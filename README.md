@@ -1,23 +1,34 @@
 # Xlsxrb
 
-TODO: Delete this and the text below, and describe your gem
+A Ruby library for reading and writing XLSX files with streaming support.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/xlsxrb`. To experiment with that code, run `bin/console` for an interactive prompt.
+## Motivation
+
+The Ruby ecosystem already has great XLSX libraries. Each is well-designed for its purpose:
+
+| Library | Read | Write | Streaming (low memory) |
+|---------|------|-------|------------------------|
+| [roo](https://rubygems.org/gems/roo) | ✅ | ❌ | ❌ |
+| [creek](https://rubygems.org/gems/creek) | ✅ | ❌ | ✅ |
+| [caxlsx / axlsx](https://rubygems.org/gems/caxlsx) | ❌ | ✅ | ❌ |
+| [xlsxtream](https://rubygems.org/gems/xlsxtream) | ❌ | ✅ | ✅ |
+| [rubyXL](https://rubygems.org/gems/rubyXL) | ✅ | ✅ | ❌ |
+| [fast_excel](https://rubygems.org/gems/fast_excel) | ❌ | ✅ | ✅ |
+
+If you need to read large files efficiently, [creek](https://rubygems.org/gems/creek) is a great choice. If you need to write large files, [xlsxtream](https://rubygems.org/gems/xlsxtream) does that well. These libraries make deliberate tradeoffs, and they do so thoughtfully.
+
+`xlsxrb` is for cases where you need **both** reading and writing in a single library, while also keeping memory usage predictable for large files.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
-
 ```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+bundle add xlsxrb
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+Or without Bundler:
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+gem install xlsxrb
 ```
 
 ## Usage
