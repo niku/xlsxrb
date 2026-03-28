@@ -1,0 +1,16 @@
+{
+    "name": "xlsxrb Development",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "Shopify.ruby-lsp",
+            ]
+        }
+    },
+    "remoteUser": "root",
+    "postCreateCommand": "bundle install && bin/setup"
+}
