@@ -154,6 +154,17 @@ module Xlsxrb
 
     # Writes the workbook as an XLSX file to the given path.
     def write(filepath)
+      # Pre-register date format if any sheet contains Date values.
+      @sheet_order.each do |sn|
+        if @sheets[sn].each_value.any?(Date)
+          date_num_fmt_id
+          break
+        end
+      end
+
+      # Clear memoized xf index map so it picks up all registered formats.
+      @xf_index_map = nil
+
       entries = {
         "[Content_Types].xml" => generate_content_types_xml,
         "_rels/.rels" => generate_rels_root,
@@ -335,11 +346,21 @@ module Xlsxrb
         parts
       when true, false
         %(<c r="#{cell_ref}" t="b"#{s_attr}><v>#{value ? 1 : 0}</v></c>)
+      when Date
+        serial = Xlsxrb.date_to_serial(value)
+        date_style = resolve_style_index(date_num_fmt_id)
+        ds_attr = date_style ? %( s="#{date_style}") : ""
+        %(<c r="#{cell_ref}"#{ds_attr}><v>#{serial}</v></c>)
       when Numeric
         %(<c r="#{cell_ref}"#{s_attr}><v>#{value}</v></c>)
       else
         %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}><is><t>#{xml_escape(value)}</t></is></c>)
       end
+    end
+
+    # Returns the numFmtId for dates, registering it on first use.
+    def date_num_fmt_id
+      @date_num_fmt_id ||= add_number_format(DEFAULT_DATE_FORMAT)
     end
 
     # Maps a numFmtId to a cellXfs index. Index 0 is the default (no format).

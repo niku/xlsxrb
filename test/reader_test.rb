@@ -246,4 +246,32 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips Date cells" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Date.new(2024, 1, 15))
+    writer.set_cell("B1", 42)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    assert_equal(Date.new(2024, 1, 15), cells["A1"])
+    assert_equal(42, cells["B1"])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "serial_to_date and date_to_serial round-trip" do
+    date = Date.new(2024, 6, 15)
+    serial = Xlsxrb.date_to_serial(date)
+    assert_equal(date, Xlsxrb.serial_to_date(serial))
+
+    # Excel epoch: Jan 1, 1900 = serial 1
+    assert_equal(1, Xlsxrb.date_to_serial(Date.new(1900, 1, 1)))
+    assert_equal(Date.new(1900, 1, 1), Xlsxrb.serial_to_date(1))
+  end
 end

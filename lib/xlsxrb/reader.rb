@@ -12,13 +12,20 @@ module Xlsxrb
     end
 
     # Returns cells for the given sheet (by name or 0-based index).
-    # Defaults to the first sheet.
+    # Defaults to the first sheet. Numeric cells with date numFmt are converted to Date.
     def cells(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
       return {} if worksheet_xml.nil? || worksheet_xml.empty?
 
       shared_strings = load_shared_strings
-      parse_worksheet_cells(worksheet_xml, shared_strings)
+      raw_cells = parse_worksheet_cells(worksheet_xml, shared_strings)
+
+      # Resolve date-formatted cells.
+      styles = load_styles
+      return raw_cells if styles.empty?
+
+      cell_style_map = parse_cell_style_indices(worksheet_xml)
+      resolve_date_cells(raw_cells, cell_style_map, styles)
     end
 
     # Returns column widths as { "A" => 20.0, "B" => 15.5 } for the given sheet.
@@ -200,6 +207,51 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       { num_fmts: listener.num_fmts, cell_xfs: listener.cell_xfs }
+    end
+
+    def parse_cell_style_indices(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = CellStyleListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.cell_style_indices
+    end
+
+    def resolve_date_cells(raw_cells, cell_style_map, styles)
+      raw_cells.each do |cell_ref, value|
+        next unless value.is_a?(Numeric)
+
+        xf_index = cell_style_map[cell_ref]
+        next unless xf_index
+
+        xf = styles[:cell_xfs][xf_index]
+        next unless xf
+
+        fmt_id = xf[:num_fmt_id]
+        next unless date_format?(fmt_id, styles[:num_fmts])
+
+        raw_cells[cell_ref] = Xlsxrb.serial_to_date(value.to_i)
+      end
+      raw_cells
+    end
+
+    def date_format?(fmt_id, custom_num_fmts)
+      return false unless fmt_id
+
+      # Built-in date format IDs.
+      return true if BUILTIN_DATE_FMT_IDS.include?(fmt_id)
+
+      # Check custom format code for date-like patterns.
+      code = custom_num_fmts[fmt_id]
+      return false unless code
+
+      date_pattern?(code)
+    end
+
+    def date_pattern?(code)
+      # Strip quoted strings to avoid false matches.
+      stripped = code.gsub(/"[^"]*"/, "").gsub(/\\[.]/, "")
+      stripped.match?(/[ymdhsYMDHS]/)
     end
 
     def extract_zip_entry(entry_name)
