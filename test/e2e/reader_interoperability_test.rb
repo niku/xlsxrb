@@ -796,6 +796,28 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated DV deep attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_dv_deep_attrs_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dvs = reader.data_validations
+    assert_equal(1, dvs.size)
+    dv = dvs[0]
+    assert_equal(true, dv[:allow_blank])
+    assert_equal("warning", dv[:error_style])
+    assert_equal("Bad Value", dv[:error_title])
+    assert_equal("Please enter 1-100", dv[:error])
+    assert_equal("Input Needed", dv[:prompt_title])
+    assert_equal("Enter a number", dv[:prompt])
+    assert_equal(true, dv[:show_error_message])
+    assert_equal(true, dv[:show_input_message])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

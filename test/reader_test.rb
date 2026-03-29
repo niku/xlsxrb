@@ -725,6 +725,41 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips data validation deep attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 50)
+    writer.add_data_validation("A1:A100", type: "whole", operator: "between",
+                                          formula1: "1", formula2: "100",
+                                          allow_blank: true,
+                                          error_style: "warning",
+                                          error_title: "Bad Value",
+                                          error: "Please enter 1-100",
+                                          show_error_message: true,
+                                          prompt_title: "Input Needed",
+                                          prompt: "Enter a number",
+                                          show_input_message: true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dvs = reader.data_validations
+    assert_equal(1, dvs.size)
+    dv = dvs[0]
+    assert_equal(true, dv[:allow_blank])
+    assert_equal("warning", dv[:error_style])
+    assert_equal("Bad Value", dv[:error_title])
+    assert_equal("Please enter 1-100", dv[:error])
+    assert_equal("Input Needed", dv[:prompt_title])
+    assert_equal("Enter a number", dv[:prompt])
+    assert_equal(true, dv[:show_error_message])
+    assert_equal(true, dv[:show_input_message])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips conditional formatting rules" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
