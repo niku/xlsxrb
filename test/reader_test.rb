@@ -579,4 +579,72 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips print options and page margins" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_print_option(:grid_lines, true)
+    writer.set_print_option(:horizontal_centered, true)
+    writer.set_page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    po = reader.print_options
+    assert_equal(true, po[:grid_lines])
+    assert_equal(true, po[:horizontal_centered])
+
+    pm = reader.page_margins
+    assert_in_delta(0.7, pm[:left], 0.001)
+    assert_in_delta(0.75, pm[:top], 0.001)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips page setup and header footer" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_page_setup(:orientation, "landscape")
+    writer.set_page_setup(:paper_size, 9)
+    writer.set_header_footer(:odd_header, "&CPage &P")
+    writer.set_header_footer(:odd_footer, "&CFooter")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ps = reader.page_setup
+    assert_equal("landscape", ps[:orientation])
+    assert_equal(9, ps[:paper_size])
+
+    hf = reader.header_footer
+    assert_equal("&CPage &P", hf[:odd_header])
+    assert_equal("&CFooter", hf[:odd_footer])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips row and col breaks" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_row_break(10)
+    writer.add_row_break(20)
+    writer.add_col_break(5)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    assert_equal([10, 20], reader.row_breaks)
+    assert_equal([5], reader.col_breaks)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
