@@ -2329,13 +2329,25 @@ module Xlsxrb
           @cfvo_target = :color_scale
           @color_target = :color_scale
         when "dataBar"
-          @current_rule[:data_bar] = { cfvo: [] } if @current_rule
+          if @current_rule
+            db = { cfvo: [] }
+            db[:min_length] = attributes["minLength"].to_i if attributes["minLength"]
+            db[:max_length] = attributes["maxLength"].to_i if attributes["maxLength"]
+            sv = attributes["showValue"]
+            db[:show_value] = %w[1 true].include?(sv) unless sv.nil?
+            @current_rule[:data_bar] = db
+          end
           @cfvo_target = :data_bar
           @color_target = :data_bar
         when "iconSet"
           if @current_rule
-            @current_rule[:icon_set] = { cfvo: [] }
-            @current_rule[:icon_set][:icon_set] = attributes["iconSet"] if attributes["iconSet"]
+            is = { cfvo: [] }
+            is[:icon_set] = attributes["iconSet"] if attributes["iconSet"]
+            rv = attributes["reverse"]
+            is[:reverse] = %w[1 true].include?(rv) unless rv.nil?
+            sv = attributes["showValue"]
+            is[:show_value] = %w[1 true].include?(sv) unless sv.nil?
+            @current_rule[:icon_set] = is
           end
           @cfvo_target = :icon_set
         when "cfvo"

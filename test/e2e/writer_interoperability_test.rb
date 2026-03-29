@@ -674,6 +674,34 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid CF dataBar and iconSet deep attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 50)
+    writer.add_conditional_format("A1:A10", type: :data_bar, priority: 1,
+                                            data_bar: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              color: "FF638EC6",
+                                              min_length: 5, max_length: 90, show_value: false
+                                            })
+    writer.add_conditional_format("B1:B10", type: :icon_set, priority: 2,
+                                            icon_set: {
+                                              icon_set: "3Arrows",
+                                              cfvo: [{ type: "percent", val: "0" },
+                                                     { type: "percent", val: "33" },
+                                                     { type: "percent", val: "67" }],
+                                              reverse: true, show_value: false
+                                            })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_cf_deep_attrs_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

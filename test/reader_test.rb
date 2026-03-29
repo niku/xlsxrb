@@ -780,6 +780,60 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips dataBar deep attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 50)
+    writer.add_conditional_format("A1:A10", type: :data_bar, priority: 1,
+                                            data_bar: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              color: "FF638EC6",
+                                              min_length: 5, max_length: 90, show_value: false
+                                            })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(1, cfs.size)
+    db = cfs[0][:data_bar]
+    assert_equal(5, db[:min_length])
+    assert_equal(90, db[:max_length])
+    assert_equal(false, db[:show_value])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips iconSet deep attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 50)
+    writer.add_conditional_format("A1:A10", type: :icon_set, priority: 1,
+                                            icon_set: {
+                                              icon_set: "3Arrows",
+                                              cfvo: [{ type: "percent", val: "0" },
+                                                     { type: "percent", val: "33" },
+                                                     { type: "percent", val: "67" }],
+                                              reverse: true, show_value: false
+                                            })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(1, cfs.size)
+    is = cfs[0][:icon_set]
+    assert_equal("3Arrows", is[:icon_set])
+    assert_equal(true, is[:reverse])
+    assert_equal(false, is[:show_value])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips cell styles with fonts fills and borders" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

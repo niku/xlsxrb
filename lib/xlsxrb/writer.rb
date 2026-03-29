@@ -2029,7 +2029,11 @@ module Xlsxrb
       when :data_bar
         db = rule[:data_bar]
         parts << "<cfRule #{rule_attrs}>"
-        parts << "<dataBar>"
+        db_attrs = +""
+        db_attrs << %( minLength="#{db[:min_length]}") if db[:min_length]
+        db_attrs << %( maxLength="#{db[:max_length]}") if db[:max_length]
+        db_attrs << %( showValue="#{db[:show_value] ? 1 : 0}") unless db[:show_value].nil?
+        parts << "<dataBar#{db_attrs}>"
         db[:cfvo]&.each do |cfvo|
           cfvo_attrs = %(type="#{cfvo[:type]}")
           cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
@@ -2041,8 +2045,11 @@ module Xlsxrb
       when :icon_set
         is = rule[:icon_set]
         parts << "<cfRule #{rule_attrs}>"
-        is_attrs = is[:icon_set] ? %(iconSet="#{is[:icon_set]}") : ""
-        parts << "<iconSet#{" #{is_attrs}" unless is_attrs.empty?}>"
+        is_attrs = +""
+        is_attrs << %( iconSet="#{is[:icon_set]}") if is[:icon_set]
+        is_attrs << %( reverse="#{is[:reverse] ? 1 : 0}") unless is[:reverse].nil?
+        is_attrs << %( showValue="#{is[:show_value] ? 1 : 0}") unless is[:show_value].nil?
+        parts << "<iconSet#{is_attrs}>"
         is[:cfvo]&.each do |cfvo|
           cfvo_attrs = %(type="#{cfvo[:type]}")
           cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
