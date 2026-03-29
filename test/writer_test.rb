@@ -280,4 +280,22 @@ class WriterTest < Test::Unit::TestCase
     assert_raise(ArgumentError) { writer.set_sheet_state("Sheet1", :invalid) }
     assert_raise(ArgumentError) { writer.set_sheet_state("NoSuch", :hidden) }
   end
+
+  test "stores defined names" do
+    writer = Xlsxrb::Writer.new
+    writer.add_sheet("Data")
+    writer.add_defined_name("MyRange", "Sheet1!$A$1:$B$10")
+    writer.add_defined_name("LocalName", "Data!$C$1", sheet: "Data")
+    writer.add_defined_name("HiddenName", "42", hidden: true)
+    writer.add_defined_name("Constant", "\"hello\"")
+
+    dns = writer.defined_names
+    assert_equal(4, dns.size)
+    assert_equal("MyRange", dns[0][:name])
+    assert_nil(dns[0][:local_sheet_id])
+    assert_equal(false, dns[0][:hidden])
+    assert_equal(1, dns[1][:local_sheet_id])
+    assert_equal(true, dns[2][:hidden])
+    assert_equal("\"hello\"", dns[3][:value])
+  end
 end

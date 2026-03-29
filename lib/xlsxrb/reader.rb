@@ -188,6 +188,11 @@ module Xlsxrb
       parse_workbook_metadata[:calc_properties]
     end
 
+    # Returns defined names as an array of hashes.
+    def defined_names
+      parse_workbook_metadata[:defined_names]
+    end
+
     # Returns sheet states as { "Sheet1" => :visible, "Hidden" => :hidden }.
     def sheet_states
       sheets = discover_sheets
@@ -221,7 +226,8 @@ module Xlsxrb
       {
         workbook_properties: listener.workbook_properties,
         workbook_views: listener.workbook_views,
-        calc_properties: listener.calc_properties
+        calc_properties: listener.calc_properties,
+        defined_names: listener.defined_names
       }
     end
 
@@ -643,13 +649,17 @@ module Xlsxrb
     class WorkbookListener
       include REXML::SAX2Listener
 
-      attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties
+      attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties, :defined_names
 
       def initialize
         @sheets = []
         @workbook_properties = {}
         @workbook_views = {}
         @calc_properties = {}
+        @defined_names = []
+        @inside_defined_name = false
+        @current_dn_attrs = nil
+        @dn_text_buffer = +""
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -672,7 +682,30 @@ module Xlsxrb
           @calc_properties[:calc_id] = ci.to_i if ci
           fcol = attributes["fullCalcOnLoad"]
           @calc_properties[:full_calc_on_load] = %w[1 true].include?(fcol) unless fcol.nil?
+        when "definedName"
+          @inside_defined_name = true
+          @current_dn_attrs = {
+            name: attributes["name"],
+            hidden: %w[1 true].include?(attributes["hidden"])
+          }
+          lsi = attributes["localSheetId"]
+          @current_dn_attrs[:local_sheet_id] = lsi.to_i if lsi
+          @dn_text_buffer = +""
         end
+      end
+
+      def characters(text)
+        @dn_text_buffer << text if @inside_defined_name
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        return unless name == "definedName" && @inside_defined_name
+
+        @current_dn_attrs[:value] = @dn_text_buffer.dup
+        @defined_names << @current_dn_attrs
+        @inside_defined_name = false
+        @current_dn_attrs = nil
       end
 
       private
