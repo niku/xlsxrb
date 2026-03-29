@@ -182,6 +182,54 @@ module Xlsxrb
       parse_worksheet_sheet_view(worksheet_xml)[:selection]
     end
 
+    # Returns print options for the given sheet.
+    def print_options(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_print_page(worksheet_xml)[:print_options]
+    end
+
+    # Returns page margins for the given sheet.
+    def page_margins(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_print_page(worksheet_xml)[:page_margins]
+    end
+
+    # Returns page setup for the given sheet.
+    def page_setup(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_print_page(worksheet_xml)[:page_setup]
+    end
+
+    # Returns header/footer for the given sheet.
+    def header_footer(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_print_page(worksheet_xml)[:header_footer]
+    end
+
+    # Returns row breaks for the given sheet.
+    def row_breaks(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return [] if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_print_page(worksheet_xml)[:row_breaks]
+    end
+
+    # Returns column breaks for the given sheet.
+    def col_breaks(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return [] if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_print_page(worksheet_xml)[:col_breaks]
+    end
+
     # Returns core properties as a hash (e.g. { title: "...", creator: "..." }).
     def core_properties
       # Discover core properties path from _rels/.rels
@@ -552,6 +600,21 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       { view: listener.view, pane: listener.pane, selection: listener.selection }
+    end
+
+    def parse_worksheet_print_page(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = PrintPageListener.new
+      parser.listen(listener)
+      parser.parse
+      {
+        print_options: listener.print_options,
+        page_margins: listener.page_margins,
+        page_setup: listener.page_setup,
+        header_footer: listener.header_footer,
+        row_breaks: listener.row_breaks,
+        col_breaks: listener.col_breaks
+      }
     end
 
     def column_index_to_letter(index)
@@ -1346,6 +1409,111 @@ module Xlsxrb
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
         @inside_sheet_views = false if name == "sheetViews"
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing print/page elements from worksheet XML.
+    class PrintPageListener
+      include REXML::SAX2Listener
+
+      attr_reader :print_options, :page_margins, :page_setup, :header_footer, :row_breaks, :col_breaks
+
+      def initialize
+        @print_options = {}
+        @page_margins = nil
+        @page_setup = {}
+        @header_footer = {}
+        @row_breaks = []
+        @col_breaks = []
+        @inside_header_footer = false
+        @inside_row_breaks = false
+        @inside_col_breaks = false
+        @current_hf_field = nil
+        @text_buffer = +""
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "printOptions"
+          @print_options[:grid_lines] = true if attributes["gridLines"] == "1"
+          @print_options[:headings] = true if attributes["headings"] == "1"
+          @print_options[:horizontal_centered] = true if attributes["horizontalCentered"] == "1"
+          @print_options[:vertical_centered] = true if attributes["verticalCentered"] == "1"
+        when "pageMargins"
+          m = {}
+          %w[left right top bottom header footer].each do |k|
+            v = attributes[k]
+            m[k.to_sym] = v.to_f if v
+          end
+          @page_margins = m unless m.empty?
+        when "pageSetup"
+          o = attributes["orientation"]
+          @page_setup[:orientation] = o if o
+          ps = attributes["paperSize"]
+          @page_setup[:paper_size] = ps.to_i if ps
+          sc = attributes["scale"]
+          @page_setup[:scale] = sc.to_i if sc
+          ftw = attributes["fitToWidth"]
+          @page_setup[:fit_to_width] = ftw.to_i if ftw
+          fth = attributes["fitToHeight"]
+          @page_setup[:fit_to_height] = fth.to_i if fth
+        when "headerFooter"
+          @inside_header_footer = true
+        when "oddHeader", "oddFooter", "evenHeader", "evenFooter"
+          if @inside_header_footer
+            @current_hf_field = name
+            @text_buffer = +""
+          end
+        when "rowBreaks"
+          @inside_row_breaks = true
+        when "colBreaks"
+          @inside_col_breaks = true
+        when "brk"
+          id = attributes["id"]&.to_i
+          if id
+            @row_breaks << id if @inside_row_breaks
+            @col_breaks << id if @inside_col_breaks
+          end
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text if @current_hf_field
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "headerFooter"
+          @inside_header_footer = false
+        when "oddHeader"
+          @header_footer[:odd_header] = @text_buffer.dup if @current_hf_field == "oddHeader"
+          @current_hf_field = nil
+        when "oddFooter"
+          @header_footer[:odd_footer] = @text_buffer.dup if @current_hf_field == "oddFooter"
+          @current_hf_field = nil
+        when "evenHeader"
+          @header_footer[:even_header] = @text_buffer.dup if @current_hf_field == "evenHeader"
+          @current_hf_field = nil
+        when "evenFooter"
+          @header_footer[:even_footer] = @text_buffer.dup if @current_hf_field == "evenFooter"
+          @current_hf_field = nil
+        when "rowBreaks"
+          @inside_row_breaks = false
+        when "colBreaks"
+          @inside_col_breaks = false
+        end
       end
 
       private

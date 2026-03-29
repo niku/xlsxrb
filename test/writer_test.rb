@@ -379,4 +379,53 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("B2", sel[:active_cell])
     assert_equal("B2:C3", sel[:sqref])
   end
+
+  test "stores print options" do
+    writer = Xlsxrb::Writer.new
+    writer.set_print_option(:grid_lines, true)
+    writer.set_print_option(:horizontal_centered, true)
+
+    po = writer.print_options
+    assert_equal(true, po[:grid_lines])
+    assert_equal(true, po[:horizontal_centered])
+  end
+
+  test "stores page margins" do
+    writer = Xlsxrb::Writer.new
+    writer.set_page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
+
+    pm = writer.page_margins
+    assert_equal(0.7, pm[:left])
+    assert_equal(0.75, pm[:top])
+  end
+
+  test "stores page setup" do
+    writer = Xlsxrb::Writer.new
+    writer.set_page_setup(:orientation, "landscape")
+    writer.set_page_setup(:paper_size, 9)
+
+    ps = writer.page_setup
+    assert_equal("landscape", ps[:orientation])
+    assert_equal(9, ps[:paper_size])
+  end
+
+  test "stores header footer" do
+    writer = Xlsxrb::Writer.new
+    writer.set_header_footer(:odd_header, "&CPage &P")
+    writer.set_header_footer(:odd_footer, "&CFooter")
+
+    hf = writer.header_footer
+    assert_equal("&CPage &P", hf[:odd_header])
+    assert_equal("&CFooter", hf[:odd_footer])
+  end
+
+  test "stores row and col breaks" do
+    writer = Xlsxrb::Writer.new
+    writer.add_row_break(10)
+    writer.add_row_break(20)
+    writer.add_col_break(5)
+
+    assert_equal([10, 20], writer.row_breaks)
+    assert_equal([5], writer.col_breaks)
+  end
 end

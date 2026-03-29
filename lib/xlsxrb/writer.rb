@@ -45,6 +45,12 @@ module Xlsxrb
       @sheet_views = { "Sheet1" => {} }
       @freeze_panes = { "Sheet1" => nil }
       @selections = { "Sheet1" => nil }
+      @print_options = { "Sheet1" => {} }
+      @page_margins = { "Sheet1" => nil }
+      @page_setup = { "Sheet1" => {} }
+      @header_footer = { "Sheet1" => {} }
+      @row_breaks = { "Sheet1" => [] }
+      @col_breaks = { "Sheet1" => [] }
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -64,6 +70,12 @@ module Xlsxrb
       @sheet_views[name] = {}
       @freeze_panes[name] = nil
       @selections[name] = nil
+      @print_options[name] = {}
+      @page_margins[name] = nil
+      @page_setup[name] = {}
+      @header_footer[name] = {}
+      @row_breaks[name] = []
+      @col_breaks[name] = []
       @sheet_order << name
     end
 
@@ -324,6 +336,97 @@ module Xlsxrb
       @selections[sheet_name]
     end
 
+    # Sets a print option (e.g. :grid_lines, :headings, :horizontal_centered, :vertical_centered).
+    def set_print_option(name, value, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @print_options.key?(sheet_name)
+
+      @print_options[sheet_name][name] = value
+    end
+
+    # Returns print options for the first (or given) sheet.
+    def print_options(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      (@print_options[sheet_name] || {}).dup
+    end
+
+    # Sets page margins (all values in inches).
+    def set_page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @page_margins.key?(sheet_name)
+
+      m = {}
+      m[:left] = left if left
+      m[:right] = right if right
+      m[:top] = top if top
+      m[:bottom] = bottom if bottom
+      m[:header] = header if header
+      m[:footer] = footer if footer
+      @page_margins[sheet_name] = m
+    end
+
+    # Returns page margins for the first (or given) sheet.
+    def page_margins(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @page_margins[sheet_name]
+    end
+
+    # Sets a page setup property (e.g. :orientation, :paper_size, :scale, :fit_to_width, :fit_to_height).
+    def set_page_setup(name, value, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @page_setup.key?(sheet_name)
+
+      @page_setup[sheet_name][name] = value
+    end
+
+    # Returns page setup for the first (or given) sheet.
+    def page_setup(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      (@page_setup[sheet_name] || {}).dup
+    end
+
+    # Sets header/footer text (:odd_header, :odd_footer, :even_header, :even_footer).
+    def set_header_footer(name, value, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @header_footer.key?(sheet_name)
+
+      @header_footer[sheet_name][name] = value
+    end
+
+    # Returns header/footer for the first (or given) sheet.
+    def header_footer(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      (@header_footer[sheet_name] || {}).dup
+    end
+
+    # Adds a row break (page break before a given row number).
+    def add_row_break(row_num, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_breaks.key?(sheet_name)
+
+      @row_breaks[sheet_name] << row_num
+    end
+
+    # Returns row breaks for the first (or given) sheet.
+    def row_breaks(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @row_breaks[sheet_name] || []
+    end
+
+    # Adds a column break (page break before a given column index, 1-based).
+    def add_col_break(col_index, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @col_breaks.key?(sheet_name)
+
+      @col_breaks[sheet_name] << col_index
+    end
+
+    # Returns column breaks for the first (or given) sheet.
+    def col_breaks(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @col_breaks[sheet_name] || []
+    end
+
     # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
     def set_sheet_state(sheet_name, state)
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -416,7 +519,9 @@ module Xlsxrb
           @sheets[sheet_name], @column_widths[sheet_name], @column_attrs[sheet_name], @row_attrs[sheet_name],
           @auto_filters[sheet_name], @merge_cells[sheet_name], @hyperlinks[sheet_name],
           @cell_styles[sheet_name], @sheet_properties[sheet_name], @sheet_formats[sheet_name],
-          @sheet_views[sheet_name], @freeze_panes[sheet_name], @selections[sheet_name]
+          @sheet_views[sheet_name], @freeze_panes[sheet_name], @selections[sheet_name],
+          @print_options[sheet_name], @page_margins[sheet_name], @page_setup[sheet_name],
+          @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name]
         )
         next if @hyperlinks[sheet_name].empty?
 
@@ -537,7 +642,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -693,6 +798,60 @@ module Xlsxrb
           parts << %(<hyperlink ref="#{cell_ref}" r:id="rId#{idx + 1}"/>)
         end
         parts << "</hyperlinks>"
+      end
+
+      # Emit <printOptions> if defined.
+      unless sheet_po.empty?
+        po_attrs = []
+        po_attrs << 'gridLines="1"' if sheet_po[:grid_lines]
+        po_attrs << 'headings="1"' if sheet_po[:headings]
+        po_attrs << 'horizontalCentered="1"' if sheet_po[:horizontal_centered]
+        po_attrs << 'verticalCentered="1"' if sheet_po[:vertical_centered]
+        parts << "<printOptions #{po_attrs.join(" ")}/>" unless po_attrs.empty?
+      end
+
+      # Emit <pageMargins> if defined.
+      if sheet_pm
+        pm_attrs = %w[left right top bottom header footer].filter_map do |k|
+          v = sheet_pm[k.to_sym]
+          %(#{k}="#{v}") if v
+        end
+        parts << "<pageMargins #{pm_attrs.join(" ")}/>" unless pm_attrs.empty?
+      end
+
+      # Emit <pageSetup> if defined.
+      unless sheet_ps.empty?
+        ps_attrs = []
+        ps_attrs << %(orientation="#{sheet_ps[:orientation]}") if sheet_ps[:orientation]
+        ps_attrs << %(paperSize="#{sheet_ps[:paper_size]}") if sheet_ps[:paper_size]
+        ps_attrs << %(scale="#{sheet_ps[:scale]}") if sheet_ps[:scale]
+        ps_attrs << %(fitToWidth="#{sheet_ps[:fit_to_width]}") if sheet_ps[:fit_to_width]
+        ps_attrs << %(fitToHeight="#{sheet_ps[:fit_to_height]}") if sheet_ps[:fit_to_height]
+        parts << "<pageSetup #{ps_attrs.join(" ")}/>" unless ps_attrs.empty?
+      end
+
+      # Emit <headerFooter> if defined.
+      unless sheet_hf.empty?
+        parts << "<headerFooter>"
+        parts << "<oddHeader>#{xml_escape(sheet_hf[:odd_header])}</oddHeader>" if sheet_hf[:odd_header]
+        parts << "<oddFooter>#{xml_escape(sheet_hf[:odd_footer])}</oddFooter>" if sheet_hf[:odd_footer]
+        parts << "<evenHeader>#{xml_escape(sheet_hf[:even_header])}</evenHeader>" if sheet_hf[:even_header]
+        parts << "<evenFooter>#{xml_escape(sheet_hf[:even_footer])}</evenFooter>" if sheet_hf[:even_footer]
+        parts << "</headerFooter>"
+      end
+
+      # Emit <rowBreaks> if defined.
+      unless sheet_rb.empty?
+        parts << %(<rowBreaks count="#{sheet_rb.size}" manualBreakCount="#{sheet_rb.size}">)
+        sheet_rb.each { |r| parts << %(<brk id="#{r}" max="16383" man="1"/>) }
+        parts << "</rowBreaks>"
+      end
+
+      # Emit <colBreaks> if defined.
+      unless sheet_cb.empty?
+        parts << %(<colBreaks count="#{sheet_cb.size}" manualBreakCount="#{sheet_cb.size}">)
+        sheet_cb.each { |c| parts << %(<brk id="#{c}" max="1048575" man="1"/>) }
+        parts << "</colBreaks>"
       end
 
       parts << "</worksheet>"

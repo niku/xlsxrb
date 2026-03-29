@@ -383,6 +383,27 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores print options, page setup, and breaks correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_print_option(:grid_lines, true)
+    writer.set_page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
+    writer.set_page_setup(:orientation, "landscape")
+    writer.set_page_setup(:paper_size, 9)
+    writer.set_header_footer(:odd_header, "&CPage &P")
+    writer.add_row_break(10)
+    writer.add_row_break(20)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_print_page_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
