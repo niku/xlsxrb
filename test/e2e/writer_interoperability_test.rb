@@ -58,9 +58,8 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   def sdk_runner_command(scenario_path, xlsx_path)
     [
-      "dotnet", "run",
-      "--project", File.expand_path("../../vendor/sdk_runner", __dir__),
-      "--", scenario_path, xlsx_path
+      "dotnet", File.expand_path("../../vendor/sdk_runner/bin/Release/net8.0/sdk_runner.dll", __dir__),
+      scenario_path, xlsx_path
     ]
   end
 end
