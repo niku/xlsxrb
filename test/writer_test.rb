@@ -204,4 +204,18 @@ class WriterTest < Test::Unit::TestCase
     assert_raise(ArgumentError) { writer.set_auto_filter("A1") }
     assert_raise(ArgumentError) { writer.set_auto_filter("") }
   end
+
+  test "stores core properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_core_property(:title, "My Workbook")
+    writer.set_core_property(:creator, "Test User")
+    writer.set_core_property(:created, "2024-01-15T00:00:00Z")
+    writer.set_core_property(:modified, "2024-01-16T12:00:00Z")
+
+    props = writer.core_properties
+    assert_equal("My Workbook", props[:title])
+    assert_equal("Test User", props[:creator])
+    assert_equal("2024-01-15T00:00:00Z", props[:created])
+    assert_equal("2024-01-16T12:00:00Z", props[:modified])
+  end
 end

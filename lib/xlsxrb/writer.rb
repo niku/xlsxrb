@@ -11,6 +11,11 @@ module Xlsxrb
     SSML_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
     DOC_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
+    CP_NS = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+    DC_NS = "http://purl.org/dc/elements/1.1/"
+    DCTERMS_NS = "http://purl.org/dc/terms/"
+    XSI_NS = "http://www.w3.org/2001/XMLSchema-instance"
+
     CELL_ADDRESS_PATTERN = /\A([A-Z]{1,3})(\d+)\z/
     MAX_ROW = 1_048_576
     MAX_COLUMN_INDEX = 16_384 # XFD
@@ -25,6 +30,7 @@ module Xlsxrb
       @auto_filters = { "Sheet1" => nil }
       @num_fmts = []
       @sheet_order = ["Sheet1"]
+      @core_properties = {}
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -167,6 +173,18 @@ module Xlsxrb
       @cell_styles[sheet_name][cell_address] = num_fmt_id
     end
 
+    # Sets a core property.
+    def set_core_property(name, value)
+      raise ArgumentError, "name must be a Symbol" unless name.is_a?(Symbol)
+
+      @core_properties[name] = value
+    end
+
+    # Returns core properties hash.
+    def core_properties
+      @core_properties.dup
+    end
+
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
@@ -190,6 +208,8 @@ module Xlsxrb
         "xl/_rels/workbook.xml.rels" => generate_workbook_rels,
         "xl/styles.xml" => generate_styles_xml
       }
+
+      entries["docProps/core.xml"] = generate_core_properties_xml unless @core_properties.empty?
 
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
@@ -221,6 +241,7 @@ module Xlsxrb
       @sheet_order.each_with_index do |_, i|
         parts << %(<Override PartName="/xl/worksheets/sheet#{i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>)
       end
+      parts << %(<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>) unless @core_properties.empty?
       parts << "</Types>"
       parts.join
     end
@@ -229,9 +250,10 @@ module Xlsxrb
       parts = [
         XML_HEADER,
         %(<Relationships xmlns="#{REL_NS}">),
-        %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/officeDocument" Target="xl/workbook.xml"/>),
-        "</Relationships>"
+        %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/officeDocument" Target="xl/workbook.xml"/>)
       ]
+      parts << %(<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>) unless @core_properties.empty?
+      parts << "</Relationships>"
       parts.join
     end
 
@@ -398,6 +420,19 @@ module Xlsxrb
         map
       end
       @xf_index_map[num_fmt_id]
+    end
+
+    def generate_core_properties_xml
+      parts = [
+        XML_HEADER,
+        %(<cp:coreProperties xmlns:cp="#{CP_NS}" xmlns:dc="#{DC_NS}" xmlns:dcterms="#{DCTERMS_NS}" xmlns:xsi="#{XSI_NS}">)
+      ]
+      parts << "<dc:title>#{xml_escape(@core_properties[:title])}</dc:title>" if @core_properties[:title]
+      parts << "<dc:creator>#{xml_escape(@core_properties[:creator])}</dc:creator>" if @core_properties[:creator]
+      parts << %(<dcterms:created xsi:type="dcterms:W3CDTF">#{xml_escape(@core_properties[:created])}</dcterms:created>) if @core_properties[:created]
+      parts << %(<dcterms:modified xsi:type="dcterms:W3CDTF">#{xml_escape(@core_properties[:modified])}</dcterms:modified>) if @core_properties[:modified]
+      parts << "</cp:coreProperties>"
+      parts.join
     end
 
     def generate_styles_xml

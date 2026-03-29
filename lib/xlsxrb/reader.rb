@@ -126,6 +126,28 @@ module Xlsxrb
       parse_worksheet_auto_filter(worksheet_xml)
     end
 
+    # Returns core properties as a hash (e.g. { title: "...", creator: "..." }).
+    def core_properties
+      # Discover core properties path from _rels/.rels
+      rels_xml = extract_zip_entry("_rels/.rels")
+      return {} if rels_xml.nil? || rels_xml.empty?
+
+      rels = parse_rels_with_types(rels_xml)
+      core_rel = rels.find { |r| r[:type]&.end_with?("/metadata/core-properties") }
+      return {} unless core_rel
+
+      target = core_rel[:target]
+      entry_path = target.start_with?("/") ? target.delete_prefix("/") : target
+      xml = extract_zip_entry(entry_path)
+      return {} if xml.nil? || xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = CorePropertiesListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.properties
+    end
+
     # Returns ordered sheet names.
     def sheet_names
       discover_sheets.map { |s| s[:name] }
@@ -180,6 +202,16 @@ module Xlsxrb
       parser.parse
       listener.relationships.each { |r| mapping[r[:id]] = r[:target] }
       mapping
+    end
+
+    def parse_rels_with_types(rels_xml)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = RelsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.relationships
     end
 
     def resolve_sheet_target(sheets, sheet)
@@ -579,7 +611,7 @@ module Xlsxrb
         name = element_name(local_name, qname)
         return unless name == "Relationship"
 
-        @relationships << { id: attributes["Id"], target: attributes["Target"] }
+        @relationships << { id: attributes["Id"], target: attributes["Target"], type: attributes["Type"] }
       end
 
       private
@@ -748,6 +780,56 @@ module Xlsxrb
         return unless name == "autoFilter"
 
         @ref = attributes["ref"]
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing docProps/core.xml.
+    class CorePropertiesListener
+      include REXML::SAX2Listener
+
+      attr_reader :properties
+
+      FIELD_MAP = {
+        "title" => :title,
+        "creator" => :creator,
+        "created" => :created,
+        "modified" => :modified
+      }.freeze
+
+      def initialize
+        @properties = {}
+        @current_field = nil
+        @text_buffer = +""
+      end
+
+      def start_element(_uri, local_name, qname, _attributes)
+        name = element_name(local_name, qname)
+        return unless FIELD_MAP.key?(name)
+
+        @current_field = FIELD_MAP[name]
+        @text_buffer = +""
+      end
+
+      def characters(text)
+        @text_buffer << text if @current_field
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        return unless @current_field && FIELD_MAP.key?(name)
+
+        @properties[@current_field] = @text_buffer.dup unless @text_buffer.empty?
+        @current_field = nil
       end
 
       private
