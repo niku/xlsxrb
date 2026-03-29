@@ -25,6 +25,7 @@ module Xlsxrb
     def initialize
       @sheets = { "Sheet1" => {} }
       @column_widths = { "Sheet1" => {} }
+      @column_attrs = { "Sheet1" => {} }
       @row_attrs = { "Sheet1" => {} }
       @merge_cells = { "Sheet1" => [] }
       @hyperlinks = { "Sheet1" => {} }
@@ -49,6 +50,7 @@ module Xlsxrb
 
       @sheets[name] = {}
       @column_widths[name] = {}
+      @column_attrs[name] = {}
       @row_attrs[name] = {}
       @merge_cells[name] = []
       @hyperlinks[name] = {}
@@ -93,6 +95,23 @@ module Xlsxrb
       @column_widths[sheet_name] || {}
     end
 
+    # Sets a column attribute (e.g. :hidden, :best_fit, :outline_level, :collapsed, :style).
+    def set_column_attribute(col_letter, name, value, sheet: nil)
+      raise ArgumentError, "column must be a String of uppercase letters" unless col_letter.is_a?(String) && col_letter.match?(/\A[A-Z]+\z/)
+
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @column_attrs.key?(sheet_name)
+
+      @column_attrs[sheet_name][col_letter] ||= {}
+      @column_attrs[sheet_name][col_letter][name] = value
+    end
+
+    # Returns column attributes for the first (or given) sheet.
+    def column_attributes(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @column_attrs[sheet_name] || {}
+    end
+
     # Sets a row height.
     def set_row_height(row_num, height, sheet: nil)
       sheet_name = sheet || @sheet_order.first
@@ -111,6 +130,26 @@ module Xlsxrb
 
       @row_attrs[sheet_name][row_num] ||= {}
       @row_attrs[sheet_name][row_num][:hidden] = hidden
+    end
+
+    # Sets a row outline level.
+    def set_row_outline_level(row_num, level, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
+      raise ArgumentError, "row must be a positive Integer" unless row_num.is_a?(Integer) && row_num >= 1
+
+      @row_attrs[sheet_name][row_num] ||= {}
+      @row_attrs[sheet_name][row_num][:outline_level] = level
+    end
+
+    # Sets a row collapsed state.
+    def set_row_collapsed(row_num, collapsed: true, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
+      raise ArgumentError, "row must be a positive Integer" unless row_num.is_a?(Integer) && row_num >= 1
+
+      @row_attrs[sheet_name][row_num] ||= {}
+      @row_attrs[sheet_name][row_num][:collapsed] = collapsed
     end
 
     # Returns row attributes for the first (or given) sheet.
@@ -326,7 +365,7 @@ module Xlsxrb
 
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
-          @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name],
+          @sheets[sheet_name], @column_widths[sheet_name], @column_attrs[sheet_name], @row_attrs[sheet_name],
           @auto_filters[sheet_name], @merge_cells[sheet_name], @hyperlinks[sheet_name],
           @cell_styles[sheet_name], @sheet_properties[sheet_name], @sheet_formats[sheet_name]
         )
@@ -449,7 +488,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -488,12 +527,22 @@ module Xlsxrb
         parts << "<sheetFormatPr #{fmt_attrs.join(" ")}/>"
       end
 
-      # Emit <cols> if column widths are defined.
-      unless sheet_col_widths.empty?
+      # Emit <cols> if column widths or column attributes are defined.
+      all_cols = sheet_col_widths.keys | sheet_col_attrs.keys
+      unless all_cols.empty?
         parts << "<cols>"
-        sheet_col_widths.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, width|
+        all_cols.sort_by { |col| column_letter_to_index(col) }.each do |col_letter|
           idx = column_letter_to_index(col_letter)
-          parts << %(<col min="#{idx}" max="#{idx}" width="#{width}" customWidth="1"/>)
+          width = sheet_col_widths[col_letter]
+          ca = sheet_col_attrs[col_letter] || {}
+          col_attrs = %(min="#{idx}" max="#{idx}")
+          col_attrs << %( width="#{width}" customWidth="1") if width
+          col_attrs << ' hidden="1"' if ca[:hidden]
+          col_attrs << ' bestFit="1"' if ca[:best_fit]
+          col_attrs << %( outlineLevel="#{ca[:outline_level]}") if ca[:outline_level]
+          col_attrs << ' collapsed="1"' if ca[:collapsed]
+          col_attrs << %( style="#{ca[:style]}") if ca[:style]
+          parts << "<col #{col_attrs}/>"
         end
         parts << "</cols>"
       end
@@ -518,7 +567,9 @@ module Xlsxrb
         ra = sheet_row_attrs[row_num]
         if ra
           attrs << %( ht="#{ra[:height]}" customHeight="1") if ra[:height]
-          attrs << %( hidden="1") if ra[:hidden]
+          attrs << ' hidden="1"' if ra[:hidden]
+          attrs << %( outlineLevel="#{ra[:outline_level]}") if ra[:outline_level]
+          attrs << ' collapsed="1"' if ra[:collapsed]
         end
         parts << "<row #{attrs}>"
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|

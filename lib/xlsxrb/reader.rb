@@ -36,6 +36,14 @@ module Xlsxrb
       parse_worksheet_columns(worksheet_xml)
     end
 
+    # Returns column attributes as { "A" => { hidden: true, outline_level: 1 } }.
+    def column_attributes(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_column_attributes(worksheet_xml)
+    end
+
     # Returns row attributes as { 1 => { height: 25.0 }, 3 => { hidden: true } }.
     def row_attributes(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -458,6 +466,14 @@ module Xlsxrb
       listener.raw_columns.transform_keys { |idx| column_index_to_letter(idx) }
     end
 
+    def parse_worksheet_column_attributes(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = ColumnsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.raw_column_attrs.transform_keys { |idx| column_index_to_letter(idx) }
+    end
+
     def parse_worksheet_row_attributes(xml)
       parser = REXML::Parsers::SAX2Parser.new(xml)
       listener = WorksheetListener.new([])
@@ -646,6 +662,9 @@ module Xlsxrb
         ht = attributes["ht"]
         attrs[:height] = ht.to_f if ht && attributes["customHeight"] == "1"
         attrs[:hidden] = true if attributes["hidden"] == "1"
+        ol = attributes["outlineLevel"]
+        attrs[:outline_level] = ol.to_i if ol && ol != "0"
+        attrs[:collapsed] = true if attributes["collapsed"] == "1"
         @row_attributes[row_num] = attrs unless attrs.empty?
       end
 
@@ -800,10 +819,11 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       # Returns { column_index => width } hash (1-based indices).
-      attr_reader :raw_columns
+      attr_reader :raw_columns, :raw_column_attrs
 
       def initialize
         @raw_columns = {}
+        @raw_column_attrs = {}
       end
 
       def columns
@@ -817,9 +837,20 @@ module Xlsxrb
         min_val = attributes["min"]&.to_i
         max_val = attributes["max"]&.to_i
         width = attributes["width"]&.to_f
-        return unless min_val && max_val && width
+        return unless min_val && max_val
 
-        (min_val..max_val).each { |i| @raw_columns[i] = width }
+        (min_val..max_val).each do |i|
+          @raw_columns[i] = width if width
+          attrs = {}
+          attrs[:hidden] = true if attributes["hidden"] == "1"
+          attrs[:best_fit] = true if attributes["bestFit"] == "1"
+          ol = attributes["outlineLevel"]
+          attrs[:outline_level] = ol.to_i if ol && ol != "0"
+          attrs[:collapsed] = true if attributes["collapsed"] == "1"
+          s = attributes["style"]
+          attrs[:style] = s.to_i if s && s != "0"
+          @raw_column_attrs[i] = attrs unless attrs.empty?
+        end
       end
 
       private
