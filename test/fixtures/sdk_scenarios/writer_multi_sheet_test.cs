@@ -11,8 +11,22 @@ try
     }
 
     var workbookPart = document.WorkbookPart ?? throw new Exception("WorkbookPart is missing.");
+    var sharedStringTable = workbookPart.SharedStringTablePart?.SharedStringTable
+        ?? throw new Exception("SharedStringTable is missing.");
     var sheets = workbookPart.Workbook.Sheets?.Elements<Sheet>().ToList()
         ?? throw new Exception("Sheets element is missing.");
+
+    string ReadSharedString(Cell cell, string reference)
+    {
+        if (cell.DataType?.Value != CellValues.SharedString)
+        {
+            throw new Exception($"{reference} must be stored as shared string.");
+        }
+
+        var sharedIndex = int.Parse(cell.CellValue?.Text
+            ?? throw new Exception($"{reference} shared string index is missing."));
+        return sharedStringTable.Elements<SharedStringItem>().ElementAt(sharedIndex).InnerText;
+    }
 
     if (sheets.Count != 2)
     {
@@ -33,8 +47,7 @@ try
     var a1Sheet1 = ws1.Worksheet.Descendants<Cell>()
         .FirstOrDefault(c => c.CellReference?.Value == "A1")
         ?? throw new Exception("Sheet1 A1 cell is missing.");
-    var val1 = a1Sheet1.InlineString?.Text?.Text ?? a1Sheet1.InlineString?.InnerText
-        ?? throw new Exception("Sheet1 A1 inline string value is missing.");
+    var val1 = ReadSharedString(a1Sheet1, "Sheet1 A1");
     if (val1 != "main")
     {
         throw new Exception($"Expected Sheet1 A1='main' but got '{val1}'.");
@@ -45,8 +58,7 @@ try
     var a1Sheet2 = ws2.Worksheet.Descendants<Cell>()
         .FirstOrDefault(c => c.CellReference?.Value == "A1")
         ?? throw new Exception("Data A1 cell is missing.");
-    var val2 = a1Sheet2.InlineString?.Text?.Text ?? a1Sheet2.InlineString?.InnerText
-        ?? throw new Exception("Data A1 inline string value is missing.");
+    var val2 = ReadSharedString(a1Sheet2, "Data A1");
     if (val2 != "data")
     {
         throw new Exception($"Expected Data A1='data' but got '{val2}'.");

@@ -63,7 +63,7 @@ module Xlsxrb
       @data_validations = { "Sheet1" => [] }
       @conditional_formats = { "Sheet1" => [] }
       @tables = { "Sheet1" => [] }
-      @use_shared_strings = false
+      @use_shared_strings = true
       @images = { "Sheet1" => [] }
       @charts_data = { "Sheet1" => [] }
       @shapes_data = { "Sheet1" => [] }
