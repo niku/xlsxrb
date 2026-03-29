@@ -109,7 +109,7 @@ module Xlsxrb
       # Emit rows in ascending order.
       cells_by_row.sort.each do |row_num, row_cells|
         parts << %(<row r="#{row_num}">)
-        row_cells.sort.each do |col_letter, value|
+        row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|
           cell_ref = "#{col_letter}#{row_num}"
           parts << %(<c r="#{cell_ref}" t="inlineStr"><is><t>#{xml_escape(value)}</t></is></c>)
         end
