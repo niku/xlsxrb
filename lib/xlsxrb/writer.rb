@@ -75,6 +75,7 @@ module Xlsxrb
       @preserve_macros = false
       @sheet_protection = { "Sheet1" => nil }
       @workbook_protection = nil
+      @external_links = []
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -859,6 +860,18 @@ module Xlsxrb
       @pivot_tables_data[sheet_name] || []
     end
 
+    # Adds an external link reference to another workbook.
+    # target: path or URI to the external workbook (e.g. "Book2.xlsx").
+    # sheet_names: array of sheet name strings in the external workbook.
+    def add_external_link(target:, sheet_names: [])
+      @external_links << { target: target, sheet_names: sheet_names }
+    end
+
+    # Returns external link definitions.
+    def external_links
+      @external_links.dup
+    end
+
     # Enables macro preservation mode. Required when copy_entries_from loads a .xlsm file.
     def preserve_macros!
       @preserve_macros = true
@@ -1017,6 +1030,13 @@ module Xlsxrb
       calc_chain_xml = generate_calc_chain_xml
       entries["xl/calcChain.xml"] = calc_chain_xml if calc_chain_xml
 
+      # Generate external link entries.
+      @external_links.each_with_index do |el, idx|
+        link_num = idx + 1
+        entries["xl/externalLinks/externalLink#{link_num}.xml"] = generate_external_link_xml(el)
+        entries["xl/externalLinks/_rels/externalLink#{link_num}.xml.rels"] = generate_external_link_rels(el)
+      end
+
       # Generate workbook rels (needs to know pivot cache count).
       entries["xl/_rels/workbook.xml.rels"] = generate_workbook_rels(entries.key?("xl/calcChain.xml"))
 
@@ -1120,6 +1140,11 @@ module Xlsxrb
         overrides["/xl/pivotCache/pivotCacheRecords#{p}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheRecords+xml"
       end
 
+      # External links.
+      @external_links.each_with_index do |_, idx|
+        overrides["/xl/externalLinks/externalLink#{idx + 1}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.externalLink+xml"
+      end
+
       # calcChain.
       overrides["/xl/calcChain.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.calcChain+xml" if all_entries.key?("xl/calcChain.xml")
 
@@ -1203,6 +1228,17 @@ module Xlsxrb
         parts << "<workbookProtection #{wp_attrs.join(" ")}/>" unless wp_attrs.empty?
       end
 
+      # externalReferences
+      unless @external_links.empty?
+        # rId for external links: after sheets + styles + optional SST + pivot caches
+        el_rid_base = @sheet_order.size + 1 + (@use_shared_strings ? 1 : 0) + 1 + pivot_cache_count
+        parts << "<externalReferences>"
+        @external_links.each_with_index do |_, idx|
+          parts << %(<externalReference r:id="rId#{el_rid_base + idx}"/>)
+        end
+        parts << "</externalReferences>"
+      end
+
       # definedNames
       unless @defined_names.empty?
         parts << "<definedNames>"
@@ -1262,6 +1298,10 @@ module Xlsxrb
       end
       (1..@pivot_cache_count.to_i).each do |c|
         parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition#{c}.xml"/>)
+        next_rid += 1
+      end
+      @external_links.each_with_index do |_, idx|
+        parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/externalLink" Target="externalLinks/externalLink#{idx + 1}.xml"/>)
         next_rid += 1
       end
       if has_calc_chain
@@ -2092,6 +2132,31 @@ module Xlsxrb
         XML_HEADER,
         %(<Relationships xmlns="#{REL_NS}">),
         %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="../pivotCache/pivotCacheDefinition#{cache_id}.xml"/>),
+        "</Relationships>"
+      ].join
+    end
+
+    def generate_external_link_xml(el)
+      parts = [
+        XML_HEADER,
+        %(<externalLink xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}">),
+        '<externalBook r:id="rId1">'
+      ]
+      unless el[:sheet_names].empty?
+        parts << "<sheetNames>"
+        el[:sheet_names].each { |sn| parts << %(<sheetName val="#{xml_escape(sn)}"/>) }
+        parts << "</sheetNames>"
+      end
+      parts << "</externalBook>"
+      parts << "</externalLink>"
+      parts.join
+    end
+
+    def generate_external_link_rels(el)
+      [
+        XML_HEADER,
+        %(<Relationships xmlns="#{REL_NS}">),
+        %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/externalLinkPath" Target="#{xml_escape(el[:target])}" TargetMode="External"/>),
         "</Relationships>"
       ].join
     end
