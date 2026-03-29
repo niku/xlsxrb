@@ -1110,6 +1110,56 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "format_variant returns transitional for standard writer output" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    assert_equal(:transitional, reader.format_variant)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "format_variant returns strict for strict namespace workbook" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    # Create a minimal XLSX with strict namespace using raw entries only.
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.write(xlsx_path)
+
+    # Read all entries, patch workbook.xml, then write using add_raw_entry only.
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    entries = {}
+    reader.entry_names.each do |name|
+      content = reader.raw_entry(name)
+      if name == "xl/workbook.xml"
+        content = content.gsub(
+          "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+          "http://purl.oclc.org/ooxml/spreadsheetml/main/2006/main"
+        )
+      end
+      entries[name] = content
+    end
+
+    # Write patched file using ZipGenerator directly.
+    gen = Xlsxrb::ZipGenerator.new(xlsx_path)
+    entries.each { |name, data| gen.add_entry(name, data) }
+    gen.generate
+
+    reader2 = Xlsxrb::Reader.new(xlsx_path)
+    assert_equal(:strict, reader2.format_variant)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shared string table mode" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
