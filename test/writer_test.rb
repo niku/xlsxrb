@@ -612,4 +612,21 @@ class WriterTest < Test::Unit::TestCase
     assert_raise(ArgumentError) { writer.insert_image("data", sheet: "Nonexistent") }
   end
 
+  test "add_comment stores comment definition" do
+    writer = Xlsxrb::Writer.new
+    writer.add_comment("A1", "Note text", author: "Tester")
+    writer.add_comment("B2", "Second note")
+    comments = writer.comments
+    assert_equal(2, comments.size)
+    assert_equal("A1", comments[0][:ref])
+    assert_equal("Note text", comments[0][:text])
+    assert_equal("Tester", comments[0][:author])
+    assert_equal("Author", comments[1][:author])
+  end
+
+  test "add_comment on unknown address raises" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.add_comment("ZZZ", "text") }
+  end
+
 end

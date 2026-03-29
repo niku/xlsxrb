@@ -2507,6 +2507,83 @@ module Xlsxrb
     end
 
     # SAX2 listener for parsing comments XML.
+    class CommentsListener
+      include REXML::SAX2Listener
+
+      attr_reader :comments
+
+      def initialize
+        @comments = []
+        @authors = []
+        @inside_authors = false
+        @inside_author = false
+        @inside_comment = false
+        @inside_text = false
+        @inside_t = false
+        @current_comment = nil
+        @text_buffer = +""
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "authors"
+          @inside_authors = true
+        when "author"
+          @inside_author = true
+          @text_buffer = +""
+        when "comment"
+          @inside_comment = true
+          @current_comment = { ref: attributes["ref"], author_id: attributes["authorId"]&.to_i }
+        when "text"
+          @inside_text = true if @inside_comment
+          @text_buffer = +""
+        when "t"
+          @inside_t = true if @inside_text
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text if @inside_author || @inside_t
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "authors"
+          @inside_authors = false
+        when "author"
+          @authors << @text_buffer.dup if @inside_authors
+          @inside_author = false
+        when "comment"
+          if @current_comment
+            aid = @current_comment[:author_id]
+            @current_comment[:author] = @authors[aid] if aid && aid < @authors.size
+            @current_comment.delete(:author_id)
+            @comments << @current_comment
+          end
+          @inside_comment = false
+          @current_comment = nil
+        when "text"
+          @current_comment[:text] = @text_buffer.dup if @current_comment && @inside_text
+          @inside_text = false
+        when "t"
+          @inside_t = false
+        end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing pivotTable XML.
 
   end
 end

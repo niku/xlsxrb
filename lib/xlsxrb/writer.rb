@@ -64,6 +64,7 @@ module Xlsxrb
       @use_shared_strings = false
       @images = { "Sheet1" => [] }
       @charts_data = { "Sheet1" => [] }
+      @comments_data = { "Sheet1" => [] }
       @extra_entries = {}
       @extra_ct_defaults = {}
       @extra_ct_overrides = {}
@@ -100,6 +101,7 @@ module Xlsxrb
       @tables[name] = []
       @images[name] = []
       @charts_data[name] = []
+      @comments_data[name] = []
       @sheet_order << name
     end
 
@@ -734,6 +736,21 @@ module Xlsxrb
       @charts_data[sheet_name] || []
     end
 
+    # Adds a comment on a cell.
+    def add_comment(cell_address, text, author: "Author", sheet: nil)
+      validate_cell_address!(cell_address)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @comments_data.key?(sheet_name)
+
+      @comments_data[sheet_name] << { ref: cell_address, text: text, author: author }
+    end
+
+    # Returns comment definitions for the first (or given) sheet.
+    def comments(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @comments_data[sheet_name] || []
+    end
+
     # Enables macro preservation mode. Required when copy_entries_from loads a .xlsm file.
     def preserve_macros!
       @preserve_macros = true
@@ -762,9 +779,10 @@ module Xlsxrb
       # Build shared string table if enabled.
       sst = build_shared_string_table if @use_shared_strings
 
-      # Track generated drawing/image/chart indices.
+      # Track generated drawing/image/chart/comment indices.
       @drawing_count = 0
       @chart_count = 0
+      @comment_count = 0
       @media_count = 0
 
       entries = {
@@ -781,10 +799,13 @@ module Xlsxrb
       @sheet_order.each_with_index do |sheet_name, i|
         sheet_images = @images[sheet_name] || []
         sheet_charts = @charts_data[sheet_name] || []
+        sheet_comments = @comments_data[sheet_name] || []
         has_drawing = sheet_images.any? || sheet_charts.any?
+        has_comments = sheet_comments.any?
 
         # Pre-increment counters so rels reference correct paths.
         sheet_drawing_idx = has_drawing ? (@drawing_count += 1) : nil
+        sheet_comment_idx = has_comments ? (@comment_count += 1) : nil
 
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @column_attrs[sheet_name], @row_attrs[sheet_name],
@@ -796,14 +817,14 @@ module Xlsxrb
           @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name],
           @data_validations[sheet_name], @conditional_formats[sheet_name], sst,
           @tables[sheet_name] || [], @hyperlinks[sheet_name].size,
-          has_drawing
+          has_drawing, has_comments
         )
 
         # Build per-sheet rels, including hyperlinks, tables, drawings, comments, pivots.
         sheet_tables = @tables[sheet_name] || []
         sheet_rels_parts = build_sheet_rels_parts_v2(
           sheet_name, sheet_tables, table_index,
-          sheet_drawing_idx, nil,
+          sheet_drawing_idx, sheet_comment_idx,
           0, 0
         )
 
@@ -830,6 +851,11 @@ module Xlsxrb
 
           entries["xl/drawings/drawing#{sheet_drawing_idx}.xml"] = generate_drawing_xml(drawing_parts)
           entries["xl/drawings/_rels/drawing#{sheet_drawing_idx}.xml.rels"] = generate_drawing_rels(drawing_rels_data) unless drawing_rels_data.empty?
+        end
+
+        # Generate comments XML.
+        if has_comments
+          entries["xl/comments#{sheet_comment_idx}.xml"] = generate_comments_xml(sheet_comments)
         end
 
         # Emit worksheet rels if any relationships exist.
@@ -890,6 +916,8 @@ module Xlsxrb
       end
       defaults.merge!(image_exts)
 
+      # Add vml extension if comments exist.
+      defaults["vml"] = "application/vnd.openxmlformats-officedocument.vmlDrawing" if @comment_count.to_i.positive?
 
       # Merge extra defaults from pass-through.
       defaults.merge!(@extra_ct_defaults)
@@ -928,6 +956,11 @@ module Xlsxrb
       # Charts.
       (1..@chart_count.to_i).each do |c|
         overrides["/xl/charts/chart#{c}.xml"] = "application/vnd.openxmlformats-officedocument.drawingml.chart+xml"
+      end
+
+      # Comments.
+      (1..@comment_count.to_i).each do |c|
+        overrides["/xl/comments#{c}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"
       end
 
       overrides["/docProps/core.xml"] = "application/vnd.openxmlformats-package.core-properties+xml" unless @core_properties.empty?
@@ -1037,7 +1070,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing = false)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing = false, has_comments = false)
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -1324,7 +1357,7 @@ module Xlsxrb
       # Emit <drawing> reference if images or charts exist.
       if has_drawing
         # The drawing rId is after hyperlinks + tables + comments
-        drawing_rid = hyperlink_count + sheet_tables.size + 1
+        drawing_rid = hyperlink_count + sheet_tables.size + (has_comments ? 1 : 0) + 1
         parts << %(<drawing r:id="rId#{drawing_rid}"/>)
       end
 
@@ -1387,13 +1420,16 @@ module Xlsxrb
       parts.join
     end
 
-    def build_sheet_rels_parts_v2(sheet_name, sheet_tables, table_start_index, drawing_idx, _comment_idx, _pivot_start, _pivot_count)
+    def build_sheet_rels_parts_v2(sheet_name, sheet_tables, table_start_index, drawing_idx, comment_idx, _pivot_start, _pivot_count)
       rels = []
       @hyperlinks[sheet_name].each do |(_cell_ref, url)|
         rels << { type: "#{DOC_REL_NS}/hyperlink", target: url, external: true }
       end
       sheet_tables.each_with_index do |_tbl, i|
         rels << { type: "#{DOC_REL_NS}/table", target: "../tables/table#{table_start_index + i + 1}.xml" }
+      end
+      if comment_idx
+        rels << { type: "#{DOC_REL_NS}/comments", target: "../comments#{comment_idx}.xml" }
       end
       if drawing_idx
         rels << { type: "#{DOC_REL_NS}/drawing", target: "../drawings/drawing#{drawing_idx}.xml" }
@@ -1515,6 +1551,23 @@ module Xlsxrb
       parts << "</c:plotArea>"
       parts << '<c:legend><c:legendPos val="r"/></c:legend>'
       parts << "</c:chart></c:chartSpace>"
+      parts.join
+    end
+
+    def generate_comments_xml(sheet_comments)
+      authors = sheet_comments.map { |c| c[:author] }.uniq
+      parts = [
+        XML_HEADER,
+        %(<comments xmlns="#{SSML_NS}">),
+        "<authors>"
+      ]
+      authors.each { |a| parts << "<author>#{xml_escape(a)}</author>" }
+      parts << "</authors><commentList>"
+      sheet_comments.each do |c|
+        aid = authors.index(c[:author]) || 0
+        parts << %(<comment ref="#{c[:ref]}" authorId="#{aid}"><text><r><t>#{xml_escape(c[:text])}</t></r></text></comment>)
+      end
+      parts << "</commentList></comments>"
       parts.join
     end
 

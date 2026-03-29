@@ -1008,4 +1008,28 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(output_path) if output_path && File.exist?(output_path)
   end
 
+  test "round-trips comments through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_comment("A1", "Test note", author: "Me")
+    writer.add_comment("B2", "Second note", author: "You")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    comments = reader.comments
+    assert_equal(2, comments.size)
+    assert_equal("A1", comments[0][:ref])
+    assert_equal("Me", comments[0][:author])
+    assert_equal("Test note", comments[0][:text])
+    assert_equal("B2", comments[1][:ref])
+    assert_equal("You", comments[1][:author])
+    assert_equal("Second note", comments[1][:text])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
 end
