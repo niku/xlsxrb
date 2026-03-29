@@ -5,7 +5,7 @@ require "rexml/parsers/sax2parser"
 require "rexml/sax2listener"
 
 module Xlsxrb
-  # Reads inline string cells from an XLSX file.
+  # Reads cells from an XLSX file.
   class Reader
     def initialize(filepath)
       @filepath = filepath
@@ -15,10 +15,22 @@ module Xlsxrb
       worksheet_xml = extract_zip_entry("xl/worksheets/sheet1.xml")
       return {} if worksheet_xml.nil? || worksheet_xml.empty?
 
-      parse_inline_string_cells(worksheet_xml)
+      shared_strings = load_shared_strings
+      parse_worksheet_cells(worksheet_xml, shared_strings)
     end
 
     private
+
+    def load_shared_strings
+      sst_xml = extract_zip_entry("xl/sharedStrings.xml")
+      return [] if sst_xml.nil? || sst_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(sst_xml)
+      listener = SharedStringsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.strings
+    end
 
     def extract_zip_entry(entry_name)
       File.open(@filepath, "rb") do |file|
@@ -68,26 +80,82 @@ module Xlsxrb
       nil
     end
 
-    def parse_inline_string_cells(xml)
+    def parse_worksheet_cells(xml, shared_strings)
       parser = REXML::Parsers::SAX2Parser.new(xml)
-      listener = InlineStringWorksheetListener.new
+      listener = WorksheetListener.new(shared_strings)
       parser.listen(listener)
       parser.parse
       listener.cells
     end
 
-    # SAX2 listener for parsing inline string cells from worksheet XML.
-    class InlineStringWorksheetListener
+    # SAX2 listener for parsing shared string table (xl/sharedStrings.xml).
+    class SharedStringsListener
+      include REXML::SAX2Listener
+
+      attr_reader :strings
+
+      def initialize
+        @strings = []
+        @inside_si = false
+        @inside_t = false
+        @text_buffer = +""
+      end
+
+      def start_element(_uri, local_name, qname, _attributes)
+        name = element_name(local_name, qname)
+
+        case name
+        when "si"
+          @inside_si = true
+          @text_buffer = +""
+        when "t"
+          @inside_t = @inside_si
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text if @inside_t
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+
+        case name
+        when "t"
+          @inside_t = false
+        when "si"
+          @strings << @text_buffer.dup
+          @inside_si = false
+          @text_buffer = +""
+        end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing worksheet cells.
+    class WorksheetListener
       include REXML::SAX2Listener
 
       attr_reader :cells
 
-      def initialize
+      def initialize(shared_strings = [])
+        @shared_strings = shared_strings
         @cells = {}
         @current_cell_ref = nil
         @current_cell_type = nil
-        @inside_cell_text = false
-        @text_buffer = +""
+        @inside_value = false
+        @inside_inline_text = false
+        @value_buffer = +""
+        @inline_text_buffer = +""
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -97,32 +165,50 @@ module Xlsxrb
         when "c"
           @current_cell_ref = attributes["r"]
           @current_cell_type = attributes["t"]
-          @text_buffer = +""
+          @value_buffer = +""
+          @inline_text_buffer = +""
+        when "v"
+          @inside_value = true
         when "t"
-          @inside_cell_text = @current_cell_type == "inlineStr" && !@current_cell_ref.nil?
+          @inside_inline_text = @current_cell_type == "inlineStr" && !@current_cell_ref.nil?
         end
       end
 
       def characters(text)
-        @text_buffer << text if @inside_cell_text
+        @value_buffer << text if @inside_value
+        @inline_text_buffer << text if @inside_inline_text
       end
 
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
 
         case name
+        when "v"
+          @inside_value = false
         when "t"
-          @inside_cell_text = false
+          @inside_inline_text = false
         when "c"
-          @cells[@current_cell_ref] = @text_buffer.dup if @current_cell_type == "inlineStr" && !@current_cell_ref.nil?
-
+          store_cell_value
           @current_cell_ref = nil
           @current_cell_type = nil
-          @text_buffer = +""
+          @value_buffer = +""
+          @inline_text_buffer = +""
         end
       end
 
       private
+
+      def store_cell_value
+        return if @current_cell_ref.nil?
+
+        case @current_cell_type
+        when "inlineStr"
+          @cells[@current_cell_ref] = @inline_text_buffer.dup
+        when "s"
+          index = @value_buffer.to_i
+          @cells[@current_cell_ref] = @shared_strings[index] || ""
+        end
+      end
 
       def element_name(local_name, qname)
         if local_name.nil? || local_name.empty?
