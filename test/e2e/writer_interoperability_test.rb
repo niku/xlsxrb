@@ -1,0 +1,66 @@
+# frozen_string_literal: true
+
+require "test_helper"
+require "open3"
+require "tempfile"
+
+class WriterInteroperabilityTest < Test::Unit::TestCase
+  SCENARIO_DIR = File.expand_path("../fixtures/sdk_scenarios", __dir__)
+
+  test "writer output passes Open XML SDK validation and value checks" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_string_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  private
+
+  def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
+    scenario_path = File.join(SCENARIO_DIR, "#{scenario_name}.cs")
+    assert(File.exist?(scenario_path), "Scenario file not found: #{scenario_path}")
+
+    command = sdk_runner_command(scenario_path, xlsx_path)
+    stdout, stderr, status = Open3.capture3(*command)
+
+    failure_reason = extract_failure_reason(stderr)
+
+    assert(
+      status.success?,
+      "Open XML SDK scenario failed: #{failure_reason}\n" \
+      "Scenario: #{scenario_name}\n" \
+      "Command: #{command.join(" ")}\n" \
+      "XLSX: #{xlsx_path}\n" \
+      "STDOUT:\n#{stdout}\n" \
+      "STDERR:\n#{stderr}"
+    )
+  end
+
+  def extract_failure_reason(stderr)
+    return "unknown reason" if stderr.nil? || stderr.strip.empty?
+
+    lines = stderr.lines.map(&:strip).reject(&:empty?)
+    exception_line = lines.find { |line| line.include?("Exception:") }
+    return exception_line if exception_line
+
+    scenario_line = lines.find { |line| line.start_with?("SCENARIO_") }
+    return scenario_line if scenario_line
+
+    lines.first
+  end
+
+  def sdk_runner_command(scenario_path, xlsx_path)
+    [
+      "dotnet", "run",
+      "--project", File.expand_path("../../vendor/sdk_runner", __dir__),
+      "--", scenario_path, xlsx_path
+    ]
+  end
+end
