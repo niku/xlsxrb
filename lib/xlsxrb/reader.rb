@@ -158,6 +158,14 @@ module Xlsxrb
       parse_worksheet_data_validations(worksheet_xml)
     end
 
+    # Returns conditional formatting rules for the given sheet.
+    def conditional_formats(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return [] if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_conditional_formats(worksheet_xml)
+    end
+
     # Returns sheet-level properties (tabColor, outlinePr) for the given sheet.
     def sheet_properties(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -616,6 +624,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.validations
+    end
+
+    def parse_worksheet_conditional_formats(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = ConditionalFormattingListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.rules
     end
 
     def parse_worksheet_properties(xml)
@@ -1640,6 +1656,109 @@ module Xlsxrb
 
       def xml_unescape(str)
         str.gsub("&amp;", "&").gsub("&lt;", "<").gsub("&gt;", ">").gsub("&quot;", '"').gsub("&apos;", "'")
+      end
+    end
+
+    # SAX2 listener for parsing conditionalFormatting elements.
+    class ConditionalFormattingListener
+      include REXML::SAX2Listener
+
+      attr_reader :rules
+
+      def initialize
+        @rules = []
+        @current_sqref = nil
+        @current_rule = nil
+        @inside_formula = false
+        @text_buffer = +""
+        @cfvo_target = nil
+        @color_target = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "conditionalFormatting"
+          @current_sqref = attributes["sqref"]
+        when "cfRule"
+          @current_rule = { sqref: @current_sqref, type: attributes["type"] }
+          @current_rule[:priority] = attributes["priority"].to_i if attributes["priority"]
+          @current_rule[:operator] = attributes["operator"] if attributes["operator"]
+          @current_rule[:format_id] = attributes["dxfId"].to_i if attributes["dxfId"]
+          @current_rule[:stop_if_true] = true if attributes["stopIfTrue"] == "1"
+        when "formula"
+          @inside_formula = true
+          @text_buffer = +""
+        when "colorScale"
+          @current_rule[:color_scale] = { cfvo: [], colors: [] } if @current_rule
+          @cfvo_target = :color_scale
+          @color_target = :color_scale
+        when "dataBar"
+          @current_rule[:data_bar] = { cfvo: [] } if @current_rule
+          @cfvo_target = :data_bar
+          @color_target = :data_bar
+        when "iconSet"
+          if @current_rule
+            @current_rule[:icon_set] = { cfvo: [] }
+            @current_rule[:icon_set][:icon_set] = attributes["iconSet"] if attributes["iconSet"]
+          end
+          @cfvo_target = :icon_set
+        when "cfvo"
+          cfvo = { type: attributes["type"] }
+          cfvo[:val] = attributes["val"] if attributes["val"]
+          append_cfvo(cfvo)
+        when "color"
+          append_color(attributes["rgb"]) if attributes["rgb"]
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text if @inside_formula
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "formula"
+          (@current_rule[:formulas] ||= []) << @text_buffer.dup if @current_rule
+          @inside_formula = false
+        when "cfRule"
+          @rules << @current_rule if @current_rule
+          @current_rule = nil
+        when "conditionalFormatting"
+          @current_sqref = nil
+        when "colorScale", "dataBar", "iconSet"
+          @cfvo_target = nil
+          @color_target = nil
+        end
+      end
+
+      private
+
+      def append_cfvo(cfvo)
+        return unless @current_rule && @cfvo_target
+
+        container = @current_rule[@cfvo_target]
+        container[:cfvo] << cfvo if container
+      end
+
+      def append_color(rgb)
+        return unless @current_rule && @color_target
+
+        container = @current_rule[@color_target]
+        if container.is_a?(Hash) && container.key?(:colors)
+          container[:colors] << rgb
+        elsif container.is_a?(Hash)
+          container[:color] = rgb
+        end
+      end
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
       end
     end
 

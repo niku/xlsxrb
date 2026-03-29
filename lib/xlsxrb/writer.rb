@@ -54,6 +54,7 @@ module Xlsxrb
       @row_breaks = { "Sheet1" => [] }
       @col_breaks = { "Sheet1" => [] }
       @data_validations = { "Sheet1" => [] }
+      @conditional_formats = { "Sheet1" => [] }
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -82,6 +83,7 @@ module Xlsxrb
       @row_breaks[name] = []
       @col_breaks[name] = []
       @data_validations[name] = []
+      @conditional_formats[name] = []
       @sheet_order << name
     end
 
@@ -486,6 +488,22 @@ module Xlsxrb
       @data_validations[sheet_name] || []
     end
 
+    # Adds a conditional formatting rule to the specified range.
+    # Options: type (:cell_is, :expression, :color_scale, :data_bar, :icon_set),
+    # operator, priority, formula/formulas, format_id, color_scale, data_bar, icon_set.
+    def add_conditional_format(sqref, sheet: nil, **opts)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @conditional_formats.key?(sheet_name)
+
+      @conditional_formats[sheet_name] << opts.merge(sqref: sqref)
+    end
+
+    # Returns conditional formatting rules for the first (or given) sheet.
+    def conditional_formats(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @conditional_formats[sheet_name] || []
+    end
+
     # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
     def set_sheet_state(sheet_name, state)
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -582,7 +600,7 @@ module Xlsxrb
           @sheet_views[sheet_name], @freeze_panes[sheet_name], @selections[sheet_name],
           @print_options[sheet_name], @page_margins[sheet_name], @page_setup[sheet_name],
           @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name],
-          @data_validations[sheet_name]
+          @data_validations[sheet_name], @conditional_formats[sheet_name]
         )
         next if @hyperlinks[sheet_name].empty?
 
@@ -593,6 +611,14 @@ module Xlsxrb
       entries.each { |path, content| generator.add_entry(path, content) }
       generator.generate
     end
+
+    CF_TYPE_MAP = {
+      cell_is: "cellIs",
+      expression: "expression",
+      color_scale: "colorScale",
+      data_bar: "dataBar",
+      icon_set: "iconSet"
+    }.freeze
 
     private
 
@@ -703,7 +729,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -882,6 +908,17 @@ module Xlsxrb
           parts << %(<hyperlink ref="#{cell_ref}" r:id="rId#{idx + 1}"/>)
         end
         parts << "</hyperlinks>"
+      end
+
+      # Emit <conditionalFormatting> if defined.
+      unless sheet_cf.empty?
+        sheet_cf.group_by { |cf| cf[:sqref] }.each do |sqref, rules|
+          parts << %(<conditionalFormatting sqref="#{sqref}">)
+          rules.each do |cf|
+            emit_cf_rule(parts, cf)
+          end
+          parts << "</conditionalFormatting>"
+        end
       end
 
       # Emit <dataValidations> if defined.
@@ -1064,6 +1101,66 @@ module Xlsxrb
         %(<top10#{top_attr}#{pct_attr} val="#{filter[:val]}"/>)
       else
         ""
+      end
+    end
+
+    def emit_cf_rule(parts, rule)
+      type = rule[:type]
+      rule_type = CF_TYPE_MAP[type] || type.to_s
+      rule_attrs = %(type="#{rule_type}")
+      rule_attrs << %( priority="#{rule[:priority]}") if rule[:priority]
+      rule_attrs << %( operator="#{rule[:operator]}") if rule[:operator]
+      rule_attrs << %( dxfId="#{rule[:format_id]}") if rule[:format_id]
+      rule_attrs << %( stopIfTrue="1") if rule[:stop_if_true]
+
+      case type
+      when :cell_is, :expression
+        formulas = rule[:formulas] || [rule[:formula]].compact
+        if formulas.empty?
+          parts << "<cfRule #{rule_attrs}/>"
+        else
+          parts << "<cfRule #{rule_attrs}>"
+          formulas.each { |f| parts << "<formula>#{xml_escape(f)}</formula>" }
+          parts << "</cfRule>"
+        end
+      when :color_scale
+        cs = rule[:color_scale]
+        parts << "<cfRule #{rule_attrs}>"
+        parts << "<colorScale>"
+        cs[:cfvo]&.each do |cfvo|
+          cfvo_attrs = %(type="#{cfvo[:type]}")
+          cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
+          parts << "<cfvo #{cfvo_attrs}/>"
+        end
+        cs[:colors]&.each { |c| parts << %(<color rgb="#{c}"/>) }
+        parts << "</colorScale>"
+        parts << "</cfRule>"
+      when :data_bar
+        db = rule[:data_bar]
+        parts << "<cfRule #{rule_attrs}>"
+        parts << "<dataBar>"
+        db[:cfvo]&.each do |cfvo|
+          cfvo_attrs = %(type="#{cfvo[:type]}")
+          cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
+          parts << "<cfvo #{cfvo_attrs}/>"
+        end
+        parts << %(<color rgb="#{db[:color]}"/>) if db[:color]
+        parts << "</dataBar>"
+        parts << "</cfRule>"
+      when :icon_set
+        is = rule[:icon_set]
+        parts << "<cfRule #{rule_attrs}>"
+        is_attrs = is[:icon_set] ? %(iconSet="#{is[:icon_set]}") : ""
+        parts << "<iconSet#{" #{is_attrs}" unless is_attrs.empty?}>"
+        is[:cfvo]&.each do |cfvo|
+          cfvo_attrs = %(type="#{cfvo[:type]}")
+          cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
+          parts << "<cfvo #{cfvo_attrs}/>"
+        end
+        parts << "</iconSet>"
+        parts << "</cfRule>"
+      else
+        parts << "<cfRule #{rule_attrs}/>"
       end
     end
 

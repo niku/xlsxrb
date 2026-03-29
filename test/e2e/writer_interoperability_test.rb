@@ -441,6 +441,39 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores conditional formatting correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_conditional_format("A1:A10", type: :cell_is, operator: "greaterThan",
+                                            formula: "100", priority: 1, format_id: 0)
+    writer.add_conditional_format("B1:B10", type: :color_scale, priority: 2,
+                                            color_scale: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              colors: %w[FF0000FF FFFF0000]
+                                            })
+    writer.add_conditional_format("C1:C10", type: :data_bar, priority: 3,
+                                            data_bar: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              color: "FF638EC6"
+                                            })
+    writer.add_conditional_format("D1:D10", type: :icon_set, priority: 4,
+                                            icon_set: {
+                                              icon_set: "3TrafficLights1",
+                                              cfvo: [{ type: "percent", val: "0" },
+                                                     { type: "percent", val: "33" },
+                                                     { type: "percent", val: "67" }]
+                                            })
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_conditional_format_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
