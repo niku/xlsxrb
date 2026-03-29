@@ -148,6 +148,7 @@ module Xlsxrb
           code = styles[:num_fmts][xf[:num_fmt_id]]
           entry[:num_fmt] = code if code
         end
+        entry[:alignment] = xf[:alignment] if xf[:alignment]
         result[cell_ref] = entry unless entry.empty?
       end
       result
@@ -1664,6 +1665,7 @@ module Xlsxrb
         @current_border = nil
         @current_border_side = nil
         @current_dxf = nil
+        @current_xf = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -1697,8 +1699,23 @@ module Xlsxrb
           if @inside_cell_xfs
             xf_entry[:xf_id] = attributes["xfId"]&.to_i
             @cell_xfs << xf_entry
+            @current_xf = xf_entry
           elsif @inside_cell_style_xfs
             @cell_style_xfs << xf_entry
+            @current_xf = xf_entry
+          else
+            @current_xf = nil
+          end
+        when "alignment"
+          if @current_xf
+            alignment = {}
+            alignment[:horizontal] = attributes["horizontal"] if attributes["horizontal"]
+            alignment[:vertical] = attributes["vertical"] if attributes["vertical"]
+            alignment[:wrap_text] = true if attributes["wrapText"] == "1"
+            alignment[:text_rotation] = attributes["textRotation"].to_i if attributes["textRotation"]
+            alignment[:indent] = attributes["indent"].to_i if attributes["indent"]
+            alignment[:shrink_to_fit] = true if attributes["shrinkToFit"] == "1"
+            @current_xf[:alignment] = alignment unless alignment.empty?
           end
         when "fonts"
           @inside_fonts = true
@@ -1750,6 +1767,8 @@ module Xlsxrb
           @inside_cell_xfs = false
         when "cellStyleXfs"
           @inside_cell_style_xfs = false
+        when "xf"
+          @current_xf = nil
         when "cellStyles"
           @inside_cell_styles = false
         when "fonts"

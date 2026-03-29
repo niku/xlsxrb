@@ -836,4 +836,63 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(:array, result.type)
     assert_equal("C1", result.ref)
   end
+
+  test "add_cell_style with alignment stores alignment attributes" do
+    writer = Xlsxrb::Writer.new
+    style_id = writer.add_cell_style(
+      alignment: { horizontal: "center", vertical: "top", wrap_text: true, text_rotation: 45,
+                   indent: 2, shrink_to_fit: true }
+    )
+    assert_equal(1, style_id)
+
+    writer.set_cell("A1", "aligned")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-alignment", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    # Verify alignment element is emitted in styles.xml
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/applyAlignment="1"/, xml_content)
+    assert_match(%r{<alignment[^/>]*horizontal="center"}, xml_content)
+    assert_match(%r{<alignment[^/>]*vertical="top"}, xml_content)
+    assert_match(%r{<alignment[^/>]*wrapText="1"}, xml_content)
+    assert_match(%r{<alignment[^/>]*textRotation="45"}, xml_content)
+    assert_match(%r{<alignment[^/>]*indent="2"}, xml_content)
+    assert_match(%r{<alignment[^/>]*shrinkToFit="1"}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_cell_style with partial alignment only emits specified attrs" do
+    writer = Xlsxrb::Writer.new
+    style_id = writer.add_cell_style(alignment: { horizontal: "left" })
+    assert_equal(1, style_id)
+
+    writer.set_cell("A1", "left")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-alignment", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<alignment horizontal="left"/>}, xml_content)
+    assert_no_match(/wrapText/, xml_content)
+    assert_no_match(/textRotation/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  private
+
+  def read_xml_from_xlsx(xlsx_path, entry_name)
+    Zlib::GzipReader # ensure zlib loaded
+    require "xlsxrb/reader"
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader.raw_entry(entry_name)
+  end
 end

@@ -1493,4 +1493,33 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips cell alignment attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    style_id = writer.add_cell_style(
+      alignment: { horizontal: "center", vertical: "top", wrap_text: true,
+                   text_rotation: 45, indent: 2, shrink_to_fit: true }
+    )
+    writer.set_cell("A1", "aligned")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    alignment = cs["A1"][:alignment]
+    assert_not_nil(alignment, "alignment should be present")
+    assert_equal("center", alignment[:horizontal])
+    assert_equal("top", alignment[:vertical])
+    assert_equal(true, alignment[:wrap_text])
+    assert_equal(45, alignment[:text_rotation])
+    assert_equal(2, alignment[:indent])
+    assert_equal(true, alignment[:shrink_to_fit])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
