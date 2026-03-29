@@ -576,6 +576,43 @@ module Xlsxrb
       end
     end
 
+    # Returns external links from the workbook as an array of hashes.
+    # Each hash: { target:, sheet_names: [] }
+    def external_links
+      wb_rels_xml = extract_zip_entry("xl/_rels/workbook.xml.rels")
+      return [] if wb_rels_xml.nil? || wb_rels_xml.empty?
+
+      # Find external link rels.
+      el_targets = []
+      wb_rels_xml.scan(/<Relationship\s[^>]*>/) do |rel_tag|
+        next unless rel_tag.include?("/externalLink")
+        target = rel_tag[/Target="([^"]+)"/, 1]
+        el_targets << target if target
+      end
+      return [] if el_targets.empty?
+
+      el_targets.filter_map do |target|
+        path = target.start_with?("/") ? target[1..] : "xl/#{target}"
+        xml = extract_zip_entry(path)
+        next if xml.nil? || xml.empty?
+
+        parser = REXML::Parsers::SAX2Parser.new(xml)
+        listener = ExternalLinkListener.new
+        parser.listen(listener)
+        parser.parse
+
+        # Resolve the external book target from rels.
+        rels_path = path.sub(%r{([^/]+)\.xml$}, '_rels/\1.xml.rels')
+        rels_xml = extract_zip_entry(rels_path)
+        ext_target = nil
+        if rels_xml
+          rels_xml.scan(/<Relationship[^>]+Target="([^"]+)"/) { |t,| ext_target = t }
+        end
+
+        { target: ext_target, sheet_names: listener.sheet_names }
+      end
+    end
+
     private
 
     def parse_workbook_metadata
@@ -3271,6 +3308,36 @@ module Xlsxrb
           @inside_data_fields = false
         end
       end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing externalLink XML.
+    class ExternalLinkListener
+      include REXML::SAX2Listener
+
+      attr_reader :sheet_names
+
+      def initialize
+        @sheet_names = []
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        if name == "sheetName"
+          @sheet_names << attributes["val"] if attributes["val"]
+        end
+      end
+
+      def end_element(_uri, _local_name, _qname); end
 
       private
 

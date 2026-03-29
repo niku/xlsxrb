@@ -806,6 +806,20 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid external link" do
+    writer = Xlsxrb::Writer.new
+    writer.add_external_link(target: "Book2.xlsx", sheet_names: %w[Data Summary])
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_external_link_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid table with totals row and enhanced columns" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "Item")

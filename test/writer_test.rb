@@ -716,6 +716,15 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(%w[East West], pivots[0][:items][1])
   end
 
+  test "add_external_link stores external link definition" do
+    writer = Xlsxrb::Writer.new
+    writer.add_external_link(target: "Book2.xlsx", sheet_names: %w[Sheet1 Sheet2])
+    els = writer.external_links
+    assert_equal(1, els.size)
+    assert_equal("Book2.xlsx", els[0][:target])
+    assert_equal(%w[Sheet1 Sheet2], els[0][:sheet_names])
+  end
+
   test "preserve_macros flag" do
     writer = Xlsxrb::Writer.new
     assert_false(writer.preserve_macros?)
