@@ -3196,6 +3196,9 @@ module Xlsxrb
         @inside_row_fields = false
         @inside_col_fields = false
         @inside_data_fields = false
+        @inside_pivot_field = false
+        @inside_items = false
+        @current_items = []
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -3209,11 +3212,20 @@ module Xlsxrb
         when "location"
           @pivot_table[:ref] = attributes["ref"] if @pivot_table
         when "pivotField"
-          field = {}
-          field[:axis] = attributes["axis"] if attributes["axis"]
-          field[:data_field] = true if attributes["dataField"] == "1"
-          field[:name] = attributes["name"] if attributes["name"]
-          @fields << field
+          @inside_pivot_field = true
+          @current_field = {}
+          @current_field[:axis] = attributes["axis"] if attributes["axis"]
+          @current_field[:data_field] = true if attributes["dataField"] == "1"
+          @current_field[:name] = attributes["name"] if attributes["name"]
+          @current_items = []
+        when "items"
+          @inside_items = true if @inside_pivot_field
+        when "item"
+          if @inside_items
+            item_type = attributes["t"]
+            item_x = attributes["x"]&.to_i
+            @current_items << { x: item_x, t: item_type } if item_type || item_x
+          end
         when "rowFields"
           @inside_row_fields = true
         when "colFields"
@@ -3238,6 +3250,12 @@ module Xlsxrb
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
         case name
+        when "pivotField"
+          @current_field[:items] = @current_items unless @current_items.empty?
+          @fields << @current_field
+          @inside_pivot_field = false
+        when "items"
+          @inside_items = false
         when "pivotTableDefinition"
           if @pivot_table
             @pivot_table[:fields] = @fields

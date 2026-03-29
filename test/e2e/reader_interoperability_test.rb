@@ -881,6 +881,27 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated pivot table with col_fields and items" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_pivot_deep_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    assert_equal(1, pts.size)
+    assert_equal("PivotDeep", pts[0][:name])
+    assert_equal([0], pts[0][:row_fields])
+    assert_equal([1], pts[0][:col_fields])
+    assert_equal("axisRow", pts[0][:fields][0][:axis])
+    assert_equal("axisCol", pts[0][:fields][1][:axis])
+    # Items parsed
+    assert_equal(3, pts[0][:fields][0][:items].size)
+    assert_equal("default", pts[0][:fields][0][:items].last[:t])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated table with totals row and deep columns" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

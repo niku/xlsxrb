@@ -784,6 +784,28 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid pivot table with col_fields and items" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Region")
+    writer.set_cell("C1", "Amount")
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           col_fields: [1],
+                           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+                           field_names: %w[Category Region Amount],
+                           items: { 0 => %w[A B C], 1 => %w[East West] })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_pivot_deep_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid table with totals row and enhanced columns" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "Item")
