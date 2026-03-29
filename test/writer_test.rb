@@ -643,4 +643,21 @@ class WriterTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     assert_raise(ArgumentError) { writer.add_comment("ZZZ", "text") }
   end
+
+  test "set_sheet_protection stores protection settings" do
+    writer = Xlsxrb::Writer.new
+    writer.set_sheet_protection(sheet: "Sheet1", password: "CF1A", objects: true, scenarios: true)
+    prot = writer.sheet_protection(sheet: "Sheet1")
+    assert_equal("CF1A", prot[:password])
+    assert_equal(true, prot[:objects])
+    assert_equal(true, prot[:scenarios])
+  end
+
+  test "set_workbook_protection stores protection settings" do
+    writer = Xlsxrb::Writer.new
+    writer.set_workbook_protection(lock_structure: true, lock_windows: false)
+    prot = writer.workbook_protection
+    assert_equal(true, prot[:lock_structure])
+    assert_equal(false, prot[:lock_windows])
+  end
 end
