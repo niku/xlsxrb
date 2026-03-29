@@ -535,6 +535,25 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(1, xf_id)
   end
 
+  test "stores chart with multiple series and axis titles" do
+    writer = Xlsxrb::Writer.new
+    writer.add_chart(type: :bar, title: "Sales",
+                     series: [
+                       { cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3", name: "Sheet1!$B$1" },
+                       { cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$C$1:$C$3", name: "Sheet1!$C$1" }
+                     ],
+                     legend: { position: "b" },
+                     data_labels: { show_val: true, show_cat_name: false },
+                     cat_axis_title: "Category",
+                     val_axis_title: "Value")
+
+    charts = writer.charts
+    assert_equal(1, charts.size)
+    assert_equal(2, charts[0][:series].size)
+    assert_equal("b", charts[0][:legend][:position])
+    assert_equal("Category", charts[0][:cat_axis_title])
+  end
+
   test "stores fonts, fills, borders, and cell styles" do
     writer = Xlsxrb::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")

@@ -841,6 +841,26 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated chart with multiple series legend and axis titles" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_chart_deep_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("barChart", charts[0][:chart_type])
+    assert_equal("Multi Series", charts[0][:title])
+    assert_equal(2, charts[0][:series].size)
+    assert_equal("b", charts[0][:legend][:position])
+    assert_equal(true, charts[0][:data_labels][:show_val])
+    assert_equal("Category", charts[0][:cat_axis_title])
+    assert_equal("Amount", charts[0][:val_axis_title])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated table with totals row and deep columns" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

@@ -742,6 +742,31 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid chart with multiple series and axis titles" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.set_cell("C1", 20)
+    writer.add_chart(type: :bar, title: "Multi",
+                     series: [
+                       { cat_ref: "Sheet1!$A$1:$A$2", val_ref: "Sheet1!$B$1:$B$2" },
+                       { cat_ref: "Sheet1!$A$1:$A$2", val_ref: "Sheet1!$C$1:$C$2" }
+                     ],
+                     legend: { position: "b" },
+                     data_labels: { show_val: true },
+                     cat_axis_title: "Category",
+                     val_axis_title: "Value")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_chart_deep_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid table with totals row and enhanced columns" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "Item")
