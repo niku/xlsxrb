@@ -167,4 +167,19 @@ class WriterTest < Test::Unit::TestCase
 
     assert_equal({ "A1" => "https://example.com", "B1" => "https://github.com" }, writer.hyperlinks)
   end
+
+  test "adds number formats and assigns to cells" do
+    writer = Xlsxrb::Writer.new
+    fmt_id = writer.add_number_format("0.00")
+    writer.set_cell("A1", 3.14)
+    writer.set_cell_format("A1", fmt_id)
+
+    assert_equal(164, fmt_id)
+
+    # Same format code returns same id.
+    assert_equal(164, writer.add_number_format("0.00"))
+
+    # Different format gets next id.
+    assert_equal(165, writer.add_number_format("#,##0"))
+  end
 end
