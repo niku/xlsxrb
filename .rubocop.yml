@@ -6,3 +6,9 @@ Style/StringLiterals:
 
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
+
+Metrics:
+  Enabled: false
+
+Layout/LineLength:
+  Enabled: false
