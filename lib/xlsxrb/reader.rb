@@ -82,6 +82,35 @@ module Xlsxrb
       result
     end
 
+    # Returns cell format codes as { "A1" => "0.00" } for cells with custom numFmt.
+    def cell_formats(sheet: nil)
+      # Load styles.
+      styles = load_styles
+      return {} if styles.empty?
+
+      # Parse worksheet to get cell style indices.
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(worksheet_xml)
+      listener = CellStyleListener.new
+      parser.listen(listener)
+      parser.parse
+
+      result = {}
+      listener.cell_style_indices.each do |cell_ref, xf_index|
+        xf = styles[:cell_xfs][xf_index]
+        next unless xf
+
+        fmt_id = xf[:num_fmt_id]
+        next unless fmt_id && fmt_id != 0
+
+        format_code = styles[:num_fmts][fmt_id]
+        result[cell_ref] = format_code if format_code
+      end
+      result
+    end
+
     # Returns ordered sheet names.
     def sheet_names
       discover_sheets.map { |s| s[:name] }
@@ -160,6 +189,17 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.strings
+    end
+
+    def load_styles
+      styles_xml = extract_zip_entry("xl/styles.xml")
+      return {} if styles_xml.nil? || styles_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(styles_xml)
+      listener = StylesListener.new
+      parser.listen(listener)
+      parser.parse
+      { num_fmts: listener.num_fmts, cell_xfs: listener.cell_xfs }
     end
 
     def extract_zip_entry(entry_name)
@@ -569,6 +609,79 @@ module Xlsxrb
         ref = attributes["ref"]
         rid = attributes["r:id"]
         @links << { ref: ref, rid: rid } if ref && rid
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing styles.xml (numFmts + cellXfs).
+    class StylesListener
+      include REXML::SAX2Listener
+
+      attr_reader :num_fmts, :cell_xfs
+
+      def initialize
+        @num_fmts = {} # { numFmtId => formatCode }
+        @cell_xfs = [] # Array of { num_fmt_id: N }
+        @inside_cell_xfs = false
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+
+        case name
+        when "numFmt"
+          id = attributes["numFmtId"]&.to_i
+          code = attributes["formatCode"]
+          @num_fmts[id] = code if id && code
+        when "cellXfs"
+          @inside_cell_xfs = true
+        when "xf"
+          @cell_xfs << { num_fmt_id: attributes["numFmtId"]&.to_i } if @inside_cell_xfs
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        @inside_cell_xfs = false if name == "cellXfs"
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener that captures cell style index (s attribute) from worksheet.
+    class CellStyleListener
+      include REXML::SAX2Listener
+
+      attr_reader :cell_style_indices
+
+      def initialize
+        @cell_style_indices = {}
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "c"
+
+        ref = attributes["r"]
+        s = attributes["s"]
+        @cell_style_indices[ref] = s.to_i if ref && s
       end
 
       private
