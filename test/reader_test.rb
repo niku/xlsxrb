@@ -481,4 +481,44 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips row outline level and collapsed" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_row_outline_level(2, 1)
+    writer.set_row_collapsed(3)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    attrs = reader.row_attributes
+    assert_equal(1, attrs[2][:outline_level])
+    assert_equal(true, attrs[3][:collapsed])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips column attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_column_attribute("B", :hidden, true)
+    writer.set_column_attribute("C", :outline_level, 2)
+    writer.set_column_attribute("C", :collapsed, true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ca = reader.column_attributes
+    assert_equal(true, ca["B"][:hidden])
+    assert_equal(2, ca["C"][:outline_level])
+    assert_equal(true, ca["C"][:collapsed])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

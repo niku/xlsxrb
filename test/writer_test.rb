@@ -327,4 +327,28 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(10.5, fmt[:default_col_width])
     assert_equal(8, fmt[:base_col_width])
   end
+
+  test "stores row outline level and collapsed" do
+    writer = Xlsxrb::Writer.new
+    writer.set_row_outline_level(2, 1)
+    writer.set_row_collapsed(3)
+
+    attrs = writer.row_attributes
+    assert_equal(1, attrs[2][:outline_level])
+    assert_equal(true, attrs[3][:collapsed])
+  end
+
+  test "stores column attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_column_attribute("B", :hidden, true)
+    writer.set_column_attribute("C", :best_fit, true)
+    writer.set_column_attribute("D", :outline_level, 2)
+    writer.set_column_attribute("D", :collapsed, true)
+
+    ca = writer.column_attributes
+    assert_equal(true, ca["B"][:hidden])
+    assert_equal(true, ca["C"][:best_fit])
+    assert_equal(2, ca["D"][:outline_level])
+    assert_equal(true, ca["D"][:collapsed])
+  end
 end

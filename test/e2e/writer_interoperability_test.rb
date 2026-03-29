@@ -346,6 +346,25 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores row and column attributes correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_row_outline_level(2, 1)
+    writer.set_row_collapsed(3)
+    writer.set_column_attribute("B", :hidden, true)
+    writer.set_column_attribute("C", :outline_level, 2)
+    writer.set_column_attribute("C", :collapsed, true)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_row_col_attrs_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
