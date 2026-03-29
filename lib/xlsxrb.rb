@@ -7,4 +7,7 @@ require_relative "xlsxrb/reader"
 
 module Xlsxrb
   class Error < StandardError; end
+
+  # Represents a formula with an optional cached value.
+  Formula = Data.define(:expression, :cached_value)
 end

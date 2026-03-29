@@ -132,6 +132,11 @@ module Xlsxrb
 
     def cell_xml(cell_ref, value)
       case value
+      when Formula
+        parts = %(<c r="#{cell_ref}"><f>#{xml_escape(value.expression)}</f>)
+        parts << "<v>#{xml_escape(value.cached_value.to_s)}</v>" unless value.cached_value.nil?
+        parts << "</c>"
+        parts
       when true, false
         %(<c r="#{cell_ref}" t="b"><v>#{value ? 1 : 0}</v></c>)
       when Numeric
