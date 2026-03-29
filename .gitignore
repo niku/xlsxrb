@@ -6,6 +6,7 @@
 /pkg/
 /spec/reports/
 /tmp/
+Gemfile.lock
 
 # .NET build artifacts
 /vendor/sdk_runner/bin/
