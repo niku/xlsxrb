@@ -145,4 +145,18 @@ class WriterTest < Test::Unit::TestCase
     expected = { 1 => { height: 25.0 }, 3 => { hidden: true } }
     assert_equal(expected, writer.row_attributes)
   end
+
+  test "stores merge cell ranges" do
+    writer = Xlsxrb::Writer.new
+    writer.merge_cells("A1:B2")
+    writer.merge_cells("C3:D4")
+
+    assert_equal(%w[A1:B2 C3:D4], writer.merged_cells)
+  end
+
+  test "rejects invalid merge cell range" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.merge_cells("A1") }
+    assert_raise(ArgumentError) { writer.merge_cells("") }
+  end
 end

@@ -130,6 +130,22 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores merge cells correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "merged")
+    writer.merge_cells("A1:B2")
+    writer.merge_cells("C3:D4")
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_merge_cells_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
