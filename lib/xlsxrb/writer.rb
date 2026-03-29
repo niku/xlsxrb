@@ -39,6 +39,7 @@ module Xlsxrb
       @calc_properties = {}
       @sheet_states = {}
       @defined_names = []
+      @sheet_properties = { "Sheet1" => {} }
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -52,6 +53,7 @@ module Xlsxrb
       @hyperlinks[name] = {}
       @cell_styles[name] = {}
       @auto_filters[name] = nil
+      @sheet_properties[name] = {}
       @sheet_order << name
     end
 
@@ -205,6 +207,20 @@ module Xlsxrb
       @app_properties.dup
     end
 
+    # Sets a sheet-level property (e.g. :tab_color, :summary_below, :summary_right).
+    def set_sheet_property(name, value, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheet_properties.key?(sheet_name)
+
+      @sheet_properties[sheet_name][name] = value
+    end
+
+    # Returns sheet properties for the first (or given) sheet.
+    def sheet_properties(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      (@sheet_properties[sheet_name] || {}).dup
+    end
+
     # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
     def set_sheet_state(sheet_name, state)
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -296,7 +312,7 @@ module Xlsxrb
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name],
           @auto_filters[sheet_name], @merge_cells[sheet_name], @hyperlinks[sheet_name],
-          @cell_styles[sheet_name]
+          @cell_styles[sheet_name], @sheet_properties[sheet_name]
         )
         next if @hyperlinks[sheet_name].empty?
 
@@ -417,13 +433,35 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
         XML_HEADER,
         "<worksheet #{worksheet_attrs}>"
       ]
+
+      # Emit <sheetPr> if sheet properties are defined.
+      unless sheet_props.empty?
+        sp_children = []
+        sp_children << %(<tabColor rgb="#{sheet_props[:tab_color]}"/>) if sheet_props[:tab_color]
+        sb = sheet_props[:summary_below]
+        sr = sheet_props[:summary_right]
+        unless sb.nil? && sr.nil?
+          outline_attrs = []
+          outline_attrs << %(summaryBelow="#{sb ? 1 : 0}") unless sb.nil?
+          outline_attrs << %(summaryRight="#{sr ? 1 : 0}") unless sr.nil?
+          sp_children << "<outlinePr #{outline_attrs.join(" ")}/>"
+        end
+        unless sp_children.empty?
+          parts << "<sheetPr>"
+          parts.concat(sp_children)
+          parts << "</sheetPr>"
+        end
+      end
+
+      # Emit <dimension> computed from cell addresses.
+      parts << %(<dimension ref="#{compute_dimension(sheet_cells)}"/>) unless sheet_cells.empty?
 
       # Emit <cols> if column widths are defined.
       unless sheet_col_widths.empty?
@@ -552,6 +590,37 @@ module Xlsxrb
         map
       end
       @xf_index_map[num_fmt_id]
+    end
+
+    def compute_dimension(sheet_cells)
+      return "A1" if sheet_cells.empty?
+
+      min_col = Float::INFINITY
+      max_col = 0
+      min_row = Float::INFINITY
+      max_row = 0
+      sheet_cells.each_key do |addr|
+        col_letter = extract_column_letter(addr)
+        row_num = extract_row_number(addr)
+        col_idx = column_letter_to_index(col_letter)
+        min_col = col_idx if col_idx < min_col
+        max_col = col_idx if col_idx > max_col
+        min_row = row_num if row_num < min_row
+        max_row = row_num if row_num > max_row
+      end
+      start_col = index_to_column_letter(min_col)
+      end_col = index_to_column_letter(max_col)
+      "#{start_col}#{min_row}:#{end_col}#{max_row}"
+    end
+
+    def index_to_column_letter(index)
+      result = +""
+      while index.positive?
+        index -= 1
+        result.prepend(("A".ord + (index % 26)).chr)
+        index /= 26
+      end
+      result
     end
 
     def generate_core_properties_xml

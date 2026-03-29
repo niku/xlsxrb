@@ -126,6 +126,22 @@ module Xlsxrb
       parse_worksheet_auto_filter(worksheet_xml)
     end
 
+    # Returns sheet-level properties (tabColor, outlinePr) for the given sheet.
+    def sheet_properties(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_properties(worksheet_xml)
+    end
+
+    # Returns the dimension ref string (e.g. "A1:B10") for the given sheet.
+    def dimension(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_dimension(worksheet_xml)
+    end
+
     # Returns core properties as a hash (e.g. { title: "...", creator: "..." }).
     def core_properties
       # Discover core properties path from _rels/.rels
@@ -453,6 +469,22 @@ module Xlsxrb
     def parse_worksheet_auto_filter(xml)
       parser = REXML::Parsers::SAX2Parser.new(xml)
       listener = AutoFilterListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.ref
+    end
+
+    def parse_worksheet_properties(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = SheetPropertiesListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.properties
+    end
+
+    def parse_worksheet_dimension(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = DimensionListener.new
       parser.listen(listener)
       parser.parse
       listener.ref
@@ -1065,6 +1097,76 @@ module Xlsxrb
         ref = attributes["r"]
         s = attributes["s"]
         @cell_style_indices[ref] = s.to_i if ref && s
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <sheetPr> element (tabColor, outlinePr).
+    class SheetPropertiesListener
+      include REXML::SAX2Listener
+
+      attr_reader :properties
+
+      def initialize
+        @properties = {}
+        @inside_sheet_pr = false
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "sheetPr"
+          @inside_sheet_pr = true
+        when "tabColor"
+          @properties[:tab_color] = attributes["rgb"] if @inside_sheet_pr && attributes["rgb"]
+        when "outlinePr"
+          if @inside_sheet_pr
+            sb = attributes["summaryBelow"]
+            @properties[:summary_below] = %w[1 true].include?(sb) unless sb.nil?
+            sr = attributes["summaryRight"]
+            @properties[:summary_right] = %w[1 true].include?(sr) unless sr.nil?
+          end
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        @inside_sheet_pr = false if name == "sheetPr"
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <dimension> element.
+    class DimensionListener
+      include REXML::SAX2Listener
+
+      attr_reader :ref
+
+      def initialize
+        @ref = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        @ref = attributes["ref"] if name == "dimension"
       end
 
       private
