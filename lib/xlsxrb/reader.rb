@@ -613,6 +613,21 @@ module Xlsxrb
       end
     end
 
+    STRICT_SSML_NS = "http://purl.oclc.org/ooxml/spreadsheetml/main/2006/main"
+    TRANSITIONAL_SSML_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+
+    # Returns :strict or :transitional based on the namespace of the workbook XML.
+    def format_variant
+      workbook_xml = extract_zip_entry("xl/workbook.xml")
+      return :transitional if workbook_xml.nil? || workbook_xml.empty?
+
+      if workbook_xml.include?(STRICT_SSML_NS)
+        :strict
+      else
+        :transitional
+      end
+    end
+
     private
 
     def parse_workbook_metadata

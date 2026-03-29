@@ -768,6 +768,37 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(true, prot[:scenarios])
   end
 
+  test "copy_entries_from preserves extra parts in round-trip" do
+    source_tempfile = Tempfile.new(["xlsxrb-source", ".xlsx"])
+    source_path = source_tempfile.path
+    source_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "original")
+    writer.add_raw_entry("customXml/item1.xml", "<root>custom</root>")
+    writer.write(source_path)
+
+    # Copy entries into a new writer.
+    writer2 = Xlsxrb::Writer.new
+    writer2.copy_entries_from(source_path)
+    writer2.set_cell("A1", "modified")
+
+    output_tempfile = Tempfile.new(["xlsxrb-output", ".xlsx"])
+    output_path = output_tempfile.path
+    output_tempfile.close
+    writer2.write(output_path)
+
+    reader = Xlsxrb::Reader.new(output_path)
+    # Generated cell overrides copied cell.
+    cells = reader.cells
+    assert_equal("modified", cells["A1"])
+    # Custom XML part preserved.
+    assert_equal("<root>custom</root>", reader.raw_entry("customXml/item1.xml"))
+  ensure
+    File.delete(source_path) if source_path && File.exist?(source_path)
+    File.delete(output_path) if output_path && File.exist?(output_path)
+  end
+
   test "set_workbook_protection stores protection settings" do
     writer = Xlsxrb::Writer.new
     writer.set_workbook_protection(lock_structure: true, lock_windows: false)
