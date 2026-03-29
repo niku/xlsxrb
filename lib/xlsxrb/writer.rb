@@ -343,7 +343,7 @@ module Xlsxrb
     end
 
     # Registers a cell style (xf entry) and returns its index for use with set_cell_style.
-    # Opts: font_id, fill_id, border_id, num_fmt_id.
+    # Opts: font_id, fill_id, border_id, num_fmt_id, alignment (hash with horizontal, vertical, wrap_text, text_rotation, indent, shrink_to_fit).
     def add_cell_style(**opts)
       entry = {
         num_fmt_id: opts[:num_fmt_id] || 0,
@@ -351,6 +351,7 @@ module Xlsxrb
         fill_id: opts[:fill_id] || 0,
         border_id: opts[:border_id] || 0
       }
+      entry[:alignment] = opts[:alignment] if opts[:alignment]
       existing = @xf_entries.index(entry)
       return existing if existing
 
@@ -2487,7 +2488,13 @@ module Xlsxrb
         apply_attrs << ' applyFont="1"' if xf[:font_id].positive?
         apply_attrs << ' applyFill="1"' if xf[:fill_id].positive?
         apply_attrs << ' applyBorder="1"' if xf[:border_id].positive?
-        parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="0"#{apply_attrs.join}/>)
+        apply_attrs << ' applyAlignment="1"' if xf[:alignment]
+        if xf[:alignment]
+          alignment_xml = emit_alignment_xml(xf[:alignment])
+          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="0"#{apply_attrs.join}>#{alignment_xml}</xf>)
+        else
+          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="0"#{apply_attrs.join}/>)
+        end
       end
       parts << "</cellXfs>"
 
@@ -2509,6 +2516,17 @@ module Xlsxrb
 
       parts << "</styleSheet>"
       parts.join
+    end
+
+    def emit_alignment_xml(alignment)
+      attrs = []
+      attrs << %(horizontal="#{alignment[:horizontal]}") if alignment[:horizontal]
+      attrs << %(vertical="#{alignment[:vertical]}") if alignment[:vertical]
+      attrs << %(wrapText="1") if alignment[:wrap_text]
+      attrs << %(textRotation="#{alignment[:text_rotation]}") if alignment[:text_rotation]
+      attrs << %(indent="#{alignment[:indent]}") if alignment[:indent]
+      attrs << %(shrinkToFit="1") if alignment[:shrink_to_fit]
+      "<alignment #{attrs.join(" ")}/>"
     end
 
     def emit_font_xml(font)
