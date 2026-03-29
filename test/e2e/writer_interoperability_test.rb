@@ -474,6 +474,27 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores expanded styles correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")
+    fill_id = writer.add_fill(pattern: "solid", fg_color: "FF00FF00")
+    brd_id = writer.add_border(left: { style: "thin" }, right: { style: "thin" },
+                               top: { style: "thin" }, bottom: { style: "thin" })
+    style_id = writer.add_cell_style(font_id: fid, fill_id: fill_id, border_id: brd_id)
+    writer.add_dxf(font: { bold: true, color: "FFFF0000" })
+    writer.set_cell("A1", "styled")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_expanded_styles_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

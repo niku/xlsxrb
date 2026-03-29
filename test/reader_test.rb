@@ -779,4 +779,56 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips cell styles with fonts fills and borders" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")
+    fill_id = writer.add_fill(pattern: "solid", fg_color: "FF00FF00")
+    brd_id = writer.add_border(left: { style: "thin", color: "FF000000" },
+                               right: { style: "thin" },
+                               top: { style: "thin" },
+                               bottom: { style: "thin" })
+    style_id = writer.add_cell_style(font_id: fid, fill_id: fill_id, border_id: brd_id)
+    writer.set_cell("A1", "styled")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    assert_equal(true, cs["A1"][:font][:bold])
+    assert_equal(14.0, cs["A1"][:font][:sz])
+    assert_equal("FFFF0000", cs["A1"][:font][:color])
+    assert_equal("solid", cs["A1"][:fill][:pattern])
+    assert_equal("FF00FF00", cs["A1"][:fill][:fg_color])
+    assert_equal("thin", cs["A1"][:border][:left][:style])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips dxf entries" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_dxf(font: { bold: true, color: "FFFF0000" },
+                   fill: { pattern: "solid", fg_color: "FFFFFF00" })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dxfs = reader.dxfs
+    assert_equal(1, dxfs.size)
+    assert_equal(true, dxfs[0][:font][:bold])
+    assert_equal("FFFF0000", dxfs[0][:font][:color])
+    assert_equal("solid", dxfs[0][:fill][:pattern])
+    assert_equal("FFFFFF00", dxfs[0][:fill][:fg_color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

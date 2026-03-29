@@ -498,4 +498,35 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(:data_bar, cfs[2][:type])
     assert_equal(:icon_set, cfs[3][:type])
   end
+
+  test "stores fonts, fills, borders, and cell styles" do
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")
+    assert_equal(1, fid)
+
+    fill_id = writer.add_fill(pattern: "solid", fg_color: "FF00FF00")
+    assert_equal(2, fill_id)
+
+    brd_id = writer.add_border(left: { style: "thin", color: "FF000000" },
+                               right: { style: "thin" },
+                               top: { style: "thin" },
+                               bottom: { style: "thin" })
+    assert_equal(1, brd_id)
+
+    style_id = writer.add_cell_style(font_id: fid, fill_id: fill_id, border_id: brd_id)
+    assert_equal(1, style_id)
+
+    writer.set_cell("A1", "styled")
+    writer.set_cell_style("A1", style_id)
+  end
+
+  test "stores dxf entries" do
+    writer = Xlsxrb::Writer.new
+    dxf_id = writer.add_dxf(font: { bold: true, color: "FFFF0000" },
+                            fill: { pattern: "solid", fg_color: "FFFFFF00" })
+    assert_equal(0, dxf_id)
+
+    dxf_id2 = writer.add_dxf(border: { left: { style: "thin" } })
+    assert_equal(1, dxf_id2)
+  end
 end

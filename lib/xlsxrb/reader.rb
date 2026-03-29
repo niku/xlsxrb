@@ -126,6 +126,41 @@ module Xlsxrb
       result
     end
 
+    # Returns expanded cell style info: { "A1" => { font:, fill:, border:, num_fmt: } }.
+    def cell_styles(sheet: nil)
+      styles = load_styles
+      return {} if styles.empty?
+
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      indices = parse_cell_style_indices(worksheet_xml)
+      result = {}
+      indices.each do |cell_ref, xf_index|
+        xf = styles[:cell_xfs][xf_index]
+        next unless xf
+
+        entry = {}
+        entry[:font] = styles[:fonts][xf[:font_id]] if xf[:font_id]&.positive? && styles[:fonts][xf[:font_id]]
+        entry[:fill] = styles[:fills][xf[:fill_id]] if xf[:fill_id]&.positive? && styles[:fills][xf[:fill_id]]
+        entry[:border] = styles[:borders][xf[:border_id]] if xf[:border_id]&.positive? && styles[:borders][xf[:border_id]]
+        if xf[:num_fmt_id]&.positive?
+          code = styles[:num_fmts][xf[:num_fmt_id]]
+          entry[:num_fmt] = code if code
+        end
+        result[cell_ref] = entry unless entry.empty?
+      end
+      result
+    end
+
+    # Returns array of differential formats (dxfs) from the styles.
+    def dxfs
+      styles = load_styles
+      return [] if styles.empty?
+
+      styles[:dxfs] || []
+    end
+
     # Returns the autoFilter range string (e.g. "A1:B10") or nil.
     def auto_filter(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -458,7 +493,11 @@ module Xlsxrb
       listener = StylesListener.new
       parser.listen(listener)
       parser.parse
-      { num_fmts: listener.num_fmts, cell_xfs: listener.cell_xfs }
+      {
+        num_fmts: listener.num_fmts, cell_xfs: listener.cell_xfs,
+        fonts: listener.fonts, fills: listener.fills,
+        borders: listener.borders, dxfs: listener.dxfs
+      }
     end
 
     def parse_cell_style_indices(xml)
@@ -1086,12 +1125,25 @@ module Xlsxrb
     class StylesListener
       include REXML::SAX2Listener
 
-      attr_reader :num_fmts, :cell_xfs
+      attr_reader :num_fmts, :cell_xfs, :fonts, :fills, :borders, :dxfs
 
       def initialize
         @num_fmts = {} # { numFmtId => formatCode }
-        @cell_xfs = [] # Array of { num_fmt_id: N }
+        @cell_xfs = [] # Array of { num_fmt_id:, font_id:, fill_id:, border_id: }
+        @fonts = []
+        @fills = []
+        @borders = []
+        @dxfs = []
         @inside_cell_xfs = false
+        @inside_fonts = false
+        @inside_fills = false
+        @inside_borders = false
+        @inside_dxfs = false
+        @current_font = nil
+        @current_fill = nil
+        @current_border = nil
+        @current_border_side = nil
+        @current_dxf = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -1105,16 +1157,113 @@ module Xlsxrb
         when "cellXfs"
           @inside_cell_xfs = true
         when "xf"
-          @cell_xfs << { num_fmt_id: attributes["numFmtId"]&.to_i } if @inside_cell_xfs
+          if @inside_cell_xfs
+            @cell_xfs << {
+              num_fmt_id: attributes["numFmtId"]&.to_i,
+              font_id: attributes["fontId"]&.to_i,
+              fill_id: attributes["fillId"]&.to_i,
+              border_id: attributes["borderId"]&.to_i
+            }
+          end
+        when "fonts"
+          @inside_fonts = true
+        when "font"
+          @current_font = {} if @inside_fonts || @inside_dxfs
+        when "b"
+          @current_font[:bold] = true if @current_font
+        when "i"
+          @current_font[:italic] = true if @current_font
+        when "u"
+          @current_font[:underline] = true if @current_font
+        when "sz"
+          @current_font[:sz] = attributes["val"]&.to_f if @current_font
+        when "color"
+          parse_color(attributes)
+        when "fills"
+          @inside_fills = true
+        when "fill"
+          @current_fill = {} if @inside_fills || @inside_dxfs
+        when "patternFill"
+          @current_fill[:pattern] = attributes["patternType"] if @current_fill
+        when "fgColor"
+          @current_fill[:fg_color] = attributes["rgb"] if @current_fill && attributes["rgb"]
+        when "bgColor"
+          @current_fill[:bg_color] = attributes["rgb"] if @current_fill && attributes["rgb"]
+        when "borders"
+          @inside_borders = true
+        when "border"
+          @current_border = {} if @inside_borders || @inside_dxfs
+        when "left", "right", "top", "bottom"
+          if @current_border
+            style = attributes["style"]
+            @current_border_side = name.to_sym
+            @current_border[@current_border_side] = { style: style } if style
+          end
+        when "dxfs"
+          @inside_dxfs = true
+        when "dxf"
+          @current_dxf = {}
         end
+
+        parse_font_name(name, attributes)
       end
 
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
-        @inside_cell_xfs = false if name == "cellXfs"
+        case name
+        when "cellXfs"
+          @inside_cell_xfs = false
+        when "fonts"
+          @inside_fonts = false
+        when "font"
+          if @inside_dxfs && @current_dxf
+            @current_dxf[:font] = @current_font
+          elsif @inside_fonts
+            @fonts << @current_font
+          end
+          @current_font = nil
+        when "fills"
+          @inside_fills = false
+        when "fill"
+          if @inside_dxfs && @current_dxf
+            @current_dxf[:fill] = @current_fill
+          elsif @inside_fills
+            @fills << @current_fill
+          end
+          @current_fill = nil
+        when "borders"
+          @inside_borders = false
+        when "border"
+          if @inside_dxfs && @current_dxf
+            @current_dxf[:border] = @current_border
+          elsif @inside_borders
+            @borders << @current_border
+          end
+          @current_border = nil
+        when "left", "right", "top", "bottom"
+          @current_border_side = nil
+        when "dxfs"
+          @inside_dxfs = false
+        when "dxf"
+          @dxfs << @current_dxf if @current_dxf
+          @current_dxf = nil
+        end
       end
 
       private
+
+      def parse_color(attributes)
+        if @current_border_side && @current_border
+          side_data = @current_border[@current_border_side]
+          side_data[:color] = attributes["rgb"] if side_data.is_a?(Hash) && attributes["rgb"]
+        elsif @current_font
+          @current_font[:color] = attributes["rgb"] if attributes["rgb"]
+        end
+      end
+
+      def parse_font_name(name, attributes)
+        @current_font[:name] = attributes["val"] if name == "name" && @current_font && attributes["val"]
+      end
 
       def element_name(local_name, qname)
         if local_name.nil? || local_name.empty?

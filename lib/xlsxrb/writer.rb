@@ -34,6 +34,11 @@ module Xlsxrb
       @filter_columns = { "Sheet1" => {} }
       @sort_state = { "Sheet1" => nil }
       @num_fmts = []
+      @fonts = [{ sz: 11, name: "Calibri" }]
+      @fills = [{ pattern: "none" }, { pattern: "gray125" }]
+      @borders = [{ left: nil, right: nil, top: nil, bottom: nil }]
+      @xf_entries = [{ num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0 }]
+      @dxfs = []
       @sheet_order = ["Sheet1"]
       @core_properties = {}
       @app_properties = {}
@@ -284,6 +289,66 @@ module Xlsxrb
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @cell_styles.key?(sheet_name)
 
       @cell_styles[sheet_name][cell_address] = num_fmt_id
+    end
+
+    # Registers a font and returns its font_id. Opts: bold, italic, sz, color, name.
+    def add_font(**opts)
+      existing = @fonts.index(opts)
+      return existing if existing
+
+      @fonts << opts
+      @fonts.size - 1
+    end
+
+    # Registers a fill and returns its fill_id. Opts: pattern, fg_color, bg_color.
+    def add_fill(**opts)
+      existing = @fills.index(opts)
+      return existing if existing
+
+      @fills << opts
+      @fills.size - 1
+    end
+
+    # Registers a border and returns its border_id.
+    # Opts: left, right, top, bottom (each a hash with :style and optional :color).
+    def add_border(**opts)
+      existing = @borders.index(opts)
+      return existing if existing
+
+      @borders << opts
+      @borders.size - 1
+    end
+
+    # Registers a cell style (xf entry) and returns its index for use with set_cell_style.
+    # Opts: font_id, fill_id, border_id, num_fmt_id.
+    def add_cell_style(**opts)
+      entry = {
+        num_fmt_id: opts[:num_fmt_id] || 0,
+        font_id: opts[:font_id] || 0,
+        fill_id: opts[:fill_id] || 0,
+        border_id: opts[:border_id] || 0
+      }
+      existing = @xf_entries.index(entry)
+      return existing if existing
+
+      @xf_entries << entry
+      @xf_entries.size - 1
+    end
+
+    # Sets a cell style by xf index (from add_cell_style).
+    def set_cell_style(cell_address, style_id, sheet: nil)
+      validate_cell_address!(cell_address)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @cell_styles.key?(sheet_name)
+
+      @cell_styles[sheet_name][cell_address] = { xf_index: style_id }
+    end
+
+    # Registers a differential format (dxf) for conditional formatting. Returns dxf_id.
+    # Opts: font (hash), fill (hash), border (hash), num_fmt (hash).
+    def add_dxf(**opts)
+      @dxfs << opts
+      @dxfs.size - 1
     end
 
     # Sets a core property.
@@ -579,6 +644,8 @@ module Xlsxrb
 
       # Clear memoized xf index map so it picks up all registered formats.
       @xf_index_map = nil
+      # Pre-populate xf entries for legacy num_fmt-based styles.
+      @num_fmts.each { |nf| resolve_style_index(nf[:num_fmt_id]) }
 
       entries = {
         "[Content_Types].xml" => generate_content_types_xml,
@@ -1055,14 +1122,24 @@ module Xlsxrb
     end
 
     # Maps a numFmtId to a cellXfs index. Index 0 is the default (no format).
-    def resolve_style_index(num_fmt_id)
-      return nil if num_fmt_id.nil?
+    def resolve_style_index(style_value)
+      return nil if style_value.nil?
 
-      # Build the xf index mapping on first call.
+      # New-style: { xf_index: N } from set_cell_style.
+      return style_value[:xf_index] if style_value.is_a?(Hash) && style_value.key?(:xf_index)
+
+      # Legacy: raw num_fmt_id from set_cell_format — find or create matching xf entry.
+      num_fmt_id = style_value
       @xf_index_map ||= begin
         map = {}
-        @num_fmts.each_with_index do |nf, i|
-          map[nf[:num_fmt_id]] = i + 1 # 0 is the default xf
+        @num_fmts.each_with_index do |nf, _i|
+          entry = { num_fmt_id: nf[:num_fmt_id], font_id: 0, fill_id: 0, border_id: 0 }
+          idx = @xf_entries.index(entry)
+          unless idx
+            @xf_entries << entry
+            idx = @xf_entries.size - 1
+          end
+          map[nf[:num_fmt_id]] = idx
         end
         map
       end
@@ -1251,28 +1328,99 @@ module Xlsxrb
         parts << "</numFmts>"
       end
 
-      # fonts — one default
-      parts << %(<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>)
+      # fonts
+      parts << %(<fonts count="#{@fonts.size}">)
+      @fonts.each { |f| parts << emit_font_xml(f) }
+      parts << "</fonts>"
 
-      # fills — two required
-      parts << %(<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>)
+      # fills
+      parts << %(<fills count="#{@fills.size}">)
+      @fills.each { |f| parts << emit_fill_xml(f) }
+      parts << "</fills>"
 
-      # borders — one default
-      parts << %(<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>)
+      # borders
+      parts << %(<borders count="#{@borders.size}">)
+      @borders.each { |b| parts << emit_border_xml(b) }
+      parts << "</borders>"
 
       # cellStyleXfs
       parts << %(<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>)
 
-      # cellXfs — default + one per numFmt
-      xf_count = 1 + @num_fmts.size
-      parts << %(<cellXfs count="#{xf_count}">)
-      parts << %(<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>)
-      @num_fmts.each do |nf|
-        parts << %(<xf numFmtId="#{nf[:num_fmt_id]}" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>)
+      # cellXfs
+      parts << %(<cellXfs count="#{@xf_entries.size}">)
+      @xf_entries.each do |xf|
+        apply_attrs = []
+        apply_attrs << ' applyNumberFormat="1"' if xf[:num_fmt_id].positive?
+        apply_attrs << ' applyFont="1"' if xf[:font_id].positive?
+        apply_attrs << ' applyFill="1"' if xf[:fill_id].positive?
+        apply_attrs << ' applyBorder="1"' if xf[:border_id].positive?
+        parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="0"#{apply_attrs.join}/>)
       end
       parts << "</cellXfs>"
 
+      # dxfs
+      unless @dxfs.empty?
+        parts << %(<dxfs count="#{@dxfs.size}">)
+        @dxfs.each { |d| parts << emit_dxf_xml(d) }
+        parts << "</dxfs>"
+      end
+
       parts << "</styleSheet>"
+      parts.join
+    end
+
+    def emit_font_xml(font)
+      parts = ["<font>"]
+      parts << "<b/>" if font[:bold]
+      parts << "<i/>" if font[:italic]
+      parts << "<u/>" if font[:underline]
+      parts << %(<sz val="#{font[:sz]}"/>) if font[:sz]
+      parts << %(<color rgb="#{font[:color]}"/>) if font[:color]
+      parts << %(<name val="#{xml_escape(font[:name])}"/>) if font[:name]
+      parts << "</font>"
+      parts.join
+    end
+
+    def emit_fill_xml(fill)
+      return "<fill><patternFill patternType=\"#{fill[:pattern]}\"/></fill>" if fill[:pattern] && !fill[:fg_color] && !fill[:bg_color]
+
+      parts = ["<fill>"]
+      pt = fill[:pattern] || "solid"
+      parts << %(<patternFill patternType="#{pt}">)
+      parts << %(<fgColor rgb="#{fill[:fg_color]}"/>) if fill[:fg_color]
+      parts << %(<bgColor rgb="#{fill[:bg_color]}"/>) if fill[:bg_color]
+      parts << "</patternFill>"
+      parts << "</fill>"
+      parts.join
+    end
+
+    def emit_border_xml(bdr)
+      parts = ["<border>"]
+      %i[left right top bottom].each do |side|
+        s = bdr[side]
+        if s.is_a?(Hash)
+          parts << %(<#{side} style="#{s[:style]}">)
+          parts << %(<color rgb="#{s[:color]}"/>) if s[:color]
+          parts << "</#{side}>"
+        else
+          parts << "<#{side}/>"
+        end
+      end
+      parts << "<diagonal/>"
+      parts << "</border>"
+      parts.join
+    end
+
+    def emit_dxf_xml(dxf)
+      parts = ["<dxf>"]
+      parts << emit_font_xml(dxf[:font]) if dxf[:font]
+      parts << emit_fill_xml(dxf[:fill]) if dxf[:fill]
+      parts << emit_border_xml(dxf[:border]) if dxf[:border]
+      if dxf[:num_fmt]
+        nf = dxf[:num_fmt]
+        parts << %(<numFmt numFmtId="#{nf[:num_fmt_id]}" formatCode="#{xml_escape(nf[:format_code])}"/>)
+      end
+      parts << "</dxf>"
       parts.join
     end
 
