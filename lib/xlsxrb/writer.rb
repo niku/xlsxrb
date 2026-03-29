@@ -22,6 +22,7 @@ module Xlsxrb
       @merge_cells = { "Sheet1" => [] }
       @hyperlinks = { "Sheet1" => {} }
       @cell_styles = { "Sheet1" => {} }
+      @auto_filters = { "Sheet1" => nil }
       @num_fmts = []
       @sheet_order = ["Sheet1"]
     end
@@ -36,6 +37,7 @@ module Xlsxrb
       @merge_cells[name] = []
       @hyperlinks[name] = {}
       @cell_styles[name] = {}
+      @auto_filters[name] = nil
       @sheet_order << name
     end
 
@@ -130,6 +132,22 @@ module Xlsxrb
       @hyperlinks[sheet_name] || {}
     end
 
+    # Sets an autoFilter range (e.g. "A1:B10") for the given sheet.
+    def set_auto_filter(range, sheet: nil)
+      raise ArgumentError, "range must be a String like 'A1:B10'" unless range.is_a?(String) && range.match?(/\A[A-Z]+\d+:[A-Z]+\d+\z/)
+
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @auto_filters.key?(sheet_name)
+
+      @auto_filters[sheet_name] = range
+    end
+
+    # Returns the autoFilter range for the first (or given) sheet.
+    def auto_filter(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @auto_filters[sheet_name]
+    end
+
     # Registers a custom number format and returns its numFmtId (starting at 164).
     def add_number_format(format_code)
       existing = @num_fmts.find { |nf| nf[:format_code] == format_code }
@@ -176,7 +194,8 @@ module Xlsxrb
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name],
-          @merge_cells[sheet_name], @hyperlinks[sheet_name], @cell_styles[sheet_name]
+          @auto_filters[sheet_name], @merge_cells[sheet_name], @hyperlinks[sheet_name],
+          @cell_styles[sheet_name]
         )
         next if @hyperlinks[sheet_name].empty?
 
@@ -244,7 +263,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -294,6 +313,9 @@ module Xlsxrb
       end
 
       parts << "</sheetData>"
+
+      # Emit <autoFilter> if set (comes before mergeCells per spec).
+      parts << %(<autoFilter ref="#{sheet_auto_filter}"/>) if sheet_auto_filter
 
       # Emit <mergeCells> if merge ranges are defined.
       unless sheet_merge_cells.empty?

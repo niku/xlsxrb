@@ -118,6 +118,14 @@ module Xlsxrb
       result
     end
 
+    # Returns the autoFilter range string (e.g. "A1:B10") or nil.
+    def auto_filter(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_auto_filter(worksheet_xml)
+    end
+
     # Returns ordered sheet names.
     def sheet_names
       discover_sheets.map { |s| s[:name] }
@@ -332,6 +340,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.ranges
+    end
+
+    def parse_worksheet_auto_filter(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = AutoFilterListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.ref
     end
 
     def column_index_to_letter(index)
@@ -704,6 +720,34 @@ module Xlsxrb
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
         @inside_cell_xfs = false if name == "cellXfs"
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <autoFilter> element.
+    class AutoFilterListener
+      include REXML::SAX2Listener
+
+      attr_reader :ref
+
+      def initialize
+        @ref = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "autoFilter"
+
+        @ref = attributes["ref"]
       end
 
       private
