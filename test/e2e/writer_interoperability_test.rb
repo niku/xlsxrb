@@ -767,6 +767,23 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid shapes with preset geometry" do
+    writer = Xlsxrb::Writer.new
+    writer.add_shape(preset: "ellipse", text: "Hello", name: "Oval 1",
+                     from_col: 1, from_row: 2, to_col: 4, to_row: 6)
+    writer.add_shape(preset: "roundRect", name: "RR 1",
+                     from_col: 5, from_row: 0, to_col: 8, to_row: 3)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_shape_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid table with totals row and enhanced columns" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "Item")

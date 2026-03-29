@@ -554,6 +554,23 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("Category", charts[0][:cat_axis_title])
   end
 
+  test "stores shapes with preset geometry and text" do
+    writer = Xlsxrb::Writer.new
+    writer.add_shape(preset: "ellipse", text: "Hello", name: "Oval 1",
+                     from_col: 1, from_row: 1, to_col: 4, to_row: 6)
+
+    shapes = writer.shapes
+    assert_equal(1, shapes.size)
+    assert_equal("ellipse", shapes[0][:preset])
+    assert_equal("Hello", shapes[0][:text])
+    assert_equal("Oval 1", shapes[0][:name])
+    assert_equal(1, shapes[0][:from_col])
+    assert_equal(4, shapes[0][:to_col])
+
+    writer.add_shape(preset: "roundRect", name: "RR 1")
+    assert_equal(2, writer.shapes.size)
+  end
+
   test "stores fonts, fills, borders, and cell styles" do
     writer = Xlsxrb::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")

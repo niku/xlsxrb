@@ -527,6 +527,19 @@ module Xlsxrb
       listener.charts
     end
 
+    # Returns shapes for the given sheet as an array of hashes.
+    # Each hash: { name:, id:, preset:, text:, from_col:, from_row:, to_col:, to_row: }
+    def shapes(sheet: nil)
+      drawing_xml = load_drawing_xml(sheet)
+      return [] if drawing_xml.nil? || drawing_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+      listener = DrawingShapesListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.shapes
+    end
+
     # Returns comments for the given sheet as an array of hashes.
     # Each hash: { ref:, author:, text: }
     def comments(sheet: nil)
@@ -2823,6 +2836,114 @@ module Xlsxrb
           @charts << @current_chart if @current_chart && @current_chart[:rid]
           @current_chart = nil
           @inside_graphic_frame = false
+        end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing drawing XML to extract shape elements.
+    class DrawingShapesListener
+      include REXML::SAX2Listener
+
+      attr_reader :shapes
+
+      def initialize
+        @shapes = []
+        @inside_anchor = false
+        @inside_sp = false
+        @current_shape = nil
+        @inside_from = false
+        @inside_to = false
+        @inside_tx_body = false
+        @inside_t = false
+        @current_field = nil
+        @text_buffer = +""
+        @anchor_from = {}
+        @anchor_to = {}
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "twoCellAnchor", "oneCellAnchor"
+          @inside_anchor = true
+          @anchor_from = {}
+          @anchor_to = {}
+        when "sp"
+          @inside_sp = true
+          @current_shape = {}
+        when "cNvPr"
+          if @inside_sp && @current_shape
+            @current_shape[:name] = attributes["name"] if attributes["name"]
+            @current_shape[:id] = attributes["id"]&.to_i
+          end
+        when "prstGeom"
+          @current_shape[:preset] = attributes["prst"] if @inside_sp && @current_shape && attributes["prst"]
+        when "from"
+          @inside_from = true if @inside_anchor
+        when "to"
+          @inside_to = true if @inside_anchor
+        when "txBody"
+          @inside_tx_body = true if @inside_sp
+        when "t"
+          @inside_t = true if @inside_tx_body
+          @text_buffer = +""
+        when "col", "colOff", "row", "rowOff"
+          @current_field = name
+          @text_buffer = +""
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text if @current_field || @inside_t
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "sp"
+          if @current_shape && !@current_shape.empty?
+            @anchor_from.each { |k, v| @current_shape[:"from_#{k}"] = v }
+            @anchor_to.each { |k, v| @current_shape[:"to_#{k}"] = v }
+            @shapes << @current_shape
+          end
+          @current_shape = nil
+          @inside_sp = false
+          @inside_tx_body = false
+        when "twoCellAnchor", "oneCellAnchor"
+          @inside_anchor = false
+          @anchor_from = {}
+          @anchor_to = {}
+        when "from"
+          @inside_from = false
+        when "to"
+          @inside_to = false
+        when "txBody"
+          @inside_tx_body = false
+        when "t"
+          if @inside_t && @inside_tx_body && @current_shape
+            @current_shape[:text] = (@current_shape[:text] || +"") << @text_buffer
+          end
+          @inside_t = false
+        when "col", "colOff", "row", "rowOff"
+          if @current_field
+            val = @text_buffer.to_i
+            if @inside_from
+              @anchor_from[@current_field] = val
+            elsif @inside_to
+              @anchor_to[@current_field] = val
+            end
+          end
+          @current_field = nil
         end
       end
 

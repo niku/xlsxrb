@@ -861,6 +861,26 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated shapes with preset geometry and text" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_shape_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(2, shapes.size)
+    assert_equal("ellipse", shapes[0][:preset])
+    assert_equal("ShapeText", shapes[0][:text])
+    assert_equal("Oval 1", shapes[0][:name])
+    assert_equal(1, shapes[0][:from_col])
+    assert_equal(2, shapes[0][:from_row])
+    assert_equal("roundRect", shapes[1][:preset])
+    assert_equal("RoundRect 1", shapes[1][:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated table with totals row and deep columns" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

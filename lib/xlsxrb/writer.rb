@@ -66,6 +66,7 @@ module Xlsxrb
       @use_shared_strings = false
       @images = { "Sheet1" => [] }
       @charts_data = { "Sheet1" => [] }
+      @shapes_data = { "Sheet1" => [] }
       @comments_data = { "Sheet1" => [] }
       @pivot_tables_data = { "Sheet1" => [] }
       @extra_entries = {}
@@ -106,6 +107,7 @@ module Xlsxrb
       @tables[name] = []
       @images[name] = []
       @charts_data[name] = []
+      @shapes_data[name] = []
       @comments_data[name] = []
       @pivot_tables_data[name] = []
       @sheet_protection[name] = nil
@@ -794,6 +796,28 @@ module Xlsxrb
       @charts_data[sheet_name] || []
     end
 
+    # Adds a shape to the given sheet.
+    # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
+    # text: optional text body string.
+    # from_col/from_row/to_col/to_row: anchor coordinates.
+    def add_shape(preset: "rect", text: nil, name: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
+
+      shape_name = name || "Shape #{@shapes_data[sheet_name].size + 1}"
+      @shapes_data[sheet_name] << {
+        preset: preset, text: text, name: shape_name,
+        from_col: from_col, from_row: from_row,
+        to_col: to_col, to_row: to_row
+      }
+    end
+
+    # Returns shape definitions for the first (or given) sheet.
+    def shapes(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @shapes_data[sheet_name] || []
+    end
+
     # Adds a comment on a cell.
     def add_comment(cell_address, text, author: "Author", sheet: nil)
       validate_cell_address!(cell_address)
@@ -881,9 +905,10 @@ module Xlsxrb
       @sheet_order.each_with_index do |sheet_name, i|
         sheet_images = @images[sheet_name] || []
         sheet_charts = @charts_data[sheet_name] || []
+        sheet_shapes = @shapes_data[sheet_name] || []
         sheet_comments = @comments_data[sheet_name] || []
         sheet_pivots = @pivot_tables_data[sheet_name] || []
-        has_drawing = sheet_images.any? || sheet_charts.any?
+        has_drawing = sheet_images.any? || sheet_charts.any? || sheet_shapes.any?
         has_comments = sheet_comments.any?
 
         # Pre-increment counters so rels reference correct paths.
@@ -942,6 +967,11 @@ module Xlsxrb
             entries[chart_path] = generate_chart_xml(chart)
             drawing_rels_data << { type: :chart, target: "../charts/chart#{@chart_count}.xml" }
             drawing_parts << { kind: :chart, chart: chart, rid_index: drawing_rels_data.size }
+          end
+
+          shape_id_base = drawing_parts.size + 1
+          sheet_shapes.each_with_index do |shape, si|
+            drawing_parts << { kind: :sp, shape: shape, id: shape_id_base + si + 1 }
           end
 
           entries["xl/drawings/drawing#{sheet_drawing_idx}.xml"] = generate_drawing_xml(drawing_parts)
@@ -1736,6 +1766,22 @@ module Xlsxrb
           parts << '<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="5000000" cy="3000000"/></xdr:xfrm>'
           parts << %(<a:graphic><a:graphicData uri="#{C_NS}"><c:chart xmlns:c="#{C_NS}" r:id="#{rid}"/></a:graphicData></a:graphic>)
           parts << "</xdr:graphicFrame>"
+          parts << "<xdr:clientData/>"
+          parts << "</xdr:twoCellAnchor>"
+        when :sp
+          shape = dp[:shape]
+          parts << "<xdr:twoCellAnchor>"
+          parts << anchor_xml("from", shape[:from_col], shape[:from_row])
+          parts << anchor_xml("to", shape[:to_col], shape[:to_row])
+          parts << "<xdr:sp>"
+          parts << %(<xdr:nvSpPr><xdr:cNvPr id="#{dp[:id]}" name="#{xml_escape(shape[:name])}"/><xdr:cNvSpPr/></xdr:nvSpPr>)
+          parts << %(<xdr:spPr><a:prstGeom prst="#{xml_escape(shape[:preset])}"><a:avLst/></a:prstGeom></xdr:spPr>)
+          if shape[:text]
+            parts << '<xdr:txBody><a:bodyPr/><a:lstStyle/>'
+            parts << "<a:p><a:r><a:t>#{xml_escape(shape[:text])}</a:t></a:r></a:p>"
+            parts << '</xdr:txBody>'
+          end
+          parts << "</xdr:sp>"
           parts << "<xdr:clientData/>"
           parts << "</xdr:twoCellAnchor>"
         end
