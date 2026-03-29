@@ -518,6 +518,11 @@ module Xlsxrb
         cp.parse
         chart[:chart_type] = cl.chart_type
         chart[:title] = cl.title
+        chart[:series] = cl.series unless cl.series.empty?
+        chart[:legend] = cl.legend unless cl.legend.empty?
+        chart[:data_labels] = cl.data_labels unless cl.data_labels.empty?
+        chart[:cat_axis_title] = cl.cat_axis_title if cl.cat_axis_title
+        chart[:val_axis_title] = cl.val_axis_title if cl.val_axis_title
       end
       listener.charts
     end
@@ -2836,7 +2841,7 @@ module Xlsxrb
     class ChartTypeListener
       include REXML::SAX2Listener
 
-      attr_reader :chart_type, :title
+      attr_reader :chart_type, :title, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -2844,35 +2849,126 @@ module Xlsxrb
       def initialize
         @chart_type = nil
         @title = nil
+        @series = []
+        @legend = {}
+        @data_labels = {}
+        @cat_axis_title = nil
+        @val_axis_title = nil
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
+        @inside_ser = false
+        @current_ser = nil
+        @inside_cat = false
+        @inside_val = false
+        @inside_f = false
+        @inside_legend = false
+        @inside_dlbls = false
+        @inside_cat_ax = false
+        @inside_val_ax = false
+        @inside_ax_title = false
+        @title_depth = 0
       end
 
-      def start_element(_uri, local_name, qname, _attributes)
+      def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
         if CHART_TYPES.include?(name)
           @chart_type = name
-        elsif name == "title"
-          @inside_title = true
-        elsif name == "t" && @inside_title
+        end
+
+        case name
+        when "ser"
+          @inside_ser = true
+          @current_ser = {}
+        when "cat"
+          @inside_cat = true if @inside_ser
+        when "val"
+          @inside_val = true if @inside_ser
+        when "f"
+          @inside_f = true
+          @text_buffer = +""
+        when "title"
+          @title_depth += 1
+          if @inside_cat_ax || @inside_val_ax
+            @inside_ax_title = true
+          elsif @title_depth == 1
+            @inside_title = true
+          end
+        when "t"
           @inside_t = true
           @text_buffer = +""
+        when "legend"
+          @inside_legend = true
+        when "legendPos"
+          @legend[:position] = attributes["val"] if @inside_legend && attributes["val"]
+        when "dLbls"
+          @inside_dlbls = true if @inside_ser || @chart_type
+        when "showVal"
+          @data_labels[:show_val] = attributes["val"] == "1" if @inside_dlbls
+        when "showCatName"
+          @data_labels[:show_cat_name] = attributes["val"] == "1" if @inside_dlbls
+        when "showSerName"
+          @data_labels[:show_ser_name] = attributes["val"] == "1" if @inside_dlbls
+        when "showPercent"
+          @data_labels[:show_percent] = attributes["val"] == "1" if @inside_dlbls
+        when "showLegendKey"
+          @data_labels[:show_legend_key] = attributes["val"] == "1" if @inside_dlbls
+        when "catAx"
+          @inside_cat_ax = true
+        when "valAx"
+          @inside_val_ax = true
         end
       end
 
       def characters(text)
-        @text_buffer << text if @inside_t
+        @text_buffer << text if @inside_t || @inside_f
       end
 
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
         case name
         when "t"
-          @title = @text_buffer.dup if @inside_t && @inside_title
+          if @inside_ax_title
+            if @inside_cat_ax
+              @cat_axis_title = @text_buffer.dup
+            elsif @inside_val_ax
+              @val_axis_title = @text_buffer.dup
+            end
+          elsif @inside_title && @title_depth == 1
+            @title = @text_buffer.dup
+          end
           @inside_t = false
+        when "f"
+          if @inside_ser
+            if @inside_cat
+              @current_ser[:cat_ref] = @text_buffer.dup
+            elsif @inside_val
+              @current_ser[:val_ref] = @text_buffer.dup
+            else
+              @current_ser[:name] = @text_buffer.dup
+            end
+          end
+          @inside_f = false
+        when "cat"
+          @inside_cat = false
+        when "val"
+          @inside_val = false
+        when "ser"
+          @series << @current_ser if @current_ser
+          @current_ser = nil
+          @inside_ser = false
         when "title"
-          @inside_title = false
+          @title_depth -= 1
+          @inside_title = false if @title_depth.zero?
+          @inside_ax_title = false
+        when "legend"
+          @inside_legend = false
+        when "dLbls"
+          @inside_dlbls = false
+        when "catAx"
+          @inside_cat_ax = false
+        when "valAx"
+          @inside_val_ax = false
         end
       end
 

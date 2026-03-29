@@ -998,6 +998,40 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips chart with multiple series and axis titles" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.set_cell("C1", 20)
+    writer.add_chart(type: :bar, title: "Multi",
+                     series: [
+                       { cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3" },
+                       { cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$C$1:$C$3" }
+                     ],
+                     legend: { position: "b" },
+                     data_labels: { show_val: true },
+                     cat_axis_title: "Category",
+                     val_axis_title: "Value")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("barChart", charts[0][:chart_type])
+    assert_equal("Multi", charts[0][:title])
+    assert_equal(2, charts[0][:series].size)
+    assert_equal("b", charts[0][:legend][:position])
+    assert_equal(true, charts[0][:data_labels][:show_val])
+    assert_equal("Category", charts[0][:cat_axis_title])
+    assert_equal("Value", charts[0][:val_axis_title])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shared string table mode" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

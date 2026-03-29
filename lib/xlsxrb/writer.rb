@@ -771,14 +771,21 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
-      @charts_data[sheet_name] << {
-        type: type, title: title,
-        cat_ref: cat_ref, val_ref: val_ref
-      }
+      chart = { type: type, title: title }
+      if series
+        chart[:series] = series
+      else
+        chart[:series] = [{ cat_ref: cat_ref, val_ref: val_ref }]
+      end
+      chart[:legend] = legend if legend
+      chart[:data_labels] = data_labels if data_labels
+      chart[:cat_axis_title] = cat_axis_title if cat_axis_title
+      chart[:val_axis_title] = val_axis_title if val_axis_title
+      @charts_data[sheet_name] << chart
     end
 
     # Returns chart definitions for the first (or given) sheet.
@@ -1775,14 +1782,30 @@ module Xlsxrb
       parts << '<c:barDir val="col"/><c:grouping val="clustered"/>' if chart_type == "barChart"
       parts << '<c:grouping val="standard"/>' if chart_type == "lineChart"
 
-      parts << "<c:ser><c:idx val=\"0\"/><c:order val=\"0\"/>"
-      if chart[:cat_ref]
-        parts << "<c:cat><c:strRef><c:f>#{xml_escape(chart[:cat_ref])}</c:f></c:strRef></c:cat>"
+      all_series = chart[:series] || []
+      all_series.each_with_index do |ser, idx|
+        parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{idx}\"/>"
+        if ser[:name]
+          parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f></c:strRef></c:tx>"
+        end
+        if chart[:data_labels]
+          dl = chart[:data_labels]
+          parts << "<c:dLbls>"
+          parts << "<c:showLegendKey val=\"#{dl[:show_legend_key] ? 1 : 0}\"/>" unless dl[:show_legend_key].nil?
+          parts << "<c:showVal val=\"#{dl[:show_val] ? 1 : 0}\"/>" unless dl[:show_val].nil?
+          parts << "<c:showCatName val=\"#{dl[:show_cat_name] ? 1 : 0}\"/>" unless dl[:show_cat_name].nil?
+          parts << "<c:showSerName val=\"#{dl[:show_ser_name] ? 1 : 0}\"/>" unless dl[:show_ser_name].nil?
+          parts << "<c:showPercent val=\"#{dl[:show_percent] ? 1 : 0}\"/>" unless dl[:show_percent].nil?
+          parts << "</c:dLbls>"
+        end
+        if ser[:cat_ref]
+          parts << "<c:cat><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f></c:strRef></c:cat>"
+        end
+        if ser[:val_ref]
+          parts << "<c:val><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f></c:numRef></c:val>"
+        end
+        parts << "</c:ser>"
       end
-      if chart[:val_ref]
-        parts << "<c:val><c:numRef><c:f>#{xml_escape(chart[:val_ref])}</c:f></c:numRef></c:val>"
-      end
-      parts << "</c:ser>"
 
       unless is_pie
         parts << '<c:axId val="1"/><c:axId val="2"/>'
@@ -1790,12 +1813,21 @@ module Xlsxrb
       parts << "</c:#{chart_type}>"
 
       unless is_pie
-        parts << '<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:crossAx val="2"/></c:catAx>'
-        parts << '<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:crossAx val="1"/></c:valAx>'
+        parts << '<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/>'
+        if chart[:cat_axis_title]
+          parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:cat_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>"
+        end
+        parts << '<c:crossAx val="2"/></c:catAx>'
+        parts << '<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/>'
+        if chart[:val_axis_title]
+          parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:val_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>"
+        end
+        parts << '<c:crossAx val="1"/></c:valAx>'
       end
 
       parts << "</c:plotArea>"
-      parts << '<c:legend><c:legendPos val="r"/></c:legend>'
+      legend_pos = chart.dig(:legend, :position) || "r"
+      parts << %(<c:legend><c:legendPos val="#{legend_pos}"/></c:legend>)
       parts << "</c:chart></c:chartSpace>"
       parts.join
     end
