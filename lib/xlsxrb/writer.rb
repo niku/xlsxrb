@@ -837,7 +837,10 @@ module Xlsxrb
     # source_ref: data source range (e.g. "Sheet1!A1:C4").
     # row_fields: array of 0-based field indices for row axis.
     # data_fields: array of { fld:, name:, subtotal: } hashes.
-    def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, sheet: nil)
+    # col_fields: array of 0-based field indices for column axis.
+    # field_names: array of field name strings (for cache definition).
+    # items: hash mapping field index to array of item values.
+    def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @pivot_tables_data.key?(sheet_name)
 
@@ -845,7 +848,8 @@ module Xlsxrb
       @pivot_tables_data[sheet_name] << {
         name: pt_name, source_ref: source_ref,
         row_fields: row_fields, col_fields: col_fields,
-        data_fields: data_fields, dest_ref: dest_ref
+        data_fields: data_fields, dest_ref: dest_ref,
+        field_names: field_names, items: items
       }
     end
 
@@ -891,9 +895,12 @@ module Xlsxrb
       @pivot_table_count = 0
       @media_count = 0
 
+      # Pre-compute total pivot cache count for workbook XML.
+      total_pivot_caches = @pivot_tables_data.values.sum { |v| v.size }
+
       entries = {
         "_rels/.rels" => generate_rels_root,
-        "xl/workbook.xml" => generate_workbook_xml,
+        "xl/workbook.xml" => generate_workbook_xml(total_pivot_caches),
         "xl/styles.xml" => generate_styles_xml
       }
 
@@ -989,7 +996,7 @@ module Xlsxrb
           cache_idx = sheet_cache_start + pi + 1
           pt_idx = sheet_pivot_start + pi + 1
           entries["xl/pivotCache/pivotCacheDefinition#{cache_idx}.xml"] = generate_pivot_cache_definition_xml(pt, cache_idx)
-          entries["xl/pivotCache/pivotCacheRecords#{cache_idx}.xml"] = generate_pivot_cache_records_xml
+          entries["xl/pivotCache/pivotCacheRecords#{cache_idx}.xml"] = generate_pivot_cache_records_xml(pt)
           entries["xl/pivotTables/pivotTable#{pt_idx}.xml"] = generate_pivot_table_xml(pt, cache_idx)
           entries["xl/pivotCache/_rels/pivotCacheDefinition#{cache_idx}.xml.rels"] = generate_pivot_cache_rels(cache_idx)
           entries["xl/pivotTables/_rels/pivotTable#{pt_idx}.xml.rels"] = generate_pivot_table_rels(cache_idx)
@@ -1144,7 +1151,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_workbook_xml
+    def generate_workbook_xml(pivot_cache_count = 0)
       parts = [
         XML_HEADER,
         %(<workbook xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}">)
@@ -1221,6 +1228,17 @@ module Xlsxrb
         attrs << %(calcCompleted="#{@calc_properties[:calc_completed] ? 1 : 0}") unless @calc_properties[:calc_completed].nil?
         attrs << %(calcOnSave="#{@calc_properties[:calc_on_save] ? 1 : 0}") unless @calc_properties[:calc_on_save].nil?
         parts << "<calcPr #{attrs.join(" ")}/>" unless attrs.empty?
+      end
+
+      # pivotCaches (reference from workbook to cache definition rels)
+      if pivot_cache_count > 0
+        # rId layout: sheets(1..N), styles(N+1), optional SST(N+2), then pivot caches
+        pivot_rid_base = @sheet_order.size + 1 + (@use_shared_strings ? 1 : 0) + 1
+        parts << "<pivotCaches>"
+        pivot_cache_count.times do |ci|
+          parts << %(<pivotCache cacheId="#{ci + 1}" r:id="rId#{pivot_rid_base + ci}"/>)
+        end
+        parts << "</pivotCaches>"
       end
 
       parts << "</workbook>"
@@ -1932,22 +1950,40 @@ module Xlsxrb
     end
 
     def generate_pivot_table_xml(pt, cache_id)
+      data_caption = pt[:data_fields].first ? pt[:data_fields].first[:name] : "Values"
       parts = [
         XML_HEADER,
-        %(<pivotTableDefinition xmlns="#{SSML_NS}" name="#{xml_escape(pt[:name])}" cacheId="#{cache_id}" dataOnRows="0" applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1">)
+        %(<pivotTableDefinition xmlns="#{SSML_NS}" name="#{xml_escape(pt[:name])}" cacheId="#{cache_id}" dataCaption="#{xml_escape(data_caption)}" dataOnRows="0" applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1">)
       ]
 
-      # Compute field count from source range.
-      field_count = (pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size).clamp(1, 100)
+      # Compute field count from source range or explicit field_names.
+      field_count = if pt[:field_names]
+                      pt[:field_names].size
+                    else
+                      (pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size).clamp(1, 100)
+                    end
       parts << %(<location ref="#{pt[:dest_ref]}" firstHeaderRow="1" firstDataRow="1" firstDataCol="1"/>)
       parts << %(<pivotFields count="#{field_count}">)
       field_count.times do |fi|
+        attrs = +""
         if pt[:row_fields].include?(fi)
-          parts << '<pivotField axis="axisRow" showAll="0"/>'
-        elsif pt[:data_fields].any? { |df| df[:fld] == fi }
-          parts << '<pivotField dataField="1" showAll="0"/>'
+          attrs << ' axis="axisRow"'
+        elsif pt[:col_fields].include?(fi)
+          attrs << ' axis="axisCol"'
+        end
+        attrs << ' dataField="1"' if pt[:data_fields].any? { |df| df[:fld] == fi }
+        attrs << ' showAll="0"'
+
+        field_items = pt[:items] && pt[:items][fi]
+        if field_items
+          parts << "<pivotField#{attrs}>"
+          parts << %(<items count="#{field_items.size + 1}">)
+          field_items.size.times { |ix| parts << %(<item x="#{ix}"/>) }
+          parts << '<item t="default"/>'
+          parts << "</items>"
+          parts << "</pivotField>"
         else
-          parts << '<pivotField showAll="0"/>'
+          parts << "<pivotField#{attrs}/>"
         end
       end
       parts << "</pivotFields>"
@@ -1956,6 +1992,12 @@ module Xlsxrb
         parts << %(<rowFields count="#{pt[:row_fields].size}">)
         pt[:row_fields].each { |f| parts << %(<field x="#{f}"/>) }
         parts << "</rowFields>"
+      end
+
+      unless pt[:col_fields].empty?
+        parts << %(<colFields count="#{pt[:col_fields].size}">)
+        pt[:col_fields].each { |f| parts << %(<field x="#{f}"/>) }
+        parts << "</colFields>"
       end
 
       unless pt[:data_fields].empty?
@@ -1986,20 +2028,54 @@ module Xlsxrb
         parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{source}"/></cacheSource>)
       end
 
-      field_count = pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size
+      field_count = pt[:field_names] ? pt[:field_names].size : (pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size)
       parts << %(<cacheFields count="#{field_count}">)
       field_count.times do |fi|
-        df = pt[:data_fields].find { |d| d[:fld] == fi }
-        fname = df ? df[:name] : "Field#{fi + 1}"
-        parts << %(<cacheField name="#{xml_escape(fname)}" numFmtId="0"><sharedItems/></cacheField>)
+        fname = if pt[:field_names] && pt[:field_names][fi]
+                  pt[:field_names][fi]
+                else
+                  df = pt[:data_fields].find { |d| d[:fld] == fi }
+                  df ? df[:name] : "Field#{fi + 1}"
+                end
+        field_items = pt[:items] && pt[:items][fi]
+        if field_items
+          parts << %(<cacheField name="#{xml_escape(fname)}" numFmtId="0">)
+          parts << %(<sharedItems count="#{field_items.size}">)
+          field_items.each { |v| parts << %(<s v="#{xml_escape(v.to_s)}"/>) }
+          parts << "</sharedItems>"
+          parts << "</cacheField>"
+        else
+          parts << %(<cacheField name="#{xml_escape(fname)}" numFmtId="0"><sharedItems/></cacheField>)
+        end
       end
       parts << "</cacheFields>"
       parts << "</pivotCacheDefinition>"
       parts.join
     end
 
-    def generate_pivot_cache_records_xml
-      [XML_HEADER, %(<pivotCacheRecords xmlns="#{SSML_NS}" count="0"/>)].join
+    def generate_pivot_cache_records_xml(pt)
+      items = pt[:items]
+      if items && items.values.any? { |v| v && !v.empty? }
+        max_len = items.values.map { |v| v ? v.size : 0 }.max
+        parts = [XML_HEADER, %(<pivotCacheRecords xmlns="#{SSML_NS}" count="#{max_len}">)]
+        max_len.times do |ri|
+          parts << "<r>"
+          field_count = pt[:field_names] ? pt[:field_names].size : (pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size)
+          field_count.times do |fi|
+            field_items = items[fi]
+            if field_items
+              parts << %(<x v="#{ri < field_items.size ? ri : 0}"/>)
+            else
+              parts << %(<n v="0"/>)
+            end
+          end
+          parts << "</r>"
+        end
+        parts << "</pivotCacheRecords>"
+        parts.join
+      else
+        [XML_HEADER, %(<pivotCacheRecords xmlns="#{SSML_NS}" count="0"/>)].join
+      end
     end
 
     def generate_pivot_cache_rels(cache_id)

@@ -699,6 +699,23 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("Sheet1!A1:C4", pivots[0][:source_ref])
   end
 
+  test "add_pivot_table with col_fields, field_names, and items" do
+    writer = Xlsxrb::Writer.new
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           col_fields: [1],
+                           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+                           field_names: %w[Category Region Amount],
+                           items: { 0 => %w[A B C], 1 => %w[East West] })
+    pivots = writer.pivot_tables
+    assert_equal(1, pivots.size)
+    assert_equal([0], pivots[0][:row_fields])
+    assert_equal([1], pivots[0][:col_fields])
+    assert_equal(%w[Category Region Amount], pivots[0][:field_names])
+    assert_equal(%w[A B C], pivots[0][:items][0])
+    assert_equal(%w[East West], pivots[0][:items][1])
+  end
+
   test "preserve_macros flag" do
     writer = Xlsxrb::Writer.new
     assert_false(writer.preserve_macros?)

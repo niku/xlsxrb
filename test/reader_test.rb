@@ -1059,6 +1059,39 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips pivot table with col_fields and items" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Region")
+    writer.set_cell("C1", "Amount")
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           col_fields: [1],
+                           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+                           field_names: %w[Category Region Amount],
+                           items: { 0 => %w[A B C], 1 => %w[East West] })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    assert_equal(1, pts.size)
+    assert_equal([0], pts[0][:row_fields])
+    assert_equal([1], pts[0][:col_fields])
+    assert_equal("axisRow", pts[0][:fields][0][:axis])
+    assert_equal("axisCol", pts[0][:fields][1][:axis])
+    assert_equal(true, pts[0][:fields][2][:data_field])
+    # Items parsed from pivotField
+    assert_equal(4, pts[0][:fields][0][:items].size) # 3 data + 1 default
+    assert_equal(0, pts[0][:fields][0][:items][0][:x])
+    assert_equal("default", pts[0][:fields][0][:items].last[:t])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shared string table mode" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
