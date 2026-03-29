@@ -142,6 +142,14 @@ module Xlsxrb
       parse_worksheet_dimension(worksheet_xml)
     end
 
+    # Returns sheet format properties (defaultRowHeight, defaultColWidth, baseColWidth).
+    def sheet_format(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_sheet_format(worksheet_xml)
+    end
+
     # Returns core properties as a hash (e.g. { title: "...", creator: "..." }).
     def core_properties
       # Discover core properties path from _rels/.rels
@@ -488,6 +496,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.ref
+    end
+
+    def parse_worksheet_sheet_format(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = SheetFormatListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.properties
     end
 
     def column_index_to_letter(index)
@@ -1167,6 +1183,39 @@ module Xlsxrb
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
         @ref = attributes["ref"] if name == "dimension"
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <sheetFormatPr> element.
+    class SheetFormatListener
+      include REXML::SAX2Listener
+
+      attr_reader :properties
+
+      def initialize
+        @properties = {}
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "sheetFormatPr"
+
+        drh = attributes["defaultRowHeight"]
+        @properties[:default_row_height] = drh.to_f if drh
+        dcw = attributes["defaultColWidth"]
+        @properties[:default_col_width] = dcw.to_f if dcw
+        bcw = attributes["baseColWidth"]
+        @properties[:base_col_width] = bcw.to_i if bcw
       end
 
       private
