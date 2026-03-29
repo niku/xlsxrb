@@ -24,6 +24,14 @@ class WriterTest < Test::Unit::TestCase
     assert_not_nil(cells)
   end
 
+  test "keeps multiple cells in the same row" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("B1", "world")
+    writer.set_cell("A1", "hello")
+
+    assert_equal({ "A1" => "hello", "B1" => "world" }, writer.cells)
+  end
+
   test "can generate XLSX file" do
     temp_file = Tempfile.new(["test", ".xlsx"])
     temp_path = temp_file.path
