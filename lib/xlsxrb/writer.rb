@@ -886,6 +886,22 @@ module Xlsxrb
         sheet_cache_start = @pivot_cache_count
         sheet_pivots.each { @pivot_cache_count += 1; @pivot_table_count += 1 }
 
+        # Build per-sheet rels first (needed for rId calculation in worksheet XML).
+        sheet_tables = @tables[sheet_name] || []
+        sheet_rels_parts = build_sheet_rels_parts_v2(
+          sheet_name, sheet_tables, table_index,
+          sheet_drawing_idx, sheet_comment_idx,
+          sheet_pivot_start, sheet_pivots.size
+        )
+
+        # Calculate the legacyDrawing rId if comments exist.
+        # The VML rel is always the one after the comments rel in rels.
+        vml_rid = nil
+        if has_comments
+          vml_idx = sheet_rels_parts.index { |r| r[:type]&.end_with?("/vmlDrawing") }
+          vml_rid = vml_idx + 1 if vml_idx # 1-based rId
+        end
+
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @column_attrs[sheet_name], @row_attrs[sheet_name],
           @auto_filters[sheet_name], @filter_columns[sheet_name], @sort_state[sheet_name],
@@ -897,15 +913,7 @@ module Xlsxrb
           @data_validations[sheet_name], @conditional_formats[sheet_name], sst,
           @tables[sheet_name] || [], @hyperlinks[sheet_name].size,
           has_drawing, has_comments,
-          @sheet_protection[sheet_name]
-        )
-
-        # Build per-sheet rels, including hyperlinks, tables, drawings, comments, pivots.
-        sheet_tables = @tables[sheet_name] || []
-        sheet_rels_parts = build_sheet_rels_parts_v2(
-          sheet_name, sheet_tables, table_index,
-          sheet_drawing_idx, sheet_comment_idx,
-          sheet_pivot_start, sheet_pivots.size
+          @sheet_protection[sheet_name], vml_rid
         )
 
         # Generate drawing XML + media + chart entries.
@@ -933,9 +941,10 @@ module Xlsxrb
           entries["xl/drawings/_rels/drawing#{sheet_drawing_idx}.xml.rels"] = generate_drawing_rels(drawing_rels_data) unless drawing_rels_data.empty?
         end
 
-        # Generate comments XML.
+        # Generate comments XML and VML drawing.
         if has_comments
           entries["xl/comments#{sheet_comment_idx}.xml"] = generate_comments_xml(sheet_comments)
+          entries["xl/drawings/vmlDrawing#{sheet_comment_idx}.vml"] = generate_vml_drawing_xml(sheet_comments)
         end
 
         # Generate pivot table + cache entries.
@@ -1225,7 +1234,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing = false, has_comments = false, sheet_prot = nil)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing = false, has_comments = false, sheet_prot = nil, vml_rid = nil)
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -1541,9 +1550,14 @@ module Xlsxrb
 
       # Emit <drawing> reference if images or charts exist.
       if has_drawing
-        # The drawing rId is after hyperlinks + tables + comments
-        drawing_rid = hyperlink_count + sheet_tables.size + (has_comments ? 1 : 0) + 1
+        # The drawing rId is after hyperlinks + tables + comments + vml
+        drawing_rid = hyperlink_count + sheet_tables.size + (has_comments ? 2 : 0) + 1
         parts << %(<drawing r:id="rId#{drawing_rid}"/>)
+      end
+
+      # Emit <legacyDrawing> reference if comments exist (VML shapes).
+      if vml_rid
+        parts << %(<legacyDrawing r:id="rId#{vml_rid}"/>)
       end
 
       parts << "</worksheet>"
@@ -1657,6 +1671,7 @@ module Xlsxrb
       end
       if comment_idx
         rels << { type: "#{DOC_REL_NS}/comments", target: "../comments#{comment_idx}.xml" }
+        rels << { type: "#{DOC_REL_NS}/vmlDrawing", target: "../drawings/vmlDrawing#{comment_idx}.vml" }
       end
       if drawing_idx
         rels << { type: "#{DOC_REL_NS}/drawing", target: "../drawings/drawing#{drawing_idx}.xml" }
@@ -1800,6 +1815,42 @@ module Xlsxrb
       end
       parts << "</commentList></comments>"
       parts.join
+    end
+
+    def generate_vml_drawing_xml(sheet_comments)
+      parts = [
+        '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">',
+        '<o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout>',
+        '<v:shapetype id="_x0000_t202" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe">',
+        '<v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/>',
+        '</v:shapetype>'
+      ]
+      sheet_comments.each_with_index do |c, idx|
+        col, row = cell_to_col_row(c[:ref])
+        shape_id = 1025 + idx
+        parts << %(<v:shape id="_x0000_s#{shape_id}" type="#_x0000_t202" style="position:absolute;margin-left:59.25pt;margin-top:1.5pt;width:108pt;height:59.25pt;z-index:#{idx + 1};visibility:hidden" fillcolor="#ffffe1" o:insetmode="auto">)
+        parts << '<v:fill color2="#ffffe1"/>'
+        parts << '<v:shadow on="t" color="black" obscured="t"/>'
+        parts << '<v:path o:connecttype="none"/>'
+        parts << '<v:textbox style="mso-direction-alt:auto"><div style="text-align:left"></div></v:textbox>'
+        parts << '<x:ClientData ObjectType="Note">'
+        parts << '<x:MoveWithCells/><x:SizeWithCells/>'
+        parts << "<x:Anchor>#{col + 1}, 15, #{row}, 10, #{col + 3}, 15, #{row + 4}, 4</x:Anchor>"
+        parts << '<x:AutoFill>False</x:AutoFill>'
+        parts << "<x:Row>#{row}</x:Row>"
+        parts << "<x:Column>#{col}</x:Column>"
+        parts << '</x:ClientData></v:shape>'
+      end
+      parts << '</xml>'
+      parts.join
+    end
+
+    def cell_to_col_row(cell_ref)
+      m = cell_ref.match(/\A([A-Z]+)(\d+)\z/)
+      return [0, 0] unless m
+      col = column_letter_to_index(m[1]) - 1
+      row = m[2].to_i - 1
+      [col, row]
     end
 
     def generate_pivot_table_xml(pt, cache_id)
