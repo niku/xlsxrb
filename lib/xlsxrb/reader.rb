@@ -2584,6 +2584,87 @@ module Xlsxrb
     end
 
     # SAX2 listener for parsing pivotTable XML.
+    class PivotTableListener
+      include REXML::SAX2Listener
 
+      attr_reader :pivot_table
+
+      def initialize
+        @pivot_table = nil
+        @fields = []
+        @row_fields = []
+        @col_fields = []
+        @data_fields = []
+        @inside_row_fields = false
+        @inside_col_fields = false
+        @inside_data_fields = false
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "pivotTableDefinition"
+          @pivot_table = {
+            name: attributes["name"],
+            cache_id: attributes["cacheId"]&.to_i
+          }
+        when "location"
+          @pivot_table[:ref] = attributes["ref"] if @pivot_table
+        when "pivotField"
+          field = {}
+          field[:axis] = attributes["axis"] if attributes["axis"]
+          field[:data_field] = true if attributes["dataField"] == "1"
+          field[:name] = attributes["name"] if attributes["name"]
+          @fields << field
+        when "rowFields"
+          @inside_row_fields = true
+        when "colFields"
+          @inside_col_fields = true
+        when "dataFields"
+          @inside_data_fields = true
+        when "field"
+          idx = attributes["x"]&.to_i
+          @row_fields << idx if @inside_row_fields && idx
+          @col_fields << idx if @inside_col_fields && idx
+        when "dataField"
+          if @inside_data_fields
+            @data_fields << {
+              name: attributes["name"],
+              fld: attributes["fld"]&.to_i,
+              subtotal: attributes["subtotal"] || "sum"
+            }
+          end
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "pivotTableDefinition"
+          if @pivot_table
+            @pivot_table[:fields] = @fields
+            @pivot_table[:row_fields] = @row_fields
+            @pivot_table[:col_fields] = @col_fields
+            @pivot_table[:data_fields] = @data_fields
+          end
+        when "rowFields"
+          @inside_row_fields = false
+        when "colFields"
+          @inside_col_fields = false
+        when "dataFields"
+          @inside_data_fields = false
+        end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
   end
 end

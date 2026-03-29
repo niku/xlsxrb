@@ -514,47 +514,8 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
-  private
+  # --- Phase 2: Steps 141-145 ---
 
-  def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
-    scenario_path = File.join(SCENARIO_DIR, "#{scenario_name}.cs")
-    assert(File.exist?(scenario_path), "Scenario file not found: #{scenario_path}")
-
-    command = sdk_runner_command(scenario_path, xlsx_path)
-    stdout, stderr, status = Open3.capture3(*command)
-
-    failure_reason = extract_failure_reason(stderr)
-
-    assert(
-      status.success?,
-      "Open XML SDK scenario failed: #{failure_reason}\n" \
-      "Scenario: #{scenario_name}\n" \
-      "Command: #{command.join(" ")}\n" \
-      "XLSX: #{xlsx_path}\n" \
-      "STDOUT:\n#{stdout}\n" \
-      "STDERR:\n#{stderr}"
-    )
-  end
-
-  def extract_failure_reason(stderr)
-    return "unknown reason" if stderr.nil? || stderr.strip.empty?
-
-    lines = stderr.lines.map(&:strip).reject(&:empty?)
-    exception_line = lines.find { |line| line.include?("Exception:") }
-    return exception_line if exception_line
-
-    scenario_line = lines.find { |line| line.start_with?("SCENARIO_") }
-    return scenario_line if scenario_line
-
-    lines.first
-  end
-
-  def sdk_runner_command(scenario_path, xlsx_path)
-    [
-      "dotnet", File.expand_path("../../vendor/sdk_runner/bin/Release/net8.0/sdk_runner.dll", __dir__),
-      scenario_path, xlsx_path
-    ]
-  end
   test "writer output stores images correctly" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -601,13 +562,6 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
-  test "writer VBA guard raises without preserve_macros" do
-    writer = Xlsxrb::Writer.new
-    assert_false(writer.preserve_macros?)
-    writer.preserve_macros!
-    assert_true(writer.preserve_macros?)
-  end
-
   test "writer output stores comments correctly" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -623,4 +577,75 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores pivot tables correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Amount")
+    writer.set_cell("A2", "A")
+    writer.set_cell("B2", 100)
+    writer.add_sheet("PivotSheet")
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum of Amount", subtotal: "sum" }],
+                           dest_ref: "A1:B3",
+                           sheet: "PivotSheet")
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_pivot_table_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "writer VBA guard raises without preserve_macros" do
+    writer = Xlsxrb::Writer.new
+    assert_false(writer.preserve_macros?)
+    writer.preserve_macros!
+    assert_true(writer.preserve_macros?)
+  end
+
+  private
+
+  def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
+    scenario_path = File.join(SCENARIO_DIR, "#{scenario_name}.cs")
+    assert(File.exist?(scenario_path), "Scenario file not found: #{scenario_path}")
+
+    command = sdk_runner_command(scenario_path, xlsx_path)
+    stdout, stderr, status = Open3.capture3(*command)
+
+    failure_reason = extract_failure_reason(stderr)
+
+    assert(
+      status.success?,
+      "Open XML SDK scenario failed: #{failure_reason}\n" \
+      "Scenario: #{scenario_name}\n" \
+      "Command: #{command.join(" ")}\n" \
+      "XLSX: #{xlsx_path}\n" \
+      "STDOUT:\n#{stdout}\n" \
+      "STDERR:\n#{stderr}"
+    )
+  end
+
+  def extract_failure_reason(stderr)
+    return "unknown reason" if stderr.nil? || stderr.strip.empty?
+
+    lines = stderr.lines.map(&:strip).reject(&:empty?)
+    exception_line = lines.find { |line| line.include?("Exception:") }
+    return exception_line if exception_line
+
+    scenario_line = lines.find { |line| line.start_with?("SCENARIO_") }
+    return scenario_line if scenario_line
+
+    lines.first
+  end
+
+  def sdk_runner_command(scenario_path, xlsx_path)
+    [
+      "dotnet", File.expand_path("../../vendor/sdk_runner/bin/Release/net8.0/sdk_runner.dll", __dir__),
+      scenario_path, xlsx_path
+    ]
+  end
 end
