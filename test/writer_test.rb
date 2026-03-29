@@ -77,6 +77,14 @@ class WriterTest < Test::Unit::TestCase
     assert_equal({ "A1" => 42, "B1" => 3.14 }, writer.cells)
   end
 
+  test "stores boolean values" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", true)
+    writer.set_cell("B1", false)
+
+    assert_equal({ "A1" => true, "B1" => false }, writer.cells)
+  end
+
   test "orders cells by column index within a row" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("AA1", "third")

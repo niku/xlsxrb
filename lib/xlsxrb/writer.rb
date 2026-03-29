@@ -132,6 +132,8 @@ module Xlsxrb
 
     def cell_xml(cell_ref, value)
       case value
+      when true, false
+        %(<c r="#{cell_ref}" t="b"><v>#{value ? 1 : 0}</v></c>)
       when Numeric
         %(<c r="#{cell_ref}"><v>#{value}</v></c>)
       else
