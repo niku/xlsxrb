@@ -11,12 +11,17 @@ module Xlsxrb
     SSML_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
     DOC_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
+    CELL_ADDRESS_PATTERN = /\A([A-Z]{1,3})(\d+)\z/
+    MAX_ROW = 1_048_576
+    MAX_COLUMN_INDEX = 16_384 # XFD
+
     def initialize
       @cells = {}
     end
 
     # Registers a cell value at the given address (e.g. "A1").
     def set_cell(cell_address, value)
+      validate_cell_address!(cell_address)
       @cells[cell_address] = value
     end
 
@@ -123,6 +128,23 @@ module Xlsxrb
         .gsub(">", "&gt;")
         .gsub('"', "&quot;")
         .gsub("'", "&apos;")
+    end
+
+    def validate_cell_address!(cell_address)
+      raise ArgumentError, "cell address must be a String" unless cell_address.is_a?(String)
+
+      match = cell_address.match(CELL_ADDRESS_PATTERN)
+      raise ArgumentError, "invalid cell address: #{cell_address.inspect}" unless match
+
+      row_num = match[2].to_i
+      raise ArgumentError, "row out of range: #{row_num}" unless row_num.between?(1, MAX_ROW)
+
+      col_index = column_letter_to_index(match[1])
+      raise ArgumentError, "column out of range: #{match[1]}" unless col_index.between?(1, MAX_COLUMN_INDEX)
+    end
+
+    def column_letter_to_index(letters)
+      letters.chars.reduce(0) { |sum, char| (sum * 26) + (char.ord - "A".ord + 1) }
     end
 
     # Extracts the column letter(s) from a cell address, e.g. "A" from "A1".
