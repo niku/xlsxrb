@@ -134,6 +134,22 @@ module Xlsxrb
       parse_worksheet_auto_filter(worksheet_xml)
     end
 
+    # Returns filter columns as { col_id => filter_hash }.
+    def filter_columns(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_filter_columns(worksheet_xml)
+    end
+
+    # Returns sort state as { ref: "A1:B10", sort_conditions: [...] } or nil.
+    def sort_state(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_sort_state(worksheet_xml)
+    end
+
     # Returns sheet-level properties (tabColor, outlinePr) for the given sheet.
     def sheet_properties(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -568,6 +584,22 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.ref
+    end
+
+    def parse_worksheet_filter_columns(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = AutoFilterListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.filter_columns
+    end
+
+    def parse_worksheet_sort_state(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = SortStateListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.sort_state
     end
 
     def parse_worksheet_properties(xml)
@@ -1065,17 +1097,118 @@ module Xlsxrb
     class AutoFilterListener
       include REXML::SAX2Listener
 
-      attr_reader :ref
+      attr_reader :ref, :filter_columns
 
       def initialize
         @ref = nil
+        @filter_columns = {}
+        @current_col_id = nil
+        @current_filter = nil
+        @inside_custom_filters = false
+        @custom_filters_list = []
+        @custom_filters_and = false
+        @filter_values = []
+        @filter_blank = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
-        return unless name == "autoFilter"
+        case name
+        when "autoFilter"
+          @ref = attributes["ref"]
+        when "filterColumn"
+          @current_col_id = attributes["colId"]&.to_i
+        when "filters"
+          @filter_blank = attributes["blank"] == "1"
+          @filter_values = []
+        when "filter"
+          val = attributes["val"]
+          @filter_values << val if val
+        when "customFilters"
+          @inside_custom_filters = true
+          @custom_filters_and = attributes["and"] == "1"
+          @custom_filters_list = []
+        when "customFilter"
+          @custom_filters_list << { operator: attributes["operator"], val: attributes["val"] } if @inside_custom_filters
+        when "dynamicFilter"
+          @current_filter = { type: :dynamic, dynamic_type: attributes["type"] }
+        when "top10"
+          @current_filter = {
+            type: :top10,
+            top: attributes["top"] == "1",
+            percent: attributes["percent"] == "1",
+            val: attributes["val"]&.to_f&.to_i
+          }
+        end
+      end
 
-        @ref = attributes["ref"]
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "filters"
+          f = { type: :filters }
+          f[:blank] = true if @filter_blank
+          f[:values] = @filter_values unless @filter_values.empty?
+          @current_filter = f
+        when "customFilters"
+          if @custom_filters_list.size == 1
+            cf = @custom_filters_list.first
+            @current_filter = { type: :custom, operator: cf[:operator], val: cf[:val] }
+          else
+            @current_filter = { type: :custom, filters: @custom_filters_list, and: @custom_filters_and }
+          end
+          @inside_custom_filters = false
+        when "filterColumn"
+          @filter_columns[@current_col_id] = @current_filter if @current_col_id && @current_filter
+          @current_col_id = nil
+          @current_filter = nil
+        end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <sortState> element.
+    class SortStateListener
+      include REXML::SAX2Listener
+
+      attr_reader :sort_state
+
+      def initialize
+        @sort_state = nil
+        @inside_sort_state = false
+        @sort_conditions = []
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "sortState"
+          @inside_sort_state = true
+          @sort_state = { ref: attributes["ref"], sort_conditions: [] }
+        when "sortCondition"
+          return unless @inside_sort_state
+
+          sc = { ref: attributes["ref"] }
+          sc[:descending] = true if attributes["descending"] == "1"
+          @sort_conditions << sc
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        return unless name == "sortState" && @inside_sort_state
+
+        @sort_state[:sort_conditions] = @sort_conditions
+        @inside_sort_state = false
       end
 
       private
