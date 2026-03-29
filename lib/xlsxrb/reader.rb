@@ -207,6 +207,8 @@ module Xlsxrb
         when "s"
           index = @value_buffer.to_i
           @cells[@current_cell_ref] = @shared_strings[index] || ""
+        when "b"
+          @cells[@current_cell_ref] = @value_buffer.strip == "1"
         when nil, "", "n"
           return if @value_buffer.empty?
 
