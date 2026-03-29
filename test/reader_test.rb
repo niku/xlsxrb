@@ -391,4 +391,36 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips defined names" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_sheet("Data")
+    writer.set_cell("A1", "hello", sheet: "Sheet1")
+    writer.add_defined_name("MyRange", "Sheet1!$A$1:$B$10")
+    writer.add_defined_name("LocalName", "Data!$C$1", sheet: "Data")
+    writer.add_defined_name("HiddenName", "42", hidden: true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dns = reader.defined_names
+    assert_equal(3, dns.size)
+
+    assert_equal("MyRange", dns[0][:name])
+    assert_equal("Sheet1!$A$1:$B$10", dns[0][:value])
+    assert_nil(dns[0][:local_sheet_id])
+    assert_equal(false, dns[0][:hidden])
+
+    assert_equal("LocalName", dns[1][:name])
+    assert_equal(1, dns[1][:local_sheet_id])
+
+    assert_equal("HiddenName", dns[2][:name])
+    assert_equal(true, dns[2][:hidden])
+    assert_equal("42", dns[2][:value])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

@@ -38,6 +38,7 @@ module Xlsxrb
       @workbook_views = {}
       @calc_properties = {}
       @sheet_states = {}
+      @defined_names = []
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -217,6 +218,23 @@ module Xlsxrb
       @sheet_states[sheet_name] || :visible
     end
 
+    # Adds a defined name. Options: sheet: (local scope), hidden: true, value: (formula or constant).
+    def add_defined_name(name, value, sheet: nil, hidden: false)
+      entry = { name: name, value: value, hidden: hidden }
+      if sheet
+        idx = @sheet_order.index(sheet)
+        raise ArgumentError, "unknown sheet: #{sheet}" unless idx
+
+        entry[:local_sheet_id] = idx
+      end
+      @defined_names << entry
+    end
+
+    # Returns defined names array.
+    def defined_names
+      @defined_names.map(&:dup)
+    end
+
     # Sets a workbook property (e.g. :date1904, :default_theme_version).
     def set_workbook_property(name, value)
       @workbook_properties[name] = value
@@ -360,6 +378,18 @@ module Xlsxrb
         parts << %(<sheet name="#{xml_escape(name)}" sheetId="#{i + 1}"#{state_attr} r:id="rId#{i + 1}"/>)
       end
       parts << "</sheets>"
+
+      # definedNames
+      unless @defined_names.empty?
+        parts << "<definedNames>"
+        @defined_names.each do |dn|
+          attrs = %(name="#{xml_escape(dn[:name])}")
+          attrs << %( localSheetId="#{dn[:local_sheet_id]}") if dn[:local_sheet_id]
+          attrs << ' hidden="1"' if dn[:hidden]
+          parts << "<definedName #{attrs}>#{xml_escape(dn[:value])}</definedName>"
+        end
+        parts << "</definedNames>"
+      end
 
       # calcPr
       unless @calc_properties.empty?
