@@ -161,6 +161,22 @@ module Xlsxrb
       styles[:dxfs] || []
     end
 
+    # Returns array of cellStyleXfs entries (base style format definitions).
+    def cell_style_xfs
+      styles = load_styles
+      return [] if styles.empty?
+
+      styles[:cell_style_xfs] || []
+    end
+
+    # Returns array of named cell styles (cellStyle elements).
+    def named_cell_styles
+      styles = load_styles
+      return [] if styles.empty?
+
+      styles[:cell_styles] || []
+    end
+
     # Returns the autoFilter range string (e.g. "A1:B10") or nil.
     def auto_filter(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -703,6 +719,7 @@ module Xlsxrb
       parser.parse
       {
         num_fmts: listener.num_fmts, cell_xfs: listener.cell_xfs,
+        cell_style_xfs: listener.cell_style_xfs, cell_styles: listener.cell_styles,
         fonts: listener.fonts, fills: listener.fills,
         borders: listener.borders, dxfs: listener.dxfs
       }
@@ -1554,16 +1571,20 @@ module Xlsxrb
     class StylesListener
       include REXML::SAX2Listener
 
-      attr_reader :num_fmts, :cell_xfs, :fonts, :fills, :borders, :dxfs
+      attr_reader :num_fmts, :cell_xfs, :cell_style_xfs, :cell_styles, :fonts, :fills, :borders, :dxfs
 
       def initialize
         @num_fmts = {} # { numFmtId => formatCode }
         @cell_xfs = [] # Array of { num_fmt_id:, font_id:, fill_id:, border_id: }
+        @cell_style_xfs = [] # Array of { num_fmt_id:, font_id:, fill_id:, border_id: }
+        @cell_styles = [] # Array of { name:, xf_id:, builtin_id: }
         @fonts = []
         @fills = []
         @borders = []
         @dxfs = []
         @inside_cell_xfs = false
+        @inside_cell_style_xfs = false
+        @inside_cell_styles = false
         @inside_fonts = false
         @inside_fills = false
         @inside_borders = false
@@ -1585,14 +1606,29 @@ module Xlsxrb
           @num_fmts[id] = code if id && code
         when "cellXfs"
           @inside_cell_xfs = true
+        when "cellStyleXfs"
+          @inside_cell_style_xfs = true
+        when "cellStyles"
+          @inside_cell_styles = true
+        when "cellStyle"
+          if @inside_cell_styles
+            entry = { name: attributes["name"] }
+            entry[:xf_id] = attributes["xfId"].to_i if attributes["xfId"]
+            entry[:builtin_id] = attributes["builtinId"].to_i if attributes["builtinId"]
+            @cell_styles << entry
+          end
         when "xf"
+          xf_entry = {
+            num_fmt_id: attributes["numFmtId"]&.to_i,
+            font_id: attributes["fontId"]&.to_i,
+            fill_id: attributes["fillId"]&.to_i,
+            border_id: attributes["borderId"]&.to_i
+          }
           if @inside_cell_xfs
-            @cell_xfs << {
-              num_fmt_id: attributes["numFmtId"]&.to_i,
-              font_id: attributes["fontId"]&.to_i,
-              fill_id: attributes["fillId"]&.to_i,
-              border_id: attributes["borderId"]&.to_i
-            }
+            xf_entry[:xf_id] = attributes["xfId"]&.to_i
+            @cell_xfs << xf_entry
+          elsif @inside_cell_style_xfs
+            @cell_style_xfs << xf_entry
           end
         when "fonts"
           @inside_fonts = true
@@ -1615,9 +1651,9 @@ module Xlsxrb
         when "patternFill"
           @current_fill[:pattern] = attributes["patternType"] if @current_fill
         when "fgColor"
-          @current_fill[:fg_color] = attributes["rgb"] if @current_fill && attributes["rgb"]
+          parse_fill_color(:fg_color, attributes) if @current_fill
         when "bgColor"
-          @current_fill[:bg_color] = attributes["rgb"] if @current_fill && attributes["rgb"]
+          parse_fill_color(:bg_color, attributes) if @current_fill
         when "borders"
           @inside_borders = true
         when "border"
@@ -1642,6 +1678,10 @@ module Xlsxrb
         case name
         when "cellXfs"
           @inside_cell_xfs = false
+        when "cellStyleXfs"
+          @inside_cell_style_xfs = false
+        when "cellStyles"
+          @inside_cell_styles = false
         when "fonts"
           @inside_fonts = false
         when "font"
@@ -1684,9 +1724,28 @@ module Xlsxrb
       def parse_color(attributes)
         if @current_border_side && @current_border
           side_data = @current_border[@current_border_side]
-          side_data[:color] = attributes["rgb"] if side_data.is_a?(Hash) && attributes["rgb"]
+          if side_data.is_a?(Hash)
+            side_data[:color] = attributes["rgb"] if attributes["rgb"]
+            side_data[:theme] = attributes["theme"].to_i if attributes["theme"]
+            side_data[:tint] = attributes["tint"].to_f if attributes["tint"]
+            side_data[:indexed] = attributes["indexed"].to_i if attributes["indexed"]
+          end
         elsif @current_font
           @current_font[:color] = attributes["rgb"] if attributes["rgb"]
+          @current_font[:theme] = attributes["theme"].to_i if attributes["theme"]
+          @current_font[:tint] = attributes["tint"].to_f if attributes["tint"]
+          @current_font[:indexed] = attributes["indexed"].to_i if attributes["indexed"]
+        end
+      end
+
+      def parse_fill_color(key, attributes)
+        if attributes["rgb"]
+          @current_fill[key] = attributes["rgb"]
+        elsif attributes["theme"]
+          @current_fill[:"#{key}_theme"] = attributes["theme"].to_i
+          @current_fill[:"#{key}_tint"] = attributes["tint"].to_f if attributes["tint"]
+        elsif attributes["indexed"]
+          @current_fill[:"#{key}_indexed"] = attributes["indexed"].to_i
         end
       end
 

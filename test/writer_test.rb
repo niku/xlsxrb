@@ -528,6 +528,13 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(false, cfs[0][:icon_set][:show_value])
   end
 
+  test "add_named_cell_style registers cellStyleXfs and cellStyles" do
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(bold: true, sz: 14, name: "Arial")
+    xf_id = writer.add_named_cell_style(name: "Heading1", font_id: fid, builtin_id: 1)
+    assert_equal(1, xf_id)
+  end
+
   test "stores fonts, fills, borders, and cell styles" do
     writer = Xlsxrb::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")

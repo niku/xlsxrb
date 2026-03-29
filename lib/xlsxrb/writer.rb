@@ -38,6 +38,8 @@ module Xlsxrb
       @fills = [{ pattern: "none" }, { pattern: "gray125" }]
       @borders = [{ left: nil, right: nil, top: nil, bottom: nil }]
       @xf_entries = [{ num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0 }]
+      @cell_style_xfs = [{ num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0 }]
+      @cell_style_names = [{ name: "Normal", xf_id: 0, builtin_id: 0 }]
       @dxfs = []
       @sheet_order = ["Sheet1"]
       @core_properties = {}
@@ -351,6 +353,18 @@ module Xlsxrb
 
       @xf_entries << entry
       @xf_entries.size - 1
+    end
+
+    # Registers a base style definition (cellStyleXf) and a named cellStyle.
+    # Returns the xfId for the new base style.
+    def add_named_cell_style(name:, num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0, builtin_id: nil)
+      entry = { num_fmt_id: num_fmt_id, font_id: font_id, fill_id: fill_id, border_id: border_id }
+      @cell_style_xfs << entry
+      xf_id = @cell_style_xfs.size - 1
+      cs = { name: name, xf_id: xf_id }
+      cs[:builtin_id] = builtin_id if builtin_id
+      @cell_style_names << cs
+      xf_id
     end
 
     # Sets a cell style by xf index (from add_cell_style).
@@ -2165,7 +2179,11 @@ module Xlsxrb
       parts << "</borders>"
 
       # cellStyleXfs
-      parts << %(<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>)
+      parts << %(<cellStyleXfs count="#{@cell_style_xfs.size}">)
+      @cell_style_xfs.each do |xf|
+        parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}"/>)
+      end
+      parts << "</cellStyleXfs>"
 
       # cellXfs
       parts << %(<cellXfs count="#{@xf_entries.size}">)
@@ -2185,6 +2203,15 @@ module Xlsxrb
         @dxfs.each { |d| parts << emit_dxf_xml(d) }
         parts << "</dxfs>"
       end
+
+      # cellStyles
+      parts << %(<cellStyles count="#{@cell_style_names.size}">)
+      @cell_style_names.each do |cs|
+        cs_attrs = %(name="#{xml_escape(cs[:name])}" xfId="#{cs[:xf_id]}")
+        cs_attrs << %( builtinId="#{cs[:builtin_id]}") if cs[:builtin_id]
+        parts << "<cellStyle #{cs_attrs}/>"
+      end
+      parts << "</cellStyles>"
 
       parts << "</styleSheet>"
       parts.join
