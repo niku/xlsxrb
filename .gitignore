@@ -6,3 +6,7 @@
 /pkg/
 /spec/reports/
 /tmp/
+
+# .NET build artifacts
+/vendor/sdk_runner/bin/
+/vendor/sdk_runner/obj/
