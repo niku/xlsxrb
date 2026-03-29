@@ -14,6 +14,29 @@ module Xlsxrb
     # Returns cells for the given sheet (by name or 0-based index).
     # Defaults to the first sheet.
     def cells(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      shared_strings = load_shared_strings
+      parse_worksheet_cells(worksheet_xml, shared_strings)
+    end
+
+    # Returns column widths as { "A" => 20.0, "B" => 15.5 } for the given sheet.
+    def columns(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_columns(worksheet_xml)
+    end
+
+    # Returns ordered sheet names.
+    def sheet_names
+      discover_sheets.map { |s| s[:name] }
+    end
+
+    private
+
+    def load_worksheet_xml(sheet)
       sheets = discover_sheets
       raise ArgumentError, "workbook has no sheets" if sheets.empty?
 
@@ -27,19 +50,8 @@ module Xlsxrb
                      "xl/#{target}"
                    end
 
-      worksheet_xml = extract_zip_entry(entry_path)
-      return {} if worksheet_xml.nil? || worksheet_xml.empty?
-
-      shared_strings = load_shared_strings
-      parse_worksheet_cells(worksheet_xml, shared_strings)
+      extract_zip_entry(entry_path)
     end
-
-    # Returns ordered sheet names.
-    def sheet_names
-      discover_sheets.map { |s| s[:name] }
-    end
-
-    private
 
     def discover_sheets
       workbook_xml = extract_zip_entry("xl/workbook.xml")
@@ -151,6 +163,24 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.cells
+    end
+
+    def parse_worksheet_columns(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = ColumnsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.raw_columns.transform_keys { |idx| column_index_to_letter(idx) }
+    end
+
+    def column_index_to_letter(index)
+      result = +""
+      while index.positive?
+        index -= 1
+        result.prepend(("A".ord + (index % 26)).chr)
+        index /= 26
+      end
+      result
     end
 
     # SAX2 listener for parsing shared string table (xl/sharedStrings.xml).
@@ -359,6 +389,44 @@ module Xlsxrb
         return unless name == "Relationship"
 
         @relationships << { id: attributes["Id"], target: attributes["Target"] }
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <cols><col> elements from worksheet XML.
+    class ColumnsListener
+      include REXML::SAX2Listener
+
+      # Returns { column_index => width } hash (1-based indices).
+      attr_reader :raw_columns
+
+      def initialize
+        @raw_columns = {}
+      end
+
+      def columns
+        @raw_columns
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "col"
+
+        min_val = attributes["min"]&.to_i
+        max_val = attributes["max"]&.to_i
+        width = attributes["width"]&.to_f
+        return unless min_val && max_val && width
+
+        (min_val..max_val).each { |i| @raw_columns[i] = width }
       end
 
       private

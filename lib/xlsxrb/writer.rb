@@ -17,6 +17,7 @@ module Xlsxrb
 
     def initialize
       @sheets = { "Sheet1" => {} }
+      @column_widths = { "Sheet1" => {} }
       @sheet_order = ["Sheet1"]
     end
 
@@ -25,6 +26,7 @@ module Xlsxrb
       raise ArgumentError, "sheet already exists: #{name}" if @sheets.key?(name)
 
       @sheets[name] = {}
+      @column_widths[name] = {}
       @sheet_order << name
     end
 
@@ -43,6 +45,25 @@ module Xlsxrb
       @sheets[sheet_name] || {}
     end
 
+    # Sets the width for a column (e.g. "A", "BC").
+    def set_column_width(col_letter, width, sheet: nil)
+      raise ArgumentError, "column must be a String of uppercase letters" unless col_letter.is_a?(String) && col_letter.match?(/\A[A-Z]+\z/)
+
+      col_index = column_letter_to_index(col_letter)
+      raise ArgumentError, "column out of range: #{col_letter}" unless col_index.between?(1, MAX_COLUMN_INDEX)
+
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @column_widths.key?(sheet_name)
+
+      @column_widths[sheet_name][col_letter] = width
+    end
+
+    # Returns column widths for the first (or given) sheet.
+    def column_widths(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @column_widths[sheet_name] || {}
+    end
+
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
@@ -56,7 +77,7 @@ module Xlsxrb
       }
 
       @sheet_order.each_with_index do |sheet_name, i|
-        entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(@sheets[sheet_name])
+        entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(@sheets[sheet_name], @column_widths[sheet_name])
       end
 
       generator = ZipGenerator.new(filepath)
@@ -117,12 +138,23 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths)
       parts = [
         XML_HEADER,
-        %(<worksheet xmlns="#{SSML_NS}">),
-        "<sheetData>"
+        %(<worksheet xmlns="#{SSML_NS}">)
       ]
+
+      # Emit <cols> if column widths are defined.
+      unless sheet_col_widths.empty?
+        parts << "<cols>"
+        sheet_col_widths.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, width|
+          idx = column_letter_to_index(col_letter)
+          parts << %(<col min="#{idx}" max="#{idx}" width="#{width}" customWidth="1"/>)
+        end
+        parts << "</cols>"
+      end
+
+      parts << "<sheetData>"
 
       # Group cells by row number.
       cells_by_row = {}

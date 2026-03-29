@@ -121,4 +121,19 @@ class WriterTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     assert_raise(ArgumentError) { writer.set_cell("A1", "v", sheet: "NoSuchSheet") }
   end
+
+  test "stores column widths" do
+    writer = Xlsxrb::Writer.new
+    writer.set_column_width("A", 20)
+    writer.set_column_width("C", 15.5)
+
+    assert_equal({ "A" => 20, "C" => 15.5 }, writer.column_widths)
+  end
+
+  test "rejects invalid column letter in set_column_width" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.set_column_width("a", 10) }
+    assert_raise(ArgumentError) { writer.set_column_width("1", 10) }
+    assert_raise(ArgumentError) { writer.set_column_width("", 10) }
+  end
 end
