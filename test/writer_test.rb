@@ -136,4 +136,13 @@ class WriterTest < Test::Unit::TestCase
     assert_raise(ArgumentError) { writer.set_column_width("1", 10) }
     assert_raise(ArgumentError) { writer.set_column_width("", 10) }
   end
+
+  test "stores row height and hidden attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_row_height(1, 25.0)
+    writer.set_row_hidden(3)
+
+    expected = { 1 => { height: 25.0 }, 3 => { hidden: true } }
+    assert_equal(expected, writer.row_attributes)
+  end
 end

@@ -18,6 +18,7 @@ module Xlsxrb
     def initialize
       @sheets = { "Sheet1" => {} }
       @column_widths = { "Sheet1" => {} }
+      @row_attrs = { "Sheet1" => {} }
       @sheet_order = ["Sheet1"]
     end
 
@@ -27,6 +28,7 @@ module Xlsxrb
 
       @sheets[name] = {}
       @column_widths[name] = {}
+      @row_attrs[name] = {}
       @sheet_order << name
     end
 
@@ -64,6 +66,32 @@ module Xlsxrb
       @column_widths[sheet_name] || {}
     end
 
+    # Sets a row height.
+    def set_row_height(row_num, height, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
+      raise ArgumentError, "row must be a positive Integer" unless row_num.is_a?(Integer) && row_num >= 1
+
+      @row_attrs[sheet_name][row_num] ||= {}
+      @row_attrs[sheet_name][row_num][:height] = height
+    end
+
+    # Hides a row.
+    def set_row_hidden(row_num, hidden: true, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
+      raise ArgumentError, "row must be a positive Integer" unless row_num.is_a?(Integer) && row_num >= 1
+
+      @row_attrs[sheet_name][row_num] ||= {}
+      @row_attrs[sheet_name][row_num][:hidden] = hidden
+    end
+
+    # Returns row attributes for the first (or given) sheet.
+    def row_attributes(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @row_attrs[sheet_name] || {}
+    end
+
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
@@ -77,7 +105,9 @@ module Xlsxrb
       }
 
       @sheet_order.each_with_index do |sheet_name, i|
-        entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(@sheets[sheet_name], @column_widths[sheet_name])
+        entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
+          @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name]
+        )
       end
 
       generator = ZipGenerator.new(filepath)
@@ -138,7 +168,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs)
       parts = [
         XML_HEADER,
         %(<worksheet xmlns="#{SSML_NS}">)
@@ -165,9 +195,18 @@ module Xlsxrb
         cells_by_row[row_num][col_letter] = value
       end
 
+      # Include rows that have attributes but no cells.
+      sheet_row_attrs.each_key { |rn| cells_by_row[rn] ||= {} }
+
       # Emit rows in ascending order.
       cells_by_row.sort.each do |row_num, row_cells|
-        parts << %(<row r="#{row_num}">)
+        attrs = %(r="#{row_num}")
+        ra = sheet_row_attrs[row_num]
+        if ra
+          attrs << %( ht="#{ra[:height]}" customHeight="1") if ra[:height]
+          attrs << %( hidden="1") if ra[:hidden]
+        end
+        parts << "<row #{attrs}>"
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|
           cell_ref = "#{col_letter}#{row_num}"
           parts << cell_xml(cell_ref, value)
