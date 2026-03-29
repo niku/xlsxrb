@@ -428,4 +428,26 @@ class WriterTest < Test::Unit::TestCase
     assert_equal([10, 20], writer.row_breaks)
     assert_equal([5], writer.col_breaks)
   end
+
+  test "stores filter columns" do
+    writer = Xlsxrb::Writer.new
+    writer.set_auto_filter("A1:C10")
+    writer.add_filter_column(0, { type: :filters, values: %w[A B] })
+    writer.add_filter_column(1, { type: :custom, operator: "greaterThan", val: "100" })
+
+    fc = writer.filter_columns
+    assert_equal(:filters, fc[0][:type])
+    assert_equal(%w[A B], fc[0][:values])
+    assert_equal(:custom, fc[1][:type])
+  end
+
+  test "stores sort state" do
+    writer = Xlsxrb::Writer.new
+    writer.set_sort_state("A1:B10", [{ ref: "A1:A10" }, { ref: "B1:B10", descending: true }])
+
+    ss = writer.sort_state
+    assert_equal("A1:B10", ss[:ref])
+    assert_equal(2, ss[:sort_conditions].size)
+    assert_equal(true, ss[:sort_conditions][1][:descending])
+  end
 end

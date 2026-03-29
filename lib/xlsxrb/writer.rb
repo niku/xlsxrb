@@ -31,6 +31,8 @@ module Xlsxrb
       @hyperlinks = { "Sheet1" => {} }
       @cell_styles = { "Sheet1" => {} }
       @auto_filters = { "Sheet1" => nil }
+      @filter_columns = { "Sheet1" => {} }
+      @sort_state = { "Sheet1" => nil }
       @num_fmts = []
       @sheet_order = ["Sheet1"]
       @core_properties = {}
@@ -65,6 +67,8 @@ module Xlsxrb
       @hyperlinks[name] = {}
       @cell_styles[name] = {}
       @auto_filters[name] = nil
+      @filter_columns[name] = {}
+      @sort_state[name] = nil
       @sheet_properties[name] = {}
       @sheet_formats[name] = {}
       @sheet_views[name] = {}
@@ -221,6 +225,42 @@ module Xlsxrb
     def auto_filter(sheet: nil)
       sheet_name = sheet || @sheet_order.first
       @auto_filters[sheet_name]
+    end
+
+    # Adds a filter column to the autoFilter.
+    # col_id: 0-based column index within the autoFilter range.
+    # filter: hash describing the filter, e.g.
+    #   { type: :filters, values: ["A", "B"] }
+    #   { type: :filters, blank: true }
+    #   { type: :custom, operator: "greaterThan", val: "100" }
+    #   { type: :custom, filters: [{ operator: "greaterThan", val: "10" }, { operator: "lessThan", val: "100" }], and: true }
+    #   { type: :dynamic, dynamic_type: "today" }
+    #   { type: :top10, top: true, percent: false, val: 10 }
+    def add_filter_column(col_id, filter, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @filter_columns.key?(sheet_name)
+
+      @filter_columns[sheet_name][col_id] = filter
+    end
+
+    # Returns filter columns for the first (or given) sheet.
+    def filter_columns(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @filter_columns[sheet_name] || {}
+    end
+
+    # Sets a sort state for the sheet. ref: sort range, sort_conditions: array of { ref:, descending: }.
+    def set_sort_state(ref, sort_conditions, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sort_state.key?(sheet_name)
+
+      @sort_state[sheet_name] = { ref: ref, sort_conditions: sort_conditions }
+    end
+
+    # Returns sort state for the first (or given) sheet.
+    def sort_state(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @sort_state[sheet_name]
     end
 
     # Registers a custom number format and returns its numFmtId (starting at 164).
@@ -517,7 +557,8 @@ module Xlsxrb
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @column_attrs[sheet_name], @row_attrs[sheet_name],
-          @auto_filters[sheet_name], @merge_cells[sheet_name], @hyperlinks[sheet_name],
+          @auto_filters[sheet_name], @filter_columns[sheet_name], @sort_state[sheet_name],
+          @merge_cells[sheet_name], @hyperlinks[sheet_name],
           @cell_styles[sheet_name], @sheet_properties[sheet_name], @sheet_formats[sheet_name],
           @sheet_views[sheet_name], @freeze_panes[sheet_name], @selections[sheet_name],
           @print_options[sheet_name], @page_margins[sheet_name], @page_setup[sheet_name],
@@ -642,7 +683,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -781,8 +822,31 @@ module Xlsxrb
 
       parts << "</sheetData>"
 
-      # Emit <autoFilter> if set (comes before mergeCells per spec).
-      parts << %(<autoFilter ref="#{sheet_auto_filter}"/>) if sheet_auto_filter
+      # Emit <autoFilter> with optional filterColumns.
+      if sheet_auto_filter
+        if sheet_filter_cols.empty?
+          parts << %(<autoFilter ref="#{sheet_auto_filter}"/>)
+        else
+          parts << %(<autoFilter ref="#{sheet_auto_filter}">)
+          sheet_filter_cols.sort.each do |col_id, filter|
+            parts << %(<filterColumn colId="#{col_id}">)
+            parts << emit_filter_xml(filter)
+            parts << "</filterColumn>"
+          end
+          parts << "</autoFilter>"
+        end
+      end
+
+      # Emit <sortState> if defined.
+      if sheet_sort
+        parts << %(<sortState ref="#{sheet_sort[:ref]}">)
+        sheet_sort[:sort_conditions].each do |sc|
+          sc_attrs = %(ref="#{sc[:ref]}")
+          sc_attrs << ' descending="1"' if sc[:descending]
+          parts << "<sortCondition #{sc_attrs}/>"
+        end
+        parts << "</sortState>"
+      end
 
       # Emit <mergeCells> if merge ranges are defined.
       unless sheet_merge_cells.empty?
@@ -919,6 +983,41 @@ module Xlsxrb
         map
       end
       @xf_index_map[num_fmt_id]
+    end
+
+    def emit_filter_xml(filter)
+      case filter[:type]
+      when :filters
+        attrs = filter[:blank] ? ' blank="1"' : ""
+        if filter[:values]&.any?
+          parts = ["<filters#{attrs}>"]
+          filter[:values].each { |v| parts << %(<filter val="#{xml_escape(v)}"/>) }
+          parts << "</filters>"
+          parts.join
+        else
+          "<filters#{attrs}/>"
+        end
+      when :custom
+        if filter[:filters]
+          and_attr = filter[:and] ? ' and="1"' : ""
+          parts = ["<customFilters#{and_attr}>"]
+          filter[:filters].each do |cf|
+            parts << %(<customFilter operator="#{cf[:operator]}" val="#{xml_escape(cf[:val])}"/>)
+          end
+          parts << "</customFilters>"
+          parts.join
+        else
+          %(<customFilters><customFilter operator="#{filter[:operator]}" val="#{xml_escape(filter[:val])}"/></customFilters>)
+        end
+      when :dynamic
+        %(<dynamicFilter type="#{filter[:dynamic_type]}"/>)
+      when :top10
+        top_attr = filter[:top] ? ' top="1"' : ""
+        pct_attr = filter[:percent] ? ' percent="1"' : ""
+        %(<top10#{top_attr}#{pct_attr} val="#{filter[:val]}"/>)
+      else
+        ""
+      end
     end
 
     def compute_dimension(sheet_cells)
