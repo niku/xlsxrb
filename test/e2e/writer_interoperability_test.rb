@@ -241,6 +241,27 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores workbook properties correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_sheet("Data")
+    writer.set_cell("A1", "main", sheet: "Sheet1")
+    writer.set_cell("A1", "data", sheet: "Data")
+    writer.set_workbook_property(:date1904, false)
+    writer.set_workbook_property(:default_theme_version, 166_925)
+    writer.set_workbook_view(:active_tab, 1)
+    writer.set_calc_property(:calc_id, 191_029)
+    writer.set_calc_property(:full_calc_on_load, true)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_workbook_properties_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

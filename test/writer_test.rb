@@ -232,4 +232,34 @@ class WriterTest < Test::Unit::TestCase
     assert_equal([["Worksheets", 2]], props[:heading_pairs])
     assert_equal(%w[Sheet1 Data], props[:titles_of_parts])
   end
+
+  test "stores workbook properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_workbook_property(:date1904, false)
+    writer.set_workbook_property(:default_theme_version, 166_925)
+
+    props = writer.workbook_properties
+    assert_equal(false, props[:date1904])
+    assert_equal(166_925, props[:default_theme_version])
+  end
+
+  test "stores workbook view properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_workbook_view(:active_tab, 1)
+    writer.set_workbook_view(:first_sheet, 0)
+
+    views = writer.workbook_views
+    assert_equal(1, views[:active_tab])
+    assert_equal(0, views[:first_sheet])
+  end
+
+  test "stores calc properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_calc_property(:calc_id, 191_029)
+    writer.set_calc_property(:full_calc_on_load, true)
+
+    props = writer.calc_properties
+    assert_equal(191_029, props[:calc_id])
+    assert_equal(true, props[:full_calc_on_load])
+  end
 end
