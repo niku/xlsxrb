@@ -85,6 +85,13 @@ class WriterTest < Test::Unit::TestCase
     assert_equal({ "A1" => true, "B1" => false }, writer.cells)
   end
 
+  test "stores empty string as a cell value" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "")
+
+    assert_equal({ "A1" => "" }, writer.cells)
+  end
+
   test "orders cells by column index within a row" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("AA1", "third")
