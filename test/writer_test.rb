@@ -50,4 +50,22 @@ class WriterTest < Test::Unit::TestCase
 
     FileUtils.rm_f(temp_path)
   end
+
+  test "rejects invalid cell addresses" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.set_cell("", "v") }
+    assert_raise(ArgumentError) { writer.set_cell("1A", "v") }
+    assert_raise(ArgumentError) { writer.set_cell("A0", "v") }
+    assert_raise(ArgumentError) { writer.set_cell("a1", "v") }
+    assert_raise(ArgumentError) { writer.set_cell("XFE1", "v") }
+    assert_raise(ArgumentError) { writer.set_cell("A1048577", "v") }
+  end
+
+  test "accepts valid boundary cell addresses" do
+    writer = Xlsxrb::Writer.new
+    assert_nothing_raised { writer.set_cell("A1", "v") }
+    assert_nothing_raised { writer.set_cell("XFD1048576", "v") }
+    assert_nothing_raised { writer.set_cell("Z1", "v") }
+    assert_nothing_raised { writer.set_cell("AA1", "v") }
+  end
 end
