@@ -378,6 +378,18 @@ module Xlsxrb
       parse_workbook_metadata[:calc_properties]
     end
 
+    # Returns the calc chain as an array of { ref:, sheet_id: } hashes, or empty array.
+    def calc_chain
+      xml = extract_zip_entry("xl/calcChain.xml")
+      return [] if xml.nil? || xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = CalcChainListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.entries
+    end
+
     # Returns defined names as an array of hashes.
     def defined_names
       parse_workbook_metadata[:defined_names]
@@ -1329,8 +1341,22 @@ module Xlsxrb
         when "calcPr"
           ci = attributes["calcId"]
           @calc_properties[:calc_id] = ci.to_i if ci
+          cm = attributes["calcMode"]
+          @calc_properties[:calc_mode] = cm if cm
           fcol = attributes["fullCalcOnLoad"]
           @calc_properties[:full_calc_on_load] = %w[1 true].include?(fcol) unless fcol.nil?
+          iter = attributes["iterate"]
+          @calc_properties[:iterate] = %w[1 true].include?(iter) unless iter.nil?
+          ic = attributes["iterateCount"]
+          @calc_properties[:iterate_count] = ic.to_i if ic
+          id = attributes["iterateDelta"]
+          @calc_properties[:iterate_delta] = id.to_f if id
+          rm = attributes["refMode"]
+          @calc_properties[:ref_mode] = rm if rm
+          cc = attributes["calcCompleted"]
+          @calc_properties[:calc_completed] = %w[1 true].include?(cc) unless cc.nil?
+          cos = attributes["calcOnSave"]
+          @calc_properties[:calc_on_save] = %w[1 true].include?(cos) unless cos.nil?
         when "workbookProtection"
           prot = {}
           ls = attributes["lockStructure"]
@@ -2505,6 +2531,38 @@ module Xlsxrb
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
         @table[:columns] = @columns if name == "table" && @table
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing calcChain.xml.
+    class CalcChainListener
+      include REXML::SAX2Listener
+
+      attr_reader :entries
+
+      def initialize
+        @entries = []
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "c"
+
+        entry = {}
+        entry[:ref] = attributes["r"] if attributes["r"]
+        i = attributes["i"]
+        entry[:sheet_id] = i.to_i if i
+        @entries << entry
       end
 
       private

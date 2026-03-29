@@ -943,8 +943,12 @@ module Xlsxrb
         end
       end
 
+      # Generate calcChain.xml if any cells have formulas.
+      calc_chain_xml = generate_calc_chain_xml
+      entries["xl/calcChain.xml"] = calc_chain_xml if calc_chain_xml
+
       # Generate workbook rels (needs to know pivot cache count).
-      entries["xl/_rels/workbook.xml.rels"] = generate_workbook_rels
+      entries["xl/_rels/workbook.xml.rels"] = generate_workbook_rels(entries.key?("xl/calcChain.xml"))
 
       # Content types must be generated after all entries are known.
       entries["[Content_Types].xml"] = generate_content_types_xml(entries)
@@ -1046,6 +1050,9 @@ module Xlsxrb
         overrides["/xl/pivotCache/pivotCacheRecords#{p}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheRecords+xml"
       end
 
+      # calcChain.
+      overrides["/xl/calcChain.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.calcChain+xml" if all_entries.key?("xl/calcChain.xml")
+
       overrides["/docProps/core.xml"] = "application/vnd.openxmlformats-package.core-properties+xml" unless @core_properties.empty?
       overrides["/docProps/app.xml"] = "application/vnd.openxmlformats-officedocument.extended-properties+xml" unless @app_properties.empty?
 
@@ -1142,7 +1149,14 @@ module Xlsxrb
       unless @calc_properties.empty?
         attrs = []
         attrs << %(calcId="#{@calc_properties[:calc_id]}") if @calc_properties[:calc_id]
+        attrs << %(calcMode="#{@calc_properties[:calc_mode]}") if @calc_properties[:calc_mode]
         attrs << %(fullCalcOnLoad="#{@calc_properties[:full_calc_on_load] ? 1 : 0}") unless @calc_properties[:full_calc_on_load].nil?
+        attrs << %(iterate="#{@calc_properties[:iterate] ? 1 : 0}") unless @calc_properties[:iterate].nil?
+        attrs << %(iterateCount="#{@calc_properties[:iterate_count]}") if @calc_properties[:iterate_count]
+        attrs << %(iterateDelta="#{@calc_properties[:iterate_delta]}") if @calc_properties[:iterate_delta]
+        attrs << %(refMode="#{@calc_properties[:ref_mode]}") if @calc_properties[:ref_mode]
+        attrs << %(calcCompleted="#{@calc_properties[:calc_completed] ? 1 : 0}") unless @calc_properties[:calc_completed].nil?
+        attrs << %(calcOnSave="#{@calc_properties[:calc_on_save] ? 1 : 0}") unless @calc_properties[:calc_on_save].nil?
         parts << "<calcPr #{attrs.join(" ")}/>" unless attrs.empty?
       end
 
@@ -1150,7 +1164,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_workbook_rels
+    def generate_workbook_rels(has_calc_chain = false)
       parts = [
         XML_HEADER,
         %(<Relationships xmlns="#{REL_NS}">)
@@ -1169,7 +1183,28 @@ module Xlsxrb
         parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition#{c}.xml"/>)
         next_rid += 1
       end
+      if has_calc_chain
+        parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/calcChain" Target="calcChain.xml"/>)
+        next_rid += 1
+      end
       parts << "</Relationships>"
+      parts.join
+    end
+
+    def generate_calc_chain_xml
+      chain_entries = []
+      @sheet_order.each_with_index do |sheet_name, i|
+        @sheets[sheet_name].each do |address, value|
+          chain_entries << { ref: address, sheet_id: i + 1 } if value.is_a?(Formula)
+        end
+      end
+      return nil if chain_entries.empty?
+
+      parts = [XML_HEADER, %(<calcChain xmlns="#{SSML_NS}">)]
+      chain_entries.each do |entry|
+        parts << %(<c r="#{entry[:ref]}" i="#{entry[:sheet_id]}"/>)
+      end
+      parts << "</calcChain>"
       parts.join
     end
 
