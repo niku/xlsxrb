@@ -62,6 +62,12 @@ module Xlsxrb
       @conditional_formats = { "Sheet1" => [] }
       @tables = { "Sheet1" => [] }
       @use_shared_strings = false
+      @images = { "Sheet1" => [] }
+      @charts_data = { "Sheet1" => [] }
+      @extra_entries = {}
+      @extra_ct_defaults = {}
+      @extra_ct_overrides = {}
+      @preserve_macros = false
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -92,6 +98,8 @@ module Xlsxrb
       @data_validations[name] = []
       @conditional_formats[name] = []
       @tables[name] = []
+      @images[name] = []
+      @charts_data[name] = []
       @sheet_order << name
     end
 
@@ -660,6 +668,82 @@ module Xlsxrb
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
+    # Adds a raw ZIP entry to be included in the output (for pass-through retention).
+    def add_raw_entry(path, content, content_type: nil)
+      @extra_entries[path] = content
+      if content_type
+        ext = File.extname(path).delete(".")
+        if ext.empty? || path.include?("/")
+          @extra_ct_overrides["/#{path}"] = content_type
+        else
+          @extra_ct_defaults[ext] = content_type
+        end
+      end
+    end
+
+    # Copies all ZIP entries from an existing XLSX file as pass-through.
+    # Generated parts override pass-through parts with the same path.
+    def copy_entries_from(filepath)
+      reader = Xlsxrb::Reader.new(filepath)
+      reader.entry_names.each do |name|
+        @extra_entries[name] = reader.raw_entry(name)
+      end
+
+      # Parse [Content_Types].xml for extra content types.
+      ct_xml = reader.raw_entry("[Content_Types].xml")
+      parse_extra_content_types(ct_xml) if ct_xml && !ct_xml.empty?
+    end
+
+    # Inserts an image from file data into the given sheet.
+    # file_data: raw image bytes. ext: file extension (e.g. "png").
+    # from_col/from_row: anchor start. to_col/to_row: anchor end.
+    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, name: nil, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @images.key?(sheet_name)
+
+      img_name = name || "Picture #{@images[sheet_name].size + 1}"
+      @images[sheet_name] << {
+        file_data: file_data, ext: ext, name: img_name,
+        from_col: from_col, from_row: from_row,
+        to_col: to_col, to_row: to_row
+      }
+    end
+
+    # Returns images for the first (or given) sheet.
+    def images(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @images[sheet_name] || []
+    end
+
+    # Adds a chart to the given sheet.
+    # type: :bar, :line, :pie. title: chart title string.
+    # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
+    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
+
+      @charts_data[sheet_name] << {
+        type: type, title: title,
+        cat_ref: cat_ref, val_ref: val_ref
+      }
+    end
+
+    # Returns chart definitions for the first (or given) sheet.
+    def charts(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @charts_data[sheet_name] || []
+    end
+
+    # Enables macro preservation mode. Required when copy_entries_from loads a .xlsm file.
+    def preserve_macros!
+      @preserve_macros = true
+    end
+
+    # Returns whether macro preservation is enabled.
+    def preserve_macros?
+      @preserve_macros
+    end
+
     # Writes the workbook as an XLSX file to the given path.
     def write(filepath)
       # Pre-register date format if any sheet contains Date values.
@@ -678,11 +762,14 @@ module Xlsxrb
       # Build shared string table if enabled.
       sst = build_shared_string_table if @use_shared_strings
 
+      # Track generated drawing/image/chart indices.
+      @drawing_count = 0
+      @chart_count = 0
+      @media_count = 0
+
       entries = {
-        "[Content_Types].xml" => generate_content_types_xml,
         "_rels/.rels" => generate_rels_root,
         "xl/workbook.xml" => generate_workbook_xml,
-        "xl/_rels/workbook.xml.rels" => generate_workbook_rels,
         "xl/styles.xml" => generate_styles_xml
       }
 
@@ -692,6 +779,13 @@ module Xlsxrb
 
       table_index = 0
       @sheet_order.each_with_index do |sheet_name, i|
+        sheet_images = @images[sheet_name] || []
+        sheet_charts = @charts_data[sheet_name] || []
+        has_drawing = sheet_images.any? || sheet_charts.any?
+
+        # Pre-increment counters so rels reference correct paths.
+        sheet_drawing_idx = has_drawing ? (@drawing_count += 1) : nil
+
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @column_attrs[sheet_name], @row_attrs[sheet_name],
           @auto_filters[sheet_name], @filter_columns[sheet_name], @sort_state[sheet_name],
@@ -701,14 +795,46 @@ module Xlsxrb
           @print_options[sheet_name], @page_margins[sheet_name], @page_setup[sheet_name],
           @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name],
           @data_validations[sheet_name], @conditional_formats[sheet_name], sst,
-          @tables[sheet_name] || [], @hyperlinks[sheet_name].size
+          @tables[sheet_name] || [], @hyperlinks[sheet_name].size,
+          has_drawing
         )
 
+        # Build per-sheet rels, including hyperlinks, tables, drawings, comments, pivots.
         sheet_tables = @tables[sheet_name] || []
-        has_rels = !@hyperlinks[sheet_name].empty? || sheet_tables.any?
-        if has_rels
-          entries["xl/worksheets/_rels/sheet#{i + 1}.xml.rels"] =
-            generate_worksheet_rels(@hyperlinks[sheet_name], sheet_tables, table_index)
+        sheet_rels_parts = build_sheet_rels_parts_v2(
+          sheet_name, sheet_tables, table_index,
+          sheet_drawing_idx, nil,
+          0, 0
+        )
+
+        # Generate drawing XML + media + chart entries.
+        if has_drawing
+          drawing_rels_data = []
+          drawing_parts = []
+
+          sheet_images.each do |img|
+            @media_count += 1
+            media_path = "xl/media/image#{@media_count}.#{img[:ext]}"
+            entries[media_path] = img[:file_data]
+            drawing_rels_data << { type: :image, target: "../media/image#{@media_count}.#{img[:ext]}" }
+            drawing_parts << { kind: :pic, img: img, rid_index: drawing_rels_data.size }
+          end
+
+          sheet_charts.each do |chart|
+            @chart_count += 1
+            chart_path = "xl/charts/chart#{@chart_count}.xml"
+            entries[chart_path] = generate_chart_xml(chart)
+            drawing_rels_data << { type: :chart, target: "../charts/chart#{@chart_count}.xml" }
+            drawing_parts << { kind: :chart, chart: chart, rid_index: drawing_rels_data.size }
+          end
+
+          entries["xl/drawings/drawing#{sheet_drawing_idx}.xml"] = generate_drawing_xml(drawing_parts)
+          entries["xl/drawings/_rels/drawing#{sheet_drawing_idx}.xml.rels"] = generate_drawing_rels(drawing_rels_data) unless drawing_rels_data.empty?
+        end
+
+        # Emit worksheet rels if any relationships exist.
+        unless sheet_rels_parts.empty?
+          entries["xl/worksheets/_rels/sheet#{i + 1}.xml.rels"] = generate_generic_rels(sheet_rels_parts)
         end
 
         sheet_tables.each do |tbl|
@@ -717,8 +843,17 @@ module Xlsxrb
         end
       end
 
+      # Generate workbook rels (needs to know pivot cache count).
+      entries["xl/_rels/workbook.xml.rels"] = generate_workbook_rels
+
+      # Content types must be generated after all entries are known.
+      entries["[Content_Types].xml"] = generate_content_types_xml(entries)
+
+      # Merge extra (pass-through) entries — generated entries take priority.
+      merged = @extra_entries.merge(entries)
+
       generator = ZipGenerator.new(filepath)
-      entries.each { |path, content| generator.add_entry(path, content) }
+      merged.each { |path, content| generator.add_entry(path, content) }
       generator.generate
     end
 
@@ -732,28 +867,78 @@ module Xlsxrb
 
     private
 
-    def generate_content_types_xml
-      parts = [
-        XML_HEADER,
-        %(<Types xmlns="#{CT_NS}">),
-        %(<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>),
-        %(<Default Extension="xml" ContentType="application/xml"/>),
-        %(<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>),
-        %(<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>)
-      ]
-      @sheet_order.each_with_index do |_, i|
-        parts << %(<Override PartName="/xl/worksheets/sheet#{i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>)
+    def generate_content_types_xml(all_entries = {})
+      defaults = {
+        "rels" => "application/vnd.openxmlformats-package.relationships+xml",
+        "xml" => "application/xml"
+      }
+
+      # Add image extension defaults.
+      image_exts = {}
+      @images.each_value do |imgs|
+        imgs.each do |img|
+          ext = img[:ext]
+          mime = case ext
+                 when "png" then "image/png"
+                 when "jpg", "jpeg" then "image/jpeg"
+                 when "gif" then "image/gif"
+                 when "bmp" then "image/bmp"
+                 else "image/#{ext}"
+                 end
+          image_exts[ext] = mime
+        end
       end
-      parts << %(<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>) if @use_shared_strings
+      defaults.merge!(image_exts)
+
+
+      # Merge extra defaults from pass-through.
+      defaults.merge!(@extra_ct_defaults)
+
+      # Add bin extension if macros are preserved.
+      defaults["bin"] = "application/vnd.ms-office.vbaProject" if @preserve_macros
+
+      workbook_ct = if @preserve_macros
+                      "application/vnd.ms-excel.sheet.macroEnabled.main+xml"
+                    else
+                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
+                    end
+
+      overrides = {}
+      overrides["/xl/workbook.xml"] = workbook_ct
+      overrides["/xl/styles.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"
+
+      @sheet_order.each_with_index do |_, i|
+        overrides["/xl/worksheets/sheet#{i + 1}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"
+      end
+      overrides["/xl/sharedStrings.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml" if @use_shared_strings
+
       table_idx = 0
       @sheet_order.each do |sn|
         (@tables[sn] || []).each do
           table_idx += 1
-          parts << %(<Override PartName="/xl/tables/table#{table_idx}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/>)
+          overrides["/xl/tables/table#{table_idx}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"
         end
       end
-      parts << %(<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>) unless @core_properties.empty?
-      parts << %(<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>) unless @app_properties.empty?
+
+      # Drawings.
+      (1..@drawing_count.to_i).each do |d|
+        overrides["/xl/drawings/drawing#{d}.xml"] = "application/vnd.openxmlformats-officedocument.drawing+xml"
+      end
+
+      # Charts.
+      (1..@chart_count.to_i).each do |c|
+        overrides["/xl/charts/chart#{c}.xml"] = "application/vnd.openxmlformats-officedocument.drawingml.chart+xml"
+      end
+
+      overrides["/docProps/core.xml"] = "application/vnd.openxmlformats-package.core-properties+xml" unless @core_properties.empty?
+      overrides["/docProps/app.xml"] = "application/vnd.openxmlformats-officedocument.extended-properties+xml" unless @app_properties.empty?
+
+      # Merge extra overrides from pass-through.
+      overrides.merge!(@extra_ct_overrides) { |_k, generated, _extra| generated }
+
+      parts = [XML_HEADER, %(<Types xmlns="#{CT_NS}">)]
+      defaults.each { |ext, ct| parts << %(<Default Extension="#{ext}" ContentType="#{ct}"/>) }
+      overrides.each { |pn, ct| parts << %(<Override PartName="#{pn}" ContentType="#{ct}"/>) }
       parts << "</Types>"
       parts.join
     end
@@ -841,19 +1026,21 @@ module Xlsxrb
       @sheet_order.each_with_index do |_, i|
         parts << %(<Relationship Id="rId#{i + 1}" Type="#{DOC_REL_NS}/worksheet" Target="worksheets/sheet#{i + 1}.xml"/>)
       end
-      styles_rid = @sheet_order.size + 1
-      parts << %(<Relationship Id="rId#{styles_rid}" Type="#{DOC_REL_NS}/styles" Target="styles.xml"/>)
+      next_rid = @sheet_order.size + 1
+      parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/styles" Target="styles.xml"/>)
+      next_rid += 1
       if @use_shared_strings
-        sst_rid = styles_rid + 1
-        parts << %(<Relationship Id="rId#{sst_rid}" Type="#{DOC_REL_NS}/sharedStrings" Target="sharedStrings.xml"/>)
+        parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/sharedStrings" Target="sharedStrings.xml"/>)
+        next_rid += 1
       end
       parts << "</Relationships>"
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing = false)
+      needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing
       worksheet_attrs = %(xmlns="#{SSML_NS}")
-      worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if !sheet_hyperlinks.empty? || sheet_tables.any?
+      worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
       parts = [
         XML_HEADER,
         "<worksheet #{worksheet_attrs}>"
@@ -1134,6 +1321,13 @@ module Xlsxrb
         parts << "</tableParts>"
       end
 
+      # Emit <drawing> reference if images or charts exist.
+      if has_drawing
+        # The drawing rId is after hyperlinks + tables + comments
+        drawing_rid = hyperlink_count + sheet_tables.size + 1
+        parts << %(<drawing r:id="rId#{drawing_rid}"/>)
+      end
+
       parts << "</worksheet>"
       parts.join
     end
@@ -1191,6 +1385,146 @@ module Xlsxrb
       end
       parts << "</Relationships>"
       parts.join
+    end
+
+    def build_sheet_rels_parts_v2(sheet_name, sheet_tables, table_start_index, drawing_idx, _comment_idx, _pivot_start, _pivot_count)
+      rels = []
+      @hyperlinks[sheet_name].each do |(_cell_ref, url)|
+        rels << { type: "#{DOC_REL_NS}/hyperlink", target: url, external: true }
+      end
+      sheet_tables.each_with_index do |_tbl, i|
+        rels << { type: "#{DOC_REL_NS}/table", target: "../tables/table#{table_start_index + i + 1}.xml" }
+      end
+      if drawing_idx
+        rels << { type: "#{DOC_REL_NS}/drawing", target: "../drawings/drawing#{drawing_idx}.xml" }
+      end
+      rels
+    end
+
+    def generate_generic_rels(rels_data)
+      parts = [XML_HEADER, %(<Relationships xmlns="#{REL_NS}">)]
+      rels_data.each_with_index do |rel, i|
+        ext_attr = rel[:external] ? ' TargetMode="External"' : ""
+        parts << %(<Relationship Id="rId#{i + 1}" Type="#{rel[:type]}" Target="#{xml_escape(rel[:target])}"#{ext_attr}/>)
+      end
+      parts << "</Relationships>"
+      parts.join
+    end
+
+    XDR_NS = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
+    A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    C_NS = "http://schemas.openxmlformats.org/drawingml/2006/chart"
+
+    def generate_drawing_xml(drawing_parts)
+      parts = [
+        XML_HEADER,
+        %(<xdr:wsDr xmlns:xdr="#{XDR_NS}" xmlns:a="#{A_NS}" xmlns:r="#{DOC_REL_NS}">)
+      ]
+
+      drawing_parts.each do |dp|
+        case dp[:kind]
+        when :pic
+          img = dp[:img]
+          rid = "rId#{dp[:rid_index]}"
+          parts << '<xdr:twoCellAnchor editAs="oneCell">'
+          parts << anchor_xml("from", img[:from_col], img[:from_row])
+          parts << anchor_xml("to", img[:to_col], img[:to_row])
+          parts << "<xdr:pic>"
+          parts << %(<xdr:nvPicPr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(img[:name])}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>)
+          parts << %(<xdr:blipFill><a:blip r:embed="#{rid}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>)
+          parts << '<xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>'
+          parts << "</xdr:pic>"
+          parts << "<xdr:clientData/>"
+          parts << "</xdr:twoCellAnchor>"
+        when :chart
+          chart = dp[:chart]
+          rid = "rId#{dp[:rid_index]}"
+          parts << "<xdr:twoCellAnchor>"
+          parts << anchor_xml("from", 0, 0)
+          parts << anchor_xml("to", 10, 15)
+          parts << %(<xdr:graphicFrame macro="">)
+          parts << %(<xdr:nvGraphicFramePr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(chart[:title] || "Chart")}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>)
+          parts << '<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="5000000" cy="3000000"/></xdr:xfrm>'
+          parts << %(<a:graphic><a:graphicData uri="#{C_NS}"><c:chart xmlns:c="#{C_NS}" r:id="#{rid}"/></a:graphicData></a:graphic>)
+          parts << "</xdr:graphicFrame>"
+          parts << "<xdr:clientData/>"
+          parts << "</xdr:twoCellAnchor>"
+        end
+      end
+
+      parts << "</xdr:wsDr>"
+      parts.join
+    end
+
+    def anchor_xml(tag, col, row)
+      "<xdr:#{tag}><xdr:col>#{col}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>#{row}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:#{tag}>"
+    end
+
+    def generate_drawing_rels(rels_data)
+      parts = [XML_HEADER, %(<Relationships xmlns="#{REL_NS}">)]
+      rels_data.each_with_index do |rel, i|
+        rel_type = case rel[:type]
+                   when :image then "#{DOC_REL_NS}/image"
+                   when :chart then "#{DOC_REL_NS}/chart"
+                   end
+        parts << %(<Relationship Id="rId#{i + 1}" Type="#{rel_type}" Target="#{rel[:target]}"/>)
+      end
+      parts << "</Relationships>"
+      parts.join
+    end
+
+    CHART_TYPE_MAP = { bar: "barChart", line: "lineChart", pie: "pieChart" }.freeze
+
+    def generate_chart_xml(chart)
+      chart_type = CHART_TYPE_MAP[chart[:type]] || "barChart"
+      is_pie = chart[:type] == :pie
+      parts = [
+        XML_HEADER,
+        %(<c:chartSpace xmlns:c="#{C_NS}" xmlns:a="#{A_NS}" xmlns:r="#{DOC_REL_NS}">),
+        "<c:chart>"
+      ]
+
+      if chart[:title]
+        parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>"
+      end
+
+      parts << "<c:plotArea><c:layout/>"
+      parts << "<c:#{chart_type}>"
+      parts << '<c:barDir val="col"/><c:grouping val="clustered"/>' if chart_type == "barChart"
+      parts << '<c:grouping val="standard"/>' if chart_type == "lineChart"
+
+      parts << "<c:ser><c:idx val=\"0\"/><c:order val=\"0\"/>"
+      if chart[:cat_ref]
+        parts << "<c:cat><c:strRef><c:f>#{xml_escape(chart[:cat_ref])}</c:f></c:strRef></c:cat>"
+      end
+      if chart[:val_ref]
+        parts << "<c:val><c:numRef><c:f>#{xml_escape(chart[:val_ref])}</c:f></c:numRef></c:val>"
+      end
+      parts << "</c:ser>"
+
+      unless is_pie
+        parts << '<c:axId val="1"/><c:axId val="2"/>'
+      end
+      parts << "</c:#{chart_type}>"
+
+      unless is_pie
+        parts << '<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:crossAx val="2"/></c:catAx>'
+        parts << '<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:crossAx val="1"/></c:valAx>'
+      end
+
+      parts << "</c:plotArea>"
+      parts << '<c:legend><c:legendPos val="r"/></c:legend>'
+      parts << "</c:chart></c:chartSpace>"
+      parts.join
+    end
+
+    def parse_extra_content_types(ct_xml)
+      ct_xml.scan(/<Default\s+Extension="([^"]+)"\s+ContentType="([^"]+)"/).each do |ext, ct|
+        @extra_ct_defaults[ext] ||= ct
+      end
+      ct_xml.scan(/<Override\s+PartName="([^"]+)"\s+ContentType="([^"]+)"/).each do |pn, ct|
+        @extra_ct_overrides[pn] ||= ct
+      end
     end
 
     def xml_escape(value)

@@ -390,6 +390,133 @@ module Xlsxrb
       discover_sheets.map { |s| s[:name] }
     end
 
+    # Returns all ZIP entry paths in the file.
+    def entry_names
+      names = []
+      File.open(@filepath, "rb") do |file|
+        loop do
+          sig = file.read(4)
+          break if sig.nil? || sig.bytesize < 4
+
+          sig_val = sig.unpack1("V")
+          break if [0x02014b50, 0x06054b50].include?(sig_val)
+          break unless sig_val == 0x04034b50
+
+          header = file.read(26)
+          break if header.nil? || header.bytesize < 26
+
+          _ver, flags, _cm, _mt, _md, _crc, comp_size, _unc, fname_len, extra_len = header.unpack("v v v v v V V V v v")
+          break if flags.anybits?(0x0008)
+
+          fname = file.read(fname_len)
+          file.read(extra_len)
+          file.read(comp_size)
+          names << fname
+        end
+      end
+      names
+    end
+
+    # Returns raw bytes for a ZIP entry by path.
+    def raw_entry(name)
+      extract_zip_entry(name)
+    end
+
+    # Returns true if the file contains VBA macros (vbaProject.bin).
+    def has_macros?
+      entry_names.any? { |n| n.include?("vbaProject.bin") }
+    end
+
+    # Returns images for the given sheet as an array of hashes.
+    # Each hash: { name:, embed_rid:, target:, from_col:, from_row:, to_col:, to_row:, cx:, cy: }
+    def images(sheet: nil)
+      drawing_xml = load_drawing_xml(sheet)
+      return [] if drawing_xml.nil? || drawing_xml.empty?
+
+      sheet_index = resolve_sheet_index(sheet)
+      drawing_rels = load_drawing_rels(sheet_index)
+
+      parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+      listener = DrawingImagesListener.new
+      parser.listen(listener)
+      parser.parse
+
+      listener.images.each do |img|
+        target = drawing_rels[img[:embed_rid]]
+        img[:target] = target if target
+      end
+      listener.images
+    end
+
+    # Returns charts for the given sheet as an array of hashes.
+    # Each hash: { name:, rid:, target:, chart_type:, title: }
+    def charts(sheet: nil)
+      drawing_xml = load_drawing_xml(sheet)
+      return [] if drawing_xml.nil? || drawing_xml.empty?
+
+      sheet_index = resolve_sheet_index(sheet)
+      drawing_rels = load_drawing_rels(sheet_index)
+
+      parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+      listener = DrawingChartsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      listener.charts.each do |chart|
+        target = drawing_rels[chart[:rid]]
+        next unless target
+
+        chart[:target] = target
+        chart_path = resolve_drawing_relative_path(target, sheet_index)
+        chart_xml = extract_zip_entry(chart_path)
+        next if chart_xml.nil? || chart_xml.empty?
+
+        cp = REXML::Parsers::SAX2Parser.new(chart_xml)
+        cl = ChartTypeListener.new
+        cp.listen(cl)
+        cp.parse
+        chart[:chart_type] = cl.chart_type
+        chart[:title] = cl.title
+      end
+      listener.charts
+    end
+
+    # Returns comments for the given sheet as an array of hashes.
+    # Each hash: { ref:, author:, text: }
+    def comments(sheet: nil)
+      sheet_index = resolve_sheet_index(sheet)
+      comments_path = find_sheet_rel_target(sheet_index, "/comments")
+      return [] unless comments_path
+
+      xml = extract_zip_entry(comments_path)
+      return [] if xml.nil? || xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = CommentsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.comments
+    end
+
+    # Returns pivot tables for the given sheet as an array of hashes.
+    # Each hash: { name:, ref:, cache_id:, fields:, row_fields:, col_fields:, data_fields: }
+    def pivot_tables(sheet: nil)
+      sheet_index = resolve_sheet_index(sheet)
+      pivot_paths = find_sheet_rel_targets(sheet_index, "/pivotTable")
+      return [] if pivot_paths.empty?
+
+      pivot_paths.filter_map do |path|
+        xml = extract_zip_entry(path)
+        next if xml.nil? || xml.empty?
+
+        parser = REXML::Parsers::SAX2Parser.new(xml)
+        listener = PivotTableListener.new
+        parser.listen(listener)
+        parser.parse
+        listener.pivot_table
+      end
+    end
+
     private
 
     def parse_workbook_metadata
@@ -783,6 +910,70 @@ module Xlsxrb
         index /= 26
       end
       result
+    end
+
+    def load_drawing_xml(sheet)
+      sheet_index = resolve_sheet_index(sheet)
+      drawing_path = find_sheet_rel_target(sheet_index, "/drawing")
+      return nil unless drawing_path
+
+      extract_zip_entry(drawing_path)
+    end
+
+    def load_drawing_rels(sheet_index)
+      drawing_path = find_sheet_rel_target(sheet_index, "/drawing")
+      return {} unless drawing_path
+
+      dir = drawing_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = extract_zip_entry(dir)
+      return {} if rels_xml.nil? || rels_xml.empty?
+
+      parse_rels(rels_xml)
+    end
+
+    def find_sheet_rel_target(sheet_index, type_suffix)
+      rels_path = "xl/worksheets/_rels/sheet#{sheet_index + 1}.xml.rels"
+      rels_xml = extract_zip_entry(rels_path)
+      return nil if rels_xml.nil? || rels_xml.empty?
+
+      rels = parse_rels_with_types(rels_xml)
+      rel = rels.find { |r| r[:type]&.end_with?(type_suffix) }
+      return nil unless rel
+
+      normalize_xl_path(rel[:target], "xl/worksheets")
+    end
+
+    def find_sheet_rel_targets(sheet_index, type_suffix)
+      rels_path = "xl/worksheets/_rels/sheet#{sheet_index + 1}.xml.rels"
+      rels_xml = extract_zip_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      rels = parse_rels_with_types(rels_xml)
+      rels.select { |r| r[:type]&.end_with?(type_suffix) }.map do |r|
+        normalize_xl_path(r[:target], "xl/worksheets")
+      end
+    end
+
+    def normalize_xl_path(target, base_dir)
+      if target.start_with?("/")
+        target[1..]
+      elsif target.start_with?("..")
+        # Resolve relative to base
+        parts = base_dir.split("/") + target.split("/")
+        resolved = []
+        parts.each { |p| p == ".." ? resolved.pop : resolved << p }
+        resolved.join("/")
+      else
+        "#{base_dir}/#{target}"
+      end
+    end
+
+    def resolve_drawing_relative_path(target, sheet_index)
+      drawing_path = find_sheet_rel_target(sheet_index, "/drawing")
+      return target unless drawing_path
+
+      base_dir = File.dirname(drawing_path)
+      normalize_xl_path(target, base_dir)
     end
 
     # SAX2 listener for parsing shared string table (xl/sharedStrings.xml).
@@ -2112,5 +2303,210 @@ module Xlsxrb
         end
       end
     end
+
+    # SAX2 listener for parsing drawing XML to extract image information.
+    class DrawingImagesListener
+      include REXML::SAX2Listener
+
+      attr_reader :images
+
+      def initialize
+        @images = []
+        @current_image = nil
+        @inside_anchor = false
+        @inside_pic = false
+        @inside_from = false
+        @inside_to = false
+        @current_field = nil
+        @text_buffer = +""
+        @anchor_from = {}
+        @anchor_to = {}
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "twoCellAnchor", "oneCellAnchor"
+          @inside_anchor = true
+          @anchor_from = {}
+          @anchor_to = {}
+        when "pic"
+          @inside_pic = true
+          @current_image = {}
+        when "cNvPr"
+          if @inside_pic && @current_image
+            @current_image[:name] = attributes["name"] if attributes["name"]
+            @current_image[:id] = attributes["id"]&.to_i
+          end
+        when "blip"
+          rid = attributes["r:embed"] || attributes["embed"]
+          @current_image[:embed_rid] = rid if @inside_pic && @current_image && rid
+        when "from"
+          @inside_from = true if @inside_anchor
+        when "to"
+          @inside_to = true if @inside_anchor
+        when "ext"
+          if @inside_pic && @current_image
+            cx = attributes["cx"]
+            cy = attributes["cy"]
+            @current_image[:cx] = cx.to_i if cx
+            @current_image[:cy] = cy.to_i if cy
+          end
+        when "col", "colOff", "row", "rowOff"
+          @current_field = name
+          @text_buffer = +""
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text if @current_field
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "pic"
+          if @current_image && !@current_image.empty?
+            @anchor_from.each { |k, v| @current_image[:"from_#{k}"] = v }
+            @anchor_to.each { |k, v| @current_image[:"to_#{k}"] = v }
+            @images << @current_image
+          end
+          @current_image = nil
+          @inside_pic = false
+        when "twoCellAnchor", "oneCellAnchor"
+          @inside_anchor = false
+          @anchor_from = {}
+          @anchor_to = {}
+        when "from"
+          @inside_from = false
+        when "to"
+          @inside_to = false
+        when "col", "colOff", "row", "rowOff"
+          if @current_field
+            val = @text_buffer.to_i
+            if @inside_from
+              @anchor_from[@current_field] = val
+            elsif @inside_to
+              @anchor_to[@current_field] = val
+            end
+          end
+          @current_field = nil
+        end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing drawing XML to extract chart references.
+    class DrawingChartsListener
+      include REXML::SAX2Listener
+
+      attr_reader :charts
+
+      def initialize
+        @charts = []
+        @inside_graphic_frame = false
+        @current_chart = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "graphicFrame"
+          @inside_graphic_frame = true
+          @current_chart = {}
+        when "cNvPr"
+          @current_chart[:name] = attributes["name"] if @inside_graphic_frame && @current_chart && attributes["name"]
+        when "chart"
+          rid = attributes["r:id"] || attributes["id"]
+          @current_chart[:rid] = rid if @inside_graphic_frame && @current_chart && rid
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        if name == "graphicFrame"
+          @charts << @current_chart if @current_chart && @current_chart[:rid]
+          @current_chart = nil
+          @inside_graphic_frame = false
+        end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing chart XML to identify chart type and title.
+    class ChartTypeListener
+      include REXML::SAX2Listener
+
+      attr_reader :chart_type, :title
+
+      CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
+                       bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
+
+      def initialize
+        @chart_type = nil
+        @title = nil
+        @inside_title = false
+        @inside_t = false
+        @text_buffer = +""
+      end
+
+      def start_element(_uri, local_name, qname, _attributes)
+        name = element_name(local_name, qname)
+        if CHART_TYPES.include?(name)
+          @chart_type = name
+        elsif name == "title"
+          @inside_title = true
+        elsif name == "t" && @inside_title
+          @inside_t = true
+          @text_buffer = +""
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text if @inside_t
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "t"
+          @title = @text_buffer.dup if @inside_t && @inside_title
+          @inside_t = false
+        when "title"
+          @inside_title = false
+        end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing comments XML.
+
   end
 end
