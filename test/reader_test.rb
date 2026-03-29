@@ -314,4 +314,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips app properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_app_property(:application, "Xlsxrb")
+    writer.set_app_property(:app_version, "1.0.0")
+    writer.set_app_property(:heading_pairs, [["Worksheets", 1]])
+    writer.set_app_property(:titles_of_parts, ["Sheet1"])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    props = reader.app_properties
+    assert_equal("Xlsxrb", props[:application])
+    assert_equal("1.0.0", props[:app_version])
+    assert_equal([["Worksheets", 1]], props[:heading_pairs])
+    assert_equal(["Sheet1"], props[:titles_of_parts])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

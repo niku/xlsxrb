@@ -218,4 +218,18 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("2024-01-15T00:00:00Z", props[:created])
     assert_equal("2024-01-16T12:00:00Z", props[:modified])
   end
+
+  test "stores app properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_app_property(:application, "Xlsxrb")
+    writer.set_app_property(:app_version, "1.0.0")
+    writer.set_app_property(:heading_pairs, [["Worksheets", 2]])
+    writer.set_app_property(:titles_of_parts, %w[Sheet1 Data])
+
+    props = writer.app_properties
+    assert_equal("Xlsxrb", props[:application])
+    assert_equal("1.0.0", props[:app_version])
+    assert_equal([["Worksheets", 2]], props[:heading_pairs])
+    assert_equal(%w[Sheet1 Data], props[:titles_of_parts])
+  end
 end

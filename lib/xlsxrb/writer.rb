@@ -15,6 +15,8 @@ module Xlsxrb
     DC_NS = "http://purl.org/dc/elements/1.1/"
     DCTERMS_NS = "http://purl.org/dc/terms/"
     XSI_NS = "http://www.w3.org/2001/XMLSchema-instance"
+    APP_NS = "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"
+    VT_NS = "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
 
     CELL_ADDRESS_PATTERN = /\A([A-Z]{1,3})(\d+)\z/
     MAX_ROW = 1_048_576
@@ -31,6 +33,7 @@ module Xlsxrb
       @num_fmts = []
       @sheet_order = ["Sheet1"]
       @core_properties = {}
+      @app_properties = {}
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -185,6 +188,18 @@ module Xlsxrb
       @core_properties.dup
     end
 
+    # Sets an app property.
+    def set_app_property(name, value)
+      raise ArgumentError, "name must be a Symbol" unless name.is_a?(Symbol)
+
+      @app_properties[name] = value
+    end
+
+    # Returns app properties hash.
+    def app_properties
+      @app_properties.dup
+    end
+
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
@@ -210,6 +225,7 @@ module Xlsxrb
       }
 
       entries["docProps/core.xml"] = generate_core_properties_xml unless @core_properties.empty?
+      entries["docProps/app.xml"] = generate_app_properties_xml unless @app_properties.empty?
 
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
@@ -242,6 +258,7 @@ module Xlsxrb
         parts << %(<Override PartName="/xl/worksheets/sheet#{i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>)
       end
       parts << %(<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>) unless @core_properties.empty?
+      parts << %(<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>) unless @app_properties.empty?
       parts << "</Types>"
       parts.join
     end
@@ -253,6 +270,10 @@ module Xlsxrb
         %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/officeDocument" Target="xl/workbook.xml"/>)
       ]
       parts << %(<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>) unless @core_properties.empty?
+      if @app_properties.any?
+        rid = @core_properties.empty? ? "rId2" : "rId3"
+        parts << %(<Relationship Id="#{rid}" Type="#{DOC_REL_NS}/extended-properties" Target="docProps/app.xml"/>)
+      end
       parts << "</Relationships>"
       parts.join
     end
@@ -432,6 +453,34 @@ module Xlsxrb
       parts << %(<dcterms:created xsi:type="dcterms:W3CDTF">#{xml_escape(@core_properties[:created])}</dcterms:created>) if @core_properties[:created]
       parts << %(<dcterms:modified xsi:type="dcterms:W3CDTF">#{xml_escape(@core_properties[:modified])}</dcterms:modified>) if @core_properties[:modified]
       parts << "</cp:coreProperties>"
+      parts.join
+    end
+
+    def generate_app_properties_xml
+      parts = [
+        XML_HEADER,
+        %(<Properties xmlns="#{APP_NS}" xmlns:vt="#{VT_NS}">)
+      ]
+      parts << "<Application>#{xml_escape(@app_properties[:application])}</Application>" if @app_properties[:application]
+      parts << "<AppVersion>#{xml_escape(@app_properties[:app_version])}</AppVersion>" if @app_properties[:app_version]
+      if @app_properties[:heading_pairs] && @app_properties[:titles_of_parts]
+        hp = @app_properties[:heading_pairs]
+        tp = @app_properties[:titles_of_parts]
+        parts << "<HeadingPairs>"
+        parts << %(<vt:vector size="#{hp.size * 2}" baseType="variant">)
+        hp.each do |label, count|
+          parts << "<vt:variant><vt:lpstr>#{xml_escape(label)}</vt:lpstr></vt:variant>"
+          parts << "<vt:variant><vt:i4>#{count}</vt:i4></vt:variant>"
+        end
+        parts << "</vt:vector>"
+        parts << "</HeadingPairs>"
+        parts << "<TitlesOfParts>"
+        parts << %(<vt:vector size="#{tp.size}" baseType="lpstr">)
+        tp.each { |t| parts << "<vt:lpstr>#{xml_escape(t)}</vt:lpstr>" }
+        parts << "</vt:vector>"
+        parts << "</TitlesOfParts>"
+      end
+      parts << "</Properties>"
       parts.join
     end
 

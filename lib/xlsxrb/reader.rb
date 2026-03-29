@@ -148,6 +148,31 @@ module Xlsxrb
       listener.properties
     end
 
+    # Returns app properties as a hash.
+    def app_properties
+      # Try standard path first, then discover via rels
+      xml = extract_zip_entry("docProps/app.xml")
+      if xml.nil? || xml.empty?
+        rels_xml = extract_zip_entry("_rels/.rels")
+        return {} if rels_xml.nil? || rels_xml.empty?
+
+        rels = parse_rels_with_types(rels_xml)
+        app_rel = rels.find { |r| r[:type]&.end_with?("/extended-properties") }
+        return {} unless app_rel
+
+        target = app_rel[:target]
+        entry_path = target.start_with?("/") ? target.delete_prefix("/") : target
+        xml = extract_zip_entry(entry_path)
+      end
+      return {} if xml.nil? || xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = AppPropertiesListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.properties
+    end
+
     # Returns ordered sheet names.
     def sheet_names
       discover_sheets.map { |s| s[:name] }
@@ -780,6 +805,89 @@ module Xlsxrb
         return unless name == "autoFilter"
 
         @ref = attributes["ref"]
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing docProps/app.xml.
+    class AppPropertiesListener
+      include REXML::SAX2Listener
+
+      attr_reader :properties
+
+      def initialize
+        @properties = {}
+        @current_field = nil
+        @text_buffer = +""
+        @inside_vector = false
+        @vector_items = []
+        @heading_pairs = []
+        @titles_of_parts = []
+        @inside_heading_pairs = false
+        @inside_titles_of_parts = false
+        @inside_variant = false
+      end
+
+      def start_element(_uri, local_name, qname, _attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "Application", "AppVersion"
+          @current_field = name
+          @text_buffer = +""
+        when "HeadingPairs"
+          @inside_heading_pairs = true
+        when "TitlesOfParts"
+          @inside_titles_of_parts = true
+        when "variant"
+          @inside_variant = true
+          @text_buffer = +""
+        when "lpstr", "i4"
+          @text_buffer = +""
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "Application"
+          @properties[:application] = @text_buffer.dup
+          @current_field = nil
+        when "AppVersion"
+          @properties[:app_version] = @text_buffer.dup
+          @current_field = nil
+        when "lpstr"
+          if @inside_titles_of_parts
+            @titles_of_parts << @text_buffer.dup
+          elsif @inside_heading_pairs && @inside_variant
+            @vector_items << @text_buffer.dup
+          end
+        when "i4"
+          @vector_items << @text_buffer.to_i if @inside_heading_pairs && @inside_variant
+        when "variant"
+          @inside_variant = false
+        when "HeadingPairs"
+          # Convert flat array to pairs: [label, count, label, count, ...]
+          @heading_pairs = @vector_items.each_slice(2).to_a
+          @vector_items = []
+          @inside_heading_pairs = false
+          @properties[:heading_pairs] = @heading_pairs
+        when "TitlesOfParts"
+          @inside_titles_of_parts = false
+          @properties[:titles_of_parts] = @titles_of_parts
+        end
       end
 
       private
