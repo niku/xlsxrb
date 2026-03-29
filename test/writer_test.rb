@@ -467,4 +467,35 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("B1:B100", dvs[1][:sqref])
     assert_equal("list", dvs[1][:type])
   end
+
+  test "stores conditional formatting rules" do
+    writer = Xlsxrb::Writer.new
+    writer.add_conditional_format("A1:A10", type: :cell_is, operator: "greaterThan",
+                                            formula: "100", priority: 1, format_id: 0)
+    writer.add_conditional_format("B1:B10", type: :color_scale, priority: 2,
+                                            color_scale: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              colors: %w[FF0000FF FFFF0000]
+                                            })
+    writer.add_conditional_format("C1:C10", type: :data_bar, priority: 3,
+                                            data_bar: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              color: "FF638EC6"
+                                            })
+    writer.add_conditional_format("D1:D10", type: :icon_set, priority: 4,
+                                            icon_set: {
+                                              icon_set: "3TrafficLights1",
+                                              cfvo: [{ type: "percent", val: "0" },
+                                                     { type: "percent", val: "33" },
+                                                     { type: "percent", val: "67" }]
+                                            })
+
+    cfs = writer.conditional_formats
+    assert_equal(4, cfs.size)
+    assert_equal(:cell_is, cfs[0][:type])
+    assert_equal("greaterThan", cfs[0][:operator])
+    assert_equal(:color_scale, cfs[1][:type])
+    assert_equal(:data_bar, cfs[2][:type])
+    assert_equal(:icon_set, cfs[3][:type])
+  end
 end

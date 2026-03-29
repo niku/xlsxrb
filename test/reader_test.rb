@@ -724,4 +724,59 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips conditional formatting rules" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_conditional_format("A1:A10", type: :cell_is, operator: "greaterThan",
+                                            formula: "100", priority: 1, format_id: 0)
+    writer.add_conditional_format("B1:B10", type: :color_scale, priority: 2,
+                                            color_scale: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              colors: %w[FF0000FF FFFF0000]
+                                            })
+    writer.add_conditional_format("C1:C10", type: :data_bar, priority: 3,
+                                            data_bar: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              color: "FF638EC6"
+                                            })
+    writer.add_conditional_format("D1:D10", type: :icon_set, priority: 4,
+                                            icon_set: {
+                                              icon_set: "3TrafficLights1",
+                                              cfvo: [{ type: "percent", val: "0" },
+                                                     { type: "percent", val: "33" },
+                                                     { type: "percent", val: "67" }]
+                                            })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(4, cfs.size)
+
+    assert_equal("A1:A10", cfs[0][:sqref])
+    assert_equal("cellIs", cfs[0][:type])
+    assert_equal("greaterThan", cfs[0][:operator])
+    assert_equal(1, cfs[0][:priority])
+    assert_equal(0, cfs[0][:format_id])
+    assert_equal(["100"], cfs[0][:formulas])
+
+    assert_equal("colorScale", cfs[1][:type])
+    assert_equal(2, cfs[1][:color_scale][:cfvo].size)
+    assert_equal("min", cfs[1][:color_scale][:cfvo][0][:type])
+    assert_equal(%w[FF0000FF FFFF0000], cfs[1][:color_scale][:colors])
+
+    assert_equal("dataBar", cfs[2][:type])
+    assert_equal(2, cfs[2][:data_bar][:cfvo].size)
+    assert_equal("FF638EC6", cfs[2][:data_bar][:color])
+
+    assert_equal("iconSet", cfs[3][:type])
+    assert_equal("3TrafficLights1", cfs[3][:icon_set][:icon_set])
+    assert_equal(3, cfs[3][:icon_set][:cfvo].size)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
