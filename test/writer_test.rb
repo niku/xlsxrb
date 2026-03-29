@@ -182,4 +182,11 @@ class WriterTest < Test::Unit::TestCase
     # Different format gets next id.
     assert_equal(165, writer.add_number_format("#,##0"))
   end
+
+  test "stores Date values" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Date.new(2024, 1, 15))
+
+    assert_equal({ "A1" => Date.new(2024, 1, 15) }, writer.cells)
+  end
 end
