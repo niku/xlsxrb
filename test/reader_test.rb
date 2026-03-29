@@ -274,4 +274,21 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(1, Xlsxrb.date_to_serial(Date.new(1900, 1, 1)))
     assert_equal(Date.new(1900, 1, 1), Xlsxrb.serial_to_date(1))
   end
+
+  test "round-trips auto filter" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Age")
+    writer.set_auto_filter("A1:B10")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    assert_equal("A1:B10", reader.auto_filter)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

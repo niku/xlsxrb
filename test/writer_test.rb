@@ -189,4 +189,19 @@ class WriterTest < Test::Unit::TestCase
 
     assert_equal({ "A1" => Date.new(2024, 1, 15) }, writer.cells)
   end
+
+  test "stores auto filter range" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Age")
+    writer.set_auto_filter("A1:B10")
+
+    assert_equal("A1:B10", writer.auto_filter)
+  end
+
+  test "rejects invalid auto filter range" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.set_auto_filter("A1") }
+    assert_raise(ArgumentError) { writer.set_auto_filter("") }
+  end
 end
