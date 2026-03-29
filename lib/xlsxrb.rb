@@ -13,6 +13,15 @@ module Xlsxrb
   # Represents a formula with an optional cached value.
   Formula = Data.define(:expression, :cached_value)
 
+  # Represents a rich text string with formatting runs.
+  # runs: array of hashes, each with :text and optional :font (hash of font properties).
+  # Font properties: :bold, :italic, :underline, :sz, :color, :name
+  RichText = Data.define(:runs) do
+    def to_s
+      runs.map { |r| r[:text] }.join
+    end
+  end
+
   # Excel 1900 date system epoch.
   EPOCH_1900 = Date.new(1899, 12, 31) # serial 1 = Jan 1, 1900
 

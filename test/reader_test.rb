@@ -1069,4 +1069,55 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips rich text inline through writer and reader" do
+    writer = Xlsxrb::Writer.new
+    rt = Xlsxrb::RichText.new(runs: [
+      { text: "Bold", font: { bold: true, sz: 14.0, color: "FFFF0000" } },
+      { text: " Normal" }
+    ])
+    writer.set_cell("A1", rt)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    result = cells["A1"]
+    assert_instance_of(Xlsxrb::RichText, result)
+    assert_equal(2, result.runs.size)
+    assert_equal("Bold", result.runs[0][:text])
+    assert_equal(true, result.runs[0][:font][:bold])
+    assert_equal(14.0, result.runs[0][:font][:sz])
+    assert_equal(" Normal", result.runs[1][:text])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips rich text through shared strings" do
+    writer = Xlsxrb::Writer.new
+    writer.use_shared_strings!
+    rt = Xlsxrb::RichText.new(runs: [
+      { text: "Italic", font: { italic: true } },
+      { text: " plain" }
+    ])
+    writer.set_cell("A1", rt)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    result = cells["A1"]
+    assert_instance_of(Xlsxrb::RichText, result)
+    assert_equal(2, result.runs.size)
+    assert_equal("Italic", result.runs[0][:text])
+    assert_equal(true, result.runs[0][:font][:italic])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

@@ -1007,19 +1007,45 @@ module Xlsxrb
       def initialize
         @strings = []
         @inside_si = false
+        @inside_r = false
+        @inside_rpr = false
         @inside_t = false
         @text_buffer = +""
+        @runs = []
+        @current_font = {}
+        @has_runs = false
       end
 
-      def start_element(_uri, local_name, qname, _attributes)
+      def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
 
         case name
         when "si"
           @inside_si = true
           @text_buffer = +""
+          @runs = []
+          @has_runs = false
+        when "r"
+          @inside_r = true
+          @has_runs = true
+          @current_font = {}
+        when "rPr"
+          @inside_rpr = true if @inside_r
+        when "b"
+          @current_font[:bold] = true if @inside_rpr
+        when "i"
+          @current_font[:italic] = true if @inside_rpr
+        when "u"
+          @current_font[:underline] = true if @inside_rpr
+        when "sz"
+          @current_font[:sz] = attributes["val"]&.to_f if @inside_rpr
+        when "color"
+          @current_font[:color] = attributes["rgb"] if @inside_rpr && attributes["rgb"]
+        when "rFont"
+          @current_font[:name] = attributes["val"] if @inside_rpr
         when "t"
           @inside_t = @inside_si
+          @text_buffer = +""  if @inside_r
         end
       end
 
@@ -1033,10 +1059,22 @@ module Xlsxrb
         case name
         when "t"
           @inside_t = false
+        when "rPr"
+          @inside_rpr = false
+        when "r"
+          run = { text: @text_buffer.dup }
+          run[:font] = @current_font.dup unless @current_font.empty?
+          @runs << run
+          @inside_r = false
         when "si"
-          @strings << @text_buffer.dup
+          if @has_runs
+            @strings << Xlsxrb::RichText.new(runs: @runs)
+          else
+            @strings << @text_buffer.dup
+          end
           @inside_si = false
           @text_buffer = +""
+          @runs = []
         end
       end
 
@@ -1066,9 +1104,16 @@ module Xlsxrb
         @inside_value = false
         @inside_inline_text = false
         @inside_formula = false
+        @inside_is = false
+        @inside_is_r = false
+        @inside_is_rpr = false
         @value_buffer = +""
         @inline_text_buffer = +""
         @formula_buffer = +""
+        @is_runs = []
+        @is_has_runs = false
+        @is_current_font = {}
+        @is_run_text = +""
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -1083,18 +1128,56 @@ module Xlsxrb
           @value_buffer = +""
           @inline_text_buffer = +""
           @formula_buffer = +""
+          @is_runs = []
+          @is_has_runs = false
         when "v"
           @inside_value = true
         when "f"
           @inside_formula = true
+        when "is"
+          @inside_is = true if @current_cell_type == "inlineStr"
+        when "r"
+          if @inside_is
+            @inside_is_r = true
+            @is_has_runs = true
+            @is_current_font = {}
+            @is_run_text = +""
+          end
+        when "rPr"
+          @inside_is_rpr = true if @inside_is_r
+        when "b"
+          @is_current_font[:bold] = true if @inside_is_rpr
+        when "i"
+          @is_current_font[:italic] = true if @inside_is_rpr
+        when "u"
+          @is_current_font[:underline] = true if @inside_is_rpr
+        when "sz"
+          @is_current_font[:sz] = attributes["val"]&.to_f if @inside_is_rpr
+        when "color"
+          @is_current_font[:color] = attributes["rgb"] if @inside_is_rpr && attributes["rgb"]
+        when "rFont"
+          @is_current_font[:name] = attributes["val"] if @inside_is_rpr
         when "t"
-          @inside_inline_text = @current_cell_type == "inlineStr" && !@current_cell_ref.nil?
+          if @inside_is_r
+            @is_run_text = +""
+            @inside_inline_text = true
+          elsif @inside_is
+            @inside_inline_text = true
+          elsif @current_cell_type == "inlineStr" && !@current_cell_ref.nil?
+            @inside_inline_text = true
+          end
         end
       end
 
       def characters(text)
         @value_buffer << text if @inside_value
-        @inline_text_buffer << text if @inside_inline_text
+        if @inside_inline_text
+          if @inside_is_r
+            @is_run_text << text
+          else
+            @inline_text_buffer << text
+          end
+        end
         @formula_buffer << text if @inside_formula
       end
 
@@ -1108,6 +1191,17 @@ module Xlsxrb
           @inside_formula = false
         when "t"
           @inside_inline_text = false
+        when "rPr"
+          @inside_is_rpr = false
+        when "r"
+          if @inside_is_r
+            run = { text: @is_run_text.dup }
+            run[:font] = @is_current_font.dup unless @is_current_font.empty?
+            @is_runs << run
+            @inside_is_r = false
+          end
+        when "is"
+          @inside_is = false
         when "c"
           store_cell_value
           @current_cell_ref = nil
@@ -1145,7 +1239,11 @@ module Xlsxrb
 
         case @current_cell_type
         when "inlineStr"
-          @cells[@current_cell_ref] = @inline_text_buffer.dup
+          if @is_has_runs
+            @cells[@current_cell_ref] = RichText.new(runs: @is_runs.map(&:dup))
+          else
+            @cells[@current_cell_ref] = @inline_text_buffer.dup
+          end
         when "s"
           index = @value_buffer.to_i
           @cells[@current_cell_ref] = @shared_strings[index] || ""

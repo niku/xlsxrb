@@ -660,4 +660,15 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(true, prot[:lock_structure])
     assert_equal(false, prot[:lock_windows])
   end
+
+  test "rich text value stored and retrievable" do
+    writer = Xlsxrb::Writer.new
+    rt = Xlsxrb::RichText.new(runs: [
+      { text: "Bold", font: { bold: true } },
+      { text: " Normal" }
+    ])
+    writer.set_cell("A1", rt)
+    assert_equal(rt, writer.cells["A1"])
+    assert_equal("Bold Normal", rt.to_s)
+  end
 end
