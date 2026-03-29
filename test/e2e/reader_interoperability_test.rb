@@ -772,6 +772,30 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated CF dataBar and iconSet deep attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_cf_deep_attrs_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(2, cfs.size)
+
+    db = cfs[0][:data_bar]
+    assert_not_nil(db, "expected dataBar rule")
+    assert_equal(5, db[:min_length])
+    assert_equal(90, db[:max_length])
+    assert_equal(false, db[:show_value])
+
+    is = cfs[1][:icon_set]
+    assert_not_nil(is, "expected iconSet rule")
+    assert_equal(true, is[:reverse])
+    assert_equal(false, is[:show_value])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

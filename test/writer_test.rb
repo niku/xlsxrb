@@ -499,6 +499,35 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(:icon_set, cfs[3][:type])
   end
 
+  test "dataBar emits minLength maxLength showValue attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.add_conditional_format("A1:A10", type: :data_bar, priority: 1,
+                                            data_bar: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              color: "FF638EC6",
+                                              min_length: 5, max_length: 90, show_value: false
+                                            })
+    cfs = writer.conditional_formats
+    assert_equal(5, cfs[0][:data_bar][:min_length])
+    assert_equal(90, cfs[0][:data_bar][:max_length])
+    assert_equal(false, cfs[0][:data_bar][:show_value])
+  end
+
+  test "iconSet emits reverse and showValue attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.add_conditional_format("A1:A10", type: :icon_set, priority: 1,
+                                            icon_set: {
+                                              icon_set: "3Arrows",
+                                              cfvo: [{ type: "percent", val: "0" },
+                                                     { type: "percent", val: "33" },
+                                                     { type: "percent", val: "67" }],
+                                              reverse: true, show_value: false
+                                            })
+    cfs = writer.conditional_formats
+    assert_equal(true, cfs[0][:icon_set][:reverse])
+    assert_equal(false, cfs[0][:icon_set][:show_value])
+  end
+
   test "stores fonts, fills, borders, and cell styles" do
     writer = Xlsxrb::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")
