@@ -1032,6 +1032,33 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shapes with preset geometry and text" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_shape(preset: "ellipse", text: "Hello", name: "Oval 1",
+                     from_col: 1, from_row: 2, to_col: 4, to_row: 6)
+    writer.add_shape(preset: "roundRect", name: "RR 1",
+                     from_col: 5, from_row: 0, to_col: 8, to_row: 3)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(2, shapes.size)
+    assert_equal("ellipse", shapes[0][:preset])
+    assert_equal("Hello", shapes[0][:text])
+    assert_equal("Oval 1", shapes[0][:name])
+    assert_equal(1, shapes[0][:from_col])
+    assert_equal(2, shapes[0][:from_row])
+    assert_equal("roundRect", shapes[1][:preset])
+    assert_equal("RR 1", shapes[1][:name])
+    assert_nil(shapes[1][:text])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shared string table mode" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

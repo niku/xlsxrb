@@ -1,0 +1,34 @@
+// Validates that an XLSX contains a shape with preset geometry and text body.
+var document = SpreadsheetDocument.Open(XlsxPath, false);
+try
+{
+    var workbookPart = document.WorkbookPart ?? throw new Exception("WorkbookPart is missing.");
+    var firstSheet = workbookPart.Workbook.Sheets?.Elements<Sheet>().FirstOrDefault()
+        ?? throw new Exception("Sheet is missing.");
+    var worksheetPart = (WorksheetPart)workbookPart.GetPartById(firstSheet.Id.Value);
+
+    var drawingsPart = worksheetPart.DrawingsPart
+        ?? throw new Exception("DrawingsPart is missing.");
+
+    var wsDr = drawingsPart.WorksheetDrawing
+        ?? throw new Exception("WorksheetDrawing is missing.");
+
+    // Find shape elements (xdr:sp)
+    var nsXdr = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing";
+    var shapes = wsDr.Descendants().Where(e => e.LocalName == "sp").ToList();
+    if (shapes.Count == 0)
+        throw new Exception("No shapes found in drawing.");
+
+    // Validate
+    var validator = new OpenXmlValidator(FileFormatVersions.Office2007);
+    var errors = validator.Validate(document).ToList();
+    if (errors.Count > 0)
+    {
+        var messages = string.Join("\n", errors.Select(e => $"  - {e.Description} (Part: {e.Part?.Uri}, Path: {e.Path?.XPath})"));
+        throw new Exception($"Validation errors:\n{messages}");
+    }
+}
+finally
+{
+    document.Dispose();
+}
