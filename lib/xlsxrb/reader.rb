@@ -154,8 +154,10 @@ module Xlsxrb
         @current_cell_type = nil
         @inside_value = false
         @inside_inline_text = false
+        @inside_formula = false
         @value_buffer = +""
         @inline_text_buffer = +""
+        @formula_buffer = +""
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -167,8 +169,11 @@ module Xlsxrb
           @current_cell_type = attributes["t"]
           @value_buffer = +""
           @inline_text_buffer = +""
+          @formula_buffer = +""
         when "v"
           @inside_value = true
+        when "f"
+          @inside_formula = true
         when "t"
           @inside_inline_text = @current_cell_type == "inlineStr" && !@current_cell_ref.nil?
         end
@@ -177,6 +182,7 @@ module Xlsxrb
       def characters(text)
         @value_buffer << text if @inside_value
         @inline_text_buffer << text if @inside_inline_text
+        @formula_buffer << text if @inside_formula
       end
 
       def end_element(_uri, local_name, qname)
@@ -185,6 +191,8 @@ module Xlsxrb
         case name
         when "v"
           @inside_value = false
+        when "f"
+          @inside_formula = false
         when "t"
           @inside_inline_text = false
         when "c"
@@ -193,6 +201,7 @@ module Xlsxrb
           @current_cell_type = nil
           @value_buffer = +""
           @inline_text_buffer = +""
+          @formula_buffer = +""
         end
       end
 
@@ -200,6 +209,12 @@ module Xlsxrb
 
       def store_cell_value
         return if @current_cell_ref.nil?
+
+        unless @formula_buffer.empty?
+          cached = @value_buffer.empty? ? nil : @value_buffer.dup
+          @cells[@current_cell_ref] = Formula.new(expression: @formula_buffer.dup, cached_value: cached)
+          return
+        end
 
         case @current_cell_type
         when "inlineStr"
