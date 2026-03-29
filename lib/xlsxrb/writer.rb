@@ -40,6 +40,7 @@ module Xlsxrb
       @sheet_states = {}
       @defined_names = []
       @sheet_properties = { "Sheet1" => {} }
+      @sheet_formats = { "Sheet1" => {} }
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -54,6 +55,7 @@ module Xlsxrb
       @cell_styles[name] = {}
       @auto_filters[name] = nil
       @sheet_properties[name] = {}
+      @sheet_formats[name] = {}
       @sheet_order << name
     end
 
@@ -221,6 +223,20 @@ module Xlsxrb
       (@sheet_properties[sheet_name] || {}).dup
     end
 
+    # Sets a sheet format property (e.g. :default_row_height, :default_col_width, :base_col_width).
+    def set_sheet_format(name, value, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheet_formats.key?(sheet_name)
+
+      @sheet_formats[sheet_name][name] = value
+    end
+
+    # Returns sheet format properties for the first (or given) sheet.
+    def sheet_format(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      (@sheet_formats[sheet_name] || {}).dup
+    end
+
     # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
     def set_sheet_state(sheet_name, state)
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -312,7 +328,7 @@ module Xlsxrb
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name],
           @auto_filters[sheet_name], @merge_cells[sheet_name], @hyperlinks[sheet_name],
-          @cell_styles[sheet_name], @sheet_properties[sheet_name]
+          @cell_styles[sheet_name], @sheet_properties[sheet_name], @sheet_formats[sheet_name]
         )
         next if @hyperlinks[sheet_name].empty?
 
@@ -433,7 +449,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -462,6 +478,15 @@ module Xlsxrb
 
       # Emit <dimension> computed from cell addresses.
       parts << %(<dimension ref="#{compute_dimension(sheet_cells)}"/>) unless sheet_cells.empty?
+
+      # Emit <sheetFormatPr> if sheet format properties are defined.
+      unless sheet_fmt.empty?
+        fmt_attrs = []
+        fmt_attrs << %(defaultRowHeight="#{sheet_fmt[:default_row_height]}") if sheet_fmt[:default_row_height]
+        fmt_attrs << %(defaultColWidth="#{sheet_fmt[:default_col_width]}") if sheet_fmt[:default_col_width]
+        fmt_attrs << %(baseColWidth="#{sheet_fmt[:base_col_width]}") if sheet_fmt[:base_col_width]
+        parts << "<sheetFormatPr #{fmt_attrs.join(" ")}/>"
+      end
 
       # Emit <cols> if column widths are defined.
       unless sheet_col_widths.empty?

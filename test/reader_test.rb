@@ -460,4 +460,25 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sheet format properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_sheet_format(:default_row_height, 18.0)
+    writer.set_sheet_format(:default_col_width, 12.5)
+    writer.set_sheet_format(:base_col_width, 10)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    fmt = reader.sheet_format
+    assert_equal(18.0, fmt[:default_row_height])
+    assert_equal(12.5, fmt[:default_col_width])
+    assert_equal(10, fmt[:base_col_width])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

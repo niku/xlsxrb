@@ -315,4 +315,16 @@ class WriterTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     assert_equal({}, writer.sheet_properties)
   end
+
+  test "stores sheet format properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_sheet_format(:default_row_height, 15.0)
+    writer.set_sheet_format(:default_col_width, 10.5)
+    writer.set_sheet_format(:base_col_width, 8)
+
+    fmt = writer.sheet_format
+    assert_equal(15.0, fmt[:default_row_height])
+    assert_equal(10.5, fmt[:default_col_width])
+    assert_equal(8, fmt[:base_col_width])
+  end
 end
