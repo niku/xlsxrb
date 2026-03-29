@@ -297,6 +297,38 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores sheet properties correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_sheet_property(:tab_color, "FF0000FF")
+    writer.set_sheet_property(:summary_below, false)
+    writer.set_sheet_property(:summary_right, true)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_sheet_properties_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "writer output stores dimension correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("B2", "hello")
+    writer.set_cell("D5", "world")
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_dimension_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

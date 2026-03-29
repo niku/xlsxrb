@@ -423,4 +423,41 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sheet properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_sheet_property(:tab_color, "FF0000FF")
+    writer.set_sheet_property(:summary_below, false)
+    writer.set_sheet_property(:summary_right, true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    props = reader.sheet_properties
+    assert_equal("FF0000FF", props[:tab_color])
+    assert_equal(false, props[:summary_below])
+    assert_equal(true, props[:summary_right])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips dimension" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("B2", "hello")
+    writer.set_cell("D5", "world")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    assert_equal("B2:D5", reader.dimension)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

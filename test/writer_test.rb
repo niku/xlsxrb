@@ -298,4 +298,21 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(true, dns[2][:hidden])
     assert_equal("\"hello\"", dns[3][:value])
   end
+
+  test "stores sheet properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_sheet_property(:tab_color, "FF0000FF", sheet: "Sheet1")
+    writer.set_sheet_property(:summary_below, false, sheet: "Sheet1")
+    writer.set_sheet_property(:summary_right, true, sheet: "Sheet1")
+
+    props = writer.sheet_properties(sheet: "Sheet1")
+    assert_equal("FF0000FF", props[:tab_color])
+    assert_equal(false, props[:summary_below])
+    assert_equal(true, props[:summary_right])
+  end
+
+  test "sheet_properties defaults to empty" do
+    writer = Xlsxrb::Writer.new
+    assert_equal({}, writer.sheet_properties)
+  end
 end
