@@ -262,4 +262,22 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(191_029, props[:calc_id])
     assert_equal(true, props[:full_calc_on_load])
   end
+
+  test "sets sheet state" do
+    writer = Xlsxrb::Writer.new
+    writer.add_sheet("Hidden")
+    writer.add_sheet("VeryHidden")
+    writer.set_sheet_state("Hidden", :hidden)
+    writer.set_sheet_state("VeryHidden", :very_hidden)
+
+    assert_equal(:visible, writer.sheet_state("Sheet1"))
+    assert_equal(:hidden, writer.sheet_state("Hidden"))
+    assert_equal(:very_hidden, writer.sheet_state("VeryHidden"))
+  end
+
+  test "rejects invalid sheet state" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.set_sheet_state("Sheet1", :invalid) }
+    assert_raise(ArgumentError) { writer.set_sheet_state("NoSuch", :hidden) }
+  end
 end

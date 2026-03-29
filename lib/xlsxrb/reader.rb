@@ -188,6 +188,21 @@ module Xlsxrb
       parse_workbook_metadata[:calc_properties]
     end
 
+    # Returns sheet states as { "Sheet1" => :visible, "Hidden" => :hidden }.
+    def sheet_states
+      sheets = discover_sheets
+      result = {}
+      sheets.each do |s|
+        state = case s[:state]
+                when "hidden" then :hidden
+                when "veryHidden" then :very_hidden
+                else :visible
+                end
+        result[s[:name]] = state
+      end
+      result
+    end
+
     # Returns ordered sheet names.
     def sheet_names
       discover_sheets.map { |s| s[:name] }
@@ -242,7 +257,7 @@ module Xlsxrb
 
       listener.sheets.each do |s|
         target = rid_to_target[s[:rid]]
-        sheets << { name: s[:name], rid: s[:rid], target: target } if target
+        sheets << { name: s[:name], rid: s[:rid], target: target, state: s[:state] } if target
       end
       sheets
     end

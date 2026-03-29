@@ -37,6 +37,7 @@ module Xlsxrb
       @workbook_properties = {}
       @workbook_views = {}
       @calc_properties = {}
+      @sheet_states = {}
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -203,6 +204,19 @@ module Xlsxrb
       @app_properties.dup
     end
 
+    # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
+    def set_sheet_state(sheet_name, state)
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+      raise ArgumentError, "state must be :visible, :hidden, or :very_hidden" unless %i[visible hidden very_hidden].include?(state)
+
+      @sheet_states[sheet_name] = state
+    end
+
+    # Returns the sheet state for a given sheet.
+    def sheet_state(sheet_name)
+      @sheet_states[sheet_name] || :visible
+    end
+
     # Sets a workbook property (e.g. :date1904, :default_theme_version).
     def set_workbook_property(name, value)
       @workbook_properties[name] = value
@@ -337,7 +351,13 @@ module Xlsxrb
 
       parts << "<sheets>"
       @sheet_order.each_with_index do |name, i|
-        parts << %(<sheet name="#{xml_escape(name)}" sheetId="#{i + 1}" r:id="rId#{i + 1}"/>)
+        state = @sheet_states[name]
+        state_attr = case state
+                     when :hidden then ' state="hidden"'
+                     when :very_hidden then ' state="veryHidden"'
+                     else ""
+                     end
+        parts << %(<sheet name="#{xml_escape(name)}" sheetId="#{i + 1}"#{state_attr} r:id="rId#{i + 1}"/>)
       end
       parts << "</sheets>"
 

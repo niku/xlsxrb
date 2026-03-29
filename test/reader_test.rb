@@ -369,4 +369,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sheet states" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_sheet("Hidden")
+    writer.add_sheet("VeryHidden")
+    writer.set_cell("A1", "main", sheet: "Sheet1")
+    writer.set_sheet_state("Hidden", :hidden)
+    writer.set_sheet_state("VeryHidden", :very_hidden)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    states = reader.sheet_states
+    assert_equal(:visible, states["Sheet1"])
+    assert_equal(:hidden, states["Hidden"])
+    assert_equal(:very_hidden, states["VeryHidden"])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
