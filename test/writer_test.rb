@@ -450,4 +450,21 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(2, ss[:sort_conditions].size)
     assert_equal(true, ss[:sort_conditions][1][:descending])
   end
+
+  test "stores data validations" do
+    writer = Xlsxrb::Writer.new
+    writer.add_data_validation("A1:A100", type: "whole", operator: "between",
+                                          formula1: "1", formula2: "100",
+                                          show_error_message: true, error: "Must be 1-100")
+    writer.add_data_validation("B1:B100", type: "list", formula1: '"Yes,No"',
+                                          show_input_message: true, prompt: "Choose one")
+
+    dvs = writer.data_validations
+    assert_equal(2, dvs.size)
+    assert_equal("A1:A100", dvs[0][:sqref])
+    assert_equal("whole", dvs[0][:type])
+    assert_equal("between", dvs[0][:operator])
+    assert_equal("B1:B100", dvs[1][:sqref])
+    assert_equal("list", dvs[1][:type])
+  end
 end

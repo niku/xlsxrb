@@ -150,6 +150,14 @@ module Xlsxrb
       parse_worksheet_sort_state(worksheet_xml)
     end
 
+    # Returns data validations as an array of hashes.
+    def data_validations(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return [] if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_data_validations(worksheet_xml)
+    end
+
     # Returns sheet-level properties (tabColor, outlinePr) for the given sheet.
     def sheet_properties(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -600,6 +608,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.sort_state
+    end
+
+    def parse_worksheet_data_validations(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = DataValidationsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.validations
     end
 
     def parse_worksheet_properties(xml)
@@ -1552,6 +1568,78 @@ module Xlsxrb
         else
           local_name
         end
+      end
+    end
+
+    # SAX2 listener for parsing <dataValidations> elements.
+    class DataValidationsListener
+      include REXML::SAX2Listener
+
+      attr_reader :validations
+
+      def initialize
+        @validations = []
+        @current_dv = nil
+        @inside_formula1 = false
+        @inside_formula2 = false
+        @text_buffer = +""
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "dataValidation"
+          @current_dv = { sqref: attributes["sqref"] }
+          @current_dv[:type] = attributes["type"] if attributes["type"]
+          @current_dv[:operator] = attributes["operator"] if attributes["operator"]
+          @current_dv[:error_style] = attributes["errorStyle"] if attributes["errorStyle"]
+          @current_dv[:allow_blank] = true if attributes["allowBlank"] == "1"
+          @current_dv[:show_input_message] = true if attributes["showInputMessage"] == "1"
+          @current_dv[:show_error_message] = true if attributes["showErrorMessage"] == "1"
+          @current_dv[:error_title] = xml_unescape(attributes["errorTitle"]) if attributes["errorTitle"]
+          @current_dv[:error] = xml_unescape(attributes["error"]) if attributes["error"]
+          @current_dv[:prompt_title] = xml_unescape(attributes["promptTitle"]) if attributes["promptTitle"]
+          @current_dv[:prompt] = xml_unescape(attributes["prompt"]) if attributes["prompt"]
+        when "formula1"
+          @inside_formula1 = true
+          @text_buffer = +""
+        when "formula2"
+          @inside_formula2 = true
+          @text_buffer = +""
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text if @inside_formula1 || @inside_formula2
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "formula1"
+          @current_dv[:formula1] = @text_buffer.dup if @current_dv
+          @inside_formula1 = false
+        when "formula2"
+          @current_dv[:formula2] = @text_buffer.dup if @current_dv
+          @inside_formula2 = false
+        when "dataValidation"
+          @validations << @current_dv if @current_dv
+          @current_dv = nil
+        end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+
+      def xml_unescape(str)
+        str.gsub("&amp;", "&").gsub("&lt;", "<").gsub("&gt;", ">").gsub("&quot;", '"').gsub("&apos;", "'")
       end
     end
 

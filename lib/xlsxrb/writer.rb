@@ -53,6 +53,7 @@ module Xlsxrb
       @header_footer = { "Sheet1" => {} }
       @row_breaks = { "Sheet1" => [] }
       @col_breaks = { "Sheet1" => [] }
+      @data_validations = { "Sheet1" => [] }
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -80,6 +81,7 @@ module Xlsxrb
       @header_footer[name] = {}
       @row_breaks[name] = []
       @col_breaks[name] = []
+      @data_validations[name] = []
       @sheet_order << name
     end
 
@@ -467,6 +469,23 @@ module Xlsxrb
       @col_breaks[sheet_name] || []
     end
 
+    # Adds a data validation rule.
+    # sqref: cell range (e.g. "A1:A100")
+    # Options: type:, operator:, formula1:, formula2:, allow_blank:, show_input_message:,
+    #          show_error_message:, error_style:, error_title:, error:, prompt_title:, prompt:
+    def add_data_validation(sqref, sheet: nil, **opts)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @data_validations.key?(sheet_name)
+
+      @data_validations[sheet_name] << opts.merge(sqref: sqref)
+    end
+
+    # Returns data validations for the first (or given) sheet.
+    def data_validations(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @data_validations[sheet_name] || []
+    end
+
     # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
     def set_sheet_state(sheet_name, state)
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -562,7 +581,8 @@ module Xlsxrb
           @cell_styles[sheet_name], @sheet_properties[sheet_name], @sheet_formats[sheet_name],
           @sheet_views[sheet_name], @freeze_panes[sheet_name], @selections[sheet_name],
           @print_options[sheet_name], @page_margins[sheet_name], @page_setup[sheet_name],
-          @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name]
+          @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name],
+          @data_validations[sheet_name]
         )
         next if @hyperlinks[sheet_name].empty?
 
@@ -683,7 +703,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -862,6 +882,33 @@ module Xlsxrb
           parts << %(<hyperlink ref="#{cell_ref}" r:id="rId#{idx + 1}"/>)
         end
         parts << "</hyperlinks>"
+      end
+
+      # Emit <dataValidations> if defined.
+      unless sheet_dv.empty?
+        parts << %(<dataValidations count="#{sheet_dv.size}">)
+        sheet_dv.each do |dv|
+          dv_attrs = %(sqref="#{dv[:sqref]}")
+          dv_attrs << %( type="#{dv[:type]}") if dv[:type]
+          dv_attrs << %( operator="#{dv[:operator]}") if dv[:operator]
+          dv_attrs << %( errorStyle="#{dv[:error_style]}") if dv[:error_style]
+          dv_attrs << ' allowBlank="1"' if dv[:allow_blank]
+          dv_attrs << ' showInputMessage="1"' if dv[:show_input_message]
+          dv_attrs << ' showErrorMessage="1"' if dv[:show_error_message]
+          dv_attrs << %( errorTitle="#{xml_escape(dv[:error_title])}") if dv[:error_title]
+          dv_attrs << %( error="#{xml_escape(dv[:error])}") if dv[:error]
+          dv_attrs << %( promptTitle="#{xml_escape(dv[:prompt_title])}") if dv[:prompt_title]
+          dv_attrs << %( prompt="#{xml_escape(dv[:prompt])}") if dv[:prompt]
+          if dv[:formula1] || dv[:formula2]
+            parts << "<dataValidation #{dv_attrs}>"
+            parts << "<formula1>#{xml_escape(dv[:formula1])}</formula1>" if dv[:formula1]
+            parts << "<formula2>#{xml_escape(dv[:formula2])}</formula2>" if dv[:formula2]
+            parts << "</dataValidation>"
+          else
+            parts << "<dataValidation #{dv_attrs}/>"
+          end
+        end
+        parts << "</dataValidations>"
       end
 
       # Emit <printOptions> if defined.

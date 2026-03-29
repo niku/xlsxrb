@@ -692,4 +692,36 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips data validations" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_data_validation("A1:A100", type: "whole", operator: "between",
+                                          formula1: "1", formula2: "100",
+                                          show_error_message: true, error: "Must be 1-100")
+    writer.add_data_validation("B1:B100", type: "list", formula1: '"Yes,No"',
+                                          show_input_message: true, prompt: "Choose one")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dvs = reader.data_validations
+    assert_equal(2, dvs.size)
+    assert_equal("A1:A100", dvs[0][:sqref])
+    assert_equal("whole", dvs[0][:type])
+    assert_equal("between", dvs[0][:operator])
+    assert_equal("1", dvs[0][:formula1])
+    assert_equal("100", dvs[0][:formula2])
+    assert_equal(true, dvs[0][:show_error_message])
+    assert_equal("Must be 1-100", dvs[0][:error])
+    assert_equal("B1:B100", dvs[1][:sqref])
+    assert_equal("list", dvs[1][:type])
+    assert_equal(true, dvs[1][:show_input_message])
+    assert_equal("Choose one", dvs[1][:prompt])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
