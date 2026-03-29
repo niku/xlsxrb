@@ -2582,6 +2582,9 @@ module Xlsxrb
       def initialize
         @table = nil
         @columns = []
+        @current_column = nil
+        @inside_calc_formula = false
+        @text_buffer = +""
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -2594,14 +2597,49 @@ module Xlsxrb
             display_name: attributes["displayName"],
             ref: attributes["ref"]
           }
+          trc = attributes["totalsRowCount"]
+          @table[:totals_row_count] = trc.to_i if trc
         when "tableColumn"
-          @columns << attributes["name"]
+          col = { name: attributes["name"] }
+          trf = attributes["totalsRowFunction"]
+          col[:totals_row_function] = trf if trf
+          @current_column = col
+        when "calculatedColumnFormula"
+          @inside_calc_formula = true
+          @text_buffer = +""
+        when "tableStyleInfo"
+          if @table
+            si = {}
+            si[:name] = attributes["name"] if attributes["name"]
+            sfc = attributes["showFirstColumn"]
+            si[:show_first_column] = sfc == "1" unless sfc.nil?
+            slc = attributes["showLastColumn"]
+            si[:show_last_column] = slc == "1" unless slc.nil?
+            srs = attributes["showRowStripes"]
+            si[:show_row_stripes] = srs == "1" unless srs.nil?
+            scs = attributes["showColumnStripes"]
+            si[:show_column_stripes] = scs == "1" unless scs.nil?
+            @table[:style] = si
+          end
         end
+      end
+
+      def characters(text)
+        @text_buffer << text if @inside_calc_formula
       end
 
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
-        @table[:columns] = @columns if name == "table" && @table
+        case name
+        when "calculatedColumnFormula"
+          @current_column[:calculated_column_formula] = @text_buffer.dup if @current_column
+          @inside_calc_formula = false
+        when "tableColumn"
+          @columns << @current_column if @current_column
+          @current_column = nil
+        when "table"
+          @table[:columns] = @columns if @table
+        end
       end
 
       private

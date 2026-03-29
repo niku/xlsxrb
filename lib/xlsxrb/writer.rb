@@ -603,16 +603,19 @@ module Xlsxrb
 
     # Adds a table definition to a sheet.
     # columns: array of column name strings.
-    def add_table(ref, columns:, name: nil, display_name: nil, sheet: nil)
+    def add_table(ref, columns:, name: nil, display_name: nil, sheet: nil, totals_row_count: 0, style: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @tables.key?(sheet_name)
 
       table_id = @tables.values.flatten.size + 1
       tbl_name = name || "Table#{table_id}"
-      @tables[sheet_name] << {
+      tbl = {
         id: table_id, ref: ref, name: tbl_name,
-        display_name: display_name || tbl_name, columns: columns
+        display_name: display_name || tbl_name, columns: columns,
+        totals_row_count: totals_row_count
       }
+      tbl[:style] = style if style
+      @tables[sheet_name] << tbl
     end
 
     # Returns table definitions for the first (or given) sheet.
@@ -1590,17 +1593,38 @@ module Xlsxrb
     end
 
     def generate_table_xml(tbl)
+      trc = tbl[:totals_row_count].to_i
+      table_attrs = %(xmlns="#{SSML_NS}" id="#{tbl[:id]}" name="#{xml_escape(tbl[:name])}" displayName="#{xml_escape(tbl[:display_name])}" ref="#{tbl[:ref]}")
+      table_attrs << %( totalsRowCount="#{trc}") if trc.positive?
+      table_attrs << ' totalsRowShown="0"' if trc.zero?
       parts = [
         XML_HEADER,
-        %(<table xmlns="#{SSML_NS}" id="#{tbl[:id]}" name="#{xml_escape(tbl[:name])}" displayName="#{xml_escape(tbl[:display_name])}" ref="#{tbl[:ref]}" totalsRowShown="0">),
+        "<table #{table_attrs}>",
         %(<autoFilter ref="#{tbl[:ref]}"/>),
         %(<tableColumns count="#{tbl[:columns].size}">)
       ]
       tbl[:columns].each_with_index do |col, i|
-        parts << %(<tableColumn id="#{i + 1}" name="#{xml_escape(col)}"/>)
+        col_name = col.is_a?(Hash) ? col[:name] : col
+        col_attrs = %(id="#{i + 1}" name="#{xml_escape(col_name)}")
+        if col.is_a?(Hash) && (col[:totals_row_function] || col[:calculated_column_formula])
+          col_attrs << %( totalsRowFunction="#{col[:totals_row_function]}") if col[:totals_row_function]
+          parts << "<tableColumn #{col_attrs}>"
+          if col[:calculated_column_formula]
+            parts << "<calculatedColumnFormula>#{xml_escape(col[:calculated_column_formula])}</calculatedColumnFormula>"
+          end
+          parts << "</tableColumn>"
+        else
+          parts << "<tableColumn #{col_attrs}/>"
+        end
       end
       parts << "</tableColumns>"
-      parts << '<tableStyleInfo name="TableStyleMedium2" showFirstColumn="0" showLastColumn="0" showRowStripes="1" showColumnStripes="0"/>'
+      style = tbl[:style] || {}
+      style_name = style[:name] || "TableStyleMedium2"
+      sfc = style[:show_first_column] ? "1" : "0"
+      slc = style[:show_last_column] ? "1" : "0"
+      srs = style.key?(:show_row_stripes) ? (style[:show_row_stripes] ? "1" : "0") : "1"
+      scs = style[:show_column_stripes] ? "1" : "0"
+      parts << %(<tableStyleInfo name="#{xml_escape(style_name)}" showFirstColumn="#{sfc}" showLastColumn="#{slc}" showRowStripes="#{srs}" showColumnStripes="#{scs}"/>)
       parts << "</table>"
       parts.join
     end

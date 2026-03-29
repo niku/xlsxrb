@@ -742,6 +742,27 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid table with totals row and enhanced columns" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Item")
+    writer.set_cell("B1", "Price")
+    writer.set_cell("C1", "Tax")
+    writer.add_table("A1:C5", columns: [
+      "Item",
+      { name: "Price", totals_row_function: "sum" },
+      { name: "Tax", calculated_column_formula: "[Price]*0.1" }
+    ], totals_row_count: 1, style: { name: "TableStyleLight1" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_table_deep_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
