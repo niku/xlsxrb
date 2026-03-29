@@ -529,6 +529,19 @@ class WriterTest < Test::Unit::TestCase
     dxf_id2 = writer.add_dxf(border: { left: { style: "thin" } })
     assert_equal(1, dxf_id2)
   end
+
+  test "stores tables" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Age")
+    writer.add_table("A1:B5", columns: %w[Name Age])
+
+    tbls = writer.tables
+    assert_equal(1, tbls.size)
+    assert_equal("A1:B5", tbls[0][:ref])
+    assert_equal(%w[Name Age], tbls[0][:columns])
+  end
+
   test "enables shared string table mode" do
     writer = Xlsxrb::Writer.new
     writer.use_shared_strings!
@@ -549,5 +562,4 @@ class WriterTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
-
 end
