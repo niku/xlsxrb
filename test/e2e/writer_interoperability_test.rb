@@ -702,6 +702,30 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid DV with deep attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 50)
+    writer.add_data_validation("A1:A100", type: "whole", operator: "between",
+                                          formula1: "1", formula2: "100",
+                                          allow_blank: true,
+                                          error_style: "warning",
+                                          error_title: "Bad Value",
+                                          error: "Please enter 1-100",
+                                          show_error_message: true,
+                                          prompt_title: "Input Needed",
+                                          prompt: "Enter a number",
+                                          show_input_message: true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_dv_deep_attrs_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
