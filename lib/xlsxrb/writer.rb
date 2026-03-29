@@ -1858,7 +1858,14 @@ module Xlsxrb
       s_attr = style_idx ? %( s="#{style_idx}") : ""
       case value
       when Formula
-        parts = %(<c r="#{cell_ref}"#{s_attr}><f>#{xml_escape(value.expression)}</f>)
+        f_attrs = +""
+        if value.type == :shared
+          f_attrs << %( t="shared" si="#{value.shared_index}")
+          f_attrs << %( ref="#{value.ref}") if value.ref
+        elsif value.type == :array
+          f_attrs << %( t="array" ref="#{value.ref}") if value.ref
+        end
+        parts = %(<c r="#{cell_ref}"#{s_attr}><f#{f_attrs}>#{xml_escape(value.expression)}</f>)
         parts << "<v>#{xml_escape(value.cached_value.to_s)}</v>" unless value.cached_value.nil?
         parts << "</c>"
         parts

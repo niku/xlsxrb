@@ -1120,4 +1120,52 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips shared formulas through writer and reader" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.set_cell("B1", Xlsxrb::Formula.new(expression: "A1*2", type: :shared, ref: "B1:B2", shared_index: 0, cached_value: "20"))
+    writer.set_cell("B2", Xlsxrb::Formula.new(expression: "", type: :shared, shared_index: 0, cached_value: "40"))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    b1 = cells["B1"]
+    assert_instance_of(Xlsxrb::Formula, b1)
+    assert_equal(:shared, b1.type)
+    assert_equal("B1:B2", b1.ref)
+    assert_equal(0, b1.shared_index)
+    assert_equal("A1*2", b1.expression)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips array formulas through writer and reader" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("A2", 2)
+    writer.set_cell("B1", 3)
+    writer.set_cell("B2", 4)
+    writer.set_cell("C1", Xlsxrb::Formula.new(expression: "SUM(A1:A2*B1:B2)", type: :array, ref: "C1", cached_value: "11"))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    c1 = cells["C1"]
+    assert_instance_of(Xlsxrb::Formula, c1)
+    assert_equal(:array, c1.type)
+    assert_equal("C1", c1.ref)
+    assert_equal("SUM(A1:A2*B1:B2)", c1.expression)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

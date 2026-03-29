@@ -1128,12 +1128,19 @@ module Xlsxrb
           @value_buffer = +""
           @inline_text_buffer = +""
           @formula_buffer = +""
+          @formula_type = nil
+          @formula_ref = nil
+          @formula_si = nil
           @is_runs = []
           @is_has_runs = false
         when "v"
           @inside_value = true
         when "f"
           @inside_formula = true
+          @formula_type = attributes["t"]
+          @formula_ref = attributes["ref"]
+          si = attributes["si"]
+          @formula_si = si&.to_i
         when "is"
           @inside_is = true if @current_cell_type == "inlineStr"
         when "r"
@@ -1233,7 +1240,17 @@ module Xlsxrb
 
         unless @formula_buffer.empty?
           cached = @value_buffer.empty? ? nil : @value_buffer.dup
-          @cells[@current_cell_ref] = Formula.new(expression: @formula_buffer.dup, cached_value: cached)
+          f_type = case @formula_type
+                   when "shared" then :shared
+                   when "array" then :array
+                   end
+          @cells[@current_cell_ref] = Formula.new(
+            expression: @formula_buffer.dup,
+            cached_value: cached,
+            type: f_type,
+            ref: @formula_ref,
+            shared_index: @formula_si
+          )
           return
         end
 

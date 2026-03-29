@@ -671,4 +671,23 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(rt, writer.cells["A1"])
     assert_equal("Bold Normal", rt.to_s)
   end
+
+  test "shared formula attributes stored" do
+    writer = Xlsxrb::Writer.new
+    sf = Xlsxrb::Formula.new(expression: "A1+1", type: :shared, ref: "B1:B10", shared_index: 0, cached_value: "2")
+    writer.set_cell("B1", sf)
+    result = writer.cells["B1"]
+    assert_equal(:shared, result.type)
+    assert_equal(0, result.shared_index)
+    assert_equal("B1:B10", result.ref)
+  end
+
+  test "array formula attributes stored" do
+    writer = Xlsxrb::Writer.new
+    af = Xlsxrb::Formula.new(expression: "{SUM(A1:A3*B1:B3)}", type: :array, ref: "C1")
+    writer.set_cell("C1", af)
+    result = writer.cells["C1"]
+    assert_equal(:array, result.type)
+    assert_equal("C1", result.ref)
+  end
 end
