@@ -68,4 +68,13 @@ class WriterTest < Test::Unit::TestCase
     assert_nothing_raised { writer.set_cell("Z1", "v") }
     assert_nothing_raised { writer.set_cell("AA1", "v") }
   end
+
+  test "orders cells by column index within a row" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("AA1", "third")
+    writer.set_cell("B1", "second")
+    writer.set_cell("A1", "first")
+
+    assert_equal({ "A1" => "first", "B1" => "second", "AA1" => "third" }, writer.cells)
+  end
 end
