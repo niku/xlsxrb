@@ -42,6 +42,9 @@ module Xlsxrb
       @defined_names = []
       @sheet_properties = { "Sheet1" => {} }
       @sheet_formats = { "Sheet1" => {} }
+      @sheet_views = { "Sheet1" => {} }
+      @freeze_panes = { "Sheet1" => nil }
+      @selections = { "Sheet1" => nil }
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -58,6 +61,9 @@ module Xlsxrb
       @auto_filters[name] = nil
       @sheet_properties[name] = {}
       @sheet_formats[name] = {}
+      @sheet_views[name] = {}
+      @freeze_panes[name] = nil
+      @selections[name] = nil
       @sheet_order << name
     end
 
@@ -276,6 +282,48 @@ module Xlsxrb
       (@sheet_formats[sheet_name] || {}).dup
     end
 
+    # Sets a sheet view property (e.g. :show_grid_lines, :show_row_col_headers, :right_to_left, :zoom_scale).
+    def set_sheet_view(name, value, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheet_views.key?(sheet_name)
+
+      @sheet_views[sheet_name][name] = value
+    end
+
+    # Returns sheet view properties for the first (or given) sheet.
+    def sheet_view(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      (@sheet_views[sheet_name] || {}).dup
+    end
+
+    # Sets a freeze pane. row: rows to freeze from top, col: columns to freeze from left.
+    def set_freeze_pane(row: 0, col: 0, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @freeze_panes.key?(sheet_name)
+
+      @freeze_panes[sheet_name] = { row: row, col: col }
+    end
+
+    # Returns freeze pane settings for the first (or given) sheet.
+    def freeze_pane(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @freeze_panes[sheet_name]
+    end
+
+    # Sets the active cell selection.
+    def set_selection(active_cell, sqref: nil, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @selections.key?(sheet_name)
+
+      @selections[sheet_name] = { active_cell: active_cell, sqref: sqref || active_cell }
+    end
+
+    # Returns selection for the first (or given) sheet.
+    def selection(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @selections[sheet_name]
+    end
+
     # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
     def set_sheet_state(sheet_name, state)
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -367,7 +415,8 @@ module Xlsxrb
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @column_attrs[sheet_name], @row_attrs[sheet_name],
           @auto_filters[sheet_name], @merge_cells[sheet_name], @hyperlinks[sheet_name],
-          @cell_styles[sheet_name], @sheet_properties[sheet_name], @sheet_formats[sheet_name]
+          @cell_styles[sheet_name], @sheet_properties[sheet_name], @sheet_formats[sheet_name],
+          @sheet_views[sheet_name], @freeze_panes[sheet_name], @selections[sheet_name]
         )
         next if @hyperlinks[sheet_name].empty?
 
@@ -488,7 +537,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -517,6 +566,51 @@ module Xlsxrb
 
       # Emit <dimension> computed from cell addresses.
       parts << %(<dimension ref="#{compute_dimension(sheet_cells)}"/>) unless sheet_cells.empty?
+
+      # Emit <sheetViews> if sheet view properties, freeze pane, or selection are defined.
+      if !sheet_sv.empty? || sheet_fp || sheet_sel
+        parts << "<sheetViews>"
+        sv_attrs = []
+        sgl = sheet_sv[:show_grid_lines]
+        sv_attrs << %(showGridLines="#{sgl ? 1 : 0}") unless sgl.nil?
+        srch = sheet_sv[:show_row_col_headers]
+        sv_attrs << %(showRowColHeaders="#{srch ? 1 : 0}") unless srch.nil?
+        rtl = sheet_sv[:right_to_left]
+        sv_attrs << %(rightToLeft="#{rtl ? 1 : 0}") unless rtl.nil?
+        zs = sheet_sv[:zoom_scale]
+        sv_attrs << %(zoomScale="#{zs}") if zs
+        sv_attrs << 'tabSelected="1"' if sheet_sv[:tab_selected]
+        sv_attrs << 'workbookViewId="0"'
+        parts << "<sheetView #{sv_attrs.join(" ")}>"
+
+        if sheet_fp && (sheet_fp[:row].to_i.positive? || sheet_fp[:col].to_i.positive?)
+          top_left = "#{index_to_column_letter(sheet_fp[:col].to_i + 1)}#{sheet_fp[:row].to_i + 1}"
+          pane_attrs = []
+          pane_attrs << %(ySplit="#{sheet_fp[:row]}") if sheet_fp[:row].to_i.positive?
+          pane_attrs << %(xSplit="#{sheet_fp[:col]}") if sheet_fp[:col].to_i.positive?
+          pane_attrs << %(topLeftCell="#{top_left}")
+          active_pane = if sheet_fp[:row].to_i.positive? && sheet_fp[:col].to_i.positive?
+                          "bottomRight"
+                        elsif sheet_fp[:row].to_i.positive?
+                          "bottomLeft"
+                        else
+                          "topRight"
+                        end
+          pane_attrs << %(activePane="#{active_pane}")
+          pane_attrs << 'state="frozen"'
+          parts << "<pane #{pane_attrs.join(" ")}/>"
+        end
+
+        if sheet_sel
+          sel_attrs = []
+          sel_attrs << %(activeCell="#{sheet_sel[:active_cell]}") if sheet_sel[:active_cell]
+          sel_attrs << %(sqref="#{sheet_sel[:sqref]}") if sheet_sel[:sqref]
+          parts << "<selection #{sel_attrs.join(" ")}/>"
+        end
+
+        parts << "</sheetView>"
+        parts << "</sheetViews>"
+      end
 
       # Emit <sheetFormatPr> if sheet format properties are defined.
       unless sheet_fmt.empty?

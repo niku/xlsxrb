@@ -351,4 +351,32 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(2, ca["D"][:outline_level])
     assert_equal(true, ca["D"][:collapsed])
   end
+
+  test "stores sheet view properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_sheet_view(:show_grid_lines, false)
+    writer.set_sheet_view(:zoom_scale, 150)
+
+    sv = writer.sheet_view
+    assert_equal(false, sv[:show_grid_lines])
+    assert_equal(150, sv[:zoom_scale])
+  end
+
+  test "stores freeze pane" do
+    writer = Xlsxrb::Writer.new
+    writer.set_freeze_pane(row: 1, col: 1)
+
+    fp = writer.freeze_pane
+    assert_equal(1, fp[:row])
+    assert_equal(1, fp[:col])
+  end
+
+  test "stores selection" do
+    writer = Xlsxrb::Writer.new
+    writer.set_selection("B2", sqref: "B2:C3")
+
+    sel = writer.selection
+    assert_equal("B2", sel[:active_cell])
+    assert_equal("B2:C3", sel[:sqref])
+  end
 end
