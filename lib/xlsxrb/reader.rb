@@ -37,6 +37,14 @@ module Xlsxrb
       parse_worksheet_row_attributes(worksheet_xml)
     end
 
+    # Returns merged cell ranges as ["A1:B2", "C3:D4"].
+    def merged_cells(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return [] if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_merge_cells(worksheet_xml)
+    end
+
     # Returns ordered sheet names.
     def sheet_names
       discover_sheets.map { |s| s[:name] }
@@ -187,6 +195,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.row_attributes
+    end
+
+    def parse_worksheet_merge_cells(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = MergeCellsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.ranges
     end
 
     def column_index_to_letter(index)
@@ -457,6 +473,35 @@ module Xlsxrb
         return unless min_val && max_val && width
 
         (min_val..max_val).each { |i| @raw_columns[i] = width }
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <mergeCells><mergeCell> elements.
+    class MergeCellsListener
+      include REXML::SAX2Listener
+
+      attr_reader :ranges
+
+      def initialize
+        @ranges = []
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "mergeCell"
+
+        ref = attributes["ref"]
+        @ranges << ref if ref
       end
 
       private

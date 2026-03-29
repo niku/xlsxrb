@@ -19,6 +19,7 @@ module Xlsxrb
       @sheets = { "Sheet1" => {} }
       @column_widths = { "Sheet1" => {} }
       @row_attrs = { "Sheet1" => {} }
+      @merge_cells = { "Sheet1" => [] }
       @sheet_order = ["Sheet1"]
     end
 
@@ -29,6 +30,7 @@ module Xlsxrb
       @sheets[name] = {}
       @column_widths[name] = {}
       @row_attrs[name] = {}
+      @merge_cells[name] = []
       @sheet_order << name
     end
 
@@ -92,6 +94,22 @@ module Xlsxrb
       @row_attrs[sheet_name] || {}
     end
 
+    # Merges a range of cells (e.g. "A1:B2").
+    def merge_cells(range, sheet: nil)
+      raise ArgumentError, "range must be a String like 'A1:B2'" unless range.is_a?(String) && range.match?(/\A[A-Z]+\d+:[A-Z]+\d+\z/)
+
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @merge_cells.key?(sheet_name)
+
+      @merge_cells[sheet_name] << range
+    end
+
+    # Returns merged cell ranges for the first (or given) sheet.
+    def merged_cells(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @merge_cells[sheet_name] || []
+    end
+
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
@@ -106,7 +124,7 @@ module Xlsxrb
 
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
-          @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name]
+          @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name], @merge_cells[sheet_name]
         )
       end
 
@@ -168,7 +186,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_merge_cells)
       parts = [
         XML_HEADER,
         %(<worksheet xmlns="#{SSML_NS}">)
@@ -215,6 +233,14 @@ module Xlsxrb
       end
 
       parts << "</sheetData>"
+
+      # Emit <mergeCells> if merge ranges are defined.
+      unless sheet_merge_cells.empty?
+        parts << %(<mergeCells count="#{sheet_merge_cells.size}">)
+        sheet_merge_cells.each { |ref| parts << %(<mergeCell ref="#{ref}"/>) }
+        parts << "</mergeCells>"
+      end
+
       parts << "</worksheet>"
       parts.join
     end
