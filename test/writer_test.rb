@@ -529,4 +529,25 @@ class WriterTest < Test::Unit::TestCase
     dxf_id2 = writer.add_dxf(border: { left: { style: "thin" } })
     assert_equal(1, dxf_id2)
   end
+  test "enables shared string table mode" do
+    writer = Xlsxrb::Writer.new
+    writer.use_shared_strings!
+    writer.set_cell("A1", "hello")
+    writer.set_cell("B1", "hello")
+    writer.set_cell("C1", "world")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sst", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    assert_equal("hello", cells["A1"])
+    assert_equal("hello", cells["B1"])
+    assert_equal("world", cells["C1"])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
 end

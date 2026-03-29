@@ -831,4 +831,25 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+  test "round-trips shared string table mode" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.use_shared_strings!
+    writer.set_cell("A1", "hello")
+    writer.set_cell("B1", "hello")
+    writer.set_cell("C1", "world")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    assert_equal("hello", cells["A1"])
+    assert_equal("hello", cells["B1"])
+    assert_equal("world", cells["C1"])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
 end

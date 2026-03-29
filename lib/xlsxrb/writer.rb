@@ -60,6 +60,7 @@ module Xlsxrb
       @col_breaks = { "Sheet1" => [] }
       @data_validations = { "Sheet1" => [] }
       @conditional_formats = { "Sheet1" => [] }
+      @use_shared_strings = false
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -569,6 +570,11 @@ module Xlsxrb
       @conditional_formats[sheet_name] || []
     end
 
+    # Enables shared string table mode (strings stored in sharedStrings.xml).
+    def use_shared_strings!
+      @use_shared_strings = true
+    end
+
     # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
     def set_sheet_state(sheet_name, state)
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -647,6 +653,9 @@ module Xlsxrb
       # Pre-populate xf entries for legacy num_fmt-based styles.
       @num_fmts.each { |nf| resolve_style_index(nf[:num_fmt_id]) }
 
+      # Build shared string table if enabled.
+      sst = build_shared_string_table if @use_shared_strings
+
       entries = {
         "[Content_Types].xml" => generate_content_types_xml,
         "_rels/.rels" => generate_rels_root,
@@ -657,6 +666,7 @@ module Xlsxrb
 
       entries["docProps/core.xml"] = generate_core_properties_xml unless @core_properties.empty?
       entries["docProps/app.xml"] = generate_app_properties_xml unless @app_properties.empty?
+      entries["xl/sharedStrings.xml"] = generate_shared_strings_xml(sst) if sst
 
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
@@ -667,7 +677,7 @@ module Xlsxrb
           @sheet_views[sheet_name], @freeze_panes[sheet_name], @selections[sheet_name],
           @print_options[sheet_name], @page_margins[sheet_name], @page_setup[sheet_name],
           @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name],
-          @data_validations[sheet_name], @conditional_formats[sheet_name]
+          @data_validations[sheet_name], @conditional_formats[sheet_name], sst
         )
         next if @hyperlinks[sheet_name].empty?
 
@@ -701,6 +711,7 @@ module Xlsxrb
       @sheet_order.each_with_index do |_, i|
         parts << %(<Override PartName="/xl/worksheets/sheet#{i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>)
       end
+      parts << %(<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>) if @use_shared_strings
       parts << %(<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>) unless @core_properties.empty?
       parts << %(<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>) unless @app_properties.empty?
       parts << "</Types>"
@@ -792,11 +803,15 @@ module Xlsxrb
       end
       styles_rid = @sheet_order.size + 1
       parts << %(<Relationship Id="rId#{styles_rid}" Type="#{DOC_REL_NS}/styles" Target="styles.xml"/>)
+      if @use_shared_strings
+        sst_rid = styles_rid + 1
+        parts << %(<Relationship Id="rId#{sst_rid}" Type="#{DOC_REL_NS}/sharedStrings" Target="sharedStrings.xml"/>)
+      end
       parts << "</Relationships>"
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -928,7 +943,7 @@ module Xlsxrb
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|
           cell_ref = "#{col_letter}#{row_num}"
           style_idx = resolve_style_index(sheet_cell_styles[cell_ref])
-          parts << cell_xml(cell_ref, value, style_idx)
+          parts << cell_xml(cell_ref, value, style_idx, sst)
         end
         parts << "</row>"
       end
@@ -1073,6 +1088,26 @@ module Xlsxrb
       parts.join
     end
 
+    def build_shared_string_table
+      sst = {}
+      @sheets.each_value do |sheet_cells|
+        sheet_cells.each_value do |value|
+          next unless value.is_a?(String) || (!value.is_a?(Numeric) && !value.is_a?(Date) &&
+                                               value != true && value != false && !value.is_a?(Formula))
+          str = value.to_s
+          sst[str] = sst.size unless sst.key?(str)
+        end
+      end
+      sst
+    end
+
+    def generate_shared_strings_xml(sst)
+      parts = [XML_HEADER, %(<sst xmlns="#{SSML_NS}" count="#{sst.size}" uniqueCount="#{sst.size}">)]
+      sst.each_key { |str| parts << "<si><t>#{xml_escape(str)}</t></si>" }
+      parts << "</sst>"
+      parts.join
+    end
+
     def generate_worksheet_rels(sheet_hyperlinks)
       parts = [
         XML_HEADER,
@@ -1094,7 +1129,7 @@ module Xlsxrb
            .gsub("'", "&apos;")
     end
 
-    def cell_xml(cell_ref, value, style_idx)
+    def cell_xml(cell_ref, value, style_idx, sst = nil)
       s_attr = style_idx ? %( s="#{style_idx}") : ""
       case value
       when Formula
@@ -1112,7 +1147,12 @@ module Xlsxrb
       when Numeric
         %(<c r="#{cell_ref}"#{s_attr}><v>#{value}</v></c>)
       else
-        %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}><is><t>#{xml_escape(value)}</t></is></c>)
+        if sst
+          idx = sst[value.to_s]
+          %(<c r="#{cell_ref}" t="s"#{s_attr}><v>#{idx}</v></c>)
+        else
+          %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}><is><t>#{xml_escape(value)}</t></is></c>)
+        end
       end
     end
 

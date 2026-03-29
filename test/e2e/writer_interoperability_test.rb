@@ -536,4 +536,16 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
       scenario_path, xlsx_path
     ]
   end
+  test "writer output stores shared strings correctly" do
+    writer = Xlsxrb::Writer.new
+    writer.use_shared_strings!
+    writer.set_cell("A1", "Hello")
+    writer.set_cell("A2", "World")
+    xlsx_path = File.join(Dir.tmpdir, "sst_test_\#{SecureRandom.hex(6)}.xlsx")
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_sst_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
 end
