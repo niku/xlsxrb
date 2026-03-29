@@ -207,6 +207,19 @@ module Xlsxrb
         when "s"
           index = @value_buffer.to_i
           @cells[@current_cell_ref] = @shared_strings[index] || ""
+        when nil, "", "n"
+          return if @value_buffer.empty?
+
+          raw = @value_buffer.dup
+          @cells[@current_cell_ref] = numeric_value(raw)
+        end
+      end
+
+      def numeric_value(raw)
+        if raw.include?(".")
+          raw.to_f
+        else
+          raw.to_i
         end
       end
 

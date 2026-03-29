@@ -103,7 +103,7 @@ module Xlsxrb
         row_num = extract_row_number(address)
         col_letter = extract_column_letter(address)
         cells_by_row[row_num] ||= {}
-        cells_by_row[row_num][col_letter] = value.to_s
+        cells_by_row[row_num][col_letter] = value
       end
 
       # Emit rows in ascending order.
@@ -111,7 +111,7 @@ module Xlsxrb
         parts << %(<row r="#{row_num}">)
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|
           cell_ref = "#{col_letter}#{row_num}"
-          parts << %(<c r="#{cell_ref}" t="inlineStr"><is><t>#{xml_escape(value)}</t></is></c>)
+          parts << cell_xml(cell_ref, value)
         end
         parts << "</row>"
       end
@@ -122,12 +122,21 @@ module Xlsxrb
     end
 
     def xml_escape(value)
-      value
-        .gsub("&", "&amp;")
-        .gsub("<", "&lt;")
-        .gsub(">", "&gt;")
-        .gsub('"', "&quot;")
-        .gsub("'", "&apos;")
+      value.to_s
+           .gsub("&", "&amp;")
+           .gsub("<", "&lt;")
+           .gsub(">", "&gt;")
+           .gsub('"', "&quot;")
+           .gsub("'", "&apos;")
+    end
+
+    def cell_xml(cell_ref, value)
+      case value
+      when Numeric
+        %(<c r="#{cell_ref}"><v>#{value}</v></c>)
+      else
+        %(<c r="#{cell_ref}" t="inlineStr"><is><t>#{xml_escape(value)}</t></is></c>)
+      end
     end
 
     def validate_cell_address!(cell_address)
