@@ -45,6 +45,43 @@ module Xlsxrb
       parse_worksheet_merge_cells(worksheet_xml)
     end
 
+    # Returns hyperlinks as { "A1" => "https://example.com" }.
+    def hyperlinks(sheet: nil)
+      sheets = discover_sheets
+      raise ArgumentError, "workbook has no sheets" if sheets.empty?
+
+      target = resolve_sheet_target(sheets, sheet)
+      raise ArgumentError, "sheet not found: #{sheet.inspect}" if target.nil?
+
+      entry_path = if target.start_with?("/")
+                     target.delete_prefix("/")
+                   else
+                     "xl/#{target}"
+                   end
+
+      worksheet_xml = extract_zip_entry(entry_path)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      # Parse hyperlink elements from worksheet.
+      parser = REXML::Parsers::SAX2Parser.new(worksheet_xml)
+      listener = HyperlinksListener.new
+      parser.listen(listener)
+      parser.parse
+
+      # Parse rels to resolve rId -> URL.
+      rels_path = entry_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = extract_zip_entry(rels_path)
+      rid_to_url = {}
+      rid_to_url = parse_rels(rels_xml).transform_values { |v| v } if rels_xml && !rels_xml.empty?
+
+      result = {}
+      listener.links.each do |link|
+        url = rid_to_url[link[:rid]]
+        result[link[:ref]] = url if url
+      end
+      result
+    end
+
     # Returns ordered sheet names.
     def sheet_names
       discover_sheets.map { |s| s[:name] }
@@ -502,6 +539,36 @@ module Xlsxrb
 
         ref = attributes["ref"]
         @ranges << ref if ref
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <hyperlinks><hyperlink> elements.
+    class HyperlinksListener
+      include REXML::SAX2Listener
+
+      attr_reader :links
+
+      def initialize
+        @links = []
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "hyperlink"
+
+        ref = attributes["ref"]
+        rid = attributes["r:id"]
+        @links << { ref: ref, rid: rid } if ref && rid
       end
 
       private

@@ -20,6 +20,7 @@ module Xlsxrb
       @column_widths = { "Sheet1" => {} }
       @row_attrs = { "Sheet1" => {} }
       @merge_cells = { "Sheet1" => [] }
+      @hyperlinks = { "Sheet1" => {} }
       @sheet_order = ["Sheet1"]
     end
 
@@ -31,6 +32,7 @@ module Xlsxrb
       @column_widths[name] = {}
       @row_attrs[name] = {}
       @merge_cells[name] = []
+      @hyperlinks[name] = {}
       @sheet_order << name
     end
 
@@ -110,6 +112,21 @@ module Xlsxrb
       @merge_cells[sheet_name] || []
     end
 
+    # Adds a hyperlink on a cell.
+    def add_hyperlink(cell_address, url, sheet: nil)
+      validate_cell_address!(cell_address)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @hyperlinks.key?(sheet_name)
+
+      @hyperlinks[sheet_name][cell_address] = url
+    end
+
+    # Returns hyperlinks for the first (or given) sheet.
+    def hyperlinks(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @hyperlinks[sheet_name] || {}
+    end
+
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
@@ -124,8 +141,12 @@ module Xlsxrb
 
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
-          @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name], @merge_cells[sheet_name]
+          @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name],
+          @merge_cells[sheet_name], @hyperlinks[sheet_name]
         )
+        next if @hyperlinks[sheet_name].empty?
+
+        entries["xl/worksheets/_rels/sheet#{i + 1}.xml.rels"] = generate_worksheet_rels(@hyperlinks[sheet_name])
       end
 
       generator = ZipGenerator.new(filepath)
@@ -186,10 +207,12 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_merge_cells)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_merge_cells, sheet_hyperlinks)
+      worksheet_attrs = %(xmlns="#{SSML_NS}")
+      worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
         XML_HEADER,
-        %(<worksheet xmlns="#{SSML_NS}">)
+        "<worksheet #{worksheet_attrs}>"
       ]
 
       # Emit <cols> if column widths are defined.
@@ -241,7 +264,28 @@ module Xlsxrb
         parts << "</mergeCells>"
       end
 
+      # Emit <hyperlinks> if hyperlinks are defined.
+      unless sheet_hyperlinks.empty?
+        parts << "<hyperlinks>"
+        sheet_hyperlinks.each_with_index do |(cell_ref, _url), idx|
+          parts << %(<hyperlink ref="#{cell_ref}" r:id="rId#{idx + 1}"/>)
+        end
+        parts << "</hyperlinks>"
+      end
+
       parts << "</worksheet>"
+      parts.join
+    end
+
+    def generate_worksheet_rels(sheet_hyperlinks)
+      parts = [
+        XML_HEADER,
+        %(<Relationships xmlns="#{REL_NS}">)
+      ]
+      sheet_hyperlinks.each_with_index do |(_cell_ref, url), idx|
+        parts << %(<Relationship Id="rId#{idx + 1}" Type="#{DOC_REL_NS}/hyperlink" Target="#{xml_escape(url)}" TargetMode="External"/>)
+      end
+      parts << "</Relationships>"
       parts.join
     end
 
