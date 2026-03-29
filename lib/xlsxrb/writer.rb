@@ -65,6 +65,7 @@ module Xlsxrb
       @images = { "Sheet1" => [] }
       @charts_data = { "Sheet1" => [] }
       @comments_data = { "Sheet1" => [] }
+      @pivot_tables_data = { "Sheet1" => [] }
       @extra_entries = {}
       @extra_ct_defaults = {}
       @extra_ct_overrides = {}
@@ -102,6 +103,7 @@ module Xlsxrb
       @images[name] = []
       @charts_data[name] = []
       @comments_data[name] = []
+      @pivot_tables_data[name] = []
       @sheet_order << name
     end
 
@@ -751,6 +753,28 @@ module Xlsxrb
       @comments_data[sheet_name] || []
     end
 
+    # Adds a pivot table to the given sheet.
+    # source_ref: data source range (e.g. "Sheet1!A1:C4").
+    # row_fields: array of 0-based field indices for row axis.
+    # data_fields: array of { fld:, name:, subtotal: } hashes.
+    def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @pivot_tables_data.key?(sheet_name)
+
+      pt_name = name || "PivotTable#{@pivot_tables_data.values.flatten.size + 1}"
+      @pivot_tables_data[sheet_name] << {
+        name: pt_name, source_ref: source_ref,
+        row_fields: row_fields, col_fields: col_fields,
+        data_fields: data_fields, dest_ref: dest_ref
+      }
+    end
+
+    # Returns pivot table definitions for the first (or given) sheet.
+    def pivot_tables(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @pivot_tables_data[sheet_name] || []
+    end
+
     # Enables macro preservation mode. Required when copy_entries_from loads a .xlsm file.
     def preserve_macros!
       @preserve_macros = true
@@ -779,10 +803,12 @@ module Xlsxrb
       # Build shared string table if enabled.
       sst = build_shared_string_table if @use_shared_strings
 
-      # Track generated drawing/image/chart/comment indices.
+      # Track generated drawing/image/chart/comment/pivot indices.
       @drawing_count = 0
       @chart_count = 0
       @comment_count = 0
+      @pivot_cache_count = 0
+      @pivot_table_count = 0
       @media_count = 0
 
       entries = {
@@ -800,12 +826,16 @@ module Xlsxrb
         sheet_images = @images[sheet_name] || []
         sheet_charts = @charts_data[sheet_name] || []
         sheet_comments = @comments_data[sheet_name] || []
+        sheet_pivots = @pivot_tables_data[sheet_name] || []
         has_drawing = sheet_images.any? || sheet_charts.any?
         has_comments = sheet_comments.any?
 
         # Pre-increment counters so rels reference correct paths.
         sheet_drawing_idx = has_drawing ? (@drawing_count += 1) : nil
         sheet_comment_idx = has_comments ? (@comment_count += 1) : nil
+        sheet_pivot_start = @pivot_table_count
+        sheet_cache_start = @pivot_cache_count
+        sheet_pivots.each { @pivot_cache_count += 1; @pivot_table_count += 1 }
 
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @column_attrs[sheet_name], @row_attrs[sheet_name],
@@ -825,7 +855,7 @@ module Xlsxrb
         sheet_rels_parts = build_sheet_rels_parts_v2(
           sheet_name, sheet_tables, table_index,
           sheet_drawing_idx, sheet_comment_idx,
-          0, 0
+          sheet_pivot_start, sheet_pivots.size
         )
 
         # Generate drawing XML + media + chart entries.
@@ -856,6 +886,17 @@ module Xlsxrb
         # Generate comments XML.
         if has_comments
           entries["xl/comments#{sheet_comment_idx}.xml"] = generate_comments_xml(sheet_comments)
+        end
+
+        # Generate pivot table + cache entries.
+        sheet_pivots.each_with_index do |pt, pi|
+          cache_idx = sheet_cache_start + pi + 1
+          pt_idx = sheet_pivot_start + pi + 1
+          entries["xl/pivotCache/pivotCacheDefinition#{cache_idx}.xml"] = generate_pivot_cache_definition_xml(pt, cache_idx)
+          entries["xl/pivotCache/pivotCacheRecords#{cache_idx}.xml"] = generate_pivot_cache_records_xml
+          entries["xl/pivotTables/pivotTable#{pt_idx}.xml"] = generate_pivot_table_xml(pt, cache_idx)
+          entries["xl/pivotCache/_rels/pivotCacheDefinition#{cache_idx}.xml.rels"] = generate_pivot_cache_rels(cache_idx)
+          entries["xl/pivotTables/_rels/pivotTable#{pt_idx}.xml.rels"] = generate_pivot_table_rels(cache_idx)
         end
 
         # Emit worksheet rels if any relationships exist.
@@ -963,6 +1004,15 @@ module Xlsxrb
         overrides["/xl/comments#{c}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"
       end
 
+      # Pivot tables and cache.
+      (1..@pivot_table_count.to_i).each do |p|
+        overrides["/xl/pivotTables/pivotTable#{p}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml"
+      end
+      (1..@pivot_cache_count.to_i).each do |p|
+        overrides["/xl/pivotCache/pivotCacheDefinition#{p}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml"
+        overrides["/xl/pivotCache/pivotCacheRecords#{p}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheRecords+xml"
+      end
+
       overrides["/docProps/core.xml"] = "application/vnd.openxmlformats-package.core-properties+xml" unless @core_properties.empty?
       overrides["/docProps/app.xml"] = "application/vnd.openxmlformats-officedocument.extended-properties+xml" unless @app_properties.empty?
 
@@ -1064,6 +1114,10 @@ module Xlsxrb
       next_rid += 1
       if @use_shared_strings
         parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/sharedStrings" Target="sharedStrings.xml"/>)
+        next_rid += 1
+      end
+      (1..@pivot_cache_count.to_i).each do |c|
+        parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition#{c}.xml"/>)
         next_rid += 1
       end
       parts << "</Relationships>"
@@ -1420,7 +1474,7 @@ module Xlsxrb
       parts.join
     end
 
-    def build_sheet_rels_parts_v2(sheet_name, sheet_tables, table_start_index, drawing_idx, comment_idx, _pivot_start, _pivot_count)
+    def build_sheet_rels_parts_v2(sheet_name, sheet_tables, table_start_index, drawing_idx, comment_idx, pivot_start, pivot_count)
       rels = []
       @hyperlinks[sheet_name].each do |(_cell_ref, url)|
         rels << { type: "#{DOC_REL_NS}/hyperlink", target: url, external: true }
@@ -1433,6 +1487,10 @@ module Xlsxrb
       end
       if drawing_idx
         rels << { type: "#{DOC_REL_NS}/drawing", target: "../drawings/drawing#{drawing_idx}.xml" }
+      end
+      pivot_count.times do |i|
+        pt_idx = pivot_start + i + 1
+        rels << { type: "#{DOC_REL_NS}/pivotTable", target: "../pivotTables/pivotTable#{pt_idx}.xml" }
       end
       rels
     end
@@ -1569,6 +1627,95 @@ module Xlsxrb
       end
       parts << "</commentList></comments>"
       parts.join
+    end
+
+    def generate_pivot_table_xml(pt, cache_id)
+      parts = [
+        XML_HEADER,
+        %(<pivotTableDefinition xmlns="#{SSML_NS}" name="#{xml_escape(pt[:name])}" cacheId="#{cache_id}" dataOnRows="0" applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1">)
+      ]
+
+      # Compute field count from source range.
+      field_count = (pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size).clamp(1, 100)
+      parts << %(<location ref="#{pt[:dest_ref]}" firstHeaderRow="1" firstDataRow="1" firstDataCol="1"/>)
+      parts << %(<pivotFields count="#{field_count}">)
+      field_count.times do |fi|
+        if pt[:row_fields].include?(fi)
+          parts << '<pivotField axis="axisRow" showAll="0"/>'
+        elsif pt[:data_fields].any? { |df| df[:fld] == fi }
+          parts << '<pivotField dataField="1" showAll="0"/>'
+        else
+          parts << '<pivotField showAll="0"/>'
+        end
+      end
+      parts << "</pivotFields>"
+
+      unless pt[:row_fields].empty?
+        parts << %(<rowFields count="#{pt[:row_fields].size}">)
+        pt[:row_fields].each { |f| parts << %(<field x="#{f}"/>) }
+        parts << "</rowFields>"
+      end
+
+      unless pt[:data_fields].empty?
+        parts << %(<dataFields count="#{pt[:data_fields].size}">)
+        pt[:data_fields].each do |df|
+          parts << %(<dataField name="#{xml_escape(df[:name])}" fld="#{df[:fld]}" subtotal="#{df[:subtotal] || "sum"}"/>)
+        end
+        parts << "</dataFields>"
+      end
+
+      parts << "</pivotTableDefinition>"
+      parts.join
+    end
+
+    def generate_pivot_cache_definition_xml(pt, cache_id)
+      parts = [
+        XML_HEADER,
+        %(<pivotCacheDefinition xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}" r:id="rId1" refreshOnLoad="1">)
+      ]
+
+      # Parse source ref: "Sheet1!A1:C4" => sheet name + range.
+      source = pt[:source_ref]
+      if source.include?("!")
+        sname, srange = source.split("!", 2)
+        sname = sname.delete("'")
+        parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{srange}" sheet="#{xml_escape(sname)}"/></cacheSource>)
+      else
+        parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{source}"/></cacheSource>)
+      end
+
+      field_count = pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size
+      parts << %(<cacheFields count="#{field_count}">)
+      field_count.times do |fi|
+        df = pt[:data_fields].find { |d| d[:fld] == fi }
+        fname = df ? df[:name] : "Field#{fi + 1}"
+        parts << %(<cacheField name="#{xml_escape(fname)}" numFmtId="0"><sharedItems/></cacheField>)
+      end
+      parts << "</cacheFields>"
+      parts << "</pivotCacheDefinition>"
+      parts.join
+    end
+
+    def generate_pivot_cache_records_xml
+      [XML_HEADER, %(<pivotCacheRecords xmlns="#{SSML_NS}" count="0"/>)].join
+    end
+
+    def generate_pivot_cache_rels(cache_id)
+      [
+        XML_HEADER,
+        %(<Relationships xmlns="#{REL_NS}">),
+        %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/pivotCacheRecords" Target="pivotCacheRecords#{cache_id}.xml"/>),
+        "</Relationships>"
+      ].join
+    end
+
+    def generate_pivot_table_rels(cache_id)
+      [
+        XML_HEADER,
+        %(<Relationships xmlns="#{REL_NS}">),
+        %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="../pivotCache/pivotCacheDefinition#{cache_id}.xml"/>),
+        "</Relationships>"
+      ].join
     end
 
     def parse_extra_content_types(ct_xml)

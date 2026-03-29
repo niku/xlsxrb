@@ -562,6 +562,9 @@ class WriterTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  # --- Phase 2: Writer unit tests ---
+
   test "insert_image stores image definition" do
     writer = Xlsxrb::Writer.new
     png = "\x89PNG".b
@@ -581,6 +584,30 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(1, charts.size)
     assert_equal(:bar, charts[0][:type])
     assert_equal("Sales", charts[0][:title])
+  end
+
+  test "add_comment stores comment definition" do
+    writer = Xlsxrb::Writer.new
+    writer.add_comment("A1", "Note text", author: "Tester")
+    writer.add_comment("B2", "Second note")
+    comments = writer.comments
+    assert_equal(2, comments.size)
+    assert_equal("A1", comments[0][:ref])
+    assert_equal("Note text", comments[0][:text])
+    assert_equal("Tester", comments[0][:author])
+    assert_equal("Author", comments[1][:author])
+  end
+
+  test "add_pivot_table stores pivot table definition" do
+    writer = Xlsxrb::Writer.new
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+                           dest_ref: "E1:F4")
+    pivots = writer.pivot_tables
+    assert_equal(1, pivots.size)
+    assert_equal([0], pivots[0][:row_fields])
+    assert_equal("Sheet1!A1:C4", pivots[0][:source_ref])
   end
 
   test "preserve_macros flag" do
@@ -612,21 +639,8 @@ class WriterTest < Test::Unit::TestCase
     assert_raise(ArgumentError) { writer.insert_image("data", sheet: "Nonexistent") }
   end
 
-  test "add_comment stores comment definition" do
-    writer = Xlsxrb::Writer.new
-    writer.add_comment("A1", "Note text", author: "Tester")
-    writer.add_comment("B2", "Second note")
-    comments = writer.comments
-    assert_equal(2, comments.size)
-    assert_equal("A1", comments[0][:ref])
-    assert_equal("Note text", comments[0][:text])
-    assert_equal("Tester", comments[0][:author])
-    assert_equal("Author", comments[1][:author])
-  end
-
   test "add_comment on unknown address raises" do
     writer = Xlsxrb::Writer.new
     assert_raise(ArgumentError) { writer.add_comment("ZZZ", "text") }
   end
-
 end
