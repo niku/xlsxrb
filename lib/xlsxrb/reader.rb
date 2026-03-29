@@ -158,6 +158,30 @@ module Xlsxrb
       parse_worksheet_sheet_format(worksheet_xml)
     end
 
+    # Returns sheet view properties for the given sheet.
+    def sheet_view(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_sheet_view(worksheet_xml)[:view]
+    end
+
+    # Returns freeze pane settings for the given sheet.
+    def freeze_pane(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_sheet_view(worksheet_xml)[:pane]
+    end
+
+    # Returns selection for the given sheet.
+    def selection(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_sheet_view(worksheet_xml)[:selection]
+    end
+
     # Returns core properties as a hash (e.g. { title: "...", creator: "..." }).
     def core_properties
       # Discover core properties path from _rels/.rels
@@ -520,6 +544,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.properties
+    end
+
+    def parse_worksheet_sheet_view(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = SheetViewListener.new
+      parser.listen(listener)
+      parser.parse
+      { view: listener.view, pane: listener.pane, selection: listener.selection }
     end
 
     def column_index_to_letter(index)
@@ -1247,6 +1279,73 @@ module Xlsxrb
         @properties[:default_col_width] = dcw.to_f if dcw
         bcw = attributes["baseColWidth"]
         @properties[:base_col_width] = bcw.to_i if bcw
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <sheetViews><sheetView>, <pane>, and <selection>.
+    class SheetViewListener
+      include REXML::SAX2Listener
+
+      attr_reader :view, :pane, :selection
+
+      def initialize
+        @view = {}
+        @pane = nil
+        @selection = nil
+        @inside_sheet_views = false
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "sheetViews"
+          @inside_sheet_views = true
+        when "sheetView"
+          return unless @inside_sheet_views
+
+          sgl = attributes["showGridLines"]
+          @view[:show_grid_lines] = %w[1 true].include?(sgl) unless sgl.nil?
+          srch = attributes["showRowColHeaders"]
+          @view[:show_row_col_headers] = %w[1 true].include?(srch) unless srch.nil?
+          rtl = attributes["rightToLeft"]
+          @view[:right_to_left] = %w[1 true].include?(rtl) unless rtl.nil?
+          zs = attributes["zoomScale"]
+          @view[:zoom_scale] = zs.to_i if zs
+          ts = attributes["tabSelected"]
+          @view[:tab_selected] = true if ts == "1"
+        when "pane"
+          return unless @inside_sheet_views
+
+          ys = attributes["ySplit"]
+          xs = attributes["xSplit"]
+          frozen = attributes["state"] == "frozen"
+          @pane = {
+            row: ys ? ys.to_i : 0,
+            col: xs ? xs.to_i : 0,
+            state: frozen ? :frozen : :split
+          }
+        when "selection"
+          return unless @inside_sheet_views
+
+          ac = attributes["activeCell"]
+          sq = attributes["sqref"]
+          @selection = { active_cell: ac, sqref: sq } if ac || sq
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        @inside_sheet_views = false if name == "sheetViews"
       end
 
       private
