@@ -607,6 +607,36 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     assert_true(writer.preserve_macros?)
   end
 
+  test "writer generates valid sheet protection" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Protected data")
+    writer.set_sheet_protection(password: "CF1A")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_sheet_protection_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "writer generates valid workbook protection" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_workbook_protection(lock_structure: true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_workbook_protection_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

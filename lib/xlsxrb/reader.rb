@@ -215,6 +215,14 @@ module Xlsxrb
       parse_worksheet_properties(worksheet_xml)
     end
 
+    # Returns sheet protection settings as a hash, or nil if unprotected.
+    def sheet_protection(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_sheet_protection(worksheet_xml)
+    end
+
     # Returns the dimension ref string (e.g. "A1:B10") for the given sheet.
     def dimension(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -358,6 +366,11 @@ module Xlsxrb
     # Returns workbook view properties (e.g. { active_tab: 0 }).
     def workbook_views
       parse_workbook_metadata[:workbook_views]
+    end
+
+    # Returns workbook protection settings as a hash, or nil if unprotected.
+    def workbook_protection
+      parse_workbook_metadata[:workbook_protection]
     end
 
     # Returns calc properties (e.g. { calc_id: 191029 }).
@@ -521,7 +534,7 @@ module Xlsxrb
 
     def parse_workbook_metadata
       workbook_xml = extract_zip_entry("xl/workbook.xml")
-      return { workbook_properties: {}, workbook_views: {}, calc_properties: {} } if workbook_xml.nil? || workbook_xml.empty?
+      return { workbook_properties: {}, workbook_views: {}, calc_properties: {}, workbook_protection: nil } if workbook_xml.nil? || workbook_xml.empty?
 
       parser = REXML::Parsers::SAX2Parser.new(workbook_xml)
       listener = WorkbookListener.new
@@ -531,7 +544,8 @@ module Xlsxrb
         workbook_properties: listener.workbook_properties,
         workbook_views: listener.workbook_views,
         calc_properties: listener.calc_properties,
-        defined_names: listener.defined_names
+        defined_names: listener.defined_names,
+        workbook_protection: listener.workbook_protection
       }
     end
 
@@ -863,6 +877,14 @@ module Xlsxrb
       listener.properties
     end
 
+    def parse_worksheet_sheet_protection(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = SheetProtectionListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.protection
+    end
+
     def parse_worksheet_dimension(xml)
       parser = REXML::Parsers::SAX2Parser.new(xml)
       listener = DimensionListener.new
@@ -1160,7 +1182,7 @@ module Xlsxrb
     class WorkbookListener
       include REXML::SAX2Listener
 
-      attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties, :defined_names
+      attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties, :defined_names, :workbook_protection
 
       def initialize
         @sheets = []
@@ -1168,6 +1190,7 @@ module Xlsxrb
         @workbook_views = {}
         @calc_properties = {}
         @defined_names = []
+        @workbook_protection = nil
         @inside_defined_name = false
         @current_dn_attrs = nil
         @dn_text_buffer = +""
@@ -1193,6 +1216,25 @@ module Xlsxrb
           @calc_properties[:calc_id] = ci.to_i if ci
           fcol = attributes["fullCalcOnLoad"]
           @calc_properties[:full_calc_on_load] = %w[1 true].include?(fcol) unless fcol.nil?
+        when "workbookProtection"
+          prot = {}
+          ls = attributes["lockStructure"]
+          prot[:lock_structure] = %w[1 true].include?(ls) unless ls.nil?
+          lw = attributes["lockWindows"]
+          prot[:lock_windows] = %w[1 true].include?(lw) unless lw.nil?
+          wp = attributes["workbookPassword"]
+          prot[:password] = wp if wp
+          an = attributes["workbookAlgorithmName"]
+          if an
+            prot[:algorithm_name] = an
+            hv = attributes["workbookHashValue"]
+            prot[:hash_value] = hv if hv
+            sv = attributes["workbookSaltValue"]
+            prot[:salt_value] = sv if sv
+            sc = attributes["workbookSpinCount"]
+            prot[:spin_count] = sc.to_i if sc
+          end
+          @workbook_protection = prot unless prot.empty?
         when "definedName"
           @inside_defined_name = true
           @current_dn_attrs = {
@@ -1843,6 +1885,63 @@ module Xlsxrb
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
         @inside_sheet_pr = false if name == "sheetPr"
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <sheetProtection> element.
+    class SheetProtectionListener
+      include REXML::SAX2Listener
+
+      attr_reader :protection
+
+      def initialize
+        @protection = nil
+      end
+
+      BOOL_ATTRS = %i[sheet objects scenarios select_locked_cells select_unlocked_cells].freeze
+      FALSE_ATTRS = %i[format_cells format_columns format_rows insert_columns insert_rows
+                       insert_hyperlinks delete_columns delete_rows sort auto_filter pivot_tables].freeze
+      ATTR_MAP = {
+        "sheet" => :sheet, "objects" => :objects, "scenarios" => :scenarios,
+        "formatCells" => :format_cells, "formatColumns" => :format_columns,
+        "formatRows" => :format_rows, "insertColumns" => :insert_columns,
+        "insertRows" => :insert_rows, "insertHyperlinks" => :insert_hyperlinks,
+        "deleteColumns" => :delete_columns, "deleteRows" => :delete_rows,
+        "selectLockedCells" => :select_locked_cells, "sort" => :sort,
+        "autoFilter" => :auto_filter, "pivotTables" => :pivot_tables,
+        "selectUnlockedCells" => :select_unlocked_cells,
+        "password" => :password, "algorithmName" => :algorithm_name,
+        "hashValue" => :hash_value, "saltValue" => :salt_value, "spinCount" => :spin_count
+      }.freeze
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "sheetProtection"
+
+        prot = {}
+        ATTR_MAP.each do |xml_attr, sym|
+          val = attributes[xml_attr]
+          next if val.nil?
+
+          prot[sym] = if sym == :spin_count
+                        val.to_i
+                      elsif %i[password algorithm_name hash_value salt_value].include?(sym)
+                        val
+                      else
+                        %w[1 true].include?(val)
+                      end
+        end
+        @protection = prot unless prot.empty?
       end
 
       private

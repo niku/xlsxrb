@@ -70,6 +70,8 @@ module Xlsxrb
       @extra_ct_defaults = {}
       @extra_ct_overrides = {}
       @preserve_macros = false
+      @sheet_protection = { "Sheet1" => nil }
+      @workbook_protection = nil
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -104,6 +106,7 @@ module Xlsxrb
       @charts_data[name] = []
       @comments_data[name] = []
       @pivot_tables_data[name] = []
+      @sheet_protection[name] = nil
       @sheet_order << name
     end
 
@@ -669,6 +672,35 @@ module Xlsxrb
       @calc_properties.dup
     end
 
+    # Sets sheet protection options.
+    # Options: :password, :sheet, :objects, :scenarios, :format_cells, :format_columns,
+    #   :format_rows, :insert_columns, :insert_rows, :insert_hyperlinks,
+    #   :delete_columns, :delete_rows, :select_locked_cells, :sort, :auto_filter,
+    #   :pivot_tables, :select_unlocked_cells, :algorithm_name, :hash_value, :salt_value, :spin_count
+    def set_sheet_protection(sheet: nil, **opts)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+
+      @sheet_protection[sheet_name] = opts
+    end
+
+    # Returns sheet protection settings for the given sheet.
+    def sheet_protection(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @sheet_protection[sheet_name]&.dup
+    end
+
+    # Sets workbook protection options.
+    # Options: :lock_structure, :lock_windows, :password, :algorithm_name, :hash_value, :salt_value, :spin_count
+    def set_workbook_protection(**opts)
+      @workbook_protection = opts
+    end
+
+    # Returns workbook protection settings.
+    def workbook_protection
+      @workbook_protection&.dup
+    end
+
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
@@ -847,7 +879,8 @@ module Xlsxrb
           @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name],
           @data_validations[sheet_name], @conditional_formats[sheet_name], sst,
           @tables[sheet_name] || [], @hyperlinks[sheet_name].size,
-          has_drawing, has_comments
+          has_drawing, has_comments,
+          @sheet_protection[sheet_name]
         )
 
         # Build per-sheet rels, including hyperlinks, tables, drawings, comments, pivots.
@@ -1077,6 +1110,22 @@ module Xlsxrb
       end
       parts << "</sheets>"
 
+      # workbookProtection
+      if @workbook_protection
+        wp_attrs = []
+        wp_attrs << 'lockStructure="1"' if @workbook_protection[:lock_structure]
+        wp_attrs << 'lockWindows="1"' if @workbook_protection[:lock_windows]
+        if @workbook_protection[:algorithm_name]
+          wp_attrs << %(workbookAlgorithmName="#{xml_escape(@workbook_protection[:algorithm_name])}")
+          wp_attrs << %(workbookHashValue="#{xml_escape(@workbook_protection[:hash_value])}") if @workbook_protection[:hash_value]
+          wp_attrs << %(workbookSaltValue="#{xml_escape(@workbook_protection[:salt_value])}") if @workbook_protection[:salt_value]
+          wp_attrs << %(workbookSpinCount="#{@workbook_protection[:spin_count]}") if @workbook_protection[:spin_count]
+        elsif @workbook_protection[:password]
+          wp_attrs << %(workbookPassword="#{xml_escape(@workbook_protection[:password])}")
+        end
+        parts << "<workbookProtection #{wp_attrs.join(" ")}/>" unless wp_attrs.empty?
+      end
+
       # definedNames
       unless @defined_names.empty?
         parts << "<definedNames>"
@@ -1124,7 +1173,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing = false, has_comments = false)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing = false, has_comments = false, sheet_prot = nil)
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -1263,6 +1312,36 @@ module Xlsxrb
       end
 
       parts << "</sheetData>"
+
+      # Emit <sheetProtection> if defined.
+      if sheet_prot
+        sp_attrs = []
+        sp_attrs << 'sheet="1"' if sheet_prot[:sheet] != false
+        sp_attrs << 'objects="1"' if sheet_prot[:objects]
+        sp_attrs << 'scenarios="1"' if sheet_prot[:scenarios]
+        sp_attrs << 'formatCells="0"' if sheet_prot[:format_cells] == false
+        sp_attrs << 'formatColumns="0"' if sheet_prot[:format_columns] == false
+        sp_attrs << 'formatRows="0"' if sheet_prot[:format_rows] == false
+        sp_attrs << 'insertColumns="0"' if sheet_prot[:insert_columns] == false
+        sp_attrs << 'insertRows="0"' if sheet_prot[:insert_rows] == false
+        sp_attrs << 'insertHyperlinks="0"' if sheet_prot[:insert_hyperlinks] == false
+        sp_attrs << 'deleteColumns="0"' if sheet_prot[:delete_columns] == false
+        sp_attrs << 'deleteRows="0"' if sheet_prot[:delete_rows] == false
+        sp_attrs << 'selectLockedCells="1"' if sheet_prot[:select_locked_cells]
+        sp_attrs << 'sort="0"' if sheet_prot[:sort] == false
+        sp_attrs << 'autoFilter="0"' if sheet_prot[:auto_filter] == false
+        sp_attrs << 'pivotTables="0"' if sheet_prot[:pivot_tables] == false
+        sp_attrs << 'selectUnlockedCells="1"' if sheet_prot[:select_unlocked_cells]
+        if sheet_prot[:algorithm_name]
+          sp_attrs << %(algorithmName="#{xml_escape(sheet_prot[:algorithm_name])}")
+          sp_attrs << %(hashValue="#{xml_escape(sheet_prot[:hash_value])}") if sheet_prot[:hash_value]
+          sp_attrs << %(saltValue="#{xml_escape(sheet_prot[:salt_value])}") if sheet_prot[:salt_value]
+          sp_attrs << %(spinCount="#{sheet_prot[:spin_count]}") if sheet_prot[:spin_count]
+        elsif sheet_prot[:password]
+          sp_attrs << %(password="#{xml_escape(sheet_prot[:password])}")
+        end
+        parts << "<sheetProtection #{sp_attrs.join(" ")}/>"
+      end
 
       # Emit <autoFilter> with optional filterColumns.
       if sheet_auto_filter

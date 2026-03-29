@@ -1034,4 +1034,39 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(source_path) if source_path && File.exist?(source_path)
     File.delete(output_path) if output_path && File.exist?(output_path)
   end
+
+  test "round-trips sheet protection through writer and reader" do
+    writer = Xlsxrb::Writer.new
+    writer.set_sheet_protection(password: "CF1A", objects: true, scenarios: true)
+    writer.set_cell("A1", "Protected")
+
+    xlsx_path = Tempfile.new(["xlsxrb-test", ".xlsx"]).path
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    prot = reader.sheet_protection
+    assert_not_nil(prot)
+    assert_equal(true, prot[:sheet])
+    assert_equal("CF1A", prot[:password])
+    assert_equal(true, prot[:objects])
+    assert_equal(true, prot[:scenarios])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips workbook protection through writer and reader" do
+    writer = Xlsxrb::Writer.new
+    writer.set_workbook_protection(lock_structure: true)
+    writer.set_cell("A1", "test")
+
+    xlsx_path = Tempfile.new(["xlsxrb-test", ".xlsx"]).path
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    prot = reader.workbook_protection
+    assert_not_nil(prot)
+    assert_equal(true, prot[:lock_structure])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
