@@ -16,17 +16,35 @@ module Xlsxrb
     MAX_COLUMN_INDEX = 16_384 # XFD
 
     def initialize
-      @cells = {}
+      @sheets = { "Sheet1" => {} }
+      @sheet_order = ["Sheet1"]
+    end
+
+    # Adds a new sheet. Raises if name is already taken.
+    def add_sheet(name)
+      raise ArgumentError, "sheet already exists: #{name}" if @sheets.key?(name)
+
+      @sheets[name] = {}
+      @sheet_order << name
     end
 
     # Registers a cell value at the given address (e.g. "A1").
-    def set_cell(cell_address, value)
+    def set_cell(cell_address, value, sheet: nil)
       validate_cell_address!(cell_address)
-      @cells[cell_address] = value
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+
+      @sheets[sheet_name][cell_address] = value
     end
 
-    # Returns the registered cells.
-    attr_reader :cells
+    # Returns the registered cells for the first (or given) sheet.
+    def cells(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @sheets[sheet_name] || {}
+    end
+
+    # Returns ordered sheet names.
+    attr_reader :sheet_order
 
     # Writes the workbook as an XLSX file to the given path.
     def write(filepath)
@@ -34,9 +52,12 @@ module Xlsxrb
         "[Content_Types].xml" => generate_content_types_xml,
         "_rels/.rels" => generate_rels_root,
         "xl/workbook.xml" => generate_workbook_xml,
-        "xl/worksheets/sheet1.xml" => generate_worksheet1_xml,
         "xl/_rels/workbook.xml.rels" => generate_workbook_rels
       }
+
+      @sheet_order.each_with_index do |sheet_name, i|
+        entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(@sheets[sheet_name])
+      end
 
       generator = ZipGenerator.new(filepath)
       entries.each { |path, content| generator.add_entry(path, content) }
@@ -51,10 +72,12 @@ module Xlsxrb
         %(<Types xmlns="#{CT_NS}">),
         %(<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>),
         %(<Default Extension="xml" ContentType="application/xml"/>),
-        %(<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>),
-        %(<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>),
-        "</Types>"
+        %(<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>)
       ]
+      @sheet_order.each_with_index do |_, i|
+        parts << %(<Override PartName="/xl/worksheets/sheet#{i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>)
+      end
+      parts << "</Types>"
       parts.join
     end
 
@@ -72,25 +95,29 @@ module Xlsxrb
       parts = [
         XML_HEADER,
         %(<workbook xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}">),
-        "<sheets>",
-        %(<sheet name="Sheet1" sheetId="1" r:id="rId1"/>),
-        "</sheets>",
-        "</workbook>"
+        "<sheets>"
       ]
+      @sheet_order.each_with_index do |name, i|
+        parts << %(<sheet name="#{xml_escape(name)}" sheetId="#{i + 1}" r:id="rId#{i + 1}"/>)
+      end
+      parts << "</sheets>"
+      parts << "</workbook>"
       parts.join
     end
 
     def generate_workbook_rels
       parts = [
         XML_HEADER,
-        %(<Relationships xmlns="#{REL_NS}">),
-        %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/worksheet" Target="worksheets/sheet1.xml"/>),
-        "</Relationships>"
+        %(<Relationships xmlns="#{REL_NS}">)
       ]
+      @sheet_order.each_with_index do |_, i|
+        parts << %(<Relationship Id="rId#{i + 1}" Type="#{DOC_REL_NS}/worksheet" Target="worksheets/sheet#{i + 1}.xml"/>)
+      end
+      parts << "</Relationships>"
       parts.join
     end
 
-    def generate_worksheet1_xml
+    def generate_worksheet_xml(sheet_cells)
       parts = [
         XML_HEADER,
         %(<worksheet xmlns="#{SSML_NS}">),
@@ -99,7 +126,7 @@ module Xlsxrb
 
       # Group cells by row number.
       cells_by_row = {}
-      @cells.each do |address, value|
+      sheet_cells.each do |address, value|
         row_num = extract_row_number(address)
         col_letter = extract_column_letter(address)
         cells_by_row[row_num] ||= {}

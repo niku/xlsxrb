@@ -137,4 +137,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips multiple sheets" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_sheet("Data")
+    writer.set_cell("A1", "main", sheet: "Sheet1")
+    writer.set_cell("A1", "data", sheet: "Data")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    assert_equal(%w[Sheet1 Data], reader.sheet_names)
+    assert_equal({ "A1" => "main" }, reader.cells)
+    assert_equal({ "A1" => "main" }, reader.cells(sheet: "Sheet1"))
+    assert_equal({ "A1" => "data" }, reader.cells(sheet: "Data"))
+    assert_equal({ "A1" => "main" }, reader.cells(sheet: 0))
+    assert_equal({ "A1" => "data" }, reader.cells(sheet: 1))
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

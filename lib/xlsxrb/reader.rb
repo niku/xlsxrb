@@ -11,15 +11,80 @@ module Xlsxrb
       @filepath = filepath
     end
 
-    def cells
-      worksheet_xml = extract_zip_entry("xl/worksheets/sheet1.xml")
+    # Returns cells for the given sheet (by name or 0-based index).
+    # Defaults to the first sheet.
+    def cells(sheet: nil)
+      sheets = discover_sheets
+      raise ArgumentError, "workbook has no sheets" if sheets.empty?
+
+      target = resolve_sheet_target(sheets, sheet)
+      raise ArgumentError, "sheet not found: #{sheet.inspect}" if target.nil?
+
+      # Target may be absolute (/xl/worksheets/sheet1.xml) or relative (worksheets/sheet1.xml).
+      entry_path = if target.start_with?("/")
+                     target.delete_prefix("/")
+                   else
+                     "xl/#{target}"
+                   end
+
+      worksheet_xml = extract_zip_entry(entry_path)
       return {} if worksheet_xml.nil? || worksheet_xml.empty?
 
       shared_strings = load_shared_strings
       parse_worksheet_cells(worksheet_xml, shared_strings)
     end
 
+    # Returns ordered sheet names.
+    def sheet_names
+      discover_sheets.map { |s| s[:name] }
+    end
+
     private
+
+    def discover_sheets
+      workbook_xml = extract_zip_entry("xl/workbook.xml")
+      return [{ name: "Sheet1", rid: "rId1", target: "worksheets/sheet1.xml" }] if workbook_xml.nil? || workbook_xml.empty?
+
+      rels_xml = extract_zip_entry("xl/_rels/workbook.xml.rels")
+      rid_to_target = parse_rels(rels_xml)
+
+      sheets = []
+      parser = REXML::Parsers::SAX2Parser.new(workbook_xml)
+      listener = WorkbookListener.new
+      parser.listen(listener)
+      parser.parse
+
+      listener.sheets.each do |s|
+        target = rid_to_target[s[:rid]]
+        sheets << { name: s[:name], rid: s[:rid], target: target } if target
+      end
+      sheets
+    end
+
+    def parse_rels(rels_xml)
+      return {} if rels_xml.nil? || rels_xml.empty?
+
+      mapping = {}
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = RelsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.relationships.each { |r| mapping[r[:id]] = r[:target] }
+      mapping
+    end
+
+    def resolve_sheet_target(sheets, sheet)
+      case sheet
+      when nil
+        sheets.first&.dig(:target)
+      when Integer
+        sheets[sheet]&.dig(:target)
+      when String
+        sheets.find { |s| s[:name] == sheet }&.dig(:target)
+      else
+        raise ArgumentError, "sheet must be a String name or Integer index"
+      end
+    end
 
     def load_shared_strings
       sst_xml = extract_zip_entry("xl/sharedStrings.xml")
@@ -241,6 +306,62 @@ module Xlsxrb
           raw.to_i
         end
       end
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing workbook.xml to discover sheet names and rIds.
+    class WorkbookListener
+      include REXML::SAX2Listener
+
+      attr_reader :sheets
+
+      def initialize
+        @sheets = []
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "sheet"
+
+        @sheets << { name: attributes["name"], rid: attributes["r:id"] }
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing .rels files to map rId to Target.
+    class RelsListener
+      include REXML::SAX2Listener
+
+      attr_reader :relationships
+
+      def initialize
+        @relationships = []
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "Relationship"
+
+        @relationships << { id: attributes["Id"], target: attributes["Target"] }
+      end
+
+      private
 
       def element_name(local_name, qname)
         if local_name.nil? || local_name.empty?

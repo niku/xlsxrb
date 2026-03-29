@@ -100,4 +100,25 @@ class WriterTest < Test::Unit::TestCase
 
     assert_equal({ "A1" => "first", "B1" => "second", "AA1" => "third" }, writer.cells)
   end
+
+  test "adds multiple sheets" do
+    writer = Xlsxrb::Writer.new
+    writer.add_sheet("Data")
+    writer.set_cell("A1", "main", sheet: "Sheet1")
+    writer.set_cell("A1", "data", sheet: "Data")
+
+    assert_equal(%w[Sheet1 Data], writer.sheet_order)
+    assert_equal({ "A1" => "main" }, writer.cells(sheet: "Sheet1"))
+    assert_equal({ "A1" => "data" }, writer.cells(sheet: "Data"))
+  end
+
+  test "rejects duplicate sheet names" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.add_sheet("Sheet1") }
+  end
+
+  test "rejects unknown sheet in set_cell" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.set_cell("A1", "v", sheet: "NoSuchSheet") }
+  end
 end
