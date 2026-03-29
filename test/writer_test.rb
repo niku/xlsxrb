@@ -159,4 +159,12 @@ class WriterTest < Test::Unit::TestCase
     assert_raise(ArgumentError) { writer.merge_cells("A1") }
     assert_raise(ArgumentError) { writer.merge_cells("") }
   end
+
+  test "stores hyperlinks" do
+    writer = Xlsxrb::Writer.new
+    writer.add_hyperlink("A1", "https://example.com")
+    writer.add_hyperlink("B1", "https://github.com")
+
+    assert_equal({ "A1" => "https://example.com", "B1" => "https://github.com" }, writer.hyperlinks)
+  end
 end
