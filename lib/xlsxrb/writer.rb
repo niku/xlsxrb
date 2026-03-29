@@ -1502,19 +1502,40 @@ module Xlsxrb
       sst = {}
       @sheets.each_value do |sheet_cells|
         sheet_cells.each_value do |value|
-          next unless value.is_a?(String) || (!value.is_a?(Numeric) && !value.is_a?(Date) &&
-                                               value != true && value != false && !value.is_a?(Formula))
+          case value
+          when RichText
+            sst[value.object_id] = sst.size unless sst.key?(value.object_id)
+          when String
+            sst[value] = sst.size unless sst.key?(value)
+          else
+            next if value.is_a?(Numeric) || value.is_a?(Date) || value == true || value == false || value.is_a?(Formula)
 
-          str = value.to_s
-          sst[str] = sst.size unless sst.key?(str)
+            str = value.to_s
+            sst[str] = sst.size unless sst.key?(str)
+          end
         end
       end
       sst
     end
 
     def generate_shared_strings_xml(sst)
+      # Collect RichText objects for lookup by object_id.
+      rt_by_id = {}
+      @sheets.each_value do |sheet_cells|
+        sheet_cells.each_value do |value|
+          rt_by_id[value.object_id] = value if value.is_a?(RichText)
+        end
+      end
+
       parts = [XML_HEADER, %(<sst xmlns="#{SSML_NS}" count="#{sst.size}" uniqueCount="#{sst.size}">)]
-      sst.each_key { |str| parts << "<si><t>#{xml_escape(str)}</t></si>" }
+      sst.each_key do |key|
+        rt = rt_by_id[key]
+        if rt
+          parts << "<si>#{rich_text_xml(rt)}</si>"
+        else
+          parts << "<si><t>#{xml_escape(key)}</t></si>"
+        end
+      end
       parts << "</sst>"
       parts.join
     end
@@ -1815,6 +1836,24 @@ module Xlsxrb
            .gsub("'", "&apos;")
     end
 
+    def rich_text_xml(rt)
+      rt.runs.map do |run|
+        font = run[:font]
+        if font && !font.empty?
+          rpr = +""
+          rpr << "<b/>" if font[:bold]
+          rpr << "<i/>" if font[:italic]
+          rpr << "<u/>" if font[:underline]
+          rpr << %(<sz val="#{font[:sz]}"/>) if font[:sz]
+          rpr << %(<color rgb="#{font[:color]}"/>) if font[:color]
+          rpr << %(<rFont val="#{xml_escape(font[:name])}"/>) if font[:name]
+          "<r><rPr>#{rpr}</rPr><t>#{xml_escape(run[:text])}</t></r>"
+        else
+          "<r><t>#{xml_escape(run[:text])}</t></r>"
+        end
+      end.join
+    end
+
     def cell_xml(cell_ref, value, style_idx, sst = nil)
       s_attr = style_idx ? %( s="#{style_idx}") : ""
       case value
@@ -1823,6 +1862,13 @@ module Xlsxrb
         parts << "<v>#{xml_escape(value.cached_value.to_s)}</v>" unless value.cached_value.nil?
         parts << "</c>"
         parts
+      when RichText
+        if sst
+          idx = sst[value.object_id]
+          %(<c r="#{cell_ref}" t="s"#{s_attr}><v>#{idx}</v></c>)
+        else
+          %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}><is>#{rich_text_xml(value)}</is></c>)
+        end
       when true, false
         %(<c r="#{cell_ref}" t="b"#{s_attr}><v>#{value ? 1 : 0}</v></c>)
       when Date
