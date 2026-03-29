@@ -29,6 +29,14 @@ module Xlsxrb
       parse_worksheet_columns(worksheet_xml)
     end
 
+    # Returns row attributes as { 1 => { height: 25.0 }, 3 => { hidden: true } }.
+    def row_attributes(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_row_attributes(worksheet_xml)
+    end
+
     # Returns ordered sheet names.
     def sheet_names
       discover_sheets.map { |s| s[:name] }
@@ -173,6 +181,14 @@ module Xlsxrb
       listener.raw_columns.transform_keys { |idx| column_index_to_letter(idx) }
     end
 
+    def parse_worksheet_row_attributes(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = WorksheetListener.new([])
+      parser.listen(listener)
+      parser.parse
+      listener.row_attributes
+    end
+
     def column_index_to_letter(index)
       result = +""
       while index.positive?
@@ -240,11 +256,12 @@ module Xlsxrb
     class WorksheetListener
       include REXML::SAX2Listener
 
-      attr_reader :cells
+      attr_reader :cells, :row_attributes
 
       def initialize(shared_strings = [])
         @shared_strings = shared_strings
         @cells = {}
+        @row_attributes = {}
         @current_cell_ref = nil
         @current_cell_type = nil
         @inside_value = false
@@ -259,6 +276,8 @@ module Xlsxrb
         name = element_name(local_name, qname)
 
         case name
+        when "row"
+          parse_row_attributes(attributes)
         when "c"
           @current_cell_ref = attributes["r"]
           @current_cell_type = attributes["t"]
@@ -301,6 +320,17 @@ module Xlsxrb
       end
 
       private
+
+      def parse_row_attributes(attributes)
+        row_num = attributes["r"]&.to_i
+        return unless row_num
+
+        attrs = {}
+        ht = attributes["ht"]
+        attrs[:height] = ht.to_f if ht && attributes["customHeight"] == "1"
+        attrs[:hidden] = true if attributes["hidden"] == "1"
+        @row_attributes[row_num] = attrs unless attrs.empty?
+      end
 
       def store_cell_value
         return if @current_cell_ref.nil?
