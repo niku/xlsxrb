@@ -291,4 +291,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips core properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_core_property(:title, "My Workbook")
+    writer.set_core_property(:creator, "Test User")
+    writer.set_core_property(:created, "2024-01-15T00:00:00Z")
+    writer.set_core_property(:modified, "2024-01-16T12:00:00Z")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    props = reader.core_properties
+    assert_equal("My Workbook", props[:title])
+    assert_equal("Test User", props[:creator])
+    assert_equal("2024-01-15T00:00:00Z", props[:created])
+    assert_equal("2024-01-16T12:00:00Z", props[:modified])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
