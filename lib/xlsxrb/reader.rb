@@ -173,12 +173,42 @@ module Xlsxrb
       listener.properties
     end
 
+    # Returns workbook properties (e.g. { date1904: false, default_theme_version: 166925 }).
+    def workbook_properties
+      parse_workbook_metadata[:workbook_properties]
+    end
+
+    # Returns workbook view properties (e.g. { active_tab: 0 }).
+    def workbook_views
+      parse_workbook_metadata[:workbook_views]
+    end
+
+    # Returns calc properties (e.g. { calc_id: 191029 }).
+    def calc_properties
+      parse_workbook_metadata[:calc_properties]
+    end
+
     # Returns ordered sheet names.
     def sheet_names
       discover_sheets.map { |s| s[:name] }
     end
 
     private
+
+    def parse_workbook_metadata
+      workbook_xml = extract_zip_entry("xl/workbook.xml")
+      return { workbook_properties: {}, workbook_views: {}, calc_properties: {} } if workbook_xml.nil? || workbook_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(workbook_xml)
+      listener = WorkbookListener.new
+      parser.listen(listener)
+      parser.parse
+      {
+        workbook_properties: listener.workbook_properties,
+        workbook_views: listener.workbook_views,
+        calc_properties: listener.calc_properties
+      }
+    end
 
     def load_worksheet_xml(sheet)
       sheets = discover_sheets
@@ -594,21 +624,40 @@ module Xlsxrb
       end
     end
 
-    # SAX2 listener for parsing workbook.xml to discover sheet names and rIds.
+    # SAX2 listener for parsing workbook.xml to discover sheet names, rIds, and workbook-level properties.
     class WorkbookListener
       include REXML::SAX2Listener
 
-      attr_reader :sheets
+      attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties
 
       def initialize
         @sheets = []
+        @workbook_properties = {}
+        @workbook_views = {}
+        @calc_properties = {}
       end
 
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
-        return unless name == "sheet"
-
-        @sheets << { name: attributes["name"], rid: attributes["r:id"] }
+        case name
+        when "sheet"
+          @sheets << { name: attributes["name"], rid: attributes["r:id"], state: attributes["state"] }
+        when "workbookPr"
+          d1904 = attributes["date1904"]
+          @workbook_properties[:date1904] = %w[1 true].include?(d1904) unless d1904.nil?
+          dtv = attributes["defaultThemeVersion"]
+          @workbook_properties[:default_theme_version] = dtv.to_i if dtv
+        when "workbookView"
+          at = attributes["activeTab"]
+          @workbook_views[:active_tab] = at.to_i if at
+          fs = attributes["firstSheet"]
+          @workbook_views[:first_sheet] = fs.to_i if fs
+        when "calcPr"
+          ci = attributes["calcId"]
+          @calc_properties[:calc_id] = ci.to_i if ci
+          fcol = attributes["fullCalcOnLoad"]
+          @calc_properties[:full_calc_on_load] = %w[1 true].include?(fcol) unless fcol.nil?
+        end
       end
 
       private

@@ -34,6 +34,9 @@ module Xlsxrb
       @sheet_order = ["Sheet1"]
       @core_properties = {}
       @app_properties = {}
+      @workbook_properties = {}
+      @workbook_views = {}
+      @calc_properties = {}
     end
 
     # Adds a new sheet. Raises if name is already taken.
@@ -200,6 +203,36 @@ module Xlsxrb
       @app_properties.dup
     end
 
+    # Sets a workbook property (e.g. :date1904, :default_theme_version).
+    def set_workbook_property(name, value)
+      @workbook_properties[name] = value
+    end
+
+    # Returns workbook properties hash.
+    def workbook_properties
+      @workbook_properties.dup
+    end
+
+    # Sets a workbook view property (e.g. :active_tab, :first_sheet).
+    def set_workbook_view(name, value)
+      @workbook_views[name] = value
+    end
+
+    # Returns workbook view properties hash.
+    def workbook_views
+      @workbook_views.dup
+    end
+
+    # Sets a calc property (e.g. :calc_id, :full_calc_on_load).
+    def set_calc_property(name, value)
+      @calc_properties[name] = value
+    end
+
+    # Returns calc properties hash.
+    def calc_properties
+      @calc_properties.dup
+    end
+
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
@@ -281,13 +314,41 @@ module Xlsxrb
     def generate_workbook_xml
       parts = [
         XML_HEADER,
-        %(<workbook xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}">),
-        "<sheets>"
+        %(<workbook xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}">)
       ]
+
+      # workbookPr
+      unless @workbook_properties.empty?
+        attrs = []
+        attrs << %(date1904="#{@workbook_properties[:date1904] ? 1 : 0}") unless @workbook_properties[:date1904].nil?
+        attrs << %(defaultThemeVersion="#{@workbook_properties[:default_theme_version]}") if @workbook_properties[:default_theme_version]
+        parts << "<workbookPr #{attrs.join(" ")}/>" unless attrs.empty?
+      end
+
+      # bookViews/workbookView
+      unless @workbook_views.empty?
+        attrs = []
+        attrs << %(activeTab="#{@workbook_views[:active_tab]}") if @workbook_views[:active_tab]
+        attrs << %(firstSheet="#{@workbook_views[:first_sheet]}") if @workbook_views[:first_sheet]
+        parts << "<bookViews>"
+        parts << "<workbookView #{attrs.join(" ")}/>" unless attrs.empty?
+        parts << "</bookViews>"
+      end
+
+      parts << "<sheets>"
       @sheet_order.each_with_index do |name, i|
         parts << %(<sheet name="#{xml_escape(name)}" sheetId="#{i + 1}" r:id="rId#{i + 1}"/>)
       end
       parts << "</sheets>"
+
+      # calcPr
+      unless @calc_properties.empty?
+        attrs = []
+        attrs << %(calcId="#{@calc_properties[:calc_id]}") if @calc_properties[:calc_id]
+        attrs << %(fullCalcOnLoad="#{@calc_properties[:full_calc_on_load] ? 1 : 0}") unless @calc_properties[:full_calc_on_load].nil?
+        parts << "<calcPr #{attrs.join(" ")}/>" unless attrs.empty?
+      end
+
       parts << "</workbook>"
       parts.join
     end

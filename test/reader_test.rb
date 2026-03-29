@@ -337,4 +337,36 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips workbook properties and views" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_sheet("Data")
+    writer.set_cell("A1", "hello", sheet: "Sheet1")
+    writer.set_workbook_property(:date1904, false)
+    writer.set_workbook_property(:default_theme_version, 166_925)
+    writer.set_workbook_view(:active_tab, 1)
+    writer.set_workbook_view(:first_sheet, 0)
+    writer.set_calc_property(:calc_id, 191_029)
+    writer.set_calc_property(:full_calc_on_load, true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    wp = reader.workbook_properties
+    assert_equal(false, wp[:date1904])
+    assert_equal(166_925, wp[:default_theme_version])
+
+    wv = reader.workbook_views
+    assert_equal(1, wv[:active_tab])
+    assert_equal(0, wv[:first_sheet])
+
+    cp = reader.calc_properties
+    assert_equal(191_029, cp[:calc_id])
+    assert_equal(true, cp[:full_calc_on_load])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
