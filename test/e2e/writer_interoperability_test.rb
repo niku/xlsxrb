@@ -495,6 +495,25 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores tables and shared strings correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.use_shared_strings!
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Age")
+    writer.set_cell("A2", "Alice")
+    writer.set_cell("B2", 30)
+    writer.add_table("A1:B5", columns: %w[Name Age])
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_table_sst_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
@@ -536,16 +555,4 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
       scenario_path, xlsx_path
     ]
   end
-  test "writer output stores shared strings correctly" do
-    writer = Xlsxrb::Writer.new
-    writer.use_shared_strings!
-    writer.set_cell("A1", "Hello")
-    writer.set_cell("A2", "World")
-    xlsx_path = File.join(Dir.tmpdir, "sst_test_\#{SecureRandom.hex(6)}.xlsx")
-    writer.write(xlsx_path)
-    assert_openxml_sdk_scenario_passes("writer_sst_test", xlsx_path)
-  ensure
-    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
-  end
-
 end

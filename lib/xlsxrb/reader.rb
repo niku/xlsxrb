@@ -169,6 +169,12 @@ module Xlsxrb
       parse_worksheet_auto_filter(worksheet_xml)
     end
 
+    # Returns tables for the given sheet as an array of { id:, name:, display_name:, ref:, columns: }.
+    def tables(sheet: nil)
+      sheet_index = resolve_sheet_index(sheet)
+      load_tables(sheet_index)
+    end
+
     # Returns filter columns as { col_id => filter_hash }.
     def filter_columns(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -483,6 +489,55 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.strings
+    end
+
+    def resolve_sheet_index(sheet)
+      sheets = discover_sheets
+      if sheet.nil?
+        0
+      elsif sheet.is_a?(Integer)
+        sheet
+      else
+        idx = sheets.index { |s| s[:name] == sheet }
+        idx || 0
+      end
+    end
+
+    def load_tables(sheet_index)
+      rels_path = "xl/worksheets/_rels/sheet#{sheet_index + 1}.xml.rels"
+      rels_xml = extract_zip_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      table_paths = []
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = RelsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.relationships.each do |rel|
+        table_paths << rel[:target] if rel[:type]&.end_with?("/table")
+      end
+
+      table_paths.map do |rel_target|
+        path = if rel_target.start_with?("/")
+                 rel_target[1..] # strip leading /
+               elsif rel_target.start_with?("..")
+                 "xl/#{rel_target.sub("../", "")}"
+               else
+                 "xl/worksheets/#{rel_target}"
+               end
+        tbl_xml = extract_zip_entry(path)
+        next if tbl_xml.nil? || tbl_xml.empty?
+
+        parse_table_xml(tbl_xml)
+      end.compact
+    end
+
+    def parse_table_xml(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = TableListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.table
     end
 
     def load_styles
@@ -2003,6 +2058,48 @@ module Xlsxrb
         when "colBreaks"
           @inside_col_breaks = false
         end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing table XML.
+    class TableListener
+      include REXML::SAX2Listener
+
+      attr_reader :table
+
+      def initialize
+        @table = nil
+        @columns = []
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "table"
+          @table = {
+            id: attributes["id"]&.to_i,
+            name: attributes["name"],
+            display_name: attributes["displayName"],
+            ref: attributes["ref"]
+          }
+        when "tableColumn"
+          @columns << attributes["name"]
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        @table[:columns] = @columns if name == "table" && @table
       end
 
       private

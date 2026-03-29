@@ -60,6 +60,7 @@ module Xlsxrb
       @col_breaks = { "Sheet1" => [] }
       @data_validations = { "Sheet1" => [] }
       @conditional_formats = { "Sheet1" => [] }
+      @tables = { "Sheet1" => [] }
       @use_shared_strings = false
     end
 
@@ -90,6 +91,7 @@ module Xlsxrb
       @col_breaks[name] = []
       @data_validations[name] = []
       @conditional_formats[name] = []
+      @tables[name] = []
       @sheet_order << name
     end
 
@@ -570,6 +572,26 @@ module Xlsxrb
       @conditional_formats[sheet_name] || []
     end
 
+    # Adds a table definition to a sheet.
+    # columns: array of column name strings.
+    def add_table(ref, columns:, name: nil, display_name: nil, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @tables.key?(sheet_name)
+
+      table_id = @tables.values.flatten.size + 1
+      tbl_name = name || "Table#{table_id}"
+      @tables[sheet_name] << {
+        id: table_id, ref: ref, name: tbl_name,
+        display_name: display_name || tbl_name, columns: columns
+      }
+    end
+
+    # Returns table definitions for the first (or given) sheet.
+    def tables(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @tables[sheet_name] || []
+    end
+
     # Enables shared string table mode (strings stored in sharedStrings.xml).
     def use_shared_strings!
       @use_shared_strings = true
@@ -668,6 +690,7 @@ module Xlsxrb
       entries["docProps/app.xml"] = generate_app_properties_xml unless @app_properties.empty?
       entries["xl/sharedStrings.xml"] = generate_shared_strings_xml(sst) if sst
 
+      table_index = 0
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @column_attrs[sheet_name], @row_attrs[sheet_name],
@@ -677,11 +700,21 @@ module Xlsxrb
           @sheet_views[sheet_name], @freeze_panes[sheet_name], @selections[sheet_name],
           @print_options[sheet_name], @page_margins[sheet_name], @page_setup[sheet_name],
           @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name],
-          @data_validations[sheet_name], @conditional_formats[sheet_name], sst
+          @data_validations[sheet_name], @conditional_formats[sheet_name], sst,
+          @tables[sheet_name] || [], @hyperlinks[sheet_name].size
         )
-        next if @hyperlinks[sheet_name].empty?
 
-        entries["xl/worksheets/_rels/sheet#{i + 1}.xml.rels"] = generate_worksheet_rels(@hyperlinks[sheet_name])
+        sheet_tables = @tables[sheet_name] || []
+        has_rels = !@hyperlinks[sheet_name].empty? || sheet_tables.any?
+        if has_rels
+          entries["xl/worksheets/_rels/sheet#{i + 1}.xml.rels"] =
+            generate_worksheet_rels(@hyperlinks[sheet_name], sheet_tables, table_index)
+        end
+
+        sheet_tables.each do |tbl|
+          table_index += 1
+          entries["xl/tables/table#{table_index}.xml"] = generate_table_xml(tbl)
+        end
       end
 
       generator = ZipGenerator.new(filepath)
@@ -712,6 +745,13 @@ module Xlsxrb
         parts << %(<Override PartName="/xl/worksheets/sheet#{i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>)
       end
       parts << %(<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>) if @use_shared_strings
+      table_idx = 0
+      @sheet_order.each do |sn|
+        (@tables[sn] || []).each do
+          table_idx += 1
+          parts << %(<Override PartName="/xl/tables/table#{table_idx}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/>)
+        end
+      end
       parts << %(<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>) unless @core_properties.empty?
       parts << %(<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>) unless @app_properties.empty?
       parts << "</Types>"
@@ -811,9 +851,9 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
-      worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
+      worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if !sheet_hyperlinks.empty? || sheet_tables.any?
       parts = [
         XML_HEADER,
         "<worksheet #{worksheet_attrs}>"
@@ -1084,6 +1124,16 @@ module Xlsxrb
         parts << "</colBreaks>"
       end
 
+      # Emit <tableParts> if tables are defined.
+      unless sheet_tables.empty?
+        parts << %(<tableParts count="#{sheet_tables.size}">)
+        sheet_tables.each_with_index do |_tbl, i|
+          rid = hyperlink_count + i + 1
+          parts << %(<tablePart r:id="rId#{rid}"/>)
+        end
+        parts << "</tableParts>"
+      end
+
       parts << "</worksheet>"
       parts.join
     end
@@ -1094,6 +1144,7 @@ module Xlsxrb
         sheet_cells.each_value do |value|
           next unless value.is_a?(String) || (!value.is_a?(Numeric) && !value.is_a?(Date) &&
                                                value != true && value != false && !value.is_a?(Formula))
+
           str = value.to_s
           sst[str] = sst.size unless sst.key?(str)
         end
@@ -1108,13 +1159,35 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_rels(sheet_hyperlinks)
+    def generate_table_xml(tbl)
+      parts = [
+        XML_HEADER,
+        %(<table xmlns="#{SSML_NS}" id="#{tbl[:id]}" name="#{xml_escape(tbl[:name])}" displayName="#{xml_escape(tbl[:display_name])}" ref="#{tbl[:ref]}" totalsRowShown="0">),
+        %(<autoFilter ref="#{tbl[:ref]}"/>),
+        %(<tableColumns count="#{tbl[:columns].size}">)
+      ]
+      tbl[:columns].each_with_index do |col, i|
+        parts << %(<tableColumn id="#{i + 1}" name="#{xml_escape(col)}"/>)
+      end
+      parts << "</tableColumns>"
+      parts << '<tableStyleInfo name="TableStyleMedium2" showFirstColumn="0" showLastColumn="0" showRowStripes="1" showColumnStripes="0"/>'
+      parts << "</table>"
+      parts.join
+    end
+
+    def generate_worksheet_rels(sheet_hyperlinks, sheet_tables = [], table_start_index = 0)
       parts = [
         XML_HEADER,
         %(<Relationships xmlns="#{REL_NS}">)
       ]
-      sheet_hyperlinks.each_with_index do |(_cell_ref, url), idx|
-        parts << %(<Relationship Id="rId#{idx + 1}" Type="#{DOC_REL_NS}/hyperlink" Target="#{xml_escape(url)}" TargetMode="External"/>)
+      rid = 0
+      sheet_hyperlinks.each do |(_cell_ref, url)|
+        rid += 1
+        parts << %(<Relationship Id="rId#{rid}" Type="#{DOC_REL_NS}/hyperlink" Target="#{xml_escape(url)}" TargetMode="External"/>)
+      end
+      sheet_tables.each_with_index do |_tbl, i|
+        rid += 1
+        parts << %(<Relationship Id="rId#{rid}" Type="#{DOC_REL_NS}/table" Target="../tables/table#{table_start_index + i + 1}.xml"/>)
       end
       parts << "</Relationships>"
       parts.join
