@@ -578,6 +578,23 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(%w[Name Age], tbls[0][:columns])
   end
 
+  test "stores tables with totals row and enhanced columns" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Item")
+    writer.set_cell("B1", "Price")
+    writer.set_cell("C1", "Tax")
+    writer.add_table("A1:C5", columns: [
+      "Item",
+      { name: "Price", totals_row_function: "sum" },
+      { name: "Tax", calculated_column_formula: "[Price]*0.1" }
+    ], totals_row_count: 1, style: { name: "TableStyleLight1", show_row_stripes: false })
+
+    tbls = writer.tables
+    assert_equal(1, tbls.size)
+    assert_equal(1, tbls[0][:totals_row_count])
+    assert_equal("TableStyleLight1", tbls[0][:style][:name])
+  end
+
   test "enables shared string table mode" do
     writer = Xlsxrb::Writer.new
     writer.use_shared_strings!

@@ -529,7 +529,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     assert_equal(1, tbls.size)
     assert_equal("A1:B2", tbls[0][:ref])
     assert_equal("SdkTable", tbls[0][:name])
-    assert_equal(%w[Name Score], tbls[0][:columns])
+    assert_equal([{ name: "Name" }, { name: "Score" }], tbls[0][:columns])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -837,6 +837,24 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     assert_equal("Heading1", ncs[1][:name])
     assert_equal(1, ncs[1][:xf_id])
     assert_equal(1, ncs[1][:builtin_id])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "reader parses SDK-generated table with totals row and deep columns" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_table_deep_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    tbls = reader.tables
+    assert_equal(1, tbls.size)
+    assert_equal(1, tbls[0][:totals_row_count])
+    assert_equal("sum", tbls[0][:columns][1][:totals_row_function])
+    assert_equal("[Price]*0.1", tbls[0][:columns][2][:calculated_column_formula])
+    assert_equal("TableStyleLight1", tbls[0][:style][:name])
+    assert_equal(true, tbls[0][:style][:show_column_stripes])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
