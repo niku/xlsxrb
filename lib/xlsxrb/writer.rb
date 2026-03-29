@@ -21,6 +21,8 @@ module Xlsxrb
       @row_attrs = { "Sheet1" => {} }
       @merge_cells = { "Sheet1" => [] }
       @hyperlinks = { "Sheet1" => {} }
+      @cell_styles = { "Sheet1" => {} }
+      @num_fmts = []
       @sheet_order = ["Sheet1"]
     end
 
@@ -33,6 +35,7 @@ module Xlsxrb
       @row_attrs[name] = {}
       @merge_cells[name] = []
       @hyperlinks[name] = {}
+      @cell_styles[name] = {}
       @sheet_order << name
     end
 
@@ -127,6 +130,25 @@ module Xlsxrb
       @hyperlinks[sheet_name] || {}
     end
 
+    # Registers a custom number format and returns its numFmtId (starting at 164).
+    def add_number_format(format_code)
+      existing = @num_fmts.find { |nf| nf[:format_code] == format_code }
+      return existing[:num_fmt_id] if existing
+
+      num_fmt_id = 164 + @num_fmts.size
+      @num_fmts << { num_fmt_id: num_fmt_id, format_code: format_code }
+      num_fmt_id
+    end
+
+    # Sets a number format on a cell. num_fmt_id is from add_number_format or a built-in id.
+    def set_cell_format(cell_address, num_fmt_id, sheet: nil)
+      validate_cell_address!(cell_address)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @cell_styles.key?(sheet_name)
+
+      @cell_styles[sheet_name][cell_address] = num_fmt_id
+    end
+
     # Returns ordered sheet names.
     attr_reader :sheet_order
 
@@ -136,13 +158,14 @@ module Xlsxrb
         "[Content_Types].xml" => generate_content_types_xml,
         "_rels/.rels" => generate_rels_root,
         "xl/workbook.xml" => generate_workbook_xml,
-        "xl/_rels/workbook.xml.rels" => generate_workbook_rels
+        "xl/_rels/workbook.xml.rels" => generate_workbook_rels,
+        "xl/styles.xml" => generate_styles_xml
       }
 
       @sheet_order.each_with_index do |sheet_name, i|
         entries["xl/worksheets/sheet#{i + 1}.xml"] = generate_worksheet_xml(
           @sheets[sheet_name], @column_widths[sheet_name], @row_attrs[sheet_name],
-          @merge_cells[sheet_name], @hyperlinks[sheet_name]
+          @merge_cells[sheet_name], @hyperlinks[sheet_name], @cell_styles[sheet_name]
         )
         next if @hyperlinks[sheet_name].empty?
 
@@ -162,7 +185,8 @@ module Xlsxrb
         %(<Types xmlns="#{CT_NS}">),
         %(<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>),
         %(<Default Extension="xml" ContentType="application/xml"/>),
-        %(<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>)
+        %(<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>),
+        %(<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>)
       ]
       @sheet_order.each_with_index do |_, i|
         parts << %(<Override PartName="/xl/worksheets/sheet#{i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>)
@@ -203,11 +227,13 @@ module Xlsxrb
       @sheet_order.each_with_index do |_, i|
         parts << %(<Relationship Id="rId#{i + 1}" Type="#{DOC_REL_NS}/worksheet" Target="worksheets/sheet#{i + 1}.xml"/>)
       end
+      styles_rid = @sheet_order.size + 1
+      parts << %(<Relationship Id="rId#{styles_rid}" Type="#{DOC_REL_NS}/styles" Target="styles.xml"/>)
       parts << "</Relationships>"
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_merge_cells, sheet_hyperlinks)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_row_attrs, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles)
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") unless sheet_hyperlinks.empty?
       parts = [
@@ -250,7 +276,8 @@ module Xlsxrb
         parts << "<row #{attrs}>"
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|
           cell_ref = "#{col_letter}#{row_num}"
-          parts << cell_xml(cell_ref, value)
+          style_idx = resolve_style_index(sheet_cell_styles[cell_ref])
+          parts << cell_xml(cell_ref, value, style_idx)
         end
         parts << "</row>"
       end
@@ -298,20 +325,76 @@ module Xlsxrb
            .gsub("'", "&apos;")
     end
 
-    def cell_xml(cell_ref, value)
+    def cell_xml(cell_ref, value, style_idx)
+      s_attr = style_idx ? %( s="#{style_idx}") : ""
       case value
       when Formula
-        parts = %(<c r="#{cell_ref}"><f>#{xml_escape(value.expression)}</f>)
+        parts = %(<c r="#{cell_ref}"#{s_attr}><f>#{xml_escape(value.expression)}</f>)
         parts << "<v>#{xml_escape(value.cached_value.to_s)}</v>" unless value.cached_value.nil?
         parts << "</c>"
         parts
       when true, false
-        %(<c r="#{cell_ref}" t="b"><v>#{value ? 1 : 0}</v></c>)
+        %(<c r="#{cell_ref}" t="b"#{s_attr}><v>#{value ? 1 : 0}</v></c>)
       when Numeric
-        %(<c r="#{cell_ref}"><v>#{value}</v></c>)
+        %(<c r="#{cell_ref}"#{s_attr}><v>#{value}</v></c>)
       else
-        %(<c r="#{cell_ref}" t="inlineStr"><is><t>#{xml_escape(value)}</t></is></c>)
+        %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}><is><t>#{xml_escape(value)}</t></is></c>)
       end
+    end
+
+    # Maps a numFmtId to a cellXfs index. Index 0 is the default (no format).
+    def resolve_style_index(num_fmt_id)
+      return nil if num_fmt_id.nil?
+
+      # Build the xf index mapping on first call.
+      @xf_index_map ||= begin
+        map = {}
+        @num_fmts.each_with_index do |nf, i|
+          map[nf[:num_fmt_id]] = i + 1 # 0 is the default xf
+        end
+        map
+      end
+      @xf_index_map[num_fmt_id]
+    end
+
+    def generate_styles_xml
+      parts = [
+        XML_HEADER,
+        %(<styleSheet xmlns="#{SSML_NS}">)
+      ]
+
+      # numFmts
+      unless @num_fmts.empty?
+        parts << %(<numFmts count="#{@num_fmts.size}">)
+        @num_fmts.each do |nf|
+          parts << %(<numFmt numFmtId="#{nf[:num_fmt_id]}" formatCode="#{xml_escape(nf[:format_code])}"/>)
+        end
+        parts << "</numFmts>"
+      end
+
+      # fonts — one default
+      parts << %(<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>)
+
+      # fills — two required
+      parts << %(<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>)
+
+      # borders — one default
+      parts << %(<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>)
+
+      # cellStyleXfs
+      parts << %(<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>)
+
+      # cellXfs — default + one per numFmt
+      xf_count = 1 + @num_fmts.size
+      parts << %(<cellXfs count="#{xf_count}">)
+      parts << %(<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>)
+      @num_fmts.each do |nf|
+        parts << %(<xf numFmtId="#{nf[:num_fmt_id]}" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>)
+      end
+      parts << "</cellXfs>"
+
+      parts << "</styleSheet>"
+      parts.join
     end
 
     def validate_cell_address!(cell_address)
