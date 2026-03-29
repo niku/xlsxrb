@@ -11,7 +11,12 @@ module Xlsxrb
   class Error < StandardError; end
 
   # Represents a formula with an optional cached value.
-  Formula = Data.define(:expression, :cached_value)
+  # Optional: type (:shared, :array), ref (range), shared_index (si for shared formulas)
+  Formula = Data.define(:expression, :cached_value, :type, :ref, :shared_index) do
+    def initialize(expression:, cached_value: nil, type: nil, ref: nil, shared_index: nil)
+      super
+    end
+  end
 
   # Represents a rich text string with formatting runs.
   # runs: array of hashes, each with :text and optional :font (hash of font properties).
