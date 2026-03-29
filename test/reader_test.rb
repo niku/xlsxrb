@@ -874,4 +874,138 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+  test "round-trips images through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    png_bytes = [
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+      0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+      0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
+      0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+      0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC,
+      0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
+      0x44, 0xAE, 0x42, 0x60, 0x82
+    ].pack("C*")
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "img test")
+    writer.insert_image(png_bytes, ext: "png", from_col: 1, from_row: 2, to_col: 6, to_row: 12, name: "RoundTrip Pic")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    imgs = reader.images
+    assert_equal(1, imgs.size)
+    assert_equal("RoundTrip Pic", imgs[0][:name])
+    assert_equal(1, imgs[0][:from_col])
+    assert_equal(2, imgs[0][:from_row])
+    assert_equal(6, imgs[0][:to_col])
+    assert_equal(12, imgs[0][:to_row])
+    assert_not_nil(imgs[0][:target])
+
+    # Verify image data is accessible.
+    img_data = reader.raw_entry("xl/media/image1.png")
+    assert_equal(png_bytes, img_data)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips charts through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Value")
+    writer.add_chart(type: :bar, title: "My Chart")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("barChart", charts[0][:chart_type])
+    assert_equal("My Chart", charts[0][:title])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "entry_names lists all ZIP entries" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    names = reader.entry_names
+    assert(names.include?("[Content_Types].xml"))
+    assert(names.include?("xl/workbook.xml"))
+    assert(names.include?("xl/worksheets/sheet1.xml"))
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "has_macros? returns false for normal xlsx" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    assert_false(reader.has_macros?)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "copy_entries_from preserves all content" do
+    source_tempfile = Tempfile.new(["xlsxrb-src", ".xlsx"])
+    source_path = source_tempfile.path
+    source_tempfile.close
+
+    output_tempfile = Tempfile.new(["xlsxrb-out", ".xlsx"])
+    output_path = output_tempfile.path
+    output_tempfile.close
+
+    # Write source with images and comments.
+    png_bytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+                 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+                 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+                 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+                 0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
+                 0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+                 0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC,
+                 0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
+                 0x44, 0xAE, 0x42, 0x60, 0x82].pack("C*")
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "original")
+    writer.insert_image(png_bytes, ext: "png")
+    writer.add_comment("A1", "Original comment", author: "Author")
+    writer.write(source_path)
+
+    # Copy entries through another Writer.
+    writer2 = Xlsxrb::Writer.new
+    writer2.copy_entries_from(source_path)
+    writer2.write(output_path)
+
+    # Verify output has images and comments.
+    reader = Xlsxrb::Reader.new(output_path)
+    imgs = reader.images
+    assert_equal(1, imgs.size)
+    comments = reader.comments
+    assert_equal(1, comments.size)
+    assert_equal("Original comment", comments[0][:text])
+  ensure
+    File.delete(source_path) if source_path && File.exist?(source_path)
+    File.delete(output_path) if output_path && File.exist?(output_path)
+  end
+
 end

@@ -562,4 +562,54 @@ class WriterTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+  test "insert_image stores image definition" do
+    writer = Xlsxrb::Writer.new
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", from_col: 1, from_row: 2, to_col: 5, to_row: 8, name: "Test")
+    imgs = writer.images
+    assert_equal(1, imgs.size)
+    assert_equal("Test", imgs[0][:name])
+    assert_equal("png", imgs[0][:ext])
+    assert_equal(1, imgs[0][:from_col])
+    assert_equal(2, imgs[0][:from_row])
+  end
+
+  test "add_chart stores chart definition" do
+    writer = Xlsxrb::Writer.new
+    writer.add_chart(type: :bar, title: "Sales", cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3")
+    charts = writer.charts
+    assert_equal(1, charts.size)
+    assert_equal(:bar, charts[0][:type])
+    assert_equal("Sales", charts[0][:title])
+  end
+
+  test "preserve_macros flag" do
+    writer = Xlsxrb::Writer.new
+    assert_false(writer.preserve_macros?)
+    writer.preserve_macros!
+    assert_true(writer.preserve_macros?)
+  end
+
+  test "add_raw_entry includes entry in output" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-raw", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_raw_entry("custom/data.txt", "test content")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    data = reader.raw_entry("custom/data.txt")
+    assert_equal("test content", data)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "insert_image on unknown sheet raises" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.insert_image("data", sheet: "Nonexistent") }
+  end
+
 end
