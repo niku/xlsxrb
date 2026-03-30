@@ -282,7 +282,7 @@ class ReaderTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     builtin_date_style = writer.add_cell_style(num_fmt_id: 14)
     builtin_text_style = writer.add_cell_style(num_fmt_id: 49)
-    writer.set_cell("A1", 45292)
+    writer.set_cell("A1", 45_292)
     writer.set_cell_style("A1", builtin_date_style)
     writer.set_cell("B1", "text")
     writer.set_cell_style("B1", builtin_text_style)
@@ -818,7 +818,7 @@ class ReaderTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial")
-    xf_id = writer.add_named_cell_style(name: "Heading1", font_id: fid, builtin_id: 1)
+    writer.add_named_cell_style(name: "Heading1", font_id: fid, builtin_id: 1)
     writer.set_cell("A1", "Hello")
     writer.write(xlsx_path)
 
@@ -846,7 +846,7 @@ class ReaderTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     style_xf_id = writer.add_named_cell_style(name: "DateBase", num_fmt_id: 14)
     cell_xf_id = writer.add_cell_style(xf_id: style_xf_id)
-    writer.set_cell("A1", 45292)
+    writer.set_cell("A1", 45_292)
     writer.set_cell_style("A1", cell_xf_id)
     writer.write(xlsx_path)
 
@@ -1051,10 +1051,10 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell("B1", "Price")
     writer.set_cell("C1", "Tax")
     writer.add_table("A1:C5", columns: [
-      "Item",
-      { name: "Price", totals_row_function: "sum" },
-      { name: "Tax", calculated_column_formula: "[Price]*0.1" }
-    ], totals_row_count: 1, style: { name: "TableStyleLight1", show_row_stripes: false })
+                       "Item",
+                       { name: "Price", totals_row_function: "sum" },
+                       { name: "Tax", calculated_column_formula: "[Price]*0.1" }
+                     ], totals_row_count: 1, style: { name: "TableStyleLight1", show_row_stripes: false })
     writer.write(xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
@@ -1274,7 +1274,7 @@ class ReaderTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "img test")
     writer.insert_image(png_bytes, ext: "png", from_col: 1, from_row: 2, to_col: 6, to_row: 12,
-              name: "RoundTrip Pic", description: "Round-trip image description")
+                                   name: "RoundTrip Pic", description: "Round-trip image description")
     writer.write(xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
@@ -1347,9 +1347,9 @@ class ReaderTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "data")
     rt = Xlsxrb::RichText.new(runs: [
-      { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
-      { text: " normal" }
-    ])
+                                { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+                                { text: " normal" }
+                              ])
     writer.add_comment("A1", rt, author: "Tester")
     writer.write(xlsx_path)
 
@@ -1391,7 +1391,7 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
-  test "has_macros? returns false for normal xlsx" do
+  test "macros? returns false for normal xlsx" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
@@ -1401,7 +1401,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
-    assert_false(reader.has_macros?)
+    assert_false(reader.macros?)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -1486,9 +1486,9 @@ class ReaderTest < Test::Unit::TestCase
   test "round-trips rich text inline through writer and reader" do
     writer = Xlsxrb::Writer.new
     rt = Xlsxrb::RichText.new(runs: [
-      { text: "Bold", font: { bold: true, sz: 14.0, color: "FFFF0000" } },
-      { text: " Normal" }
-    ])
+                                { text: "Bold", font: { bold: true, sz: 14.0, color: "FFFF0000" } },
+                                { text: " Normal" }
+                              ])
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
@@ -1513,9 +1513,9 @@ class ReaderTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     writer.use_shared_strings!
     rt = Xlsxrb::RichText.new(runs: [
-      { text: "Italic", font: { italic: true } },
-      { text: " plain" }
-    ])
+                                { text: "Italic", font: { italic: true } },
+                                { text: " plain" }
+                              ])
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
@@ -1887,12 +1887,12 @@ class ReaderTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Writer.new
     rt = Xlsxrb::RichText.new(runs: [
-      { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
-      { text: "DblUnder", font: { underline: "double", name: "Arial", sz: 11 } },
-      { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
-      { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } },
-      { text: "Indexed", font: { indexed: 10, name: "Calibri", sz: 11 } }
-    ])
+                                { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+                                { text: "DblUnder", font: { underline: "double", name: "Arial", sz: 11 } },
+                                { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
+                                { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } },
+                                { text: "Indexed", font: { indexed: 10, name: "Calibri", sz: 11 } }
+                              ])
     writer.set_cell("A1", rt)
     writer.write(xlsx_path)
 
@@ -1971,9 +1971,9 @@ class ReaderTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Writer.new
     fill_id = writer.add_fill(gradient: {
-      degree: 90,
-      stops: [{ position: 0, theme: 4, tint: -0.5 }, { position: 1, indexed: 12 }]
-    })
+                                degree: 90,
+                                stops: [{ position: 0, theme: 4, tint: -0.5 }, { position: 1, indexed: 12 }]
+                              })
     style_id = writer.add_cell_style(fill_id: fill_id)
     writer.set_cell("A1", "themed gradient")
     writer.set_cell_style("A1", style_id)
@@ -2001,18 +2001,18 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell("A1", "hello")
     writer.add_dxf(font: { bold: true, color: "FFFF0000" })
     writer.add_conditional_format("A1:A10", type: :expression, priority: 1,
-                                            formula: 'MOD(ROW(),2)=0', format_id: 0)
+                                            formula: "MOD(ROW(),2)=0", format_id: 0)
     writer.add_conditional_format("B1:B10", type: :unique_values, priority: 2, format_id: 0)
     writer.add_conditional_format("C1:C10", type: :not_contains_text, priority: 3, operator: "notContains",
                                             text: "bad", formula: 'ISERROR(SEARCH("bad",C1))',
                                             format_id: 0)
     writer.add_conditional_format("D1:D10", type: :contains_blanks, priority: 4,
-                                            formula: 'LEN(TRIM(D1))=0', format_id: 0)
+                                            formula: "LEN(TRIM(D1))=0", format_id: 0)
     writer.add_conditional_format("E1:E10", type: :not_contains_blanks, priority: 5,
-                                            formula: 'LEN(TRIM(E1))>0', format_id: 0)
+                                            formula: "LEN(TRIM(E1))>0", format_id: 0)
     writer.add_conditional_format("F1:F10", type: :time_period, priority: 6,
                                             time_period: "lastWeek",
-                                            formula: 'AND(TODAY()-7<=F1,F1<=TODAY())',
+                                            formula: "AND(TODAY()-7<=F1,F1<=TODAY())",
                                             format_id: 0)
     writer.write(xlsx_path)
 

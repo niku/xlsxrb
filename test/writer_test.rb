@@ -685,9 +685,9 @@ class WriterTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
-    assert_match(%r{<border[^>]*diagonalUp="1"}, xml_content)
-    assert_match(%r{<border[^>]*diagonalDown="1"}, xml_content)
-    assert_match(%r{<diagonal style="thin">}, xml_content)
+    assert_match(/<border[^>]*diagonalUp="1"/, xml_content)
+    assert_match(/<border[^>]*diagonalDown="1"/, xml_content)
+    assert_match(/<diagonal style="thin">/, xml_content)
     assert_match(%r{<color rgb="FFFF0000"/>}, xml_content)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -711,8 +711,8 @@ class WriterTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
-    assert_match(%r{<gradientFill[^>]*type="linear"}, xml_content)
-    assert_match(%r{<gradientFill[^>]*degree="90"}, xml_content)
+    assert_match(/<gradientFill[^>]*type="linear"/, xml_content)
+    assert_match(/<gradientFill[^>]*degree="90"/, xml_content)
     assert_match(%r{<stop position="0"><color rgb="FFFF0000"/></stop>}, xml_content)
     assert_match(%r{<stop position="1"><color rgb="FF0000FF"/></stop>}, xml_content)
   ensure
@@ -747,10 +747,10 @@ class WriterTest < Test::Unit::TestCase
     writer.set_cell("B1", "Price")
     writer.set_cell("C1", "Tax")
     writer.add_table("A1:C5", columns: [
-      "Item",
-      { name: "Price", totals_row_function: "sum" },
-      { name: "Tax", calculated_column_formula: "[Price]*0.1" }
-    ], totals_row_count: 1, style: { name: "TableStyleLight1", show_row_stripes: false })
+                       "Item",
+                       { name: "Price", totals_row_function: "sum" },
+                       { name: "Tax", calculated_column_formula: "[Price]*0.1" }
+                     ], totals_row_count: 1, style: { name: "TableStyleLight1", show_row_stripes: false })
 
     tbls = writer.tables
     assert_equal(1, tbls.size)
@@ -827,9 +827,9 @@ class WriterTest < Test::Unit::TestCase
   test "add_comment stores rich text comment" do
     writer = Xlsxrb::Writer.new
     rt = Xlsxrb::RichText.new(runs: [
-      { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
-      { text: " normal" }
-    ])
+                                { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+                                { text: " normal" }
+                              ])
     writer.add_comment("A1", rt, author: "Tester")
     comments = writer.comments
     assert_equal(1, comments.size)
@@ -1055,7 +1055,7 @@ class WriterTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
-    assert_match(%r{<left style="thin">}, xml_content)
+    assert_match(/<left style="thin">/, xml_content)
     assert_match(%r{<color[^/>]*theme="1"}, xml_content)
     assert_match(%r{<color[^/>]*tint="-0.25"}, xml_content)
   ensure
@@ -1065,9 +1065,9 @@ class WriterTest < Test::Unit::TestCase
   test "rich text value stored and retrievable" do
     writer = Xlsxrb::Writer.new
     rt = Xlsxrb::RichText.new(runs: [
-      { text: "Bold", font: { bold: true } },
-      { text: " Normal" }
-    ])
+                                { text: "Bold", font: { bold: true } },
+                                { text: " Normal" }
+                              ])
     writer.set_cell("A1", rt)
     assert_equal(rt, writer.cells["A1"])
     assert_equal("Bold Normal", rt.to_s)
@@ -1182,22 +1182,22 @@ class WriterTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Writer.new
     rt = Xlsxrb::RichText.new(runs: [
-      { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
-      { text: "Double", font: { underline: "double", name: "Arial", sz: 11 } },
-      { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
-      { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } }
-    ])
+                                { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+                                { text: "Double", font: { underline: "double", name: "Arial", sz: 11 } },
+                                { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
+                                { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } }
+                              ])
     writer.set_cell("A1", rt)
     writer.write(xlsx_path)
 
     xml = read_xml_from_xlsx(xlsx_path, "xl/sharedStrings.xml")
-    assert_match(/<strike\/>/, xml)
-    assert_match(/<u val="double"\/>/, xml)
-    assert_match(/<vertAlign val="superscript"\/>/, xml)
+    assert_match(%r{<strike/>}, xml)
+    assert_match(%r{<u val="double"/>}, xml)
+    assert_match(%r{<vertAlign val="superscript"/>}, xml)
     assert_match(/<color[^>]*theme="1"/, xml)
     assert_match(/<color[^>]*tint="0.5"/, xml)
-    assert_match(/<family val="2"\/>/, xml)
-    assert_match(/<scheme val="minor"\/>/, xml)
+    assert_match(%r{<family val="2"/>}, xml)
+    assert_match(%r{<scheme val="minor"/>}, xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -1222,9 +1222,9 @@ class WriterTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
-    assert_match(/<color theme="4" tint="-0.25"\/>/, xml)
-    assert_match(/<color theme="9"\/>/, xml)
-    assert_match(/<color indexed="10"\/>/, xml)
+    assert_match(%r{<color theme="4" tint="-0.25"/>}, xml)
+    assert_match(%r{<color theme="9"/>}, xml)
+    assert_match(%r{<color indexed="10"/>}, xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -1236,17 +1236,17 @@ class WriterTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Writer.new
     fill_id = writer.add_fill(gradient: {
-      degree: 90,
-      stops: [{ position: 0, theme: 4, tint: -0.5 }, { position: 1, indexed: 12 }]
-    })
+                                degree: 90,
+                                stops: [{ position: 0, theme: 4, tint: -0.5 }, { position: 1, indexed: 12 }]
+                              })
     style_id = writer.add_cell_style(fill_id: fill_id)
     writer.set_cell("A1", "themed gradient")
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
     xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
-    assert_match(/<stop position="0"><color theme="4" tint="-0.5"\/><\/stop>/, xml)
-    assert_match(/<stop position="1"><color indexed="12"\/><\/stop>/, xml)
+    assert_match(%r{<stop position="0"><color theme="4" tint="-0.5"/></stop>}, xml)
+    assert_match(%r{<stop position="1"><color indexed="12"/></stop>}, xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -1254,18 +1254,18 @@ class WriterTest < Test::Unit::TestCase
   test "stores complete set of CF rule types" do
     writer = Xlsxrb::Writer.new
     writer.add_conditional_format("A1:A10", type: :expression, priority: 1,
-                                            formula: 'MOD(ROW(),2)=0', format_id: 0)
+                                            formula: "MOD(ROW(),2)=0", format_id: 0)
     writer.add_conditional_format("B1:B10", type: :unique_values, priority: 2, format_id: 0)
     writer.add_conditional_format("C1:C10", type: :not_contains_text, priority: 3, operator: "notContains",
                                             text: "bad", formula: 'ISERROR(SEARCH("bad",C1))',
                                             format_id: 0)
     writer.add_conditional_format("D1:D10", type: :contains_blanks, priority: 4,
-                                            formula: 'LEN(TRIM(D1))=0', format_id: 0)
+                                            formula: "LEN(TRIM(D1))=0", format_id: 0)
     writer.add_conditional_format("E1:E10", type: :not_contains_blanks, priority: 5,
-                                            formula: 'LEN(TRIM(E1))>0', format_id: 0)
+                                            formula: "LEN(TRIM(E1))>0", format_id: 0)
     writer.add_conditional_format("F1:F10", type: :time_period, priority: 6,
                                             time_period: "lastWeek",
-                                            formula: 'AND(TODAY()-7<=F1,F1<=TODAY())',
+                                            formula: "AND(TODAY()-7<=F1,F1<=TODAY())",
                                             format_id: 0)
 
     cfs = writer.conditional_formats
@@ -1297,17 +1297,17 @@ class WriterTest < Test::Unit::TestCase
 
     xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
     assert_match(/<dxf>/, xml)
-    assert_match(/<alignment horizontal="center" wrapText="1"\/>/, xml)
-    assert_match(/<protection locked="0" hidden="1"\/>/, xml)
-    assert_match(/<numFmt numFmtId="164" formatCode="#,##0.00"\/>/, xml)
+    assert_match(%r{<alignment horizontal="center" wrapText="1"/>}, xml)
+    assert_match(%r{<protection locked="0" hidden="1"/>}, xml)
+    assert_match(%r{<numFmt numFmtId="164" formatCode="#,##0.00"/>}, xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
   private
 
+  # ensure zlib loaded
   def read_xml_from_xlsx(xlsx_path, entry_name)
-    Zlib::GzipReader # ensure zlib loaded
     require "xlsxrb/reader"
     reader = Xlsxrb::Reader.new(xlsx_path)
     reader.raw_entry(entry_name)

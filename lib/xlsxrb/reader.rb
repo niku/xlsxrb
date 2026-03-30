@@ -473,7 +473,7 @@ module Xlsxrb
     end
 
     # Returns true if the file contains VBA macros (vbaProject.bin).
-    def has_macros?
+    def macros?
       entry_names.any? { |n| n.include?("vbaProject.bin") }
     end
 
@@ -595,6 +595,7 @@ module Xlsxrb
       el_targets = []
       wb_rels_xml.scan(/<Relationship\s[^>]*>/) do |rel_tag|
         next unless rel_tag.include?("/externalLink")
+
         target = rel_tag[/Target="([^"]+)"/, 1]
         el_targets << target if target
       end
@@ -614,9 +615,7 @@ module Xlsxrb
         rels_path = path.sub(%r{([^/]+)\.xml$}, '_rels/\1.xml.rels')
         rels_xml = extract_zip_entry(rels_path)
         ext_target = nil
-        if rels_xml
-          rels_xml.scan(/<Relationship[^>]+Target="([^"]+)"/) { |t,| ext_target = t }
-        end
+        rels_xml&.scan(/<Relationship[^>]+Target="([^"]+)"/) { |t,| ext_target = t }
 
         { target: ext_target, sheet_names: listener.sheet_names }
       end
@@ -847,20 +846,16 @@ module Xlsxrb
       custom_num_fmts[fmt_id] || Xlsxrb::BUILTIN_NUM_FMT_CODES[fmt_id]
     end
 
-    def resolve_effective_xf(xf, cell_style_xfs)
-      return nil unless xf
+    def resolve_effective_xf(xf_data, cell_style_xfs)
+      return nil unless xf_data
 
-      effective = xf.dup
+      effective = xf_data.dup
       style_xf = nil
-      if effective[:xf_id]
-        style_xf = cell_style_xfs[effective[:xf_id]]
-      end
+      style_xf = cell_style_xfs[effective[:xf_id]] if effective[:xf_id]
       return effective unless style_xf
 
       %i[num_fmt_id font_id fill_id border_id].each do |k|
-        if effective[k].nil? || effective[k] == 0
-          effective[k] = style_xf[k] if style_xf.key?(k)
-        end
+        effective[k] = style_xf[k] if (effective[k].nil? || effective[k].zero?) && style_xf.key?(k)
       end
       effective[:alignment] ||= style_xf[:alignment]
       effective[:protection] ||= style_xf[:protection]
@@ -1197,7 +1192,7 @@ module Xlsxrb
           @current_font[:scheme] = attributes["val"] if @inside_rpr
         when "t"
           @inside_t = @inside_si
-          @text_buffer = +""  if @inside_r
+          @text_buffer = +"" if @inside_r
         end
       end
 
@@ -1219,11 +1214,11 @@ module Xlsxrb
           @runs << run
           @inside_r = false
         when "si"
-          if @has_runs
-            @strings << Xlsxrb::RichText.new(runs: @runs)
-          else
-            @strings << @text_buffer.dup
-          end
+          @strings << if @has_runs
+                        Xlsxrb::RichText.new(runs: @runs)
+                      else
+                        @text_buffer.dup
+                      end
           @inside_si = false
           @text_buffer = +""
           @runs = []
@@ -1340,9 +1335,7 @@ module Xlsxrb
           if @inside_is_r
             @is_run_text = +""
             @inside_inline_text = true
-          elsif @inside_is
-            @inside_inline_text = true
-          elsif @current_cell_type == "inlineStr" && !@current_cell_ref.nil?
+          elsif @inside_is || (@current_cell_type == "inlineStr" && !@current_cell_ref.nil?)
             @inside_inline_text = true
           end
         end
@@ -1430,11 +1423,11 @@ module Xlsxrb
 
         case @current_cell_type
         when "inlineStr"
-          if @is_has_runs
-            @cells[@current_cell_ref] = RichText.new(runs: @is_runs.map(&:dup))
-          else
-            @cells[@current_cell_ref] = @inline_text_buffer.dup
-          end
+          @cells[@current_cell_ref] = if @is_has_runs
+                                        RichText.new(runs: @is_runs.map(&:dup))
+                                      else
+                                        @inline_text_buffer.dup
+                                      end
         when "s"
           index = @value_buffer.to_i
           @cells[@current_cell_ref] = @shared_strings[index] || ""
@@ -1758,8 +1751,8 @@ module Xlsxrb
           code = attributes["formatCode"]
           if @inside_dxfs && @current_dxf
             @current_dxf[:num_fmt] = { num_fmt_id: id, format_code: code } if id && code
-          else
-            @num_fmts[id] = code if id && code
+          elsif id && code
+            @num_fmts[id] = code
           end
         when "cellXfs"
           @inside_cell_xfs = true
@@ -1861,9 +1854,7 @@ module Xlsxrb
             @current_fill[:gradient] = gradient
           end
         when "stop"
-          if @current_fill&.dig(:gradient)
-            @current_gradient_stop = { position: attributes["position"].to_f }
-          end
+          @current_gradient_stop = { position: attributes["position"].to_f } if @current_fill&.dig(:gradient)
         when "fgColor"
           parse_fill_color(:fg_color, attributes) if @current_fill
         when "bgColor"
@@ -1921,9 +1912,7 @@ module Xlsxrb
           end
           @current_fill = nil
         when "stop"
-          if @current_gradient_stop && @current_fill&.dig(:gradient)
-            @current_fill[:gradient][:stops] << @current_gradient_stop
-          end
+          @current_fill[:gradient][:stops] << @current_gradient_stop if @current_gradient_stop && @current_fill&.dig(:gradient)
           @current_gradient_stop = nil
         when "borders"
           @inside_borders = false
@@ -3064,11 +3053,11 @@ module Xlsxrb
 
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
-        if name == "graphicFrame"
-          @charts << @current_chart if @current_chart && @current_chart[:rid]
-          @current_chart = nil
-          @inside_graphic_frame = false
-        end
+        return unless name == "graphicFrame"
+
+        @charts << @current_chart if @current_chart && @current_chart[:rid]
+        @current_chart = nil
+        @inside_graphic_frame = false
       end
 
       private
@@ -3162,9 +3151,7 @@ module Xlsxrb
         when "txBody"
           @inside_tx_body = false
         when "t"
-          if @inside_t && @inside_tx_body && @current_shape
-            @current_shape[:text] = (@current_shape[:text] || +"") << @text_buffer
-          end
+          @current_shape[:text] = (@current_shape[:text] || +"") << @text_buffer if @inside_t && @inside_tx_body && @current_shape
           @inside_t = false
         when "col", "colOff", "row", "rowOff"
           if @current_field
@@ -3225,9 +3212,7 @@ module Xlsxrb
 
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
-        if CHART_TYPES.include?(name)
-          @chart_type = name
-        end
+        @chart_type = name if CHART_TYPES.include?(name)
 
         case name
         when "ser"
@@ -3595,9 +3580,9 @@ module Xlsxrb
 
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
-        if name == "sheetName"
-          @sheet_names << attributes["val"] if attributes["val"]
-        end
+        return unless name == "sheetName"
+
+        @sheet_names << attributes["val"] if attributes["val"]
       end
 
       def end_element(_uri, _local_name, _qname); end

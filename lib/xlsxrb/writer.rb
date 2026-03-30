@@ -747,13 +747,13 @@ module Xlsxrb
     # Adds a raw ZIP entry to be included in the output (for pass-through retention).
     def add_raw_entry(path, content, content_type: nil)
       @extra_entries[path] = content
-      if content_type
-        ext = File.extname(path).delete(".")
-        if ext.empty? || path.include?("/")
-          @extra_ct_overrides["/#{path}"] = content_type
-        else
-          @extra_ct_defaults[ext] = content_type
-        end
+      return unless content_type
+
+      ext = File.extname(path).delete(".")
+      if ext.empty? || path.include?("/")
+        @extra_ct_overrides["/#{path}"] = content_type
+      else
+        @extra_ct_defaults[ext] = content_type
       end
     end
 
@@ -801,11 +801,7 @@ module Xlsxrb
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
       chart = { type: type, title: title }
-      if series
-        chart[:series] = series
-      else
-        chart[:series] = [{ cat_ref: cat_ref, val_ref: val_ref }]
-      end
+      chart[:series] = (series || [{ cat_ref: cat_ref, val_ref: val_ref }])
       chart[:legend] = legend if legend
       chart[:data_labels] = data_labels if data_labels
       chart[:cat_axis_title] = cat_axis_title if cat_axis_title
@@ -931,7 +927,7 @@ module Xlsxrb
       @media_count = 0
 
       # Pre-compute total pivot cache count for workbook XML.
-      total_pivot_caches = @pivot_tables_data.values.sum { |v| v.size }
+      total_pivot_caches = @pivot_tables_data.values.sum(&:size)
 
       entries = {
         "_rels/.rels" => generate_rels_root,
@@ -958,7 +954,10 @@ module Xlsxrb
         sheet_comment_idx = has_comments ? (@comment_count += 1) : nil
         sheet_pivot_start = @pivot_table_count
         sheet_cache_start = @pivot_cache_count
-        sheet_pivots.each { @pivot_cache_count += 1; @pivot_table_count += 1 }
+        sheet_pivots.each do
+          @pivot_cache_count += 1
+          @pivot_table_count += 1
+        end
 
         # Build per-sheet rels first (needed for rId calculation in worksheet XML).
         sheet_tables = @tables[sheet_name] || []
@@ -986,8 +985,8 @@ module Xlsxrb
           @header_footer[sheet_name], @row_breaks[sheet_name], @col_breaks[sheet_name],
           @data_validations[sheet_name], @conditional_formats[sheet_name], sst,
           @tables[sheet_name] || [], @hyperlinks[sheet_name].size,
-          has_drawing, has_comments,
-          @sheet_protection[sheet_name], vml_rid
+          has_drawing:, has_comments:,
+          sheet_prot: @sheet_protection[sheet_name], vml_rid:
         )
 
         # Generate drawing XML + media + chart entries.
@@ -1038,9 +1037,7 @@ module Xlsxrb
         end
 
         # Emit worksheet rels if any relationships exist.
-        unless sheet_rels_parts.empty?
-          entries["xl/worksheets/_rels/sheet#{i + 1}.xml.rels"] = generate_generic_rels(sheet_rels_parts)
-        end
+        entries["xl/worksheets/_rels/sheet#{i + 1}.xml.rels"] = generate_generic_rels(sheet_rels_parts) unless sheet_rels_parts.empty?
 
         sheet_tables.each do |tbl|
           table_index += 1
@@ -1060,7 +1057,7 @@ module Xlsxrb
       end
 
       # Generate workbook rels (needs to know pivot cache count).
-      entries["xl/_rels/workbook.xml.rels"] = generate_workbook_rels(entries.key?("xl/calcChain.xml"))
+      entries["xl/_rels/workbook.xml.rels"] = generate_workbook_rels(has_calc_chain: entries.key?("xl/calcChain.xml"))
 
       # Content types must be generated after all entries are known.
       entries["[Content_Types].xml"] = generate_content_types_xml(entries)
@@ -1091,6 +1088,11 @@ module Xlsxrb
       not_contains_blanks: "notContainsBlanks",
       time_period: "timePeriod"
     }.freeze
+
+    XDR_NS = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
+    A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    C_NS = "http://schemas.openxmlformats.org/drawingml/2006/chart"
+    CHART_TYPE_MAP = { bar: "barChart", line: "lineChart", pie: "pieChart" }.freeze
 
     private
 
@@ -1300,7 +1302,7 @@ module Xlsxrb
       end
 
       # pivotCaches (reference from workbook to cache definition rels)
-      if pivot_cache_count > 0
+      if pivot_cache_count.positive?
         # rId layout: sheets(1..N), styles(N+1), optional SST(N+2), then pivot caches
         pivot_rid_base = @sheet_order.size + 1 + (@use_shared_strings ? 1 : 0) + 1
         parts << "<pivotCaches>"
@@ -1314,7 +1316,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_workbook_rels(has_calc_chain = false)
+    def generate_workbook_rels(has_calc_chain: false)
       parts = [
         XML_HEADER,
         %(<Relationships xmlns="#{REL_NS}">)
@@ -1362,7 +1364,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing = false, has_comments = false, sheet_prot = nil, vml_rid = nil)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil)
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -1496,9 +1498,7 @@ module Xlsxrb
           attrs << ' hidden="1"' if ra[:hidden]
           attrs << %( outlineLevel="#{ra[:outline_level]}") if ra[:outline_level]
           attrs << ' collapsed="1"' if ra[:collapsed]
-          if ra.key?(:style)
-            attrs << %( s="#{ra[:style]}" customFormat="1")
-          end
+          attrs << %( s="#{ra[:style]}" customFormat="1") if ra.key?(:style)
         end
         parts << "<row #{attrs}>"
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|
@@ -1702,51 +1702,48 @@ module Xlsxrb
       end
 
       # Emit <legacyDrawing> reference if comments exist (VML shapes).
-      if vml_rid
-        parts << %(<legacyDrawing r:id="rId#{vml_rid}"/>)
-      end
+      parts << %(<legacyDrawing r:id="rId#{vml_rid}"/>) if vml_rid
 
       parts << "</worksheet>"
       parts.join
     end
 
     def build_shared_string_table
-      sst = {}
+      rt_sst = {}.compare_by_identity # RichText object -> global index
+      str_sst = {} # String -> global index
       @sheets.each_value do |sheet_cells|
         sheet_cells.each_value do |value|
+          total = rt_sst.size + str_sst.size
           case value
           when RichText
-            sst[value.object_id] = sst.size unless sst.key?(value.object_id)
+            rt_sst[value] = total unless rt_sst.key?(value)
           when String
-            sst[value] = sst.size unless sst.key?(value)
+            str_sst[value] = total unless str_sst.key?(value)
           else
             next if value.is_a?(Numeric) || value.is_a?(Date) || value == true || value == false || value.is_a?(Formula)
 
             str = value.to_s
-            sst[str] = sst.size unless sst.key?(str)
+            str_sst[str] = total unless str_sst.key?(str)
           end
         end
       end
-      sst
+      [rt_sst, str_sst]
     end
 
     def generate_shared_strings_xml(sst)
-      # Collect RichText objects for lookup by object_id.
-      rt_by_id = {}
-      @sheets.each_value do |sheet_cells|
-        sheet_cells.each_value do |value|
-          rt_by_id[value.object_id] = value if value.is_a?(RichText)
-        end
-      end
+      rt_sst, str_sst = sst
+      total = rt_sst.size + str_sst.size
+      entries = Array.new(total)
+      rt_sst.each { |rt, idx| entries[idx] = { type: :rt, value: rt } }
+      str_sst.each { |str, idx| entries[idx] = { type: :str, value: str } }
 
-      parts = [XML_HEADER, %(<sst xmlns="#{SSML_NS}" count="#{sst.size}" uniqueCount="#{sst.size}">)]
-      sst.each_key do |key|
-        rt = rt_by_id[key]
-        if rt
-          parts << "<si>#{rich_text_xml(rt)}</si>"
-        else
-          parts << "<si><t>#{xml_escape(key)}</t></si>"
-        end
+      parts = [XML_HEADER, %(<sst xmlns="#{SSML_NS}" count="#{total}" uniqueCount="#{total}">)]
+      entries.each do |entry|
+        parts << if entry[:type] == :rt
+                   "<si>#{rich_text_xml(entry[:value])}</si>"
+                 else
+                   "<si><t>#{xml_escape(entry[:value])}</t></si>"
+                 end
       end
       parts << "</sst>"
       parts.join
@@ -1769,9 +1766,7 @@ module Xlsxrb
         if col.is_a?(Hash) && (col[:totals_row_function] || col[:calculated_column_formula])
           col_attrs << %( totalsRowFunction="#{col[:totals_row_function]}") if col[:totals_row_function]
           parts << "<tableColumn #{col_attrs}>"
-          if col[:calculated_column_formula]
-            parts << "<calculatedColumnFormula>#{xml_escape(col[:calculated_column_formula])}</calculatedColumnFormula>"
-          end
+          parts << "<calculatedColumnFormula>#{xml_escape(col[:calculated_column_formula])}</calculatedColumnFormula>" if col[:calculated_column_formula]
           parts << "</tableColumn>"
         else
           parts << "<tableColumn #{col_attrs}/>"
@@ -1782,7 +1777,11 @@ module Xlsxrb
       style_name = style[:name] || "TableStyleMedium2"
       sfc = style[:show_first_column] ? "1" : "0"
       slc = style[:show_last_column] ? "1" : "0"
-      srs = style.key?(:show_row_stripes) ? (style[:show_row_stripes] ? "1" : "0") : "1"
+      srs = if style.key?(:show_row_stripes)
+              style[:show_row_stripes] ? "1" : "0"
+            else
+              "1"
+            end
       scs = style[:show_column_stripes] ? "1" : "0"
       parts << %(<tableStyleInfo name="#{xml_escape(style_name)}" showFirstColumn="#{sfc}" showLastColumn="#{slc}" showRowStripes="#{srs}" showColumnStripes="#{scs}"/>)
       parts << "</table>"
@@ -1797,6 +1796,7 @@ module Xlsxrb
       rid = 0
       sheet_hyperlinks.each do |(_cell_ref, link)|
         next unless link[:url]
+
         rid += 1
         parts << %(<Relationship Id="rId#{rid}" Type="#{DOC_REL_NS}/hyperlink" Target="#{xml_escape(link[:url])}" TargetMode="External"/>)
       end
@@ -1812,6 +1812,7 @@ module Xlsxrb
       rels = []
       @hyperlinks[sheet_name].each do |(_cell_ref, link)|
         next unless link[:url]
+
         rels << { type: "#{DOC_REL_NS}/hyperlink", target: link[:url], external: true }
       end
       sheet_tables.each_with_index do |_tbl, i|
@@ -1821,9 +1822,7 @@ module Xlsxrb
         rels << { type: "#{DOC_REL_NS}/comments", target: "../comments#{comment_idx}.xml" }
         rels << { type: "#{DOC_REL_NS}/vmlDrawing", target: "../drawings/vmlDrawing#{comment_idx}.vml" }
       end
-      if drawing_idx
-        rels << { type: "#{DOC_REL_NS}/drawing", target: "../drawings/drawing#{drawing_idx}.xml" }
-      end
+      rels << { type: "#{DOC_REL_NS}/drawing", target: "../drawings/drawing#{drawing_idx}.xml" } if drawing_idx
       pivot_count.times do |i|
         pt_idx = pivot_start + i + 1
         rels << { type: "#{DOC_REL_NS}/pivotTable", target: "../pivotTables/pivotTable#{pt_idx}.xml" }
@@ -1840,10 +1839,6 @@ module Xlsxrb
       parts << "</Relationships>"
       parts.join
     end
-
-    XDR_NS = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
-    A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
-    C_NS = "http://schemas.openxmlformats.org/drawingml/2006/chart"
 
     def generate_drawing_xml(drawing_parts)
       parts = [
@@ -1889,9 +1884,9 @@ module Xlsxrb
           parts << %(<xdr:nvSpPr><xdr:cNvPr id="#{dp[:id]}" name="#{xml_escape(shape[:name])}"/><xdr:cNvSpPr/></xdr:nvSpPr>)
           parts << %(<xdr:spPr><a:prstGeom prst="#{xml_escape(shape[:preset])}"><a:avLst/></a:prstGeom></xdr:spPr>)
           if shape[:text]
-            parts << '<xdr:txBody><a:bodyPr/><a:lstStyle/>'
+            parts << "<xdr:txBody><a:bodyPr/><a:lstStyle/>"
             parts << "<a:p><a:r><a:t>#{xml_escape(shape[:text])}</a:t></a:r></a:p>"
-            parts << '</xdr:txBody>'
+            parts << "</xdr:txBody>"
           end
           parts << "</xdr:sp>"
           parts << "<xdr:clientData/>"
@@ -1920,8 +1915,6 @@ module Xlsxrb
       parts.join
     end
 
-    CHART_TYPE_MAP = { bar: "barChart", line: "lineChart", pie: "pieChart" }.freeze
-
     def generate_chart_xml(chart)
       chart_type = CHART_TYPE_MAP[chart[:type]] || "barChart"
       is_pie = chart[:type] == :pie
@@ -1931,9 +1924,7 @@ module Xlsxrb
         "<c:chart>"
       ]
 
-      if chart[:title]
-        parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>"
-      end
+      parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:title]
 
       parts << "<c:plotArea><c:layout/>"
       parts << "<c:#{chart_type}>"
@@ -1943,9 +1934,7 @@ module Xlsxrb
       all_series = chart[:series] || []
       all_series.each_with_index do |ser, idx|
         parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{idx}\"/>"
-        if ser[:name]
-          parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f></c:strRef></c:tx>"
-        end
+        parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f></c:strRef></c:tx>" if ser[:name]
         if chart[:data_labels]
           dl = chart[:data_labels]
           parts << "<c:dLbls>"
@@ -1956,30 +1945,20 @@ module Xlsxrb
           parts << "<c:showPercent val=\"#{dl[:show_percent] ? 1 : 0}\"/>" unless dl[:show_percent].nil?
           parts << "</c:dLbls>"
         end
-        if ser[:cat_ref]
-          parts << "<c:cat><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f></c:strRef></c:cat>"
-        end
-        if ser[:val_ref]
-          parts << "<c:val><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f></c:numRef></c:val>"
-        end
+        parts << "<c:cat><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f></c:strRef></c:cat>" if ser[:cat_ref]
+        parts << "<c:val><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f></c:numRef></c:val>" if ser[:val_ref]
         parts << "</c:ser>"
       end
 
-      unless is_pie
-        parts << '<c:axId val="1"/><c:axId val="2"/>'
-      end
+      parts << '<c:axId val="1"/><c:axId val="2"/>' unless is_pie
       parts << "</c:#{chart_type}>"
 
       unless is_pie
         parts << '<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/>'
-        if chart[:cat_axis_title]
-          parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:cat_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>"
-        end
+        parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:cat_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:cat_axis_title]
         parts << '<c:crossAx val="2"/></c:catAx>'
         parts << '<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/>'
-        if chart[:val_axis_title]
-          parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:val_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>"
-        end
+        parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:val_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:val_axis_title]
         parts << '<c:crossAx val="1"/></c:valAx>'
       end
 
@@ -2018,7 +1997,7 @@ module Xlsxrb
         '<o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout>',
         '<v:shapetype id="_x0000_t202" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe">',
         '<v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/>',
-        '</v:shapetype>'
+        "</v:shapetype>"
       ]
       sheet_comments.each_with_index do |c, idx|
         col, row = cell_to_col_row(c[:ref])
@@ -2029,51 +2008,52 @@ module Xlsxrb
         parts << '<v:path o:connecttype="none"/>'
         parts << '<v:textbox style="mso-direction-alt:auto"><div style="text-align:left"></div></v:textbox>'
         parts << '<x:ClientData ObjectType="Note">'
-        parts << '<x:MoveWithCells/><x:SizeWithCells/>'
+        parts << "<x:MoveWithCells/><x:SizeWithCells/>"
         parts << "<x:Anchor>#{col + 1}, 15, #{row}, 10, #{col + 3}, 15, #{row + 4}, 4</x:Anchor>"
-        parts << '<x:AutoFill>False</x:AutoFill>'
+        parts << "<x:AutoFill>False</x:AutoFill>"
         parts << "<x:Row>#{row}</x:Row>"
         parts << "<x:Column>#{col}</x:Column>"
-        parts << '</x:ClientData></v:shape>'
+        parts << "</x:ClientData></v:shape>"
       end
-      parts << '</xml>'
+      parts << "</xml>"
       parts.join
     end
 
     def cell_to_col_row(cell_ref)
       m = cell_ref.match(/\A([A-Z]+)(\d+)\z/)
       return [0, 0] unless m
+
       col = column_letter_to_index(m[1]) - 1
       row = m[2].to_i - 1
       [col, row]
     end
 
-    def generate_pivot_table_xml(pt, cache_id)
-      data_caption = pt[:data_fields].first ? pt[:data_fields].first[:name] : "Values"
+    def generate_pivot_table_xml(pivot_table, cache_id)
+      data_caption = pivot_table[:data_fields].first ? pivot_table[:data_fields].first[:name] : "Values"
       parts = [
         XML_HEADER,
-        %(<pivotTableDefinition xmlns="#{SSML_NS}" name="#{xml_escape(pt[:name])}" cacheId="#{cache_id}" dataCaption="#{xml_escape(data_caption)}" dataOnRows="0" applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1">)
+        %(<pivotTableDefinition xmlns="#{SSML_NS}" name="#{xml_escape(pivot_table[:name])}" cacheId="#{cache_id}" dataCaption="#{xml_escape(data_caption)}" dataOnRows="0" applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1">)
       ]
 
       # Compute field count from source range or explicit field_names.
-      field_count = if pt[:field_names]
-                      pt[:field_names].size
+      field_count = if pivot_table[:field_names]
+                      pivot_table[:field_names].size
                     else
-                      (pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size).clamp(1, 100)
+                      (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size).clamp(1, 100)
                     end
-      parts << %(<location ref="#{pt[:dest_ref]}" firstHeaderRow="1" firstDataRow="1" firstDataCol="1"/>)
+      parts << %(<location ref="#{pivot_table[:dest_ref]}" firstHeaderRow="1" firstDataRow="1" firstDataCol="1"/>)
       parts << %(<pivotFields count="#{field_count}">)
       field_count.times do |fi|
         attrs = +""
-        if pt[:row_fields].include?(fi)
+        if pivot_table[:row_fields].include?(fi)
           attrs << ' axis="axisRow"'
-        elsif pt[:col_fields].include?(fi)
+        elsif pivot_table[:col_fields].include?(fi)
           attrs << ' axis="axisCol"'
         end
-        attrs << ' dataField="1"' if pt[:data_fields].any? { |df| df[:fld] == fi }
+        attrs << ' dataField="1"' if pivot_table[:data_fields].any? { |df| df[:fld] == fi }
         attrs << ' showAll="0"'
 
-        field_items = pt[:items] && pt[:items][fi]
+        field_items = pivot_table[:items] && pivot_table[:items][fi]
         if field_items
           parts << "<pivotField#{attrs}>"
           parts << %(<items count="#{field_items.size + 1}">)
@@ -2087,21 +2067,21 @@ module Xlsxrb
       end
       parts << "</pivotFields>"
 
-      unless pt[:row_fields].empty?
-        parts << %(<rowFields count="#{pt[:row_fields].size}">)
-        pt[:row_fields].each { |f| parts << %(<field x="#{f}"/>) }
+      unless pivot_table[:row_fields].empty?
+        parts << %(<rowFields count="#{pivot_table[:row_fields].size}">)
+        pivot_table[:row_fields].each { |f| parts << %(<field x="#{f}"/>) }
         parts << "</rowFields>"
       end
 
-      unless pt[:col_fields].empty?
-        parts << %(<colFields count="#{pt[:col_fields].size}">)
-        pt[:col_fields].each { |f| parts << %(<field x="#{f}"/>) }
+      unless pivot_table[:col_fields].empty?
+        parts << %(<colFields count="#{pivot_table[:col_fields].size}">)
+        pivot_table[:col_fields].each { |f| parts << %(<field x="#{f}"/>) }
         parts << "</colFields>"
       end
 
-      unless pt[:data_fields].empty?
-        parts << %(<dataFields count="#{pt[:data_fields].size}">)
-        pt[:data_fields].each do |df|
+      unless pivot_table[:data_fields].empty?
+        parts << %(<dataFields count="#{pivot_table[:data_fields].size}">)
+        pivot_table[:data_fields].each do |df|
           parts << %(<dataField name="#{xml_escape(df[:name])}" fld="#{df[:fld]}" subtotal="#{df[:subtotal] || "sum"}"/>)
         end
         parts << "</dataFields>"
@@ -2111,14 +2091,14 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_pivot_cache_definition_xml(pt, cache_id)
+    def generate_pivot_cache_definition_xml(pivot_table, _cache_id)
       parts = [
         XML_HEADER,
         %(<pivotCacheDefinition xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}" r:id="rId1" refreshOnLoad="1">)
       ]
 
       # Parse source ref: "Sheet1!A1:C4" => sheet name + range.
-      source = pt[:source_ref]
+      source = pivot_table[:source_ref]
       if source.include?("!")
         sname, srange = source.split("!", 2)
         sname = sname.delete("'")
@@ -2127,16 +2107,16 @@ module Xlsxrb
         parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{source}"/></cacheSource>)
       end
 
-      field_count = pt[:field_names] ? pt[:field_names].size : (pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size)
+      field_count = pivot_table[:field_names] ? pivot_table[:field_names].size : (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size)
       parts << %(<cacheFields count="#{field_count}">)
       field_count.times do |fi|
-        fname = if pt[:field_names] && pt[:field_names][fi]
-                  pt[:field_names][fi]
+        fname = if pivot_table[:field_names] && pivot_table[:field_names][fi]
+                  pivot_table[:field_names][fi]
                 else
-                  df = pt[:data_fields].find { |d| d[:fld] == fi }
+                  df = pivot_table[:data_fields].find { |d| d[:fld] == fi }
                   df ? df[:name] : "Field#{fi + 1}"
                 end
-        field_items = pt[:items] && pt[:items][fi]
+        field_items = pivot_table[:items] && pivot_table[:items][fi]
         if field_items
           parts << %(<cacheField name="#{xml_escape(fname)}" numFmtId="0">)
           parts << %(<sharedItems count="#{field_items.size}">)
@@ -2152,21 +2132,21 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_pivot_cache_records_xml(pt)
-      items = pt[:items]
-      if items && items.values.any? { |v| v && !v.empty? }
+    def generate_pivot_cache_records_xml(pivot_table)
+      items = pivot_table[:items]
+      if items&.values&.any? { |v| v && !v.empty? }
         max_len = items.values.map { |v| v ? v.size : 0 }.max
         parts = [XML_HEADER, %(<pivotCacheRecords xmlns="#{SSML_NS}" count="#{max_len}">)]
         max_len.times do |ri|
           parts << "<r>"
-          field_count = pt[:field_names] ? pt[:field_names].size : (pt[:row_fields].size + pt[:col_fields].size + pt[:data_fields].size)
+          field_count = pivot_table[:field_names] ? pivot_table[:field_names].size : (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size)
           field_count.times do |fi|
             field_items = items[fi]
-            if field_items
-              parts << %(<x v="#{ri < field_items.size ? ri : 0}"/>)
-            else
-              parts << %(<n v="0"/>)
-            end
+            parts << if field_items
+                       %(<x v="#{ri < field_items.size ? ri : 0}"/>)
+                     else
+                       %(<n v="0"/>)
+                     end
           end
           parts << "</r>"
         end
@@ -2195,15 +2175,15 @@ module Xlsxrb
       ].join
     end
 
-    def generate_external_link_xml(el)
+    def generate_external_link_xml(ext_link)
       parts = [
         XML_HEADER,
         %(<externalLink xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}">),
         '<externalBook r:id="rId1">'
       ]
-      unless el[:sheet_names].empty?
+      unless ext_link[:sheet_names].empty?
         parts << "<sheetNames>"
-        el[:sheet_names].each { |sn| parts << %(<sheetName val="#{xml_escape(sn)}"/>) }
+        ext_link[:sheet_names].each { |sn| parts << %(<sheetName val="#{xml_escape(sn)}"/>) }
         parts << "</sheetNames>"
       end
       parts << "</externalBook>"
@@ -2211,11 +2191,11 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_external_link_rels(el)
+    def generate_external_link_rels(ext_link)
       [
         XML_HEADER,
         %(<Relationships xmlns="#{REL_NS}">),
-        %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/externalLinkPath" Target="#{xml_escape(el[:target])}" TargetMode="External"/>),
+        %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/externalLinkPath" Target="#{xml_escape(ext_link[:target])}" TargetMode="External"/>),
         "</Relationships>"
       ].join
     end
@@ -2238,8 +2218,8 @@ module Xlsxrb
            .gsub("'", "&apos;")
     end
 
-    def rich_text_xml(rt)
-      rt.runs.map do |run|
+    def rich_text_xml(rich_text)
+      rich_text.runs.map do |run|
         font = run[:font]
         if font && !font.empty?
           rpr = +""
@@ -2247,11 +2227,11 @@ module Xlsxrb
           rpr << "<i/>" if font[:italic]
           rpr << "<strike/>" if font[:strike]
           if font[:underline]
-            if font[:underline] == true
-              rpr << "<u/>"
-            else
-              rpr << %(<u val="#{font[:underline]}"/>)
-            end
+            rpr << if font[:underline] == true
+                     "<u/>"
+                   else
+                     %(<u val="#{font[:underline]}"/>)
+                   end
           end
           rpr << %(<vertAlign val="#{font[:vert_align]}"/>) if font[:vert_align]
           rpr << %(<sz val="#{font[:sz]}"/>) if font[:sz]
@@ -2283,7 +2263,8 @@ module Xlsxrb
         parts
       when RichText
         if sst
-          idx = sst[value.object_id]
+          rt_sst, = sst
+          idx = rt_sst[value]
           %(<c r="#{cell_ref}" t="s"#{s_attr}><v>#{idx}</v></c>)
         else
           %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}><is>#{rich_text_xml(value)}</is></c>)
@@ -2299,7 +2280,8 @@ module Xlsxrb
         %(<c r="#{cell_ref}"#{s_attr}><v>#{value}</v></c>)
       else
         if sst
-          idx = sst[value.to_s]
+          _, str_sst = sst
+          idx = str_sst[value.to_s]
           %(<c r="#{cell_ref}" t="s"#{s_attr}><v>#{idx}</v></c>)
         else
           %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}><is><t>#{xml_escape(value)}</t></is></c>)
@@ -2580,11 +2562,11 @@ module Xlsxrb
         children << emit_alignment_xml(xf[:alignment]) if xf[:alignment]
         children << emit_protection_xml(xf[:protection]) if xf[:protection]
         xf_id = xf[:xf_id] || 0
-        if children.any?
-          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="#{xf_id}"#{apply_attrs.join}>#{children.join}</xf>)
-        else
-          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="#{xf_id}"#{apply_attrs.join}/>)
-        end
+        parts << if children.any?
+                   %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="#{xf_id}"#{apply_attrs.join}>#{children.join}</xf>)
+                 else
+                   %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="#{xf_id}"#{apply_attrs.join}/>)
+                 end
       end
       parts << "</cellXfs>"
 
@@ -2646,11 +2628,11 @@ module Xlsxrb
       parts << "<i/>" if font[:italic]
       parts << "<strike/>" if font[:strike]
       if font[:underline]
-        if font[:underline] == true
-          parts << "<u/>"
-        else
-          parts << %(<u val="#{font[:underline]}"/>)
-        end
+        parts << if font[:underline] == true
+                   "<u/>"
+                 else
+                   %(<u val="#{font[:underline]}"/>)
+                 end
       end
       parts << %(<vertAlign val="#{font[:vert_align]}"/>) if font[:vert_align]
       parts << %(<sz val="#{font[:sz]}"/>) if font[:sz]
@@ -2663,9 +2645,8 @@ module Xlsxrb
     end
 
     def emit_fill_xml(fill)
-      if fill[:gradient]
-        return emit_gradient_fill_xml(fill[:gradient])
-      end
+      return emit_gradient_fill_xml(fill[:gradient]) if fill[:gradient]
+
       has_fg = fill[:fg_color] || fill[:fg_color_theme] || fill[:fg_color_indexed]
       has_bg = fill[:bg_color] || fill[:bg_color_theme] || fill[:bg_color_indexed]
       return "<fill><patternFill patternType=\"#{fill[:pattern]}\"/></fill>" if fill[:pattern] && !has_fg && !has_bg
@@ -2703,7 +2684,7 @@ module Xlsxrb
       attrs << %(top="#{gradient[:top]}") if gradient[:top]
       attrs << %(bottom="#{gradient[:bottom]}") if gradient[:bottom]
       parts = ["<fill>"]
-      parts << "<gradientFill#{attrs.empty? ? "" : " #{attrs.join(" ")}"}"
+      parts << "<gradientFill#{" #{attrs.join(" ")}" unless attrs.empty?}"
       if gradient[:stops]&.any?
         parts[-1] = "#{parts[-1]}>"
         gradient[:stops].each do |stop|
