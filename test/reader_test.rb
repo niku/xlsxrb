@@ -3257,4 +3257,30 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips dataConsolidate element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_data_consolidate(
+      function: "average", start_labels: true, link: true,
+      data_refs: [{ ref: "A1:B10", sheet: "Sheet1" }, { ref: "C1:D10", name: "Range2" }]
+    )
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dc = reader.data_consolidate
+    assert_equal("average", dc[:function])
+    assert_equal(true, dc[:start_labels])
+    assert_equal(true, dc[:link])
+    assert_equal(2, dc[:data_refs].size)
+    assert_equal("A1:B10", dc[:data_refs][0][:ref])
+    assert_equal("Sheet1", dc[:data_refs][0][:sheet])
+    assert_equal("Range2", dc[:data_refs][1][:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
