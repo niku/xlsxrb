@@ -2089,6 +2089,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "conditional format rule emits stdDev attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 100)
+    writer.add_conditional_format("A1:A10",
+                                  type: :above_average,
+                                  std_dev: 2,
+                                  format_id: writer.add_dxf(font: { bold: true }))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-cf", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/stdDev="2"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
