@@ -2398,6 +2398,35 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits tableStyles in stylesheet" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    dxf_id = writer.add_dxf(font: { bold: true })
+    writer.set_table_styles_option(:default_table_style, "TableStyleMedium2")
+    writer.set_table_styles_option(:default_pivot_style, "PivotStyleLight16")
+    writer.add_table_style(name: "MyStyle", elements: [
+                             { type: "wholeTable", dxf_id: dxf_id },
+                             { type: "headerRow", dxf_id: dxf_id, size: 2 }
+                           ], pivot: false)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-ts", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/<tableStyles /, xml_content)
+    assert_match(/defaultTableStyle="TableStyleMedium2"/, xml_content)
+    assert_match(/defaultPivotStyle="PivotStyleLight16"/, xml_content)
+    assert_match(/name="MyStyle"/, xml_content)
+    assert_match(/pivot="0"/, xml_content)
+    assert_match(/type="wholeTable"/, xml_content)
+    assert_match(/type="headerRow"/, xml_content)
+    assert_match(/size="2"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

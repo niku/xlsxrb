@@ -43,6 +43,7 @@ module Xlsxrb
       @dxfs = []
       @indexed_colors = []
       @mru_colors = []
+      @table_styles = {}
       @sheet_order = ["Sheet1"]
       @core_properties = {}
       @app_properties = {}
@@ -471,6 +472,33 @@ module Xlsxrb
     # Returns the MRU colors.
     def mru_colors
       @mru_colors.map(&:dup)
+    end
+
+    # Sets table styles options (defaultTableStyle, defaultPivotStyle).
+    def set_table_styles_option(name, value)
+      raise ArgumentError, "name must be a Symbol" unless name.is_a?(Symbol)
+
+      @table_styles[name] = value
+    end
+
+    # Adds a table style definition. Returns the style name.
+    # elements: array of { type:, dxf_id:, size: }
+    def add_table_style(name:, elements: [], pivot: nil, table: nil)
+      @table_styles[:styles] ||= []
+      style = { name: name, elements: elements }
+      style[:pivot] = pivot unless pivot.nil?
+      style[:table] = table unless table.nil?
+      @table_styles[:styles] << style
+      name
+    end
+
+    # Returns table styles configuration.
+    def table_styles
+      deep_copy = {}
+      @table_styles.each do |k, v|
+        deep_copy[k] = v.is_a?(Array) ? v.map(&:dup) : v
+      end
+      deep_copy
     end
 
     # Sets a core property.
@@ -3030,6 +3058,38 @@ module Xlsxrb
         parts << %(<dxfs count="#{@dxfs.size}">)
         @dxfs.each { |d| parts << emit_dxf_xml(d) }
         parts << "</dxfs>"
+      end
+
+      # tableStyles
+      ts_styles = @table_styles[:styles] || []
+      unless ts_styles.empty? && @table_styles[:default_table_style].nil? && @table_styles[:default_pivot_style].nil?
+        ts_attrs = [%(count="#{ts_styles.size}")]
+        ts_attrs << %(defaultTableStyle="#{xml_escape(@table_styles[:default_table_style])}") if @table_styles[:default_table_style]
+        ts_attrs << %(defaultPivotStyle="#{xml_escape(@table_styles[:default_pivot_style])}") if @table_styles[:default_pivot_style]
+        if ts_styles.empty?
+          parts << "<tableStyles #{ts_attrs.join(" ")}/>"
+        else
+          parts << "<tableStyles #{ts_attrs.join(" ")}>"
+          ts_styles.each do |ts|
+            s_attrs = [%(name="#{xml_escape(ts[:name])}")]
+            s_attrs << %(pivot="0") if ts[:pivot] == false
+            s_attrs << %(table="0") if ts[:table] == false
+            s_attrs << %(count="#{ts[:elements].size}") unless ts[:elements].empty?
+            if ts[:elements].empty?
+              parts << "<tableStyle #{s_attrs.join(" ")}/>"
+            else
+              parts << "<tableStyle #{s_attrs.join(" ")}>"
+              ts[:elements].each do |el|
+                el_attrs = [%(type="#{el[:type]}")]
+                el_attrs << %(size="#{el[:size]}") if el[:size] && el[:size] != 1
+                el_attrs << %(dxfId="#{el[:dxf_id]}") if el[:dxf_id]
+                parts << "<tableStyleElement #{el_attrs.join(" ")}/>"
+              end
+              parts << "</tableStyle>"
+            end
+          end
+          parts << "</tableStyles>"
+        end
       end
 
       # colors
