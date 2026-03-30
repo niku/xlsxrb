@@ -993,6 +993,17 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(false, pivots[0][:show_headers])
   end
 
+  test "add_pivot_table with source_name stores worksheetSource name" do
+    writer = Xlsxrb::Writer.new
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+                           source_name: "MyNamedRange")
+    pivots = writer.pivot_tables
+    assert_equal(1, pivots.size)
+    assert_equal("MyNamedRange", pivots[0][:source_name])
+  end
+
   test "add_external_link stores external link definition" do
     writer = Xlsxrb::Writer.new
     writer.add_external_link(target: "Book2.xlsx", sheet_names: %w[Sheet1 Sheet2])

@@ -1163,7 +1163,8 @@ module Xlsxrb
         field_names: field_names, items: items,
         data_caption: opts[:data_caption], data_on_rows: opts[:data_on_rows],
         row_grand_totals: opts[:row_grand_totals], col_grand_totals: opts[:col_grand_totals],
-        compact: opts[:compact], outline: opts[:outline], show_headers: opts[:show_headers]
+        compact: opts[:compact], outline: opts[:outline], show_headers: opts[:show_headers],
+        source_name: opts[:source_name]
       }
     end
 
@@ -2742,12 +2743,13 @@ module Xlsxrb
 
       # Parse source ref: "Sheet1!A1:C4" => sheet name + range.
       source = pivot_table[:source_ref]
+      ws_name_attr = pivot_table[:source_name] ? %( name="#{xml_escape(pivot_table[:source_name])}") : ""
       if source.include?("!")
         sname, srange = source.split("!", 2)
         sname = sname.delete("'")
-        parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{srange}" sheet="#{xml_escape(sname)}"/></cacheSource>)
+        parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{srange}" sheet="#{xml_escape(sname)}"#{ws_name_attr}/></cacheSource>)
       else
-        parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{source}"/></cacheSource>)
+        parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{source}"#{ws_name_attr}/></cacheSource>)
       end
 
       field_count = pivot_table[:field_names] ? pivot_table[:field_names].size : (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size)
