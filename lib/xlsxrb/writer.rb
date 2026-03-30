@@ -1340,9 +1340,23 @@ module Xlsxrb
       # bookViews/workbookView
       unless @workbook_views.empty?
         attrs = []
-        attrs << %(activeTab="#{@workbook_views[:active_tab]}") if @workbook_views[:active_tab]
-        attrs << %(firstSheet="#{@workbook_views[:first_sheet]}") if @workbook_views[:first_sheet]
         attrs << %(visibility="#{@workbook_views[:visibility]}") if @workbook_views[:visibility]
+        attrs << 'minimized="1"' if @workbook_views[:minimized]
+        shs = @workbook_views[:show_horizontal_scroll]
+        attrs << %(showHorizontalScroll="#{shs ? 1 : 0}") unless shs.nil?
+        svs = @workbook_views[:show_vertical_scroll]
+        attrs << %(showVerticalScroll="#{svs ? 1 : 0}") unless svs.nil?
+        sst = @workbook_views[:show_sheet_tabs]
+        attrs << %(showSheetTabs="#{sst ? 1 : 0}") unless sst.nil?
+        attrs << %(xWindow="#{@workbook_views[:x_window]}") if @workbook_views[:x_window]
+        attrs << %(yWindow="#{@workbook_views[:y_window]}") if @workbook_views[:y_window]
+        attrs << %(windowWidth="#{@workbook_views[:window_width]}") if @workbook_views[:window_width]
+        attrs << %(windowHeight="#{@workbook_views[:window_height]}") if @workbook_views[:window_height]
+        attrs << %(tabRatio="#{@workbook_views[:tab_ratio]}") if @workbook_views[:tab_ratio]
+        attrs << %(firstSheet="#{@workbook_views[:first_sheet]}") if @workbook_views[:first_sheet]
+        attrs << %(activeTab="#{@workbook_views[:active_tab]}") if @workbook_views[:active_tab]
+        afdg = @workbook_views[:auto_filter_date_grouping]
+        attrs << %(autoFilterDateGrouping="#{afdg ? 1 : 0}") unless afdg.nil?
         parts << "<bookViews>"
         parts << "<workbookView #{attrs.join(" ")}/>" unless attrs.empty?
         parts << "</bookViews>"
