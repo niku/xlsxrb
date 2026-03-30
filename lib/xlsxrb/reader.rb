@@ -1876,6 +1876,8 @@ module Xlsxrb
           @current_font[:scheme] = attributes["val"] if @current_font && attributes["val"]
         when "family"
           @current_font[:family] = attributes["val"].to_i if @current_font && attributes["val"]
+        when "charset"
+          @current_font[:charset] = attributes["val"].to_i if @current_font && attributes["val"]
         when "sz"
           @current_font[:sz] = attributes["val"]&.to_f if @current_font
         when "color"
