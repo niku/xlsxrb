@@ -1900,6 +1900,7 @@ module Xlsxrb
           @current_gradient_stop[:color] = attributes["rgb"] if attributes["rgb"]
           @current_gradient_stop[:theme] = attributes["theme"].to_i if attributes["theme"]
           @current_gradient_stop[:tint] = attributes["tint"].to_f if attributes["tint"]
+          @current_gradient_stop[:indexed] = attributes["indexed"].to_i if attributes["indexed"]
         elsif @current_border_side && @current_border
           side_data = @current_border[@current_border_side]
           if side_data.is_a?(Hash)

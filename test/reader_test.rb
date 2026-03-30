@@ -1856,4 +1856,32 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips gradient fill with theme/indexed stop colors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fill_id = writer.add_fill(gradient: {
+      degree: 90,
+      stops: [{ position: 0, theme: 4, tint: -0.5 }, { position: 1, indexed: 12 }]
+    })
+    style_id = writer.add_cell_style(fill_id: fill_id)
+    writer.set_cell("A1", "themed gradient")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    gradient = cs["A1"][:fill][:gradient]
+    assert_not_nil(gradient, "gradient should be present")
+    stops = gradient[:stops]
+    assert_equal(2, stops.size)
+    assert_equal(4, stops[0][:theme])
+    assert_in_delta(-0.5, stops[0][:tint], 0.001)
+    assert_equal(12, stops[1][:indexed])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

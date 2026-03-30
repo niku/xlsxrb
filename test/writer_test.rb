@@ -1161,6 +1161,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "gradient fill stops emit theme/indexed colors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fill_id = writer.add_fill(gradient: {
+      degree: 90,
+      stops: [{ position: 0, theme: 4, tint: -0.5 }, { position: 1, indexed: 12 }]
+    })
+    style_id = writer.add_cell_style(fill_id: fill_id)
+    writer.set_cell("A1", "themed gradient")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/<stop position="0"><color theme="4" tint="-0.5"\/><\/stop>/, xml)
+    assert_match(/<stop position="1"><color indexed="12"\/><\/stop>/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
