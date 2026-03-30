@@ -2798,6 +2798,9 @@ module Xlsxrb
             apb = attributes["autoPageBreaks"]
             @properties[:auto_page_breaks] = %w[1 true].include?(apb) unless apb.nil?
           end
+        when "sheetCalcPr"
+          fcol = attributes["fullCalcOnLoad"]
+          @properties[:full_calc_on_load] = %w[1 true].include?(fcol) unless fcol.nil?
         end
       end
 

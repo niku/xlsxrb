@@ -1926,6 +1926,9 @@ module Xlsxrb
 
       parts << "</sheetData>"
 
+      # Emit <sheetCalcPr> if fullCalcOnLoad is set.
+      parts << '<sheetCalcPr fullCalcOnLoad="1"/>' if sheet_props[:full_calc_on_load]
+
       # Emit <sheetProtection> if defined.
       if sheet_prot
         sp_attrs = []
