@@ -1200,6 +1200,35 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses pivotField showAll, compact, outline, subtotalTop, numFmtId, sortType" do
+    require "xlsxrb/reader"
+    pivot_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <pivotTableDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+                            name="PivotTable1" cacheId="0" dataCaption="Values">
+        <pivotFields count="2">
+          <pivotField axis="axisRow" showAll="0" compact="0" outline="0" subtotalTop="0" numFmtId="164" sortType="ascending"/>
+          <pivotField dataField="1" showAll="1"/>
+        </pivotFields>
+      </pivotTableDefinition>
+    XML
+    listener = Xlsxrb::Reader::PivotTableListener.new
+    parser = REXML::Parsers::SAX2Parser.new(pivot_xml)
+    parser.listen(listener)
+    parser.parse
+    fields = listener.pivot_table[:fields]
+    assert_equal(2, fields.size)
+    f0 = fields[0]
+    assert_equal(false, f0[:show_all])
+    assert_equal(false, f0[:compact])
+    assert_equal(false, f0[:outline])
+    assert_equal(false, f0[:subtotal_top])
+    assert_equal(164, f0[:num_fmt_id])
+    assert_equal("ascending", f0[:sort_type])
+    f1 = fields[1]
+    assert_equal(true, f1[:show_all])
+  end
+
   test "round-trips dataField showDataAs, baseField, baseItem, numFmtId" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
