@@ -1325,6 +1325,15 @@ module Xlsxrb
         attrs = []
         attrs << %(date1904="#{@workbook_properties[:date1904] ? 1 : 0}") unless @workbook_properties[:date1904].nil?
         attrs << %(defaultThemeVersion="#{@workbook_properties[:default_theme_version]}") if @workbook_properties[:default_theme_version]
+        attrs << %(codeName="#{xml_escape(@workbook_properties[:code_name])}") if @workbook_properties[:code_name]
+        attrs << %(filterPrivacy="1") if @workbook_properties[:filter_privacy]
+        attrs << %(autoCompressPictures="0") if @workbook_properties[:auto_compress_pictures] == false
+        attrs << %(backupFile="1") if @workbook_properties[:backup_file]
+        attrs << %(showObjects="#{xml_escape(@workbook_properties[:show_objects])}") if @workbook_properties[:show_objects]
+        attrs << %(updateLinks="#{xml_escape(@workbook_properties[:update_links])}") if @workbook_properties[:update_links]
+        attrs << %(refreshAllConnections="1") if @workbook_properties[:refresh_all_connections]
+        attrs << %(checkCompatibility="1") if @workbook_properties[:check_compatibility]
+        attrs << %(hidePivotFieldList="1") if @workbook_properties[:hide_pivot_field_list]
         parts << "<workbookPr #{attrs.join(" ")}/>" unless attrs.empty?
       end
 

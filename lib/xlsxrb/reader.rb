@@ -1574,6 +1574,24 @@ module Xlsxrb
           @workbook_properties[:date1904] = %w[1 true].include?(d1904) unless d1904.nil?
           dtv = attributes["defaultThemeVersion"]
           @workbook_properties[:default_theme_version] = dtv.to_i if dtv
+          cn = attributes["codeName"]
+          @workbook_properties[:code_name] = cn if cn
+          fp = attributes["filterPrivacy"]
+          @workbook_properties[:filter_privacy] = %w[1 true].include?(fp) unless fp.nil?
+          acp = attributes["autoCompressPictures"]
+          @workbook_properties[:auto_compress_pictures] = %w[1 true].include?(acp) unless acp.nil?
+          bf = attributes["backupFile"]
+          @workbook_properties[:backup_file] = %w[1 true].include?(bf) unless bf.nil?
+          so = attributes["showObjects"]
+          @workbook_properties[:show_objects] = so if so
+          ul = attributes["updateLinks"]
+          @workbook_properties[:update_links] = ul if ul
+          rac = attributes["refreshAllConnections"]
+          @workbook_properties[:refresh_all_connections] = %w[1 true].include?(rac) unless rac.nil?
+          cc = attributes["checkCompatibility"]
+          @workbook_properties[:check_compatibility] = %w[1 true].include?(cc) unless cc.nil?
+          hpfl = attributes["hidePivotFieldList"]
+          @workbook_properties[:hide_pivot_field_list] = %w[1 true].include?(hpfl) unless hpfl.nil?
         when "workbookView"
           at = attributes["activeTab"]
           @workbook_views[:active_tab] = at.to_i if at
