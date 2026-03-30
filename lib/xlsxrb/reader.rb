@@ -2112,6 +2112,10 @@ module Xlsxrb
             fill_id: attributes["fillId"]&.to_i,
             border_id: attributes["borderId"]&.to_i
           }
+          %w[applyNumberFormat applyFont applyFill applyBorder applyAlignment applyProtection].each do |attr|
+            key = attr.gsub(/[A-Z]/) { |m| "_#{m.downcase}" }.to_sym
+            xf_entry[key] = attributes[attr] == "1" unless attributes[attr].nil?
+          end
           if @inside_cell_xfs
             xf_entry[:xf_id] = attributes["xfId"]&.to_i
             xf_entry[:quote_prefix] = true if attributes["quotePrefix"] == "1"
