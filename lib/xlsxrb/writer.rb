@@ -2129,7 +2129,9 @@ module Xlsxrb
       # Emit <conditionalFormatting> if defined.
       unless sheet_cf.empty?
         sheet_cf.group_by { |cf| cf[:sqref] }.each do |sqref, rules|
-          parts << %(<conditionalFormatting sqref="#{sqref}">)
+          cf_attrs = %( sqref="#{sqref}")
+          cf_attrs << ' pivot="1"' if rules.any? { |r| r[:pivot] }
+          parts << "<conditionalFormatting#{cf_attrs}>"
           rules.each do |cf|
             emit_cf_rule(parts, cf)
           end

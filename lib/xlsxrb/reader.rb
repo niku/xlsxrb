@@ -3419,6 +3419,7 @@ module Xlsxrb
       def initialize
         @rules = []
         @current_sqref = nil
+        @current_pivot = false
         @current_rule = nil
         @inside_formula = false
         @text_buffer = +""
@@ -3431,8 +3432,10 @@ module Xlsxrb
         case name
         when "conditionalFormatting"
           @current_sqref = attributes["sqref"]
+          @current_pivot = attributes["pivot"] == "1"
         when "cfRule"
           @current_rule = { sqref: @current_sqref, type: attributes["type"] }
+          @current_rule[:pivot] = true if @current_pivot
           @current_rule[:priority] = attributes["priority"].to_i if attributes["priority"]
           @current_rule[:operator] = attributes["operator"] if attributes["operator"]
           @current_rule[:format_id] = attributes["dxfId"].to_i if attributes["dxfId"]
