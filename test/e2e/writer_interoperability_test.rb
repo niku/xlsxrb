@@ -977,6 +977,35 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid expanded CF rule types" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_dxf(font: { bold: true, color: "FFFF0000" })
+    writer.add_conditional_format("A1:A10", type: :above_average, priority: 1,
+                                            above_average: false, equal_average: true, format_id: 0)
+    writer.add_conditional_format("B1:B10", type: :top10, priority: 2,
+                                            rank: 5, percent: true, bottom: true, format_id: 0)
+    writer.add_conditional_format("C1:C10", type: :duplicate_values, priority: 3, format_id: 0)
+    writer.add_conditional_format("D1:D10", type: :contains_text, priority: 4, operator: "containsText",
+                                            text: "hello", formula: 'NOT(ISERROR(SEARCH("hello",D1)))',
+                                            format_id: 0)
+    writer.add_conditional_format("E1:E10", type: :begins_with, priority: 5, operator: "beginsWith",
+                                            text: "foo", formula: 'LEFT(E1,3)="foo"',
+                                            format_id: 0)
+    writer.add_conditional_format("F1:F10", type: :ends_with, priority: 6, operator: "endsWith",
+                                            text: "bar", formula: 'RIGHT(F1,3)="bar"',
+                                            format_id: 0)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_cf_expanded_types_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

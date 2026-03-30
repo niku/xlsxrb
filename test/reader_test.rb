@@ -1714,4 +1714,62 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips expanded conditional formatting rule types" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_dxf(font: { bold: true, color: "FFFF0000" })
+    writer.add_conditional_format("A1:A10", type: :above_average, priority: 1,
+                                            above_average: false, equal_average: true, format_id: 0)
+    writer.add_conditional_format("B1:B10", type: :top10, priority: 2,
+                                            rank: 5, percent: true, bottom: true, format_id: 0)
+    writer.add_conditional_format("C1:C10", type: :duplicate_values, priority: 3, format_id: 0)
+    writer.add_conditional_format("D1:D10", type: :contains_text, priority: 4, operator: "containsText",
+                                            text: "hello", formula: 'NOT(ISERROR(SEARCH("hello",D1)))',
+                                            format_id: 0)
+    writer.add_conditional_format("E1:E10", type: :begins_with, priority: 5, operator: "beginsWith",
+                                            text: "foo", formula: 'LEFT(E1,3)="foo"',
+                                            format_id: 0)
+    writer.add_conditional_format("F1:F10", type: :ends_with, priority: 6, operator: "endsWith",
+                                            text: "bar", formula: 'RIGHT(F1,3)="bar"',
+                                            format_id: 0)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(6, cfs.size)
+
+    # aboveAverage (below average + equal)
+    assert_equal("aboveAverage", cfs[0][:type])
+    assert_equal(false, cfs[0][:above_average])
+    assert_equal(true, cfs[0][:equal_average])
+
+    # top10 (bottom 5 percent)
+    assert_equal("top10", cfs[1][:type])
+    assert_equal(5, cfs[1][:rank])
+    assert_equal(true, cfs[1][:percent])
+    assert_equal(true, cfs[1][:bottom])
+
+    # duplicateValues
+    assert_equal("duplicateValues", cfs[2][:type])
+
+    # containsText
+    assert_equal("containsText", cfs[3][:type])
+    assert_equal("hello", cfs[3][:text])
+    assert_equal(1, cfs[3][:formulas].size)
+
+    # beginsWith
+    assert_equal("beginsWith", cfs[4][:type])
+    assert_equal("foo", cfs[4][:text])
+
+    # endsWith
+    assert_equal("endsWith", cfs[5][:type])
+    assert_equal("bar", cfs[5][:text])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

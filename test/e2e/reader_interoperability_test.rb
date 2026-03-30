@@ -1035,6 +1035,45 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated expanded CF rule types" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_cf_expanded_types_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(6, cfs.size)
+
+    # aboveAverage (below average, equal)
+    assert_equal("aboveAverage", cfs[0][:type])
+    assert_equal(false, cfs[0][:above_average])
+    assert_equal(true, cfs[0][:equal_average])
+
+    # top10 (bottom 5 percent)
+    assert_equal("top10", cfs[1][:type])
+    assert_equal(5, cfs[1][:rank])
+    assert_equal(true, cfs[1][:percent])
+    assert_equal(true, cfs[1][:bottom])
+
+    # duplicateValues
+    assert_equal("duplicateValues", cfs[2][:type])
+
+    # containsText
+    assert_equal("containsText", cfs[3][:type])
+    assert_equal("hello", cfs[3][:text])
+
+    # beginsWith
+    assert_equal("beginsWith", cfs[4][:type])
+    assert_equal("foo", cfs[4][:text])
+
+    # endsWith
+    assert_equal("endsWith", cfs[5][:type])
+    assert_equal("bar", cfs[5][:text])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

@@ -1058,7 +1058,13 @@ module Xlsxrb
       expression: "expression",
       color_scale: "colorScale",
       data_bar: "dataBar",
-      icon_set: "iconSet"
+      icon_set: "iconSet",
+      above_average: "aboveAverage",
+      top10: "top10",
+      duplicate_values: "duplicateValues",
+      contains_text: "containsText",
+      begins_with: "beginsWith",
+      ends_with: "endsWith"
     }.freeze
 
     private
@@ -2319,9 +2325,15 @@ module Xlsxrb
       rule_attrs << %( operator="#{rule[:operator]}") if rule[:operator]
       rule_attrs << %( dxfId="#{rule[:format_id]}") if rule[:format_id]
       rule_attrs << %( stopIfTrue="1") if rule[:stop_if_true]
+      rule_attrs << %( aboveAverage="0") if rule[:above_average] == false
+      rule_attrs << %( equalAverage="1") if rule[:equal_average]
+      rule_attrs << %( rank="#{rule[:rank]}") if rule[:rank]
+      rule_attrs << %( percent="1") if rule[:percent]
+      rule_attrs << %( bottom="1") if rule[:bottom]
+      rule_attrs << %( text="#{xml_escape(rule[:text])}") if rule[:text]
 
       case type
-      when :cell_is, :expression
+      when :cell_is, :expression, :above_average, :top10, :duplicate_values, :contains_text, :begins_with, :ends_with
         formulas = rule[:formulas] || [rule[:formula]].compact
         if formulas.empty?
           parts << "<cfRule #{rule_attrs}/>"

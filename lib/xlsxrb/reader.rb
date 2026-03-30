@@ -2522,6 +2522,12 @@ module Xlsxrb
           @current_rule[:operator] = attributes["operator"] if attributes["operator"]
           @current_rule[:format_id] = attributes["dxfId"].to_i if attributes["dxfId"]
           @current_rule[:stop_if_true] = true if attributes["stopIfTrue"] == "1"
+          @current_rule[:above_average] = false if attributes["aboveAverage"] == "0"
+          @current_rule[:equal_average] = true if attributes["equalAverage"] == "1"
+          @current_rule[:rank] = attributes["rank"].to_i if attributes["rank"]
+          @current_rule[:percent] = true if attributes["percent"] == "1"
+          @current_rule[:bottom] = true if attributes["bottom"] == "1"
+          @current_rule[:text] = attributes["text"] if attributes["text"]
         when "formula"
           @inside_formula = true
           @text_buffer = +""
