@@ -2169,6 +2169,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "xf entry emits pivotButton attribute" do
+    writer = Xlsxrb::Writer.new
+    style_id = writer.add_cell_style(pivot_button: true)
+    writer.set_cell("A1", "pivot")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-pivot", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/pivotButton="1"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

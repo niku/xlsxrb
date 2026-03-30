@@ -2958,4 +2958,23 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips xf pivotButton attribute" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    style_id = writer.add_cell_style(pivot_button: true)
+    writer.set_cell("A1", "pivot")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"))
+    assert_equal(true, cs["A1"][:pivot_button])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
