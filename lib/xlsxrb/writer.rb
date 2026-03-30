@@ -352,6 +352,7 @@ module Xlsxrb
         border_id: opts[:border_id] || 0
       }
       entry[:alignment] = opts[:alignment] if opts[:alignment]
+      entry[:protection] = opts[:protection] if opts[:protection]
       existing = @xf_entries.index(entry)
       return existing if existing
 
@@ -2489,9 +2490,12 @@ module Xlsxrb
         apply_attrs << ' applyFill="1"' if xf[:fill_id].positive?
         apply_attrs << ' applyBorder="1"' if xf[:border_id].positive?
         apply_attrs << ' applyAlignment="1"' if xf[:alignment]
-        if xf[:alignment]
-          alignment_xml = emit_alignment_xml(xf[:alignment])
-          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="0"#{apply_attrs.join}>#{alignment_xml}</xf>)
+        apply_attrs << ' applyProtection="1"' if xf[:protection]
+        children = []
+        children << emit_alignment_xml(xf[:alignment]) if xf[:alignment]
+        children << emit_protection_xml(xf[:protection]) if xf[:protection]
+        if children.any?
+          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="0"#{apply_attrs.join}>#{children.join}</xf>)
         else
           parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="0"#{apply_attrs.join}/>)
         end
@@ -2527,6 +2531,13 @@ module Xlsxrb
       attrs << %(indent="#{alignment[:indent]}") if alignment[:indent]
       attrs << %(shrinkToFit="1") if alignment[:shrink_to_fit]
       "<alignment #{attrs.join(" ")}/>"
+    end
+
+    def emit_protection_xml(protection)
+      attrs = []
+      attrs << %(locked="#{protection[:locked] ? "1" : "0"}") unless protection[:locked].nil?
+      attrs << %(hidden="#{protection[:hidden] ? "1" : "0"}") unless protection[:hidden].nil?
+      "<protection #{attrs.join(" ")}/>"
     end
 
     def emit_font_xml(font)
