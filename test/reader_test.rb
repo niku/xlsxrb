@@ -2781,4 +2781,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips font auto color" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    font_id = writer.add_font(auto: true, size: 11, name: "Calibri")
+    style_id = writer.add_cell_style(font_id: font_id)
+    writer.set_cell("A1", "auto-color")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    font = cs["A1"][:font]
+    assert_not_nil(font, "font should be present")
+    assert_equal(true, font[:auto])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

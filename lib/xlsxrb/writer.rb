@@ -2884,7 +2884,9 @@ module Xlsxrb
     end
 
     def emit_color_xml(source, tag: "color")
-      if source[:color]
+      if source[:auto]
+        %(<#{tag} auto="1"/>)
+      elsif source[:color]
         %(<#{tag} rgb="#{source[:color]}"/>)
       elsif source[:theme]
         attrs = [%(theme="#{source[:theme]}")]
