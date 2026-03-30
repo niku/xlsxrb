@@ -1512,6 +1512,10 @@ module Xlsxrb
         fmt_attrs << %(defaultRowHeight="#{sheet_fmt[:default_row_height]}") if sheet_fmt[:default_row_height]
         fmt_attrs << %(defaultColWidth="#{sheet_fmt[:default_col_width]}") if sheet_fmt[:default_col_width]
         fmt_attrs << %(baseColWidth="#{sheet_fmt[:base_col_width]}") if sheet_fmt[:base_col_width]
+        fmt_attrs << %(outlineLevelRow="#{sheet_fmt[:outline_level_row]}") if sheet_fmt[:outline_level_row]
+        fmt_attrs << %(outlineLevelCol="#{sheet_fmt[:outline_level_col]}") if sheet_fmt[:outline_level_col]
+        fmt_attrs << 'customHeight="1"' if sheet_fmt[:custom_height]
+        fmt_attrs << 'zeroHeight="1"' if sheet_fmt[:zero_height]
         parts << "<sheetFormatPr #{fmt_attrs.join(" ")}/>"
       end
 
