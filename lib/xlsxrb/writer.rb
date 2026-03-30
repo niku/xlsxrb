@@ -242,6 +242,16 @@ module Xlsxrb
       @row_attrs[sheet_name][row_num][:thick_bot] = thick
     end
 
+    # Sets a row phonetic flag.
+    def set_row_phonetic(row_num, phonetic: true, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
+      raise ArgumentError, "row must be a positive Integer" unless row_num.is_a?(Integer) && row_num >= 1
+
+      @row_attrs[sheet_name][row_num] ||= {}
+      @row_attrs[sheet_name][row_num][:ph] = phonetic
+    end
+
     # Returns row attributes for the first (or given) sheet.
     def row_attributes(sheet: nil)
       sheet_name = sheet || @sheet_order.first
@@ -1708,6 +1718,7 @@ module Xlsxrb
           attrs << %( s="#{ra[:style]}" customFormat="1") if ra.key?(:style)
           attrs << ' thickTop="1"' if ra[:thick_top]
           attrs << ' thickBot="1"' if ra[:thick_bot]
+          attrs << ' ph="1"' if ra[:ph]
         end
         parts << "<row #{attrs}>"
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|

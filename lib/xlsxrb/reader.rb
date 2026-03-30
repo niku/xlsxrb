@@ -1497,6 +1497,7 @@ module Xlsxrb
         attrs[:style] = s.to_i if s
         attrs[:thick_top] = true if attributes["thickTop"] == "1"
         attrs[:thick_bot] = true if attributes["thickBot"] == "1"
+        attrs[:ph] = true if attributes["ph"] == "1"
         @row_attributes[row_num] = attrs unless attrs.empty?
       end
 
