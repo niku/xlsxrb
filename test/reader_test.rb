@@ -2733,4 +2733,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sheet properties extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_property(:filter_mode, true)
+    writer.set_sheet_property(:published, false)
+    writer.set_sheet_property(:fit_to_page, true)
+    writer.set_sheet_property(:auto_page_breaks, false)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    sp = reader.sheet_properties
+    assert_equal(true, sp[:filter_mode])
+    assert_equal(false, sp[:published])
+    assert_equal(true, sp[:fit_to_page])
+    assert_equal(false, sp[:auto_page_breaks])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

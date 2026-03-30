@@ -2526,6 +2526,12 @@ module Xlsxrb
         when "sheetPr"
           @inside_sheet_pr = true
           @properties[:code_name] = attributes["codeName"] if attributes["codeName"]
+          fm = attributes["filterMode"]
+          @properties[:filter_mode] = %w[1 true].include?(fm) unless fm.nil?
+          pub = attributes["published"]
+          @properties[:published] = %w[1 true].include?(pub) unless pub.nil?
+          efcc = attributes["enableFormatConditionsCalculation"]
+          @properties[:enable_format_conditions_calculation] = %w[1 true].include?(efcc) unless efcc.nil?
         when "tabColor"
           if @inside_sheet_pr
             @properties[:tab_color] = attributes["rgb"] if attributes["rgb"]
@@ -2538,6 +2544,13 @@ module Xlsxrb
             @properties[:summary_below] = %w[1 true].include?(sb) unless sb.nil?
             sr = attributes["summaryRight"]
             @properties[:summary_right] = %w[1 true].include?(sr) unless sr.nil?
+          end
+        when "pageSetUpPr"
+          if @inside_sheet_pr
+            ftp = attributes["fitToPage"]
+            @properties[:fit_to_page] = %w[1 true].include?(ftp) unless ftp.nil?
+            apb = attributes["autoPageBreaks"]
+            @properties[:auto_page_breaks] = %w[1 true].include?(apb) unless apb.nil?
           end
         end
       end
