@@ -2145,4 +2145,25 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips split pane through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_split_pane(x_split: 2400, y_split: 1800, top_left_cell: "C4")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pane = reader.freeze_pane
+
+    assert_equal(:split, pane[:state])
+    assert_equal(2400, pane[:x_split])
+    assert_equal(1800, pane[:y_split])
+    assert_equal("C4", pane[:top_left_cell])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
