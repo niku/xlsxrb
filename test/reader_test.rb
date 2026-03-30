@@ -1291,6 +1291,40 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips rich text comments" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    rt = Xlsxrb::RichText.new(runs: [
+      { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+      { text: " normal" }
+    ])
+    writer.add_comment("A1", rt, author: "Tester")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    comments = reader.comments
+    assert_equal(1, comments.size)
+    c = comments[0]
+    assert_equal("A1", c[:ref])
+    assert_equal("Tester", c[:author])
+    assert_instance_of(Xlsxrb::RichText, c[:text])
+    assert_equal("Bold normal", c[:text].to_s)
+    runs = c[:text].runs
+    assert_equal(2, runs.size)
+    assert_equal("Bold", runs[0][:text])
+    assert_equal(true, runs[0][:font][:bold])
+    assert_equal(9.0, runs[0][:font][:sz])
+    assert_equal("Calibri", runs[0][:font][:name])
+    assert_equal(" normal", runs[1][:text])
+    assert_nil(runs[1][:font])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "entry_names lists all ZIP entries" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
