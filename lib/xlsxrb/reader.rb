@@ -2685,26 +2685,42 @@ module Xlsxrb
         when "sheetView"
           return unless @inside_sheet_views
 
+          wp = attributes["windowProtection"]
+          @view[:window_protection] = %w[1 true].include?(wp) unless wp.nil?
           sf = attributes["showFormulas"]
           @view[:show_formulas] = %w[1 true].include?(sf) unless sf.nil?
           sgl = attributes["showGridLines"]
           @view[:show_grid_lines] = %w[1 true].include?(sgl) unless sgl.nil?
           srch = attributes["showRowColHeaders"]
           @view[:show_row_col_headers] = %w[1 true].include?(srch) unless srch.nil?
-          rtl = attributes["rightToLeft"]
-          @view[:right_to_left] = %w[1 true].include?(rtl) unless rtl.nil?
           szv = attributes["showZeros"]
           @view[:show_zeros] = %w[1 true].include?(szv) unless szv.nil?
-          vm = attributes["view"]
-          @view[:view] = vm if vm
-          soss = attributes["showOutlineSymbols"]
-          @view[:show_outline_symbols] = %w[1 true].include?(soss) unless soss.nil?
-          srr = attributes["showRuler"]
-          @view[:show_ruler] = %w[1 true].include?(srr) unless srr.nil?
-          zs = attributes["zoomScale"]
-          @view[:zoom_scale] = zs.to_i if zs
+          rtl = attributes["rightToLeft"]
+          @view[:right_to_left] = %w[1 true].include?(rtl) unless rtl.nil?
           ts = attributes["tabSelected"]
           @view[:tab_selected] = true if ts == "1"
+          srr = attributes["showRuler"]
+          @view[:show_ruler] = %w[1 true].include?(srr) unless srr.nil?
+          soss = attributes["showOutlineSymbols"]
+          @view[:show_outline_symbols] = %w[1 true].include?(soss) unless soss.nil?
+          dgc = attributes["defaultGridColor"]
+          @view[:default_grid_color] = %w[1 true].include?(dgc) unless dgc.nil?
+          sws = attributes["showWhiteSpace"]
+          @view[:show_white_space] = %w[1 true].include?(sws) unless sws.nil?
+          vm = attributes["view"]
+          @view[:view] = vm if vm
+          tlc = attributes["topLeftCell"]
+          @view[:top_left_cell] = tlc if tlc
+          cid = attributes["colorId"]
+          @view[:color_id] = cid.to_i if cid
+          zs = attributes["zoomScale"]
+          @view[:zoom_scale] = zs.to_i if zs
+          zsn = attributes["zoomScaleNormal"]
+          @view[:zoom_scale_normal] = zsn.to_i if zsn
+          zssl = attributes["zoomScaleSheetLayoutView"]
+          @view[:zoom_scale_sheet_layout_view] = zssl.to_i if zssl
+          zspl = attributes["zoomScalePageLayoutView"]
+          @view[:zoom_scale_page_layout_view] = zspl.to_i if zspl
         when "pane"
           return unless @inside_sheet_views
 

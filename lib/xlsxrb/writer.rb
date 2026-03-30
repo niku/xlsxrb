@@ -1492,24 +1492,35 @@ module Xlsxrb
       if !sheet_sv.empty? || sheet_fp || sheet_sel
         parts << "<sheetViews>"
         sv_attrs = []
+        wp = sheet_sv[:window_protection]
+        sv_attrs << %(windowProtection="#{wp ? 1 : 0}") unless wp.nil?
         sf = sheet_sv[:show_formulas]
         sv_attrs << %(showFormulas="#{sf ? 1 : 0}") unless sf.nil?
         sgl = sheet_sv[:show_grid_lines]
         sv_attrs << %(showGridLines="#{sgl ? 1 : 0}") unless sgl.nil?
         srch = sheet_sv[:show_row_col_headers]
         sv_attrs << %(showRowColHeaders="#{srch ? 1 : 0}") unless srch.nil?
-        rtl = sheet_sv[:right_to_left]
-        sv_attrs << %(rightToLeft="#{rtl ? 1 : 0}") unless rtl.nil?
         sz = sheet_sv[:show_zeros]
         sv_attrs << %(showZeros="#{sz ? 1 : 0}") unless sz.nil?
-        sv_attrs << %(view="#{sheet_sv[:view]}") if sheet_sv[:view]
-        sos = sheet_sv[:show_outline_symbols]
-        sv_attrs << %(showOutlineSymbols="#{sos ? 1 : 0}") unless sos.nil?
+        rtl = sheet_sv[:right_to_left]
+        sv_attrs << %(rightToLeft="#{rtl ? 1 : 0}") unless rtl.nil?
+        sv_attrs << 'tabSelected="1"' if sheet_sv[:tab_selected]
         sr = sheet_sv[:show_ruler]
         sv_attrs << %(showRuler="#{sr ? 1 : 0}") unless sr.nil?
+        sos = sheet_sv[:show_outline_symbols]
+        sv_attrs << %(showOutlineSymbols="#{sos ? 1 : 0}") unless sos.nil?
+        dgc = sheet_sv[:default_grid_color]
+        sv_attrs << %(defaultGridColor="#{dgc ? 1 : 0}") unless dgc.nil?
+        sws = sheet_sv[:show_white_space]
+        sv_attrs << %(showWhiteSpace="#{sws ? 1 : 0}") unless sws.nil?
+        sv_attrs << %(view="#{sheet_sv[:view]}") if sheet_sv[:view]
+        sv_attrs << %(topLeftCell="#{sheet_sv[:top_left_cell]}") if sheet_sv[:top_left_cell]
+        sv_attrs << %(colorId="#{sheet_sv[:color_id]}") if sheet_sv[:color_id]
         zs = sheet_sv[:zoom_scale]
         sv_attrs << %(zoomScale="#{zs}") if zs
-        sv_attrs << 'tabSelected="1"' if sheet_sv[:tab_selected]
+        sv_attrs << %(zoomScaleNormal="#{sheet_sv[:zoom_scale_normal]}") if sheet_sv[:zoom_scale_normal]
+        sv_attrs << %(zoomScaleSheetLayoutView="#{sheet_sv[:zoom_scale_sheet_layout_view]}") if sheet_sv[:zoom_scale_sheet_layout_view]
+        sv_attrs << %(zoomScalePageLayoutView="#{sheet_sv[:zoom_scale_page_layout_view]}") if sheet_sv[:zoom_scale_page_layout_view]
         sv_attrs << 'workbookViewId="0"'
         parts << "<sheetView #{sv_attrs.join(" ")}>"
 
