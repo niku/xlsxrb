@@ -1369,6 +1369,27 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_fill with auto color emits auto attribute" do
+    writer = Xlsxrb::Writer.new
+    fill_id = writer.add_fill(pattern: "solid", fg_color_auto: true, bg_color_auto: true)
+    assert_operator(fill_id, :>=, 2)
+
+    style_id = writer.add_cell_style(fill_id: fill_id)
+    writer.set_cell("A1", "auto fill")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-autofill", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<fgColor auto="1"/>}, xml_content)
+    assert_match(%r{<bgColor auto="1"/>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_border with theme color emits theme color attributes" do
     writer = Xlsxrb::Writer.new
     brd_id = writer.add_border(left: { style: "thin", theme: 1, tint: -0.25 })

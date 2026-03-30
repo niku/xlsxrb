@@ -2176,6 +2176,29 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips fill auto colors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fill_id = writer.add_fill(pattern: "solid", fg_color_auto: true, bg_color_auto: true)
+    style_id = writer.add_cell_style(fill_id: fill_id)
+    writer.set_cell("A1", "auto fill")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    fill = cs["A1"][:fill]
+    assert_not_nil(fill, "fill should be present")
+    assert_equal(true, fill[:fg_color_auto])
+    assert_equal(true, fill[:bg_color_auto])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips border theme color and tabColor theme" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
