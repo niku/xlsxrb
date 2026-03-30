@@ -2668,6 +2668,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits autoFilter extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Date")
+    writer.set_auto_filter("A1:B10")
+    writer.add_filter_column(0, { type: :filters, values: %w[Alice],
+                                  calendar_type: "gregorian",
+                                  date_group_items: [{ date_time_grouping: "year", year: 2024 }],
+                                  hidden_button: true, show_button: false })
+    writer.add_filter_column(1, { type: :top10, top: true, val: 5, filter_val: 4.5 })
+    xlsx_path = File.join(Dir.tmpdir, "af_ext_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/hiddenButton="1"/, xml)
+    assert_match(/showButton="0"/, xml)
+    assert_match(/calendarType="gregorian"/, xml)
+    assert_match(/dateGroupItem dateTimeGrouping="year" year="2024"/, xml)
+    assert_match(/filterVal="4.5"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

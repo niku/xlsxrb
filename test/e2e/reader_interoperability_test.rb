@@ -1751,6 +1751,23 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "reader parses SDK-generated autoFilter extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_auto_filter_extended_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    fcs = reader.filter_columns
+    assert_equal(true, fcs[0][:hidden_button])
+    assert_equal(1, fcs[0][:date_group_items].size)
+    assert_equal("year", fcs[0][:date_group_items][0][:date_time_grouping])
+    assert_equal(2024, fcs[0][:date_group_items][0][:year])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

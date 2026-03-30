@@ -2412,12 +2412,25 @@ module Xlsxrb
           @ref = attributes["ref"]
         when "filterColumn"
           @current_col_id = attributes["colId"]&.to_i
+          @fc_hidden_button = attributes["hiddenButton"] == "1"
+          @fc_show_button = attributes["showButton"] == "0" ? false : nil
         when "filters"
           @filter_blank = attributes["blank"] == "1"
+          @filter_calendar_type = attributes["calendarType"]
           @filter_values = []
+          @date_group_items = []
         when "filter"
           val = attributes["val"]
           @filter_values << val if val
+        when "dateGroupItem"
+          dg = { date_time_grouping: attributes["dateTimeGrouping"] }
+          dg[:year] = attributes["year"].to_i if attributes["year"]
+          dg[:month] = attributes["month"].to_i if attributes["month"]
+          dg[:day] = attributes["day"].to_i if attributes["day"]
+          dg[:hour] = attributes["hour"].to_i if attributes["hour"]
+          dg[:minute] = attributes["minute"].to_i if attributes["minute"]
+          dg[:second] = attributes["second"].to_i if attributes["second"]
+          @date_group_items << dg
         when "customFilters"
           @inside_custom_filters = true
           @custom_filters_and = attributes["and"] == "1"
@@ -2425,14 +2438,21 @@ module Xlsxrb
         when "customFilter"
           @custom_filters_list << { operator: attributes["operator"], val: attributes["val"] } if @inside_custom_filters
         when "dynamicFilter"
-          @current_filter = { type: :dynamic, dynamic_type: attributes["type"] }
+          df = { type: :dynamic, dynamic_type: attributes["type"] }
+          df[:val] = attributes["val"].to_f if attributes["val"]
+          df[:val_iso] = attributes["valIso"] if attributes["valIso"]
+          df[:max_val] = attributes["maxVal"].to_f if attributes["maxVal"]
+          df[:max_val_iso] = attributes["maxValIso"] if attributes["maxValIso"]
+          @current_filter = df
         when "top10"
-          @current_filter = {
+          t10 = {
             type: :top10,
             top: attributes["top"] == "1",
             percent: attributes["percent"] == "1",
             val: attributes["val"]&.to_f&.to_i
           }
+          t10[:filter_val] = attributes["filterVal"].to_f if attributes["filterVal"]
+          @current_filter = t10
         when "colorFilter"
           cf = { type: :color_filter, dxf_id: attributes["dxfId"]&.to_i }
           cf[:cell_color] = false if attributes["cellColor"] == "0"
@@ -2450,7 +2470,9 @@ module Xlsxrb
         when "filters"
           f = { type: :filters }
           f[:blank] = true if @filter_blank
+          f[:calendar_type] = @filter_calendar_type if @filter_calendar_type
           f[:values] = @filter_values unless @filter_values.empty?
+          f[:date_group_items] = @date_group_items unless @date_group_items.empty?
           @current_filter = f
         when "customFilters"
           if @custom_filters_list.size == 1
@@ -2461,7 +2483,11 @@ module Xlsxrb
           end
           @inside_custom_filters = false
         when "filterColumn"
-          @filter_columns[@current_col_id] = @current_filter if @current_col_id && @current_filter
+          if @current_col_id && @current_filter
+            @current_filter[:hidden_button] = true if @fc_hidden_button
+            @current_filter[:show_button] = false if @fc_show_button == false
+            @filter_columns[@current_col_id] = @current_filter
+          end
           @current_col_id = nil
           @current_filter = nil
         end
