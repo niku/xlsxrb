@@ -2633,6 +2633,7 @@ module Xlsxrb
         cs[:cfvo]&.each do |cfvo|
           cfvo_attrs = %(type="#{cfvo[:type]}")
           cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
+          cfvo_attrs << ' gte="0"' if cfvo[:gte] == false
           parts << "<cfvo #{cfvo_attrs}/>"
         end
         cs[:colors]&.each { |c| parts << emit_cf_color_xml(c) }
@@ -2649,6 +2650,7 @@ module Xlsxrb
         db[:cfvo]&.each do |cfvo|
           cfvo_attrs = %(type="#{cfvo[:type]}")
           cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
+          cfvo_attrs << ' gte="0"' if cfvo[:gte] == false
           parts << "<cfvo #{cfvo_attrs}/>"
         end
         parts << emit_cf_color_xml(db[:color]) if db[:color]
@@ -2665,6 +2667,7 @@ module Xlsxrb
         is[:cfvo]&.each do |cfvo|
           cfvo_attrs = %(type="#{cfvo[:type]}")
           cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
+          cfvo_attrs << ' gte="0"' if cfvo[:gte] == false
           parts << "<cfvo #{cfvo_attrs}/>"
         end
         parts << "</iconSet>"

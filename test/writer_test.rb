@@ -2108,6 +2108,27 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "cfvo emits gte attribute when false" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_conditional_format("A1:A10",
+                                  type: :color_scale,
+                                  color_scale: {
+                                    cfvo: [{ type: "min" }, { type: "num", val: "50", gte: false }, { type: "max" }],
+                                    colors: [{ rgb: "FFFF0000" }, { rgb: "FFFFFF00" }, { rgb: "FF00FF00" }]
+                                  })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-cfvo", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/gte="0"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

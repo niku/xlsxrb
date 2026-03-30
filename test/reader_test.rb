@@ -2887,4 +2887,29 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips cfvo gte attribute" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_conditional_format("A1:A10",
+                                  type: :color_scale,
+                                  color_scale: {
+                                    cfvo: [{ type: "min" }, { type: "num", val: "50", gte: false }, { type: "max" }],
+                                    colors: [{ rgb: "FFFF0000" }, { rgb: "FFFFFF00" }, { rgb: "FF00FF00" }]
+                                  })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    rules = reader.conditional_formats
+    rule = rules.find { |r| r[:type] == "colorScale" }
+    assert_not_nil(rule)
+    cfvos = rule[:color_scale][:cfvo]
+    assert_equal(false, cfvos[1][:gte])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
