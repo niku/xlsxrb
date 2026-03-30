@@ -2948,6 +2948,32 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits pivotCacheDefinition optional attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0], data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           cache_save_data: false, cache_enable_refresh: false,
+                           cache_refreshed_by: "Bot", cache_refreshed_version: 6,
+                           cache_created_version: 5, cache_record_count: 99,
+                           cache_optimize_memory: true)
+    xlsx_path = File.join(Dir.tmpdir, "pcd_attrs_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/pivotCache/pivotCacheDefinition1.xml")
+    assert_match(/saveData="0"/, xml)
+    assert_match(/enableRefresh="0"/, xml)
+    assert_match(/refreshedBy="Bot"/, xml)
+    assert_match(/refreshedVersion="6"/, xml)
+    assert_match(/createdVersion="5"/, xml)
+    assert_match(/recordCount="99"/, xml)
+    assert_match(/optimizeMemory="1"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

@@ -1190,7 +1190,11 @@ module Xlsxrb
         show_missing: opts[:show_missing], tag: opts[:tag], indent: opts[:indent],
         published: opts[:published], created_version: opts[:created_version],
         updated_version: opts[:updated_version], min_refreshable_version: opts[:min_refreshable_version],
-        pivot_table_style: opts[:pivot_table_style]
+        pivot_table_style: opts[:pivot_table_style],
+        cache_save_data: opts[:cache_save_data], cache_enable_refresh: opts[:cache_enable_refresh],
+        cache_refreshed_by: opts[:cache_refreshed_by], cache_refreshed_version: opts[:cache_refreshed_version],
+        cache_created_version: opts[:cache_created_version], cache_record_count: opts[:cache_record_count],
+        cache_optimize_memory: opts[:cache_optimize_memory]
       }
     end
 
@@ -2827,9 +2831,17 @@ module Xlsxrb
     end
 
     def generate_pivot_cache_definition_xml(pivot_table, _cache_id)
+      pcd_attrs = %( xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}" r:id="rId1" refreshOnLoad="1")
+      pcd_attrs << ' saveData="0"' if pivot_table[:cache_save_data] == false
+      pcd_attrs << ' enableRefresh="0"' if pivot_table[:cache_enable_refresh] == false
+      pcd_attrs << %( refreshedBy="#{xml_escape(pivot_table[:cache_refreshed_by])}") if pivot_table[:cache_refreshed_by]
+      pcd_attrs << %( refreshedVersion="#{pivot_table[:cache_refreshed_version]}") if pivot_table[:cache_refreshed_version]
+      pcd_attrs << %( createdVersion="#{pivot_table[:cache_created_version]}") if pivot_table[:cache_created_version]
+      pcd_attrs << %( recordCount="#{pivot_table[:cache_record_count]}") if pivot_table[:cache_record_count]
+      pcd_attrs << ' optimizeMemory="1"' if pivot_table[:cache_optimize_memory]
       parts = [
         XML_HEADER,
-        %(<pivotCacheDefinition xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}" r:id="rId1" refreshOnLoad="1">)
+        "<pivotCacheDefinition#{pcd_attrs}>"
       ]
 
       # Parse source ref: "Sheet1!A1:C4" => sheet name + range.
