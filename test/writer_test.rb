@@ -352,6 +352,28 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(true, props[:full_calc_on_load])
   end
 
+  test "calc properties extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_calc_property(:full_precision, false)
+    writer.set_calc_property(:concurrent_calc, false)
+    writer.set_calc_property(:concurrent_manual_count, 4)
+    writer.set_calc_property(:force_full_calc, true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-calc", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/fullPrecision="0"/, xml)
+    assert_match(/concurrentCalc="0"/, xml)
+    assert_match(/concurrentManualCount="4"/, xml)
+    assert_match(/forceFullCalc="1"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "sets sheet state" do
     writer = Xlsxrb::Writer.new
     writer.add_sheet("Hidden")

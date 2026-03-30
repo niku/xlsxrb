@@ -1638,6 +1638,14 @@ module Xlsxrb
           @calc_properties[:calc_completed] = %w[1 true].include?(cc) unless cc.nil?
           cos = attributes["calcOnSave"]
           @calc_properties[:calc_on_save] = %w[1 true].include?(cos) unless cos.nil?
+          fprec = attributes["fullPrecision"]
+          @calc_properties[:full_precision] = %w[1 true].include?(fprec) unless fprec.nil?
+          conc = attributes["concurrentCalc"]
+          @calc_properties[:concurrent_calc] = %w[1 true].include?(conc) unless conc.nil?
+          cmc = attributes["concurrentManualCount"]
+          @calc_properties[:concurrent_manual_count] = cmc.to_i if cmc
+          ffc = attributes["forceFullCalc"]
+          @calc_properties[:force_full_calc] = %w[1 true].include?(ffc) unless ffc.nil?
         when "workbookProtection"
           prot = {}
           ls = attributes["lockStructure"]

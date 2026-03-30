@@ -1425,6 +1425,13 @@ module Xlsxrb
         attrs << %(refMode="#{@calc_properties[:ref_mode]}") if @calc_properties[:ref_mode]
         attrs << %(calcCompleted="#{@calc_properties[:calc_completed] ? 1 : 0}") unless @calc_properties[:calc_completed].nil?
         attrs << %(calcOnSave="#{@calc_properties[:calc_on_save] ? 1 : 0}") unless @calc_properties[:calc_on_save].nil?
+        fp = @calc_properties[:full_precision]
+        attrs << %(fullPrecision="#{fp ? 1 : 0}") unless fp.nil?
+        conc = @calc_properties[:concurrent_calc]
+        attrs << %(concurrentCalc="#{conc ? 1 : 0}") unless conc.nil?
+        attrs << %(concurrentManualCount="#{@calc_properties[:concurrent_manual_count]}") if @calc_properties[:concurrent_manual_count]
+        ffc = @calc_properties[:force_full_calc]
+        attrs << %(forceFullCalc="#{ffc ? 1 : 0}") unless ffc.nil?
         parts << "<calcPr #{attrs.join(" ")}/>" unless attrs.empty?
       end
 
