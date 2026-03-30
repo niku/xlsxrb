@@ -3018,6 +3018,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits cacheField caption and formula via field_attrs" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           field_attrs: {
+                             0 => { cache_caption: "Category", cache_formula: "='Sheet1'!A1", cache_num_fmt_id: 49 }
+                           })
+    xlsx_path = File.join(Dir.tmpdir, "cache_field_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/pivotCache/pivotCacheDefinition1.xml")
+    assert_match(/caption="Category"/, xml)
+    assert_match(/formula="=&apos;Sheet1&apos;!A1"/, xml)
+    assert_match(/numFmtId="49"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
