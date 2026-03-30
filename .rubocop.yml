@@ -1,6 +1,9 @@
 AllCops:
   TargetRubyVersion: 4.0
 
+plugins:
+  - rubocop-rake
+
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
