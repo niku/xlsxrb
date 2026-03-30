@@ -4552,6 +4552,8 @@ module Xlsxrb
           @pivot_table[:min_refreshable_version] = attributes["minRefreshableVersion"]&.to_i if attributes["minRefreshableVersion"]
         when "location"
           @pivot_table[:ref] = attributes["ref"] if @pivot_table
+          @pivot_table[:row_page_count] = attributes["rowPageCount"]&.to_i if attributes["rowPageCount"]
+          @pivot_table[:col_page_count] = attributes["colPageCount"]&.to_i if attributes["colPageCount"]
         when "pivotField"
           @inside_pivot_field = true
           @current_field = {}

@@ -4086,4 +4086,23 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "parses location rowPageCount and colPageCount from pivot table XML" do
+    xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <pivotTableDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" name="PT1">
+        <location ref="E1:F5" firstHeaderRow="1" firstDataRow="1" firstDataCol="1" rowPageCount="2" colPageCount="3"/>
+        <pivotFields count="1"><pivotField axis="axisRow" showAll="1"/></pivotFields>
+        <rowFields count="1"><field x="0"/></rowFields>
+        <dataFields count="0"/>
+      </pivotTableDefinition>
+    XML
+    listener = Xlsxrb::Reader::PivotTableListener.new
+    parser = REXML::Parsers::SAX2Parser.new(xml)
+    parser.listen(listener)
+    parser.parse
+    pt = listener.pivot_table
+    assert_equal 2, pt[:row_page_count]
+    assert_equal 3, pt[:col_page_count]
+  end
 end
