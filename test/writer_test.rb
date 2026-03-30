@@ -2738,7 +2738,7 @@ class WriterTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "data")
     writer.set_data_consolidate(
-      function: "average", start_labels: true, link: true,
+      function: "average", start_labels: true, left_labels: true, link: true,
       data_refs: [{ ref: "A1:B10", sheet: "Sheet1" }, { ref: "C1:D10", name: "Range2" }]
     )
 
@@ -2751,6 +2751,7 @@ class WriterTest < Test::Unit::TestCase
     assert_match(/<dataConsolidate /, xml_content)
     assert_match(/function="average"/, xml_content)
     assert_match(/startLabels="1"/, xml_content)
+    assert_match(/leftLabels="1"/, xml_content)
     assert_match(/link="1"/, xml_content)
     assert_match(/<dataRefs count="2">/, xml_content)
     assert_match(/ref="A1:B10"/, xml_content)
