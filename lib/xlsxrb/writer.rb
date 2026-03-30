@@ -816,7 +816,8 @@ module Xlsxrb
     # Adds a defined name. Options: sheet: (local scope), hidden: true, value: (formula or constant).
     def add_defined_name(name, value, sheet: nil, hidden: false, **opts)
       entry = { name: name, value: value, hidden: hidden }
-      %i[comment description function vb_procedure xlm shortcut_key publish_to_server workbook_parameter].each do |key|
+      %i[comment description function vb_procedure xlm shortcut_key publish_to_server workbook_parameter
+         function_group_id custom_menu help status_bar].each do |key|
         entry[key] = opts[key] if opts.key?(key)
       end
       if sheet
@@ -1646,6 +1647,10 @@ module Xlsxrb
           attrs << %( shortcutKey="#{xml_escape(dn[:shortcut_key])}") if dn[:shortcut_key]
           attrs << ' publishToServer="1"' if dn[:publish_to_server]
           attrs << ' workbookParameter="1"' if dn[:workbook_parameter]
+          attrs << %( functionGroupId="#{dn[:function_group_id]}") if dn[:function_group_id]
+          attrs << %( customMenu="#{xml_escape(dn[:custom_menu])}") if dn[:custom_menu]
+          attrs << %( help="#{xml_escape(dn[:help])}") if dn[:help]
+          attrs << %( statusBar="#{xml_escape(dn[:status_bar])}") if dn[:status_bar]
           parts << "<definedName #{attrs}>#{xml_escape(dn[:value])}</definedName>"
         end
         parts << "</definedNames>"

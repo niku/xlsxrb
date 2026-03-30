@@ -3459,4 +3459,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips definedName functionGroupId customMenu help statusBar" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_defined_name("Func1", "Sheet1!$A$1",
+                            function_group_id: 3, custom_menu: "CM",
+                            help: "H", status_bar: "SB")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dns = reader.defined_names
+    dn = dns.find { |d| d[:name] == "Func1" }
+    assert_not_nil(dn)
+    assert_equal(3, dn[:function_group_id])
+    assert_equal("CM", dn[:custom_menu])
+    assert_equal("H", dn[:help])
+    assert_equal("SB", dn[:status_bar])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
