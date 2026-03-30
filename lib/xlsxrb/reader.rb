@@ -3111,6 +3111,10 @@ module Xlsxrb
           @header_footer[:different_first] = true if %w[1 true].include?(df)
           doe = attributes["differentOddEven"]
           @header_footer[:different_odd_even] = true if %w[1 true].include?(doe)
+          swd = attributes["scaleWithDoc"]
+          @header_footer[:scale_with_doc] = swd != "0" if swd
+          awm = attributes["alignWithMargins"]
+          @header_footer[:align_with_margins] = awm != "0" if awm
         when "oddHeader", "oddFooter", "evenHeader", "evenFooter", "firstHeader", "firstFooter"
           if @inside_header_footer
             @current_hf_field = name

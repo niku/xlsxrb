@@ -2803,4 +2803,24 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips headerFooter scaleWithDoc and alignWithMargins" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_header_footer(:odd_header, "&CHello")
+    writer.set_header_footer(:scale_with_doc, false)
+    writer.set_header_footer(:align_with_margins, false)
+    writer.set_cell("A1", "hf")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    hf = reader.header_footer
+    assert_equal(false, hf[:scale_with_doc])
+    assert_equal(false, hf[:align_with_margins])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

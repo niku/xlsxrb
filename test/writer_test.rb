@@ -2030,6 +2030,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "headerFooter emits scaleWithDoc and alignWithMargins" do
+    writer = Xlsxrb::Writer.new
+    writer.set_header_footer(:odd_header, "&CHello")
+    writer.set_header_footer(:scale_with_doc, false)
+    writer.set_header_footer(:align_with_margins, false)
+    writer.set_cell("A1", "hf")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-hf", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/scaleWithDoc="0"/, xml_content)
+    assert_match(/alignWithMargins="0"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

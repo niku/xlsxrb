@@ -1874,6 +1874,8 @@ module Xlsxrb
         hf_attrs = []
         hf_attrs << 'differentFirst="1"' if sheet_hf[:different_first]
         hf_attrs << 'differentOddEven="1"' if sheet_hf[:different_odd_even]
+        hf_attrs << 'scaleWithDoc="0"' if sheet_hf[:scale_with_doc] == false
+        hf_attrs << 'alignWithMargins="0"' if sheet_hf[:align_with_margins] == false
         hf_tag = hf_attrs.empty? ? "<headerFooter>" : "<headerFooter #{hf_attrs.join(" ")}>"
         parts << hf_tag
         parts << "<oddHeader>#{xml_escape(sheet_hf[:odd_header])}</oddHeader>" if sheet_hf[:odd_header]
