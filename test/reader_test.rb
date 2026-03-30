@@ -693,8 +693,9 @@ class ReaderTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
-    assert_equal([10, 20], reader.row_breaks)
-    assert_equal([5], reader.col_breaks)
+    assert_equal([10, 20], reader.row_breaks.map { |b| b[:id] })
+    assert_equal([5], reader.col_breaks.map { |b| b[:id] })
+    assert_equal(true, reader.row_breaks.first[:man])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -3043,6 +3044,29 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("FF00FF00", border[:vertical][:color])
     assert_equal("dashed", border[:horizontal][:style])
     assert_equal("FF0000FF", border[:horizontal][:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips break extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_row_break({ id: 10, min: 2, max: 8, man: true, pt: true })
+    writer.set_cell("A1", "brk")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    brks = reader.row_breaks
+    assert_equal(1, brks.size)
+    brk = brks.first
+    assert_equal(10, brk[:id])
+    assert_equal(2, brk[:min])
+    assert_equal(8, brk[:max])
+    assert_equal(true, brk[:man])
+    assert_equal(true, brk[:pt])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

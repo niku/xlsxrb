@@ -2248,6 +2248,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "row break with extended attributes emits min, max, pt" do
+    writer = Xlsxrb::Writer.new
+    writer.add_row_break({ id: 10, min: 2, max: 8, man: true, pt: true })
+    writer.set_cell("A1", "brk")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-brk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/min="2"/, xml_content)
+    assert_match(/max="8"/, xml_content)
+    assert_match(/man="1"/, xml_content)
+    assert_match(/pt="1"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
