@@ -371,6 +371,7 @@ module Xlsxrb
       }
       entry[:alignment] = opts[:alignment] if opts[:alignment]
       entry[:protection] = opts[:protection] if opts[:protection]
+      entry[:quote_prefix] = true if opts[:quote_prefix]
       existing = @xf_entries.index(entry)
       return existing if existing
 
@@ -2666,6 +2667,7 @@ module Xlsxrb
         apply_attrs << ' applyBorder="1"' if xf[:border_id].positive?
         apply_attrs << ' applyAlignment="1"' if xf[:alignment]
         apply_attrs << ' applyProtection="1"' if xf[:protection]
+        apply_attrs << ' quotePrefix="1"' if xf[:quote_prefix]
         children = []
         children << emit_alignment_xml(xf[:alignment]) if xf[:alignment]
         children << emit_protection_xml(xf[:protection]) if xf[:protection]

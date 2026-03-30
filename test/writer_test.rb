@@ -1652,6 +1652,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "cellXf emits quotePrefix attribute" do
+    writer = Xlsxrb::Writer.new
+    sid = writer.add_cell_style(quote_prefix: true)
+    writer.set_cell("A1", "001234")
+    writer.set_cell_style("A1", sid)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-qp", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    styles_xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/quotePrefix="1"/, styles_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
