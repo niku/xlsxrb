@@ -2580,16 +2580,32 @@ module Xlsxrb
       if fill[:gradient]
         return emit_gradient_fill_xml(fill[:gradient])
       end
-      return "<fill><patternFill patternType=\"#{fill[:pattern]}\"/></fill>" if fill[:pattern] && !fill[:fg_color] && !fill[:bg_color]
+      has_fg = fill[:fg_color] || fill[:fg_color_theme] || fill[:fg_color_indexed]
+      has_bg = fill[:bg_color] || fill[:bg_color_theme] || fill[:bg_color_indexed]
+      return "<fill><patternFill patternType=\"#{fill[:pattern]}\"/></fill>" if fill[:pattern] && !has_fg && !has_bg
 
       parts = ["<fill>"]
       pt = fill[:pattern] || "solid"
       parts << %(<patternFill patternType="#{pt}">)
-      parts << %(<fgColor rgb="#{fill[:fg_color]}"/>) if fill[:fg_color]
-      parts << %(<bgColor rgb="#{fill[:bg_color]}"/>) if fill[:bg_color]
+      parts << emit_fill_color_xml("fgColor", fill, :fg)
+      parts << emit_fill_color_xml("bgColor", fill, :bg)
       parts << "</patternFill>"
       parts << "</fill>"
       parts.join
+    end
+
+    def emit_fill_color_xml(tag, fill, prefix)
+      if fill[:"#{prefix}_color"]
+        %(<#{tag} rgb="#{fill[:"#{prefix}_color"]}"/>)
+      elsif fill[:"#{prefix}_color_theme"]
+        attrs = [%(theme="#{fill[:"#{prefix}_color_theme"]}")]
+        attrs << %(tint="#{fill[:"#{prefix}_color_tint"]}") if fill[:"#{prefix}_color_tint"]
+        %(<#{tag} #{attrs.join(" ")}/>)
+      elsif fill[:"#{prefix}_color_indexed"]
+        %(<#{tag} indexed="#{fill[:"#{prefix}_color_indexed"]}"/>)
+      else
+        ""
+      end
     end
 
     def emit_gradient_fill_xml(gradient)
