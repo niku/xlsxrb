@@ -829,11 +829,11 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("colorScale", cfs[1][:type])
     assert_equal(2, cfs[1][:color_scale][:cfvo].size)
     assert_equal("min", cfs[1][:color_scale][:cfvo][0][:type])
-    assert_equal(%w[FF0000FF FFFF0000], cfs[1][:color_scale][:colors])
+    assert_equal([{ rgb: "FF0000FF" }, { rgb: "FFFF0000" }], cfs[1][:color_scale][:colors])
 
     assert_equal("dataBar", cfs[2][:type])
     assert_equal(2, cfs[2][:data_bar][:cfvo].size)
-    assert_equal("FF638EC6", cfs[2][:data_bar][:color])
+    assert_equal({ rgb: "FF638EC6" }, cfs[2][:data_bar][:color])
 
     assert_equal("iconSet", cfs[3][:type])
     assert_equal("3TrafficLights1", cfs[3][:icon_set][:icon_set])
@@ -1818,6 +1818,41 @@ class ReaderTest < Test::Unit::TestCase
     # Run 4: indexed color
     assert_equal("Indexed", runs[4][:text])
     assert_equal(10, runs[4][:font][:indexed])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips CF colorScale and dataBar with theme/indexed colors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 50)
+    writer.add_conditional_format("A1:A10", type: :color_scale, priority: 1,
+                                            color_scale: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              colors: [{ theme: 4, tint: -0.25 }, { theme: 9 }]
+                                            })
+    writer.add_conditional_format("B1:B10", type: :data_bar, priority: 2,
+                                            data_bar: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              color: { indexed: 10 }
+                                            })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(2, cfs.size)
+
+    cs_colors = cfs[0][:color_scale][:colors]
+    assert_equal(2, cs_colors.size)
+    assert_equal(4, cs_colors[0][:theme])
+    assert_in_delta(-0.25, cs_colors[0][:tint], 0.001)
+    assert_equal(9, cs_colors[1][:theme])
+
+    db_color = cfs[1][:data_bar][:color]
+    assert_equal(10, db_color[:indexed])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

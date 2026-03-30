@@ -2361,7 +2361,7 @@ module Xlsxrb
           cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
           parts << "<cfvo #{cfvo_attrs}/>"
         end
-        cs[:colors]&.each { |c| parts << %(<color rgb="#{c}"/>) }
+        cs[:colors]&.each { |c| parts << emit_cf_color_xml(c) }
         parts << "</colorScale>"
         parts << "</cfRule>"
       when :data_bar
@@ -2377,7 +2377,7 @@ module Xlsxrb
           cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
           parts << "<cfvo #{cfvo_attrs}/>"
         end
-        parts << %(<color rgb="#{db[:color]}"/>) if db[:color]
+        parts << emit_cf_color_xml(db[:color]) if db[:color]
         parts << "</dataBar>"
         parts << "</cfRule>"
       when :icon_set
@@ -2397,6 +2397,15 @@ module Xlsxrb
         parts << "</cfRule>"
       else
         parts << "<cfRule #{rule_attrs}/>"
+      end
+    end
+
+    # Emits a <color> element for CF rules, accepting either a plain RGB string or a hash.
+    def emit_cf_color_xml(color)
+      if color.is_a?(Hash)
+        emit_color_xml(color)
+      else
+        %(<color rgb="#{color}"/>)
       end
     end
 
