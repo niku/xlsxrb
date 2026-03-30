@@ -623,11 +623,14 @@ module Xlsxrb
     end
 
     # Sets the active cell selection.
-    def set_selection(active_cell, sqref: nil, sheet: nil)
+    def set_selection(active_cell, sqref: nil, pane: nil, active_cell_id: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @selections.key?(sheet_name)
 
-      @selections[sheet_name] = { active_cell: active_cell, sqref: sqref || active_cell }
+      sel = { active_cell: active_cell, sqref: sqref || active_cell }
+      sel[:pane] = pane if pane
+      sel[:active_cell_id] = active_cell_id if active_cell_id
+      @selections[sheet_name] = sel
     end
 
     # Returns selection for the first (or given) sheet.
@@ -1874,7 +1877,9 @@ module Xlsxrb
 
         if sheet_sel
           sel_attrs = []
+          sel_attrs << %(pane="#{sheet_sel[:pane]}") if sheet_sel[:pane]
           sel_attrs << %(activeCell="#{sheet_sel[:active_cell]}") if sheet_sel[:active_cell]
+          sel_attrs << %(activeCellId="#{sheet_sel[:active_cell_id]}") if sheet_sel[:active_cell_id]
           sel_attrs << %(sqref="#{sheet_sel[:sqref]}") if sheet_sel[:sqref]
           parts << "<selection #{sel_attrs.join(" ")}/>"
         end
