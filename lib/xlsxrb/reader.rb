@@ -236,6 +236,14 @@ module Xlsxrb
       styles[:cell_style_xfs] || []
     end
 
+    # Returns array of cellXfs entries (cell format definitions).
+    def cell_xfs
+      styles = load_styles
+      return [] if styles.empty?
+
+      styles[:cell_xfs] || []
+    end
+
     # Returns array of named cell styles (cellStyle elements).
     def named_cell_styles
       styles = load_styles
