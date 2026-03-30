@@ -142,6 +142,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     row_attrs = reader.row_attributes
     assert_in_delta(25.0, row_attrs[1][:height], 0.01)
     assert_equal(true, row_attrs[3][:hidden])
+    assert_equal(0, row_attrs[5][:style])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

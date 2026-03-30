@@ -186,12 +186,14 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell("A1", "hello")
     writer.set_row_height(1, 25.0)
     writer.set_row_hidden(3)
+    writer.set_row_style(5, 0)
     writer.write(xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
     row_attrs = reader.row_attributes
     assert_in_delta(25.0, row_attrs[1][:height], 0.01)
     assert_equal(true, row_attrs[3][:hidden])
+    assert_equal(0, row_attrs[5][:style])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

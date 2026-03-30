@@ -16,7 +16,8 @@ try
             }
         )
         { RowIndex = 1, Height = 25.0, CustomHeight = true },
-        new Row() { RowIndex = 3, Hidden = true }
+        new Row() { RowIndex = 3, Hidden = true },
+        new Row() { RowIndex = 5, StyleIndex = 0U, CustomFormat = true }
     );
 
     worksheetPart.Worksheet = new Worksheet(sheetData);
