@@ -1343,7 +1343,13 @@ module Xlsxrb
       # Emit <sheetPr> if sheet properties are defined.
       unless sheet_props.empty?
         sp_children = []
-        sp_children << %(<tabColor rgb="#{sheet_props[:tab_color]}"/>) if sheet_props[:tab_color]
+        if sheet_props[:tab_color]
+          sp_children << %(<tabColor rgb="#{sheet_props[:tab_color]}"/>)
+        elsif sheet_props[:tab_color_theme]
+          tc_attrs = [%(theme="#{sheet_props[:tab_color_theme]}")]
+          tc_attrs << %(tint="#{sheet_props[:tab_color_tint]}") if sheet_props[:tab_color_tint]
+          sp_children << "<tabColor #{tc_attrs.join(" ")}/>"
+        end
         sb = sheet_props[:summary_below]
         sr = sheet_props[:summary_right]
         unless sb.nil? && sr.nil?
@@ -2640,7 +2646,7 @@ module Xlsxrb
         s = bdr[side]
         if s.is_a?(Hash)
           parts << %(<#{side} style="#{s[:style]}">)
-          parts << %(<color rgb="#{s[:color]}"/>) if s[:color]
+          parts << emit_color_xml(s)
           parts << "</#{side}>"
         else
           parts << "<#{side}/>"

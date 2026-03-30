@@ -2209,7 +2209,11 @@ module Xlsxrb
         when "sheetPr"
           @inside_sheet_pr = true
         when "tabColor"
-          @properties[:tab_color] = attributes["rgb"] if @inside_sheet_pr && attributes["rgb"]
+          if @inside_sheet_pr
+            @properties[:tab_color] = attributes["rgb"] if attributes["rgb"]
+            @properties[:tab_color_theme] = attributes["theme"].to_i if attributes["theme"]
+            @properties[:tab_color_tint] = attributes["tint"].to_f if attributes["tint"]
+          end
         when "outlinePr"
           if @inside_sheet_pr
             sb = attributes["summaryBelow"]
