@@ -3111,4 +3111,25 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips fileVersion element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_file_version(:app_name, "xl")
+    writer.set_file_version(:last_edited, "7")
+    writer.set_file_version(:rup_build, "27425")
+    writer.set_cell("A1", "test")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    fv = reader.file_version
+    assert_equal("xl", fv[:app_name])
+    assert_equal("7", fv[:last_edited])
+    assert_equal("27425", fv[:rup_build])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

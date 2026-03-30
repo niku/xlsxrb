@@ -431,6 +431,11 @@ module Xlsxrb
       parse_workbook_metadata[:workbook_properties]
     end
 
+    # Returns file version properties (e.g. { app_name: "xl", last_edited: "7" }).
+    def file_version
+      parse_workbook_metadata[:file_version]
+    end
+
     # Returns workbook view properties (e.g. { active_tab: 0 }).
     def workbook_views
       parse_workbook_metadata[:workbook_views]
@@ -727,7 +732,8 @@ module Xlsxrb
         workbook_views: listener.workbook_views,
         calc_properties: listener.calc_properties,
         defined_names: listener.defined_names,
-        workbook_protection: listener.workbook_protection
+        workbook_protection: listener.workbook_protection,
+        file_version: listener.file_version
       }
     end
 
@@ -1568,7 +1574,8 @@ module Xlsxrb
     class WorkbookListener
       include REXML::SAX2Listener
 
-      attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties, :defined_names, :workbook_protection
+      attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties, :defined_names,
+                  :workbook_protection, :file_version
 
       def initialize
         @sheets = []
@@ -1577,6 +1584,7 @@ module Xlsxrb
         @calc_properties = {}
         @defined_names = []
         @workbook_protection = nil
+        @file_version = {}
         @inside_defined_name = false
         @current_dn_attrs = nil
         @dn_text_buffer = +""
@@ -1587,6 +1595,17 @@ module Xlsxrb
         case name
         when "sheet"
           @sheets << { name: attributes["name"], rid: attributes["r:id"], state: attributes["state"] }
+        when "fileVersion"
+          an = attributes["appName"]
+          @file_version[:app_name] = an if an
+          le = attributes["lastEdited"]
+          @file_version[:last_edited] = le if le
+          loe = attributes["lowestEdited"]
+          @file_version[:lowest_edited] = loe if loe
+          rb = attributes["rupBuild"]
+          @file_version[:rup_build] = rb if rb
+          cn = attributes["codeName"]
+          @file_version[:code_name] = cn if cn
         when "workbookPr"
           d1904 = attributes["date1904"]
           @workbook_properties[:date1904] = %w[1 true].include?(d1904) unless d1904.nil?
