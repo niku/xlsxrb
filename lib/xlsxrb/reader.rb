@@ -2784,6 +2784,8 @@ module Xlsxrb
           end
         when "outlinePr"
           if @inside_sheet_pr
+            apply_s = attributes["applyStyles"]
+            @properties[:apply_styles] = %w[1 true].include?(apply_s) unless apply_s.nil?
             sb = attributes["summaryBelow"]
             @properties[:summary_below] = %w[1 true].include?(sb) unless sb.nil?
             sr = attributes["summaryRight"]
