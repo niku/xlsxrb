@@ -50,6 +50,7 @@ module Xlsxrb
       @sheet_states = {}
       @defined_names = []
       @sheet_properties = { "Sheet1" => {} }
+      @phonetic_properties = { "Sheet1" => nil }
       @sheet_formats = { "Sheet1" => {} }
       @sheet_views = { "Sheet1" => {} }
       @freeze_panes = { "Sheet1" => nil }
@@ -112,6 +113,7 @@ module Xlsxrb
       @comments_data[name] = []
       @pivot_tables_data[name] = []
       @sheet_protection[name] = nil
+      @phonetic_properties[name] = nil
       @sheet_order << name
     end
 
@@ -443,6 +445,20 @@ module Xlsxrb
     def sheet_properties(sheet: nil)
       sheet_name = sheet || @sheet_order.first
       (@sheet_properties[sheet_name] || {}).dup
+    end
+
+    # Sets phonetic properties for a sheet (e.g. :font_id, :type, :alignment).
+    def set_phonetic_properties(props, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @phonetic_properties.key?(sheet_name)
+
+      @phonetic_properties[sheet_name] = props
+    end
+
+    # Returns phonetic properties for the first (or given) sheet.
+    def phonetic_properties(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @phonetic_properties[sheet_name]&.dup
     end
 
     # Sets a sheet format property (e.g. :default_row_height, :default_col_width, :base_col_width).
@@ -1031,7 +1047,8 @@ module Xlsxrb
           @data_validations[sheet_name], @conditional_formats[sheet_name], sst,
           @tables[sheet_name] || [], @hyperlinks[sheet_name].size,
           has_drawing:, has_comments:,
-          sheet_prot: @sheet_protection[sheet_name], vml_rid:
+          sheet_prot: @sheet_protection[sheet_name], vml_rid:,
+          phonetic_pr: @phonetic_properties[sheet_name]
         )
 
         # Generate drawing XML + media + chart entries.
@@ -1275,6 +1292,7 @@ module Xlsxrb
         attrs = []
         attrs << %(activeTab="#{@workbook_views[:active_tab]}") if @workbook_views[:active_tab]
         attrs << %(firstSheet="#{@workbook_views[:first_sheet]}") if @workbook_views[:first_sheet]
+        attrs << %(visibility="#{@workbook_views[:visibility]}") if @workbook_views[:visibility]
         parts << "<bookViews>"
         parts << "<workbookView #{attrs.join(" ")}/>" unless attrs.empty?
         parts << "</bookViews>"
@@ -1409,7 +1427,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil)
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -1420,6 +1438,8 @@ module Xlsxrb
 
       # Emit <sheetPr> if sheet properties are defined.
       unless sheet_props.empty?
+        sp_attrs = []
+        sp_attrs << %(codeName="#{xml_escape(sheet_props[:code_name])}") if sheet_props[:code_name]
         sp_children = []
         if sheet_props[:tab_color]
           sp_children << %(<tabColor rgb="#{sheet_props[:tab_color]}"/>)
@@ -1436,8 +1456,9 @@ module Xlsxrb
           outline_attrs << %(summaryRight="#{sr ? 1 : 0}") unless sr.nil?
           sp_children << "<outlinePr #{outline_attrs.join(" ")}/>"
         end
-        unless sp_children.empty?
-          parts << "<sheetPr>"
+        if !sp_children.empty? || !sp_attrs.empty?
+          sp_open = sp_attrs.empty? ? "<sheetPr>" : "<sheetPr #{sp_attrs.join(" ")}>"
+          parts << sp_open
           parts.concat(sp_children)
           parts << "</sheetPr>"
         end
@@ -1450,6 +1471,8 @@ module Xlsxrb
       if !sheet_sv.empty? || sheet_fp || sheet_sel
         parts << "<sheetViews>"
         sv_attrs = []
+        sf = sheet_sv[:show_formulas]
+        sv_attrs << %(showFormulas="#{sf ? 1 : 0}") unless sf.nil?
         sgl = sheet_sv[:show_grid_lines]
         sv_attrs << %(showGridLines="#{sgl ? 1 : 0}") unless sgl.nil?
         srch = sheet_sv[:show_row_col_headers]
@@ -1637,6 +1660,15 @@ module Xlsxrb
         parts << %(<mergeCells count="#{sheet_merge_cells.size}">)
         sheet_merge_cells.each { |ref| parts << %(<mergeCell ref="#{ref}"/>) }
         parts << "</mergeCells>"
+      end
+
+      # Emit <phoneticPr> if defined.
+      if phonetic_pr
+        pp_attrs = []
+        pp_attrs << %(fontId="#{phonetic_pr[:font_id]}") if phonetic_pr[:font_id]
+        pp_attrs << %(type="#{phonetic_pr[:type]}") if phonetic_pr[:type]
+        pp_attrs << %(alignment="#{phonetic_pr[:alignment]}") if phonetic_pr[:alignment]
+        parts << "<phoneticPr #{pp_attrs.join(" ")}/>"
       end
 
       # Emit <hyperlinks> if hyperlinks are defined.

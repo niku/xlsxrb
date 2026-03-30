@@ -234,11 +234,20 @@ module Xlsxrb
     end
 
     # Returns sheet-level properties (tabColor, outlinePr) for the given sheet.
+    # Returns sheet-level properties (tabColor, outlinePr) for the given sheet.
     def sheet_properties(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
       return {} if worksheet_xml.nil? || worksheet_xml.empty?
 
       parse_worksheet_properties(worksheet_xml)
+    end
+
+    # Returns phonetic properties for the given sheet, or nil if not present.
+    def phonetic_properties(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_phonetic_pr(worksheet_xml)
     end
 
     # Returns sheet protection settings as a hash, or nil if unprotected.
@@ -1042,6 +1051,14 @@ module Xlsxrb
       listener.properties
     end
 
+    def parse_worksheet_phonetic_pr(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = PhoneticPrListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.phonetic_pr
+    end
+
     def parse_worksheet_sheet_protection(xml)
       parser = REXML::Parsers::SAX2Parser.new(xml)
       listener = SheetProtectionListener.new
@@ -1536,6 +1553,8 @@ module Xlsxrb
           @workbook_views[:active_tab] = at.to_i if at
           fs = attributes["firstSheet"]
           @workbook_views[:first_sheet] = fs.to_i if fs
+          vis = attributes["visibility"]
+          @workbook_views[:visibility] = vis if vis
         when "calcPr"
           ci = attributes["calcId"]
           @calc_properties[:calc_id] = ci.to_i if ci
@@ -2354,6 +2373,7 @@ module Xlsxrb
         case name
         when "sheetPr"
           @inside_sheet_pr = true
+          @properties[:code_name] = attributes["codeName"] if attributes["codeName"]
         when "tabColor"
           if @inside_sheet_pr
             @properties[:tab_color] = attributes["rgb"] if attributes["rgb"]
@@ -2373,6 +2393,38 @@ module Xlsxrb
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
         @inside_sheet_pr = false if name == "sheetPr"
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <phoneticPr> element.
+    class PhoneticPrListener
+      include REXML::SAX2Listener
+
+      attr_reader :phonetic_pr
+
+      def initialize
+        @phonetic_pr = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "phoneticPr"
+
+        pr = {}
+        pr[:font_id] = attributes["fontId"].to_i if attributes["fontId"]
+        pr[:type] = attributes["type"] if attributes["type"]
+        pr[:alignment] = attributes["alignment"] if attributes["alignment"]
+        @phonetic_pr = pr
       end
 
       private
@@ -2531,6 +2583,8 @@ module Xlsxrb
         when "sheetView"
           return unless @inside_sheet_views
 
+          sf = attributes["showFormulas"]
+          @view[:show_formulas] = %w[1 true].include?(sf) unless sf.nil?
           sgl = attributes["showGridLines"]
           @view[:show_grid_lines] = %w[1 true].include?(sgl) unless sgl.nil?
           srch = attributes["showRowColHeaders"]
