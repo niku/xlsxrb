@@ -965,6 +965,20 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(false, imgs[0][:prints_with_sheet])
   end
 
+  test "insert_image with anchor offsets stores col/row offsets" do
+    writer = Xlsxrb::Writer.new
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1",
+                             from_col: 1, from_row: 2, to_col: 5, to_row: 8,
+                             from_col_off: 100_000, from_row_off: 200_000,
+                             to_col_off: 300_000, to_row_off: 400_000)
+    imgs = writer.images
+    assert_equal(100_000, imgs[0][:from_col_off])
+    assert_equal(200_000, imgs[0][:from_row_off])
+    assert_equal(300_000, imgs[0][:to_col_off])
+    assert_equal(400_000, imgs[0][:to_row_off])
+  end
+
   test "add_comment stores comment definition" do
     writer = Xlsxrb::Writer.new
     writer.add_comment("A1", "Note text", author: "Tester")
