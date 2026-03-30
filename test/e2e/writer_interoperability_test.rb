@@ -1346,6 +1346,28 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores extended page setup attributes correctly" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_page_setup(:page_order, "overThenDown")
+    writer.set_page_setup(:black_and_white, true)
+    writer.set_page_setup(:draft, true)
+    writer.set_page_setup(:cell_comments, "atEnd")
+    writer.set_page_setup(:first_page_number, 5)
+    writer.set_page_setup(:use_first_page_number, true)
+    writer.set_page_setup(:horizontal_dpi, 300)
+    writer.set_page_setup(:vertical_dpi, 300)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_page_setup_extended_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

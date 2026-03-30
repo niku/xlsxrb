@@ -2822,6 +2822,22 @@ module Xlsxrb
           @page_setup[:fit_to_width] = ftw.to_i if ftw
           fth = attributes["fitToHeight"]
           @page_setup[:fit_to_height] = fth.to_i if fth
+          po = attributes["pageOrder"]
+          @page_setup[:page_order] = po if po
+          baw = attributes["blackAndWhite"]
+          @page_setup[:black_and_white] = true if %w[1 true].include?(baw)
+          dr = attributes["draft"]
+          @page_setup[:draft] = true if %w[1 true].include?(dr)
+          cc = attributes["cellComments"]
+          @page_setup[:cell_comments] = cc if cc
+          fpn = attributes["firstPageNumber"]
+          @page_setup[:first_page_number] = fpn.to_i if fpn
+          ufpn = attributes["useFirstPageNumber"]
+          @page_setup[:use_first_page_number] = true if %w[1 true].include?(ufpn)
+          hdpi = attributes["horizontalDpi"]
+          @page_setup[:horizontal_dpi] = hdpi.to_i if hdpi
+          vdpi = attributes["verticalDpi"]
+          @page_setup[:vertical_dpi] = vdpi.to_i if vdpi
         when "headerFooter"
           @inside_header_footer = true
           df = attributes["differentFirst"]
