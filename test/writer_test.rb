@@ -772,6 +772,16 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(2, imgs[0][:from_row])
   end
 
+  test "insert_image stores description" do
+    writer = Xlsxrb::Writer.new
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Logo", description: "Company logo image")
+    imgs = writer.images
+    assert_equal(1, imgs.size)
+    assert_equal("Logo", imgs[0][:name])
+    assert_equal("Company logo image", imgs[0][:description])
+  end
+
   test "add_chart stores chart definition" do
     writer = Xlsxrb::Writer.new
     writer.add_chart(type: :bar, title: "Sales", cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3")

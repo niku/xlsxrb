@@ -761,16 +761,18 @@ module Xlsxrb
     # Inserts an image from file data into the given sheet.
     # file_data: raw image bytes. ext: file extension (e.g. "png").
     # from_col/from_row: anchor start. to_col/to_row: anchor end.
-    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, name: nil, sheet: nil)
+    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, name: nil, description: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @images.key?(sheet_name)
 
       img_name = name || "Picture #{@images[sheet_name].size + 1}"
-      @images[sheet_name] << {
+      img = {
         file_data: file_data, ext: ext, name: img_name,
         from_col: from_col, from_row: from_row,
         to_col: to_col, to_row: to_row
       }
+      img[:description] = description if description
+      @images[sheet_name] << img
     end
 
     # Returns images for the first (or given) sheet.
@@ -1843,7 +1845,8 @@ module Xlsxrb
           parts << anchor_xml("from", img[:from_col], img[:from_row])
           parts << anchor_xml("to", img[:to_col], img[:to_row])
           parts << "<xdr:pic>"
-          parts << %(<xdr:nvPicPr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(img[:name])}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>)
+          descr_attr = img[:description] ? %( descr="#{xml_escape(img[:description])}") : ""
+          parts << %(<xdr:nvPicPr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(img[:name])}"#{descr_attr}/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>)
           parts << %(<xdr:blipFill><a:blip r:embed="#{rid}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>)
           parts << '<xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>'
           parts << "</xdr:pic>"

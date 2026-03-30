@@ -2941,6 +2941,7 @@ module Xlsxrb
           if @inside_pic && @current_image
             @current_image[:name] = attributes["name"] if attributes["name"]
             @current_image[:id] = attributes["id"]&.to_i
+            @current_image[:description] = attributes["descr"] if attributes["descr"]
           end
         when "blip"
           rid = attributes["r:embed"] || attributes["embed"]
