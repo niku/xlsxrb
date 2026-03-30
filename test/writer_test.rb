@@ -889,6 +889,27 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(false, prot[:lock_windows])
   end
 
+  test "add_cell_style with protection emits protection element" do
+    writer = Xlsxrb::Writer.new
+    style_id = writer.add_cell_style(protection: { locked: false, hidden: true })
+    assert_equal(1, style_id)
+
+    writer.set_cell("A1", "protected")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-prot", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/applyProtection="1"/, xml_content)
+    assert_match(%r{<protection[^/>]*locked="0"}, xml_content)
+    assert_match(%r{<protection[^/>]*hidden="1"}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "rich text value stored and retrievable" do
     writer = Xlsxrb::Writer.new
     rt = Xlsxrb::RichText.new(runs: [

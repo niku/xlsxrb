@@ -149,6 +149,7 @@ module Xlsxrb
           entry[:num_fmt] = code if code
         end
         entry[:alignment] = xf[:alignment] if xf[:alignment]
+        entry[:protection] = xf[:protection] if xf[:protection]
         result[cell_ref] = entry unless entry.empty?
       end
       result
@@ -1717,6 +1718,13 @@ module Xlsxrb
             alignment[:indent] = attributes["indent"].to_i if attributes["indent"]
             alignment[:shrink_to_fit] = true if attributes["shrinkToFit"] == "1"
             @current_xf[:alignment] = alignment unless alignment.empty?
+          end
+        when "protection"
+          if @current_xf
+            protection = {}
+            protection[:locked] = attributes["locked"] != "0" if attributes.key?("locked")
+            protection[:hidden] = attributes["hidden"] == "1" if attributes.key?("hidden")
+            @current_xf[:protection] = protection unless protection.empty?
           end
         when "fonts"
           @inside_fonts = true
