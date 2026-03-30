@@ -2703,6 +2703,26 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits sortState extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Value")
+    writer.set_auto_filter("A1:B10")
+    writer.set_sort_state("A2:B10",
+                          [{ ref: "A2:A10", sort_by: "cellColor", dxf_id: 0 }],
+                          column_sort: true, case_sensitive: true, sort_method: "pinYin")
+    xlsx_path = File.join(Dir.tmpdir, "sort_ext_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/columnSort="1"/, xml)
+    assert_match(/caseSensitive="1"/, xml)
+    assert_match(/sortMethod="pinYin"/, xml)
+    assert_match(/sortBy="cellColor"/, xml)
+    assert_match(/dxfId="0"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

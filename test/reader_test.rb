@@ -3587,4 +3587,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sortState extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "X")
+    writer.set_auto_filter("A1:B10")
+    writer.set_sort_state("A2:B10",
+                          [{ ref: "A2:A10", sort_by: "value", custom_list: "a,b,c" }],
+                          column_sort: true, sort_method: "stroke")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ss = reader.sort_state
+    assert_equal(true, ss[:column_sort])
+    assert_equal("stroke", ss[:sort_method])
+    sc = ss[:sort_conditions][0]
+    assert_equal("value", sc[:sort_by])
+    assert_equal("a,b,c", sc[:custom_list])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
