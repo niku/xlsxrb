@@ -2658,7 +2658,7 @@ module Xlsxrb
       if gradient[:stops]&.any?
         parts[-1] = "#{parts[-1]}>"
         gradient[:stops].each do |stop|
-          parts << %(<stop position="#{stop[:position]}"><color rgb="#{stop[:color]}"/></stop>)
+          parts << %(<stop position="#{stop[:position]}">#{emit_color_xml(stop)}</stop>)
         end
         parts << "</gradientFill>"
       else
