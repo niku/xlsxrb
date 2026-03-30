@@ -3178,8 +3178,15 @@ module Xlsxrb
         when "brk"
           id = attributes["id"]&.to_i
           if id
-            @row_breaks << id if @inside_row_breaks
-            @col_breaks << id if @inside_col_breaks
+            brk = { id: id }
+            mn = attributes["min"]
+            brk[:min] = mn.to_i if mn
+            mx = attributes["max"]
+            brk[:max] = mx.to_i if mx
+            brk[:man] = true if %w[1 true].include?(attributes["man"])
+            brk[:pt] = true if %w[1 true].include?(attributes["pt"])
+            @row_breaks << brk if @inside_row_breaks
+            @col_breaks << brk if @inside_col_breaks
           end
         end
       end

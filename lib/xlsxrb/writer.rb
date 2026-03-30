@@ -1918,15 +1918,17 @@ module Xlsxrb
 
       # Emit <rowBreaks> if defined.
       unless sheet_rb.empty?
-        parts << %(<rowBreaks count="#{sheet_rb.size}" manualBreakCount="#{sheet_rb.size}">)
-        sheet_rb.each { |r| parts << %(<brk id="#{r}" max="16383" man="1"/>) }
+        manual_count = sheet_rb.count { |r| r.is_a?(Hash) ? r.fetch(:man, true) : true }
+        parts << %(<rowBreaks count="#{sheet_rb.size}" manualBreakCount="#{manual_count}">)
+        sheet_rb.each { |r| parts << emit_brk_xml(r, default_max: 16_383) }
         parts << "</rowBreaks>"
       end
 
       # Emit <colBreaks> if defined.
       unless sheet_cb.empty?
-        parts << %(<colBreaks count="#{sheet_cb.size}" manualBreakCount="#{sheet_cb.size}">)
-        sheet_cb.each { |c| parts << %(<brk id="#{c}" max="1048575" man="1"/>) }
+        manual_count = sheet_cb.count { |c| c.is_a?(Hash) ? c.fetch(:man, true) : true }
+        parts << %(<colBreaks count="#{sheet_cb.size}" manualBreakCount="#{manual_count}">)
+        sheet_cb.each { |c| parts << emit_brk_xml(c, default_max: 1_048_575) }
         parts << "</colBreaks>"
       end
 
@@ -3017,6 +3019,19 @@ module Xlsxrb
       end
       parts << "</fill>"
       parts.join
+    end
+
+    def emit_brk_xml(brk, default_max:)
+      if brk.is_a?(Hash)
+        attrs = %(id="#{brk[:id]}")
+        attrs << %( min="#{brk[:min]}") if brk[:min]
+        attrs << %( max="#{brk.fetch(:max, default_max)}")
+        attrs << ' man="1"' if brk.fetch(:man, true)
+        attrs << ' pt="1"' if brk[:pt]
+        "<brk #{attrs}/>"
+      else
+        %(<brk id="#{brk}" max="#{default_max}" man="1"/>)
+      end
     end
 
     def emit_border_xml(bdr)

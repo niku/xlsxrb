@@ -464,7 +464,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     assert_equal("&LLeft Header", hf[:odd_header])
     assert_equal("&RRight Footer", hf[:odd_footer])
 
-    assert_equal([5, 15], reader.row_breaks)
+    assert_equal([5, 15], reader.row_breaks.map { |b| b[:id] })
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
