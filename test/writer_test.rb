@@ -793,6 +793,19 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("Author", comments[1][:author])
   end
 
+  test "add_comment stores rich text comment" do
+    writer = Xlsxrb::Writer.new
+    rt = Xlsxrb::RichText.new(runs: [
+      { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+      { text: " normal" }
+    ])
+    writer.add_comment("A1", rt, author: "Tester")
+    comments = writer.comments
+    assert_equal(1, comments.size)
+    assert_instance_of(Xlsxrb::RichText, comments[0][:text])
+    assert_equal("Bold normal", comments[0][:text].to_s)
+  end
+
   test "add_pivot_table stores pivot table definition" do
     writer = Xlsxrb::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",

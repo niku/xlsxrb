@@ -3322,9 +3322,14 @@ module Xlsxrb
         @inside_author = false
         @inside_comment = false
         @inside_text = false
+        @inside_r = false
+        @inside_rpr = false
         @inside_t = false
         @current_comment = nil
         @text_buffer = +""
+        @runs = []
+        @current_font = {}
+        @has_runs = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -3339,10 +3344,57 @@ module Xlsxrb
           @inside_comment = true
           @current_comment = { ref: attributes["ref"], author_id: attributes["authorId"]&.to_i }
         when "text"
-          @inside_text = true if @inside_comment
-          @text_buffer = +""
+          if @inside_comment
+            @inside_text = true
+            @text_buffer = +""
+            @runs = []
+            @has_runs = false
+          end
+        when "r"
+          if @inside_text
+            @inside_r = true
+            @has_runs = true
+            @current_font = {}
+          end
+        when "rPr"
+          @inside_rpr = true if @inside_r
+        when "b"
+          @current_font[:bold] = true if @inside_rpr
+        when "i"
+          @current_font[:italic] = true if @inside_rpr
+        when "strike"
+          @current_font[:strike] = true if @inside_rpr
+        when "u"
+          if @inside_rpr
+            val = attributes["val"]
+            @current_font[:underline] = val || true
+          end
+        when "vertAlign"
+          @current_font[:vert_align] = attributes["val"] if @inside_rpr && attributes["val"]
+        when "sz"
+          @current_font[:sz] = attributes["val"]&.to_f if @inside_rpr
+        when "color"
+          if @inside_rpr
+            if attributes["rgb"]
+              @current_font[:color] = attributes["rgb"]
+            elsif attributes["theme"]
+              @current_font[:theme] = attributes["theme"].to_i
+              @current_font[:tint] = attributes["tint"].to_f if attributes["tint"]
+            elsif attributes["indexed"]
+              @current_font[:indexed] = attributes["indexed"].to_i
+            end
+          end
+        when "rFont"
+          @current_font[:name] = attributes["val"] if @inside_rpr
+        when "family"
+          @current_font[:family] = attributes["val"]&.to_i if @inside_rpr
+        when "scheme"
+          @current_font[:scheme] = attributes["val"] if @inside_rpr
         when "t"
-          @inside_t = true if @inside_text
+          if @inside_text
+            @inside_t = true
+            @text_buffer = +"" if @inside_r
+          end
         end
       end
 
@@ -3368,10 +3420,26 @@ module Xlsxrb
           @inside_comment = false
           @current_comment = nil
         when "text"
-          @current_comment[:text] = @text_buffer.dup if @current_comment && @inside_text
+          if @current_comment && @inside_text
+            if @has_runs && @runs.any? { |r| r[:font] }
+              @current_comment[:text] = Xlsxrb::RichText.new(runs: @runs)
+            else
+              plain = @has_runs ? @runs.map { |r| r[:text] }.join : @text_buffer.dup
+              @current_comment[:text] = plain
+            end
+          end
           @inside_text = false
         when "t"
           @inside_t = false
+        when "rPr"
+          @inside_rpr = false
+        when "r"
+          if @inside_r
+            run = { text: @text_buffer.dup }
+            run[:font] = @current_font.dup unless @current_font.empty?
+            @runs << run
+            @inside_r = false
+          end
         end
       end
 

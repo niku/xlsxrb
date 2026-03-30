@@ -596,6 +596,25 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores rich text comments correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    rt = Xlsxrb::RichText.new(runs: [
+      { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+      { text: " normal" }
+    ])
+    writer.add_comment("A1", rt, author: "Tester")
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_comment_rich_text_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer output stores pivot tables correctly" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

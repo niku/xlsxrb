@@ -1349,7 +1349,7 @@ module Xlsxrb
     end
 
     def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing = false, has_comments = false, sheet_prot = nil, vml_rid = nil)
-      needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing
+      needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
       parts = [
@@ -1983,7 +1983,12 @@ module Xlsxrb
       parts << "</authors><commentList>"
       sheet_comments.each do |c|
         aid = authors.index(c[:author]) || 0
-        parts << %(<comment ref="#{c[:ref]}" authorId="#{aid}"><text><r><t>#{xml_escape(c[:text])}</t></r></text></comment>)
+        text_xml = if c[:text].is_a?(RichText)
+                     rich_text_xml(c[:text])
+                   else
+                     "<r><t>#{xml_escape(c[:text])}</t></r>"
+                   end
+        parts << %(<comment ref="#{c[:ref]}" authorId="#{aid}"><text>#{text_xml}</text></comment>)
       end
       parts << "</commentList></comments>"
       parts.join
