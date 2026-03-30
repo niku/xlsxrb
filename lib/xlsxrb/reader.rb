@@ -393,6 +393,30 @@ module Xlsxrb
       listener.properties
     end
 
+    # Returns custom document properties as an array of { name:, value:, type: }.
+    def custom_properties
+      xml = extract_zip_entry("docProps/custom.xml")
+      if xml.nil? || xml.empty?
+        rels_xml = extract_zip_entry("_rels/.rels")
+        return [] if rels_xml.nil? || rels_xml.empty?
+
+        rels = parse_rels_with_types(rels_xml)
+        custom_rel = rels.find { |r| r[:type]&.end_with?("/custom-properties") }
+        return [] unless custom_rel
+
+        target = custom_rel[:target]
+        entry_path = target.start_with?("/") ? target.delete_prefix("/") : target
+        xml = extract_zip_entry(entry_path)
+      end
+      return [] if xml.nil? || xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = CustomPropertiesListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.properties
+    end
+
     # Returns workbook properties (e.g. { date1904: false, default_theme_version: 166925 }).
     def workbook_properties
       parse_workbook_metadata[:workbook_properties]
@@ -2314,6 +2338,76 @@ module Xlsxrb
 
         @properties[@current_field] = @text_buffer.dup unless @text_buffer.empty?
         @current_field = nil
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing custom properties (docProps/custom.xml).
+    class CustomPropertiesListener
+      include REXML::SAX2Listener
+
+      attr_reader :properties
+
+      def initialize
+        @properties = []
+        @current_name = nil
+        @current_type = nil
+        @text_buffer = +""
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "property"
+          @current_name = attributes["name"]
+        when "lpwstr"
+          @current_type = :string
+          @text_buffer = +""
+        when "i4"
+          @current_type = :number
+          @text_buffer = +""
+        when "r8"
+          @current_type = :float
+          @text_buffer = +""
+        when "bool"
+          @current_type = :bool
+          @text_buffer = +""
+        when "filetime"
+          @current_type = :date
+          @text_buffer = +""
+        end
+      end
+
+      def characters(text)
+        @text_buffer << text if @current_type
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "property"
+          @current_name = nil
+        when "lpwstr", "i4", "r8", "bool", "filetime"
+          if @current_name
+            value = case @current_type
+                    when :number then @text_buffer.to_i
+                    when :float then @text_buffer.to_f
+                    when :bool then @text_buffer == "true"
+                    else @text_buffer.dup
+                    end
+            @properties << { name: @current_name, value: value, type: @current_type }
+          end
+          @current_type = nil
+        end
       end
 
       private

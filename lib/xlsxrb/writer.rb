@@ -44,6 +44,7 @@ module Xlsxrb
       @sheet_order = ["Sheet1"]
       @core_properties = {}
       @app_properties = {}
+      @custom_properties = []
       @workbook_properties = {}
       @workbook_views = {}
       @calc_properties = {}
@@ -431,6 +432,16 @@ module Xlsxrb
     # Returns app properties hash.
     def app_properties
       @app_properties.dup
+    end
+
+    # Adds a custom document property. type: :string (default), :number, :bool, :date.
+    def add_custom_property(name, value, type: :string)
+      @custom_properties << { name: name, value: value, type: type }
+    end
+
+    # Returns custom properties array.
+    def custom_properties
+      @custom_properties.map(&:dup)
     end
 
     # Sets a sheet-level property (e.g. :tab_color, :summary_below, :summary_right).
@@ -998,6 +1009,7 @@ module Xlsxrb
 
       entries["docProps/core.xml"] = generate_core_properties_xml unless @core_properties.empty?
       entries["docProps/app.xml"] = generate_app_properties_xml unless @app_properties.empty?
+      entries["docProps/custom.xml"] = generate_custom_properties_xml unless @custom_properties.empty?
       entries["xl/sharedStrings.xml"] = generate_shared_strings_xml(sst) if sst
 
       table_index = 0
@@ -1247,6 +1259,7 @@ module Xlsxrb
 
       overrides["/docProps/core.xml"] = "application/vnd.openxmlformats-package.core-properties+xml" unless @core_properties.empty?
       overrides["/docProps/app.xml"] = "application/vnd.openxmlformats-officedocument.extended-properties+xml" unless @app_properties.empty?
+      overrides["/docProps/custom.xml"] = "application/vnd.openxmlformats-officedocument.custom-properties+xml" unless @custom_properties.empty?
 
       # Merge extra overrides from pass-through.
       overrides.merge!(@extra_ct_overrides) { |_k, generated, _extra| generated }
@@ -1259,15 +1272,23 @@ module Xlsxrb
     end
 
     def generate_rels_root
+      rid_counter = 1
       parts = [
         XML_HEADER,
         %(<Relationships xmlns="#{REL_NS}">),
-        %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/officeDocument" Target="xl/workbook.xml"/>)
+        %(<Relationship Id="rId#{rid_counter}" Type="#{DOC_REL_NS}/officeDocument" Target="xl/workbook.xml"/>)
       ]
-      parts << %(<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>) unless @core_properties.empty?
+      unless @core_properties.empty?
+        rid_counter += 1
+        parts << %(<Relationship Id="rId#{rid_counter}" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>)
+      end
       if @app_properties.any?
-        rid = @core_properties.empty? ? "rId2" : "rId3"
-        parts << %(<Relationship Id="#{rid}" Type="#{DOC_REL_NS}/extended-properties" Target="docProps/app.xml"/>)
+        rid_counter += 1
+        parts << %(<Relationship Id="rId#{rid_counter}" Type="#{DOC_REL_NS}/extended-properties" Target="docProps/app.xml"/>)
+      end
+      unless @custom_properties.empty?
+        rid_counter += 1
+        parts << %(<Relationship Id="rId#{rid_counter}" Type="#{DOC_REL_NS}/custom-properties" Target="docProps/custom.xml"/>)
       end
       parts << "</Relationships>"
       parts.join
@@ -2647,6 +2668,34 @@ module Xlsxrb
         tp.each { |t| parts << "<vt:lpstr>#{xml_escape(t)}</vt:lpstr>" }
         parts << "</vt:vector>"
         parts << "</TitlesOfParts>"
+      end
+      parts << "</Properties>"
+      parts.join
+    end
+
+    def generate_custom_properties_xml
+      custom_ns = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
+      parts = [
+        XML_HEADER,
+        %(<Properties xmlns="#{custom_ns}" xmlns:vt="#{VT_NS}">)
+      ]
+      @custom_properties.each_with_index do |prop, idx|
+        fmtid = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"
+        pid = idx + 2 # pids start at 2
+        parts << %(<property fmtid="#{fmtid}" pid="#{pid}" name="#{xml_escape(prop[:name])}">)
+        parts << case prop[:type]
+                 when :number, :int, :i4
+                   "<vt:i4>#{prop[:value]}</vt:i4>"
+                 when :float, :r8
+                   "<vt:r8>#{prop[:value]}</vt:r8>"
+                 when :bool
+                   "<vt:bool>#{prop[:value] ? "true" : "false"}</vt:bool>"
+                 when :date, :filetime
+                   "<vt:filetime>#{prop[:value]}</vt:filetime>"
+                 else
+                   "<vt:lpwstr>#{xml_escape(prop[:value].to_s)}</vt:lpwstr>"
+                 end
+        parts << "</property>"
       end
       parts << "</Properties>"
       parts.join

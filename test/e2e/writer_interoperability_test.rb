@@ -1498,6 +1498,23 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores custom document properties correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_custom_property("Project", "Alpha", type: :lpwstr)
+    writer.add_custom_property("Version", 42, type: :i4)
+    writer.add_custom_property("Active", true, type: :bool)
+    writer.set_cell("A1", "data")
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_custom_properties_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
