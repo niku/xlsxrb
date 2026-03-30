@@ -2728,6 +2728,10 @@ module Xlsxrb
         @properties[:custom_height] = true if %w[1 true].include?(ch)
         zh = attributes["zeroHeight"]
         @properties[:zero_height] = true if %w[1 true].include?(zh)
+        tt = attributes["thickTop"]
+        @properties[:thick_top] = true if %w[1 true].include?(tt)
+        tb = attributes["thickBottom"]
+        @properties[:thick_bottom] = true if %w[1 true].include?(tb)
       end
 
       private
