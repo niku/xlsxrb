@@ -4526,6 +4526,12 @@ module Xlsxrb
           @current_field[:axis] = attributes["axis"] if attributes["axis"]
           @current_field[:data_field] = true if attributes["dataField"] == "1"
           @current_field[:name] = attributes["name"] if attributes["name"]
+          @current_field[:show_all] = attributes["showAll"] != "0" if attributes["showAll"]
+          @current_field[:compact] = attributes["compact"] != "0" if attributes["compact"]
+          @current_field[:outline] = attributes["outline"] != "0" if attributes["outline"]
+          @current_field[:subtotal_top] = attributes["subtotalTop"] != "0" if attributes["subtotalTop"]
+          @current_field[:num_fmt_id] = attributes["numFmtId"]&.to_i if attributes["numFmtId"]
+          @current_field[:sort_type] = attributes["sortType"] if attributes["sortType"]
           @current_items = []
         when "items"
           @inside_items = true if @inside_pivot_field
