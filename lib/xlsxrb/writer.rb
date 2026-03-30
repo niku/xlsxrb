@@ -2876,15 +2876,20 @@ module Xlsxrb
                   df = pivot_table[:data_fields].find { |d| d[:fld] == fi }
                   df ? df[:name] : "Field#{fi + 1}"
                 end
+        fa = pivot_table[:field_attrs] && pivot_table[:field_attrs][fi]
+        cf_num_fmt = (fa && fa[:cache_num_fmt_id]) || 0
+        cf_attrs = %( name="#{xml_escape(fname)}" numFmtId="#{cf_num_fmt}")
+        cf_attrs << %( caption="#{xml_escape(fa[:cache_caption])}") if fa && fa[:cache_caption]
+        cf_attrs << %( formula="#{xml_escape(fa[:cache_formula])}") if fa && fa[:cache_formula]
         field_items = pivot_table[:items] && pivot_table[:items][fi]
         if field_items
-          parts << %(<cacheField name="#{xml_escape(fname)}" numFmtId="0">)
+          parts << "<cacheField#{cf_attrs}>"
           parts << %(<sharedItems count="#{field_items.size}">)
           field_items.each { |v| parts << %(<s v="#{xml_escape(v.to_s)}"/>) }
           parts << "</sharedItems>"
           parts << "</cacheField>"
         else
-          parts << %(<cacheField name="#{xml_escape(fname)}" numFmtId="0"><sharedItems/></cacheField>)
+          parts << "<cacheField#{cf_attrs}><sharedItems/></cacheField>"
         end
       end
       parts << "</cacheFields>"
