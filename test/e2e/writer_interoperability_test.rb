@@ -1651,6 +1651,24 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "writer generates valid dataConsolidate element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.set_data_consolidate(
+      function: "average", start_labels: true, link: true,
+      data_refs: [{ ref: "A1:B10", sheet: "Sheet1" }, { ref: "C1:D10", name: "Range2" }]
+    )
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_data_consolidate_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

@@ -2447,6 +2447,32 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dataConsolidate in worksheet XML" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.set_data_consolidate(
+      function: "average", start_labels: true, link: true,
+      data_refs: [{ ref: "A1:B10", sheet: "Sheet1" }, { ref: "C1:D10", name: "Range2" }]
+    )
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dc", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/<dataConsolidate /, xml_content)
+    assert_match(/function="average"/, xml_content)
+    assert_match(/startLabels="1"/, xml_content)
+    assert_match(/link="1"/, xml_content)
+    assert_match(/<dataRefs count="2">/, xml_content)
+    assert_match(/ref="A1:B10"/, xml_content)
+    assert_match(/sheet="Sheet1"/, xml_content)
+    assert_match(/name="Range2"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

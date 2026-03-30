@@ -307,6 +307,14 @@ module Xlsxrb
       parse_worksheet_cell_watches(worksheet_xml)
     end
 
+    # Returns data consolidation settings for the given sheet.
+    def data_consolidate(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_data_consolidate(worksheet_xml)
+    end
+
     # Returns the dimension ref string (e.g. "A1:B10") for the given sheet.
     def dimension(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -1176,6 +1184,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.watches
+    end
+
+    def parse_worksheet_data_consolidate(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = DataConsolidateListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.result
     end
 
     def parse_worksheet_dimension(xml)
@@ -2916,6 +2932,48 @@ module Xlsxrb
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
         @watches << attributes["r"] if name == "cellWatch" && attributes["r"]
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <dataConsolidate> element.
+    class DataConsolidateListener
+      include REXML::SAX2Listener
+
+      attr_reader :result
+
+      def initialize
+        @result = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "dataConsolidate"
+          @result = {}
+          @result[:function] = attributes["function"] if attributes["function"]
+          @result[:start_labels] = true if %w[1 true].include?(attributes["startLabels"])
+          @result[:top_labels] = true if %w[1 true].include?(attributes["topLabels"])
+          @result[:link] = true if %w[1 true].include?(attributes["link"])
+          @result[:data_refs] = []
+        when "dataRef"
+          if @result
+            ref = {}
+            ref[:ref] = attributes["ref"] if attributes["ref"]
+            ref[:name] = attributes["name"] if attributes["name"]
+            ref[:sheet] = attributes["sheet"] if attributes["sheet"]
+            @result[:data_refs] << ref
+          end
+        end
       end
 
       private

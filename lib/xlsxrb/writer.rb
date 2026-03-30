@@ -72,6 +72,7 @@ module Xlsxrb
       @conditional_formats = { "Sheet1" => [] }
       @tables = { "Sheet1" => [] }
       @cell_watches = { "Sheet1" => [] }
+      @data_consolidate = { "Sheet1" => nil }
       @use_shared_strings = true
       @images = { "Sheet1" => [] }
       @charts_data = { "Sheet1" => [] }
@@ -118,6 +119,7 @@ module Xlsxrb
       @conditional_formats[name] = []
       @tables[name] = []
       @cell_watches[name] = []
+      @data_consolidate[name] = nil
       @images[name] = []
       @charts_data[name] = []
       @shapes_data[name] = []
@@ -953,6 +955,21 @@ module Xlsxrb
       (@cell_watches[sheet_name] || []).dup
     end
 
+    # Sets data consolidation options for the given sheet.
+    # Options: function:, start_labels:, top_labels:, link:, data_refs: [{ref:, name:, sheet:}]
+    def set_data_consolidate(sheet: nil, **opts)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+
+      @data_consolidate[sheet_name] = opts
+    end
+
+    # Returns data consolidation settings for the given sheet.
+    def data_consolidate(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @data_consolidate[sheet_name]&.dup
+    end
+
     # Sets workbook protection options.
     # Options: :lock_structure, :lock_windows, :password, :algorithm_name, :hash_value, :salt_value, :spin_count
     def set_workbook_protection(**opts)
@@ -1219,7 +1236,8 @@ module Xlsxrb
           phonetic_pr: @phonetic_properties[sheet_name],
           dv_options: @data_validations_options[sheet_name],
           prot_ranges: @protected_ranges[sheet_name],
-          cell_watches: @cell_watches[sheet_name]
+          cell_watches: @cell_watches[sheet_name],
+          data_consol: @data_consolidate[sheet_name]
         )
 
         # Generate drawing XML + media + chart entries.
@@ -1668,7 +1686,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [])
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [], data_consol: nil)
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -1952,6 +1970,32 @@ module Xlsxrb
           parts << "<sortCondition #{sc_attrs}/>"
         end
         parts << "</sortState>"
+      end
+
+      # Emit <dataConsolidate> if defined.
+      if data_consol
+        dc_attrs = []
+        dc_attrs << %(function="#{data_consol[:function]}") if data_consol[:function] && data_consol[:function] != "sum"
+        dc_attrs << 'startLabels="1"' if data_consol[:start_labels]
+        dc_attrs << 'topLabels="1"' if data_consol[:top_labels]
+        dc_attrs << 'link="1"' if data_consol[:link]
+        refs = data_consol[:data_refs] || []
+        dc_attr_str = dc_attrs.empty? ? "" : " #{dc_attrs.join(" ")}"
+        if refs.empty?
+          parts << "<dataConsolidate#{dc_attr_str}/>"
+        else
+          parts << "<dataConsolidate#{dc_attr_str}>"
+          parts << %(<dataRefs count="#{refs.size}">)
+          refs.each do |r|
+            ref_attrs = []
+            ref_attrs << %(ref="#{r[:ref]}") if r[:ref]
+            ref_attrs << %(name="#{xml_escape(r[:name])}") if r[:name]
+            ref_attrs << %(sheet="#{xml_escape(r[:sheet])}") if r[:sheet]
+            parts << "<dataRef #{ref_attrs.join(" ")}/>"
+          end
+          parts << "</dataRefs>"
+          parts << "</dataConsolidate>"
+        end
       end
 
       # Emit <mergeCells> if merge ranges are defined.

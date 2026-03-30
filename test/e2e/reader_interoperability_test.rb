@@ -1693,6 +1693,26 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "reader parses SDK-generated dataConsolidate element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_data_consolidate_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dc = reader.data_consolidate
+    assert_equal("average", dc[:function])
+    assert_equal(true, dc[:start_labels])
+    assert_equal(true, dc[:link])
+    assert_equal(2, dc[:data_refs].size)
+    assert_equal("A1:B10", dc[:data_refs][0][:ref])
+    assert_equal("Sheet1", dc[:data_refs][0][:sheet])
+    assert_equal("Range2", dc[:data_refs][1][:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
