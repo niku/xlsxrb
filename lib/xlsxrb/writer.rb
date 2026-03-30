@@ -748,8 +748,11 @@ module Xlsxrb
     end
 
     # Adds a defined name. Options: sheet: (local scope), hidden: true, value: (formula or constant).
-    def add_defined_name(name, value, sheet: nil, hidden: false)
+    def add_defined_name(name, value, sheet: nil, hidden: false, **opts)
       entry = { name: name, value: value, hidden: hidden }
+      %i[comment description function vb_procedure xlm shortcut_key publish_to_server workbook_parameter].each do |key|
+        entry[key] = opts[key] if opts.key?(key)
+      end
       if sheet
         idx = @sheet_order.index(sheet)
         raise ArgumentError, "unknown sheet: #{sheet}" unless idx
@@ -1434,6 +1437,14 @@ module Xlsxrb
           attrs = %(name="#{xml_escape(dn[:name])}")
           attrs << %( localSheetId="#{dn[:local_sheet_id]}") if dn[:local_sheet_id]
           attrs << ' hidden="1"' if dn[:hidden]
+          attrs << %( comment="#{xml_escape(dn[:comment])}") if dn[:comment]
+          attrs << %( description="#{xml_escape(dn[:description])}") if dn[:description]
+          attrs << ' function="1"' if dn[:function]
+          attrs << ' vbProcedure="1"' if dn[:vb_procedure]
+          attrs << ' xlm="1"' if dn[:xlm]
+          attrs << %( shortcutKey="#{xml_escape(dn[:shortcut_key])}") if dn[:shortcut_key]
+          attrs << ' publishToServer="1"' if dn[:publish_to_server]
+          attrs << ' workbookParameter="1"' if dn[:workbook_parameter]
           parts << "<definedName #{attrs}>#{xml_escape(dn[:value])}</definedName>"
         end
         parts << "</definedNames>"

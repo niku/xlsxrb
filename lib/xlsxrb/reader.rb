@@ -1691,6 +1691,14 @@ module Xlsxrb
           }
           lsi = attributes["localSheetId"]
           @current_dn_attrs[:local_sheet_id] = lsi.to_i if lsi
+          @current_dn_attrs[:comment] = attributes["comment"] if attributes["comment"]
+          @current_dn_attrs[:description] = attributes["description"] if attributes["description"]
+          @current_dn_attrs[:function] = true if %w[1 true].include?(attributes["function"])
+          @current_dn_attrs[:vb_procedure] = true if %w[1 true].include?(attributes["vbProcedure"])
+          @current_dn_attrs[:xlm] = true if %w[1 true].include?(attributes["xlm"])
+          @current_dn_attrs[:shortcut_key] = attributes["shortcutKey"] if attributes["shortcutKey"]
+          @current_dn_attrs[:publish_to_server] = true if %w[1 true].include?(attributes["publishToServer"])
+          @current_dn_attrs[:workbook_parameter] = true if %w[1 true].include?(attributes["workbookParameter"])
           @dn_text_buffer = +""
         end
       end
