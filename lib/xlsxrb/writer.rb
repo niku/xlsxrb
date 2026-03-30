@@ -3577,8 +3577,8 @@ module Xlsxrb
     def emit_fill_xml(fill)
       return emit_gradient_fill_xml(fill[:gradient]) if fill[:gradient]
 
-      has_fg = fill[:fg_color] || fill[:fg_color_theme] || fill[:fg_color_indexed]
-      has_bg = fill[:bg_color] || fill[:bg_color_theme] || fill[:bg_color_indexed]
+      has_fg = fill[:fg_color] || fill[:fg_color_theme] || fill[:fg_color_indexed] || fill[:fg_color_auto]
+      has_bg = fill[:bg_color] || fill[:bg_color_theme] || fill[:bg_color_indexed] || fill[:bg_color_auto]
       return "<fill><patternFill patternType=\"#{fill[:pattern]}\"/></fill>" if fill[:pattern] && !has_fg && !has_bg
 
       parts = ["<fill>"]
@@ -3600,6 +3600,8 @@ module Xlsxrb
         %(<#{tag} #{attrs.join(" ")}/>)
       elsif fill[:"#{prefix}_color_indexed"]
         %(<#{tag} indexed="#{fill[:"#{prefix}_color_indexed"]}"/>)
+      elsif fill[:"#{prefix}_color_auto"]
+        %(<#{tag} auto="1"/>)
       else
         ""
       end
