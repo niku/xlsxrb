@@ -1357,6 +1357,28 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses datetime as Time from SDK-generated fractional serial" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_datetime_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+
+    val = cells["A1"]
+    assert_instance_of(Time, val)
+    assert_equal(2024, val.year)
+    assert_equal(6, val.month)
+    assert_equal(15, val.day)
+    assert_equal(10, val.hour)
+    assert_equal(15, val.min)
+    assert_equal(30, val.sec)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

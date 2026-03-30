@@ -911,13 +911,18 @@ module Xlsxrb
 
     # Writes the workbook as an XLSX file to the given path.
     def write(filepath)
-      # Pre-register date format if any sheet contains Date values.
+      # Pre-register date/datetime formats if any sheet contains Date or Time values.
+      needs_date = false
+      needs_datetime = false
       @sheet_order.each do |sn|
-        if @sheets[sn].each_value.any?(Date)
-          date_num_fmt_id
-          break
+        @sheets[sn].each_value do |v|
+          needs_datetime = true if v.is_a?(Time)
+          needs_date = true if v.is_a?(Date) && !v.is_a?(Time)
         end
+        break if needs_date && needs_datetime
       end
+      date_num_fmt_id if needs_date
+      datetime_num_fmt_id if needs_datetime
 
       # Clear memoized xf index map so it picks up all registered formats.
       @xf_index_map = nil
@@ -2298,6 +2303,11 @@ module Xlsxrb
         end
       when true, false
         %(<c r="#{cell_ref}" t="b"#{s_attr}><v>#{value ? 1 : 0}</v></c>)
+      when Time
+        serial = Xlsxrb.datetime_to_serial(value)
+        dt_style = resolve_style_index(datetime_num_fmt_id)
+        dt_attr = dt_style ? %( s="#{dt_style}") : ""
+        %(<c r="#{cell_ref}"#{dt_attr}><v>#{serial}</v></c>)
       when Date
         serial = Xlsxrb.date_to_serial(value)
         date_style = resolve_style_index(date_num_fmt_id)
@@ -2319,6 +2329,11 @@ module Xlsxrb
     # Returns the numFmtId for dates, registering it on first use.
     def date_num_fmt_id
       @date_num_fmt_id ||= add_number_format(DEFAULT_DATE_FORMAT)
+    end
+
+    # Returns the numFmtId for datetime, registering it on first use.
+    def datetime_num_fmt_id
+      @datetime_num_fmt_id ||= add_number_format(DEFAULT_DATETIME_FORMAT)
     end
 
     # Maps a numFmtId to a cellXfs index. Index 0 is the default (no format).

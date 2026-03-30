@@ -82,6 +82,9 @@ module Xlsxrb
   # Default date format code used by Writer for Date cells.
   DEFAULT_DATE_FORMAT = "yyyy\\-mm\\-dd"
 
+  # Default date-time format code used by Writer for Time cells.
+  DEFAULT_DATETIME_FORMAT = "yyyy\\-mm\\-dd\\ hh:mm:ss"
+
   # Converts a Date to an Excel serial number (1900 system).
   def self.date_to_serial(date)
     serial = (date - EPOCH_1900).to_i
@@ -96,5 +99,26 @@ module Xlsxrb
     # Adjust for Lotus 1-2-3 bug.
     serial -= 1 if serial > 60
     EPOCH_1900 + serial
+  end
+
+  # Converts a Time to a fractional Excel serial number (1900 system).
+  def self.datetime_to_serial(time)
+    date = time.to_date
+    day_serial = date_to_serial(date)
+    # Fractional part: seconds since midnight / seconds per day
+    seconds_since_midnight = (time.hour * 3600) + (time.min * 60) + time.sec
+    day_serial + (seconds_since_midnight.to_f / 86_400)
+  end
+
+  # Converts a fractional Excel serial number to a Time (1900 system, UTC).
+  def self.serial_to_datetime(serial)
+    int_part = serial.to_i
+    frac = serial - int_part
+    date = serial_to_date(int_part)
+    total_seconds = (frac * 86_400).round
+    hours = total_seconds / 3600
+    minutes = (total_seconds % 3600) / 60
+    seconds = total_seconds % 60
+    Time.utc(date.year, date.month, date.day, hours, minutes, seconds)
   end
 end
