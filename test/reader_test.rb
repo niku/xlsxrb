@@ -2389,4 +2389,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sheetFormatPr extended attributes through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_format(:default_row_height, 15)
+    writer.set_sheet_format(:outline_level_row, 3)
+    writer.set_sheet_format(:outline_level_col, 2)
+    writer.set_sheet_format(:zero_height, true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    fmt = reader.sheet_format
+
+    assert_equal(3, fmt[:outline_level_row])
+    assert_equal(2, fmt[:outline_level_col])
+    assert_equal(true, fmt[:zero_height])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

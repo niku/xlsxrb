@@ -1419,6 +1419,25 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores extended sheetFormatPr attributes correctly" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_format(:default_row_height, 15)
+    writer.set_sheet_format(:outline_level_row, 3)
+    writer.set_sheet_format(:outline_level_col, 2)
+    writer.set_sheet_format(:zero_height, true)
+    writer.set_sheet_format(:custom_height, true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_sheet_format_extended_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

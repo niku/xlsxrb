@@ -1629,6 +1629,29 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "sheetFormatPr emits outlineLevelRow, outlineLevelCol, zeroHeight, customHeight" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_format(:default_row_height, 15)
+    writer.set_sheet_format(:outline_level_row, 3)
+    writer.set_sheet_format(:outline_level_col, 2)
+    writer.set_sheet_format(:zero_height, true)
+    writer.set_sheet_format(:custom_height, true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sfp", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    sheet_xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/outlineLevelRow="3"/, sheet_xml)
+    assert_match(/outlineLevelCol="2"/, sheet_xml)
+    assert_match(/zeroHeight="1"/, sheet_xml)
+    assert_match(/customHeight="1"/, sheet_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

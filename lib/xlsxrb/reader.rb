@@ -2487,6 +2487,14 @@ module Xlsxrb
         @properties[:default_col_width] = dcw.to_f if dcw
         bcw = attributes["baseColWidth"]
         @properties[:base_col_width] = bcw.to_i if bcw
+        olr = attributes["outlineLevelRow"]
+        @properties[:outline_level_row] = olr.to_i if olr
+        olc = attributes["outlineLevelCol"]
+        @properties[:outline_level_col] = olc.to_i if olc
+        ch = attributes["customHeight"]
+        @properties[:custom_height] = true if %w[1 true].include?(ch)
+        zh = attributes["zeroHeight"]
+        @properties[:zero_height] = true if %w[1 true].include?(zh)
       end
 
       private
