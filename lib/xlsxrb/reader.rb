@@ -2981,6 +2981,8 @@ module Xlsxrb
         when "cfvo"
           cfvo = { type: attributes["type"] }
           cfvo[:val] = attributes["val"] if attributes["val"]
+          gte = attributes["gte"]
+          cfvo[:gte] = %w[1 true].include?(gte) unless gte.nil?
           append_cfvo(cfvo)
         when "color"
           if attributes["rgb"]
