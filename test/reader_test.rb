@@ -2912,4 +2912,23 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips column phonetic attribute" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_column_attribute("A", :phonetic, true)
+    writer.set_cell("A1", "test")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ca = reader.column_attributes
+    a_attrs = ca["A"]
+    assert_not_nil(a_attrs, "column A should have attributes")
+    assert_equal(true, a_attrs[:phonetic])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

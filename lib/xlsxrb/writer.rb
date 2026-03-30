@@ -1658,6 +1658,7 @@ module Xlsxrb
           col_attrs << %( outlineLevel="#{ca[:outline_level]}") if ca[:outline_level]
           col_attrs << ' collapsed="1"' if ca[:collapsed]
           col_attrs << %( style="#{ca[:style]}") if ca[:style]
+          col_attrs << ' phonetic="1"' if ca[:phonetic]
           parts << "<col #{col_attrs}/>"
         end
         parts << "</cols>"

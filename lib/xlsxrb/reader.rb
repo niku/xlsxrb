@@ -1765,6 +1765,7 @@ module Xlsxrb
           attrs[:collapsed] = true if attributes["collapsed"] == "1"
           s = attributes["style"]
           attrs[:style] = s.to_i if s && s != "0"
+          attrs[:phonetic] = true if attributes["phonetic"] == "1"
           @raw_column_attrs[i] = attrs unless attrs.empty?
         end
       end
