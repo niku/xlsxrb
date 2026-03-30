@@ -30,8 +30,40 @@ module Xlsxrb
   # Excel 1900 date system epoch.
   EPOCH_1900 = Date.new(1899, 12, 31) # serial 1 = Jan 1, 1900
 
-  # Built-in numFmtIds that represent date/time formats (14-22).
-  BUILTIN_DATE_FMT_IDS = (14..22).to_a.freeze
+  # Built-in number format codes defined by SpreadsheetML.
+  BUILTIN_NUM_FMT_CODES = {
+    0 => "General",
+    1 => "0",
+    2 => "0.00",
+    3 => "#,##0",
+    4 => "#,##0.00",
+    9 => "0%",
+    10 => "0.00%",
+    11 => "0.00E+00",
+    12 => "# ?/?",
+    13 => "# ??/??",
+    14 => "mm-dd-yy",
+    15 => "d-mmm-yy",
+    16 => "d-mmm",
+    17 => "mmm-yy",
+    18 => "h:mm AM/PM",
+    19 => "h:mm:ss AM/PM",
+    20 => "h:mm",
+    21 => "h:mm:ss",
+    22 => "m/d/yy h:mm",
+    37 => "#,##0 ;(#,##0)",
+    38 => "#,##0 ;[Red](#,##0)",
+    39 => "#,##0.00;(#,##0.00)",
+    40 => "#,##0.00;[Red](#,##0.00)",
+    45 => "mm:ss",
+    46 => "[h]:mm:ss",
+    47 => "mmss.0",
+    48 => "##0.0E+0",
+    49 => "@"
+  }.freeze
+
+  # Built-in numFmtIds that represent date/time formats.
+  BUILTIN_DATE_FMT_IDS = [14, 15, 16, 17, 18, 19, 20, 21, 22].freeze
 
   # Default date format code used by Writer for Date cells.
   DEFAULT_DATE_FORMAT = "yyyy\\-mm\\-dd"

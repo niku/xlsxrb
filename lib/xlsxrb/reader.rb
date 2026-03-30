@@ -127,7 +127,7 @@ module Xlsxrb
         fmt_id = xf[:num_fmt_id]
         next unless fmt_id && fmt_id != 0
 
-        format_code = styles[:num_fmts][fmt_id]
+        format_code = resolve_num_fmt_code(fmt_id, styles[:num_fmts])
         result[cell_ref] = format_code if format_code
       end
       result
@@ -152,7 +152,7 @@ module Xlsxrb
         entry[:fill] = styles[:fills][xf[:fill_id]] if xf[:fill_id]&.positive? && styles[:fills][xf[:fill_id]]
         entry[:border] = styles[:borders][xf[:border_id]] if xf[:border_id]&.positive? && styles[:borders][xf[:border_id]]
         if xf[:num_fmt_id]&.positive?
-          code = styles[:num_fmts][xf[:num_fmt_id]]
+          code = resolve_num_fmt_code(xf[:num_fmt_id], styles[:num_fmts])
           entry[:num_fmt] = code if code
         end
         entry[:alignment] = xf[:alignment] if xf[:alignment]
@@ -841,6 +841,10 @@ module Xlsxrb
       return false unless code
 
       date_pattern?(code)
+    end
+
+    def resolve_num_fmt_code(fmt_id, custom_num_fmts)
+      custom_num_fmts[fmt_id] || Xlsxrb::BUILTIN_NUM_FMT_CODES[fmt_id]
     end
 
     def date_pattern?(code)

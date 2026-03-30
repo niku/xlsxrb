@@ -274,6 +274,30 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "resolves built-in number formats from numFmtId" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    builtin_date_style = writer.add_cell_style(num_fmt_id: 14)
+    builtin_text_style = writer.add_cell_style(num_fmt_id: 49)
+    writer.set_cell("A1", 45292)
+    writer.set_cell_style("A1", builtin_date_style)
+    writer.set_cell("B1", "text")
+    writer.set_cell_style("B1", builtin_text_style)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    assert_equal("mm-dd-yy", reader.cell_formats["A1"])
+    assert_equal("@", reader.cell_formats["B1"])
+    cs = reader.cell_styles
+    assert_equal("mm-dd-yy", cs["A1"][:num_fmt])
+    assert_equal("@", cs["B1"][:num_fmt])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips Date cells" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
