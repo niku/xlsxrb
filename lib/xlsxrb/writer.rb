@@ -2735,7 +2735,12 @@ module Xlsxrb
       unless pivot_table[:data_fields].empty?
         parts << %(<dataFields count="#{pivot_table[:data_fields].size}">)
         pivot_table[:data_fields].each do |df|
-          parts << %(<dataField name="#{xml_escape(df[:name])}" fld="#{df[:fld]}" subtotal="#{df[:subtotal] || "sum"}"/>)
+          df_attrs = %( name="#{xml_escape(df[:name])}" fld="#{df[:fld]}" subtotal="#{df[:subtotal] || "sum"}")
+          df_attrs << %( showDataAs="#{xml_escape(df[:show_data_as])}") if df[:show_data_as]
+          df_attrs << %( baseField="#{df[:base_field]}") if df[:base_field]
+          df_attrs << %( baseItem="#{df[:base_item]}") if df[:base_item]
+          df_attrs << %( numFmtId="#{df[:num_fmt_id]}") if df[:num_fmt_id]
+          parts << "<dataField#{df_attrs}/>"
         end
         parts << "</dataFields>"
       end

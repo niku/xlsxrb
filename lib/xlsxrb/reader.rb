@@ -4509,11 +4509,16 @@ module Xlsxrb
           @col_fields << idx if @inside_col_fields && idx
         when "dataField"
           if @inside_data_fields
-            @data_fields << {
+            df = {
               name: attributes["name"],
               fld: attributes["fld"]&.to_i,
               subtotal: attributes["subtotal"] || "sum"
             }
+            df[:show_data_as] = attributes["showDataAs"] if attributes["showDataAs"]
+            df[:base_field] = attributes["baseField"]&.to_i if attributes["baseField"]
+            df[:base_item] = attributes["baseItem"]&.to_i if attributes["baseItem"]
+            df[:num_fmt_id] = attributes["numFmtId"]&.to_i if attributes["numFmtId"]
+            @data_fields << df
           end
         end
       end

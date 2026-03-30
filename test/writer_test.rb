@@ -1004,6 +1004,20 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("MyNamedRange", pivots[0][:source_name])
   end
 
+  test "add_pivot_table with dataField showDataAs, baseField, baseItem, numFmtId" do
+    writer = Xlsxrb::Writer.new
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "% of Total", subtotal: "sum",
+                                           show_data_as: "percentOfTotal", base_field: 0, base_item: 0, num_fmt_id: 10 }])
+    pivots = writer.pivot_tables
+    df = pivots[0][:data_fields][0]
+    assert_equal("percentOfTotal", df[:show_data_as])
+    assert_equal(0, df[:base_field])
+    assert_equal(0, df[:base_item])
+    assert_equal(10, df[:num_fmt_id])
+  end
+
   test "add_external_link stores external link definition" do
     writer = Xlsxrb::Writer.new
     writer.add_external_link(target: "Book2.xlsx", sheet_names: %w[Sheet1 Sheet2])

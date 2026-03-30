@@ -1200,6 +1200,34 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips dataField showDataAs, baseField, baseItem, numFmtId" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Region")
+    writer.set_cell("C1", "Amount")
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "% of Total", subtotal: "sum",
+                                           show_data_as: "percentOfTotal", base_field: 0, base_item: 0, num_fmt_id: 10 }],
+                           field_names: %w[Category Region Amount])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    assert_equal(1, pts.size)
+    df = pts[0][:data_fields][0]
+    assert_equal("percentOfTotal", df[:show_data_as])
+    assert_equal(0, df[:base_field])
+    assert_equal(0, df[:base_item])
+    assert_equal(10, df[:num_fmt_id])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips external links" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
