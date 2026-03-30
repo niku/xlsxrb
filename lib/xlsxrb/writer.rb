@@ -1119,12 +1119,15 @@ module Xlsxrb
     end
 
     # Adds a comment on a cell.
-    def add_comment(cell_address, text, author: "Author", sheet: nil)
+    def add_comment(cell_address, text, author: "Author", sheet: nil, guid: nil, shape_id: nil)
       validate_cell_address!(cell_address)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @comments_data.key?(sheet_name)
 
-      @comments_data[sheet_name] << { ref: cell_address, text: text, author: author }
+      entry = { ref: cell_address, text: text, author: author }
+      entry[:guid] = guid if guid
+      entry[:shape_id] = shape_id if shape_id
+      @comments_data[sheet_name] << entry
     end
 
     # Returns comment definitions for the first (or given) sheet.
@@ -2586,7 +2589,10 @@ module Xlsxrb
                    else
                      "<r><t>#{xml_escape(c[:text])}</t></r>"
                    end
-        parts << %(<comment ref="#{c[:ref]}" authorId="#{aid}"><text>#{text_xml}</text></comment>)
+        comment_attrs = %(ref="#{c[:ref]}" authorId="#{aid}")
+        comment_attrs << %( guid="#{c[:guid]}") if c[:guid]
+        comment_attrs << %( shapeId="#{c[:shape_id]}") if c[:shape_id]
+        parts << "<comment #{comment_attrs}><text>#{text_xml}</text></comment>"
       end
       parts << "</commentList></comments>"
       parts.join
