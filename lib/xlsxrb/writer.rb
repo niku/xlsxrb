@@ -3025,7 +3025,7 @@ module Xlsxrb
       border_attrs << ' diagonalDown="1"' if bdr[:diagonal_down]
       border_attrs << ' outline="0"' if bdr[:outline] == false
       parts = ["<border#{border_attrs.join}>"]
-      %i[left right top bottom diagonal].each do |side|
+      %i[left right top bottom diagonal vertical horizontal].each do |side|
         s = bdr[side]
         if s.is_a?(Hash)
           parts << %(<#{side} style="#{s[:style]}">)
