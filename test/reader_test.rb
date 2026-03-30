@@ -1164,6 +1164,42 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips pivot table extended attributes (dataCaption, dataOnRows, grandTotals, compact, outline, showHeaders)" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Region")
+    writer.set_cell("C1", "Amount")
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+                           field_names: %w[Category Region Amount],
+                           data_caption: "Custom Caption",
+                           data_on_rows: true,
+                           row_grand_totals: false,
+                           col_grand_totals: false,
+                           compact: false,
+                           outline: false,
+                           show_headers: false)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    assert_equal(1, pts.size)
+    assert_equal("Custom Caption", pts[0][:data_caption])
+    assert_equal(true, pts[0][:data_on_rows])
+    assert_equal(false, pts[0][:row_grand_totals])
+    assert_equal(false, pts[0][:col_grand_totals])
+    assert_equal(false, pts[0][:compact])
+    assert_equal(false, pts[0][:outline])
+    assert_equal(false, pts[0][:show_headers])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips external links" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
