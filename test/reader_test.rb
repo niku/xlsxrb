@@ -4217,4 +4217,55 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips cacheField sharedItems" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-shared-items", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Region")
+    writer.set_cell("C1", "Amount")
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           col_fields: [1],
+                           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+                           field_names: %w[Category Region Amount],
+                           items: { 0 => %w[A B C], 1 => %w[East West] })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    cache = pts[0][:cache]
+    assert_equal(3, cache[:fields].size)
+    assert_equal(%w[A B C], cache[:fields][0][:shared_items])
+    assert_equal(%w[East West], cache[:fields][1][:shared_items])
+    assert_nil(cache[:fields][2][:shared_items])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips cacheSource type attribute" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-cache-source", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    cache = pts[0][:cache]
+    assert_equal("worksheet", cache[:source_type])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

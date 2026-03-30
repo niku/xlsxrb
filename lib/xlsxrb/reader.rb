@@ -4698,6 +4698,7 @@ module Xlsxrb
         @cache_definition = {}
         @fields = []
         @current_field = nil
+        @current_shared_items = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4714,6 +4715,8 @@ module Xlsxrb
           @cache_definition[:record_count] = attributes["recordCount"]&.to_i if attributes["recordCount"]
           om = attributes["optimizeMemory"]
           @cache_definition[:optimize_memory] = om == "1" unless om.nil?
+        when "cacheSource"
+          @cache_definition[:source_type] = attributes["type"] if attributes["type"]
         when "worksheetSource"
           @cache_definition[:source_ref] = attributes["ref"] if attributes["ref"]
           @cache_definition[:source_sheet] = attributes["sheet"] if attributes["sheet"]
@@ -4724,15 +4727,29 @@ module Xlsxrb
           @current_field[:num_fmt_id] = attributes["numFmtId"]&.to_i if attributes["numFmtId"]
           @current_field[:caption] = attributes["caption"] if attributes["caption"]
           @current_field[:formula] = xml_unescape(attributes["formula"]) if attributes["formula"]
+        when "sharedItems"
+          @current_shared_items = [] if @current_field
+        when "s"
+          @current_shared_items << attributes["v"] if @current_shared_items && attributes["v"]
+        when "n"
+          @current_shared_items << attributes["v"]&.to_f if @current_shared_items && attributes["v"]
+        when "b"
+          @current_shared_items << (attributes["v"] == "1") if @current_shared_items
         end
       end
 
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
-        return unless name == "cacheField" && @current_field
-
-        @fields << @current_field
-        @current_field = nil
+        case name
+        when "sharedItems"
+          @current_field[:shared_items] = @current_shared_items if @current_field && @current_shared_items && !@current_shared_items.empty?
+          @current_shared_items = nil
+        when "cacheField"
+          if @current_field
+            @fields << @current_field
+            @current_field = nil
+          end
+        end
       end
 
       def characters(_text); end
