@@ -395,6 +395,7 @@ module Xlsxrb
       entry[:alignment] = opts[:alignment] if opts[:alignment]
       entry[:protection] = opts[:protection] if opts[:protection]
       entry[:quote_prefix] = true if opts[:quote_prefix]
+      entry[:pivot_button] = true if opts[:pivot_button]
       existing = @xf_entries.index(entry)
       return existing if existing
 
@@ -2847,6 +2848,7 @@ module Xlsxrb
         apply_attrs << ' applyAlignment="1"' if xf[:alignment]
         apply_attrs << ' applyProtection="1"' if xf[:protection]
         apply_attrs << ' quotePrefix="1"' if xf[:quote_prefix]
+        apply_attrs << ' pivotButton="1"' if xf[:pivot_button]
         children = []
         children << emit_alignment_xml(xf[:alignment]) if xf[:alignment]
         children << emit_protection_xml(xf[:protection]) if xf[:protection]
