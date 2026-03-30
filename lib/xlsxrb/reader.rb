@@ -436,6 +436,11 @@ module Xlsxrb
       parse_workbook_metadata[:file_version]
     end
 
+    # Returns file sharing properties (e.g. { read_only_recommended: true, user_name: "John" }).
+    def file_sharing
+      parse_workbook_metadata[:file_sharing]
+    end
+
     # Returns workbook view properties (e.g. { active_tab: 0 }).
     def workbook_views
       parse_workbook_metadata[:workbook_views]
@@ -733,7 +738,8 @@ module Xlsxrb
         calc_properties: listener.calc_properties,
         defined_names: listener.defined_names,
         workbook_protection: listener.workbook_protection,
-        file_version: listener.file_version
+        file_version: listener.file_version,
+        file_sharing: listener.file_sharing
       }
     end
 
@@ -1575,7 +1581,7 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties, :defined_names,
-                  :workbook_protection, :file_version
+                  :workbook_protection, :file_version, :file_sharing
 
       def initialize
         @sheets = []
@@ -1585,6 +1591,7 @@ module Xlsxrb
         @defined_names = []
         @workbook_protection = nil
         @file_version = {}
+        @file_sharing = {}
         @inside_defined_name = false
         @current_dn_attrs = nil
         @dn_text_buffer = +""
@@ -1606,6 +1613,18 @@ module Xlsxrb
           @file_version[:rup_build] = rb if rb
           cn = attributes["codeName"]
           @file_version[:code_name] = cn if cn
+        when "fileSharing"
+          @file_sharing[:read_only_recommended] = true if %w[1 true].include?(attributes["readOnlyRecommended"])
+          un = attributes["userName"]
+          @file_sharing[:user_name] = un if un
+          an = attributes["algorithmName"]
+          @file_sharing[:algorithm_name] = an if an
+          hv = attributes["hashValue"]
+          @file_sharing[:hash_value] = hv if hv
+          sv = attributes["saltValue"]
+          @file_sharing[:salt_value] = sv if sv
+          sc = attributes["spinCount"]
+          @file_sharing[:spin_count] = sc.to_i if sc
         when "workbookPr"
           d1904 = attributes["date1904"]
           @workbook_properties[:date1904] = %w[1 true].include?(d1904) unless d1904.nil?

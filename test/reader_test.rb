@@ -3132,4 +3132,23 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips fileSharing element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_file_sharing(:read_only_recommended, true)
+    writer.set_file_sharing(:user_name, "TestUser")
+    writer.set_cell("A1", "test")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    fs = reader.file_sharing
+    assert_equal(true, fs[:read_only_recommended])
+    assert_equal("TestUser", fs[:user_name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
