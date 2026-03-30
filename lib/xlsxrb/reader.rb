@@ -2824,7 +2824,11 @@ module Xlsxrb
           @page_setup[:fit_to_height] = fth.to_i if fth
         when "headerFooter"
           @inside_header_footer = true
-        when "oddHeader", "oddFooter", "evenHeader", "evenFooter"
+          df = attributes["differentFirst"]
+          @header_footer[:different_first] = true if %w[1 true].include?(df)
+          doe = attributes["differentOddEven"]
+          @header_footer[:different_odd_even] = true if %w[1 true].include?(doe)
+        when "oddHeader", "oddFooter", "evenHeader", "evenFooter", "firstHeader", "firstFooter"
           if @inside_header_footer
             @current_hf_field = name
             @text_buffer = +""
@@ -2862,6 +2866,12 @@ module Xlsxrb
           @current_hf_field = nil
         when "evenFooter"
           @header_footer[:even_footer] = @text_buffer.dup if @current_hf_field == "evenFooter"
+          @current_hf_field = nil
+        when "firstHeader"
+          @header_footer[:first_header] = @text_buffer.dup if @current_hf_field == "firstHeader"
+          @current_hf_field = nil
+        when "firstFooter"
+          @header_footer[:first_footer] = @text_buffer.dup if @current_hf_field == "firstFooter"
           @current_hf_field = nil
         when "rowBreaks"
           @inside_row_breaks = false
