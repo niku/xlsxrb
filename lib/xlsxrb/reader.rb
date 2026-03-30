@@ -172,6 +172,38 @@ module Xlsxrb
       styles[:dxfs] || []
     end
 
+    # Returns array of font entries from the styles.
+    def fonts
+      styles = load_styles
+      return [] if styles.empty?
+
+      styles[:fonts] || []
+    end
+
+    # Returns array of fill entries from the styles.
+    def fills
+      styles = load_styles
+      return [] if styles.empty?
+
+      styles[:fills] || []
+    end
+
+    # Returns array of border entries from the styles.
+    def borders
+      styles = load_styles
+      return [] if styles.empty?
+
+      styles[:borders] || []
+    end
+
+    # Returns custom number formats as { numFmtId => formatCode }.
+    def num_fmts
+      styles = load_styles
+      return {} if styles.empty?
+
+      styles[:num_fmts] || {}
+    end
+
     # Returns indexed colors palette (array of ARGB hex strings).
     def indexed_colors
       styles = load_styles

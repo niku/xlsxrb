@@ -4461,4 +4461,83 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal({ x: 1 }, records[1][0])
     assert_equal(false, records[1][3])
   end
+
+  test "round-trips fonts from stylesheet" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_font(sz: 14, name: "Arial", bold: true, color: "FFFF0000")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    fonts = reader.fonts
+    assert_operator(fonts.size, :>=, 2)
+    custom = fonts.find { |f| f[:name] == "Arial" && f[:sz] == 14.0 } # rubocop:disable Lint/FloatComparison
+    assert_not_nil(custom)
+    assert_equal(true, custom[:bold])
+    assert_equal("FFFF0000", custom[:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips fills from stylesheet" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_fill(pattern: "solid", fg_color: "FFFFFF00")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    fills = reader.fills
+    assert_operator(fills.size, :>=, 3)
+    custom = fills.find { |f| f[:fg_color] == "FFFFFF00" }
+    assert_not_nil(custom)
+    assert_equal("solid", custom[:pattern])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips borders from stylesheet" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_border(left: { style: "thin", color: "FF000000" }, right: { style: "medium" })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    borders = reader.borders
+    assert_operator(borders.size, :>=, 2)
+    custom = borders.find { |b| b[:left] && b[:left][:style] == "thin" }
+    assert_not_nil(custom)
+    assert_equal("FF000000", custom[:left][:color])
+    assert_equal("medium", custom[:right][:style])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips num_fmts from stylesheet" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    fmt_id = writer.add_number_format("#,##0.00")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    nf = reader.num_fmts
+    assert_equal("#,##0.00", nf[fmt_id])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
