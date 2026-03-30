@@ -998,6 +998,15 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     # Items parsed
     assert_equal(3, pts[0][:fields][0][:items].size)
     assert_equal("default", pts[0][:fields][0][:items].last[:t])
+    # Cache definition parsed
+    cache = pts[0][:cache]
+    assert_not_nil(cache)
+    assert_equal("Sheet1", cache[:source_sheet])
+    assert_equal("A1:C4", cache[:source_ref])
+    assert_equal(3, cache[:fields].size)
+    assert_equal("Category", cache[:fields][0][:name])
+    assert_equal("Region", cache[:fields][1][:name])
+    assert_equal("Amount", cache[:fields][2][:name])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

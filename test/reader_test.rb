@@ -4126,4 +4126,95 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips pivotCacheDefinition optional attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-pivot-cache", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           cache_save_data: false, cache_enable_refresh: false,
+                           cache_refreshed_by: "Bot", cache_refreshed_version: 6,
+                           cache_created_version: 5, cache_record_count: 99,
+                           cache_optimize_memory: true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    assert_equal(1, pts.size)
+    cache = pts[0][:cache]
+    assert_equal(false, cache[:save_data])
+    assert_equal(false, cache[:enable_refresh])
+    assert_equal("Bot", cache[:refreshed_by])
+    assert_equal(6, cache[:refreshed_version])
+    assert_equal(5, cache[:created_version])
+    assert_equal(99, cache[:record_count])
+    assert_equal(true, cache[:optimize_memory])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips cacheField caption, formula, and numFmtId" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-cache-field", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           field_names: %w[Cat Val],
+                           field_attrs: {
+                             0 => { cache_caption: "Category", cache_formula: "='Sheet1'!A1", cache_num_fmt_id: 49 }
+                           })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    cache = pts[0][:cache]
+    assert_equal(2, cache[:fields].size)
+    assert_equal("Cat", cache[:fields][0][:name])
+    assert_equal("Category", cache[:fields][0][:caption])
+    assert_equal("='Sheet1'!A1", cache[:fields][0][:formula])
+    assert_equal(49, cache[:fields][0][:num_fmt_id])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips worksheetSource name attribute" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-ws-source", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           source_name: "MyNamedRange")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    cache = pts[0][:cache]
+    assert_equal("Sheet1", cache[:source_sheet])
+    assert_equal("A1:B2", cache[:source_ref])
+    assert_equal("MyNamedRange", cache[:source_name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

@@ -710,7 +710,7 @@ module Xlsxrb
     end
 
     # Returns pivot tables for the given sheet as an array of hashes.
-    # Each hash: { name:, ref:, cache_id:, fields:, row_fields:, col_fields:, data_fields: }
+    # Each hash: { name:, ref:, cache_id:, fields:, row_fields:, col_fields:, data_fields:, cache: }
     def pivot_tables(sheet: nil)
       sheet_index = resolve_sheet_index(sheet)
       pivot_paths = find_sheet_rel_targets(sheet_index, "/pivotTable")
@@ -724,7 +724,13 @@ module Xlsxrb
         listener = PivotTableListener.new
         parser.listen(listener)
         parser.parse
-        listener.pivot_table
+        pt = listener.pivot_table
+        next unless pt
+
+        # Resolve pivotCacheDefinition via pivot table rels.
+        cache_info = load_pivot_cache_definition(path)
+        pt[:cache] = cache_info if cache_info
+        pt
       end
     end
 
@@ -945,6 +951,26 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.table
+    end
+
+    def load_pivot_cache_definition(pivot_table_path)
+      rels_path = pivot_table_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = extract_zip_entry(rels_path)
+      return nil if rels_xml.nil? || rels_xml.empty?
+
+      rels = parse_rels_with_types(rels_xml)
+      cache_rel = rels.find { |r| r[:type]&.end_with?("/pivotCacheDefinition") }
+      return nil unless cache_rel
+
+      cache_path = normalize_xl_path(cache_rel[:target], File.dirname(pivot_table_path))
+      cache_xml = extract_zip_entry(cache_path)
+      return nil if cache_xml.nil? || cache_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(cache_xml)
+      listener = PivotCacheDefinitionListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.cache_definition
     end
 
     def load_styles
@@ -4659,6 +4685,74 @@ module Xlsxrb
         else
           local_name
         end
+      end
+    end
+
+    # SAX2 listener for parsing pivotCacheDefinition XML.
+    class PivotCacheDefinitionListener
+      include REXML::SAX2Listener
+
+      attr_reader :cache_definition
+
+      def initialize
+        @cache_definition = {}
+        @fields = []
+        @current_field = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "pivotCacheDefinition"
+          sd = attributes["saveData"]
+          @cache_definition[:save_data] = sd != "0" unless sd.nil?
+          er = attributes["enableRefresh"]
+          @cache_definition[:enable_refresh] = er != "0" unless er.nil?
+          @cache_definition[:refreshed_by] = attributes["refreshedBy"] if attributes["refreshedBy"]
+          @cache_definition[:refreshed_version] = attributes["refreshedVersion"]&.to_i if attributes["refreshedVersion"]
+          @cache_definition[:created_version] = attributes["createdVersion"]&.to_i if attributes["createdVersion"]
+          @cache_definition[:record_count] = attributes["recordCount"]&.to_i if attributes["recordCount"]
+          om = attributes["optimizeMemory"]
+          @cache_definition[:optimize_memory] = om == "1" unless om.nil?
+        when "worksheetSource"
+          @cache_definition[:source_ref] = attributes["ref"] if attributes["ref"]
+          @cache_definition[:source_sheet] = attributes["sheet"] if attributes["sheet"]
+          @cache_definition[:source_name] = attributes["name"] if attributes["name"]
+        when "cacheField"
+          @current_field = {}
+          @current_field[:name] = attributes["name"] if attributes["name"]
+          @current_field[:num_fmt_id] = attributes["numFmtId"]&.to_i if attributes["numFmtId"]
+          @current_field[:caption] = attributes["caption"] if attributes["caption"]
+          @current_field[:formula] = xml_unescape(attributes["formula"]) if attributes["formula"]
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        return unless name == "cacheField" && @current_field
+
+        @fields << @current_field
+        @current_field = nil
+      end
+
+      def characters(_text); end
+
+      def end_document
+        @cache_definition[:fields] = @fields unless @fields.empty?
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+
+      def xml_unescape(str)
+        str.gsub("&amp;", "&").gsub("&lt;", "<").gsub("&gt;", ">").gsub("&quot;", '"').gsub("&apos;", "'")
       end
     end
 
