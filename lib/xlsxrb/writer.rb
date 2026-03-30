@@ -2820,6 +2820,10 @@ module Xlsxrb
       parts << "<b/>" if font[:bold]
       parts << "<i/>" if font[:italic]
       parts << "<strike/>" if font[:strike]
+      parts << "<shadow/>" if font[:shadow]
+      parts << "<outline/>" if font[:outline]
+      parts << "<condense/>" if font[:condense]
+      parts << "<extend/>" if font[:extend]
       if font[:underline]
         parts << if font[:underline] == true
                    "<u/>"
