@@ -1062,7 +1062,7 @@ module Xlsxrb
     # Inserts an image from file data into the given sheet.
     # file_data: raw image bytes. ext: file extension (e.g. "png").
     # from_col/from_row: anchor start. to_col/to_row: anchor end.
-    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, name: nil, description: nil, sheet: nil)
+    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, name: nil, description: nil, edit_as: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @images.key?(sheet_name)
 
@@ -1073,6 +1073,7 @@ module Xlsxrb
         to_col: to_col, to_row: to_row
       }
       img[:description] = description if description
+      img[:edit_as] = edit_as if edit_as
       @images[sheet_name] << img
     end
 
@@ -1085,7 +1086,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, edit_as: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1095,6 +1096,7 @@ module Xlsxrb
       chart[:data_labels] = data_labels if data_labels
       chart[:cat_axis_title] = cat_axis_title if cat_axis_title
       chart[:val_axis_title] = val_axis_title if val_axis_title
+      chart[:edit_as] = edit_as if edit_as
       @charts_data[sheet_name] << chart
     end
 
@@ -1108,16 +1110,18 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, edit_as: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
       shape_name = name || "Shape #{@shapes_data[sheet_name].size + 1}"
-      @shapes_data[sheet_name] << {
+      shape = {
         preset: preset, text: text, name: shape_name,
         from_col: from_col, from_row: from_row,
         to_col: to_col, to_row: to_row
       }
+      shape[:edit_as] = edit_as if edit_as
+      @shapes_data[sheet_name] << shape
     end
 
     # Returns shape definitions for the first (or given) sheet.
@@ -2492,7 +2496,8 @@ module Xlsxrb
         when :pic
           img = dp[:img]
           rid = "rId#{dp[:rid_index]}"
-          parts << '<xdr:twoCellAnchor editAs="oneCell">'
+          ea = img[:edit_as] || "oneCell"
+          parts << %(<xdr:twoCellAnchor editAs="#{xml_escape(ea)}">)
           parts << anchor_xml("from", img[:from_col], img[:from_row])
           parts << anchor_xml("to", img[:to_col], img[:to_row])
           parts << "<xdr:pic>"
@@ -2506,7 +2511,8 @@ module Xlsxrb
         when :chart
           chart = dp[:chart]
           rid = "rId#{dp[:rid_index]}"
-          parts << "<xdr:twoCellAnchor>"
+          chart_ea_attr = chart[:edit_as] ? %( editAs="#{xml_escape(chart[:edit_as])}") : ""
+          parts << "<xdr:twoCellAnchor#{chart_ea_attr}>"
           parts << anchor_xml("from", 0, 0)
           parts << anchor_xml("to", 10, 15)
           parts << %(<xdr:graphicFrame macro="">)
@@ -2518,7 +2524,8 @@ module Xlsxrb
           parts << "</xdr:twoCellAnchor>"
         when :sp
           shape = dp[:shape]
-          parts << "<xdr:twoCellAnchor>"
+          shape_ea_attr = shape[:edit_as] ? %( editAs="#{xml_escape(shape[:edit_as])}") : ""
+          parts << "<xdr:twoCellAnchor#{shape_ea_attr}>"
           parts << anchor_xml("from", shape[:from_col], shape[:from_row])
           parts << anchor_xml("to", shape[:to_col], shape[:to_row])
           parts << "<xdr:sp>"

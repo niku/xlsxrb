@@ -916,6 +916,28 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("Sales", charts[0][:title])
   end
 
+  test "insert_image with edit_as stores editAs attribute" do
+    writer = Xlsxrb::Writer.new
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", edit_as: "absolute")
+    imgs = writer.images
+    assert_equal("absolute", imgs[0][:edit_as])
+  end
+
+  test "add_chart with edit_as stores editAs attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.add_chart(type: :bar, title: "Sales", cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3", edit_as: "oneCell")
+    charts = writer.charts
+    assert_equal("oneCell", charts[0][:edit_as])
+  end
+
+  test "add_shape with edit_as stores editAs attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.add_shape(preset: "rect", edit_as: "absolute")
+    shapes = writer.shapes
+    assert_equal("absolute", shapes[0][:edit_as])
+  end
+
   test "add_comment stores comment definition" do
     writer = Xlsxrb::Writer.new
     writer.add_comment("A1", "Note text", author: "Tester")
