@@ -4114,7 +4114,10 @@ module Xlsxrb
           @inside_graphic_frame = true
           @current_chart = {}
         when "cNvPr"
-          @current_chart[:name] = attributes["name"] if @inside_graphic_frame && @current_chart && attributes["name"]
+          if @inside_graphic_frame && @current_chart
+            @current_chart[:name] = attributes["name"] if attributes["name"]
+            @current_chart[:description] = attributes["descr"] if attributes["descr"]
+          end
         when "chart"
           rid = attributes["r:id"] || attributes["id"]
           @current_chart[:rid] = rid if @inside_graphic_frame && @current_chart && rid

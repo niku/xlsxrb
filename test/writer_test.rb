@@ -1005,6 +1005,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_chart with name and description emits cNvPr attrs" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "x")
+    writer.add_chart(type: :bar, title: "Sales",
+                     cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
+                     name: "Chart 1", description: "A sales chart")
+    charts = writer.charts
+    assert_equal("Chart 1", charts[0][:name])
+    assert_equal("A sales chart", charts[0][:description])
+
+    xlsx_path = File.join(Dir.tmpdir, "chart_descr_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/name="Chart 1"/, xml)
+    assert_match(/descr="A sales chart"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with edit_as stores editAs attribute" do
     writer = Xlsxrb::Writer.new
     writer.add_shape(preset: "rect", edit_as: "absolute")
