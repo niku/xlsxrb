@@ -1195,7 +1195,8 @@ module Xlsxrb
         cache_refreshed_by: opts[:cache_refreshed_by], cache_refreshed_version: opts[:cache_refreshed_version],
         cache_created_version: opts[:cache_created_version], cache_record_count: opts[:cache_record_count],
         cache_optimize_memory: opts[:cache_optimize_memory],
-        row_page_count: opts[:row_page_count], col_page_count: opts[:col_page_count]
+        row_page_count: opts[:row_page_count], col_page_count: opts[:col_page_count],
+        field_attrs: opts[:field_attrs]
       }
     end
 
@@ -2778,7 +2779,13 @@ module Xlsxrb
           attrs << ' axis="axisCol"'
         end
         attrs << ' dataField="1"' if pivot_table[:data_fields].any? { |df| df[:fld] == fi }
-        attrs << ' showAll="0"'
+        fa = pivot_table[:field_attrs] && pivot_table[:field_attrs][fi]
+        attrs << %( compact="#{fa[:compact] ? "1" : "0"}") if fa && !fa[:compact].nil?
+        attrs << %( outline="#{fa[:outline] ? "1" : "0"}") if fa && !fa[:outline].nil?
+        attrs << %( subtotalTop="#{fa[:subtotal_top] ? "1" : "0"}") if fa && !fa[:subtotal_top].nil?
+        attrs << %( showAll="#{fa && fa[:show_all] == true ? "1" : "0"}")
+        attrs << %( numFmtId="#{fa[:num_fmt_id]}") if fa && fa[:num_fmt_id]
+        attrs << %( sortType="#{xml_escape(fa[:sort_type])}") if fa && fa[:sort_type]
 
         field_items = pivot_table[:items] && pivot_table[:items][fi]
         if field_items
