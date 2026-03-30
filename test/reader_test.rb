@@ -4268,4 +4268,35 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "parses sharedItems date, missing, and error elements" do
+    xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <cacheFields count="1">
+          <cacheField name="Mixed" numFmtId="0">
+            <sharedItems count="5">
+              <s v="Hello"/>
+              <n v="42"/>
+              <d v="2024-01-15T00:00:00"/>
+              <m/>
+              <e v="#N/A"/>
+            </sharedItems>
+          </cacheField>
+        </cacheFields>
+      </pivotCacheDefinition>
+    XML
+
+    parser = REXML::Parsers::SAX2Parser.new(xml)
+    listener = Xlsxrb::Reader::PivotCacheDefinitionListener.new
+    parser.listen(listener)
+    parser.parse
+    items = listener.cache_definition[:fields][0][:shared_items]
+    assert_equal(5, items.size)
+    assert_equal("Hello", items[0])
+    assert_equal(42.0, items[1])
+    assert_equal("2024-01-15T00:00:00", items[2])
+    assert_nil(items[3])
+    assert_equal("#N/A", items[4])
+  end
 end

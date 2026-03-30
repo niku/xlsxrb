@@ -4729,12 +4729,14 @@ module Xlsxrb
           @current_field[:formula] = xml_unescape(attributes["formula"]) if attributes["formula"]
         when "sharedItems"
           @current_shared_items = [] if @current_field
-        when "s"
+        when "s", "d", "e"
           @current_shared_items << attributes["v"] if @current_shared_items && attributes["v"]
         when "n"
           @current_shared_items << attributes["v"]&.to_f if @current_shared_items && attributes["v"]
         when "b"
           @current_shared_items << (attributes["v"] == "1") if @current_shared_items
+        when "m"
+          @current_shared_items << nil if @current_shared_items
         end
       end
 
