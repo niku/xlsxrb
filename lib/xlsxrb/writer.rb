@@ -2612,6 +2612,7 @@ module Xlsxrb
       rule_attrs << %( bottom="1") if rule[:bottom]
       rule_attrs << %( text="#{xml_escape(rule[:text])}") if rule[:text]
       rule_attrs << %( timePeriod="#{rule[:time_period]}") if rule[:time_period]
+      rule_attrs << %( stdDev="#{rule[:std_dev]}") if rule[:std_dev]
 
       case type
       when :cell_is, :expression, :above_average, :top10, :duplicate_values, :unique_values,

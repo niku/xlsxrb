@@ -2865,4 +2865,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips conditional format stdDev" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 100)
+    writer.add_conditional_format("A1:A10",
+                                  type: :above_average,
+                                  std_dev: 2,
+                                  format_id: writer.add_dxf(font: { bold: true }))
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    rules = reader.conditional_formats
+    rule = rules.find { |r| r[:type] == "aboveAverage" }
+    assert_not_nil(rule, "should find above_average rule")
+    assert_equal(2, rule[:std_dev])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
