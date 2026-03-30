@@ -157,6 +157,7 @@ module Xlsxrb
         end
         entry[:alignment] = xf[:alignment] if xf[:alignment]
         entry[:protection] = xf[:protection] if xf[:protection]
+        entry[:quote_prefix] = true if xf[:quote_prefix]
         result[cell_ref] = entry unless entry.empty?
       end
       result
@@ -1818,6 +1819,7 @@ module Xlsxrb
           }
           if @inside_cell_xfs
             xf_entry[:xf_id] = attributes["xfId"]&.to_i
+            xf_entry[:quote_prefix] = true if attributes["quotePrefix"] == "1"
             @cell_xfs << xf_entry
             @current_xf = xf_entry
           elsif @inside_cell_style_xfs
