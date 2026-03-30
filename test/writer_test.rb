@@ -1074,6 +1074,39 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "stores expanded conditional formatting rule types" do
+    writer = Xlsxrb::Writer.new
+    writer.add_conditional_format("A1:A10", type: :above_average, priority: 1,
+                                            above_average: false, equal_average: true, format_id: 0)
+    writer.add_conditional_format("B1:B10", type: :top10, priority: 2,
+                                            rank: 5, percent: true, bottom: true, format_id: 0)
+    writer.add_conditional_format("C1:C10", type: :duplicate_values, priority: 3, format_id: 0)
+    writer.add_conditional_format("D1:D10", type: :contains_text, priority: 4, operator: "containsText",
+                                            text: "hello", formula: 'NOT(ISERROR(SEARCH("hello",D1)))',
+                                            format_id: 0)
+    writer.add_conditional_format("E1:E10", type: :begins_with, priority: 5, operator: "beginsWith",
+                                            text: "foo", formula: 'LEFT(E1,3)="foo"',
+                                            format_id: 0)
+    writer.add_conditional_format("F1:F10", type: :ends_with, priority: 6, operator: "endsWith",
+                                            text: "bar", formula: 'RIGHT(F1,3)="bar"',
+                                            format_id: 0)
+
+    cfs = writer.conditional_formats
+    assert_equal(6, cfs.size)
+    assert_equal(:above_average, cfs[0][:type])
+    assert_equal(false, cfs[0][:above_average])
+    assert_equal(true, cfs[0][:equal_average])
+    assert_equal(:top10, cfs[1][:type])
+    assert_equal(5, cfs[1][:rank])
+    assert_equal(true, cfs[1][:percent])
+    assert_equal(true, cfs[1][:bottom])
+    assert_equal(:duplicate_values, cfs[2][:type])
+    assert_equal(:contains_text, cfs[3][:type])
+    assert_equal("hello", cfs[3][:text])
+    assert_equal(:begins_with, cfs[4][:type])
+    assert_equal(:ends_with, cfs[5][:type])
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
