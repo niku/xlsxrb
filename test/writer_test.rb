@@ -1709,6 +1709,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "sheetView showZeros, view, showOutlineSymbols, showRuler" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_view(:show_zeros, false)
+    writer.set_sheet_view(:view, "pageBreakPreview")
+    writer.set_sheet_view(:show_outline_symbols, false)
+    writer.set_sheet_view(:show_ruler, false)
+
+    xlsx_tempfile = Tempfile.new(["test-sv", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/showZeros="0"/, xml)
+    assert_match(/view="pageBreakPreview"/, xml)
+    assert_match(/showOutlineSymbols="0"/, xml)
+    assert_match(/showRuler="0"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "codeName on sheet properties" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "hello")

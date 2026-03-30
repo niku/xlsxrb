@@ -2693,6 +2693,14 @@ module Xlsxrb
           @view[:show_row_col_headers] = %w[1 true].include?(srch) unless srch.nil?
           rtl = attributes["rightToLeft"]
           @view[:right_to_left] = %w[1 true].include?(rtl) unless rtl.nil?
+          szv = attributes["showZeros"]
+          @view[:show_zeros] = %w[1 true].include?(szv) unless szv.nil?
+          vm = attributes["view"]
+          @view[:view] = vm if vm
+          soss = attributes["showOutlineSymbols"]
+          @view[:show_outline_symbols] = %w[1 true].include?(soss) unless soss.nil?
+          srr = attributes["showRuler"]
+          @view[:show_ruler] = %w[1 true].include?(srr) unless srr.nil?
           zs = attributes["zoomScale"]
           @view[:zoom_scale] = zs.to_i if zs
           ts = attributes["tabSelected"]

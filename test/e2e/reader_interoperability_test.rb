@@ -1582,6 +1582,23 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader can parse sheetView showZeros view showOutlineSymbols showRuler from SDK" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_sheet_view_extended_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    sv = reader.sheet_view
+    assert_equal(false, sv[:show_zeros])
+    assert_equal("pageBreakPreview", sv[:view])
+    assert_equal(false, sv[:show_outline_symbols])
+    assert_equal(false, sv[:show_ruler])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

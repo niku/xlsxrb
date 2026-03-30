@@ -1500,6 +1500,13 @@ module Xlsxrb
         sv_attrs << %(showRowColHeaders="#{srch ? 1 : 0}") unless srch.nil?
         rtl = sheet_sv[:right_to_left]
         sv_attrs << %(rightToLeft="#{rtl ? 1 : 0}") unless rtl.nil?
+        sz = sheet_sv[:show_zeros]
+        sv_attrs << %(showZeros="#{sz ? 1 : 0}") unless sz.nil?
+        sv_attrs << %(view="#{sheet_sv[:view]}") if sheet_sv[:view]
+        sos = sheet_sv[:show_outline_symbols]
+        sv_attrs << %(showOutlineSymbols="#{sos ? 1 : 0}") unless sos.nil?
+        sr = sheet_sv[:show_ruler]
+        sv_attrs << %(showRuler="#{sr ? 1 : 0}") unless sr.nil?
         zs = sheet_sv[:zoom_scale]
         sv_attrs << %(zoomScale="#{zs}") if zs
         sv_attrs << 'tabSelected="1"' if sheet_sv[:tab_selected]
