@@ -1222,6 +1222,30 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores extended core properties correctly" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_core_property(:title, "My Title")
+    writer.set_core_property(:subject, "My Subject")
+    writer.set_core_property(:creator, "Alice")
+    writer.set_core_property(:keywords, "ruby, xlsx")
+    writer.set_core_property(:description, "A test document")
+    writer.set_core_property(:last_modified_by, "Bob")
+    writer.set_core_property(:revision, "3")
+    writer.set_core_property(:category, "Reports")
+    writer.set_core_property(:content_status, "Draft")
+    writer.set_core_property(:language, "en-US")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_core_properties_extended_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

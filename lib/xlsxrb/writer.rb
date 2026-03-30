@@ -2478,9 +2478,17 @@ module Xlsxrb
         %(<cp:coreProperties xmlns:cp="#{CP_NS}" xmlns:dc="#{DC_NS}" xmlns:dcterms="#{DCTERMS_NS}" xmlns:xsi="#{XSI_NS}">)
       ]
       parts << "<dc:title>#{xml_escape(@core_properties[:title])}</dc:title>" if @core_properties[:title]
+      parts << "<dc:subject>#{xml_escape(@core_properties[:subject])}</dc:subject>" if @core_properties[:subject]
       parts << "<dc:creator>#{xml_escape(@core_properties[:creator])}</dc:creator>" if @core_properties[:creator]
+      parts << "<cp:keywords>#{xml_escape(@core_properties[:keywords])}</cp:keywords>" if @core_properties[:keywords]
+      parts << "<dc:description>#{xml_escape(@core_properties[:description])}</dc:description>" if @core_properties[:description]
+      parts << "<cp:lastModifiedBy>#{xml_escape(@core_properties[:last_modified_by])}</cp:lastModifiedBy>" if @core_properties[:last_modified_by]
+      parts << "<cp:revision>#{xml_escape(@core_properties[:revision])}</cp:revision>" if @core_properties[:revision]
       parts << %(<dcterms:created xsi:type="dcterms:W3CDTF">#{xml_escape(@core_properties[:created])}</dcterms:created>) if @core_properties[:created]
       parts << %(<dcterms:modified xsi:type="dcterms:W3CDTF">#{xml_escape(@core_properties[:modified])}</dcterms:modified>) if @core_properties[:modified]
+      parts << "<cp:category>#{xml_escape(@core_properties[:category])}</cp:category>" if @core_properties[:category]
+      parts << "<cp:contentStatus>#{xml_escape(@core_properties[:content_status])}</cp:contentStatus>" if @core_properties[:content_status]
+      parts << "<dc:language>#{xml_escape(@core_properties[:language])}</dc:language>" if @core_properties[:language]
       parts << "</cp:coreProperties>"
       parts.join
     end
