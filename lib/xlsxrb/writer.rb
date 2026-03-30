@@ -1181,7 +1181,8 @@ module Xlsxrb
         show_error: opts[:show_error], missing_caption: opts[:missing_caption],
         show_missing: opts[:show_missing], tag: opts[:tag], indent: opts[:indent],
         published: opts[:published], created_version: opts[:created_version],
-        updated_version: opts[:updated_version], min_refreshable_version: opts[:min_refreshable_version]
+        updated_version: opts[:updated_version], min_refreshable_version: opts[:min_refreshable_version],
+        pivot_table_style: opts[:pivot_table_style]
       }
     end
 
@@ -2799,6 +2800,18 @@ module Xlsxrb
           parts << "<dataField#{df_attrs}/>"
         end
         parts << "</dataFields>"
+      end
+
+      if pivot_table[:pivot_table_style]
+        psi = pivot_table[:pivot_table_style]
+        psi_attrs = +""
+        psi_attrs << %( name="#{xml_escape(psi[:name])}") if psi[:name]
+        psi_attrs << %( showRowHeaders="#{psi[:show_row_headers] ? "1" : "0"}") unless psi[:show_row_headers].nil?
+        psi_attrs << %( showColHeaders="#{psi[:show_col_headers] ? "1" : "0"}") unless psi[:show_col_headers].nil?
+        psi_attrs << %( showRowStripes="#{psi[:show_row_stripes] ? "1" : "0"}") unless psi[:show_row_stripes].nil?
+        psi_attrs << %( showColStripes="#{psi[:show_col_stripes] ? "1" : "0"}") unless psi[:show_col_stripes].nil?
+        psi_attrs << %( showLastColumn="#{psi[:show_last_column] ? "1" : "0"}") unless psi[:show_last_column].nil?
+        parts << "<pivotTableStyleInfo#{psi_attrs}/>"
       end
 
       parts << "</pivotTableDefinition>"
