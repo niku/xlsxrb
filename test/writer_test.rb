@@ -141,8 +141,9 @@ class WriterTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     writer.set_row_height(1, 25.0)
     writer.set_row_hidden(3)
+    writer.set_row_style(5, 0)
 
-    expected = { 1 => { height: 25.0 }, 3 => { hidden: true } }
+    expected = { 1 => { height: 25.0 }, 3 => { hidden: true }, 5 => { style: 0 } }
     assert_equal(expected, writer.row_attributes)
   end
 

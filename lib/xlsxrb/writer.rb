@@ -206,6 +206,17 @@ module Xlsxrb
       @row_attrs[sheet_name][row_num][:collapsed] = collapsed
     end
 
+    # Sets a row default style index (cellXfs index).
+    def set_row_style(row_num, style_id, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
+      raise ArgumentError, "row must be a positive Integer" unless row_num.is_a?(Integer) && row_num >= 1
+      raise ArgumentError, "style_id must be a non-negative Integer" unless style_id.is_a?(Integer) && style_id >= 0
+
+      @row_attrs[sheet_name][row_num] ||= {}
+      @row_attrs[sheet_name][row_num][:style] = style_id
+    end
+
     # Returns row attributes for the first (or given) sheet.
     def row_attributes(sheet: nil)
       sheet_name = sheet || @sheet_order.first
@@ -1484,6 +1495,9 @@ module Xlsxrb
           attrs << ' hidden="1"' if ra[:hidden]
           attrs << %( outlineLevel="#{ra[:outline_level]}") if ra[:outline_level]
           attrs << ' collapsed="1"' if ra[:collapsed]
+          if ra.key?(:style)
+            attrs << %( s="#{ra[:style]}" customFormat="1")
+          end
         end
         parts << "<row #{attrs}>"
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|

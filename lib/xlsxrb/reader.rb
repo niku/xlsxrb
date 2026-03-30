@@ -1380,6 +1380,8 @@ module Xlsxrb
         ol = attributes["outlineLevel"]
         attrs[:outline_level] = ol.to_i if ol && ol != "0"
         attrs[:collapsed] = true if attributes["collapsed"] == "1"
+        s = attributes["s"]
+        attrs[:style] = s.to_i if s
         @row_attributes[row_num] = attrs unless attrs.empty?
       end
 

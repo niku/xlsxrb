@@ -123,6 +123,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     writer.set_cell("A1", "hello")
     writer.set_row_height(1, 25.0)
     writer.set_row_hidden(3)
+    writer.set_row_style(5, 0)
     writer.write(xlsx_path)
 
     assert_openxml_sdk_scenario_passes("writer_row_attributes_test", xlsx_path)

@@ -36,6 +36,18 @@ try
     {
         throw new Exception("Row 3 should be hidden.");
     }
+
+    // Row 5 should have row style index and custom format flag.
+    var row5 = rows.FirstOrDefault(r => r.RowIndex?.Value == 5)
+        ?? throw new Exception("Row 5 is missing.");
+    if (row5.StyleIndex?.Value != 0U)
+    {
+        throw new Exception($"Expected row 5 style index=0 but got {row5.StyleIndex?.Value}.");
+    }
+    if (row5.CustomFormat?.Value != true)
+    {
+        throw new Exception("Row 5 should have customFormat=true.");
+    }
 }
 finally
 {
