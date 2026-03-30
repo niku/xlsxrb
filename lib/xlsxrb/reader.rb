@@ -1839,6 +1839,8 @@ module Xlsxrb
           prot[:lock_structure] = %w[1 true].include?(ls) unless ls.nil?
           lw = attributes["lockWindows"]
           prot[:lock_windows] = %w[1 true].include?(lw) unless lw.nil?
+          lr = attributes["lockRevision"]
+          prot[:lock_revision] = %w[1 true].include?(lr) unless lr.nil?
           wp = attributes["workbookPassword"]
           prot[:password] = wp if wp
           an = attributes["workbookAlgorithmName"]
@@ -1851,6 +1853,18 @@ module Xlsxrb
             sc = attributes["workbookSpinCount"]
             prot[:spin_count] = sc.to_i if sc
           end
+          ran = attributes["revisionsAlgorithmName"]
+          if ran
+            prot[:revisions_algorithm_name] = ran
+            rhv = attributes["revisionsHashValue"]
+            prot[:revisions_hash_value] = rhv if rhv
+            rsv = attributes["revisionsSaltValue"]
+            prot[:revisions_salt_value] = rsv if rsv
+            rsc = attributes["revisionsSpinCount"]
+            prot[:revisions_spin_count] = rsc.to_i if rsc
+          end
+          rp = attributes["revisionsPassword"]
+          prot[:revisions_password] = rp if rp
           @workbook_protection = prot unless prot.empty?
         when "definedName"
           @inside_defined_name = true

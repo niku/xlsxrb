@@ -1095,6 +1095,24 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(false, prot[:lock_windows])
   end
 
+  test "set_workbook_protection with lockRevision and revision algorithm attrs" do
+    writer = Xlsxrb::Writer.new
+    writer.set_workbook_protection(
+      lock_structure: true,
+      lock_revision: true,
+      revisions_algorithm_name: "SHA-512",
+      revisions_hash_value: "abc123",
+      revisions_salt_value: "salt456",
+      revisions_spin_count: 100_000
+    )
+    prot = writer.workbook_protection
+    assert_equal(true, prot[:lock_revision])
+    assert_equal("SHA-512", prot[:revisions_algorithm_name])
+    assert_equal("abc123", prot[:revisions_hash_value])
+    assert_equal("salt456", prot[:revisions_salt_value])
+    assert_equal(100_000, prot[:revisions_spin_count])
+  end
+
   test "add_cell_style with protection emits protection element" do
     writer = Xlsxrb::Writer.new
     style_id = writer.add_cell_style(protection: { locked: false, hidden: true })
