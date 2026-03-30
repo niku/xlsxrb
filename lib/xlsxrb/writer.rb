@@ -1062,9 +1062,14 @@ module Xlsxrb
       above_average: "aboveAverage",
       top10: "top10",
       duplicate_values: "duplicateValues",
+      unique_values: "uniqueValues",
       contains_text: "containsText",
+      not_contains_text: "notContainsText",
       begins_with: "beginsWith",
-      ends_with: "endsWith"
+      ends_with: "endsWith",
+      contains_blanks: "containsBlanks",
+      not_contains_blanks: "notContainsBlanks",
+      time_period: "timePeriod"
     }.freeze
 
     private
@@ -2341,9 +2346,12 @@ module Xlsxrb
       rule_attrs << %( percent="1") if rule[:percent]
       rule_attrs << %( bottom="1") if rule[:bottom]
       rule_attrs << %( text="#{xml_escape(rule[:text])}") if rule[:text]
+      rule_attrs << %( timePeriod="#{rule[:time_period]}") if rule[:time_period]
 
       case type
-      when :cell_is, :expression, :above_average, :top10, :duplicate_values, :contains_text, :begins_with, :ends_with
+      when :cell_is, :expression, :above_average, :top10, :duplicate_values, :unique_values,
+           :contains_text, :not_contains_text, :begins_with, :ends_with,
+           :contains_blanks, :not_contains_blanks, :time_period
         formulas = rule[:formulas] || [rule[:formula]].compact
         if formulas.empty?
           parts << "<cfRule #{rule_attrs}/>"
