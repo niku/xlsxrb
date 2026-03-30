@@ -188,6 +188,14 @@ module Xlsxrb
       styles[:mru_colors] || []
     end
 
+    # Returns table styles configuration hash.
+    def table_styles
+      styles = load_styles
+      return {} if styles.empty?
+
+      styles[:table_styles] || {}
+    end
+
     # Returns array of cellStyleXfs entries (base style format definitions).
     def cell_style_xfs
       styles = load_styles
@@ -912,7 +920,8 @@ module Xlsxrb
         cell_style_xfs: listener.cell_style_xfs, cell_styles: listener.cell_styles,
         fonts: listener.fonts, fills: listener.fills,
         borders: listener.borders, dxfs: listener.dxfs,
-        indexed_colors: listener.indexed_colors, mru_colors: listener.mru_colors
+        indexed_colors: listener.indexed_colors, mru_colors: listener.mru_colors,
+        table_styles: listener.table_styles
       }
     end
 
@@ -1948,7 +1957,7 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       attr_reader :num_fmts, :cell_xfs, :cell_style_xfs, :cell_styles, :fonts, :fills, :borders, :dxfs,
-                  :indexed_colors, :mru_colors
+                  :indexed_colors, :mru_colors, :table_styles
 
       def initialize
         @num_fmts = {} # { numFmtId => formatCode }
@@ -1961,6 +1970,7 @@ module Xlsxrb
         @dxfs = []
         @indexed_colors = []
         @mru_colors = []
+        @table_styles = {}
         @inside_cell_xfs = false
         @inside_cell_style_xfs = false
         @inside_cell_styles = false
@@ -1970,6 +1980,8 @@ module Xlsxrb
         @inside_dxfs = false
         @inside_indexed_colors = false
         @inside_mru_colors = false
+        @inside_table_styles = false
+        @current_table_style = nil
         @current_font = nil
         @current_fill = nil
         @current_border = nil
@@ -2143,6 +2155,25 @@ module Xlsxrb
           @inside_mru_colors = true
         when "rgbColor"
           @indexed_colors << attributes["rgb"] if @inside_indexed_colors && attributes["rgb"]
+        when "tableStyles"
+          @inside_table_styles = true
+          @table_styles[:default_table_style] = attributes["defaultTableStyle"] if attributes["defaultTableStyle"]
+          @table_styles[:default_pivot_style] = attributes["defaultPivotStyle"] if attributes["defaultPivotStyle"]
+          @table_styles[:styles] = []
+        when "tableStyle"
+          if @inside_table_styles
+            ts = { name: attributes["name"], elements: [] }
+            ts[:pivot] = %w[1 true].include?(attributes["pivot"]) if attributes.key?("pivot")
+            ts[:table] = %w[1 true].include?(attributes["table"]) if attributes.key?("table")
+            @current_table_style = ts
+          end
+        when "tableStyleElement"
+          if @current_table_style
+            el = { type: attributes["type"] }
+            el[:size] = attributes["size"].to_i if attributes["size"]
+            el[:dxf_id] = attributes["dxfId"].to_i if attributes["dxfId"]
+            @current_table_style[:elements] << el
+          end
         end
 
         parse_font_name(name, attributes)
@@ -2200,6 +2231,13 @@ module Xlsxrb
           @inside_indexed_colors = false
         when "mruColors"
           @inside_mru_colors = false
+        when "tableStyles"
+          @inside_table_styles = false
+        when "tableStyle"
+          if @inside_table_styles && @current_table_style
+            @table_styles[:styles] << @current_table_style
+            @current_table_style = nil
+          end
         end
       end
 

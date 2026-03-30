@@ -3204,4 +3204,38 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips tableStyles in stylesheet" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    dxf_id = writer.add_dxf(font: { bold: true })
+    writer.set_table_styles_option(:default_table_style, "TableStyleMedium2")
+    writer.set_table_styles_option(:default_pivot_style, "PivotStyleLight16")
+    writer.add_table_style(name: "MyStyle", elements: [
+                             { type: "wholeTable", dxf_id: dxf_id },
+                             { type: "headerRow", dxf_id: dxf_id, size: 2 }
+                           ], pivot: false)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ts = reader.table_styles
+    assert_equal("TableStyleMedium2", ts[:default_table_style])
+    assert_equal("PivotStyleLight16", ts[:default_pivot_style])
+    assert_equal(1, ts[:styles].size)
+
+    style = ts[:styles][0]
+    assert_equal("MyStyle", style[:name])
+    assert_equal(false, style[:pivot])
+    assert_equal(2, style[:elements].size)
+    assert_equal("wholeTable", style[:elements][0][:type])
+    assert_equal(dxf_id, style[:elements][0][:dxf_id])
+    assert_equal("headerRow", style[:elements][1][:type])
+    assert_equal(2, style[:elements][1][:size])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
