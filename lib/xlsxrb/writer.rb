@@ -63,6 +63,7 @@ module Xlsxrb
       @row_breaks = { "Sheet1" => [] }
       @col_breaks = { "Sheet1" => [] }
       @data_validations = { "Sheet1" => [] }
+      @data_validations_options = { "Sheet1" => {} }
       @conditional_formats = { "Sheet1" => [] }
       @tables = { "Sheet1" => [] }
       @use_shared_strings = true
@@ -106,6 +107,7 @@ module Xlsxrb
       @row_breaks[name] = []
       @col_breaks[name] = []
       @data_validations[name] = []
+      @data_validations_options[name] = {}
       @conditional_formats[name] = []
       @tables[name] = []
       @images[name] = []
@@ -670,6 +672,14 @@ module Xlsxrb
       @data_validations[sheet_name] || []
     end
 
+    # Sets a data validations container option (e.g. disable_prompts, x_window, y_window).
+    def set_data_validations_option(name, value, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @data_validations_options.key?(sheet_name)
+
+      @data_validations_options[sheet_name][name] = value
+    end
+
     # Adds a conditional formatting rule to the specified range.
     # Options: type (:cell_is, :expression, :color_scale, :data_bar, :icon_set),
     # operator, priority, formula/formulas, format_id, color_scale, data_bar, icon_set.
@@ -1085,7 +1095,8 @@ module Xlsxrb
           @tables[sheet_name] || [], @hyperlinks[sheet_name].size,
           has_drawing:, has_comments:,
           sheet_prot: @sheet_protection[sheet_name], vml_rid:,
-          phonetic_pr: @phonetic_properties[sheet_name]
+          phonetic_pr: @phonetic_properties[sheet_name],
+          dv_options: @data_validations_options[sheet_name]
         )
 
         # Generate drawing XML + media + chart entries.
@@ -1503,7 +1514,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {})
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -1812,7 +1823,11 @@ module Xlsxrb
 
       # Emit <dataValidations> if defined.
       unless sheet_dv.empty?
-        parts << %(<dataValidations count="#{sheet_dv.size}">)
+        dv_container_attrs = %( count="#{sheet_dv.size}")
+        dv_container_attrs << ' disablePrompts="1"' if dv_options[:disable_prompts]
+        dv_container_attrs << %( xWindow="#{dv_options[:x_window]}") if dv_options[:x_window]
+        dv_container_attrs << %( yWindow="#{dv_options[:y_window]}") if dv_options[:y_window]
+        parts << "<dataValidations#{dv_container_attrs}>"
         sheet_dv.each do |dv|
           dv_attrs = %(sqref="#{dv[:sqref]}")
           dv_attrs << %( type="#{dv[:type]}") if dv[:type]
