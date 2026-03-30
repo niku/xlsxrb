@@ -1587,4 +1587,32 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips diagonal border" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    brd_id = writer.add_border(
+      left: { style: "thin" }, diagonal: { style: "thin", color: "FFFF0000" },
+      diagonal_up: true, diagonal_down: true
+    )
+    style_id = writer.add_cell_style(border_id: brd_id)
+    writer.set_cell("A1", "diag")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    border = cs["A1"][:border]
+    assert_not_nil(border, "border should be present")
+    assert_equal(true, border[:diagonal_up])
+    assert_equal(true, border[:diagonal_down])
+    assert_equal("thin", border[:diagonal][:style])
+    assert_equal("FFFF0000", border[:diagonal][:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

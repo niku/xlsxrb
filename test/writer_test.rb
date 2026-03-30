@@ -620,6 +620,34 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_border with diagonal emits diagonal element and border attributes" do
+    writer = Xlsxrb::Writer.new
+    brd_id = writer.add_border(
+      left: { style: "thin" }, right: { style: "thin" },
+      top: { style: "thin" }, bottom: { style: "thin" },
+      diagonal: { style: "thin", color: "FFFF0000" },
+      diagonal_up: true, diagonal_down: true
+    )
+    assert_equal(1, brd_id)
+
+    style_id = writer.add_cell_style(border_id: brd_id)
+    writer.set_cell("A1", "diag")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-diag", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<border[^>]*diagonalUp="1"}, xml_content)
+    assert_match(%r{<border[^>]*diagonalDown="1"}, xml_content)
+    assert_match(%r{<diagonal style="thin">}, xml_content)
+    assert_match(%r{<color rgb="FFFF0000"/>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_fill with gradient type emits gradientFill" do
     writer = Xlsxrb::Writer.new
     fill_id = writer.add_fill(
