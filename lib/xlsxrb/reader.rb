@@ -226,6 +226,14 @@ module Xlsxrb
       parse_worksheet_data_validations(worksheet_xml)
     end
 
+    # Returns data validations container options (disablePrompts, xWindow, yWindow).
+    def data_validations_options(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_data_validations_options(worksheet_xml)
+    end
+
     # Returns conditional formatting rules for the given sheet.
     def conditional_formats(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -1058,6 +1066,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.validations
+    end
+
+    def parse_worksheet_data_validations_options(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = DataValidationsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.container_options
     end
 
     def parse_worksheet_conditional_formats(xml)
@@ -2854,10 +2870,11 @@ module Xlsxrb
     class DataValidationsListener
       include REXML::SAX2Listener
 
-      attr_reader :validations
+      attr_reader :validations, :container_options
 
       def initialize
         @validations = []
+        @container_options = {}
         @current_dv = nil
         @inside_formula1 = false
         @inside_formula2 = false
@@ -2867,6 +2884,13 @@ module Xlsxrb
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
         case name
+        when "dataValidations"
+          dp = attributes["disablePrompts"]
+          @container_options[:disable_prompts] = true if %w[1 true].include?(dp)
+          xw = attributes["xWindow"]
+          @container_options[:x_window] = xw.to_i if xw
+          yw = attributes["yWindow"]
+          @container_options[:y_window] = yw.to_i if yw
         when "dataValidation"
           @current_dv = { sqref: attributes["sqref"] }
           @current_dv[:type] = attributes["type"] if attributes["type"]

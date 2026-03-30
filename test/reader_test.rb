@@ -2997,4 +2997,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips dataValidations container options" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_data_validations_option(:disable_prompts, true)
+    writer.set_data_validations_option(:x_window, 100)
+    writer.set_data_validations_option(:y_window, 200)
+    writer.add_data_validation("A1:A10", type: "whole", formula1: "1", formula2: "100")
+    writer.set_cell("A1", 50)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dvo = reader.data_validations_options
+    assert_equal(true, dvo[:disable_prompts])
+    assert_equal(100, dvo[:x_window])
+    assert_equal(200, dvo[:y_window])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

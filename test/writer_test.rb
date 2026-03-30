@@ -2205,6 +2205,27 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "dataValidations container emits disablePrompts, xWindow, yWindow" do
+    writer = Xlsxrb::Writer.new
+    writer.set_data_validations_option(:disable_prompts, true)
+    writer.set_data_validations_option(:x_window, 100)
+    writer.set_data_validations_option(:y_window, 200)
+    writer.add_data_validation("A1:A10", type: "whole", formula1: "1", formula2: "100")
+    writer.set_cell("A1", 50)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dvo", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/disablePrompts="1"/, xml_content)
+    assert_match(/xWindow="100"/, xml_content)
+    assert_match(/yWindow="200"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
