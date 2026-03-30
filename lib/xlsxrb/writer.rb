@@ -1838,6 +1838,7 @@ module Xlsxrb
         po_attrs << 'headings="1"' if sheet_po[:headings]
         po_attrs << 'horizontalCentered="1"' if sheet_po[:horizontal_centered]
         po_attrs << 'verticalCentered="1"' if sheet_po[:vertical_centered]
+        po_attrs << 'gridLinesSet="0"' if sheet_po[:grid_lines_set] == false
         parts << "<printOptions #{po_attrs.join(" ")}/>" unless po_attrs.empty?
       end
 

@@ -3071,6 +3071,8 @@ module Xlsxrb
           @print_options[:headings] = true if attributes["headings"] == "1"
           @print_options[:horizontal_centered] = true if attributes["horizontalCentered"] == "1"
           @print_options[:vertical_centered] = true if attributes["verticalCentered"] == "1"
+          gls = attributes["gridLinesSet"]
+          @print_options[:grid_lines_set] = gls != "0" if gls
         when "pageMargins"
           m = {}
           %w[left right top bottom header footer].each do |k|
