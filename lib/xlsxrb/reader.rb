@@ -1900,6 +1900,10 @@ module Xlsxrb
             entry = { name: attributes["name"] }
             entry[:xf_id] = attributes["xfId"].to_i if attributes["xfId"]
             entry[:builtin_id] = attributes["builtinId"].to_i if attributes["builtinId"]
+            il = attributes["iLevel"]
+            entry[:i_level] = il.to_i if il
+            entry[:hidden] = true if %w[1 true].include?(attributes["hidden"])
+            entry[:custom_builtin] = true if %w[1 true].include?(attributes["customBuiltin"])
             @cell_styles << entry
           end
         when "xf"
