@@ -1382,6 +1382,43 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writes colorFilter and iconFilter in autoFilter" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Header1")
+    writer.set_cell("B1", "Header2")
+    writer.set_auto_filter("A1:B10")
+    writer.add_filter_column(0, { type: :color_filter, dxf_id: 0 })
+    writer.add_filter_column(1, { type: :icon_filter, icon_set: "3Arrows", icon_id: 1 })
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<colorFilter dxfId="0"/>}, xml)
+    assert_match(%r{<iconFilter iconSet="3Arrows" iconId="1"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "writes colorFilter with cellColor=false for font color filter" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Header")
+    writer.set_auto_filter("A1:A10")
+    writer.add_filter_column(0, { type: :color_filter, dxf_id: 1, cell_color: false })
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<colorFilter dxfId="1" cellColor="0"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
