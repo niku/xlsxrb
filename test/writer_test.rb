@@ -990,6 +990,20 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("absolute", shapes[0][:edit_as])
   end
 
+  test "add_shape with description stores descr attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.add_shape(preset: "rect", description: "A rectangle shape")
+    shapes = writer.shapes
+    assert_equal("A rectangle shape", shapes[0][:description])
+
+    xlsx_path = File.join(Dir.tmpdir, "shape_descr_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/descr="A rectangle shape"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "insert_image with clientData attrs stores locks_with_sheet and prints_with_sheet" do
     writer = Xlsxrb::Writer.new
     png = "\x89PNG".b

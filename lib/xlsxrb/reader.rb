@@ -4180,6 +4180,7 @@ module Xlsxrb
           if @inside_sp && @current_shape
             @current_shape[:name] = attributes["name"] if attributes["name"]
             @current_shape[:id] = attributes["id"]&.to_i
+            @current_shape[:description] = attributes["descr"] if attributes["descr"]
           end
         when "prstGeom"
           @current_shape[:preset] = attributes["prst"] if @inside_sp && @current_shape && attributes["prst"]
