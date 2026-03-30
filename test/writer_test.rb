@@ -268,6 +268,36 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(166_925, props[:default_theme_version])
   end
 
+  test "workbook properties extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_workbook_property(:code_name, "ThisWorkbook")
+    writer.set_workbook_property(:filter_privacy, true)
+    writer.set_workbook_property(:auto_compress_pictures, false)
+    writer.set_workbook_property(:backup_file, true)
+    writer.set_workbook_property(:show_objects, "placeholders")
+    writer.set_workbook_property(:update_links, "never")
+    writer.set_workbook_property(:refresh_all_connections, true)
+    writer.set_workbook_property(:check_compatibility, true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-wbpr", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/codeName="ThisWorkbook"/, xml)
+    assert_match(/filterPrivacy="1"/, xml)
+    assert_match(/autoCompressPictures="0"/, xml)
+    assert_match(/backupFile="1"/, xml)
+    assert_match(/showObjects="placeholders"/, xml)
+    assert_match(/updateLinks="never"/, xml)
+    assert_match(/refreshAllConnections="1"/, xml)
+    assert_match(/checkCompatibility="1"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "stores workbook view properties" do
     writer = Xlsxrb::Writer.new
     writer.set_workbook_view(:active_tab, 1)

@@ -2650,4 +2650,31 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips workbook properties extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_workbook_property(:code_name, "ThisWorkbook")
+    writer.set_workbook_property(:filter_privacy, true)
+    writer.set_workbook_property(:auto_compress_pictures, false)
+    writer.set_workbook_property(:backup_file, true)
+    writer.set_workbook_property(:show_objects, "placeholders")
+    writer.set_workbook_property(:update_links, "never")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    wp = reader.workbook_properties
+    assert_equal("ThisWorkbook", wp[:code_name])
+    assert_equal(true, wp[:filter_privacy])
+    assert_equal(false, wp[:auto_compress_pictures])
+    assert_equal(true, wp[:backup_file])
+    assert_equal("placeholders", wp[:show_objects])
+    assert_equal("never", wp[:update_links])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
