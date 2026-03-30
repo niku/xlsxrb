@@ -2497,6 +2497,36 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits workbookPr extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.set_workbook_property(:show_border_unselected_tables, false)
+    writer.set_workbook_property(:prompted_solutions, true)
+    writer.set_workbook_property(:show_ink_annotation, false)
+    writer.set_workbook_property(:save_external_link_values, false)
+    writer.set_workbook_property(:show_pivot_chart_filter, true)
+    writer.set_workbook_property(:allow_refresh_query, true)
+    writer.set_workbook_property(:publish_items, true)
+    writer.set_workbook_property(:date_compatibility, false)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-wbpr", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/showBorderUnselectedTables="0"/, xml_content)
+    assert_match(/promptedSolutions="1"/, xml_content)
+    assert_match(/showInkAnnotation="0"/, xml_content)
+    assert_match(/saveExternalLinkValues="0"/, xml_content)
+    assert_match(/showPivotChartFilter="1"/, xml_content)
+    assert_match(/allowRefreshQuery="1"/, xml_content)
+    assert_match(/publishItems="1"/, xml_content)
+    assert_match(/dateCompatibility="0"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

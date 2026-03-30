@@ -1504,6 +1504,7 @@ module Xlsxrb
       unless @workbook_properties.empty?
         attrs = []
         attrs << %(date1904="#{@workbook_properties[:date1904] ? 1 : 0}") unless @workbook_properties[:date1904].nil?
+        attrs << %(dateCompatibility="0") if @workbook_properties[:date_compatibility] == false
         attrs << %(defaultThemeVersion="#{@workbook_properties[:default_theme_version]}") if @workbook_properties[:default_theme_version]
         attrs << %(codeName="#{xml_escape(@workbook_properties[:code_name])}") if @workbook_properties[:code_name]
         attrs << %(filterPrivacy="1") if @workbook_properties[:filter_privacy]
@@ -1514,6 +1515,13 @@ module Xlsxrb
         attrs << %(refreshAllConnections="1") if @workbook_properties[:refresh_all_connections]
         attrs << %(checkCompatibility="1") if @workbook_properties[:check_compatibility]
         attrs << %(hidePivotFieldList="1") if @workbook_properties[:hide_pivot_field_list]
+        attrs << %(showBorderUnselectedTables="0") if @workbook_properties[:show_border_unselected_tables] == false
+        attrs << %(promptedSolutions="1") if @workbook_properties[:prompted_solutions]
+        attrs << %(showInkAnnotation="0") if @workbook_properties[:show_ink_annotation] == false
+        attrs << %(saveExternalLinkValues="0") if @workbook_properties[:save_external_link_values] == false
+        attrs << %(showPivotChartFilter="1") if @workbook_properties[:show_pivot_chart_filter]
+        attrs << %(allowRefreshQuery="1") if @workbook_properties[:allow_refresh_query]
+        attrs << %(publishItems="1") if @workbook_properties[:publish_items]
         parts << "<workbookPr #{attrs.join(" ")}/>" unless attrs.empty?
       end
 
