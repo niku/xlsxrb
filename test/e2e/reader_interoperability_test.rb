@@ -1379,6 +1379,26 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses print area and print titles from SDK-generated file" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_print_area_titles_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+
+    pa = reader.print_area
+    assert_equal("$A$1:$E$50", pa)
+
+    pt = reader.print_titles
+    assert_not_nil(pt)
+    assert(pt.include?("$A:$C"), "Expected print titles to contain '$A:$C' but got '#{pt}'")
+    assert(pt.include?("$1:$5"), "Expected print titles to contain '$1:$5' but got '#{pt}'")
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

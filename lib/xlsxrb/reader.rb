@@ -420,6 +420,25 @@ module Xlsxrb
       parse_workbook_metadata[:defined_names]
     end
 
+    # Returns the print area for the given sheet, or nil if not set.
+    def print_area(sheet: nil)
+      _sheet_name, idx = resolve_sheet_for_defined_name(sheet)
+      dn = defined_names.find { |d| d[:name] == "_xlnm.Print_Area" && d[:local_sheet_id] == idx }
+      return nil unless dn
+
+      # Strip the sheet prefix (e.g. "'Sheet1'!$A$1:$D$20" → "$A$1:$D$20")
+      dn[:value]&.sub(/\A'[^']*'!/, "")
+    end
+
+    # Returns the print titles for the given sheet, or nil if not set.
+    def print_titles(sheet: nil)
+      _sheet_name, idx = resolve_sheet_for_defined_name(sheet)
+      dn = defined_names.find { |d| d[:name] == "_xlnm.Print_Titles" && d[:local_sheet_id] == idx }
+      return nil unless dn
+
+      dn[:value]
+    end
+
     # Returns sheet states as { "Sheet1" => :visible, "Hidden" => :hidden }.
     def sheet_states
       sheets = discover_sheets
@@ -637,6 +656,20 @@ module Xlsxrb
     end
 
     private
+
+    def resolve_sheet_for_defined_name(sheet)
+      sheets = discover_sheets
+      if sheet
+        idx = if sheet.is_a?(Integer)
+                sheet
+              else
+                sheets.index { |s| s[:name] == sheet }
+              end
+        [sheets[idx][:name], idx]
+      else
+        [sheets.first[:name], 0]
+      end
+    end
 
     def parse_workbook_metadata
       workbook_xml = extract_zip_entry("xl/workbook.xml")
