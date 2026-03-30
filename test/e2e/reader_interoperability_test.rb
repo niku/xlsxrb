@@ -1074,6 +1074,40 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated rich text with extended font attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_rich_text_extended_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    val = reader.cells["A1"]
+    assert_instance_of(Xlsxrb::RichText, val)
+    runs = val.runs
+
+    assert_equal(5, runs.size)
+
+    # strike
+    assert_equal(true, runs[0][:font][:strike])
+
+    # double underline
+    assert_equal("double", runs[1][:font][:underline])
+
+    # superscript
+    assert_equal("superscript", runs[2][:font][:vert_align])
+
+    # theme color + family + scheme
+    assert_equal(1, runs[3][:font][:theme])
+    assert_in_delta(0.5, runs[3][:font][:tint], 0.001)
+    assert_equal(2, runs[3][:font][:family])
+    assert_equal("minor", runs[3][:font][:scheme])
+
+    # indexed color
+    assert_equal(10, runs[4][:font][:indexed])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

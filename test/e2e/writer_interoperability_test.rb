@@ -1006,6 +1006,26 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid rich text with extended font attributes" do
+    writer = Xlsxrb::Writer.new
+    rt = Xlsxrb::RichText.new(runs: [
+      { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+      { text: "Double", font: { underline: "double", name: "Arial", sz: 11 } },
+      { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
+      { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } }
+    ])
+    writer.set_cell("A1", rt)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_rich_text_extended_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

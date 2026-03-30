@@ -1772,4 +1772,53 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips rich text with extended font attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    rt = Xlsxrb::RichText.new(runs: [
+      { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+      { text: "DblUnder", font: { underline: "double", name: "Arial", sz: 11 } },
+      { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
+      { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } },
+      { text: "Indexed", font: { indexed: 10, name: "Calibri", sz: 11 } }
+    ])
+    writer.set_cell("A1", rt)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    val = reader.cells["A1"]
+    assert_instance_of(Xlsxrb::RichText, val)
+    runs = val.runs
+
+    assert_equal(5, runs.size)
+
+    # Run 0: strike
+    assert_equal("Strike", runs[0][:text])
+    assert_equal(true, runs[0][:font][:strike])
+
+    # Run 1: double underline
+    assert_equal("DblUnder", runs[1][:text])
+    assert_equal("double", runs[1][:font][:underline])
+
+    # Run 2: superscript
+    assert_equal("Super", runs[2][:text])
+    assert_equal("superscript", runs[2][:font][:vert_align])
+
+    # Run 3: theme color, family, scheme
+    assert_equal("Theme", runs[3][:text])
+    assert_equal(1, runs[3][:font][:theme])
+    assert_in_delta(0.5, runs[3][:font][:tint], 0.001)
+    assert_equal(2, runs[3][:font][:family])
+    assert_equal("minor", runs[3][:font][:scheme])
+
+    # Run 4: indexed color
+    assert_equal("Indexed", runs[4][:text])
+    assert_equal(10, runs[4][:font][:indexed])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

@@ -1107,6 +1107,33 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(:ends_with, cfs[5][:type])
   end
 
+  test "rich text emits extended font attributes in XML" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    rt = Xlsxrb::RichText.new(runs: [
+      { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+      { text: "Double", font: { underline: "double", name: "Arial", sz: 11 } },
+      { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
+      { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } }
+    ])
+    writer.set_cell("A1", rt)
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/sharedStrings.xml")
+    assert_match(/<strike\/>/, xml)
+    assert_match(/<u val="double"\/>/, xml)
+    assert_match(/<vertAlign val="superscript"\/>/, xml)
+    assert_match(/<color[^>]*theme="1"/, xml)
+    assert_match(/<color[^>]*tint="0.5"/, xml)
+    assert_match(/<family val="2"\/>/, xml)
+    assert_match(/<scheme val="minor"\/>/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
