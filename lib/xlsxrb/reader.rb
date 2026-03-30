@@ -1878,6 +1878,8 @@ module Xlsxrb
           alignment[:wrap_text] = true if attributes["wrapText"] == "1"
           alignment[:text_rotation] = attributes["textRotation"].to_i if attributes["textRotation"]
           alignment[:indent] = attributes["indent"].to_i if attributes["indent"]
+          ri = attributes["relativeIndent"]
+          alignment[:relative_indent] = ri.to_i if ri
           alignment[:shrink_to_fit] = true if attributes["shrinkToFit"] == "1"
           ro = attributes["readingOrder"]
           alignment[:reading_order] = ro.to_i if ro

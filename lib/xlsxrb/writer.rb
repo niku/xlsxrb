@@ -2806,6 +2806,7 @@ module Xlsxrb
       attrs << %(wrapText="1") if alignment[:wrap_text]
       attrs << %(textRotation="#{alignment[:text_rotation]}") if alignment[:text_rotation]
       attrs << %(indent="#{alignment[:indent]}") if alignment[:indent]
+      attrs << %(relativeIndent="#{alignment[:relative_indent]}") if alignment[:relative_indent]
       attrs << %(shrinkToFit="1") if alignment[:shrink_to_fit]
       attrs << %(readingOrder="#{alignment[:reading_order]}") if alignment[:reading_order]
       attrs << %(justifyLastLine="1") if alignment[:justify_last_line]
