@@ -1227,13 +1227,15 @@ class ReaderTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "img test")
-    writer.insert_image(png_bytes, ext: "png", from_col: 1, from_row: 2, to_col: 6, to_row: 12, name: "RoundTrip Pic")
+    writer.insert_image(png_bytes, ext: "png", from_col: 1, from_row: 2, to_col: 6, to_row: 12,
+              name: "RoundTrip Pic", description: "Round-trip image description")
     writer.write(xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal("RoundTrip Pic", imgs[0][:name])
+    assert_equal("Round-trip image description", imgs[0][:description])
     assert_equal(1, imgs[0][:from_col])
     assert_equal(2, imgs[0][:from_row])
     assert_equal(6, imgs[0][:to_col])
