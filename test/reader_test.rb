@@ -1522,6 +1522,34 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips workbook protection lockRevision and revision algorithm attrs" do
+    writer = Xlsxrb::Writer.new
+    writer.set_workbook_protection(
+      lock_structure: true,
+      lock_revision: true,
+      revisions_algorithm_name: "SHA-512",
+      revisions_hash_value: "abc123",
+      revisions_salt_value: "salt456",
+      revisions_spin_count: 100_000
+    )
+    writer.set_cell("A1", "test")
+
+    xlsx_path = Tempfile.new(["xlsxrb-test", ".xlsx"]).path
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    prot = reader.workbook_protection
+    assert_not_nil(prot)
+    assert_equal(true, prot[:lock_structure])
+    assert_equal(true, prot[:lock_revision])
+    assert_equal("SHA-512", prot[:revisions_algorithm_name])
+    assert_equal("abc123", prot[:revisions_hash_value])
+    assert_equal("salt456", prot[:revisions_salt_value])
+    assert_equal(100_000, prot[:revisions_spin_count])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips rich text inline through writer and reader" do
     writer = Xlsxrb::Writer.new
     rt = Xlsxrb::RichText.new(runs: [

@@ -1627,6 +1627,7 @@ module Xlsxrb
         wp_attrs = []
         wp_attrs << 'lockStructure="1"' if @workbook_protection[:lock_structure]
         wp_attrs << 'lockWindows="1"' if @workbook_protection[:lock_windows]
+        wp_attrs << 'lockRevision="1"' if @workbook_protection[:lock_revision]
         if @workbook_protection[:algorithm_name]
           wp_attrs << %(workbookAlgorithmName="#{xml_escape(@workbook_protection[:algorithm_name])}")
           wp_attrs << %(workbookHashValue="#{xml_escape(@workbook_protection[:hash_value])}") if @workbook_protection[:hash_value]
@@ -1634,6 +1635,14 @@ module Xlsxrb
           wp_attrs << %(workbookSpinCount="#{@workbook_protection[:spin_count]}") if @workbook_protection[:spin_count]
         elsif @workbook_protection[:password]
           wp_attrs << %(workbookPassword="#{xml_escape(@workbook_protection[:password])}")
+        end
+        if @workbook_protection[:revisions_algorithm_name]
+          wp_attrs << %(revisionsAlgorithmName="#{xml_escape(@workbook_protection[:revisions_algorithm_name])}")
+          wp_attrs << %(revisionsHashValue="#{xml_escape(@workbook_protection[:revisions_hash_value])}") if @workbook_protection[:revisions_hash_value]
+          wp_attrs << %(revisionsSaltValue="#{xml_escape(@workbook_protection[:revisions_salt_value])}") if @workbook_protection[:revisions_salt_value]
+          wp_attrs << %(revisionsSpinCount="#{@workbook_protection[:revisions_spin_count]}") if @workbook_protection[:revisions_spin_count]
+        elsif @workbook_protection[:revisions_password]
+          wp_attrs << %(revisionsPassword="#{xml_escape(@workbook_protection[:revisions_password])}")
         end
         parts << "<workbookProtection #{wp_attrs.join(" ")}/>" unless wp_attrs.empty?
       end
