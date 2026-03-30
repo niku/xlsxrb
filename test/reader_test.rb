@@ -3337,4 +3337,41 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips scenarios element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 100)
+    writer.set_scenarios(
+      current: 0, show: 0,
+      scenarios: [
+        {
+          name: "Best Case", user: "Admin", comment: "Optimistic",
+          input_cells: [{ r: "A1", val: "200" }, { r: "B1", val: "300" }]
+        }
+      ]
+    )
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    sc = reader.scenarios
+    assert_equal(0, sc[:current])
+    assert_equal(0, sc[:show])
+    assert_equal(1, sc[:scenarios].size)
+
+    scenario = sc[:scenarios][0]
+    assert_equal("Best Case", scenario[:name])
+    assert_equal("Admin", scenario[:user])
+    assert_equal("Optimistic", scenario[:comment])
+    assert_equal(2, scenario[:input_cells].size)
+    assert_equal("A1", scenario[:input_cells][0][:r])
+    assert_equal("200", scenario[:input_cells][0][:val])
+    assert_equal("B1", scenario[:input_cells][1][:r])
+    assert_equal("300", scenario[:input_cells][1][:val])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
