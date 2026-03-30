@@ -3925,6 +3925,7 @@ module Xlsxrb
           @inside_anchor = true
           @anchor_from = {}
           @anchor_to = {}
+          @anchor_edit_as = attributes["editAs"]
         when "pic"
           @inside_pic = true
           @current_image = {}
@@ -3965,6 +3966,7 @@ module Xlsxrb
           if @current_image && !@current_image.empty?
             @anchor_from.each { |k, v| @current_image[:"from_#{k}"] = v }
             @anchor_to.each { |k, v| @current_image[:"to_#{k}"] = v }
+            @current_image[:edit_as] = @anchor_edit_as if @anchor_edit_as
             @images << @current_image
           end
           @current_image = nil
@@ -4011,11 +4013,14 @@ module Xlsxrb
         @charts = []
         @inside_graphic_frame = false
         @current_chart = nil
+        @anchor_edit_as = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
         case name
+        when "twoCellAnchor", "oneCellAnchor"
+          @anchor_edit_as = attributes["editAs"]
         when "graphicFrame"
           @inside_graphic_frame = true
           @current_chart = {}
@@ -4029,11 +4034,17 @@ module Xlsxrb
 
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
-        return unless name == "graphicFrame"
-
-        @charts << @current_chart if @current_chart && @current_chart[:rid]
-        @current_chart = nil
-        @inside_graphic_frame = false
+        case name
+        when "graphicFrame"
+          if @current_chart && @current_chart[:rid]
+            @current_chart[:edit_as] = @anchor_edit_as if @anchor_edit_as
+            @charts << @current_chart
+          end
+          @current_chart = nil
+          @inside_graphic_frame = false
+        when "twoCellAnchor", "oneCellAnchor"
+          @anchor_edit_as = nil
+        end
       end
 
       private
@@ -4075,6 +4086,7 @@ module Xlsxrb
           @inside_anchor = true
           @anchor_from = {}
           @anchor_to = {}
+          @anchor_edit_as = attributes["editAs"]
         when "sp"
           @inside_sp = true
           @current_shape = {}
@@ -4111,6 +4123,7 @@ module Xlsxrb
           if @current_shape && !@current_shape.empty?
             @anchor_from.each { |k, v| @current_shape[:"from_#{k}"] = v }
             @anchor_to.each { |k, v| @current_shape[:"to_#{k}"] = v }
+            @current_shape[:edit_as] = @anchor_edit_as if @anchor_edit_as
             @shapes << @current_shape
           end
           @current_shape = nil
