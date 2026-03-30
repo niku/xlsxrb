@@ -768,7 +768,7 @@ module Xlsxrb
 
     # Adds a table definition to a sheet.
     # columns: array of column name strings.
-    def add_table(ref, columns:, name: nil, display_name: nil, sheet: nil, totals_row_count: 0, style: nil)
+    def add_table(ref, columns:, name: nil, display_name: nil, sheet: nil, totals_row_count: 0, style: nil, **opts)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @tables.key?(sheet_name)
 
@@ -780,6 +780,10 @@ module Xlsxrb
         totals_row_count: totals_row_count
       }
       tbl[:style] = style if style
+      %i[header_row_count published comment insert_row insert_row_shift
+         header_row_dxf_id data_dxf_id totals_row_dxf_id].each do |key|
+        tbl[key] = opts[key] if opts.key?(key)
+      end
       @tables[sheet_name] << tbl
     end
 
@@ -2294,8 +2298,17 @@ module Xlsxrb
     def generate_table_xml(tbl)
       trc = tbl[:totals_row_count].to_i
       table_attrs = %(xmlns="#{SSML_NS}" id="#{tbl[:id]}" name="#{xml_escape(tbl[:name])}" displayName="#{xml_escape(tbl[:display_name])}" ref="#{tbl[:ref]}")
+      table_attrs << %( comment="#{xml_escape(tbl[:comment])}") if tbl[:comment]
+      hrc = tbl[:header_row_count]
+      table_attrs << %( headerRowCount="#{hrc}") if hrc && hrc != 1
+      table_attrs << ' insertRow="1"' if tbl[:insert_row]
+      table_attrs << ' insertRowShift="1"' if tbl[:insert_row_shift]
       table_attrs << %( totalsRowCount="#{trc}") if trc.positive?
       table_attrs << ' totalsRowShown="0"' if trc.zero?
+      table_attrs << ' published="1"' if tbl[:published]
+      table_attrs << %( headerRowDxfId="#{tbl[:header_row_dxf_id]}") if tbl[:header_row_dxf_id]
+      table_attrs << %( dataDxfId="#{tbl[:data_dxf_id]}") if tbl[:data_dxf_id]
+      table_attrs << %( totalsRowDxfId="#{tbl[:totals_row_dxf_id]}") if tbl[:totals_row_dxf_id]
       parts = [
         XML_HEADER,
         "<table #{table_attrs}>",

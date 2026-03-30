@@ -2583,7 +2583,30 @@ class WriterTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
-    assert_match(/<sheetCalcPr fullCalcOnLoad="1"\/>/, xml_content)
+    assert_match(%r{<sheetCalcPr fullCalcOnLoad="1"/>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits table extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Age")
+    writer.add_table("A1:B5", columns: %w[Name Age],
+                              header_row_count: 0, published: true, comment: "Test table",
+                              insert_row: true, insert_row_shift: true,
+                              header_row_dxf_id: 1, data_dxf_id: 2, totals_row_dxf_id: 3)
+    xlsx_path = File.join(Dir.tmpdir, "table_ext_attrs_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    tbl_xml = read_xml_from_xlsx(xlsx_path, "xl/tables/table1.xml")
+    assert_match(/headerRowCount="0"/, tbl_xml)
+    assert_match(/published="1"/, tbl_xml)
+    assert_match(/comment="Test table"/, tbl_xml)
+    assert_match(/insertRow="1"/, tbl_xml)
+    assert_match(/insertRowShift="1"/, tbl_xml)
+    assert_match(/headerRowDxfId="1"/, tbl_xml)
+    assert_match(/dataDxfId="2"/, tbl_xml)
+    assert_match(/totalsRowDxfId="3"/, tbl_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
