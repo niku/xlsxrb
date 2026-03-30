@@ -2977,4 +2977,24 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sheetFormatPr thickTop and thickBottom" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_sheet_format(:default_row_height, 15)
+    writer.set_sheet_format(:thick_top, true)
+    writer.set_sheet_format(:thick_bottom, true)
+    writer.set_cell("A1", "test")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    sfp = reader.sheet_format
+    assert_equal(true, sfp[:thick_top])
+    assert_equal(true, sfp[:thick_bottom])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

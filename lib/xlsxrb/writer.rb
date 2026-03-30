@@ -1645,6 +1645,8 @@ module Xlsxrb
         fmt_attrs << %(outlineLevelCol="#{sheet_fmt[:outline_level_col]}") if sheet_fmt[:outline_level_col]
         fmt_attrs << 'customHeight="1"' if sheet_fmt[:custom_height]
         fmt_attrs << 'zeroHeight="1"' if sheet_fmt[:zero_height]
+        fmt_attrs << 'thickTop="1"' if sheet_fmt[:thick_top]
+        fmt_attrs << 'thickBottom="1"' if sheet_fmt[:thick_bottom]
         parts << "<sheetFormatPr #{fmt_attrs.join(" ")}/>"
       end
 
