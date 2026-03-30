@@ -1866,6 +1866,11 @@ module Xlsxrb
         ps_attrs << 'useFirstPageNumber="1"' if sheet_ps[:use_first_page_number]
         ps_attrs << %(horizontalDpi="#{sheet_ps[:horizontal_dpi]}") if sheet_ps[:horizontal_dpi]
         ps_attrs << %(verticalDpi="#{sheet_ps[:vertical_dpi]}") if sheet_ps[:vertical_dpi]
+        ps_attrs << %(copies="#{sheet_ps[:copies]}") if sheet_ps[:copies]
+        ps_attrs << %(paperHeight="#{sheet_ps[:paper_height]}") if sheet_ps[:paper_height]
+        ps_attrs << %(paperWidth="#{sheet_ps[:paper_width]}") if sheet_ps[:paper_width]
+        ps_attrs << %(errors="#{sheet_ps[:errors]}") if sheet_ps[:errors]
+        ps_attrs << 'usePrinterDefaults="0"' if sheet_ps[:use_printer_defaults] == false
         parts << "<pageSetup #{ps_attrs.join(" ")}/>" unless ps_attrs.empty?
       end
 

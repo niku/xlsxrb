@@ -3105,6 +3105,16 @@ module Xlsxrb
           @page_setup[:horizontal_dpi] = hdpi.to_i if hdpi
           vdpi = attributes["verticalDpi"]
           @page_setup[:vertical_dpi] = vdpi.to_i if vdpi
+          cp = attributes["copies"]
+          @page_setup[:copies] = cp.to_i if cp
+          ph = attributes["paperHeight"]
+          @page_setup[:paper_height] = ph if ph
+          pw = attributes["paperWidth"]
+          @page_setup[:paper_width] = pw if pw
+          err = attributes["errors"]
+          @page_setup[:errors] = err if err
+          upd = attributes["usePrinterDefaults"]
+          @page_setup[:use_printer_defaults] = %w[1 true].include?(upd) unless upd.nil?
         when "headerFooter"
           @inside_header_footer = true
           df = attributes["differentFirst"]
