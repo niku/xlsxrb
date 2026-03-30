@@ -1292,22 +1292,20 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
+    return if OpenXmlSdkScenarioRunner.copy_reader_fixture(scenario_name, xlsx_path)
+
     scenario_path = File.join(SCENARIO_DIR, "#{scenario_name}.cs")
     assert(File.exist?(scenario_path), "Scenario file not found: #{scenario_path}")
 
-    command = sdk_runner_command(scenario_path, xlsx_path)
-    stdout, stderr, status = Open3.capture3(*command)
-
-    failure_reason = extract_failure_reason(stderr)
+    result = OpenXmlSdkScenarioRunner.run_single_scenario(scenario_path, xlsx_path)
+    failure_reason = extract_failure_reason(result[:stderr])
 
     assert(
-      status.success?,
+      result[:success],
       "Open XML SDK scenario failed: #{failure_reason}\n" \
       "Scenario: #{scenario_name}\n" \
-      "Command: #{command.join(" ")}\n" \
       "XLSX: #{xlsx_path}\n" \
-      "STDOUT:\n#{stdout}\n" \
-      "STDERR:\n#{stderr}"
+      "STDERR:\n#{result[:stderr]}"
     )
   end
 
@@ -1322,12 +1320,5 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     return scenario_line if scenario_line
 
     lines.first
-  end
-
-  def sdk_runner_command(scenario_path, xlsx_path)
-    [
-      "dotnet", File.expand_path("../../vendor/sdk_runner/bin/Release/net8.0/sdk_runner.dll", __dir__),
-      scenario_path, xlsx_path
-    ]
   end
 end

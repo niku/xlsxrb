@@ -25,48 +25,58 @@ if (!File.Exists(xlsxPath))
 }
 
 var code = await File.ReadAllTextAsync(scenarioPath);
-var globals = new ScenarioContext(xlsxPath);
-
-var options = ScriptOptions.Default
-    .AddReferences(
-        typeof(object).Assembly,
-        typeof(Enumerable).Assembly,
-        typeof(Console).Assembly,
-        typeof(SpreadsheetDocument).Assembly,
-        typeof(OpenXmlValidator).Assembly
-    )
-    .AddImports(
-        "System",
-        "System.IO",
-        "System.Linq",
-        "System.Collections.Generic",
-        "DocumentFormat.OpenXml",
-        "DocumentFormat.OpenXml.Packaging",
-        "DocumentFormat.OpenXml.Spreadsheet",
-        "DocumentFormat.OpenXml.Validation"
-    );
-
-try
+var result = await RunScenario(code, xlsxPath);
+if (result.Success)
 {
-    await CSharpScript.RunAsync(code, options, globals, typeof(ScenarioContext));
     Console.WriteLine("SCENARIO_PASS");
     return 0;
 }
-catch (CompilationErrorException ex)
+
+Console.Error.WriteLine(result.ErrorOutput);
+return 1;
+
+
+async Task<ScenarioExecResult> RunScenario(string code, string xlsxPath)
 {
-    Console.Error.WriteLine("SCENARIO_COMPILE_ERROR");
-    foreach (var diagnostic in ex.Diagnostics)
+    var globals = new ScenarioContext(xlsxPath);
+
+    var options = ScriptOptions.Default
+        .AddReferences(
+            typeof(object).Assembly,
+            typeof(Enumerable).Assembly,
+            typeof(Console).Assembly,
+            typeof(SpreadsheetDocument).Assembly,
+            typeof(OpenXmlValidator).Assembly
+        )
+        .AddImports(
+            "System",
+            "System.IO",
+            "System.Linq",
+            "System.Collections.Generic",
+            "DocumentFormat.OpenXml",
+            "DocumentFormat.OpenXml.Packaging",
+            "DocumentFormat.OpenXml.Spreadsheet",
+            "DocumentFormat.OpenXml.Validation"
+        );
+
+    try
     {
-        Console.Error.WriteLine(diagnostic.ToString());
+        await CSharpScript.RunAsync(code, options, globals, typeof(ScenarioContext));
+        return new ScenarioExecResult { Success = true };
     }
-    return 1;
+    catch (CompilationErrorException ex)
+    {
+        var errorMsg = "SCENARIO_COMPILE_ERROR\n" + string.Join("\n", ex.Diagnostics.Select(d => d.ToString()));
+        return new ScenarioExecResult { Success = false, ErrorOutput = errorMsg };
+    }
+    catch (Exception ex)
+    {
+        var errorMsg = "SCENARIO_FAIL\n" + ex.ToString();
+        return new ScenarioExecResult { Success = false, ErrorOutput = errorMsg };
+    }
 }
-catch (Exception ex)
-{
-    Console.Error.WriteLine("SCENARIO_FAIL");
-    Console.Error.WriteLine(ex.ToString());
-    return 1;
-}
+
+record ScenarioExecResult(bool Success = false, string ErrorOutput = "");
 
 public sealed class ScenarioContext
 {
