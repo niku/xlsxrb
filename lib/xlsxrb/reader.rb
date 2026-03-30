@@ -3663,6 +3663,18 @@ module Xlsxrb
           }
           trc = attributes["totalsRowCount"]
           @table[:totals_row_count] = trc.to_i if trc
+          hrc = attributes["headerRowCount"]
+          @table[:header_row_count] = hrc.to_i if hrc
+          @table[:published] = true if attributes["published"] == "1"
+          @table[:comment] = attributes["comment"] if attributes["comment"]
+          @table[:insert_row] = true if attributes["insertRow"] == "1"
+          @table[:insert_row_shift] = true if attributes["insertRowShift"] == "1"
+          hrd = attributes["headerRowDxfId"]
+          @table[:header_row_dxf_id] = hrd.to_i if hrd
+          dd = attributes["dataDxfId"]
+          @table[:data_dxf_id] = dd.to_i if dd
+          trd = attributes["totalsRowDxfId"]
+          @table[:totals_row_dxf_id] = trd.to_i if trd
         when "tableColumn"
           col = { name: attributes["name"] }
           trf = attributes["totalsRowFunction"]

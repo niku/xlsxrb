@@ -3408,4 +3408,34 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips table extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Age")
+    writer.add_table("A1:B5", columns: %w[Name Age],
+                              header_row_count: 0, published: true, comment: "My table",
+                              insert_row: true, insert_row_shift: true,
+                              header_row_dxf_id: 1, data_dxf_id: 2, totals_row_dxf_id: 3)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    tbls = reader.tables
+    assert_equal(1, tbls.size)
+    tbl = tbls[0]
+    assert_equal(0, tbl[:header_row_count])
+    assert_equal(true, tbl[:published])
+    assert_equal("My table", tbl[:comment])
+    assert_equal(true, tbl[:insert_row])
+    assert_equal(true, tbl[:insert_row_shift])
+    assert_equal(1, tbl[:header_row_dxf_id])
+    assert_equal(2, tbl[:data_dxf_id])
+    assert_equal(3, tbl[:totals_row_dxf_id])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
