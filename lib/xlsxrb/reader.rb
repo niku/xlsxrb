@@ -2728,6 +2728,15 @@ module Xlsxrb
         case name
         when "sheetPr"
           @inside_sheet_pr = true
+          sh = attributes["syncHorizontal"]
+          @properties[:sync_horizontal] = %w[1 true].include?(sh) unless sh.nil?
+          sv = attributes["syncVertical"]
+          @properties[:sync_vertical] = %w[1 true].include?(sv) unless sv.nil?
+          @properties[:sync_ref] = attributes["syncRef"] if attributes["syncRef"]
+          te = attributes["transitionEvaluation"]
+          @properties[:transition_evaluation] = %w[1 true].include?(te) unless te.nil?
+          tent = attributes["transitionEntry"]
+          @properties[:transition_entry] = %w[1 true].include?(tent) unless tent.nil?
           @properties[:code_name] = attributes["codeName"] if attributes["codeName"]
           fm = attributes["filterMode"]
           @properties[:filter_mode] = %w[1 true].include?(fm) unless fm.nil?

@@ -3283,4 +3283,29 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sheetPr sync and transition attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_property(:sync_horizontal, true)
+    writer.set_sheet_property(:sync_vertical, true)
+    writer.set_sheet_property(:sync_ref, "A1")
+    writer.set_sheet_property(:transition_evaluation, true)
+    writer.set_sheet_property(:transition_entry, true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    props = reader.sheet_properties
+    assert_equal(true, props[:sync_horizontal])
+    assert_equal(true, props[:sync_vertical])
+    assert_equal("A1", props[:sync_ref])
+    assert_equal(true, props[:transition_evaluation])
+    assert_equal(true, props[:transition_entry])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
