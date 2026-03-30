@@ -172,6 +172,22 @@ module Xlsxrb
       styles[:dxfs] || []
     end
 
+    # Returns indexed colors palette (array of ARGB hex strings).
+    def indexed_colors
+      styles = load_styles
+      return [] if styles.empty?
+
+      styles[:indexed_colors] || []
+    end
+
+    # Returns MRU (most recently used) colors (array of color hashes).
+    def mru_colors
+      styles = load_styles
+      return [] if styles.empty?
+
+      styles[:mru_colors] || []
+    end
+
     # Returns array of cellStyleXfs entries (base style format definitions).
     def cell_style_xfs
       styles = load_styles
@@ -895,7 +911,8 @@ module Xlsxrb
         num_fmts: listener.num_fmts, cell_xfs: listener.cell_xfs,
         cell_style_xfs: listener.cell_style_xfs, cell_styles: listener.cell_styles,
         fonts: listener.fonts, fills: listener.fills,
-        borders: listener.borders, dxfs: listener.dxfs
+        borders: listener.borders, dxfs: listener.dxfs,
+        indexed_colors: listener.indexed_colors, mru_colors: listener.mru_colors
       }
     end
 
@@ -1930,7 +1947,8 @@ module Xlsxrb
     class StylesListener
       include REXML::SAX2Listener
 
-      attr_reader :num_fmts, :cell_xfs, :cell_style_xfs, :cell_styles, :fonts, :fills, :borders, :dxfs
+      attr_reader :num_fmts, :cell_xfs, :cell_style_xfs, :cell_styles, :fonts, :fills, :borders, :dxfs,
+                  :indexed_colors, :mru_colors
 
       def initialize
         @num_fmts = {} # { numFmtId => formatCode }
@@ -1941,6 +1959,8 @@ module Xlsxrb
         @fills = []
         @borders = []
         @dxfs = []
+        @indexed_colors = []
+        @mru_colors = []
         @inside_cell_xfs = false
         @inside_cell_style_xfs = false
         @inside_cell_styles = false
@@ -1948,6 +1968,8 @@ module Xlsxrb
         @inside_fills = false
         @inside_borders = false
         @inside_dxfs = false
+        @inside_indexed_colors = false
+        @inside_mru_colors = false
         @current_font = nil
         @current_fill = nil
         @current_border = nil
@@ -2115,6 +2137,12 @@ module Xlsxrb
           @inside_dxfs = true
         when "dxf"
           @current_dxf = {}
+        when "indexedColors"
+          @inside_indexed_colors = true
+        when "mruColors"
+          @inside_mru_colors = true
+        when "rgbColor"
+          @indexed_colors << attributes["rgb"] if @inside_indexed_colors && attributes["rgb"]
         end
 
         parse_font_name(name, attributes)
@@ -2168,13 +2196,25 @@ module Xlsxrb
         when "dxf"
           @dxfs << @current_dxf if @current_dxf
           @current_dxf = nil
+        when "indexedColors"
+          @inside_indexed_colors = false
+        when "mruColors"
+          @inside_mru_colors = false
         end
       end
 
       private
 
       def parse_color(attributes)
-        if @current_gradient_stop
+        if @inside_mru_colors
+          c = {}
+          c[:auto] = true if %w[1 true].include?(attributes["auto"])
+          c[:rgb] = attributes["rgb"] if attributes["rgb"]
+          c[:theme] = attributes["theme"].to_i if attributes["theme"]
+          c[:tint] = attributes["tint"].to_f if attributes["tint"]
+          c[:indexed] = attributes["indexed"].to_i if attributes["indexed"]
+          @mru_colors << c unless c.empty?
+        elsif @current_gradient_stop
           @current_gradient_stop[:auto] = true if %w[1 true].include?(attributes["auto"])
           @current_gradient_stop[:color] = attributes["rgb"] if attributes["rgb"]
           @current_gradient_stop[:theme] = attributes["theme"].to_i if attributes["theme"]
