@@ -3087,6 +3087,7 @@ module Xlsxrb
         is_attrs = +""
         is_attrs << %( iconSet="#{is[:icon_set]}") if is[:icon_set]
         is_attrs << %( reverse="#{is[:reverse] ? 1 : 0}") unless is[:reverse].nil?
+        is_attrs << %( percent="#{is[:percent] ? 1 : 0}") unless is[:percent].nil?
         is_attrs << %( showValue="#{is[:show_value] ? 1 : 0}") unless is[:show_value].nil?
         parts << "<iconSet#{is_attrs}>"
         is[:cfvo]&.each do |cfvo|

@@ -3522,6 +3522,8 @@ module Xlsxrb
             is[:icon_set] = attributes["iconSet"] if attributes["iconSet"]
             rv = attributes["reverse"]
             is[:reverse] = %w[1 true].include?(rv) unless rv.nil?
+            pct = attributes["percent"]
+            is[:percent] = %w[1 true].include?(pct) unless pct.nil?
             sv = attributes["showValue"]
             is[:show_value] = %w[1 true].include?(sv) unless sv.nil?
             @current_rule[:icon_set] = is
