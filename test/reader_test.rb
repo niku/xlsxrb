@@ -4540,4 +4540,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips cell_xfs from stylesheet" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    font_id = writer.add_font(sz: 12, name: "Arial", bold: true)
+    style_id = writer.add_cell_style(font_id: font_id, num_fmt_id: 0)
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    xfs = reader.cell_xfs
+    assert_operator(xfs.size, :>=, 2)
+    custom = xfs.find { |xf| xf[:font_id] == font_id }
+    assert_not_nil(custom)
+    assert_equal(0, custom[:num_fmt_id])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
