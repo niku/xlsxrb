@@ -2050,7 +2050,10 @@ module Xlsxrb
         else
           parts << %(<autoFilter ref="#{sheet_auto_filter}">)
           sheet_filter_cols.sort.each do |col_id, filter|
-            parts << %(<filterColumn colId="#{col_id}">)
+            fc_attrs = %( colId="#{col_id}")
+            fc_attrs << ' hiddenButton="1"' if filter[:hidden_button]
+            fc_attrs << ' showButton="0"' if filter[:show_button] == false
+            parts << "<filterColumn#{fc_attrs}>"
             parts << emit_filter_xml(filter)
             parts << "</filterColumn>"
           end
@@ -2941,10 +2944,23 @@ module Xlsxrb
     def emit_filter_xml(filter)
       case filter[:type]
       when :filters
-        attrs = filter[:blank] ? ' blank="1"' : ""
-        if filter[:values]&.any?
+        attrs = filter[:blank] ? +' blank="1"' : +""
+        attrs << %( calendarType="#{filter[:calendar_type]}") if filter[:calendar_type]
+        has_values = filter[:values]&.any?
+        has_date_groups = filter[:date_group_items]&.any?
+        if has_values || has_date_groups
           parts = ["<filters#{attrs}>"]
-          filter[:values].each { |v| parts << %(<filter val="#{xml_escape(v)}"/>) }
+          filter[:values]&.each { |v| parts << %(<filter val="#{xml_escape(v)}"/>) }
+          filter[:date_group_items]&.each do |dg|
+            dg_attrs = %(dateTimeGrouping="#{dg[:date_time_grouping]}")
+            dg_attrs << %( year="#{dg[:year]}") if dg[:year]
+            dg_attrs << %( month="#{dg[:month]}") if dg[:month]
+            dg_attrs << %( day="#{dg[:day]}") if dg[:day]
+            dg_attrs << %( hour="#{dg[:hour]}") if dg[:hour]
+            dg_attrs << %( minute="#{dg[:minute]}") if dg[:minute]
+            dg_attrs << %( second="#{dg[:second]}") if dg[:second]
+            parts << "<dateGroupItem #{dg_attrs}/>"
+          end
           parts << "</filters>"
           parts.join
         else
@@ -2963,11 +2979,17 @@ module Xlsxrb
           %(<customFilters><customFilter operator="#{filter[:operator]}" val="#{xml_escape(filter[:val])}"/></customFilters>)
         end
       when :dynamic
-        %(<dynamicFilter type="#{filter[:dynamic_type]}"/>)
+        dyn_attrs = %( type="#{filter[:dynamic_type]}")
+        dyn_attrs << %( val="#{filter[:val]}") if filter[:val]
+        dyn_attrs << %( valIso="#{filter[:val_iso]}") if filter[:val_iso]
+        dyn_attrs << %( maxVal="#{filter[:max_val]}") if filter[:max_val]
+        dyn_attrs << %( maxValIso="#{filter[:max_val_iso]}") if filter[:max_val_iso]
+        "<dynamicFilter#{dyn_attrs}/>"
       when :top10
         top_attr = filter[:top] ? ' top="1"' : ""
         pct_attr = filter[:percent] ? ' percent="1"' : ""
-        %(<top10#{top_attr}#{pct_attr} val="#{filter[:val]}"/>)
+        fv_attr = filter[:filter_val] ? %( filterVal="#{filter[:filter_val]}") : ""
+        %(<top10#{top_attr}#{pct_attr} val="#{filter[:val]}"#{fv_attr}/>)
       when :color_filter
         cf_attrs = %(dxfId="#{filter[:dxf_id]}")
         cf_attrs << ' cellColor="0"' if filter[:cell_color] == false

@@ -3521,4 +3521,33 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips autoFilter extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_auto_filter("A1:B10")
+    writer.add_filter_column(0, { type: :filters, values: %w[X],
+                                  date_group_items: [{ date_time_grouping: "month", year: 2023, month: 6 }],
+                                  hidden_button: true })
+    writer.add_filter_column(1, { type: :dynamic, dynamic_type: "aboveAverage",
+                                  val: 50.0, max_val: 100.0 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    fcs = reader.filter_columns
+    assert_equal(true, fcs[0][:hidden_button])
+    assert_equal(1, fcs[0][:date_group_items].size)
+    dg = fcs[0][:date_group_items][0]
+    assert_equal("month", dg[:date_time_grouping])
+    assert_equal(2023, dg[:year])
+    assert_equal(6, dg[:month])
+    assert_equal(50.0, fcs[1][:val])
+    assert_equal(100.0, fcs[1][:max_val])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

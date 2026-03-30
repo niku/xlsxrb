@@ -1707,6 +1707,26 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "writer generates valid autoFilter extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Date")
+    writer.set_auto_filter("A1:B10")
+    writer.add_filter_column(0, { type: :filters, values: %w[Alice],
+                                  calendar_type: "gregorian",
+                                  date_group_items: [{ date_time_grouping: "year", year: 2024 }],
+                                  hidden_button: true, show_button: false })
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_auto_filter_extended_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
