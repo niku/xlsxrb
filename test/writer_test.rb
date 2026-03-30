@@ -2611,6 +2611,20 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits ignoredErrors element" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "123")
+    writer.add_ignored_error(sqref: "A1:B2", number_stored_as_text: true, eval_error: true)
+    xlsx_path = File.join(Dir.tmpdir, "ignored_errors_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/<ignoredErrors>/, xml)
+    assert_match(%r{<ignoredError sqref="A1:B2" evalError="1" numberStoredAsText="1"/>}, xml)
+    assert_match(%r{</ignoredErrors>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

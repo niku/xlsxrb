@@ -72,6 +72,7 @@ module Xlsxrb
       @conditional_formats = { "Sheet1" => [] }
       @tables = { "Sheet1" => [] }
       @cell_watches = { "Sheet1" => [] }
+      @ignored_errors = { "Sheet1" => [] }
       @data_consolidate = { "Sheet1" => nil }
       @scenarios = { "Sheet1" => nil }
       @use_shared_strings = true
@@ -120,6 +121,7 @@ module Xlsxrb
       @conditional_formats[name] = []
       @tables[name] = []
       @cell_watches[name] = []
+      @ignored_errors[name] = []
       @data_consolidate[name] = nil
       @scenarios[name] = nil
       @images[name] = []
@@ -961,6 +963,23 @@ module Xlsxrb
       (@cell_watches[sheet_name] || []).dup
     end
 
+    # Adds an ignored error entry for the given sheet.
+    # Options: sqref:, eval_error:, two_digit_text_year:, number_stored_as_text:, formula:,
+    #   formula_range:, unlocked_formula:, empty_cell_reference:, list_data_validation:, calculated_column:
+    def add_ignored_error(sheet: nil, **opts)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+      raise ArgumentError, "sqref is required" unless opts[:sqref]
+
+      @ignored_errors[sheet_name] << opts
+    end
+
+    # Returns ignored errors for the given sheet.
+    def ignored_errors(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      (@ignored_errors[sheet_name] || []).dup
+    end
+
     # Sets data consolidation options for the given sheet.
     # Options: function:, start_labels:, top_labels:, link:, data_refs: [{ref:, name:, sheet:}]
     def set_data_consolidate(sheet: nil, **opts)
@@ -1258,6 +1277,7 @@ module Xlsxrb
           dv_options: @data_validations_options[sheet_name],
           prot_ranges: @protected_ranges[sheet_name],
           cell_watches: @cell_watches[sheet_name],
+          ignored_errors: @ignored_errors[sheet_name],
           data_consol: @data_consolidate[sheet_name],
           sheet_scenarios: @scenarios[sheet_name]
         )
@@ -1716,7 +1736,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [], data_consol: nil, sheet_scenarios: nil)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [], ignored_errors: [], data_consol: nil, sheet_scenarios: nil)
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -2228,6 +2248,25 @@ module Xlsxrb
         parts << "<cellWatches>"
         cell_watches.each { |r| parts << %(<cellWatch r="#{r}"/>) }
         parts << "</cellWatches>"
+      end
+
+      # Emit <ignoredErrors> if defined.
+      unless ignored_errors.empty?
+        parts << "<ignoredErrors>"
+        ignored_errors.each do |ie|
+          ie_attrs = %( sqref="#{ie[:sqref]}")
+          ie_attrs << ' evalError="1"' if ie[:eval_error]
+          ie_attrs << ' twoDigitTextYear="1"' if ie[:two_digit_text_year]
+          ie_attrs << ' numberStoredAsText="1"' if ie[:number_stored_as_text]
+          ie_attrs << ' formula="1"' if ie[:formula]
+          ie_attrs << ' formulaRange="1"' if ie[:formula_range]
+          ie_attrs << ' unlockedFormula="1"' if ie[:unlocked_formula]
+          ie_attrs << ' emptyCellReference="1"' if ie[:empty_cell_reference]
+          ie_attrs << ' listDataValidation="1"' if ie[:list_data_validation]
+          ie_attrs << ' calculatedColumn="1"' if ie[:calculated_column]
+          parts << "<ignoredError#{ie_attrs}/>"
+        end
+        parts << "</ignoredErrors>"
       end
 
       # Emit <tableParts> if tables are defined.

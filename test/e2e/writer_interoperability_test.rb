@@ -1692,6 +1692,21 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "writer generates valid ignoredErrors element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "123")
+    writer.add_ignored_error(sqref: "A1:B2", number_stored_as_text: true, eval_error: true)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_ignored_errors_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

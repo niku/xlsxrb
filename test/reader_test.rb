@@ -3438,4 +3438,25 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips ignoredErrors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "123")
+    writer.add_ignored_error(sqref: "A1", number_stored_as_text: true, formula_range: true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    errors = reader.ignored_errors
+    assert_equal(1, errors.size)
+    assert_equal("A1", errors[0][:sqref])
+    assert_equal(true, errors[0][:number_stored_as_text])
+    assert_equal(true, errors[0][:formula_range])
+    assert_nil(errors[0][:eval_error])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

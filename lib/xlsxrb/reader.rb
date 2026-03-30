@@ -307,6 +307,14 @@ module Xlsxrb
       parse_worksheet_cell_watches(worksheet_xml)
     end
 
+    # Returns ignored errors for the given sheet.
+    def ignored_errors(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return [] if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_ignored_errors(worksheet_xml)
+    end
+
     # Returns data consolidation settings for the given sheet.
     def data_consolidate(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -1192,6 +1200,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.watches
+    end
+
+    def parse_worksheet_ignored_errors(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = IgnoredErrorsListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.errors
     end
 
     def parse_worksheet_data_consolidate(xml)
@@ -2978,6 +2994,46 @@ module Xlsxrb
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
         @watches << attributes["r"] if name == "cellWatch" && attributes["r"]
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <ignoredErrors> element.
+    class IgnoredErrorsListener
+      include REXML::SAX2Listener
+
+      attr_reader :errors
+
+      def initialize
+        @errors = []
+      end
+
+      IGNORED_ERROR_BOOL_ATTRS = {
+        "evalError" => :eval_error, "twoDigitTextYear" => :two_digit_text_year,
+        "numberStoredAsText" => :number_stored_as_text, "formula" => :formula,
+        "formulaRange" => :formula_range, "unlockedFormula" => :unlocked_formula,
+        "emptyCellReference" => :empty_cell_reference, "listDataValidation" => :list_data_validation,
+        "calculatedColumn" => :calculated_column
+      }.freeze
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        return unless name == "ignoredError" && attributes["sqref"]
+
+        ie = { sqref: attributes["sqref"] }
+        IGNORED_ERROR_BOOL_ATTRS.each do |xml_attr, sym|
+          ie[sym] = true if attributes[xml_attr] == "1"
+        end
+        @errors << ie
       end
 
       private
