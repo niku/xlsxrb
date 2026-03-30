@@ -1989,6 +1989,29 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_border with outline false emits outline attribute" do
+    writer = Xlsxrb::Writer.new
+    brd_id = writer.add_border(
+      left: { style: "thin" },
+      outline: false
+    )
+    assert_equal(1, brd_id)
+
+    style_id = writer.add_cell_style(border_id: brd_id)
+    writer.set_cell("A1", "no-outline")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-outline", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/<border[^>]*outline="0"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
