@@ -1772,8 +1772,12 @@ module Xlsxrb
         when "borders"
           @inside_borders = true
         when "border"
-          @current_border = {} if @inside_borders || @inside_dxfs
-        when "left", "right", "top", "bottom"
+          if @inside_borders || @inside_dxfs
+            @current_border = {}
+            @current_border[:diagonal_up] = true if attributes["diagonalUp"] == "1"
+            @current_border[:diagonal_down] = true if attributes["diagonalDown"] == "1"
+          end
+        when "left", "right", "top", "bottom", "diagonal"
           if @current_border
             style = attributes["style"]
             @current_border_side = name.to_sym
@@ -1831,7 +1835,7 @@ module Xlsxrb
             @borders << @current_border
           end
           @current_border = nil
-        when "left", "right", "top", "bottom"
+        when "left", "right", "top", "bottom", "diagonal"
           @current_border_side = nil
         when "dxfs"
           @inside_dxfs = false

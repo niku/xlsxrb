@@ -2591,8 +2591,11 @@ module Xlsxrb
     end
 
     def emit_border_xml(bdr)
-      parts = ["<border>"]
-      %i[left right top bottom].each do |side|
+      border_attrs = []
+      border_attrs << ' diagonalUp="1"' if bdr[:diagonal_up]
+      border_attrs << ' diagonalDown="1"' if bdr[:diagonal_down]
+      parts = ["<border#{border_attrs.join}>"]
+      %i[left right top bottom diagonal].each do |side|
         s = bdr[side]
         if s.is_a?(Hash)
           parts << %(<#{side} style="#{s[:style]}">)
@@ -2602,7 +2605,6 @@ module Xlsxrb
           parts << "<#{side}/>"
         end
       end
-      parts << "<diagonal/>"
       parts << "</border>"
       parts.join
     end
