@@ -2642,6 +2642,19 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits conditionalFormatting pivot attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_conditional_format("A1:A10", type: :cell_is, operator: "greaterThan",
+                                            formula: "5", format_id: 0, priority: 1, pivot: true)
+    xlsx_path = File.join(Dir.tmpdir, "cf_pivot_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/<conditionalFormatting sqref="A1:A10" pivot="1">/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
