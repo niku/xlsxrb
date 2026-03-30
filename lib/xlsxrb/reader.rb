@@ -1834,6 +1834,9 @@ module Xlsxrb
           alignment[:text_rotation] = attributes["textRotation"].to_i if attributes["textRotation"]
           alignment[:indent] = attributes["indent"].to_i if attributes["indent"]
           alignment[:shrink_to_fit] = true if attributes["shrinkToFit"] == "1"
+          ro = attributes["readingOrder"]
+          alignment[:reading_order] = ro.to_i if ro
+          alignment[:justify_last_line] = true if attributes["justifyLastLine"] == "1"
           unless alignment.empty?
             if @inside_dxfs && @current_dxf
               @current_dxf[:alignment] = alignment

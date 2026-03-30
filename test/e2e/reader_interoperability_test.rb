@@ -1461,6 +1461,23 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses alignment readingOrder and justifyLastLine from SDK-generated file" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_alignment_extended_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    styles = reader.cell_styles
+    xf = styles.values.find { |s| s[:alignment]&.key?(:reading_order) }
+    assert_not_nil(xf, "Expected a cell style with readingOrder")
+    assert_equal(2, xf[:alignment][:reading_order])
+    assert_equal(true, xf[:alignment][:justify_last_line])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
