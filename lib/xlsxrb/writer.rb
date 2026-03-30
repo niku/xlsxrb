@@ -71,6 +71,7 @@ module Xlsxrb
       @data_validations_options = { "Sheet1" => {} }
       @conditional_formats = { "Sheet1" => [] }
       @tables = { "Sheet1" => [] }
+      @cell_watches = { "Sheet1" => [] }
       @use_shared_strings = true
       @images = { "Sheet1" => [] }
       @charts_data = { "Sheet1" => [] }
@@ -116,6 +117,7 @@ module Xlsxrb
       @data_validations_options[name] = {}
       @conditional_formats[name] = []
       @tables[name] = []
+      @cell_watches[name] = []
       @images[name] = []
       @charts_data[name] = []
       @shapes_data[name] = []
@@ -937,6 +939,20 @@ module Xlsxrb
       (@protected_ranges[sheet_name] || []).map(&:dup)
     end
 
+    # Adds a cell watch to the given sheet.
+    def add_cell_watch(cell_ref, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+
+      @cell_watches[sheet_name] << cell_ref
+    end
+
+    # Returns cell watches for the given sheet.
+    def cell_watches(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      (@cell_watches[sheet_name] || []).dup
+    end
+
     # Sets workbook protection options.
     # Options: :lock_structure, :lock_windows, :password, :algorithm_name, :hash_value, :salt_value, :spin_count
     def set_workbook_protection(**opts)
@@ -1202,7 +1218,8 @@ module Xlsxrb
           sheet_prot: @sheet_protection[sheet_name], vml_rid:,
           phonetic_pr: @phonetic_properties[sheet_name],
           dv_options: @data_validations_options[sheet_name],
-          prot_ranges: @protected_ranges[sheet_name]
+          prot_ranges: @protected_ranges[sheet_name],
+          cell_watches: @cell_watches[sheet_name]
         )
 
         # Generate drawing XML + media + chart entries.
@@ -1651,7 +1668,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [])
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [])
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -2091,6 +2108,13 @@ module Xlsxrb
         parts << %(<colBreaks count="#{sheet_cb.size}" manualBreakCount="#{manual_count}">)
         sheet_cb.each { |c| parts << emit_brk_xml(c, default_max: 1_048_575) }
         parts << "</colBreaks>"
+      end
+
+      # Emit <cellWatches> if defined.
+      unless cell_watches.empty?
+        parts << "<cellWatches>"
+        cell_watches.each { |r| parts << %(<cellWatch r="#{r}"/>) }
+        parts << "</cellWatches>"
       end
 
       # Emit <tableParts> if tables are defined.

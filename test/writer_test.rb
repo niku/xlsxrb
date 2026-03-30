@@ -2427,6 +2427,26 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits cellWatches in worksheet XML" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 100)
+    writer.set_cell("B2", 200)
+    writer.add_cell_watch("A1")
+    writer.add_cell_watch("B2")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-cw", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/<cellWatches>/, xml_content)
+    assert_match(%r{<cellWatch r="A1"/>}, xml_content)
+    assert_match(%r{<cellWatch r="B2"/>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
