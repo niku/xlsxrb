@@ -2166,4 +2166,33 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips colorFilter and iconFilter through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "H1")
+    writer.set_cell("B1", "H2")
+    writer.set_auto_filter("A1:B10")
+    writer.add_filter_column(0, { type: :color_filter, dxf_id: 0, cell_color: false })
+    writer.add_filter_column(1, { type: :icon_filter, icon_set: "3Arrows", icon_id: 2 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    filters = reader.filter_columns
+
+    cf = filters[0]
+    assert_equal(:color_filter, cf[:type])
+    assert_equal(0, cf[:dxf_id])
+    assert_equal(false, cf[:cell_color])
+
+    icf = filters[1]
+    assert_equal(:icon_filter, icf[:type])
+    assert_equal("3Arrows", icf[:icon_set])
+    assert_equal(2, icf[:icon_id])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

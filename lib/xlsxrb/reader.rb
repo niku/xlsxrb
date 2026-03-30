@@ -2032,6 +2032,14 @@ module Xlsxrb
             percent: attributes["percent"] == "1",
             val: attributes["val"]&.to_f&.to_i
           }
+        when "colorFilter"
+          cf = { type: :color_filter, dxf_id: attributes["dxfId"]&.to_i }
+          cf[:cell_color] = false if attributes["cellColor"] == "0"
+          @current_filter = cf
+        when "iconFilter"
+          icf = { type: :icon_filter, icon_set: attributes["iconSet"] }
+          icf[:icon_id] = attributes["iconId"].to_i if attributes["iconId"]
+          @current_filter = icf
         end
       end
 

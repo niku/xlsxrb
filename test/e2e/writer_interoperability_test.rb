@@ -1261,6 +1261,25 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores colorFilter and iconFilter correctly" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Header1")
+    writer.set_cell("B1", "Header2")
+    writer.set_auto_filter("A1:B10")
+    writer.add_dxf(fill: { pattern: "solid", fg_color: "FFFF0000" })
+    writer.add_filter_column(0, { type: :color_filter, dxf_id: 0 })
+    writer.add_filter_column(1, { type: :icon_filter, icon_set: "3Arrows", icon_id: 1 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_color_icon_filter_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

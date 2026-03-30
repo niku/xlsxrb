@@ -2376,6 +2376,14 @@ module Xlsxrb
         top_attr = filter[:top] ? ' top="1"' : ""
         pct_attr = filter[:percent] ? ' percent="1"' : ""
         %(<top10#{top_attr}#{pct_attr} val="#{filter[:val]}"/>)
+      when :color_filter
+        cf_attrs = %(dxfId="#{filter[:dxf_id]}")
+        cf_attrs << ' cellColor="0"' if filter[:cell_color] == false
+        %(<colorFilter #{cf_attrs}/>)
+      when :icon_filter
+        if_attrs = %(iconSet="#{filter[:icon_set]}")
+        if_attrs << %( iconId="#{filter[:icon_id]}") if filter[:icon_id]
+        %(<iconFilter #{if_attrs}/>)
       else
         ""
       end
@@ -2605,13 +2613,6 @@ module Xlsxrb
       end
       parts << "</cellXfs>"
 
-      # dxfs
-      unless @dxfs.empty?
-        parts << %(<dxfs count="#{@dxfs.size}">)
-        @dxfs.each { |d| parts << emit_dxf_xml(d) }
-        parts << "</dxfs>"
-      end
-
       # cellStyles
       parts << %(<cellStyles count="#{@cell_style_names.size}">)
       @cell_style_names.each do |cs|
@@ -2620,6 +2621,13 @@ module Xlsxrb
         parts << "<cellStyle #{cs_attrs}/>"
       end
       parts << "</cellStyles>"
+
+      # dxfs
+      unless @dxfs.empty?
+        parts << %(<dxfs count="#{@dxfs.size}">)
+        @dxfs.each { |d| parts << emit_dxf_xml(d) }
+        parts << "</dxfs>"
+      end
 
       parts << "</styleSheet>"
       parts.join
