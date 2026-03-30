@@ -1743,8 +1743,10 @@ module Xlsxrb
         end
         sb = sheet_props[:summary_below]
         sr = sheet_props[:summary_right]
-        unless sb.nil? && sr.nil?
+        as = sheet_props[:apply_styles]
+        unless sb.nil? && sr.nil? && as.nil?
           outline_attrs = []
+          outline_attrs << %(applyStyles="#{as ? 1 : 0}") unless as.nil?
           outline_attrs << %(summaryBelow="#{sb ? 1 : 0}") unless sb.nil?
           outline_attrs << %(summaryRight="#{sr ? 1 : 0}") unless sr.nil?
           sp_children << "<outlinePr #{outline_attrs.join(" ")}/>"
