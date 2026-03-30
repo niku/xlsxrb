@@ -35,11 +35,9 @@ rescue ArgumentError
   Etc.nprocessors
 end
 
-task :ensure_reader_fixtures => :build_sdk_runner do
+task ensure_reader_fixtures: :build_sdk_runner do
   missing_specs = reader_fixture_specs.reject { |_scenario_name, fixture_path| File.exist?(fixture_path) }
-  if missing_specs.empty?
-    next
-  end
+  next if missing_specs.empty?
 
   FileUtils.mkdir_p(reader_fixture_dir)
 
