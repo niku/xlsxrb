@@ -73,6 +73,7 @@ module Xlsxrb
       @tables = { "Sheet1" => [] }
       @cell_watches = { "Sheet1" => [] }
       @data_consolidate = { "Sheet1" => nil }
+      @scenarios = { "Sheet1" => nil }
       @use_shared_strings = true
       @images = { "Sheet1" => [] }
       @charts_data = { "Sheet1" => [] }
@@ -120,6 +121,7 @@ module Xlsxrb
       @tables[name] = []
       @cell_watches[name] = []
       @data_consolidate[name] = nil
+      @scenarios[name] = nil
       @images[name] = []
       @charts_data[name] = []
       @shapes_data[name] = []
@@ -970,6 +972,21 @@ module Xlsxrb
       @data_consolidate[sheet_name]&.dup
     end
 
+    # Sets scenarios for the given sheet.
+    # Options: current:, show:, sqref:, scenarios: [{name:, input_cells: [{r:, val:, ...}], ...}]
+    def set_scenarios(sheet: nil, **opts)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+
+      @scenarios[sheet_name] = opts
+    end
+
+    # Returns scenarios for the given sheet.
+    def scenarios(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      @scenarios[sheet_name]&.dup
+    end
+
     # Sets workbook protection options.
     # Options: :lock_structure, :lock_windows, :password, :algorithm_name, :hash_value, :salt_value, :spin_count
     def set_workbook_protection(**opts)
@@ -1237,7 +1254,8 @@ module Xlsxrb
           dv_options: @data_validations_options[sheet_name],
           prot_ranges: @protected_ranges[sheet_name],
           cell_watches: @cell_watches[sheet_name],
-          data_consol: @data_consolidate[sheet_name]
+          data_consol: @data_consolidate[sheet_name],
+          sheet_scenarios: @scenarios[sheet_name]
         )
 
         # Generate drawing XML + media + chart entries.
@@ -1694,7 +1712,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [], data_consol: nil)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [], data_consol: nil, sheet_scenarios: nil)
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -1957,6 +1975,35 @@ module Xlsxrb
           end
         end
         parts << "</protectedRanges>"
+      end
+
+      # Emit <scenarios> if defined.
+      if sheet_scenarios
+        sc_attrs = []
+        sc_attrs << %(current="#{sheet_scenarios[:current]}") if sheet_scenarios[:current]
+        sc_attrs << %(show="#{sheet_scenarios[:show]}") if sheet_scenarios[:show]
+        sc_attrs << %(sqref="#{sheet_scenarios[:sqref]}") if sheet_scenarios[:sqref]
+        items = sheet_scenarios[:scenarios] || []
+        sc_attr_str = sc_attrs.empty? ? "" : " #{sc_attrs.join(" ")}"
+        parts << "<scenarios#{sc_attr_str}>"
+        items.each do |sc|
+          s_attrs = [%(name="#{xml_escape(sc[:name])}")]
+          s_attrs << 'locked="1"' if sc[:locked]
+          s_attrs << 'hidden="1"' if sc[:hidden]
+          s_attrs << %(count="#{sc[:input_cells].size}") if sc[:input_cells]&.any?
+          s_attrs << %(user="#{xml_escape(sc[:user])}") if sc[:user]
+          s_attrs << %(comment="#{xml_escape(sc[:comment])}") if sc[:comment]
+          parts << "<scenario #{s_attrs.join(" ")}>"
+          (sc[:input_cells] || []).each do |ic|
+            ic_attrs = [%(r="#{ic[:r]}"), %(val="#{xml_escape(ic[:val].to_s)}")]
+            ic_attrs << 'deleted="1"' if ic[:deleted]
+            ic_attrs << 'undone="1"' if ic[:undone]
+            ic_attrs << %(numFmtId="#{ic[:num_fmt_id]}") if ic[:num_fmt_id]
+            parts << "<inputCells #{ic_attrs.join(" ")}/>"
+          end
+          parts << "</scenario>"
+        end
+        parts << "</scenarios>"
       end
 
       # Emit <autoFilter> with optional filterColumns.

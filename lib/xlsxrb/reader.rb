@@ -315,6 +315,14 @@ module Xlsxrb
       parse_worksheet_data_consolidate(worksheet_xml)
     end
 
+    # Returns scenarios for the given sheet.
+    def scenarios(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return nil if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_scenarios(worksheet_xml)
+    end
+
     # Returns the dimension ref string (e.g. "A1:B10") for the given sheet.
     def dimension(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -1189,6 +1197,14 @@ module Xlsxrb
     def parse_worksheet_data_consolidate(xml)
       parser = REXML::Parsers::SAX2Parser.new(xml)
       listener = DataConsolidateListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.result
+    end
+
+    def parse_worksheet_scenarios(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = ScenariosListener.new
       parser.listen(listener)
       parser.parse
       listener.result
@@ -2999,6 +3015,64 @@ module Xlsxrb
             @result[:data_refs] << ref
           end
         end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <scenarios> element.
+    class ScenariosListener
+      include REXML::SAX2Listener
+
+      attr_reader :result
+
+      def initialize
+        @result = nil
+        @current_scenario = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "scenarios"
+          @result = { scenarios: [] }
+          @result[:current] = attributes["current"].to_i if attributes["current"]
+          @result[:show] = attributes["show"].to_i if attributes["show"]
+          @result[:sqref] = attributes["sqref"] if attributes["sqref"]
+        when "scenario"
+          if @result
+            sc = { name: attributes["name"], input_cells: [] }
+            sc[:locked] = true if %w[1 true].include?(attributes["locked"])
+            sc[:hidden] = true if %w[1 true].include?(attributes["hidden"])
+            sc[:user] = attributes["user"] if attributes["user"]
+            sc[:comment] = attributes["comment"] if attributes["comment"]
+            @current_scenario = sc
+          end
+        when "inputCells"
+          if @current_scenario
+            ic = { r: attributes["r"], val: attributes["val"] }
+            ic[:deleted] = true if %w[1 true].include?(attributes["deleted"])
+            ic[:undone] = true if %w[1 true].include?(attributes["undone"])
+            ic[:num_fmt_id] = attributes["numFmtId"].to_i if attributes["numFmtId"]
+            @current_scenario[:input_cells] << ic
+          end
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        return unless name == "scenario" && @current_scenario && @result
+
+        @result[:scenarios] << @current_scenario
+        @current_scenario = nil
       end
 
       private

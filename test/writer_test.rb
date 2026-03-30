@@ -2527,6 +2527,35 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits scenarios in worksheet XML" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 100)
+    writer.set_scenarios(
+      current: 0, show: 0,
+      scenarios: [
+        {
+          name: "Best Case", user: "Admin", comment: "Optimistic",
+          input_cells: [{ r: "A1", val: "200" }, { r: "B1", val: "300" }]
+        }
+      ]
+    )
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sc", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/<scenarios /, xml_content)
+    assert_match(/current="0"/, xml_content)
+    assert_match(/name="Best Case"/, xml_content)
+    assert_match(/user="Admin"/, xml_content)
+    assert_match(/r="A1"/, xml_content)
+    assert_match(/val="200"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

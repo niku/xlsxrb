@@ -1713,6 +1713,27 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "reader parses SDK-generated scenarios element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_scenarios_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    sc = reader.scenarios
+    assert_equal(0, sc[:current])
+    assert_equal(0, sc[:show])
+    assert_equal(1, sc[:scenarios].size)
+    assert_equal("Best Case", sc[:scenarios][0][:name])
+    assert_equal("Admin", sc[:scenarios][0][:user])
+    assert_equal(2, sc[:scenarios][0][:input_cells].size)
+    assert_equal("A1", sc[:scenarios][0][:input_cells][0][:r])
+    assert_equal("200", sc[:scenarios][0][:input_cells][0][:val])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
