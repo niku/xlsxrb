@@ -3635,4 +3635,29 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("thin", bdr[:start][:style])
     assert_equal("double", bdr[:end][:style])
   end
+
+  test "reader parses xf applyXxx attributes" do
+    require "xlsxrb/reader"
+    styles_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <cellXfs count="1">
+          <xf numFmtId="0" fontId="0" fillId="0" borderId="0"
+              applyNumberFormat="1" applyFont="0" applyFill="1" applyBorder="0"
+              applyAlignment="1" applyProtection="0"/>
+        </cellXfs>
+      </styleSheet>
+    XML
+    listener = Xlsxrb::Reader::StylesListener.new
+    parser = REXML::Parsers::SAX2Parser.new(styles_xml)
+    parser.listen(listener)
+    parser.parse
+    xf = listener.cell_xfs[0]
+    assert_equal(true, xf[:apply_number_format])
+    assert_equal(false, xf[:apply_font])
+    assert_equal(true, xf[:apply_fill])
+    assert_equal(false, xf[:apply_border])
+    assert_equal(true, xf[:apply_alignment])
+    assert_equal(false, xf[:apply_protection])
+  end
 end
