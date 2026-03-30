@@ -862,6 +862,24 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("TableStyleLight1", tbls[0][:style][:name])
   end
 
+  test "add_table with tableColumn extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Item")
+    writer.set_cell("B1", "Price")
+    writer.add_table("A1:B5", columns: [
+                       { name: "Item", totals_row_label: "Total", header_row_dxf_id: 1 },
+                       { name: "Price", totals_row_function: "sum", data_dxf_id: 2,
+                         totals_row_dxf_id: 3, data_cell_style: "Currency" }
+                     ], totals_row_count: 1)
+    tbls = writer.tables
+    cols = tbls[0][:columns]
+    assert_equal("Total", cols[0][:totals_row_label])
+    assert_equal(1, cols[0][:header_row_dxf_id])
+    assert_equal(2, cols[1][:data_dxf_id])
+    assert_equal(3, cols[1][:totals_row_dxf_id])
+    assert_equal("Currency", cols[1][:data_cell_style])
+  end
+
   test "enables shared string table mode" do
     writer = Xlsxrb::Writer.new
     writer.use_shared_strings!

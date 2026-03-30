@@ -3817,6 +3817,16 @@ module Xlsxrb
           col = { name: attributes["name"] }
           trf = attributes["totalsRowFunction"]
           col[:totals_row_function] = trf if trf
+          trl = attributes["totalsRowLabel"]
+          col[:totals_row_label] = trl if trl
+          dd = attributes["dataDxfId"]
+          col[:data_dxf_id] = dd.to_i if dd
+          td = attributes["totalsRowDxfId"]
+          col[:totals_row_dxf_id] = td.to_i if td
+          hd = attributes["headerRowDxfId"]
+          col[:header_row_dxf_id] = hd.to_i if hd
+          dcs = attributes["dataCellStyle"]
+          col[:data_cell_style] = dcs if dcs
           @current_column = col
         when "calculatedColumnFormula"
           @inside_calc_formula = true
