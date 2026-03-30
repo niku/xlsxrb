@@ -1212,6 +1212,30 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("lastWeek", cfs[5][:time_period])
   end
 
+  test "DXF emits alignment and protection elements" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_dxf(
+      font: { bold: true, color: "FFFF0000" },
+      num_fmt: { num_fmt_id: 164, format_code: "#,##0.00" },
+      alignment: { horizontal: "center", wrap_text: true },
+      protection: { locked: false, hidden: true }
+    )
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/<dxf>/, xml)
+    assert_match(/<alignment horizontal="center" wrapText="1"\/>/, xml)
+    assert_match(/<protection locked="0" hidden="1"\/>/, xml)
+    assert_match(/<numFmt numFmtId="164" formatCode="#,##0.00"\/>/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

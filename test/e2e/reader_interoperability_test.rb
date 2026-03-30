@@ -1171,6 +1171,28 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated DXF with alignment, protection, numFmt" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_dxf_deep_attrs_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dxfs = reader.dxfs
+    assert_equal(1, dxfs.size)
+    dxf = dxfs[0]
+
+    assert_equal(true, dxf[:font][:bold])
+    assert_equal(164, dxf[:num_fmt][:num_fmt_id])
+    assert_equal("#,##0.00", dxf[:num_fmt][:format_code])
+    assert_equal("center", dxf[:alignment][:horizontal])
+    assert_equal(true, dxf[:alignment][:wrap_text])
+    assert_equal(false, dxf[:protection][:locked])
+    assert_equal(true, dxf[:protection][:hidden])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
