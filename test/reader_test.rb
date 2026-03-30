@@ -2823,4 +2823,29 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips pageSetup copies, paperHeight, paperWidth, errors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_page_setup(:copies, 3)
+    writer.set_page_setup(:paper_height, "297mm")
+    writer.set_page_setup(:paper_width, "210mm")
+    writer.set_page_setup(:errors, "blank")
+    writer.set_page_setup(:use_printer_defaults, false)
+    writer.set_cell("A1", "ps")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ps = reader.page_setup
+    assert_equal(3, ps[:copies])
+    assert_equal("297mm", ps[:paper_height])
+    assert_equal("210mm", ps[:paper_width])
+    assert_equal("blank", ps[:errors])
+    assert_equal(false, ps[:use_printer_defaults])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
