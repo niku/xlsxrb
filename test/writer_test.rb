@@ -970,6 +970,29 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(%w[East West], pivots[0][:items][1])
   end
 
+  test "add_pivot_table with extended attributes (dataCaption, dataOnRows, grandTotals, compact, outline, showHeaders)" do
+    writer = Xlsxrb::Writer.new
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+                           data_caption: "Custom Caption",
+                           data_on_rows: true,
+                           row_grand_totals: false,
+                           col_grand_totals: false,
+                           compact: false,
+                           outline: false,
+                           show_headers: false)
+    pivots = writer.pivot_tables
+    assert_equal(1, pivots.size)
+    assert_equal("Custom Caption", pivots[0][:data_caption])
+    assert_equal(true, pivots[0][:data_on_rows])
+    assert_equal(false, pivots[0][:row_grand_totals])
+    assert_equal(false, pivots[0][:col_grand_totals])
+    assert_equal(false, pivots[0][:compact])
+    assert_equal(false, pivots[0][:outline])
+    assert_equal(false, pivots[0][:show_headers])
+  end
+
   test "add_external_link stores external link definition" do
     writer = Xlsxrb::Writer.new
     writer.add_external_link(target: "Book2.xlsx", sheet_names: %w[Sheet1 Sheet2])

@@ -1151,7 +1151,7 @@ module Xlsxrb
     # col_fields: array of 0-based field indices for column axis.
     # field_names: array of field name strings (for cache definition).
     # items: hash mapping field index to array of item values.
-    def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil, sheet: nil)
+    def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil, sheet: nil, **opts)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @pivot_tables_data.key?(sheet_name)
 
@@ -1160,7 +1160,10 @@ module Xlsxrb
         name: pt_name, source_ref: source_ref,
         row_fields: row_fields, col_fields: col_fields,
         data_fields: data_fields, dest_ref: dest_ref,
-        field_names: field_names, items: items
+        field_names: field_names, items: items,
+        data_caption: opts[:data_caption], data_on_rows: opts[:data_on_rows],
+        row_grand_totals: opts[:row_grand_totals], col_grand_totals: opts[:col_grand_totals],
+        compact: opts[:compact], outline: opts[:outline], show_headers: opts[:show_headers]
       }
     end
 
@@ -2660,10 +2663,19 @@ module Xlsxrb
     end
 
     def generate_pivot_table_xml(pivot_table, cache_id)
-      data_caption = pivot_table[:data_fields].first ? pivot_table[:data_fields].first[:name] : "Values"
+      data_caption = pivot_table[:data_caption] || (pivot_table[:data_fields].first ? pivot_table[:data_fields].first[:name] : "Values")
+      pt_attrs = %( xmlns="#{SSML_NS}" name="#{xml_escape(pivot_table[:name])}" cacheId="#{cache_id}" dataCaption="#{xml_escape(data_caption)}")
+      pt_attrs << %( dataOnRows="1") if pivot_table[:data_on_rows]
+      pt_attrs << %( dataOnRows="0") unless pivot_table[:data_on_rows]
+      pt_attrs << %( rowGrandTotals="0") if pivot_table[:row_grand_totals] == false
+      pt_attrs << %( colGrandTotals="0") if pivot_table[:col_grand_totals] == false
+      pt_attrs << %( compact="0") if pivot_table[:compact] == false
+      pt_attrs << %( outline="0") if pivot_table[:outline] == false
+      pt_attrs << %( showHeaders="0") if pivot_table[:show_headers] == false
+      pt_attrs << %( applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1")
       parts = [
         XML_HEADER,
-        %(<pivotTableDefinition xmlns="#{SSML_NS}" name="#{xml_escape(pivot_table[:name])}" cacheId="#{cache_id}" dataCaption="#{xml_escape(data_caption)}" dataOnRows="0" applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1">)
+        "<pivotTableDefinition#{pt_attrs}>"
       ]
 
       # Compute field count from source range or explicit field_names.

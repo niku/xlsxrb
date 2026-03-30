@@ -4459,6 +4459,13 @@ module Xlsxrb
             name: attributes["name"],
             cache_id: attributes["cacheId"]&.to_i
           }
+          @pivot_table[:data_caption] = attributes["dataCaption"] if attributes["dataCaption"]
+          @pivot_table[:data_on_rows] = attributes["dataOnRows"] == "1" if attributes["dataOnRows"]
+          @pivot_table[:row_grand_totals] = attributes["rowGrandTotals"] != "0" if attributes["rowGrandTotals"]
+          @pivot_table[:col_grand_totals] = attributes["colGrandTotals"] != "0" if attributes["colGrandTotals"]
+          @pivot_table[:compact] = attributes["compact"] != "0" if attributes["compact"]
+          @pivot_table[:outline] = attributes["outline"] != "0" if attributes["outline"]
+          @pivot_table[:show_headers] = attributes["showHeaders"] != "0" if attributes["showHeaders"]
         when "location"
           @pivot_table[:ref] = attributes["ref"] if @pivot_table
         when "pivotField"
