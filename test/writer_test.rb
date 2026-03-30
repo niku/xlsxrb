@@ -1097,6 +1097,24 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(10, df[:num_fmt_id])
   end
 
+  test "add_pivot_table with pivot_table_style emits pivotTableStyleInfo" do
+    writer = Xlsxrb::Writer.new
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "Sum", subtotal: "sum" }],
+                           pivot_table_style: { name: "PivotStyleLight16",
+                                                show_row_headers: true,
+                                                show_col_headers: true,
+                                                show_row_stripes: false,
+                                                show_col_stripes: false,
+                                                show_last_column: true })
+    pivots = writer.pivot_tables
+    psi = pivots[0][:pivot_table_style]
+    assert_equal("PivotStyleLight16", psi[:name])
+    assert_equal(true, psi[:show_row_headers])
+    assert_equal(false, psi[:show_row_stripes])
+  end
+
   test "add_external_link stores external link definition" do
     writer = Xlsxrb::Writer.new
     writer.add_external_link(target: "Book2.xlsx", sheet_names: %w[Sheet1 Sheet2])

@@ -4596,6 +4596,22 @@ module Xlsxrb
             df[:num_fmt_id] = attributes["numFmtId"]&.to_i if attributes["numFmtId"]
             @data_fields << df
           end
+        when "pivotTableStyleInfo"
+          if @pivot_table
+            psi = {}
+            psi[:name] = attributes["name"] if attributes["name"]
+            srh = attributes["showRowHeaders"]
+            psi[:show_row_headers] = srh == "1" unless srh.nil?
+            sch = attributes["showColHeaders"]
+            psi[:show_col_headers] = sch == "1" unless sch.nil?
+            srs = attributes["showRowStripes"]
+            psi[:show_row_stripes] = srs == "1" unless srs.nil?
+            scs = attributes["showColStripes"]
+            psi[:show_col_stripes] = scs == "1" unless scs.nil?
+            slc = attributes["showLastColumn"]
+            psi[:show_last_column] = slc == "1" unless slc.nil?
+            @pivot_table[:pivot_table_style] = psi
+          end
         end
       end
 

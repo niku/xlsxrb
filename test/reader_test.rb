@@ -1300,6 +1300,41 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips pivotTableStyleInfo" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Region")
+    writer.set_cell("C1", "Amount")
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "Sum", subtotal: "sum" }],
+                           field_names: %w[Category Region Amount],
+                           pivot_table_style: { name: "PivotStyleLight16",
+                                                show_row_headers: true,
+                                                show_col_headers: false,
+                                                show_row_stripes: true,
+                                                show_col_stripes: false,
+                                                show_last_column: true })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    psi = pts[0][:pivot_table_style]
+    assert_not_nil(psi)
+    assert_equal("PivotStyleLight16", psi[:name])
+    assert_equal(true, psi[:show_row_headers])
+    assert_equal(false, psi[:show_col_headers])
+    assert_equal(true, psi[:show_row_stripes])
+    assert_equal(false, psi[:show_col_stripes])
+    assert_equal(true, psi[:show_last_column])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips dataField showDataAs, baseField, baseItem, numFmtId" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

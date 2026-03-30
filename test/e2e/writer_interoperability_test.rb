@@ -1742,6 +1742,33 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "writer generates valid pivotTableStyleInfo element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    %w[cat1 cat2 cat3].each_with_index { |v, i| writer.set_cell("A#{i + 1}", v) }
+    %w[x y z].each_with_index { |v, i| writer.set_cell("B#{i + 1}", v) }
+    [10, 20, 30].each_with_index { |v, i| writer.set_cell("C#{i + 1}", v) }
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "Sum", subtotal: "sum" }],
+                           pivot_table_style: {
+                             name: "PivotStyleLight16",
+                             show_row_headers: true,
+                             show_col_headers: true,
+                             show_row_stripes: false,
+                             show_col_stripes: false,
+                             show_last_column: true
+                           })
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_pivot_table_style_info_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
