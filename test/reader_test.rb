@@ -1687,4 +1687,31 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips border theme color and tabColor theme" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    brd_id = writer.add_border(left: { style: "thin", theme: 1, tint: -0.25 })
+    style_id = writer.add_cell_style(border_id: brd_id)
+    writer.set_cell("A1", "themed border")
+    writer.set_cell_style("A1", style_id)
+    writer.set_sheet_property(:tab_color_theme, 3)
+    writer.set_sheet_property(:tab_color_tint, -0.5)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    border = cs["A1"][:border]
+    assert_equal(1, border[:left][:theme])
+    assert_in_delta(-0.25, border[:left][:tint], 0.001)
+
+    props = reader.sheet_properties
+    assert_equal(3, props[:tab_color_theme])
+    assert_in_delta(-0.5, props[:tab_color_tint], 0.001)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

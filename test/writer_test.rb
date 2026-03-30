@@ -972,6 +972,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_border with theme color emits theme color attributes" do
+    writer = Xlsxrb::Writer.new
+    brd_id = writer.add_border(left: { style: "thin", theme: 1, tint: -0.25 })
+    assert_equal(1, brd_id)
+
+    style_id = writer.add_cell_style(border_id: brd_id)
+    writer.set_cell("A1", "border theme")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-brdtheme", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<left style="thin">}, xml_content)
+    assert_match(%r{<color[^/>]*theme="1"}, xml_content)
+    assert_match(%r{<color[^/>]*tint="-0.25"}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "rich text value stored and retrievable" do
     writer = Xlsxrb::Writer.new
     rt = Xlsxrb::RichText.new(runs: [
