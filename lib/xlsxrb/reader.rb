@@ -2224,7 +2224,7 @@ module Xlsxrb
             ol = attributes["outline"]
             @current_border[:outline] = %w[1 true].include?(ol) unless ol.nil?
           end
-        when "left", "right", "top", "bottom", "diagonal", "vertical", "horizontal"
+        when "left", "right", "top", "bottom", "diagonal", "vertical", "horizontal", "start", "end"
           if @current_border
             style = attributes["style"]
             @current_border_side = name.to_sym
@@ -2305,7 +2305,7 @@ module Xlsxrb
             @borders << @current_border
           end
           @current_border = nil
-        when "left", "right", "top", "bottom", "diagonal", "vertical", "horizontal"
+        when "left", "right", "top", "bottom", "diagonal", "vertical", "horizontal", "start", "end"
           @current_border_side = nil
         when "dxfs"
           @inside_dxfs = false

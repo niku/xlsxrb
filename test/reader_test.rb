@@ -3611,4 +3611,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "reader parses border start and end elements from Strict format" do
+    # Simulate reading styles XML with start/end border elements (ISO 29500 Strict)
+    require "xlsxrb/reader"
+    styles_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <borders count="1">
+          <border>
+            <left/><right/><top/><bottom/><diagonal/>
+            <start style="thin"><color rgb="FF0000FF"/></start>
+            <end style="double"><color rgb="FFFF0000"/></end>
+          </border>
+        </borders>
+      </styleSheet>
+    XML
+    listener = Xlsxrb::Reader::StylesListener.new
+    parser = REXML::Parsers::SAX2Parser.new(styles_xml)
+    parser.listen(listener)
+    parser.parse
+    bdr = listener.borders[0]
+    assert_equal("thin", bdr[:start][:style])
+    assert_equal("double", bdr[:end][:style])
+  end
 end
