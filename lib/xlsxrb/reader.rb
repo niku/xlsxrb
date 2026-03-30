@@ -1717,7 +1717,11 @@ module Xlsxrb
         when "numFmt"
           id = attributes["numFmtId"]&.to_i
           code = attributes["formatCode"]
-          @num_fmts[id] = code if id && code
+          if @inside_dxfs && @current_dxf
+            @current_dxf[:num_fmt] = { num_fmt_id: id, format_code: code } if id && code
+          else
+            @num_fmts[id] = code if id && code
+          end
         when "cellXfs"
           @inside_cell_xfs = true
         when "cellStyleXfs"
@@ -1749,22 +1753,30 @@ module Xlsxrb
             @current_xf = nil
           end
         when "alignment"
-          if @current_xf
-            alignment = {}
-            alignment[:horizontal] = attributes["horizontal"] if attributes["horizontal"]
-            alignment[:vertical] = attributes["vertical"] if attributes["vertical"]
-            alignment[:wrap_text] = true if attributes["wrapText"] == "1"
-            alignment[:text_rotation] = attributes["textRotation"].to_i if attributes["textRotation"]
-            alignment[:indent] = attributes["indent"].to_i if attributes["indent"]
-            alignment[:shrink_to_fit] = true if attributes["shrinkToFit"] == "1"
-            @current_xf[:alignment] = alignment unless alignment.empty?
+          alignment = {}
+          alignment[:horizontal] = attributes["horizontal"] if attributes["horizontal"]
+          alignment[:vertical] = attributes["vertical"] if attributes["vertical"]
+          alignment[:wrap_text] = true if attributes["wrapText"] == "1"
+          alignment[:text_rotation] = attributes["textRotation"].to_i if attributes["textRotation"]
+          alignment[:indent] = attributes["indent"].to_i if attributes["indent"]
+          alignment[:shrink_to_fit] = true if attributes["shrinkToFit"] == "1"
+          unless alignment.empty?
+            if @inside_dxfs && @current_dxf
+              @current_dxf[:alignment] = alignment
+            elsif @current_xf
+              @current_xf[:alignment] = alignment
+            end
           end
         when "protection"
-          if @current_xf
-            protection = {}
-            protection[:locked] = attributes["locked"] != "0" if attributes.key?("locked")
-            protection[:hidden] = attributes["hidden"] == "1" if attributes.key?("hidden")
-            @current_xf[:protection] = protection unless protection.empty?
+          protection = {}
+          protection[:locked] = attributes["locked"] != "0" if attributes.key?("locked")
+          protection[:hidden] = attributes["hidden"] == "1" if attributes.key?("hidden")
+          unless protection.empty?
+            if @inside_dxfs && @current_dxf
+              @current_dxf[:protection] = protection
+            elsif @current_xf
+              @current_xf[:protection] = protection
+            end
           end
         when "fonts"
           @inside_fonts = true

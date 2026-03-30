@@ -2698,12 +2698,14 @@ module Xlsxrb
     def emit_dxf_xml(dxf)
       parts = ["<dxf>"]
       parts << emit_font_xml(dxf[:font]) if dxf[:font]
-      parts << emit_fill_xml(dxf[:fill]) if dxf[:fill]
-      parts << emit_border_xml(dxf[:border]) if dxf[:border]
       if dxf[:num_fmt]
         nf = dxf[:num_fmt]
         parts << %(<numFmt numFmtId="#{nf[:num_fmt_id]}" formatCode="#{xml_escape(nf[:format_code])}"/>)
       end
+      parts << emit_fill_xml(dxf[:fill]) if dxf[:fill]
+      parts << emit_alignment_xml(dxf[:alignment]) if dxf[:alignment]
+      parts << emit_border_xml(dxf[:border]) if dxf[:border]
+      parts << emit_protection_xml(dxf[:protection]) if dxf[:protection]
       parts << "</dxf>"
       parts.join
     end

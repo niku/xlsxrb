@@ -1936,4 +1936,35 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips DXF with alignment, protection, and numFmt" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_dxf(
+      font: { bold: true, color: "FFFF0000" },
+      num_fmt: { num_fmt_id: 164, format_code: "#,##0.00" },
+      alignment: { horizontal: "center", wrap_text: true },
+      protection: { locked: false, hidden: true }
+    )
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dxfs = reader.dxfs
+    assert_equal(1, dxfs.size)
+    dxf = dxfs[0]
+
+    assert_equal(true, dxf[:font][:bold])
+    assert_equal(164, dxf[:num_fmt][:num_fmt_id])
+    assert_equal("#,##0.00", dxf[:num_fmt][:format_code])
+    assert_equal("center", dxf[:alignment][:horizontal])
+    assert_equal(true, dxf[:alignment][:wrap_text])
+    assert_equal(false, dxf[:protection][:locked])
+    assert_equal(true, dxf[:protection][:hidden])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
