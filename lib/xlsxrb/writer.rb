@@ -2552,6 +2552,9 @@ module Xlsxrb
     end
 
     def emit_fill_xml(fill)
+      if fill[:gradient]
+        return emit_gradient_fill_xml(fill[:gradient])
+      end
       return "<fill><patternFill patternType=\"#{fill[:pattern]}\"/></fill>" if fill[:pattern] && !fill[:fg_color] && !fill[:bg_color]
 
       parts = ["<fill>"]
@@ -2560,6 +2563,29 @@ module Xlsxrb
       parts << %(<fgColor rgb="#{fill[:fg_color]}"/>) if fill[:fg_color]
       parts << %(<bgColor rgb="#{fill[:bg_color]}"/>) if fill[:bg_color]
       parts << "</patternFill>"
+      parts << "</fill>"
+      parts.join
+    end
+
+    def emit_gradient_fill_xml(gradient)
+      attrs = []
+      attrs << %(type="#{gradient[:type]}") if gradient[:type]
+      attrs << %(degree="#{gradient[:degree]}") if gradient[:degree]
+      attrs << %(left="#{gradient[:left]}") if gradient[:left]
+      attrs << %(right="#{gradient[:right]}") if gradient[:right]
+      attrs << %(top="#{gradient[:top]}") if gradient[:top]
+      attrs << %(bottom="#{gradient[:bottom]}") if gradient[:bottom]
+      parts = ["<fill>"]
+      parts << "<gradientFill#{attrs.empty? ? "" : " #{attrs.join(" ")}"}"
+      if gradient[:stops]&.any?
+        parts[-1] = "#{parts[-1]}>"
+        gradient[:stops].each do |stop|
+          parts << %(<stop position="#{stop[:position]}"><color rgb="#{stop[:color]}"/></stop>)
+        end
+        parts << "</gradientFill>"
+      else
+        parts[-1] = "#{parts[-1]}/>"
+      end
       parts << "</fill>"
       parts.join
     end

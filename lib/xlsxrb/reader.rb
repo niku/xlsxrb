@@ -1666,6 +1666,7 @@ module Xlsxrb
         @current_border_side = nil
         @current_dxf = nil
         @current_xf = nil
+        @current_gradient_stop = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -1748,6 +1749,22 @@ module Xlsxrb
           @current_fill = {} if @inside_fills || @inside_dxfs
         when "patternFill"
           @current_fill[:pattern] = attributes["patternType"] if @current_fill
+        when "gradientFill"
+          if @current_fill
+            gradient = {}
+            gradient[:type] = attributes["type"] if attributes["type"]
+            gradient[:degree] = attributes["degree"].to_f if attributes["degree"]
+            gradient[:left] = attributes["left"].to_f if attributes["left"]
+            gradient[:right] = attributes["right"].to_f if attributes["right"]
+            gradient[:top] = attributes["top"].to_f if attributes["top"]
+            gradient[:bottom] = attributes["bottom"].to_f if attributes["bottom"]
+            gradient[:stops] = []
+            @current_fill[:gradient] = gradient
+          end
+        when "stop"
+          if @current_fill&.dig(:gradient)
+            @current_gradient_stop = { position: attributes["position"].to_f }
+          end
         when "fgColor"
           parse_fill_color(:fg_color, attributes) if @current_fill
         when "bgColor"
@@ -1800,6 +1817,11 @@ module Xlsxrb
             @fills << @current_fill
           end
           @current_fill = nil
+        when "stop"
+          if @current_gradient_stop && @current_fill&.dig(:gradient)
+            @current_fill[:gradient][:stops] << @current_gradient_stop
+          end
+          @current_gradient_stop = nil
         when "borders"
           @inside_borders = false
         when "border"
@@ -1822,7 +1844,11 @@ module Xlsxrb
       private
 
       def parse_color(attributes)
-        if @current_border_side && @current_border
+        if @current_gradient_stop
+          @current_gradient_stop[:color] = attributes["rgb"] if attributes["rgb"]
+          @current_gradient_stop[:theme] = attributes["theme"].to_i if attributes["theme"]
+          @current_gradient_stop[:tint] = attributes["tint"].to_f if attributes["tint"]
+        elsif @current_border_side && @current_border
           side_data = @current_border[@current_border_side]
           if side_data.is_a?(Hash)
             side_data[:color] = attributes["rgb"] if attributes["rgb"]

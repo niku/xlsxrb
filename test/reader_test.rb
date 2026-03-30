@@ -1554,4 +1554,37 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips gradient fill" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fill_id = writer.add_fill(
+      gradient: { type: "linear", degree: 90,
+                  stops: [{ position: 0, color: "FFFF0000" }, { position: 1, color: "FF0000FF" }] }
+    )
+    style_id = writer.add_cell_style(fill_id: fill_id)
+    writer.set_cell("A1", "gradient")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    fill = cs["A1"][:fill]
+    assert_not_nil(fill, "fill should be present")
+    gradient = fill[:gradient]
+    assert_not_nil(gradient, "gradient should be present")
+    assert_equal("linear", gradient[:type])
+    assert_equal(90.0, gradient[:degree])
+    assert_equal(2, gradient[:stops].size)
+    assert_equal(0.0, gradient[:stops][0][:position])
+    assert_equal("FFFF0000", gradient[:stops][0][:color])
+    assert_equal(1.0, gradient[:stops][1][:position])
+    assert_equal("FF0000FF", gradient[:stops][1][:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
