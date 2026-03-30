@@ -1725,8 +1725,19 @@ module Xlsxrb
           @current_font[:bold] = true if @current_font
         when "i"
           @current_font[:italic] = true if @current_font
+        when "strike"
+          @current_font[:strike] = true if @current_font
         when "u"
-          @current_font[:underline] = true if @current_font
+          if @current_font
+            val = attributes["val"]
+            @current_font[:underline] = val || true
+          end
+        when "vertAlign"
+          @current_font[:vert_align] = attributes["val"] if @current_font && attributes["val"]
+        when "scheme"
+          @current_font[:scheme] = attributes["val"] if @current_font && attributes["val"]
+        when "family"
+          @current_font[:family] = attributes["val"].to_i if @current_font && attributes["val"]
         when "sz"
           @current_font[:sz] = attributes["val"]&.to_f if @current_font
         when "color"

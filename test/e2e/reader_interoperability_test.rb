@@ -955,6 +955,28 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reads extended font attributes from SDK-generated XLSX" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_font_extended_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    font = cs["A1"][:font]
+    assert_not_nil(font, "font should be present")
+    assert_equal(true, font[:bold])
+    assert_equal(true, font[:italic])
+    assert_equal(true, font[:strike])
+    assert_equal("double", font[:underline])
+    assert_equal("superscript", font[:vert_align])
+    assert_equal("minor", font[:scheme])
+    assert_equal(2, font[:family])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
