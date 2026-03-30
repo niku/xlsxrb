@@ -2331,6 +2331,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "fileSharing element emits readOnlyRecommended and userName" do
+    writer = Xlsxrb::Writer.new
+    writer.set_file_sharing(:read_only_recommended, true)
+    writer.set_file_sharing(:user_name, "TestUser")
+    writer.set_cell("A1", "test")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-fs", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/readOnlyRecommended="1"/, xml_content)
+    assert_match(/userName="TestUser"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

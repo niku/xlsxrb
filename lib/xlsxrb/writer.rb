@@ -46,6 +46,7 @@ module Xlsxrb
       @app_properties = {}
       @custom_properties = []
       @file_version = {}
+      @file_sharing = {}
       @workbook_properties = {}
       @workbook_views = {}
       @calc_properties = {}
@@ -818,6 +819,16 @@ module Xlsxrb
       @file_version.dup
     end
 
+    # Sets a file sharing property (e.g. :read_only_recommended, :user_name).
+    def set_file_sharing(name, value)
+      @file_sharing[name] = value
+    end
+
+    # Returns file sharing hash.
+    def file_sharing
+      @file_sharing.dup
+    end
+
     # Sets a workbook view property (e.g. :active_tab, :first_sheet).
     def set_workbook_view(name, value)
       @workbook_views[name] = value
@@ -1369,6 +1380,18 @@ module Xlsxrb
         fv_attrs << %(rupBuild="#{@file_version[:rup_build]}") if @file_version[:rup_build]
         fv_attrs << %(codeName="#{xml_escape(@file_version[:code_name])}") if @file_version[:code_name]
         parts << "<fileVersion #{fv_attrs.join(" ")}/>" unless fv_attrs.empty?
+      end
+
+      # fileSharing
+      unless @file_sharing.empty?
+        fs_attrs = []
+        fs_attrs << 'readOnlyRecommended="1"' if @file_sharing[:read_only_recommended]
+        fs_attrs << %(userName="#{xml_escape(@file_sharing[:user_name])}") if @file_sharing[:user_name]
+        fs_attrs << %(algorithmName="#{xml_escape(@file_sharing[:algorithm_name])}") if @file_sharing[:algorithm_name]
+        fs_attrs << %(hashValue="#{@file_sharing[:hash_value]}") if @file_sharing[:hash_value]
+        fs_attrs << %(saltValue="#{@file_sharing[:salt_value]}") if @file_sharing[:salt_value]
+        fs_attrs << %(spinCount="#{@file_sharing[:spin_count]}") if @file_sharing[:spin_count]
+        parts << "<fileSharing #{fs_attrs.join(" ")}/>" unless fs_attrs.empty?
       end
 
       # workbookPr
