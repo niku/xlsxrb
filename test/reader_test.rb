@@ -3660,4 +3660,24 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(true, xf[:apply_alignment])
     assert_equal(false, xf[:apply_protection])
   end
+
+  test "round-trips iconSet percent attribute" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_conditional_format("A1:A5", type: :icon_set, priority: 1,
+                                           icon_set: { icon_set: "3Arrows", percent: false,
+                                                       cfvo: [{ type: "min" }, { type: "num", val: "33" }, { type: "num", val: "67" }] })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(1, cfs.size)
+    assert_equal(false, cfs[0][:icon_set][:percent])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

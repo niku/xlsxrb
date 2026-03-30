@@ -2723,6 +2723,20 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits iconSet percent attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_conditional_format("A1:A5", type: :icon_set, priority: 1,
+                                           icon_set: { icon_set: "3Arrows", percent: false,
+                                                       cfvo: [{ type: "min" }, { type: "num", val: "33" }, { type: "num", val: "67" }] })
+    xlsx_path = File.join(Dir.tmpdir, "icon_pct_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/percent="0"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
