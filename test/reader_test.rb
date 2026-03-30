@@ -2323,4 +2323,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips data validation showDropDown and imeMode through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_data_validation("A1:A10", type: "list",
+                                         formula1: '"Yes,No"',
+                                         show_drop_down: true,
+                                         ime_mode: "hiragana")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dvs = reader.data_validations
+
+    assert_equal(1, dvs.size)
+    dv = dvs.first
+    assert_equal(true, dv[:show_drop_down])
+    assert_equal("hiragana", dv[:ime_mode])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

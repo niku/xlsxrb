@@ -1678,6 +1678,8 @@ module Xlsxrb
           dv_attrs << %( error="#{xml_escape(dv[:error])}") if dv[:error]
           dv_attrs << %( promptTitle="#{xml_escape(dv[:prompt_title])}") if dv[:prompt_title]
           dv_attrs << %( prompt="#{xml_escape(dv[:prompt])}") if dv[:prompt]
+          dv_attrs << ' showDropDown="1"' if dv[:show_drop_down]
+          dv_attrs << %( imeMode="#{dv[:ime_mode]}") if dv[:ime_mode]
           if dv[:formula1] || dv[:formula2]
             parts << "<dataValidation #{dv_attrs}>"
             parts << "<formula1>#{xml_escape(dv[:formula1])}</formula1>" if dv[:formula1]

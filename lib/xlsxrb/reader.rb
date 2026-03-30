@@ -2603,6 +2603,8 @@ module Xlsxrb
           @current_dv[:error] = xml_unescape(attributes["error"]) if attributes["error"]
           @current_dv[:prompt_title] = xml_unescape(attributes["promptTitle"]) if attributes["promptTitle"]
           @current_dv[:prompt] = xml_unescape(attributes["prompt"]) if attributes["prompt"]
+          @current_dv[:show_drop_down] = true if attributes["showDropDown"] == "1"
+          @current_dv[:ime_mode] = attributes["imeMode"] if attributes["imeMode"]
         when "formula1"
           @inside_formula1 = true
           @text_buffer = +""
