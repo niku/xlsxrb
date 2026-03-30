@@ -2283,6 +2283,32 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "definedName emits extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.add_defined_name("MyName", "Sheet1!$A$1",
+                            comment: "A comment", description: "A desc",
+                            function: true, vb_procedure: true, xlm: true,
+                            shortcut_key: "A", publish_to_server: true, workbook_parameter: true)
+    writer.set_cell("A1", "test")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dn", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/comment="A comment"/, xml_content)
+    assert_match(/description="A desc"/, xml_content)
+    assert_match(/function="1"/, xml_content)
+    assert_match(/vbProcedure="1"/, xml_content)
+    assert_match(/xlm="1"/, xml_content)
+    assert_match(/shortcutKey="A"/, xml_content)
+    assert_match(/publishToServer="1"/, xml_content)
+    assert_match(/workbookParameter="1"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

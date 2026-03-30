@@ -3087,4 +3087,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips definedName extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_defined_name("MyName", "Sheet1!$A$1",
+                            comment: "A comment", description: "A desc",
+                            function: true, shortcut_key: "B")
+    writer.set_cell("A1", "test")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dns = reader.defined_names
+    dn = dns.find { |d| d[:name] == "MyName" }
+    assert_not_nil(dn)
+    assert_equal("A comment", dn[:comment])
+    assert_equal("A desc", dn[:description])
+    assert_equal(true, dn[:function])
+    assert_equal("B", dn[:shortcut_key])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
