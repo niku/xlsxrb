@@ -910,6 +910,47 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_font with theme color and tint emits theme color attributes" do
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(sz: 11, name: "Calibri", theme: 1, tint: -0.25)
+    assert_equal(1, fid)
+
+    style_id = writer.add_cell_style(font_id: fid)
+    writer.set_cell("A1", "theme color")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-theme", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<color[^/>]*theme="1"}, xml_content)
+    assert_match(%r{<color[^/>]*tint="-0.25"}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_font with indexed color emits indexed color attribute" do
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(sz: 11, name: "Calibri", indexed: 10)
+    assert_equal(1, fid)
+
+    style_id = writer.add_cell_style(font_id: fid)
+    writer.set_cell("A1", "indexed color")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-indexed", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<color indexed="10"/>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "rich text value stored and retrievable" do
     writer = Xlsxrb::Writer.new
     rt = Xlsxrb::RichText.new(runs: [
