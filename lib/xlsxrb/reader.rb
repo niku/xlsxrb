@@ -3952,6 +3952,11 @@ module Xlsxrb
         when "col", "colOff", "row", "rowOff"
           @current_field = name
           @text_buffer = +""
+        when "clientData"
+          if @inside_anchor
+            @anchor_locks_with_sheet = attributes["fLocksWithSheet"]
+            @anchor_prints_with_sheet = attributes["fPrintsWithSheet"]
+          end
         end
       end
 
@@ -3972,9 +3977,13 @@ module Xlsxrb
           @current_image = nil
           @inside_pic = false
         when "twoCellAnchor", "oneCellAnchor"
+          @images.last[:locks_with_sheet] = @anchor_locks_with_sheet == "1" if @anchor_locks_with_sheet && !@images.empty?
+          @images.last[:prints_with_sheet] = @anchor_prints_with_sheet == "1" if @anchor_prints_with_sheet && !@images.empty?
           @inside_anchor = false
           @anchor_from = {}
           @anchor_to = {}
+          @anchor_locks_with_sheet = nil
+          @anchor_prints_with_sheet = nil
         when "from"
           @inside_from = false
         when "to"
@@ -4029,6 +4038,9 @@ module Xlsxrb
         when "chart"
           rid = attributes["r:id"] || attributes["id"]
           @current_chart[:rid] = rid if @inside_graphic_frame && @current_chart && rid
+        when "clientData"
+          @anchor_locks_with_sheet = attributes["fLocksWithSheet"]
+          @anchor_prints_with_sheet = attributes["fPrintsWithSheet"]
         end
       end
 
@@ -4043,7 +4055,11 @@ module Xlsxrb
           @current_chart = nil
           @inside_graphic_frame = false
         when "twoCellAnchor", "oneCellAnchor"
+          @charts.last[:locks_with_sheet] = @anchor_locks_with_sheet == "1" if @anchor_locks_with_sheet && !@charts.empty?
+          @charts.last[:prints_with_sheet] = @anchor_prints_with_sheet == "1" if @anchor_prints_with_sheet && !@charts.empty?
           @anchor_edit_as = nil
+          @anchor_locks_with_sheet = nil
+          @anchor_prints_with_sheet = nil
         end
       end
 
@@ -4109,6 +4125,11 @@ module Xlsxrb
         when "col", "colOff", "row", "rowOff"
           @current_field = name
           @text_buffer = +""
+        when "clientData"
+          if @inside_anchor
+            @anchor_locks_with_sheet = attributes["fLocksWithSheet"]
+            @anchor_prints_with_sheet = attributes["fPrintsWithSheet"]
+          end
         end
       end
 
@@ -4130,9 +4151,13 @@ module Xlsxrb
           @inside_sp = false
           @inside_tx_body = false
         when "twoCellAnchor", "oneCellAnchor"
+          @shapes.last[:locks_with_sheet] = @anchor_locks_with_sheet == "1" if @anchor_locks_with_sheet && !@shapes.empty?
+          @shapes.last[:prints_with_sheet] = @anchor_prints_with_sheet == "1" if @anchor_prints_with_sheet && !@shapes.empty?
           @inside_anchor = false
           @anchor_from = {}
           @anchor_to = {}
+          @anchor_locks_with_sheet = nil
+          @anchor_prints_with_sheet = nil
         when "from"
           @inside_from = false
         when "to"

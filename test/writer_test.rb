@@ -938,6 +938,15 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("absolute", shapes[0][:edit_as])
   end
 
+  test "insert_image with clientData attrs stores locks_with_sheet and prints_with_sheet" do
+    writer = Xlsxrb::Writer.new
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", locks_with_sheet: false, prints_with_sheet: false)
+    imgs = writer.images
+    assert_equal(false, imgs[0][:locks_with_sheet])
+    assert_equal(false, imgs[0][:prints_with_sheet])
+  end
+
   test "add_comment stores comment definition" do
     writer = Xlsxrb::Writer.new
     writer.add_comment("A1", "Note text", author: "Tester")
