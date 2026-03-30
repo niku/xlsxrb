@@ -1070,6 +1070,35 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid complete CF rule types" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_dxf(font: { bold: true, color: "FFFF0000" })
+    writer.add_conditional_format("A1:A10", type: :expression, priority: 1,
+                                            formula: 'MOD(ROW(),2)=0', format_id: 0)
+    writer.add_conditional_format("B1:B10", type: :unique_values, priority: 2, format_id: 0)
+    writer.add_conditional_format("C1:C10", type: :not_contains_text, priority: 3, operator: "notContains",
+                                            text: "bad", formula: 'ISERROR(SEARCH("bad",C1))',
+                                            format_id: 0)
+    writer.add_conditional_format("D1:D10", type: :contains_blanks, priority: 4,
+                                            formula: 'LEN(TRIM(D1))=0', format_id: 0)
+    writer.add_conditional_format("E1:E10", type: :not_contains_blanks, priority: 5,
+                                            formula: 'LEN(TRIM(E1))>0', format_id: 0)
+    writer.add_conditional_format("F1:F10", type: :time_period, priority: 6,
+                                            time_period: "lastWeek",
+                                            formula: 'AND(TODAY()-7<=F1,F1<=TODAY())',
+                                            format_id: 0)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_cf_complete_types_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

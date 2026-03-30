@@ -1183,6 +1183,35 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "stores complete set of CF rule types" do
+    writer = Xlsxrb::Writer.new
+    writer.add_conditional_format("A1:A10", type: :expression, priority: 1,
+                                            formula: 'MOD(ROW(),2)=0', format_id: 0)
+    writer.add_conditional_format("B1:B10", type: :unique_values, priority: 2, format_id: 0)
+    writer.add_conditional_format("C1:C10", type: :not_contains_text, priority: 3, operator: "notContains",
+                                            text: "bad", formula: 'ISERROR(SEARCH("bad",C1))',
+                                            format_id: 0)
+    writer.add_conditional_format("D1:D10", type: :contains_blanks, priority: 4,
+                                            formula: 'LEN(TRIM(D1))=0', format_id: 0)
+    writer.add_conditional_format("E1:E10", type: :not_contains_blanks, priority: 5,
+                                            formula: 'LEN(TRIM(E1))>0', format_id: 0)
+    writer.add_conditional_format("F1:F10", type: :time_period, priority: 6,
+                                            time_period: "lastWeek",
+                                            formula: 'AND(TODAY()-7<=F1,F1<=TODAY())',
+                                            format_id: 0)
+
+    cfs = writer.conditional_formats
+    assert_equal(6, cfs.size)
+    assert_equal(:expression, cfs[0][:type])
+    assert_equal(:unique_values, cfs[1][:type])
+    assert_equal(:not_contains_text, cfs[2][:type])
+    assert_equal("bad", cfs[2][:text])
+    assert_equal(:contains_blanks, cfs[3][:type])
+    assert_equal(:not_contains_blanks, cfs[4][:type])
+    assert_equal(:time_period, cfs[5][:type])
+    assert_equal("lastWeek", cfs[5][:time_period])
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

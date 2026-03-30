@@ -1149,6 +1149,28 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated complete CF rule types" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_cf_complete_types_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(6, cfs.size)
+
+    assert_equal("expression", cfs[0][:type])
+    assert_equal("uniqueValues", cfs[1][:type])
+    assert_equal("notContainsText", cfs[2][:type])
+    assert_equal("bad", cfs[2][:text])
+    assert_equal("containsBlanks", cfs[3][:type])
+    assert_equal("notContainsBlanks", cfs[4][:type])
+    assert_equal("timePeriod", cfs[5][:type])
+    assert_equal("lastWeek", cfs[5][:time_period])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

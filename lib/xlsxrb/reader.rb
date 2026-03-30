@@ -2569,6 +2569,7 @@ module Xlsxrb
           @current_rule[:percent] = true if attributes["percent"] == "1"
           @current_rule[:bottom] = true if attributes["bottom"] == "1"
           @current_rule[:text] = attributes["text"] if attributes["text"]
+          @current_rule[:time_period] = attributes["timePeriod"] if attributes["timePeriod"]
         when "formula"
           @inside_formula = true
           @text_buffer = +""

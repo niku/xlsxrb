@@ -1884,4 +1884,56 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips complete set of CF rule types" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.add_dxf(font: { bold: true, color: "FFFF0000" })
+    writer.add_conditional_format("A1:A10", type: :expression, priority: 1,
+                                            formula: 'MOD(ROW(),2)=0', format_id: 0)
+    writer.add_conditional_format("B1:B10", type: :unique_values, priority: 2, format_id: 0)
+    writer.add_conditional_format("C1:C10", type: :not_contains_text, priority: 3, operator: "notContains",
+                                            text: "bad", formula: 'ISERROR(SEARCH("bad",C1))',
+                                            format_id: 0)
+    writer.add_conditional_format("D1:D10", type: :contains_blanks, priority: 4,
+                                            formula: 'LEN(TRIM(D1))=0', format_id: 0)
+    writer.add_conditional_format("E1:E10", type: :not_contains_blanks, priority: 5,
+                                            formula: 'LEN(TRIM(E1))>0', format_id: 0)
+    writer.add_conditional_format("F1:F10", type: :time_period, priority: 6,
+                                            time_period: "lastWeek",
+                                            formula: 'AND(TODAY()-7<=F1,F1<=TODAY())',
+                                            format_id: 0)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(6, cfs.size)
+
+    # expression
+    assert_equal("expression", cfs[0][:type])
+    assert_equal(["MOD(ROW(),2)=0"], cfs[0][:formulas])
+
+    # uniqueValues
+    assert_equal("uniqueValues", cfs[1][:type])
+
+    # notContainsText
+    assert_equal("notContainsText", cfs[2][:type])
+    assert_equal("bad", cfs[2][:text])
+
+    # containsBlanks
+    assert_equal("containsBlanks", cfs[3][:type])
+
+    # notContainsBlanks
+    assert_equal("notContainsBlanks", cfs[4][:type])
+
+    # timePeriod
+    assert_equal("timePeriod", cfs[5][:type])
+    assert_equal("lastWeek", cfs[5][:time_period])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
