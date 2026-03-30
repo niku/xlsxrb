@@ -2473,6 +2473,30 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits sheetPr sync and transition attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.set_sheet_property(:sync_horizontal, true)
+    writer.set_sheet_property(:sync_vertical, true)
+    writer.set_sheet_property(:sync_ref, "A1")
+    writer.set_sheet_property(:transition_evaluation, true)
+    writer.set_sheet_property(:transition_entry, true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sp", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/syncHorizontal="1"/, xml_content)
+    assert_match(/syncVertical="1"/, xml_content)
+    assert_match(/syncRef="A1"/, xml_content)
+    assert_match(/transitionEvaluation="1"/, xml_content)
+    assert_match(/transitionEntry="1"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

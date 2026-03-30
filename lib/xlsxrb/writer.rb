@@ -1698,6 +1698,11 @@ module Xlsxrb
       # Emit <sheetPr> if sheet properties are defined.
       unless sheet_props.empty?
         sp_attrs = []
+        sp_attrs << 'syncHorizontal="1"' if sheet_props[:sync_horizontal]
+        sp_attrs << 'syncVertical="1"' if sheet_props[:sync_vertical]
+        sp_attrs << %(syncRef="#{sheet_props[:sync_ref]}") if sheet_props[:sync_ref]
+        sp_attrs << 'transitionEvaluation="1"' if sheet_props[:transition_evaluation]
+        sp_attrs << 'transitionEntry="1"' if sheet_props[:transition_entry]
         sp_attrs << %(codeName="#{xml_escape(sheet_props[:code_name])}") if sheet_props[:code_name]
         sp_attrs << 'filterMode="1"' if sheet_props[:filter_mode]
         sp_attrs << 'published="0"' if sheet_props[:published] == false
