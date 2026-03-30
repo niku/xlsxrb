@@ -1439,6 +1439,29 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "set_print_area creates _xlnm.Print_Area defined name" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_print_area("A1:D20")
+
+    dns = writer.defined_names
+    assert_equal(1, dns.size)
+    assert_equal("_xlnm.Print_Area", dns[0][:name])
+    assert_equal("'Sheet1'!$A$1:$D$20", dns[0][:value])
+    assert_equal(0, dns[0][:local_sheet_id])
+  end
+
+  test "set_print_titles creates _xlnm.Print_Titles defined name" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_print_titles(rows: "1:3", cols: "A:B")
+
+    dns = writer.defined_names
+    assert_equal(1, dns.size)
+    assert_equal("_xlnm.Print_Titles", dns[0][:name])
+    assert_equal("'Sheet1'!$A:$B,'Sheet1'!$1:$3", dns[0][:value])
+  end
+
   private
 
   # ensure zlib loaded

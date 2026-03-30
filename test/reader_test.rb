@@ -2225,4 +2225,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips print area and print titles through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_print_area("A1:D20")
+    writer.set_print_titles(rows: "1:3", cols: "A:B")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+
+    pa = reader.print_area
+    assert_equal("$A$1:$D$20", pa)
+
+    pt = reader.print_titles
+    assert_not_nil(pt)
+    assert(pt.include?("$A:$B"), "Expected print titles to contain '$A:$B' but got '#{pt}'")
+    assert(pt.include?("$1:$3"), "Expected print titles to contain '$1:$3' but got '#{pt}'")
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

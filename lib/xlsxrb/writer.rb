@@ -691,6 +691,36 @@ module Xlsxrb
       @defined_names.map(&:dup)
     end
 
+    # Sets the print area for a sheet. range should be like "A1:D20".
+    # Generates the _xlnm.Print_Area defined name automatically.
+    def set_print_area(range, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+
+      value = "'#{sheet_name}'!#{absolute_range(range)}"
+      # Remove any existing print area for this sheet
+      idx = @sheet_order.index(sheet_name)
+      @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_id] == idx }
+      add_defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
+    end
+
+    # Sets print titles (rows and/or columns to repeat on each page).
+    # rows: "1:3" repeats rows 1-3, cols: "A:B" repeats columns A-B.
+    def set_print_titles(rows: nil, cols: nil, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+      raise ArgumentError, "at least one of rows: or cols: must be specified" unless rows || cols
+
+      parts = []
+      parts << "'#{sheet_name}'!$#{cols.sub(":", ":$")}" if cols
+      parts << "'#{sheet_name}'!$#{rows.sub(":", ":$")}" if rows
+      value = parts.join(",")
+
+      idx = @sheet_order.index(sheet_name)
+      @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_id] == idx }
+      add_defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
+    end
+
     # Sets a workbook property (e.g. :date1904, :default_theme_version).
     def set_workbook_property(name, value)
       @workbook_properties[name] = value
@@ -2815,6 +2845,19 @@ module Xlsxrb
     # Extracts the row number from a cell address, e.g. 1 from "A1".
     def extract_row_number(cell_address)
       cell_address.match(/(\d+)$/)[1].to_i
+    end
+
+    # Converts a range like "A1:D20" to absolute "$A$1:$D$20".
+    def absolute_range(range)
+      range.split(":").map { |part| absolute_cell(part) }.join(":")
+    end
+
+    # Converts "A1" to "$A$1".
+    def absolute_cell(cell_ref)
+      m = cell_ref.match(/\A([A-Z]+)(\d+)\z/)
+      raise ArgumentError, "invalid cell reference: #{cell_ref}" unless m
+
+      "$#{m[1]}$#{m[2]}"
     end
   end
 end
