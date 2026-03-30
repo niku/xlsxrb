@@ -4299,4 +4299,76 @@ class ReaderTest < Test::Unit::TestCase
     assert_nil(items[3])
     assert_equal("#N/A", items[4])
   end
+
+  test "round-trips pivotCacheRecords" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-cache-records", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Region")
+    writer.set_cell("C1", "Amount")
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           col_fields: [1],
+                           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+                           field_names: %w[Category Region Amount],
+                           items: { 0 => %w[A B C], 1 => %w[East West] })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    cache = pts[0][:cache]
+    records = cache[:records]
+    assert_not_nil(records)
+    assert_equal(3, records.size)
+    # Each record has 3 fields: x (field item index), x, n (number)
+    assert_equal(3, records[0].size)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "parses pivotCacheRecords with mixed element types" do
+    xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <pivotCacheRecords xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="2">
+        <r>
+          <x v="0"/>
+          <s v="Hello"/>
+          <n v="42"/>
+          <b v="1"/>
+          <d v="2024-01-15T00:00:00"/>
+          <m/>
+          <e v="#REF!"/>
+        </r>
+        <r>
+          <x v="1"/>
+          <s v="World"/>
+          <n v="99.5"/>
+          <b v="0"/>
+          <d v="2024-06-30T00:00:00"/>
+          <m/>
+          <e v="#N/A"/>
+        </r>
+      </pivotCacheRecords>
+    XML
+
+    parser = REXML::Parsers::SAX2Parser.new(xml)
+    listener = Xlsxrb::Reader::PivotCacheRecordsListener.new
+    parser.listen(listener)
+    parser.parse
+    records = listener.records
+    assert_equal(2, records.size)
+    assert_equal(7, records[0].size)
+    assert_equal({ x: 0 }, records[0][0])
+    assert_equal("Hello", records[0][1])
+    assert_equal(42.0, records[0][2])
+    assert_equal(true, records[0][3])
+    assert_equal("2024-01-15T00:00:00", records[0][4])
+    assert_nil(records[0][5])
+    assert_equal("#REF!", records[0][6])
+    assert_equal({ x: 1 }, records[1][0])
+    assert_equal(false, records[1][3])
+  end
 end
