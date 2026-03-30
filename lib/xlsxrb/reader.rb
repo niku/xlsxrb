@@ -1478,6 +1478,8 @@ module Xlsxrb
         attrs[:collapsed] = true if attributes["collapsed"] == "1"
         s = attributes["s"]
         attrs[:style] = s.to_i if s
+        attrs[:thick_top] = true if attributes["thickTop"] == "1"
+        attrs[:thick_bot] = true if attributes["thickBot"] == "1"
         @row_attributes[row_num] = attrs unless attrs.empty?
       end
 

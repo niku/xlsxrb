@@ -220,6 +220,26 @@ module Xlsxrb
       @row_attrs[sheet_name][row_num][:style] = style_id
     end
 
+    # Sets a row thick top border flag.
+    def set_row_thick_top(row_num, thick: true, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
+      raise ArgumentError, "row must be a positive Integer" unless row_num.is_a?(Integer) && row_num >= 1
+
+      @row_attrs[sheet_name][row_num] ||= {}
+      @row_attrs[sheet_name][row_num][:thick_top] = thick
+    end
+
+    # Sets a row thick bottom border flag.
+    def set_row_thick_bot(row_num, thick: true, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
+      raise ArgumentError, "row must be a positive Integer" unless row_num.is_a?(Integer) && row_num >= 1
+
+      @row_attrs[sheet_name][row_num] ||= {}
+      @row_attrs[sheet_name][row_num][:thick_bot] = thick
+    end
+
     # Returns row attributes for the first (or given) sheet.
     def row_attributes(sheet: nil)
       sheet_name = sheet || @sheet_order.first
@@ -1626,6 +1646,8 @@ module Xlsxrb
           attrs << %( outlineLevel="#{ra[:outline_level]}") if ra[:outline_level]
           attrs << ' collapsed="1"' if ra[:collapsed]
           attrs << %( s="#{ra[:style]}" customFormat="1") if ra.key?(:style)
+          attrs << ' thickTop="1"' if ra[:thick_top]
+          attrs << ' thickBot="1"' if ra[:thick_bot]
         end
         parts << "<row #{attrs}>"
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|

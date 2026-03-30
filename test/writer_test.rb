@@ -363,6 +363,24 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(true, attrs[3][:collapsed])
   end
 
+  test "row emits thickTop and thickBot" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_row_thick_top(1)
+    writer.set_row_thick_bot(1)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-thick", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/thickTop="1"/, xml)
+    assert_match(/thickBot="1"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "stores column attributes" do
     writer = Xlsxrb::Writer.new
     writer.set_column_attribute("B", :hidden, true)
