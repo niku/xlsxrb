@@ -592,6 +592,34 @@ class WriterTest < Test::Unit::TestCase
     writer.set_cell_style("A1", style_id)
   end
 
+  test "add_font supports extended attributes (strike, underline val, vertAlign, scheme, family)" do
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(
+      bold: true, italic: true, strike: true, sz: 12, name: "Calibri",
+      color: "FF0000FF", underline: "double", vert_align: "superscript",
+      scheme: "minor", family: 2
+    )
+    assert_equal(1, fid)
+
+    writer.set_cell("A1", "extended font")
+    style_id = writer.add_cell_style(font_id: fid)
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-fontex", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<strike/>}, xml_content)
+    assert_match(%r{<u val="double"/>}, xml_content)
+    assert_match(%r{<vertAlign val="superscript"/>}, xml_content)
+    assert_match(%r{<scheme val="minor"/>}, xml_content)
+    assert_match(%r{<family val="2"/>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "stores dxf entries" do
     writer = Xlsxrb::Writer.new
     dxf_id = writer.add_dxf(font: { bold: true, color: "FFFF0000" },

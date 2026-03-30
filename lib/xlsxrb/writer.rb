@@ -2533,10 +2533,20 @@ module Xlsxrb
       parts = ["<font>"]
       parts << "<b/>" if font[:bold]
       parts << "<i/>" if font[:italic]
-      parts << "<u/>" if font[:underline]
+      parts << "<strike/>" if font[:strike]
+      if font[:underline]
+        if font[:underline] == true
+          parts << "<u/>"
+        else
+          parts << %(<u val="#{font[:underline]}"/>)
+        end
+      end
+      parts << %(<vertAlign val="#{font[:vert_align]}"/>) if font[:vert_align]
       parts << %(<sz val="#{font[:sz]}"/>) if font[:sz]
       parts << %(<color rgb="#{font[:color]}"/>) if font[:color]
       parts << %(<name val="#{xml_escape(font[:name])}"/>) if font[:name]
+      parts << %(<family val="#{font[:family]}"/>) if font[:family]
+      parts << %(<scheme val="#{font[:scheme]}"/>) if font[:scheme]
       parts << "</font>"
       parts.join
     end

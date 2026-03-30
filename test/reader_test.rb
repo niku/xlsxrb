@@ -1522,4 +1522,36 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips extended font attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(
+      bold: true, italic: true, strike: true, sz: 12, name: "Calibri",
+      color: "FF0000FF", underline: "double", vert_align: "superscript",
+      scheme: "minor", family: 2
+    )
+    style_id = writer.add_cell_style(font_id: fid)
+    writer.set_cell("A1", "extended")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    font = cs["A1"][:font]
+    assert_not_nil(font, "font should be present")
+    assert_equal(true, font[:bold])
+    assert_equal(true, font[:italic])
+    assert_equal(true, font[:strike])
+    assert_equal("double", font[:underline])
+    assert_equal("superscript", font[:vert_align])
+    assert_equal("minor", font[:scheme])
+    assert_equal(2, font[:family])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
