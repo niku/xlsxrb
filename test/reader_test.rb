@@ -3502,4 +3502,23 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips comment guid and shapeId" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "val")
+    writer.add_comment("A1", "Note", guid: "{AABBCCDD-1122-3344-5566-778899AABBCC}", shape_id: 2048)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cmnts = reader.comments
+    assert_equal(1, cmnts.size)
+    assert_equal("{AABBCCDD-1122-3344-5566-778899AABBCC}", cmnts[0][:guid])
+    assert_equal(2048, cmnts[0][:shape_id])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

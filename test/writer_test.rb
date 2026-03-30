@@ -2655,6 +2655,19 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits comment guid and shapeId attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_comment("A1", "Note", guid: "{12345678-1234-1234-1234-123456789ABC}", shape_id: 1025)
+    xlsx_path = File.join(Dir.tmpdir, "comment_guid_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/comments1.xml")
+    assert_match(/guid="\{12345678-1234-1234-1234-123456789ABC\}"/, xml)
+    assert_match(/shapeId="1025"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

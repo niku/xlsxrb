@@ -4257,6 +4257,9 @@ module Xlsxrb
         when "comment"
           @inside_comment = true
           @current_comment = { ref: attributes["ref"], author_id: attributes["authorId"]&.to_i }
+          @current_comment[:guid] = attributes["guid"] if attributes["guid"]
+          sid = attributes["shapeId"]
+          @current_comment[:shape_id] = sid.to_i if sid
         when "text"
           if @inside_comment
             @inside_text = true
