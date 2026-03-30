@@ -3308,4 +3308,33 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips workbookPr extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_workbook_property(:prompted_solutions, true)
+    writer.set_workbook_property(:show_pivot_chart_filter, true)
+    writer.set_workbook_property(:allow_refresh_query, true)
+    writer.set_workbook_property(:publish_items, true)
+    writer.set_workbook_property(:save_external_link_values, false)
+    writer.set_workbook_property(:show_border_unselected_tables, false)
+    writer.set_workbook_property(:date_compatibility, false)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    wp = reader.workbook_properties
+    assert_equal(true, wp[:prompted_solutions])
+    assert_equal(true, wp[:show_pivot_chart_filter])
+    assert_equal(true, wp[:allow_refresh_query])
+    assert_equal(true, wp[:publish_items])
+    assert_equal(false, wp[:save_external_link_values])
+    assert_equal(false, wp[:show_border_unselected_tables])
+    assert_equal(false, wp[:date_compatibility])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

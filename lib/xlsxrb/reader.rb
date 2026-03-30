@@ -1722,6 +1722,22 @@ module Xlsxrb
           @workbook_properties[:check_compatibility] = %w[1 true].include?(cc) unless cc.nil?
           hpfl = attributes["hidePivotFieldList"]
           @workbook_properties[:hide_pivot_field_list] = %w[1 true].include?(hpfl) unless hpfl.nil?
+          sbut = attributes["showBorderUnselectedTables"]
+          @workbook_properties[:show_border_unselected_tables] = %w[1 true].include?(sbut) unless sbut.nil?
+          ps = attributes["promptedSolutions"]
+          @workbook_properties[:prompted_solutions] = %w[1 true].include?(ps) unless ps.nil?
+          sia = attributes["showInkAnnotation"]
+          @workbook_properties[:show_ink_annotation] = %w[1 true].include?(sia) unless sia.nil?
+          selv = attributes["saveExternalLinkValues"]
+          @workbook_properties[:save_external_link_values] = %w[1 true].include?(selv) unless selv.nil?
+          spcf = attributes["showPivotChartFilter"]
+          @workbook_properties[:show_pivot_chart_filter] = %w[1 true].include?(spcf) unless spcf.nil?
+          arq = attributes["allowRefreshQuery"]
+          @workbook_properties[:allow_refresh_query] = %w[1 true].include?(arq) unless arq.nil?
+          pi = attributes["publishItems"]
+          @workbook_properties[:publish_items] = %w[1 true].include?(pi) unless pi.nil?
+          dcompat = attributes["dateCompatibility"]
+          @workbook_properties[:date_compatibility] = %w[1 true].include?(dcompat) unless dcompat.nil?
         when "workbookView"
           at = attributes["activeTab"]
           @workbook_views[:active_tab] = at.to_i if at
