@@ -1070,6 +1070,33 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips tableColumn extended attributes (totalsRowLabel, dxfIds, dataCellStyle)" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Item")
+    writer.set_cell("B1", "Price")
+    writer.add_table("A1:B5", columns: [
+                       { name: "Item", totals_row_label: "Total", header_row_dxf_id: 1 },
+                       { name: "Price", totals_row_function: "sum", data_dxf_id: 2,
+                         totals_row_dxf_id: 3, data_cell_style: "Currency" }
+                     ], totals_row_count: 1)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    tbls = reader.tables
+    cols = tbls[0][:columns]
+    assert_equal("Total", cols[0][:totals_row_label])
+    assert_equal(1, cols[0][:header_row_dxf_id])
+    assert_equal(2, cols[1][:data_dxf_id])
+    assert_equal(3, cols[1][:totals_row_dxf_id])
+    assert_equal("Currency", cols[1][:data_cell_style])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart with multiple series and axis titles" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
