@@ -2710,4 +2710,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips calc properties extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_calc_property(:full_precision, false)
+    writer.set_calc_property(:concurrent_calc, false)
+    writer.set_calc_property(:concurrent_manual_count, 4)
+    writer.set_calc_property(:force_full_calc, true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cp = reader.calc_properties
+    assert_equal(false, cp[:full_precision])
+    assert_equal(false, cp[:concurrent_calc])
+    assert_equal(4, cp[:concurrent_manual_count])
+    assert_equal(true, cp[:force_full_calc])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
