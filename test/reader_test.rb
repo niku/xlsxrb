@@ -1599,6 +1599,34 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips chart anchor positions" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_chart(type: :bar, title: "Positioned",
+                     cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
+                     from_col: 2, from_row: 3, to_col: 8, to_row: 18,
+                     from_col_off: 100, from_row_off: 200, to_col_off: 300, to_row_off: 400)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal(2, charts[0][:from_col])
+    assert_equal(3, charts[0][:from_row])
+    assert_equal(8, charts[0][:to_col])
+    assert_equal(18, charts[0][:to_row])
+    assert_equal(100, charts[0][:from_col_off])
+    assert_equal(200, charts[0][:from_row_off])
+    assert_equal(300, charts[0][:to_col_off])
+    assert_equal(400, charts[0][:to_row_off])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips image clientData fLocksWithSheet and fPrintsWithSheet" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

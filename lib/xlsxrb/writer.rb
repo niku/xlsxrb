@@ -1098,11 +1098,17 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, grouping: nil, bar_dir: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, grouping: nil, bar_dir: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
-      chart = { type: type, title: title }
+      chart = { type: type, title: title,
+                from_col: from_col, from_row: from_row,
+                to_col: to_col, to_row: to_row }
+      chart[:from_col_off] = from_col_off if from_col_off
+      chart[:from_row_off] = from_row_off if from_row_off
+      chart[:to_col_off] = to_col_off if to_col_off
+      chart[:to_row_off] = to_row_off if to_row_off
       chart[:series] = (series || [{ cat_ref: cat_ref, val_ref: val_ref }])
       chart[:legend] = legend if legend
       chart[:data_labels] = data_labels if data_labels
@@ -2573,8 +2579,8 @@ module Xlsxrb
           rid = "rId#{dp[:rid_index]}"
           chart_ea_attr = chart[:edit_as] ? %( editAs="#{xml_escape(chart[:edit_as])}") : ""
           parts << "<xdr:twoCellAnchor#{chart_ea_attr}>"
-          parts << anchor_xml("from", 0, 0)
-          parts << anchor_xml("to", 10, 15)
+          parts << anchor_xml("from", chart[:from_col], chart[:from_row], col_off: chart[:from_col_off] || 0, row_off: chart[:from_row_off] || 0)
+          parts << anchor_xml("to", chart[:to_col], chart[:to_row], col_off: chart[:to_col_off] || 0, row_off: chart[:to_row_off] || 0)
           parts << %(<xdr:graphicFrame macro="">)
           parts << %(<xdr:nvGraphicFramePr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(chart[:title] || "Chart")}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>)
           parts << '<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="5000000" cy="3000000"/></xdr:xfrm>'
