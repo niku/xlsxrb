@@ -4518,6 +4518,17 @@ module Xlsxrb
           @pivot_table[:compact] = attributes["compact"] != "0" if attributes["compact"]
           @pivot_table[:outline] = attributes["outline"] != "0" if attributes["outline"]
           @pivot_table[:show_headers] = attributes["showHeaders"] != "0" if attributes["showHeaders"]
+          @pivot_table[:grand_total_caption] = attributes["grandTotalCaption"] if attributes["grandTotalCaption"]
+          @pivot_table[:error_caption] = attributes["errorCaption"] if attributes["errorCaption"]
+          @pivot_table[:show_error] = attributes["showError"] == "1" if attributes["showError"]
+          @pivot_table[:missing_caption] = attributes["missingCaption"] if attributes["missingCaption"]
+          @pivot_table[:show_missing] = attributes["showMissing"] != "0" if attributes["showMissing"]
+          @pivot_table[:tag] = attributes["tag"] if attributes["tag"]
+          @pivot_table[:indent] = attributes["indent"]&.to_i if attributes["indent"]
+          @pivot_table[:published] = attributes["published"] == "1" if attributes["published"]
+          @pivot_table[:created_version] = attributes["createdVersion"]&.to_i if attributes["createdVersion"]
+          @pivot_table[:updated_version] = attributes["updatedVersion"]&.to_i if attributes["updatedVersion"]
+          @pivot_table[:min_refreshable_version] = attributes["minRefreshableVersion"]&.to_i if attributes["minRefreshableVersion"]
         when "location"
           @pivot_table[:ref] = attributes["ref"] if @pivot_table
         when "pivotField"

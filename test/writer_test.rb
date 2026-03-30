@@ -1024,6 +1024,36 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(false, pivots[0][:show_headers])
   end
 
+  test "add_pivot_table with grandTotalCaption, errorCaption, missingCaption, tag, version attrs" do
+    writer = Xlsxrb::Writer.new
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "Sum", subtotal: "sum" }],
+                           grand_total_caption: "Grand Total",
+                           error_caption: "#N/A",
+                           show_error: true,
+                           missing_caption: "(blank)",
+                           show_missing: false,
+                           tag: "custom-tag",
+                           indent: 2,
+                           published: true,
+                           created_version: 6,
+                           updated_version: 8,
+                           min_refreshable_version: 3)
+    pivots = writer.pivot_tables
+    assert_equal("Grand Total", pivots[0][:grand_total_caption])
+    assert_equal("#N/A", pivots[0][:error_caption])
+    assert_equal(true, pivots[0][:show_error])
+    assert_equal("(blank)", pivots[0][:missing_caption])
+    assert_equal(false, pivots[0][:show_missing])
+    assert_equal("custom-tag", pivots[0][:tag])
+    assert_equal(2, pivots[0][:indent])
+    assert_equal(true, pivots[0][:published])
+    assert_equal(6, pivots[0][:created_version])
+    assert_equal(8, pivots[0][:updated_version])
+    assert_equal(3, pivots[0][:min_refreshable_version])
+  end
+
   test "add_pivot_table with source_name stores worksheetSource name" do
     writer = Xlsxrb::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",

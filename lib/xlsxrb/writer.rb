@@ -1174,7 +1174,12 @@ module Xlsxrb
         data_caption: opts[:data_caption], data_on_rows: opts[:data_on_rows],
         row_grand_totals: opts[:row_grand_totals], col_grand_totals: opts[:col_grand_totals],
         compact: opts[:compact], outline: opts[:outline], show_headers: opts[:show_headers],
-        source_name: opts[:source_name]
+        source_name: opts[:source_name],
+        grand_total_caption: opts[:grand_total_caption], error_caption: opts[:error_caption],
+        show_error: opts[:show_error], missing_caption: opts[:missing_caption],
+        show_missing: opts[:show_missing], tag: opts[:tag], indent: opts[:indent],
+        published: opts[:published], created_version: opts[:created_version],
+        updated_version: opts[:updated_version], min_refreshable_version: opts[:min_refreshable_version]
       }
     end
 
@@ -2697,6 +2702,12 @@ module Xlsxrb
     def generate_pivot_table_xml(pivot_table, cache_id)
       data_caption = pivot_table[:data_caption] || (pivot_table[:data_fields].first ? pivot_table[:data_fields].first[:name] : "Values")
       pt_attrs = %( xmlns="#{SSML_NS}" name="#{xml_escape(pivot_table[:name])}" cacheId="#{cache_id}" dataCaption="#{xml_escape(data_caption)}")
+      pt_attrs << %( grandTotalCaption="#{xml_escape(pivot_table[:grand_total_caption])}") if pivot_table[:grand_total_caption]
+      pt_attrs << %( errorCaption="#{xml_escape(pivot_table[:error_caption])}") if pivot_table[:error_caption]
+      pt_attrs << ' showError="1"' if pivot_table[:show_error]
+      pt_attrs << %( missingCaption="#{xml_escape(pivot_table[:missing_caption])}") if pivot_table[:missing_caption]
+      pt_attrs << ' showMissing="0"' if pivot_table[:show_missing] == false
+      pt_attrs << %( tag="#{xml_escape(pivot_table[:tag])}") if pivot_table[:tag]
       pt_attrs << %( dataOnRows="1") if pivot_table[:data_on_rows]
       pt_attrs << %( dataOnRows="0") unless pivot_table[:data_on_rows]
       pt_attrs << %( rowGrandTotals="0") if pivot_table[:row_grand_totals] == false
@@ -2704,6 +2715,11 @@ module Xlsxrb
       pt_attrs << %( compact="0") if pivot_table[:compact] == false
       pt_attrs << %( outline="0") if pivot_table[:outline] == false
       pt_attrs << %( showHeaders="0") if pivot_table[:show_headers] == false
+      pt_attrs << %( indent="#{pivot_table[:indent]}") if pivot_table[:indent]
+      pt_attrs << ' published="1"' if pivot_table[:published]
+      pt_attrs << %( createdVersion="#{pivot_table[:created_version]}") if pivot_table[:created_version]
+      pt_attrs << %( updatedVersion="#{pivot_table[:updated_version]}") if pivot_table[:updated_version]
+      pt_attrs << %( minRefreshableVersion="#{pivot_table[:min_refreshable_version]}") if pivot_table[:min_refreshable_version]
       pt_attrs << %( applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1")
       parts = [
         XML_HEADER,
