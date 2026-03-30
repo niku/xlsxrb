@@ -91,8 +91,15 @@ module Xlsxrb
 
       result = {}
       listener.links.each do |link|
-        url = rid_to_url[link[:rid]]
-        result[link[:ref]] = url if url
+        entry = {}
+        if link[:rid]
+          url = rid_to_url[link[:rid]]
+          entry[:url] = url if url
+        end
+        entry[:display] = link[:display] if link[:display]
+        entry[:tooltip] = link[:tooltip] if link[:tooltip]
+        entry[:location] = link[:location] if link[:location]
+        result[link[:ref]] = entry unless entry.empty?
       end
       result
     end
@@ -1664,8 +1671,14 @@ module Xlsxrb
         return unless name == "hyperlink"
 
         ref = attributes["ref"]
-        rid = attributes["r:id"]
-        @links << { ref: ref, rid: rid } if ref && rid
+        return unless ref
+
+        link = { ref: ref }
+        link[:rid] = attributes["r:id"] if attributes["r:id"]
+        link[:display] = attributes["display"] if attributes["display"]
+        link[:tooltip] = attributes["tooltip"] if attributes["tooltip"]
+        link[:location] = attributes["location"] if attributes["location"]
+        @links << link
       end
 
       private

@@ -167,7 +167,26 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     assert_openxml_sdk_scenario_passes("reader_hyperlink_generated_by_sdk", xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
-    assert_equal({ "A1" => "https://example.com" }, reader.hyperlinks)
+    assert_equal({ "A1" => { url: "https://example.com" } }, reader.hyperlinks)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "reader can parse hyperlinks with display tooltip and location from SDK" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_hyperlink_deep_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    links = reader.hyperlinks
+    expected = {
+      "A1" => { url: "https://example.com", display: "Example Site", tooltip: "Click to visit" },
+      "B1" => { url: "https://example.com/page", location: "Sheet2!A1" },
+      "C1" => { location: "Sheet1!D1" }
+    }
+    assert_equal(expected, links)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
