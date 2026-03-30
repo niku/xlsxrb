@@ -3716,7 +3716,7 @@ class ReaderTest < Test::Unit::TestCase
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "test")
     writer.set_data_consolidate(
-      function: "average", start_labels: true, link: true,
+      function: "average", start_labels: true, left_labels: true, link: true,
       data_refs: [{ ref: "A1:B10", sheet: "Sheet1" }, { ref: "C1:D10", name: "Range2" }]
     )
     writer.write(xlsx_path)
@@ -3725,6 +3725,7 @@ class ReaderTest < Test::Unit::TestCase
     dc = reader.data_consolidate
     assert_equal("average", dc[:function])
     assert_equal(true, dc[:start_labels])
+    assert_equal(true, dc[:left_labels])
     assert_equal(true, dc[:link])
     assert_equal(2, dc[:data_refs].size)
     assert_equal("A1:B10", dc[:data_refs][0][:ref])

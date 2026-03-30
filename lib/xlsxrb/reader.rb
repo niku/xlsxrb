@@ -3222,6 +3222,7 @@ module Xlsxrb
           @result = {}
           @result[:function] = attributes["function"] if attributes["function"]
           @result[:start_labels] = true if %w[1 true].include?(attributes["startLabels"])
+          @result[:left_labels] = true if %w[1 true].include?(attributes["leftLabels"])
           @result[:top_labels] = true if %w[1 true].include?(attributes["topLabels"])
           @result[:link] = true if %w[1 true].include?(attributes["link"])
           @result[:data_refs] = []

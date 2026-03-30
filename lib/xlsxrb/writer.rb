@@ -2167,6 +2167,7 @@ module Xlsxrb
         dc_attrs = []
         dc_attrs << %(function="#{data_consol[:function]}") if data_consol[:function] && data_consol[:function] != "sum"
         dc_attrs << 'startLabels="1"' if data_consol[:start_labels]
+        dc_attrs << 'leftLabels="1"' if data_consol[:left_labels]
         dc_attrs << 'topLabels="1"' if data_consol[:top_labels]
         dc_attrs << 'link="1"' if data_consol[:link]
         refs = data_consol[:data_refs] || []
