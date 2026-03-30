@@ -3151,4 +3151,33 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips protectedRanges element" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_protected_range(name: "EditArea", sqref: "A1:B10")
+    writer.add_protected_range(name: "SecureRange", sqref: "C1:D5", algorithm_name: "SHA-512",
+                               hash_value: "abc123", salt_value: "salt456", spin_count: 100_000)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ranges = reader.protected_ranges
+    assert_equal(2, ranges.size)
+
+    assert_equal("A1:B10", ranges[0][:sqref])
+    assert_equal("EditArea", ranges[0][:name])
+
+    assert_equal("C1:D5", ranges[1][:sqref])
+    assert_equal("SecureRange", ranges[1][:name])
+    assert_equal("SHA-512", ranges[1][:algorithm_name])
+    assert_equal("abc123", ranges[1][:hash_value])
+    assert_equal("salt456", ranges[1][:salt_value])
+    assert_equal(100_000, ranges[1][:spin_count])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
