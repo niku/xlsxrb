@@ -1453,7 +1453,9 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_sheet_protection(password: "CF1A", objects: true, scenarios: true)
     writer.set_cell("A1", "Protected")
 
-    xlsx_path = Tempfile.new(["xlsxrb-test", ".xlsx"]).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
     writer.write(xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
@@ -2071,6 +2073,39 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(true, dxf[:alignment][:wrap_text])
     assert_equal(false, dxf[:protection][:locked])
     assert_equal(true, dxf[:protection][:hidden])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips error cell values through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Xlsxrb::CellError.new(code: "#N/A"))
+    writer.set_cell("B1", Xlsxrb::CellError.new(code: "#DIV/0!"))
+    writer.set_cell("C1", Xlsxrb::CellError.new(code: "#VALUE!"))
+    writer.set_cell("D1", Xlsxrb::CellError.new(code: "#REF!"))
+    writer.set_cell("E1", Xlsxrb::CellError.new(code: "#NAME?"))
+    writer.set_cell("F1", Xlsxrb::CellError.new(code: "#NUM!"))
+    writer.set_cell("G1", Xlsxrb::CellError.new(code: "#NULL!"))
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+
+    %w[A1 B1 C1 D1 E1 F1 G1].each do |ref|
+      assert_instance_of(Xlsxrb::CellError, cells[ref], "Expected CellError for #{ref}")
+    end
+
+    assert_equal("#N/A", cells["A1"].code)
+    assert_equal("#DIV/0!", cells["B1"].code)
+    assert_equal("#VALUE!", cells["C1"].code)
+    assert_equal("#REF!", cells["D1"].code)
+    assert_equal("#NAME?", cells["E1"].code)
+    assert_equal("#NUM!", cells["F1"].code)
+    assert_equal("#NULL!", cells["G1"].code)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

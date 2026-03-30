@@ -1304,6 +1304,33 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writes error cell values with t=e" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Xlsxrb::CellError.new(code: "#N/A"))
+    writer.set_cell("B1", Xlsxrb::CellError.new(code: "#DIV/0!"))
+    writer.set_cell("C1", Xlsxrb::CellError.new(code: "#VALUE!"))
+    writer.set_cell("D1", Xlsxrb::CellError.new(code: "#REF!"))
+    writer.set_cell("E1", Xlsxrb::CellError.new(code: "#NAME?"))
+    writer.set_cell("F1", Xlsxrb::CellError.new(code: "#NUM!"))
+    writer.set_cell("G1", Xlsxrb::CellError.new(code: "#NULL!"))
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<c r="A1" t="e"><v>#N/A</v></c>}, xml)
+    assert_match(%r{<c r="B1" t="e"><v>#DIV/0!</v></c>}, xml)
+    assert_match(%r{<c r="C1" t="e"><v>#VALUE!</v></c>}, xml)
+    assert_match(%r{<c r="D1" t="e"><v>#REF!</v></c>}, xml)
+    assert_match(%r{<c r="E1" t="e"><v>#NAME\?</v></c>}, xml)
+    assert_match(%r{<c r="F1" t="e"><v>#NUM!</v></c>}, xml)
+    assert_match(%r{<c r="G1" t="e"><v>#NULL!</v></c>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
