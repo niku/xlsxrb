@@ -1026,6 +1026,30 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid CF theme/indexed colors" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 50)
+    writer.add_conditional_format("A1:A10", type: :color_scale, priority: 1,
+                                            color_scale: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              colors: [{ theme: 4, tint: -0.25 }, { theme: 9 }]
+                                            })
+    writer.add_conditional_format("B1:B10", type: :data_bar, priority: 2,
+                                            data_bar: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              color: { indexed: 10 }
+                                            })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_cf_theme_color_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

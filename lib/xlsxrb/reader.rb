@@ -2602,7 +2602,15 @@ module Xlsxrb
           cfvo[:val] = attributes["val"] if attributes["val"]
           append_cfvo(cfvo)
         when "color"
-          append_color(attributes["rgb"]) if attributes["rgb"]
+          if attributes["rgb"]
+            append_cf_color({ rgb: attributes["rgb"] })
+          elsif attributes["theme"]
+            c = { theme: attributes["theme"].to_i }
+            c[:tint] = attributes["tint"].to_f if attributes["tint"]
+            append_cf_color(c)
+          elsif attributes["indexed"]
+            append_cf_color({ indexed: attributes["indexed"].to_i })
+          end
         end
       end
 
@@ -2636,14 +2644,14 @@ module Xlsxrb
         container[:cfvo] << cfvo if container
       end
 
-      def append_color(rgb)
+      def append_cf_color(color)
         return unless @current_rule && @color_target
 
         container = @current_rule[@color_target]
         if container.is_a?(Hash) && container.key?(:colors)
-          container[:colors] << rgb
+          container[:colors] << color
         elsif container.is_a?(Hash)
-          container[:color] = rgb
+          container[:color] = color
         end
       end
 

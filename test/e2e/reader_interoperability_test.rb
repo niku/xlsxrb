@@ -482,12 +482,12 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     cs = cfs[1][:color_scale]
     assert_equal(2, cs[:cfvo].size)
     assert_equal("min", cs[:cfvo][0][:type])
-    assert_equal(%w[FF00FF00 FFFF0000], cs[:colors])
+    assert_equal([{ rgb: "FF00FF00" }, { rgb: "FFFF0000" }], cs[:colors])
 
     assert_equal("dataBar", cfs[2][:type])
     db = cfs[2][:data_bar]
     assert_equal(2, db[:cfvo].size)
-    assert_equal("FF63C384", db[:color])
+    assert_equal({ rgb: "FF63C384" }, db[:color])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -1104,6 +1104,28 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     # indexed color
     assert_equal(10, runs[4][:font][:indexed])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "reader parses SDK-generated CF theme/indexed colors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_cf_theme_color_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cfs = reader.conditional_formats
+    assert_equal(2, cfs.size)
+
+    cs_colors = cfs[0][:color_scale][:colors]
+    assert_equal(2, cs_colors.size)
+    assert_equal(4, cs_colors[0][:theme])
+    assert_in_delta(-0.25, cs_colors[0][:tint], 0.001)
+    assert_equal(9, cs_colors[1][:theme])
+
+    db_color = cfs[1][:data_bar][:color]
+    assert_equal(10, db_color[:indexed])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

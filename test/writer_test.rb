@@ -1134,6 +1134,33 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "CF colorScale and dataBar emit theme/indexed colors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 50)
+    writer.add_conditional_format("A1:A10", type: :color_scale, priority: 1,
+                                            color_scale: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              colors: [{ theme: 4, tint: -0.25 }, { theme: 9 }]
+                                            })
+    writer.add_conditional_format("B1:B10", type: :data_bar, priority: 2,
+                                            data_bar: {
+                                              cfvo: [{ type: "min" }, { type: "max" }],
+                                              color: { indexed: 10 }
+                                            })
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/<color theme="4" tint="-0.25"\/>/, xml)
+    assert_match(/<color theme="9"\/>/, xml)
+    assert_match(/<color indexed="10"\/>/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
