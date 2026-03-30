@@ -2982,6 +2982,7 @@ module Xlsxrb
       border_attrs = []
       border_attrs << ' diagonalUp="1"' if bdr[:diagonal_up]
       border_attrs << ' diagonalDown="1"' if bdr[:diagonal_down]
+      border_attrs << ' outline="0"' if bdr[:outline] == false
       parts = ["<border#{border_attrs.join}>"]
       %i[left right top bottom diagonal].each do |side|
         s = bdr[side]

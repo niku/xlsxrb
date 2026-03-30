@@ -2016,6 +2016,8 @@ module Xlsxrb
             @current_border = {}
             @current_border[:diagonal_up] = true if attributes["diagonalUp"] == "1"
             @current_border[:diagonal_down] = true if attributes["diagonalDown"] == "1"
+            ol = attributes["outline"]
+            @current_border[:outline] = %w[1 true].include?(ol) unless ol.nil?
           end
         when "left", "right", "top", "bottom", "diagonal"
           if @current_border
