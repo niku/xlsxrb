@@ -1599,6 +1599,26 @@ module Xlsxrb
           @workbook_views[:first_sheet] = fs.to_i if fs
           vis = attributes["visibility"]
           @workbook_views[:visibility] = vis if vis
+          min = attributes["minimized"]
+          @workbook_views[:minimized] = %w[1 true].include?(min) unless min.nil?
+          shs = attributes["showHorizontalScroll"]
+          @workbook_views[:show_horizontal_scroll] = %w[1 true].include?(shs) unless shs.nil?
+          svs = attributes["showVerticalScroll"]
+          @workbook_views[:show_vertical_scroll] = %w[1 true].include?(svs) unless svs.nil?
+          sst = attributes["showSheetTabs"]
+          @workbook_views[:show_sheet_tabs] = %w[1 true].include?(sst) unless sst.nil?
+          xw = attributes["xWindow"]
+          @workbook_views[:x_window] = xw.to_i if xw
+          yw = attributes["yWindow"]
+          @workbook_views[:y_window] = yw.to_i if yw
+          ww = attributes["windowWidth"]
+          @workbook_views[:window_width] = ww.to_i if ww
+          wh = attributes["windowHeight"]
+          @workbook_views[:window_height] = wh.to_i if wh
+          tr = attributes["tabRatio"]
+          @workbook_views[:tab_ratio] = tr.to_i if tr
+          afdg = attributes["autoFilterDateGrouping"]
+          @workbook_views[:auto_filter_date_grouping] = %w[1 true].include?(afdg) unless afdg.nil?
         when "calcPr"
           ci = attributes["calcId"]
           @calc_properties[:calc_id] = ci.to_i if ci

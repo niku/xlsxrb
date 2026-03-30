@@ -308,6 +308,40 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(0, views[:first_sheet])
   end
 
+  test "workbook view extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_workbook_view(:show_horizontal_scroll, false)
+    writer.set_workbook_view(:show_vertical_scroll, false)
+    writer.set_workbook_view(:show_sheet_tabs, false)
+    writer.set_workbook_view(:minimized, true)
+    writer.set_workbook_view(:x_window, 100)
+    writer.set_workbook_view(:y_window, 200)
+    writer.set_workbook_view(:window_width, 20_000)
+    writer.set_workbook_view(:window_height, 10_000)
+    writer.set_workbook_view(:tab_ratio, 800)
+    writer.set_workbook_view(:auto_filter_date_grouping, false)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-bv", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/showHorizontalScroll="0"/, xml)
+    assert_match(/showVerticalScroll="0"/, xml)
+    assert_match(/showSheetTabs="0"/, xml)
+    assert_match(/minimized="1"/, xml)
+    assert_match(/xWindow="100"/, xml)
+    assert_match(/yWindow="200"/, xml)
+    assert_match(/windowWidth="20000"/, xml)
+    assert_match(/windowHeight="10000"/, xml)
+    assert_match(/tabRatio="800"/, xml)
+    assert_match(/autoFilterDateGrouping="0"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "stores calc properties" do
     writer = Xlsxrb::Writer.new
     writer.set_calc_property(:calc_id, 191_029)

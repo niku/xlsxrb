@@ -2677,4 +2677,37 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips workbook view extended attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_workbook_view(:show_horizontal_scroll, false)
+    writer.set_workbook_view(:show_vertical_scroll, false)
+    writer.set_workbook_view(:show_sheet_tabs, false)
+    writer.set_workbook_view(:minimized, true)
+    writer.set_workbook_view(:x_window, 100)
+    writer.set_workbook_view(:y_window, 200)
+    writer.set_workbook_view(:window_width, 20_000)
+    writer.set_workbook_view(:window_height, 10_000)
+    writer.set_workbook_view(:tab_ratio, 800)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    wv = reader.workbook_views
+    assert_equal(false, wv[:show_horizontal_scroll])
+    assert_equal(false, wv[:show_vertical_scroll])
+    assert_equal(false, wv[:show_sheet_tabs])
+    assert_equal(true, wv[:minimized])
+    assert_equal(100, wv[:x_window])
+    assert_equal(200, wv[:y_window])
+    assert_equal(20_000, wv[:window_width])
+    assert_equal(10_000, wv[:window_height])
+    assert_equal(800, wv[:tab_ratio])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
