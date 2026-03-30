@@ -2145,6 +2145,30 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "named cell style emits iLevel, hidden, customBuiltin" do
+    writer = Xlsxrb::Writer.new
+    writer.add_named_cell_style(
+      name: "Heading 1",
+      builtin_id: 16,
+      i_level: 0,
+      hidden: true,
+      custom_builtin: true
+    )
+    writer.set_cell("A1", "test")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-cs", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/iLevel="0"/, xml_content)
+    assert_match(/hidden="1"/, xml_content)
+    assert_match(/customBuiltin="1"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

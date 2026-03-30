@@ -404,12 +404,16 @@ module Xlsxrb
 
     # Registers a base style definition (cellStyleXf) and a named cellStyle.
     # Returns the xfId for the new base style.
-    def add_named_cell_style(name:, num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0, builtin_id: nil)
+    def add_named_cell_style(name:, num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0, builtin_id: nil,
+                             i_level: nil, hidden: nil, custom_builtin: nil)
       entry = { num_fmt_id: num_fmt_id, font_id: font_id, fill_id: fill_id, border_id: border_id }
       @cell_style_xfs << entry
       xf_id = @cell_style_xfs.size - 1
       cs = { name: name, xf_id: xf_id }
       cs[:builtin_id] = builtin_id if builtin_id
+      cs[:i_level] = i_level if i_level
+      cs[:hidden] = true if hidden
+      cs[:custom_builtin] = true if custom_builtin
       @cell_style_names << cs
       xf_id
     end
@@ -2860,6 +2864,9 @@ module Xlsxrb
       @cell_style_names.each do |cs|
         cs_attrs = %(name="#{xml_escape(cs[:name])}" xfId="#{cs[:xf_id]}")
         cs_attrs << %( builtinId="#{cs[:builtin_id]}") if cs[:builtin_id]
+        cs_attrs << %( iLevel="#{cs[:i_level]}") if cs[:i_level]
+        cs_attrs << ' hidden="1"' if cs[:hidden]
+        cs_attrs << ' customBuiltin="1"' if cs[:custom_builtin]
         parts << "<cellStyle #{cs_attrs}/>"
       end
       parts << "</cellStyles>"

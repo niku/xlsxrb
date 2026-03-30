@@ -2931,4 +2931,31 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips named cell style iLevel, hidden, customBuiltin" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_named_cell_style(
+      name: "Heading 1",
+      builtin_id: 16,
+      i_level: 0,
+      hidden: true,
+      custom_builtin: true
+    )
+    writer.set_cell("A1", "test")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ncs = reader.named_cell_styles
+    heading = ncs.find { |cs| cs[:name] == "Heading 1" }
+    assert_not_nil(heading, "should find Heading 1")
+    assert_equal(0, heading[:i_level])
+    assert_equal(true, heading[:hidden])
+    assert_equal(true, heading[:custom_builtin])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
