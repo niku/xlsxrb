@@ -1098,7 +1098,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, grouping: nil, bar_dir: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, grouping: nil, bar_dir: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1116,6 +1116,8 @@ module Xlsxrb
       chart[:val_axis_title] = val_axis_title if val_axis_title
       chart[:grouping] = grouping if grouping
       chart[:bar_dir] = bar_dir if bar_dir
+      chart[:name] = name if name
+      chart[:description] = description if description
       chart[:edit_as] = edit_as if edit_as
       chart[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
       chart[:prints_with_sheet] = prints_with_sheet unless prints_with_sheet.nil?
@@ -2582,7 +2584,9 @@ module Xlsxrb
           parts << anchor_xml("from", chart[:from_col], chart[:from_row], col_off: chart[:from_col_off] || 0, row_off: chart[:from_row_off] || 0)
           parts << anchor_xml("to", chart[:to_col], chart[:to_row], col_off: chart[:to_col_off] || 0, row_off: chart[:to_row_off] || 0)
           parts << %(<xdr:graphicFrame macro="">)
-          parts << %(<xdr:nvGraphicFramePr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(chart[:title] || "Chart")}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>)
+          chart_frame_name = chart[:name] || chart[:title] || "Chart"
+          chart_descr_attr = chart[:description] ? %( descr="#{xml_escape(chart[:description])}") : ""
+          parts << %(<xdr:nvGraphicFramePr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(chart_frame_name)}"#{chart_descr_attr}/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>)
           parts << '<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="5000000" cy="3000000"/></xdr:xfrm>'
           parts << %(<a:graphic><a:graphicData uri="#{C_NS}"><c:chart xmlns:c="#{C_NS}" r:id="#{rid}"/></a:graphicData></a:graphic>)
           parts << "</xdr:graphicFrame>"
