@@ -2756,6 +2756,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_table with border dxfId, cellStyle, tableType, connectionId" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Age")
+    writer.add_table("A1:B5", columns: %w[Name Age],
+                              header_row_border_dxf_id: 10,
+                              table_border_dxf_id: 11,
+                              totals_row_border_dxf_id: 12,
+                              header_row_cell_style: "HeaderStyle",
+                              totals_row_cell_style: "TotalsStyle",
+                              connection_id: 5,
+                              table_type: "queryTable")
+    tbls = writer.tables
+    assert_equal(10, tbls[0][:header_row_border_dxf_id])
+    assert_equal(11, tbls[0][:table_border_dxf_id])
+    assert_equal(12, tbls[0][:totals_row_border_dxf_id])
+    assert_equal("HeaderStyle", tbls[0][:header_row_cell_style])
+    assert_equal("TotalsStyle", tbls[0][:totals_row_cell_style])
+    assert_equal(5, tbls[0][:connection_id])
+    assert_equal("queryTable", tbls[0][:table_type])
+  end
+
   test "emits ignoredErrors element" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "123")

@@ -3813,6 +3813,17 @@ module Xlsxrb
           @table[:data_dxf_id] = dd.to_i if dd
           trd = attributes["totalsRowDxfId"]
           @table[:totals_row_dxf_id] = trd.to_i if trd
+          hrbd = attributes["headerRowBorderDxfId"]
+          @table[:header_row_border_dxf_id] = hrbd.to_i if hrbd
+          tbd = attributes["tableBorderDxfId"]
+          @table[:table_border_dxf_id] = tbd.to_i if tbd
+          trbd = attributes["totalsRowBorderDxfId"]
+          @table[:totals_row_border_dxf_id] = trbd.to_i if trbd
+          @table[:header_row_cell_style] = attributes["headerRowCellStyle"] if attributes["headerRowCellStyle"]
+          @table[:totals_row_cell_style] = attributes["totalsRowCellStyle"] if attributes["totalsRowCellStyle"]
+          cid = attributes["connectionId"]
+          @table[:connection_id] = cid.to_i if cid
+          @table[:table_type] = attributes["tableType"] if attributes["tableType"]
         when "tableColumn"
           col = { name: attributes["name"] }
           trf = attributes["totalsRowFunction"]
