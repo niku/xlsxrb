@@ -977,6 +977,28 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reads gradient fill from SDK-generated XLSX" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_gradient_fill_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    fill = cs["A1"][:fill]
+    assert_not_nil(fill, "fill should be present")
+    gradient = fill[:gradient]
+    assert_not_nil(gradient, "gradient should be present")
+    assert_equal("linear", gradient[:type])
+    assert_equal(90.0, gradient[:degree])
+    assert_equal(2, gradient[:stops].size)
+    assert_equal("FFFF0000", gradient[:stops][0][:color])
+    assert_equal("FF0000FF", gradient[:stops][1][:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

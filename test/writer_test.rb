@@ -620,6 +620,32 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_fill with gradient type emits gradientFill" do
+    writer = Xlsxrb::Writer.new
+    fill_id = writer.add_fill(
+      gradient: { type: "linear", degree: 90,
+                  stops: [{ position: 0, color: "FFFF0000" }, { position: 1, color: "FF0000FF" }] }
+    )
+    assert_operator(fill_id, :>=, 2) # 0=none, 1=gray125
+
+    style_id = writer.add_cell_style(fill_id: fill_id)
+    writer.set_cell("A1", "gradient")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-gradient", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<gradientFill[^>]*type="linear"}, xml_content)
+    assert_match(%r{<gradientFill[^>]*degree="90"}, xml_content)
+    assert_match(%r{<stop position="0"><color rgb="FFFF0000"/></stop>}, xml_content)
+    assert_match(%r{<stop position="1"><color rgb="FF0000FF"/></stop>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "stores dxf entries" do
     writer = Xlsxrb::Writer.new
     dxf_id = writer.add_dxf(font: { bold: true, color: "FFFF0000" },
