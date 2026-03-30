@@ -2556,4 +2556,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sheetView showZeros, view, showOutlineSymbols, showRuler" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_view(:show_zeros, false)
+    writer.set_sheet_view(:view, "pageBreakPreview")
+    writer.set_sheet_view(:show_outline_symbols, false)
+    writer.set_sheet_view(:show_ruler, false)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    sv = reader.sheet_view
+    assert_equal(false, sv[:show_zeros])
+    assert_equal("pageBreakPreview", sv[:view])
+    assert_equal(false, sv[:show_outline_symbols])
+    assert_equal(false, sv[:show_ruler])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
