@@ -1432,7 +1432,12 @@ module Xlsxrb
           index = @value_buffer.to_i
           @cells[@current_cell_ref] = @shared_strings[index] || ""
         when "e"
-          @cells[@current_cell_ref] = @value_buffer.dup
+          code = @value_buffer.dup
+          @cells[@current_cell_ref] = if VALID_ERROR_CODES.include?(code)
+                                        CellError.new(code:)
+                                      else
+                                        code
+                                      end
         when "b"
           @cells[@current_cell_ref] = @value_buffer.strip == "1"
         when nil, "", "n"

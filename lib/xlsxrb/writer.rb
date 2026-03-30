@@ -2249,6 +2249,8 @@ module Xlsxrb
     def cell_xml(cell_ref, value, style_idx, sst = nil)
       s_attr = style_idx ? %( s="#{style_idx}") : ""
       case value
+      when CellError
+        %(<c r="#{cell_ref}" t="e"#{s_attr}><v>#{xml_escape(value.code)}</v></c>)
       when Formula
         f_attrs = +""
         if value.type == :shared

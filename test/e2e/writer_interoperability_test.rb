@@ -1202,6 +1202,26 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores error cell values correctly" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Xlsxrb::CellError.new(code: "#N/A"))
+    writer.set_cell("B1", Xlsxrb::CellError.new(code: "#DIV/0!"))
+    writer.set_cell("C1", Xlsxrb::CellError.new(code: "#VALUE!"))
+    writer.set_cell("D1", Xlsxrb::CellError.new(code: "#REF!"))
+    writer.set_cell("E1", Xlsxrb::CellError.new(code: "#NAME?"))
+    writer.set_cell("F1", Xlsxrb::CellError.new(code: "#NUM!"))
+    writer.set_cell("G1", Xlsxrb::CellError.new(code: "#NULL!"))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_error_cells_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

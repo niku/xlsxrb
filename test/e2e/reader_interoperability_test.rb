@@ -80,7 +80,11 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     assert_openxml_sdk_scenario_passes("reader_error_cells_generated_by_sdk", xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
-    assert_equal({ "A1" => "#DIV/0!", "B1" => "#VALUE!" }, reader.cells)
+    cells = reader.cells
+    assert_instance_of(Xlsxrb::CellError, cells["A1"])
+    assert_equal("#DIV/0!", cells["A1"].code)
+    assert_instance_of(Xlsxrb::CellError, cells["B1"])
+    assert_equal("#VALUE!", cells["B1"].code)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
