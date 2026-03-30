@@ -1731,6 +1731,36 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "sheetView remaining attributes: topLeftCell, colorId, zoomScaleNormal, etc." do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_view(:window_protection, true)
+    writer.set_sheet_view(:default_grid_color, false)
+    writer.set_sheet_view(:show_white_space, false)
+    writer.set_sheet_view(:top_left_cell, "B5")
+    writer.set_sheet_view(:color_id, 10)
+    writer.set_sheet_view(:zoom_scale_normal, 80)
+    writer.set_sheet_view(:zoom_scale_sheet_layout_view, 75)
+    writer.set_sheet_view(:zoom_scale_page_layout_view, 90)
+
+    xlsx_tempfile = Tempfile.new(["test-sv2", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/windowProtection="1"/, xml)
+    assert_match(/defaultGridColor="0"/, xml)
+    assert_match(/showWhiteSpace="0"/, xml)
+    assert_match(/topLeftCell="B5"/, xml)
+    assert_match(/colorId="10"/, xml)
+    assert_match(/zoomScaleNormal="80"/, xml)
+    assert_match(/zoomScaleSheetLayoutView="75"/, xml)
+    assert_match(/zoomScalePageLayoutView="90"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "codeName on sheet properties" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "hello")

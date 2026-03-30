@@ -2579,4 +2579,35 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips sheetView topLeftCell, colorId, zoomScaleNormal, etc." do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_view(:window_protection, true)
+    writer.set_sheet_view(:default_grid_color, false)
+    writer.set_sheet_view(:show_white_space, false)
+    writer.set_sheet_view(:top_left_cell, "B5")
+    writer.set_sheet_view(:color_id, 10)
+    writer.set_sheet_view(:zoom_scale_normal, 80)
+    writer.set_sheet_view(:zoom_scale_sheet_layout_view, 75)
+    writer.set_sheet_view(:zoom_scale_page_layout_view, 90)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    sv = reader.sheet_view
+    assert_equal(true, sv[:window_protection])
+    assert_equal(false, sv[:default_grid_color])
+    assert_equal(false, sv[:show_white_space])
+    assert_equal("B5", sv[:top_left_cell])
+    assert_equal(10, sv[:color_id])
+    assert_equal(80, sv[:zoom_scale_normal])
+    assert_equal(75, sv[:zoom_scale_sheet_layout_view])
+    assert_equal(90, sv[:zoom_scale_page_layout_view])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
