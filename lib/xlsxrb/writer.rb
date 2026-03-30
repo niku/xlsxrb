@@ -2200,10 +2200,20 @@ module Xlsxrb
           rpr = +""
           rpr << "<b/>" if font[:bold]
           rpr << "<i/>" if font[:italic]
-          rpr << "<u/>" if font[:underline]
+          rpr << "<strike/>" if font[:strike]
+          if font[:underline]
+            if font[:underline] == true
+              rpr << "<u/>"
+            else
+              rpr << %(<u val="#{font[:underline]}"/>)
+            end
+          end
+          rpr << %(<vertAlign val="#{font[:vert_align]}"/>) if font[:vert_align]
           rpr << %(<sz val="#{font[:sz]}"/>) if font[:sz]
-          rpr << %(<color rgb="#{font[:color]}"/>) if font[:color]
+          rpr << emit_color_xml(font)
           rpr << %(<rFont val="#{xml_escape(font[:name])}"/>) if font[:name]
+          rpr << %(<family val="#{font[:family]}"/>) if font[:family]
+          rpr << %(<scheme val="#{font[:scheme]}"/>) if font[:scheme]
           "<r><rPr>#{rpr}</rPr><t>#{xml_escape(run[:text])}</t></r>"
         else
           "<r><t>#{xml_escape(run[:text])}</t></r>"

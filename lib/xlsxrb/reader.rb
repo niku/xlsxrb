@@ -1136,14 +1136,34 @@ module Xlsxrb
           @current_font[:bold] = true if @inside_rpr
         when "i"
           @current_font[:italic] = true if @inside_rpr
+        when "strike"
+          @current_font[:strike] = true if @inside_rpr
         when "u"
-          @current_font[:underline] = true if @inside_rpr
+          if @inside_rpr
+            val = attributes["val"]
+            @current_font[:underline] = val || true
+          end
+        when "vertAlign"
+          @current_font[:vert_align] = attributes["val"] if @inside_rpr && attributes["val"]
         when "sz"
           @current_font[:sz] = attributes["val"]&.to_f if @inside_rpr
         when "color"
-          @current_font[:color] = attributes["rgb"] if @inside_rpr && attributes["rgb"]
+          if @inside_rpr
+            if attributes["rgb"]
+              @current_font[:color] = attributes["rgb"]
+            elsif attributes["theme"]
+              @current_font[:theme] = attributes["theme"].to_i
+              @current_font[:tint] = attributes["tint"].to_f if attributes["tint"]
+            elsif attributes["indexed"]
+              @current_font[:indexed] = attributes["indexed"].to_i
+            end
+          end
         when "rFont"
           @current_font[:name] = attributes["val"] if @inside_rpr
+        when "family"
+          @current_font[:family] = attributes["val"]&.to_i if @inside_rpr
+        when "scheme"
+          @current_font[:scheme] = attributes["val"] if @inside_rpr
         when "t"
           @inside_t = @inside_si
           @text_buffer = +""  if @inside_r
@@ -1257,14 +1277,34 @@ module Xlsxrb
           @is_current_font[:bold] = true if @inside_is_rpr
         when "i"
           @is_current_font[:italic] = true if @inside_is_rpr
+        when "strike"
+          @is_current_font[:strike] = true if @inside_is_rpr
         when "u"
-          @is_current_font[:underline] = true if @inside_is_rpr
+          if @inside_is_rpr
+            val = attributes["val"]
+            @is_current_font[:underline] = val || true
+          end
+        when "vertAlign"
+          @is_current_font[:vert_align] = attributes["val"] if @inside_is_rpr && attributes["val"]
         when "sz"
           @is_current_font[:sz] = attributes["val"]&.to_f if @inside_is_rpr
         when "color"
-          @is_current_font[:color] = attributes["rgb"] if @inside_is_rpr && attributes["rgb"]
+          if @inside_is_rpr
+            if attributes["rgb"]
+              @is_current_font[:color] = attributes["rgb"]
+            elsif attributes["theme"]
+              @is_current_font[:theme] = attributes["theme"].to_i
+              @is_current_font[:tint] = attributes["tint"].to_f if attributes["tint"]
+            elsif attributes["indexed"]
+              @is_current_font[:indexed] = attributes["indexed"].to_i
+            end
+          end
         when "rFont"
           @is_current_font[:name] = attributes["val"] if @inside_is_rpr
+        when "family"
+          @is_current_font[:family] = attributes["val"]&.to_i if @inside_is_rpr
+        when "scheme"
+          @is_current_font[:scheme] = attributes["val"] if @inside_is_rpr
         when "t"
           if @inside_is_r
             @is_run_text = +""
