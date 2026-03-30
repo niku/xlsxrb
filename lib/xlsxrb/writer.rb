@@ -1722,11 +1722,17 @@ module Xlsxrb
 
       # Emit <headerFooter> if defined.
       unless sheet_hf.empty?
-        parts << "<headerFooter>"
+        hf_attrs = []
+        hf_attrs << 'differentFirst="1"' if sheet_hf[:different_first]
+        hf_attrs << 'differentOddEven="1"' if sheet_hf[:different_odd_even]
+        hf_tag = hf_attrs.empty? ? "<headerFooter>" : "<headerFooter #{hf_attrs.join(" ")}>"
+        parts << hf_tag
         parts << "<oddHeader>#{xml_escape(sheet_hf[:odd_header])}</oddHeader>" if sheet_hf[:odd_header]
         parts << "<oddFooter>#{xml_escape(sheet_hf[:odd_footer])}</oddFooter>" if sheet_hf[:odd_footer]
         parts << "<evenHeader>#{xml_escape(sheet_hf[:even_header])}</evenHeader>" if sheet_hf[:even_header]
         parts << "<evenFooter>#{xml_escape(sheet_hf[:even_footer])}</evenFooter>" if sheet_hf[:even_footer]
+        parts << "<firstHeader>#{xml_escape(sheet_hf[:first_header])}</firstHeader>" if sheet_hf[:first_header]
+        parts << "<firstFooter>#{xml_escape(sheet_hf[:first_footer])}</firstFooter>" if sheet_hf[:first_footer]
         parts << "</headerFooter>"
       end
 

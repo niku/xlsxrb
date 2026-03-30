@@ -2271,4 +2271,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips first page header/footer through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_header_footer(:first_header, "&CFirst Page")
+    writer.set_header_footer(:first_footer, "&CPage &P")
+    writer.set_header_footer(:different_first, true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    hf = reader.header_footer
+
+    assert_equal(true, hf[:different_first])
+    assert_equal("&CFirst Page", hf[:first_header])
+    assert_equal("&CPage &P", hf[:first_footer])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

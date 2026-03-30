@@ -1504,6 +1504,45 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(44, result[:hash_value].length)
   end
 
+  test "set_header_footer emits firstHeader and firstFooter elements" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_header_footer(:first_header, "&CFirst Page Header")
+    writer.set_header_footer(:first_footer, "&CFirst Page Footer")
+    writer.set_header_footer(:different_first, true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-hf", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    sheet_xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/differentFirst="1"/, sheet_xml)
+    assert_match(%r{<firstHeader>&amp;CFirst Page Header</firstHeader>}, sheet_xml)
+    assert_match(%r{<firstFooter>&amp;CFirst Page Footer</firstFooter>}, sheet_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "set_header_footer emits differentOddEven attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_header_footer(:odd_header, "&LOdd Header")
+    writer.set_header_footer(:even_header, "&LEven Header")
+    writer.set_header_footer(:different_odd_even, true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-hf", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    sheet_xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/differentOddEven="1"/, sheet_xml)
+    assert_match(%r{<evenHeader>&amp;LEven Header</evenHeader>}, sheet_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
