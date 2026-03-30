@@ -96,6 +96,18 @@ To ensure systematic progress, perfect round-trip compatibility, and strict adhe
 11. **Commit:** Commit the changes. The commit message must clearly describe the specific feature implemented in this cycle.
 12. **Next Feature:** Proceed to the next feature and return to step 1.
 
+#### E2E Omission Policy
+
+E2E tests are required by default. However, adding new E2E coverage may be skipped only when there is clear and explicit justification.
+
+All of the following conditions must be satisfied:
+
+1. The change is limited to a narrow extension (for example, adding attributes to an already covered structure), and existing E2E scenarios already validate the same structural path.
+2. The change does not introduce new public API shape or new XML structure branches.
+3. Writer/Reader unit tests and round-trip tests are added or updated sufficiently for the new behavior.
+4. Open XML SDK validation and the full test suite (`rake test`) pass.
+5. The commit message or PR description documents why E2E was omitted and identifies which existing E2E scenario provides coverage.
+
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
 ## Contributing
