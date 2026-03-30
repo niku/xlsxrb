@@ -267,6 +267,14 @@ module Xlsxrb
       parse_worksheet_sheet_protection(worksheet_xml)
     end
 
+    # Returns protected ranges for the given sheet as an array of hashes.
+    def protected_ranges(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return [] if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_protected_ranges(worksheet_xml)
+    end
+
     # Returns the dimension ref string (e.g. "A1:B10") for the given sheet.
     def dimension(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -1118,6 +1126,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.protection
+    end
+
+    def parse_worksheet_protected_ranges(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = ProtectedRangesListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.ranges
     end
 
     def parse_worksheet_dimension(xml)
@@ -2724,6 +2740,62 @@ module Xlsxrb
                       end
         end
         @protection = prot unless prot.empty?
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <protectedRanges> element.
+    class ProtectedRangesListener
+      include REXML::SAX2Listener
+
+      attr_reader :ranges
+
+      def initialize
+        @ranges = []
+        @current = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "protectedRange"
+          pr = {}
+          pr[:sqref] = attributes["sqref"] if attributes["sqref"]
+          pr[:name] = attributes["name"] if attributes["name"]
+          pr[:algorithm_name] = attributes["algorithmName"] if attributes["algorithmName"]
+          pr[:hash_value] = attributes["hashValue"] if attributes["hashValue"]
+          pr[:salt_value] = attributes["saltValue"] if attributes["saltValue"]
+          pr[:spin_count] = attributes["spinCount"].to_i if attributes["spinCount"]
+          @current = pr
+        when "securityDescriptor"
+          @in_sd = true
+          @sd_text = +""
+        end
+      end
+
+      def characters(text)
+        @sd_text << text if @in_sd
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        case name
+        when "securityDescriptor"
+          (@current[:security_descriptors] ||= []) << @sd_text if @current
+          @in_sd = false
+        when "protectedRange"
+          @ranges << @current if @current
+          @current = nil
+        end
       end
 
       private

@@ -2349,6 +2349,30 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits protectedRanges in worksheet XML" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.add_protected_range(name: "EditArea", sqref: "A1:B10")
+    writer.add_protected_range(name: "SecureRange", sqref: "C1:D5", algorithm_name: "SHA-512",
+                               hash_value: "abc123", salt_value: "salt456", spin_count: 100_000)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-pr", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/<protectedRanges>/, xml_content)
+    assert_match(/sqref="A1:B10"/, xml_content)
+    assert_match(/name="EditArea"/, xml_content)
+    assert_match(/algorithmName="SHA-512"/, xml_content)
+    assert_match(/hashValue="abc123"/, xml_content)
+    assert_match(/saltValue="salt456"/, xml_content)
+    assert_match(/spinCount="100000"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

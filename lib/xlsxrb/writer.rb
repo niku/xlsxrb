@@ -79,6 +79,7 @@ module Xlsxrb
       @extra_ct_overrides = {}
       @preserve_macros = false
       @sheet_protection = { "Sheet1" => nil }
+      @protected_ranges = { "Sheet1" => [] }
       @workbook_protection = nil
       @external_links = []
     end
@@ -118,6 +119,7 @@ module Xlsxrb
       @comments_data[name] = []
       @pivot_tables_data[name] = []
       @sheet_protection[name] = nil
+      @protected_ranges[name] = []
       @phonetic_properties[name] = nil
       @sheet_order << name
     end
@@ -867,6 +869,24 @@ module Xlsxrb
       @sheet_protection[sheet_name]&.dup
     end
 
+    # Adds a protected range to the given sheet.
+    # Required: name:, sqref:
+    # Optional: algorithm_name:, hash_value:, salt_value:, spin_count:, security_descriptors: []
+    def add_protected_range(sheet: nil, **opts)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
+      raise ArgumentError, "name is required" unless opts[:name]
+      raise ArgumentError, "sqref is required" unless opts[:sqref]
+
+      @protected_ranges[sheet_name] << opts
+    end
+
+    # Returns protected ranges for the given sheet.
+    def protected_ranges(sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      (@protected_ranges[sheet_name] || []).map(&:dup)
+    end
+
     # Sets workbook protection options.
     # Options: :lock_structure, :lock_windows, :password, :algorithm_name, :hash_value, :salt_value, :spin_count
     def set_workbook_protection(**opts)
@@ -1131,7 +1151,8 @@ module Xlsxrb
           has_drawing:, has_comments:,
           sheet_prot: @sheet_protection[sheet_name], vml_rid:,
           phonetic_pr: @phonetic_properties[sheet_name],
-          dv_options: @data_validations_options[sheet_name]
+          dv_options: @data_validations_options[sheet_name],
+          prot_ranges: @protected_ranges[sheet_name]
         )
 
         # Generate drawing XML + media + chart entries.
@@ -1580,7 +1601,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {})
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [])
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -1815,6 +1836,29 @@ module Xlsxrb
           sp_attrs << %(password="#{xml_escape(sheet_prot[:password])}")
         end
         parts << "<sheetProtection #{sp_attrs.join(" ")}/>"
+      end
+
+      # Emit <protectedRanges> if defined.
+      unless prot_ranges.empty?
+        parts << "<protectedRanges>"
+        prot_ranges.each do |pr|
+          pr_attrs = [%(sqref="#{pr[:sqref]}"), %(name="#{xml_escape(pr[:name])}")]
+          if pr[:algorithm_name]
+            pr_attrs << %(algorithmName="#{xml_escape(pr[:algorithm_name])}")
+            pr_attrs << %(hashValue="#{xml_escape(pr[:hash_value])}") if pr[:hash_value]
+            pr_attrs << %(saltValue="#{xml_escape(pr[:salt_value])}") if pr[:salt_value]
+            pr_attrs << %(spinCount="#{pr[:spin_count]}") if pr[:spin_count]
+          end
+          sds = pr[:security_descriptors] || []
+          if sds.empty?
+            parts << "<protectedRange #{pr_attrs.join(" ")}/>"
+          else
+            parts << "<protectedRange #{pr_attrs.join(" ")}>"
+            sds.each { |sd| parts << "<securityDescriptor>#{xml_escape(sd)}</securityDescriptor>" }
+            parts << "</protectedRange>"
+          end
+        end
+        parts << "</protectedRanges>"
       end
 
       # Emit <autoFilter> with optional filterColumns.
