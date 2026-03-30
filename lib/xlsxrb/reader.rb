@@ -2089,6 +2089,7 @@ module Xlsxrb
 
       def parse_color(attributes)
         if @current_gradient_stop
+          @current_gradient_stop[:auto] = true if %w[1 true].include?(attributes["auto"])
           @current_gradient_stop[:color] = attributes["rgb"] if attributes["rgb"]
           @current_gradient_stop[:theme] = attributes["theme"].to_i if attributes["theme"]
           @current_gradient_stop[:tint] = attributes["tint"].to_f if attributes["tint"]
@@ -2096,12 +2097,14 @@ module Xlsxrb
         elsif @current_border_side && @current_border
           side_data = @current_border[@current_border_side]
           if side_data.is_a?(Hash)
+            side_data[:auto] = true if %w[1 true].include?(attributes["auto"])
             side_data[:color] = attributes["rgb"] if attributes["rgb"]
             side_data[:theme] = attributes["theme"].to_i if attributes["theme"]
             side_data[:tint] = attributes["tint"].to_f if attributes["tint"]
             side_data[:indexed] = attributes["indexed"].to_i if attributes["indexed"]
           end
         elsif @current_font
+          @current_font[:auto] = true if %w[1 true].include?(attributes["auto"])
           @current_font[:color] = attributes["rgb"] if attributes["rgb"]
           @current_font[:theme] = attributes["theme"].to_i if attributes["theme"]
           @current_font[:tint] = attributes["tint"].to_f if attributes["tint"]
@@ -2110,7 +2113,9 @@ module Xlsxrb
       end
 
       def parse_fill_color(key, attributes)
-        if attributes["rgb"]
+        if %w[1 true].include?(attributes["auto"])
+          @current_fill[:"#{key}_auto"] = true
+        elsif attributes["rgb"]
           @current_fill[key] = attributes["rgb"]
         elsif attributes["theme"]
           @current_fill[:"#{key}_theme"] = attributes["theme"].to_i

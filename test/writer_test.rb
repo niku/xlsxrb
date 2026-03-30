@@ -2012,6 +2012,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "font with auto color emits auto attribute" do
+    writer = Xlsxrb::Writer.new
+    font_id = writer.add_font(auto: true, size: 11, name: "Calibri")
+    style_id = writer.add_cell_style(font_id: font_id)
+    writer.set_cell("A1", "auto-color")
+    writer.set_cell_style("A1", style_id)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-auto", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<color auto="1"/>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
