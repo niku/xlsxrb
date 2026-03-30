@@ -1442,6 +1442,25 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses data validation showDropDown and imeMode from SDK-generated file" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_data_validation_extended_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    dvs = reader.data_validations
+
+    assert_equal(1, dvs.size)
+    dv = dvs.first
+    assert_equal(true, dv[:show_drop_down])
+    assert_equal("hiragana", dv[:ime_mode])
+    assert_equal("list", dv[:type])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
