@@ -1229,6 +1229,50 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(true, f1[:show_all])
   end
 
+  test "round-trips pivotTableDefinition grandTotalCaption, errorCaption, missingCaption, tag, version attrs" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Category")
+    writer.set_cell("B1", "Region")
+    writer.set_cell("C1", "Amount")
+    writer.add_pivot_table("Sheet1!A1:C4",
+                           row_fields: [0],
+                           data_fields: [{ fld: 2, name: "Sum", subtotal: "sum" }],
+                           field_names: %w[Category Region Amount],
+                           grand_total_caption: "Grand Total",
+                           error_caption: "#N/A",
+                           show_error: true,
+                           missing_caption: "(blank)",
+                           show_missing: false,
+                           tag: "custom-tag",
+                           indent: 2,
+                           published: true,
+                           created_version: 6,
+                           updated_version: 8,
+                           min_refreshable_version: 3)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    assert_equal(1, pts.size)
+    assert_equal("Grand Total", pts[0][:grand_total_caption])
+    assert_equal("#N/A", pts[0][:error_caption])
+    assert_equal(true, pts[0][:show_error])
+    assert_equal("(blank)", pts[0][:missing_caption])
+    assert_equal(false, pts[0][:show_missing])
+    assert_equal("custom-tag", pts[0][:tag])
+    assert_equal(2, pts[0][:indent])
+    assert_equal(true, pts[0][:published])
+    assert_equal(6, pts[0][:created_version])
+    assert_equal(8, pts[0][:updated_version])
+    assert_equal(3, pts[0][:min_refreshable_version])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips dataField showDataAs, baseField, baseItem, numFmtId" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
