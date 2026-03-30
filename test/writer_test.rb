@@ -1593,6 +1593,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "alignment emits readingOrder and justifyLastLine attributes" do
+    writer = Xlsxrb::Writer.new
+    sid = writer.add_cell_style(alignment: { horizontal: "distributed", reading_order: 2, justify_last_line: true })
+    writer.set_cell("A1", "RTL text")
+    writer.set_cell_style("A1", sid)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-align", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    styles_xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/readingOrder="2"/, styles_xml)
+    assert_match(/justifyLastLine="1"/, styles_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

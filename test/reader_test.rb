@@ -2347,4 +2347,25 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips alignment readingOrder and justifyLastLine through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    sid = writer.add_cell_style(alignment: { horizontal: "distributed", reading_order: 2, justify_last_line: true })
+    writer.set_cell("A1", "RTL")
+    writer.set_cell_style("A1", sid)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    styles = reader.cell_styles
+    xf = styles.values.find { |s| s[:alignment]&.key?(:reading_order) }
+    assert_not_nil(xf)
+    assert_equal(2, xf[:alignment][:reading_order])
+    assert_equal(true, xf[:alignment][:justify_last_line])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
