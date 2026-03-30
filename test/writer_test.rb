@@ -1901,6 +1901,30 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "sheet properties extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_sheet_property(:filter_mode, true)
+    writer.set_sheet_property(:published, false)
+    writer.set_sheet_property(:enable_format_conditions_calculation, false)
+    writer.set_sheet_property(:fit_to_page, true)
+    writer.set_sheet_property(:auto_page_breaks, false)
+
+    xlsx_tempfile = Tempfile.new(["test-sp", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/filterMode="1"/, xml)
+    assert_match(/published="0"/, xml)
+    assert_match(/enableFormatConditionsCalculation="0"/, xml)
+    assert_match(/fitToPage="1"/, xml)
+    assert_match(/autoPageBreaks="0"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "workbook view visibility" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "hello")

@@ -1511,6 +1511,9 @@ module Xlsxrb
       unless sheet_props.empty?
         sp_attrs = []
         sp_attrs << %(codeName="#{xml_escape(sheet_props[:code_name])}") if sheet_props[:code_name]
+        sp_attrs << 'filterMode="1"' if sheet_props[:filter_mode]
+        sp_attrs << 'published="0"' if sheet_props[:published] == false
+        sp_attrs << 'enableFormatConditionsCalculation="0"' if sheet_props[:enable_format_conditions_calculation] == false
         sp_children = []
         if sheet_props[:tab_color]
           sp_children << %(<tabColor rgb="#{sheet_props[:tab_color]}"/>)
@@ -1526,6 +1529,14 @@ module Xlsxrb
           outline_attrs << %(summaryBelow="#{sb ? 1 : 0}") unless sb.nil?
           outline_attrs << %(summaryRight="#{sr ? 1 : 0}") unless sr.nil?
           sp_children << "<outlinePr #{outline_attrs.join(" ")}/>"
+        end
+        ftp = sheet_props[:fit_to_page]
+        apb = sheet_props[:auto_page_breaks]
+        unless ftp.nil? && apb.nil?
+          psp_attrs = []
+          psp_attrs << %(fitToPage="#{ftp ? 1 : 0}") unless ftp.nil?
+          psp_attrs << %(autoPageBreaks="#{apb ? 1 : 0}") unless apb.nil?
+          sp_children << "<pageSetUpPr #{psp_attrs.join(" ")}/>"
         end
         if !sp_children.empty? || !sp_attrs.empty?
           sp_open = sp_attrs.empty? ? "<sheetPr>" : "<sheetPr #{sp_attrs.join(" ")}>"
