@@ -224,7 +224,32 @@ class ReaderTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     reader = Xlsxrb::Reader.new(xlsx_path)
-    assert_equal({ "A1" => "https://example.com" }, reader.hyperlinks)
+    assert_equal({ "A1" => { url: "https://example.com" } }, reader.hyperlinks)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips hyperlinks with display tooltip and location" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Example")
+    writer.add_hyperlink("A1", "https://example.com", display: "Example Site", tooltip: "Click to visit")
+    writer.set_cell("B1", "Page")
+    writer.add_hyperlink("B1", "https://example.com/page", location: "Sheet2!A1")
+    writer.set_cell("C1", "Internal")
+    writer.add_hyperlink("C1", location: "Sheet1!D1")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    expected = {
+      "A1" => { url: "https://example.com", display: "Example Site", tooltip: "Click to visit" },
+      "B1" => { url: "https://example.com/page", location: "Sheet2!A1" },
+      "C1" => { location: "Sheet1!D1" }
+    }
+    assert_equal(expected, reader.hyperlinks)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

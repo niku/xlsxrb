@@ -165,7 +165,31 @@ class WriterTest < Test::Unit::TestCase
     writer.add_hyperlink("A1", "https://example.com")
     writer.add_hyperlink("B1", "https://github.com")
 
-    assert_equal({ "A1" => "https://example.com", "B1" => "https://github.com" }, writer.hyperlinks)
+    assert_equal({ "A1" => { url: "https://example.com" }, "B1" => { url: "https://github.com" } }, writer.hyperlinks)
+  end
+
+  test "stores hyperlinks with display tooltip and location" do
+    writer = Xlsxrb::Writer.new
+    writer.add_hyperlink("A1", "https://example.com", display: "Example Site", tooltip: "Click to visit")
+    writer.add_hyperlink("B1", "https://example.com/page", location: "Sheet2!A1")
+
+    expected = {
+      "A1" => { url: "https://example.com", display: "Example Site", tooltip: "Click to visit" },
+      "B1" => { url: "https://example.com/page", location: "Sheet2!A1" }
+    }
+    assert_equal(expected, writer.hyperlinks)
+  end
+
+  test "stores internal hyperlink with location only" do
+    writer = Xlsxrb::Writer.new
+    writer.add_hyperlink("A1", location: "Sheet2!A1")
+
+    assert_equal({ "A1" => { location: "Sheet2!A1" } }, writer.hyperlinks)
+  end
+
+  test "add_hyperlink requires url or location" do
+    writer = Xlsxrb::Writer.new
+    assert_raise(ArgumentError) { writer.add_hyperlink("A1") }
   end
 
   test "adds number formats and assigns to cells" do

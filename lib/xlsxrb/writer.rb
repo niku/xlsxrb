@@ -229,12 +229,18 @@ module Xlsxrb
     end
 
     # Adds a hyperlink on a cell.
-    def add_hyperlink(cell_address, url, sheet: nil)
+    def add_hyperlink(cell_address, url = nil, sheet: nil, display: nil, tooltip: nil, location: nil)
       validate_cell_address!(cell_address)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @hyperlinks.key?(sheet_name)
+      raise ArgumentError, "url or location required" if url.nil? && location.nil?
 
-      @hyperlinks[sheet_name][cell_address] = url
+      link = {}
+      link[:url] = url if url
+      link[:display] = display if display
+      link[:tooltip] = tooltip if tooltip
+      link[:location] = location if location
+      @hyperlinks[sheet_name][cell_address] = link
     end
 
     # Returns hyperlinks for the first (or given) sheet.
@@ -1554,8 +1560,17 @@ module Xlsxrb
       # Emit <hyperlinks> if hyperlinks are defined.
       unless sheet_hyperlinks.empty?
         parts << "<hyperlinks>"
-        sheet_hyperlinks.each_with_index do |(cell_ref, _url), idx|
-          parts << %(<hyperlink ref="#{cell_ref}" r:id="rId#{idx + 1}"/>)
+        ext_rid = 0
+        sheet_hyperlinks.each do |(cell_ref, link)|
+          attrs = %(ref="#{cell_ref}")
+          if link[:url]
+            ext_rid += 1
+            attrs << %( r:id="rId#{ext_rid}")
+          end
+          attrs << %( display="#{xml_escape(link[:display])}") if link[:display]
+          attrs << %( tooltip="#{xml_escape(link[:tooltip])}") if link[:tooltip]
+          attrs << %( location="#{xml_escape(link[:location])}") if link[:location]
+          parts << %(<hyperlink #{attrs}/>)
         end
         parts << "</hyperlinks>"
       end
@@ -1763,9 +1778,10 @@ module Xlsxrb
         %(<Relationships xmlns="#{REL_NS}">)
       ]
       rid = 0
-      sheet_hyperlinks.each do |(_cell_ref, url)|
+      sheet_hyperlinks.each do |(_cell_ref, link)|
+        next unless link[:url]
         rid += 1
-        parts << %(<Relationship Id="rId#{rid}" Type="#{DOC_REL_NS}/hyperlink" Target="#{xml_escape(url)}" TargetMode="External"/>)
+        parts << %(<Relationship Id="rId#{rid}" Type="#{DOC_REL_NS}/hyperlink" Target="#{xml_escape(link[:url])}" TargetMode="External"/>)
       end
       sheet_tables.each_with_index do |_tbl, i|
         rid += 1
@@ -1777,8 +1793,9 @@ module Xlsxrb
 
     def build_sheet_rels_parts_v2(sheet_name, sheet_tables, table_start_index, drawing_idx, comment_idx, pivot_start, pivot_count)
       rels = []
-      @hyperlinks[sheet_name].each do |(_cell_ref, url)|
-        rels << { type: "#{DOC_REL_NS}/hyperlink", target: url, external: true }
+      @hyperlinks[sheet_name].each do |(_cell_ref, link)|
+        next unless link[:url]
+        rels << { type: "#{DOC_REL_NS}/hyperlink", target: link[:url], external: true }
       end
       sheet_tables.each_with_index do |_tbl, i|
         rels << { type: "#{DOC_REL_NS}/table", target: "../tables/table#{table_start_index + i + 1}.xml" }
