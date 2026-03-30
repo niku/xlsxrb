@@ -2974,6 +2974,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits location rowPageCount and colPageCount on pivot table" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0], data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           row_page_count: 2, col_page_count: 3)
+    xlsx_path = File.join(Dir.tmpdir, "loc_page_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/pivotTables/pivotTable1.xml")
+    assert_match(/rowPageCount="2"/, xml)
+    assert_match(/colPageCount="3"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

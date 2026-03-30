@@ -1194,7 +1194,8 @@ module Xlsxrb
         cache_save_data: opts[:cache_save_data], cache_enable_refresh: opts[:cache_enable_refresh],
         cache_refreshed_by: opts[:cache_refreshed_by], cache_refreshed_version: opts[:cache_refreshed_version],
         cache_created_version: opts[:cache_created_version], cache_record_count: opts[:cache_record_count],
-        cache_optimize_memory: opts[:cache_optimize_memory]
+        cache_optimize_memory: opts[:cache_optimize_memory],
+        row_page_count: opts[:row_page_count], col_page_count: opts[:col_page_count]
       }
     end
 
@@ -2763,7 +2764,11 @@ module Xlsxrb
                     else
                       (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size).clamp(1, 100)
                     end
-      parts << %(<location ref="#{pivot_table[:dest_ref]}" firstHeaderRow="1" firstDataRow="1" firstDataCol="1"/>)
+      loc_attrs = %(<location ref="#{pivot_table[:dest_ref]}" firstHeaderRow="1" firstDataRow="1" firstDataCol="1")
+      loc_attrs << %( rowPageCount="#{pivot_table[:row_page_count]}") if pivot_table[:row_page_count]
+      loc_attrs << %( colPageCount="#{pivot_table[:col_page_count]}") if pivot_table[:col_page_count]
+      loc_attrs << "/>"
+      parts << loc_attrs
       parts << %(<pivotFields count="#{field_count}">)
       field_count.times do |fi|
         attrs = +""
