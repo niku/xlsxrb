@@ -1435,7 +1435,16 @@ module Xlsxrb
     XDR_NS = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
     A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
     C_NS = "http://schemas.openxmlformats.org/drawingml/2006/chart"
-    CHART_TYPE_MAP = { bar: "barChart", line: "lineChart", pie: "pieChart" }.freeze
+    CHART_TYPE_MAP = {
+      bar: "barChart", line: "lineChart", pie: "pieChart",
+      area: "areaChart", scatter: "scatterChart", doughnut: "doughnutChart",
+      radar: "radarChart", bar3d: "bar3DChart", line3d: "line3DChart",
+      pie3d: "pie3DChart", area3d: "area3DChart", surface: "surfaceChart",
+      stock: "stockChart", bubble: "bubbleChart"
+    }.freeze
+
+    NO_AXIS_CHARTS = %w[pieChart doughnutChart pie3DChart].freeze
+    GROUPING_CHARTS = %w[barChart lineChart areaChart bar3DChart line3DChart area3DChart].freeze
 
     private
 
@@ -2620,7 +2629,7 @@ module Xlsxrb
 
     def generate_chart_xml(chart)
       chart_type = CHART_TYPE_MAP[chart[:type]] || "barChart"
-      is_pie = chart[:type] == :pie
+      no_axes = NO_AXIS_CHARTS.include?(chart_type)
       parts = [
         XML_HEADER,
         %(<c:chartSpace xmlns:c="#{C_NS}" xmlns:a="#{A_NS}" xmlns:r="#{DOC_REL_NS}">),
@@ -2631,12 +2640,13 @@ module Xlsxrb
 
       parts << "<c:plotArea><c:layout/>"
       parts << "<c:#{chart_type}>"
-      if chart_type == "barChart"
+      if %w[barChart bar3DChart].include?(chart_type)
         bd = chart[:bar_dir] || "col"
         gr = chart[:grouping] || "clustered"
         parts << %(<c:barDir val="#{bd}"/><c:grouping val="#{gr}"/>)
+      elsif GROUPING_CHARTS.include?(chart_type)
+        parts << %(<c:grouping val="#{chart[:grouping] || "standard"}"/>)
       end
-      parts << %(<c:grouping val="#{chart[:grouping] || "standard"}"/>) if chart_type == "lineChart"
 
       all_series = chart[:series] || []
       all_series.each_with_index do |ser, idx|
@@ -2657,10 +2667,10 @@ module Xlsxrb
         parts << "</c:ser>"
       end
 
-      parts << '<c:axId val="1"/><c:axId val="2"/>' unless is_pie
+      parts << '<c:axId val="1"/><c:axId val="2"/>' unless no_axes
       parts << "</c:#{chart_type}>"
 
-      unless is_pie
+      unless no_axes
         parts << '<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/>'
         parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:cat_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:cat_axis_title]
         parts << '<c:crossAx val="2"/></c:catAx>'

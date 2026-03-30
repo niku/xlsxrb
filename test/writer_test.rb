@@ -949,6 +949,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_chart supports area, scatter, doughnut, radar types" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "a")
+    %i[area scatter doughnut radar].each { |t| writer.add_chart(type: t, cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1") }
+    xlsx_path = File.join(Dir.tmpdir, "chart_types_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    (1..4).each do |i|
+      xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart#{i}.xml")
+      assert(xml.include?("<c:"), "chart#{i}.xml should contain chart XML")
+    end
+    xml1 = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/areaChart/, xml1)
+    xml3 = read_xml_from_xlsx(xlsx_path, "xl/charts/chart3.xml")
+    assert_match(/doughnutChart/, xml3)
+    refute_match(/catAx/, xml3, "doughnut chart should not have axes")
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "insert_image with edit_as stores editAs attribute" do
     writer = Xlsxrb::Writer.new
     png = "\x89PNG".b
