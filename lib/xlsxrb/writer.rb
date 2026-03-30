@@ -2745,6 +2745,7 @@ module Xlsxrb
       parts << emit_color_xml(font)
       parts << %(<name val="#{xml_escape(font[:name])}"/>) if font[:name]
       parts << %(<family val="#{font[:family]}"/>) if font[:family]
+      parts << %(<charset val="#{font[:charset]}"/>) if font[:charset]
       parts << %(<scheme val="#{font[:scheme]}"/>) if font[:scheme]
       parts << "</font>"
       parts.join

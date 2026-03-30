@@ -1402,6 +1402,23 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores font charset attribute correctly" do
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(name: "MS Gothic", sz: 11, family: 3, charset: 128)
+    sid = writer.add_cell_style(font_id: fid)
+    writer.set_cell("A1", "テスト")
+    writer.set_cell_style("A1", sid)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_font_charset_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

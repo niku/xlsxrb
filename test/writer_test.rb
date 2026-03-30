@@ -1611,6 +1611,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "font emits charset attribute" do
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(name: "MS Gothic", sz: 11, family: 3, charset: 128)
+    sid = writer.add_cell_style(font_id: fid)
+    writer.set_cell("A1", "テスト")
+    writer.set_cell_style("A1", sid)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-charset", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    styles_xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/charset val="128"/, styles_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
