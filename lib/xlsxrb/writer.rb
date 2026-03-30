@@ -1526,9 +1526,11 @@ module Xlsxrb
     end
 
     def generate_workbook_xml(pivot_cache_count = 0)
+      wb_attrs = %(xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}")
+      wb_attrs << %( conformance="#{@workbook_properties[:conformance]}") if @workbook_properties[:conformance]
       parts = [
         XML_HEADER,
-        %(<workbook xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}">)
+        "<workbook #{wb_attrs}>"
       ]
 
       # fileVersion
