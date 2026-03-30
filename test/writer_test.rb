@@ -2625,6 +2625,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits definedName extended attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_defined_name("MyFunc", "Sheet1!$A$1",
+                            function_group_id: 4, custom_menu: "My Menu",
+                            help: "Help text", status_bar: "Status text")
+    xlsx_path = File.join(Dir.tmpdir, "dn_ext_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/functionGroupId="4"/, xml)
+    assert_match(/customMenu="My Menu"/, xml)
+    assert_match(/help="Help text"/, xml)
+    assert_match(/statusBar="Status text"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

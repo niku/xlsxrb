@@ -1859,6 +1859,11 @@ module Xlsxrb
           @current_dn_attrs[:shortcut_key] = attributes["shortcutKey"] if attributes["shortcutKey"]
           @current_dn_attrs[:publish_to_server] = true if %w[1 true].include?(attributes["publishToServer"])
           @current_dn_attrs[:workbook_parameter] = true if %w[1 true].include?(attributes["workbookParameter"])
+          fgi = attributes["functionGroupId"]
+          @current_dn_attrs[:function_group_id] = fgi.to_i if fgi
+          @current_dn_attrs[:custom_menu] = attributes["customMenu"] if attributes["customMenu"]
+          @current_dn_attrs[:help] = attributes["help"] if attributes["help"]
+          @current_dn_attrs[:status_bar] = attributes["statusBar"] if attributes["statusBar"]
           @dn_text_buffer = +""
         end
       end
