@@ -56,7 +56,9 @@ async Task<ScenarioExecResult> RunScenario(string code, string xlsxPath)
             "DocumentFormat.OpenXml",
             "DocumentFormat.OpenXml.Packaging",
             "DocumentFormat.OpenXml.Spreadsheet",
-            "DocumentFormat.OpenXml.Validation"
+            "DocumentFormat.OpenXml.Validation",
+            "DocumentFormat.OpenXml.CustomProperties",
+            "DocumentFormat.OpenXml.VariantTypes"
         );
 
     try

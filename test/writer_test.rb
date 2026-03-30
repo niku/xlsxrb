@@ -1750,6 +1750,27 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "custom properties are written to docProps/custom.xml" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_custom_property("Project", "Alpha")
+    writer.add_custom_property("Version", 42, type: :number)
+    writer.add_custom_property("Active", true, type: :bool)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-custom", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    custom_xml = read_xml_from_xlsx(xlsx_path, "docProps/custom.xml")
+    assert_match(/name="Project"/, custom_xml)
+    assert_match(%r{<vt:lpwstr>Alpha</vt:lpwstr>}, custom_xml)
+    assert_match(%r{<vt:i4>42</vt:i4>}, custom_xml)
+    assert_match(%r{<vt:bool>true</vt:bool>}, custom_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

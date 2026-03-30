@@ -2501,4 +2501,35 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips custom document properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.add_custom_property("Project", "Alpha", type: :lpwstr)
+    writer.add_custom_property("Version", 42, type: :i4)
+    writer.add_custom_property("Active", true, type: :bool)
+    writer.set_cell("A1", "data")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    props = reader.custom_properties
+    assert_equal(3, props.size)
+
+    project = props.find { |p| p[:name] == "Project" }
+    assert_equal("Alpha", project[:value])
+    assert_equal(:string, project[:type])
+
+    version = props.find { |p| p[:name] == "Version" }
+    assert_equal(42, version[:value])
+    assert_equal(:number, version[:type])
+
+    active = props.find { |p| p[:name] == "Active" }
+    assert_equal(true, active[:value])
+    assert_equal(:bool, active[:type])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
