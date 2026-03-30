@@ -1669,6 +1669,87 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "showFormulas on sheet view" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_sheet_view(:show_formulas, true)
+
+    sv = writer.sheet_view
+    assert_equal(true, sv[:show_formulas])
+
+    xlsx_tempfile = Tempfile.new(["test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/showFormulas="1"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "codeName on sheet properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_sheet_property(:code_name, "MySheet")
+
+    props = writer.sheet_properties
+    assert_equal("MySheet", props[:code_name])
+
+    xlsx_tempfile = Tempfile.new(["test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/codeName="MySheet"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "workbook view visibility" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_workbook_view(:visibility, "hidden")
+
+    views = writer.workbook_views
+    assert_equal("hidden", views[:visibility])
+
+    xlsx_tempfile = Tempfile.new(["test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/visibility="hidden"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "phonetic properties on sheet" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    writer.set_phonetic_properties({ font_id: 1, type: "Hiragana", alignment: "center" })
+
+    pp = writer.phonetic_properties
+    assert_equal(1, pp[:font_id])
+    assert_equal("Hiragana", pp[:type])
+    assert_equal("center", pp[:alignment])
+
+    xlsx_tempfile = Tempfile.new(["test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/phoneticPr/, xml)
+    assert_match(/fontId="1"/, xml)
+    assert_match(/type="Hiragana"/, xml)
+    assert_match(/alignment="center"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
