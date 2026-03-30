@@ -983,6 +983,28 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("oneCell", charts[0][:edit_as])
   end
 
+  test "add_chart with anchor positions stores from/to col/row" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "x")
+    writer.add_chart(type: :bar, title: "Positioned",
+                     cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
+                     from_col: 2, from_row: 3, to_col: 8, to_row: 18,
+                     from_col_off: 100, from_row_off: 200, to_col_off: 300, to_row_off: 400)
+    charts = writer.charts
+    assert_equal(2, charts[0][:from_col])
+    assert_equal(3, charts[0][:from_row])
+    assert_equal(8, charts[0][:to_col])
+    assert_equal(18, charts[0][:to_row])
+
+    xlsx_path = File.join(Dir.tmpdir, "chart_anchor_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<xdr:from>.*<xdr:col>2</xdr:col>}m, xml)
+    assert_match(%r{<xdr:to>.*<xdr:col>8</xdr:col>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with edit_as stores editAs attribute" do
     writer = Xlsxrb::Writer.new
     writer.add_shape(preset: "rect", edit_as: "absolute")

@@ -4093,6 +4093,13 @@ module Xlsxrb
         @inside_graphic_frame = false
         @current_chart = nil
         @anchor_edit_as = nil
+        @inside_anchor = false
+        @inside_from = false
+        @inside_to = false
+        @anchor_from = {}
+        @anchor_to = {}
+        @current_field = nil
+        @text_buffer = +""
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4100,6 +4107,9 @@ module Xlsxrb
         case name
         when "twoCellAnchor", "oneCellAnchor"
           @anchor_edit_as = attributes["editAs"]
+          @inside_anchor = true
+          @anchor_from = {}
+          @anchor_to = {}
         when "graphicFrame"
           @inside_graphic_frame = true
           @current_chart = {}
@@ -4108,18 +4118,46 @@ module Xlsxrb
         when "chart"
           rid = attributes["r:id"] || attributes["id"]
           @current_chart[:rid] = rid if @inside_graphic_frame && @current_chart && rid
+        when "from"
+          @inside_from = true if @inside_anchor
+        when "to"
+          @inside_to = true if @inside_anchor
+        when "col", "colOff", "row", "rowOff"
+          @current_field = name
+          @text_buffer = +""
         when "clientData"
           @anchor_locks_with_sheet = attributes["fLocksWithSheet"]
           @anchor_prints_with_sheet = attributes["fPrintsWithSheet"]
         end
       end
 
+      def characters(text)
+        @text_buffer << text if @current_field
+      end
+
       def end_element(_uri, local_name, qname)
         name = element_name(local_name, qname)
         case name
+        when "col", "colOff", "row", "rowOff"
+          val = @text_buffer.strip.to_i
+          @anchor_from[name] = val if @inside_from
+          @anchor_to[name] = val if @inside_to
+          @current_field = nil
+        when "from"
+          @inside_from = false
+        when "to"
+          @inside_to = false
         when "graphicFrame"
           if @current_chart && @current_chart[:rid]
             @current_chart[:edit_as] = @anchor_edit_as if @anchor_edit_as
+            @current_chart[:from_col] = @anchor_from["col"] if @anchor_from["col"]
+            @current_chart[:from_row] = @anchor_from["row"] if @anchor_from["row"]
+            @current_chart[:from_col_off] = @anchor_from["colOff"] if @anchor_from["colOff"]
+            @current_chart[:from_row_off] = @anchor_from["rowOff"] if @anchor_from["rowOff"]
+            @current_chart[:to_col] = @anchor_to["col"] if @anchor_to["col"]
+            @current_chart[:to_row] = @anchor_to["row"] if @anchor_to["row"]
+            @current_chart[:to_col_off] = @anchor_to["colOff"] if @anchor_to["colOff"]
+            @current_chart[:to_row_off] = @anchor_to["rowOff"] if @anchor_to["rowOff"]
             @charts << @current_chart
           end
           @current_chart = nil
@@ -4127,9 +4165,12 @@ module Xlsxrb
         when "twoCellAnchor", "oneCellAnchor"
           @charts.last[:locks_with_sheet] = @anchor_locks_with_sheet == "1" if @anchor_locks_with_sheet && !@charts.empty?
           @charts.last[:prints_with_sheet] = @anchor_prints_with_sheet == "1" if @anchor_prints_with_sheet && !@charts.empty?
+          @inside_anchor = false
           @anchor_edit_as = nil
           @anchor_locks_with_sheet = nil
           @anchor_prints_with_sheet = nil
+          @anchor_from = {}
+          @anchor_to = {}
         end
       end
 
