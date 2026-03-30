@@ -366,7 +366,8 @@ module Xlsxrb
         num_fmt_id: opts[:num_fmt_id] || 0,
         font_id: opts[:font_id] || 0,
         fill_id: opts[:fill_id] || 0,
-        border_id: opts[:border_id] || 0
+        border_id: opts[:border_id] || 0,
+        xf_id: opts[:xf_id] || 0
       }
       entry[:alignment] = opts[:alignment] if opts[:alignment]
       entry[:protection] = opts[:protection] if opts[:protection]
@@ -2578,10 +2579,11 @@ module Xlsxrb
         children = []
         children << emit_alignment_xml(xf[:alignment]) if xf[:alignment]
         children << emit_protection_xml(xf[:protection]) if xf[:protection]
+        xf_id = xf[:xf_id] || 0
         if children.any?
-          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="0"#{apply_attrs.join}>#{children.join}</xf>)
+          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="#{xf_id}"#{apply_attrs.join}>#{children.join}</xf>)
         else
-          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="0"#{apply_attrs.join}/>)
+          parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="#{xf_id}"#{apply_attrs.join}/>)
         end
       end
       parts << "</cellXfs>"

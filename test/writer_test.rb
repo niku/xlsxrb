@@ -560,6 +560,26 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(1, xf_id)
   end
 
+  test "cellXf emits specified xfId linkage" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(bold: true, sz: 14, name: "Arial")
+    base_xf_id = writer.add_named_cell_style(name: "Heading1", font_id: fid, builtin_id: 1)
+    cell_xf = writer.add_cell_style(xf_id: base_xf_id)
+    writer.set_cell("A1", "hello")
+    writer.set_cell_style("A1", cell_xf)
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/<cellXfs[^>]*>/, xml)
+    assert_match(/<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="1"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "stores chart with multiple series and axis titles" do
     writer = Xlsxrb::Writer.new
     writer.add_chart(type: :bar, title: "Sales",

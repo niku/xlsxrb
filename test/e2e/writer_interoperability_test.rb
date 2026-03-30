@@ -131,6 +131,23 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores cellXf xfId linkage correctly" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "hello")
+    style_xf_id = writer.add_named_cell_style(name: "Heading1", num_fmt_id: 0)
+    cell_xf_id = writer.add_cell_style(xf_id: style_xf_id)
+    writer.set_cell_style("A1", cell_xf_id)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_cell_xf_xfid_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer output stores merge cells correctly" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

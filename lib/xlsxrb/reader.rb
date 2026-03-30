@@ -121,7 +121,7 @@ module Xlsxrb
 
       result = {}
       listener.cell_style_indices.each do |cell_ref, xf_index|
-        xf = styles[:cell_xfs][xf_index]
+        xf = resolve_effective_xf(styles[:cell_xfs][xf_index], styles[:cell_style_xfs])
         next unless xf
 
         fmt_id = xf[:num_fmt_id]
@@ -144,7 +144,7 @@ module Xlsxrb
       indices = parse_cell_style_indices(worksheet_xml)
       result = {}
       indices.each do |cell_ref, xf_index|
-        xf = styles[:cell_xfs][xf_index]
+        xf = resolve_effective_xf(styles[:cell_xfs][xf_index], styles[:cell_style_xfs])
         next unless xf
 
         entry = {}
@@ -819,7 +819,7 @@ module Xlsxrb
         xf_index = cell_style_map[cell_ref]
         next unless xf_index
 
-        xf = styles[:cell_xfs][xf_index]
+        xf = resolve_effective_xf(styles[:cell_xfs][xf_index], styles[:cell_style_xfs])
         next unless xf
 
         fmt_id = xf[:num_fmt_id]
@@ -845,6 +845,26 @@ module Xlsxrb
 
     def resolve_num_fmt_code(fmt_id, custom_num_fmts)
       custom_num_fmts[fmt_id] || Xlsxrb::BUILTIN_NUM_FMT_CODES[fmt_id]
+    end
+
+    def resolve_effective_xf(xf, cell_style_xfs)
+      return nil unless xf
+
+      effective = xf.dup
+      style_xf = nil
+      if effective[:xf_id]
+        style_xf = cell_style_xfs[effective[:xf_id]]
+      end
+      return effective unless style_xf
+
+      %i[num_fmt_id font_id fill_id border_id].each do |k|
+        if effective[k].nil? || effective[k] == 0
+          effective[k] = style_xf[k] if style_xf.key?(k)
+        end
+      end
+      effective[:alignment] ||= style_xf[:alignment]
+      effective[:protection] ||= style_xf[:protection]
+      effective
     end
 
     def date_pattern?(code)

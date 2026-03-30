@@ -838,6 +838,26 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "resolves cellXf xfId linkage through cellStyleXfs" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    style_xf_id = writer.add_named_cell_style(name: "DateBase", num_fmt_id: 14)
+    cell_xf_id = writer.add_cell_style(xf_id: style_xf_id)
+    writer.set_cell("A1", 45292)
+    writer.set_cell_style("A1", cell_xf_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    assert_equal("mm-dd-yy", reader.cell_formats["A1"])
+    assert_equal("mm-dd-yy", reader.cell_styles["A1"][:num_fmt])
+    assert_equal(Date.new(2024, 1, 1), reader.cells["A1"])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips conditional formatting rules" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
