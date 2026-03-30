@@ -468,9 +468,11 @@ module Xlsxrb
     end
 
     # Sets the indexed colors palette (array of ARGB hex strings, e.g. ["FF000000", "FFFFFFFF"]).
+    # rubocop:disable Naming/AccessorMethodName
     def set_indexed_colors(colors)
       @indexed_colors = colors
     end
+    # rubocop:enable Naming/AccessorMethodName
 
     # Returns the indexed colors palette.
     def indexed_colors
@@ -478,9 +480,11 @@ module Xlsxrb
     end
 
     # Sets the MRU (most recently used) colors (array of color hashes, e.g. [{rgb: "FFFF0000"}]).
+    # rubocop:disable Naming/AccessorMethodName
     def set_mru_colors(colors)
       @mru_colors = colors
     end
+    # rubocop:enable Naming/AccessorMethodName
 
     # Returns the MRU colors.
     def mru_colors
