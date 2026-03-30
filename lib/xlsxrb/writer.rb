@@ -349,11 +349,16 @@ module Xlsxrb
     end
 
     # Sets a sort state for the sheet. ref: sort range, sort_conditions: array of { ref:, descending: }.
-    def set_sort_state(ref, sort_conditions, sheet: nil)
+    # Options: column_sort:, case_sensitive:, sort_method:
+    def set_sort_state(ref, sort_conditions, sheet: nil, **opts)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sort_state.key?(sheet_name)
 
-      @sort_state[sheet_name] = { ref: ref, sort_conditions: sort_conditions }
+      ss = { ref: ref, sort_conditions: sort_conditions }
+      %i[column_sort case_sensitive sort_method].each do |key|
+        ss[key] = opts[key] if opts.key?(key)
+      end
+      @sort_state[sheet_name] = ss
     end
 
     # Returns sort state for the first (or given) sheet.
@@ -2068,10 +2073,19 @@ module Xlsxrb
 
       # Emit <sortState> if defined.
       if sheet_sort
-        parts << %(<sortState ref="#{sheet_sort[:ref]}">)
+        ss_attrs = %( ref="#{sheet_sort[:ref]}")
+        ss_attrs << ' columnSort="1"' if sheet_sort[:column_sort]
+        ss_attrs << ' caseSensitive="1"' if sheet_sort[:case_sensitive]
+        ss_attrs << %( sortMethod="#{sheet_sort[:sort_method]}") if sheet_sort[:sort_method]
+        parts << "<sortState#{ss_attrs}>"
         sheet_sort[:sort_conditions].each do |sc|
           sc_attrs = %(ref="#{sc[:ref]}")
           sc_attrs << ' descending="1"' if sc[:descending]
+          sc_attrs << %( sortBy="#{sc[:sort_by]}") if sc[:sort_by]
+          sc_attrs << %( customList="#{xml_escape(sc[:custom_list])}") if sc[:custom_list]
+          sc_attrs << %( dxfId="#{sc[:dxf_id]}") if sc[:dxf_id]
+          sc_attrs << %( iconSet="#{sc[:icon_set]}") if sc[:icon_set]
+          sc_attrs << %( iconId="#{sc[:icon_id]}") if sc[:icon_id]
           parts << "<sortCondition #{sc_attrs}/>"
         end
         parts << "</sortState>"

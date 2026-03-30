@@ -2521,12 +2521,23 @@ module Xlsxrb
         case name
         when "sortState"
           @inside_sort_state = true
-          @sort_state = { ref: attributes["ref"], sort_conditions: [] }
+          ss = { ref: attributes["ref"], sort_conditions: [] }
+          ss[:column_sort] = true if attributes["columnSort"] == "1"
+          ss[:case_sensitive] = true if attributes["caseSensitive"] == "1"
+          ss[:sort_method] = attributes["sortMethod"] if attributes["sortMethod"]
+          @sort_state = ss
         when "sortCondition"
           return unless @inside_sort_state
 
           sc = { ref: attributes["ref"] }
           sc[:descending] = true if attributes["descending"] == "1"
+          sc[:sort_by] = attributes["sortBy"] if attributes["sortBy"]
+          sc[:custom_list] = attributes["customList"] if attributes["customList"]
+          dxf = attributes["dxfId"]
+          sc[:dxf_id] = dxf.to_i if dxf
+          sc[:icon_set] = attributes["iconSet"] if attributes["iconSet"]
+          iid = attributes["iconId"]
+          sc[:icon_id] = iid.to_i if iid
           @sort_conditions << sc
         end
       end
