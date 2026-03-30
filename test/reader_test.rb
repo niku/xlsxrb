@@ -2249,4 +2249,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips hashed password sheet protection through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "protected")
+    hp = Xlsxrb.hash_password("secret", spin_count: 500)
+    writer.set_sheet_protection(**hp)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    sp = reader.sheet_protection
+
+    assert_equal("SHA-512", sp[:algorithm_name])
+    assert_equal(hp[:hash_value], sp[:hash_value])
+    assert_equal(hp[:salt_value], sp[:salt_value])
+    assert_equal(500, sp[:spin_count])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

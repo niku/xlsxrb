@@ -1462,6 +1462,48 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("'Sheet1'!$A:$B,'Sheet1'!$1:$3", dns[0][:value])
   end
 
+  test "hash_password returns deterministic result with fixed salt" do
+    salt = "\x00" * 16
+    result = Xlsxrb.hash_password("secret", salt: salt, spin_count: 1000)
+
+    assert_equal("SHA-512", result[:algorithm_name])
+    assert_equal(1000, result[:spin_count])
+    assert_equal([salt].pack("m0"), result[:salt_value])
+    assert_match(%r{\A[A-Za-z0-9+/]+=*\z}, result[:hash_value])
+
+    # Same inputs should produce same output
+    result2 = Xlsxrb.hash_password("secret", salt: salt, spin_count: 1000)
+    assert_equal(result[:hash_value], result2[:hash_value])
+  end
+
+  test "hash_password integrates with set_sheet_protection" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "protected")
+    hp = Xlsxrb.hash_password("mypassword", spin_count: 1000)
+    writer.set_sheet_protection(**hp)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-hash-pw", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    sheet_xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/algorithmName="SHA-512"/, sheet_xml)
+    assert_match(%r{hashValue="[A-Za-z0-9+/]+=*"}, sheet_xml)
+    assert_match(%r{saltValue="[A-Za-z0-9+/]+=*"}, sheet_xml)
+    assert_match(/spinCount="1000"/, sheet_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "hash_password supports SHA-256 algorithm" do
+    result = Xlsxrb.hash_password("test", algorithm: "SHA-256", spin_count: 100)
+    assert_equal("SHA-256", result[:algorithm_name])
+    assert_equal(100, result[:spin_count])
+    # SHA-256 produces 32-byte hash → 44-char base64
+    assert_equal(44, result[:hash_value].length)
+  end
+
   private
 
   # ensure zlib loaded
