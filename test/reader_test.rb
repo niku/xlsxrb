@@ -2109,4 +2109,40 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips extended core properties through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_core_property(:title, "My Title")
+    writer.set_core_property(:subject, "My Subject")
+    writer.set_core_property(:creator, "Alice")
+    writer.set_core_property(:keywords, "ruby, xlsx")
+    writer.set_core_property(:description, "A test document")
+    writer.set_core_property(:last_modified_by, "Bob")
+    writer.set_core_property(:revision, "3")
+    writer.set_core_property(:category, "Reports")
+    writer.set_core_property(:content_status, "Draft")
+    writer.set_core_property(:language, "en-US")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    props = reader.core_properties
+
+    assert_equal("My Title", props[:title])
+    assert_equal("My Subject", props[:subject])
+    assert_equal("Alice", props[:creator])
+    assert_equal("ruby, xlsx", props[:keywords])
+    assert_equal("A test document", props[:description])
+    assert_equal("Bob", props[:last_modified_by])
+    assert_equal("3", props[:revision])
+    assert_equal("Reports", props[:category])
+    assert_equal("Draft", props[:content_status])
+    assert_equal("en-US", props[:language])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

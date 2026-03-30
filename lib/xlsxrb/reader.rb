@@ -2206,9 +2206,17 @@ module Xlsxrb
 
       FIELD_MAP = {
         "title" => :title,
+        "subject" => :subject,
         "creator" => :creator,
+        "keywords" => :keywords,
+        "description" => :description,
+        "lastModifiedBy" => :last_modified_by,
+        "revision" => :revision,
         "created" => :created,
-        "modified" => :modified
+        "modified" => :modified,
+        "category" => :category,
+        "contentStatus" => :content_status,
+        "language" => :language
       }.freeze
 
       def initialize

@@ -1331,6 +1331,40 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writes extended core properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_core_property(:title, "My Title")
+    writer.set_core_property(:subject, "My Subject")
+    writer.set_core_property(:creator, "Alice")
+    writer.set_core_property(:keywords, "ruby, xlsx")
+    writer.set_core_property(:description, "A test document")
+    writer.set_core_property(:last_modified_by, "Bob")
+    writer.set_core_property(:revision, "3")
+    writer.set_core_property(:category, "Reports")
+    writer.set_core_property(:content_status, "Draft")
+    writer.set_core_property(:language, "en-US")
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "docProps/core.xml")
+    assert_match(%r{<dc:title>My Title</dc:title>}, xml)
+    assert_match(%r{<dc:subject>My Subject</dc:subject>}, xml)
+    assert_match(%r{<dc:creator>Alice</dc:creator>}, xml)
+    assert_match(%r{<cp:keywords>ruby, xlsx</cp:keywords>}, xml)
+    assert_match(%r{<dc:description>A test document</dc:description>}, xml)
+    assert_match(%r{<cp:lastModifiedBy>Bob</cp:lastModifiedBy>}, xml)
+    assert_match(%r{<cp:revision>3</cp:revision>}, xml)
+    assert_match(%r{<cp:category>Reports</cp:category>}, xml)
+    assert_match(%r{<cp:contentStatus>Draft</cp:contentStatus>}, xml)
+    assert_match(%r{<dc:language>en-US</dc:language>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
