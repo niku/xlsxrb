@@ -3019,4 +3019,31 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips border vertical and horizontal sides" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    brd_id = writer.add_border(
+      vertical: { style: "thin", color: "FF00FF00" },
+      horizontal: { style: "dashed", color: "FF0000FF" }
+    )
+    style_id = writer.add_cell_style(border_id: brd_id)
+    writer.set_cell("A1", "vh")
+    writer.set_cell_style("A1", style_id)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    border = cs["A1"][:border]
+    assert_not_nil(border)
+    assert_equal("thin", border[:vertical][:style])
+    assert_equal("FF00FF00", border[:vertical][:color])
+    assert_equal("dashed", border[:horizontal][:style])
+    assert_equal("FF0000FF", border[:horizontal][:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
