@@ -6,6 +6,7 @@ require "etc"
 require "fileutils"
 require "open3"
 
+desc "Build the Open XML SDK runner"
 task :build_sdk_runner do
   sh "dotnet build vendor/sdk_runner/sdk_runner.csproj -c Release"
 end
@@ -35,6 +36,7 @@ rescue ArgumentError
   Etc.nprocessors
 end
 
+desc "Ensure SDK-generated reader fixtures exist"
 task ensure_reader_fixtures: :build_sdk_runner do
   missing_specs = reader_fixture_specs.reject { |_scenario_name, fixture_path| File.exist?(fixture_path) }
   next if missing_specs.empty?
