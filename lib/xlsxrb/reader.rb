@@ -673,6 +673,8 @@ module Xlsxrb
         chart[:data_labels] = cl.data_labels unless cl.data_labels.empty?
         chart[:cat_axis_title] = cl.cat_axis_title if cl.cat_axis_title
         chart[:val_axis_title] = cl.val_axis_title if cl.val_axis_title
+        chart[:grouping] = cl.grouping if cl.grouping
+        chart[:bar_dir] = cl.bar_dir if cl.bar_dir
       end
       listener.charts
     end
@@ -4216,7 +4218,8 @@ module Xlsxrb
     class ChartTypeListener
       include REXML::SAX2Listener
 
-      attr_reader :chart_type, :title, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title
+      attr_reader :chart_type, :title, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
+                  :grouping, :bar_dir
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4229,6 +4232,8 @@ module Xlsxrb
         @data_labels = {}
         @cat_axis_title = nil
         @val_axis_title = nil
+        @grouping = nil
+        @bar_dir = nil
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4250,6 +4255,10 @@ module Xlsxrb
         @chart_type = name if CHART_TYPES.include?(name)
 
         case name
+        when "grouping"
+          @grouping = attributes["val"] if attributes["val"]
+        when "barDir"
+          @bar_dir = attributes["val"] if attributes["val"]
         when "ser"
           @inside_ser = true
           @current_ser = {}

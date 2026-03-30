@@ -934,6 +934,21 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("Sales", charts[0][:title])
   end
 
+  test "add_chart emits custom grouping and barDir" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "a")
+    writer.add_chart(type: :bar, title: "Stacked",
+                     cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
+                     grouping: "stacked", bar_dir: "bar")
+    xlsx_path = File.join(Dir.tmpdir, "chart_grp_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/grouping val="stacked"/, xml)
+    assert_match(/barDir val="bar"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "insert_image with edit_as stores editAs attribute" do
     writer = Xlsxrb::Writer.new
     png = "\x89PNG".b

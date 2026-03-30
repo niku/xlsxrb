@@ -1094,7 +1094,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, grouping: nil, bar_dir: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1104,6 +1104,8 @@ module Xlsxrb
       chart[:data_labels] = data_labels if data_labels
       chart[:cat_axis_title] = cat_axis_title if cat_axis_title
       chart[:val_axis_title] = val_axis_title if val_axis_title
+      chart[:grouping] = grouping if grouping
+      chart[:bar_dir] = bar_dir if bar_dir
       chart[:edit_as] = edit_as if edit_as
       chart[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
       chart[:prints_with_sheet] = prints_with_sheet unless prints_with_sheet.nil?
@@ -2629,8 +2631,12 @@ module Xlsxrb
 
       parts << "<c:plotArea><c:layout/>"
       parts << "<c:#{chart_type}>"
-      parts << '<c:barDir val="col"/><c:grouping val="clustered"/>' if chart_type == "barChart"
-      parts << '<c:grouping val="standard"/>' if chart_type == "lineChart"
+      if chart_type == "barChart"
+        bd = chart[:bar_dir] || "col"
+        gr = chart[:grouping] || "clustered"
+        parts << %(<c:barDir val="#{bd}"/><c:grouping val="#{gr}"/>)
+      end
+      parts << %(<c:grouping val="#{chart[:grouping] || "standard"}"/>) if chart_type == "lineChart"
 
       all_series = chart[:series] || []
       all_series.each_with_index do |ser, idx|

@@ -4105,4 +4105,25 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal 2, pt[:row_page_count]
     assert_equal 3, pt[:col_page_count]
   end
+
+  test "round-trips chart grouping and barDir" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-chart-grp", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "a")
+    writer.add_chart(type: :bar, title: "Stacked",
+                     cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
+                     grouping: "stacked", bar_dir: "bar")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("stacked", charts[0][:grouping])
+    assert_equal("bar", charts[0][:bar_dir])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
