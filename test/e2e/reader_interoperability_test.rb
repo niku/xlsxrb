@@ -1010,6 +1010,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     assert_equal("Amount", cache[:fields][2][:name])
     assert_equal(%w[A B], cache[:fields][0][:shared_items])
     assert_equal(%w[East West], cache[:fields][1][:shared_items])
+    # Cache records parsed
+    assert_not_nil(cache[:records])
+    assert_equal(2, cache[:records].size)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

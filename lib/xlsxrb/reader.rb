@@ -970,7 +970,28 @@ module Xlsxrb
       listener = PivotCacheDefinitionListener.new
       parser.listen(listener)
       parser.parse
-      listener.cache_definition
+      cache_def = listener.cache_definition
+
+      # Load pivotCacheRecords via cache definition rels.
+      cache_rels_path = cache_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      cache_rels_xml = extract_zip_entry(cache_rels_path)
+      if cache_rels_xml && !cache_rels_xml.empty?
+        cache_rels = parse_rels_with_types(cache_rels_xml)
+        rec_rel = cache_rels.find { |r| r[:type]&.end_with?("/pivotCacheRecords") }
+        if rec_rel
+          rec_path = normalize_xl_path(rec_rel[:target], File.dirname(cache_path))
+          rec_xml = extract_zip_entry(rec_path)
+          if rec_xml && !rec_xml.empty?
+            rec_parser = REXML::Parsers::SAX2Parser.new(rec_xml)
+            rec_listener = PivotCacheRecordsListener.new
+            rec_parser.listen(rec_listener)
+            rec_parser.parse
+            cache_def[:records] = rec_listener.records unless rec_listener.records.empty?
+          end
+        end
+      end
+
+      cache_def
     end
 
     def load_styles
@@ -4772,6 +4793,54 @@ module Xlsxrb
 
       def xml_unescape(str)
         str.gsub("&amp;", "&").gsub("&lt;", "<").gsub("&gt;", ">").gsub("&quot;", '"').gsub("&apos;", "'")
+      end
+    end
+
+    # SAX2 listener for parsing pivotCacheRecords XML.
+    class PivotCacheRecordsListener
+      include REXML::SAX2Listener
+
+      attr_reader :records
+
+      def initialize
+        @records = []
+        @current_record = nil
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        case name
+        when "r"
+          @current_record = []
+        when "x"
+          @current_record << { x: attributes["v"]&.to_i } if @current_record
+        when "s", "d", "e"
+          @current_record << attributes["v"] if @current_record && attributes["v"]
+        when "n"
+          @current_record << attributes["v"]&.to_f if @current_record && attributes["v"]
+        when "b"
+          @current_record << (attributes["v"] == "1") if @current_record
+        when "m"
+          @current_record << nil if @current_record
+        end
+      end
+
+      def end_element(_uri, local_name, qname)
+        name = element_name(local_name, qname)
+        return unless name == "r" && @current_record
+
+        @records << @current_record
+        @current_record = nil
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
       end
     end
 
