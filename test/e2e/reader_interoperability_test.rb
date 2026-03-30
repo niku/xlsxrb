@@ -1648,6 +1648,22 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "reader parses SDK-generated indexed colors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_indexed_colors_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ic = reader.indexed_colors
+    assert_equal("FF000000", ic[0])
+    assert_equal("FFFFFFFF", ic[1])
+    assert_equal("FFFF0000", ic[2])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

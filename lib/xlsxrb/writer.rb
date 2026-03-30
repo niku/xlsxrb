@@ -41,6 +41,8 @@ module Xlsxrb
       @cell_style_xfs = [{ num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0 }]
       @cell_style_names = [{ name: "Normal", xf_id: 0, builtin_id: 0 }]
       @dxfs = []
+      @indexed_colors = []
+      @mru_colors = []
       @sheet_order = ["Sheet1"]
       @core_properties = {}
       @app_properties = {}
@@ -449,6 +451,26 @@ module Xlsxrb
     def add_dxf(**opts)
       @dxfs << opts
       @dxfs.size - 1
+    end
+
+    # Sets the indexed colors palette (array of ARGB hex strings, e.g. ["FF000000", "FFFFFFFF"]).
+    def set_indexed_colors(colors)
+      @indexed_colors = colors
+    end
+
+    # Returns the indexed colors palette.
+    def indexed_colors
+      @indexed_colors.dup
+    end
+
+    # Sets the MRU (most recently used) colors (array of color hashes, e.g. [{rgb: "FFFF0000"}]).
+    def set_mru_colors(colors)
+      @mru_colors = colors
+    end
+
+    # Returns the MRU colors.
+    def mru_colors
+      @mru_colors.map(&:dup)
     end
 
     # Sets a core property.
@@ -3010,6 +3032,22 @@ module Xlsxrb
         parts << "</dxfs>"
       end
 
+      # colors
+      unless @indexed_colors.empty? && @mru_colors.empty?
+        parts << "<colors>"
+        unless @indexed_colors.empty?
+          parts << "<indexedColors>"
+          @indexed_colors.each { |c| parts << %(<rgbColor rgb="#{c}"/>) }
+          parts << "</indexedColors>"
+        end
+        unless @mru_colors.empty?
+          parts << "<mruColors>"
+          @mru_colors.each { |c| parts << emit_color_xml(c) }
+          parts << "</mruColors>"
+        end
+        parts << "</colors>"
+      end
+
       parts << "</styleSheet>"
       parts.join
     end
@@ -3038,8 +3076,8 @@ module Xlsxrb
     def emit_color_xml(source, tag: "color")
       if source[:auto]
         %(<#{tag} auto="1"/>)
-      elsif source[:color]
-        %(<#{tag} rgb="#{source[:color]}"/>)
+      elsif source[:color] || source[:rgb]
+        %(<#{tag} rgb="#{source[:color] || source[:rgb]}"/>)
       elsif source[:theme]
         attrs = [%(theme="#{source[:theme]}")]
         attrs << %(tint="#{source[:tint]}") if source[:tint]

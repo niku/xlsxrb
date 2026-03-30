@@ -3180,4 +3180,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips indexedColors and mruColors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_indexed_colors(%w[FF000000 FFFFFFFF FFFF0000])
+    writer.set_mru_colors([{ rgb: "FF00FF00" }, { theme: 3, tint: 0.4 }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ic = reader.indexed_colors
+    assert_equal(%w[FF000000 FFFFFFFF FFFF0000], ic)
+
+    mru = reader.mru_colors
+    assert_equal(2, mru.size)
+    assert_equal("FF00FF00", mru[0][:rgb])
+    assert_equal(3, mru[1][:theme])
+    assert_in_delta(0.4, mru[1][:tint])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

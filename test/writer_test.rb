@@ -2373,6 +2373,31 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits indexedColors and mruColors in stylesheet" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.set_indexed_colors(%w[FF000000 FFFFFFFF FFFF0000])
+    writer.set_mru_colors([{ rgb: "FF00FF00" }, { theme: 3, tint: 0.4 }])
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-colors", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/<colors>/, xml_content)
+    assert_match(/<indexedColors>/, xml_content)
+    assert_match(%r{<rgbColor rgb="FF000000"/>}, xml_content)
+    assert_match(%r{<rgbColor rgb="FFFFFFFF"/>}, xml_content)
+    assert_match(%r{<rgbColor rgb="FFFF0000"/>}, xml_content)
+    assert_match(/<mruColors>/, xml_content)
+    assert_match(/rgb="FF00FF00"/, xml_content)
+    assert_match(/theme="3"/, xml_content)
+    assert_match(/tint="0.4"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
