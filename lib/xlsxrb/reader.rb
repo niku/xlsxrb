@@ -1910,6 +1910,14 @@ module Xlsxrb
           @current_font[:italic] = true if @current_font
         when "strike"
           @current_font[:strike] = true if @current_font
+        when "shadow"
+          @current_font[:shadow] = true if @current_font
+        when "outline"
+          @current_font[:outline] = true if @current_font
+        when "condense"
+          @current_font[:condense] = true if @current_font
+        when "extend"
+          @current_font[:extend] = true if @current_font
         when "u"
           if @current_font
             val = attributes["val"]

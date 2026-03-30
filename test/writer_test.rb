@@ -1629,6 +1629,27 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "font emits shadow, outline, condense, extend" do
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(name: "Arial", sz: 12, bold: true, shadow: true, outline: true, condense: true, extend: true)
+    sid = writer.add_cell_style(font_id: fid)
+    writer.set_cell("A1", "styled")
+    writer.set_cell_style("A1", sid)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-font-effects", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    styles_xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(%r{<shadow/>}, styles_xml)
+    assert_match(%r{<outline/>}, styles_xml)
+    assert_match(%r{<condense/>}, styles_xml)
+    assert_match(%r{<extend/>}, styles_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "sheetFormatPr emits outlineLevelRow, outlineLevelCol, zeroHeight, customHeight" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "test")

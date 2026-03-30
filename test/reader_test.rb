@@ -2532,4 +2532,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips font shadow outline condense extend" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fid = writer.add_font(name: "Arial", sz: 12, shadow: true, outline: true, condense: true, extend: true)
+    sid = writer.add_cell_style(font_id: fid)
+    writer.set_cell("A1", "effects")
+    writer.set_cell_style("A1", sid)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    styles = reader.cell_styles
+    styled_font = styles.values.map { |s| s[:font] }.compact.find { |f| f[:shadow] }
+    assert_not_nil(styled_font)
+    assert_equal(true, styled_font[:shadow])
+    assert_equal(true, styled_font[:outline])
+    assert_equal(true, styled_font[:condense])
+    assert_equal(true, styled_font[:extend])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
