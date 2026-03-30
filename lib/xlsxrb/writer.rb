@@ -1717,6 +1717,14 @@ module Xlsxrb
         ps_attrs << %(scale="#{sheet_ps[:scale]}") if sheet_ps[:scale]
         ps_attrs << %(fitToWidth="#{sheet_ps[:fit_to_width]}") if sheet_ps[:fit_to_width]
         ps_attrs << %(fitToHeight="#{sheet_ps[:fit_to_height]}") if sheet_ps[:fit_to_height]
+        ps_attrs << %(pageOrder="#{sheet_ps[:page_order]}") if sheet_ps[:page_order]
+        ps_attrs << 'blackAndWhite="1"' if sheet_ps[:black_and_white]
+        ps_attrs << 'draft="1"' if sheet_ps[:draft]
+        ps_attrs << %(cellComments="#{sheet_ps[:cell_comments]}") if sheet_ps[:cell_comments]
+        ps_attrs << %(firstPageNumber="#{sheet_ps[:first_page_number]}") if sheet_ps[:first_page_number]
+        ps_attrs << 'useFirstPageNumber="1"' if sheet_ps[:use_first_page_number]
+        ps_attrs << %(horizontalDpi="#{sheet_ps[:horizontal_dpi]}") if sheet_ps[:horizontal_dpi]
+        ps_attrs << %(verticalDpi="#{sheet_ps[:vertical_dpi]}") if sheet_ps[:vertical_dpi]
         parts << "<pageSetup #{ps_attrs.join(" ")}/>" unless ps_attrs.empty?
       end
 

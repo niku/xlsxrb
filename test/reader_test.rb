@@ -2293,4 +2293,34 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips extended page setup attributes through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_page_setup(:page_order, "overThenDown")
+    writer.set_page_setup(:black_and_white, true)
+    writer.set_page_setup(:draft, true)
+    writer.set_page_setup(:first_page_number, 3)
+    writer.set_page_setup(:use_first_page_number, true)
+    writer.set_page_setup(:horizontal_dpi, 600)
+    writer.set_page_setup(:vertical_dpi, 600)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    ps = reader.page_setup
+
+    assert_equal("overThenDown", ps[:page_order])
+    assert_equal(true, ps[:black_and_white])
+    assert_equal(true, ps[:draft])
+    assert_equal(3, ps[:first_page_number])
+    assert_equal(true, ps[:use_first_page_number])
+    assert_equal(600, ps[:horizontal_dpi])
+    assert_equal(600, ps[:vertical_dpi])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
