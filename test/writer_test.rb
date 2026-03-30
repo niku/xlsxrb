@@ -2309,6 +2309,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "fileVersion element emits appName and lastEdited" do
+    writer = Xlsxrb::Writer.new
+    writer.set_file_version(:app_name, "xl")
+    writer.set_file_version(:last_edited, "7")
+    writer.set_file_version(:lowest_edited, "7")
+    writer.set_file_version(:rup_build, "27425")
+    writer.set_cell("A1", "test")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-fv", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/appName="xl"/, xml_content)
+    assert_match(/lastEdited="7"/, xml_content)
+    assert_match(/lowestEdited="7"/, xml_content)
+    assert_match(/rupBuild="27425"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded

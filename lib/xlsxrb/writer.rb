@@ -45,6 +45,7 @@ module Xlsxrb
       @core_properties = {}
       @app_properties = {}
       @custom_properties = []
+      @file_version = {}
       @workbook_properties = {}
       @workbook_views = {}
       @calc_properties = {}
@@ -807,6 +808,16 @@ module Xlsxrb
       @workbook_properties.dup
     end
 
+    # Sets a file version property (e.g. :app_name, :last_edited, :lowest_edited, :rup_build, :code_name).
+    def set_file_version(name, value)
+      @file_version[name] = value
+    end
+
+    # Returns file version hash.
+    def file_version
+      @file_version.dup
+    end
+
     # Sets a workbook view property (e.g. :active_tab, :first_sheet).
     def set_workbook_view(name, value)
       @workbook_views[name] = value
@@ -1348,6 +1359,17 @@ module Xlsxrb
         XML_HEADER,
         %(<workbook xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}">)
       ]
+
+      # fileVersion
+      unless @file_version.empty?
+        fv_attrs = []
+        fv_attrs << %(appName="#{xml_escape(@file_version[:app_name])}") if @file_version[:app_name]
+        fv_attrs << %(lastEdited="#{@file_version[:last_edited]}") if @file_version[:last_edited]
+        fv_attrs << %(lowestEdited="#{@file_version[:lowest_edited]}") if @file_version[:lowest_edited]
+        fv_attrs << %(rupBuild="#{@file_version[:rup_build]}") if @file_version[:rup_build]
+        fv_attrs << %(codeName="#{xml_escape(@file_version[:code_name])}") if @file_version[:code_name]
+        parts << "<fileVersion #{fv_attrs.join(" ")}/>" unless fv_attrs.empty?
+      end
 
       # workbookPr
       unless @workbook_properties.empty?
