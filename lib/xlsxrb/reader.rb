@@ -299,6 +299,14 @@ module Xlsxrb
       parse_worksheet_protected_ranges(worksheet_xml)
     end
 
+    # Returns cell watches for the given sheet as an array of cell references.
+    def cell_watches(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return [] if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_cell_watches(worksheet_xml)
+    end
+
     # Returns the dimension ref string (e.g. "A1:B10") for the given sheet.
     def dimension(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -1160,6 +1168,14 @@ module Xlsxrb
       parser.listen(listener)
       parser.parse
       listener.ranges
+    end
+
+    def parse_worksheet_cell_watches(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = CellWatchesListener.new
+      parser.listen(listener)
+      parser.parse
+      listener.watches
     end
 
     def parse_worksheet_dimension(xml)
@@ -2874,6 +2890,32 @@ module Xlsxrb
           @ranges << @current if @current
           @current = nil
         end
+      end
+
+      private
+
+      def element_name(local_name, qname)
+        if local_name.nil? || local_name.empty?
+          qname.to_s.split(":").last
+        else
+          local_name
+        end
+      end
+    end
+
+    # SAX2 listener for parsing <cellWatches> element.
+    class CellWatchesListener
+      include REXML::SAX2Listener
+
+      attr_reader :watches
+
+      def initialize
+        @watches = []
+      end
+
+      def start_element(_uri, local_name, qname, attributes)
+        name = element_name(local_name, qname)
+        @watches << attributes["r"] if name == "cellWatch" && attributes["r"]
       end
 
       private
