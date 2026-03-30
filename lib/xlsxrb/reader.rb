@@ -824,7 +824,11 @@ module Xlsxrb
         fmt_id = xf[:num_fmt_id]
         next unless date_format?(fmt_id, styles[:num_fmts])
 
-        raw_cells[cell_ref] = Xlsxrb.serial_to_date(value.to_i)
+        raw_cells[cell_ref] = if value.is_a?(Float) && (value % 1).positive?
+                                Xlsxrb.serial_to_datetime(value)
+                              else
+                                Xlsxrb.serial_to_date(value.to_i)
+                              end
       end
       raw_cells
     end

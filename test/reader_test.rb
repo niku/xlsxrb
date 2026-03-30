@@ -2195,4 +2195,34 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips Time values as fractional serial through writer and reader" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    t = Time.utc(2024, 3, 15, 14, 30, 0)
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", t)
+    writer.set_cell("B1", Date.new(2024, 1, 1))
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+
+    # Time cell should be returned as Time
+    assert_instance_of(Time, cells["A1"])
+    assert_equal(2024, cells["A1"].year)
+    assert_equal(3, cells["A1"].month)
+    assert_equal(15, cells["A1"].day)
+    assert_equal(14, cells["A1"].hour)
+    assert_equal(30, cells["A1"].min)
+    assert_equal(0, cells["A1"].sec)
+
+    # Date cell should still be returned as Date
+    assert_instance_of(Date, cells["B1"])
+    assert_equal(Date.new(2024, 1, 1), cells["B1"])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

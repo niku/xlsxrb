@@ -1419,6 +1419,26 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writes Time values as fractional serial numbers with datetime format" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    t = Time.utc(2024, 3, 15, 14, 30, 0)
+    writer.set_cell("A1", t)
+    writer.write(xlsx_path)
+
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    # Serial for 2024-03-15 = 45366, plus 14:30:00 = 14*3600+30*60 = 52200 / 86400 = 0.604166...
+    assert_match(/<v>45366\.604166/, xml)
+
+    styles_xml = read_xml_from_xlsx(xlsx_path, "xl/styles.xml")
+    assert_match(/yyyy\\-mm\\-dd\\ hh:mm:ss/, styles_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
