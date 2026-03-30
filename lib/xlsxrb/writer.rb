@@ -791,7 +791,9 @@ module Xlsxrb
       }
       tbl[:style] = style if style
       %i[header_row_count published comment insert_row insert_row_shift
-         header_row_dxf_id data_dxf_id totals_row_dxf_id].each do |key|
+         header_row_dxf_id data_dxf_id totals_row_dxf_id
+         header_row_border_dxf_id table_border_dxf_id totals_row_border_dxf_id
+         header_row_cell_style totals_row_cell_style connection_id table_type].each do |key|
         tbl[key] = opts[key] if opts.key?(key)
       end
       @tables[sheet_name] << tbl
@@ -2410,6 +2412,13 @@ module Xlsxrb
       table_attrs << %( headerRowDxfId="#{tbl[:header_row_dxf_id]}") if tbl[:header_row_dxf_id]
       table_attrs << %( dataDxfId="#{tbl[:data_dxf_id]}") if tbl[:data_dxf_id]
       table_attrs << %( totalsRowDxfId="#{tbl[:totals_row_dxf_id]}") if tbl[:totals_row_dxf_id]
+      table_attrs << %( headerRowBorderDxfId="#{tbl[:header_row_border_dxf_id]}") if tbl[:header_row_border_dxf_id]
+      table_attrs << %( tableBorderDxfId="#{tbl[:table_border_dxf_id]}") if tbl[:table_border_dxf_id]
+      table_attrs << %( totalsRowBorderDxfId="#{tbl[:totals_row_border_dxf_id]}") if tbl[:totals_row_border_dxf_id]
+      table_attrs << %( headerRowCellStyle="#{xml_escape(tbl[:header_row_cell_style])}") if tbl[:header_row_cell_style]
+      table_attrs << %( totalsRowCellStyle="#{xml_escape(tbl[:totals_row_cell_style])}") if tbl[:totals_row_cell_style]
+      table_attrs << %( connectionId="#{tbl[:connection_id]}") if tbl[:connection_id]
+      table_attrs << %( tableType="#{xml_escape(tbl[:table_type])}") if tbl[:table_type]
       parts = [
         XML_HEADER,
         "<table #{table_attrs}>",

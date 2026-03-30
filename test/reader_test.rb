@@ -3728,6 +3728,36 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips table border dxfId, cellStyle, tableType, connectionId" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Name")
+    writer.set_cell("B1", "Age")
+    writer.add_table("A1:B5", columns: %w[Name Age],
+                              header_row_border_dxf_id: 10,
+                              table_border_dxf_id: 11,
+                              totals_row_border_dxf_id: 12,
+                              header_row_cell_style: "HeaderStyle",
+                              totals_row_cell_style: "TotalsStyle",
+                              table_type: "queryTable")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    tbls = reader.tables
+    tbl = tbls[0]
+    assert_equal(10, tbl[:header_row_border_dxf_id])
+    assert_equal(11, tbl[:table_border_dxf_id])
+    assert_equal(12, tbl[:totals_row_border_dxf_id])
+    assert_equal("HeaderStyle", tbl[:header_row_cell_style])
+    assert_equal("TotalsStyle", tbl[:totals_row_cell_style])
+    assert_equal("queryTable", tbl[:table_type])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips ignoredErrors" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
