@@ -495,6 +495,11 @@ module Xlsxrb
       parse_workbook_metadata[:workbook_properties]
     end
 
+    # Returns the workbook conformance class ("transitional" or "strict"), or nil if not set.
+    def conformance
+      parse_workbook_metadata[:conformance]
+    end
+
     # Returns file version properties (e.g. { app_name: "xl", last_edited: "7" }).
     def file_version
       parse_workbook_metadata[:file_version]
@@ -803,7 +808,8 @@ module Xlsxrb
         defined_names: listener.defined_names,
         workbook_protection: listener.workbook_protection,
         file_version: listener.file_version,
-        file_sharing: listener.file_sharing
+        file_sharing: listener.file_sharing,
+        conformance: listener.conformance
       }
     end
 
@@ -1687,7 +1693,7 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties, :defined_names,
-                  :workbook_protection, :file_version, :file_sharing
+                  :workbook_protection, :file_version, :file_sharing, :conformance
 
       def initialize
         @sheets = []
@@ -1698,6 +1704,7 @@ module Xlsxrb
         @workbook_protection = nil
         @file_version = {}
         @file_sharing = {}
+        @conformance = nil
         @inside_defined_name = false
         @current_dn_attrs = nil
         @dn_text_buffer = +""
@@ -1706,6 +1713,8 @@ module Xlsxrb
       def start_element(_uri, local_name, qname, attributes)
         name = element_name(local_name, qname)
         case name
+        when "workbook"
+          @conformance = attributes["conformance"] if attributes["conformance"]
         when "sheet"
           @sheets << { name: attributes["name"], rid: attributes["r:id"], state: attributes["state"] }
         when "fileVersion"

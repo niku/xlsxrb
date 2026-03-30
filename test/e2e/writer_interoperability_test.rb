@@ -1727,6 +1727,21 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "writer generates valid conformance attribute" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_workbook_property(:conformance, "transitional")
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_conformance_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
