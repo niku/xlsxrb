@@ -3313,28 +3313,36 @@ module Xlsxrb
           xs = attributes["xSplit"]
           frozen = attributes["state"] == "frozen"
           tlc = attributes["topLeftCell"]
-          @pane = if frozen
-                    {
-                      row: ys ? ys.to_i : 0,
-                      col: xs ? xs.to_i : 0,
-                      state: :frozen
-                    }
-                  else
-                    {
-                      row: ys ? ys.to_i : 0,
-                      col: xs ? xs.to_i : 0,
-                      x_split: xs ? xs.to_i : 0,
-                      y_split: ys ? ys.to_i : 0,
-                      top_left_cell: tlc,
-                      state: :split
-                    }
-                  end
+          ap = attributes["activePane"]
+          p = if frozen
+                {
+                  row: ys ? ys.to_i : 0,
+                  col: xs ? xs.to_i : 0,
+                  state: :frozen
+                }
+              else
+                {
+                  row: ys ? ys.to_i : 0,
+                  col: xs ? xs.to_i : 0,
+                  x_split: xs ? xs.to_i : 0,
+                  y_split: ys ? ys.to_i : 0,
+                  top_left_cell: tlc,
+                  state: :split
+                }
+              end
+          p[:active_pane] = ap if ap
+          @pane = p
         when "selection"
           return unless @inside_sheet_views
 
           ac = attributes["activeCell"]
           sq = attributes["sqref"]
-          @selection = { active_cell: ac, sqref: sq } if ac || sq
+          sel = { active_cell: ac, sqref: sq }
+          pn = attributes["pane"]
+          sel[:pane] = pn if pn
+          acid = attributes["activeCellId"]
+          sel[:active_cell_id] = acid.to_i if acid
+          @selection = sel if ac || sq || pn || acid
         end
       end
 

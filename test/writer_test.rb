@@ -2690,6 +2690,19 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits selection pane and activeCellId attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.set_selection("B2", sqref: "B2:C3", pane: "bottomRight", active_cell_id: 1)
+    xlsx_path = File.join(Dir.tmpdir, "sel_pane_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/pane="bottomRight"/, xml)
+    assert_match(/activeCellId="1"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   # ensure zlib loaded
