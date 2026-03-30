@@ -1637,4 +1637,31 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips font theme and indexed colors" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    fid1 = writer.add_font(sz: 11, name: "Calibri", theme: 1, tint: -0.25)
+    fid2 = writer.add_font(sz: 11, name: "Calibri", indexed: 10)
+    s1 = writer.add_cell_style(font_id: fid1)
+    s2 = writer.add_cell_style(font_id: fid2)
+    writer.set_cell("A1", "theme")
+    writer.set_cell_style("A1", s1)
+    writer.set_cell("A2", "indexed")
+    writer.set_cell_style("A2", s2)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cs = reader.cell_styles
+    assert(cs.key?("A1"), "A1 should have a style")
+    assert_equal(1, cs["A1"][:font][:theme])
+    assert_in_delta(-0.25, cs["A1"][:font][:tint], 0.001)
+    assert(cs.key?("A2"), "A2 should have a style")
+    assert_equal(10, cs["A2"][:font][:indexed])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

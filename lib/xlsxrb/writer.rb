@@ -2540,6 +2540,20 @@ module Xlsxrb
       "<protection #{attrs.join(" ")}/>"
     end
 
+    def emit_color_xml(source, tag: "color")
+      if source[:color]
+        %(<#{tag} rgb="#{source[:color]}"/>)
+      elsif source[:theme]
+        attrs = [%(theme="#{source[:theme]}")]
+        attrs << %(tint="#{source[:tint]}") if source[:tint]
+        %(<#{tag} #{attrs.join(" ")}/>)
+      elsif source[:indexed]
+        %(<#{tag} indexed="#{source[:indexed]}"/>)
+      else
+        ""
+      end
+    end
+
     def emit_font_xml(font)
       parts = ["<font>"]
       parts << "<b/>" if font[:bold]
@@ -2554,7 +2568,7 @@ module Xlsxrb
       end
       parts << %(<vertAlign val="#{font[:vert_align]}"/>) if font[:vert_align]
       parts << %(<sz val="#{font[:sz]}"/>) if font[:sz]
-      parts << %(<color rgb="#{font[:color]}"/>) if font[:color]
+      parts << emit_color_xml(font)
       parts << %(<name val="#{xml_escape(font[:name])}"/>) if font[:name]
       parts << %(<family val="#{font[:family]}"/>) if font[:family]
       parts << %(<scheme val="#{font[:scheme]}"/>) if font[:scheme]
