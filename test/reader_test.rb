@@ -2610,4 +2610,25 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips alignment relativeIndent" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    sid = writer.add_cell_style(alignment: { indent: 2, relative_indent: -1 })
+    writer.set_cell("A1", "indented")
+    writer.set_cell_style("A1", sid)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    styles = reader.cell_styles
+    style = styles.values.find { |s| s[:alignment] && s[:alignment][:relative_indent] }
+    assert_not_nil(style)
+    assert_equal(-1, style[:alignment][:relative_indent])
+    assert_equal(2, style[:alignment][:indent])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
