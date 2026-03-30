@@ -2487,11 +2487,23 @@ module Xlsxrb
           ys = attributes["ySplit"]
           xs = attributes["xSplit"]
           frozen = attributes["state"] == "frozen"
-          @pane = {
-            row: ys ? ys.to_i : 0,
-            col: xs ? xs.to_i : 0,
-            state: frozen ? :frozen : :split
-          }
+          tlc = attributes["topLeftCell"]
+          @pane = if frozen
+                    {
+                      row: ys ? ys.to_i : 0,
+                      col: xs ? xs.to_i : 0,
+                      state: :frozen
+                    }
+                  else
+                    {
+                      row: ys ? ys.to_i : 0,
+                      col: xs ? xs.to_i : 0,
+                      x_split: xs ? xs.to_i : 0,
+                      y_split: ys ? ys.to_i : 0,
+                      top_left_cell: tlc,
+                      state: :split
+                    }
+                  end
         when "selection"
           return unless @inside_sheet_views
 

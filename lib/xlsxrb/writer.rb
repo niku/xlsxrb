@@ -477,7 +477,16 @@ module Xlsxrb
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @freeze_panes.key?(sheet_name)
 
-      @freeze_panes[sheet_name] = { row: row, col: col }
+      @freeze_panes[sheet_name] = { row: row, col: col, state: :frozen }
+    end
+
+    # Sets a split pane (non-frozen). x_split/y_split are in 1/20th of a point (twips).
+    # top_left_cell: the cell at top-left of the bottom-right pane.
+    def set_split_pane(x_split: 0, y_split: 0, top_left_cell: nil, sheet: nil)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @freeze_panes.key?(sheet_name)
+
+      @freeze_panes[sheet_name] = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell, state: :split }
     end
 
     # Returns freeze pane settings for the first (or given) sheet.
@@ -1417,7 +1426,23 @@ module Xlsxrb
         sv_attrs << 'workbookViewId="0"'
         parts << "<sheetView #{sv_attrs.join(" ")}>"
 
-        if sheet_fp && (sheet_fp[:row].to_i.positive? || sheet_fp[:col].to_i.positive?)
+        if sheet_fp && sheet_fp[:state] == :split
+          pane_attrs = []
+          pane_attrs << %(xSplit="#{sheet_fp[:x_split]}") if sheet_fp[:x_split].to_i.positive?
+          pane_attrs << %(ySplit="#{sheet_fp[:y_split]}") if sheet_fp[:y_split].to_i.positive?
+          pane_attrs << %(topLeftCell="#{sheet_fp[:top_left_cell]}") if sheet_fp[:top_left_cell]
+          has_x = sheet_fp[:x_split].to_i.positive?
+          has_y = sheet_fp[:y_split].to_i.positive?
+          active_pane = if has_y && has_x
+                          "bottomRight"
+                        elsif has_y
+                          "bottomLeft"
+                        else
+                          "topRight"
+                        end
+          pane_attrs << %(activePane="#{active_pane}")
+          parts << "<pane #{pane_attrs.join(" ")}/>"
+        elsif sheet_fp && (sheet_fp[:row].to_i.positive? || sheet_fp[:col].to_i.positive?)
           top_left = "#{index_to_column_letter(sheet_fp[:col].to_i + 1)}#{sheet_fp[:row].to_i + 1}"
           pane_attrs = []
           pane_attrs << %(ySplit="#{sheet_fp[:row]}") if sheet_fp[:row].to_i.positive?
