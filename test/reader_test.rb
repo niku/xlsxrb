@@ -2081,6 +2081,32 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape gradient fill" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Grad",
+                     gradient_fill: { stops: [{ pos: 0, color: "FF0000" }, { pos: 100_000, color: "0000FF" }], angle: 5_400_000 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    gf = shapes[0][:gradient_fill]
+    assert_not_nil(gf)
+    assert_equal(2, gf[:stops].size)
+    assert_equal(0, gf[:stops][0][:pos])
+    assert_equal("FF0000", gf[:stops][0][:color])
+    assert_equal(100_000, gf[:stops][1][:pos])
+    assert_equal("0000FF", gf[:stops][1][:color])
+    assert_equal(5_400_000, gf[:angle])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart editAs attribute" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

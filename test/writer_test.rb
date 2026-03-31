@@ -1392,7 +1392,7 @@ class WriterTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
-    assert_match(%r{<a:noFill/>.*<a:prstGeom}, drawing_xml)
+    assert_match(%r{<a:prstGeom.*<a:noFill/>}, drawing_xml)
     assert_match(%r{<a:ln><a:noFill/></a:ln>}, drawing_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -1495,6 +1495,23 @@ class WriterTest < Test::Unit::TestCase
 
     drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
     assert_match(%r{<a:effectLst><a:outerShdw blurRad="50800" dist="38100" dir="2700000"><a:srgbClr val="000000"/></a:outerShdw></a:effectLst>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with gradient_fill emits a:gradFill with stops and lin" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Grad",
+                     gradient_fill: { stops: [{ pos: 0, color: "FF0000" }, { pos: 100_000, color: "0000FF" }], angle: 5_400_000 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-grad", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs><a:gs pos="100000"><a:srgbClr val="0000FF"/></a:gs></a:gsLst><a:lin ang="5400000" scaled="0"/></a:gradFill>}, drawing_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

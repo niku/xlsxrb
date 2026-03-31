@@ -1119,6 +1119,29 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated shape with gradient fill" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_shape_gradient_fill_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    gf = shapes[0][:gradient_fill]
+    assert_not_nil(gf)
+    assert_equal(3, gf[:stops].size)
+    assert_equal(0, gf[:stops][0][:pos])
+    assert_equal("00FF00", gf[:stops][0][:color])
+    assert_equal(50_000, gf[:stops][1][:pos])
+    assert_equal("FFFF00", gf[:stops][1][:color])
+    assert_equal(100_000, gf[:stops][2][:pos])
+    assert_equal("FF00FF", gf[:stops][2][:color])
+    assert_equal(2_700_000, gf[:angle])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated shapes with preset geometry and text" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
