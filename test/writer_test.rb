@@ -2975,6 +2975,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits fileRecoveryPr element" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.set_file_recovery_property(:auto_recover, false)
+    writer.set_file_recovery_property(:crash_save, true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-frp", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/workbook.xml")
+    assert_match(/autoRecover="0"/, xml_content)
+    assert_match(/crashSave="1"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits sheetCalcPr fullCalcOnLoad" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "data")
