@@ -2481,9 +2481,10 @@ module Xlsxrb
           col_attrs << %( totalsRowDxfId="#{col[:totals_row_dxf_id]}") if col[:totals_row_dxf_id]
           col_attrs << %( headerRowDxfId="#{col[:header_row_dxf_id]}") if col[:header_row_dxf_id]
           col_attrs << %( dataCellStyle="#{xml_escape(col[:data_cell_style])}") if col[:data_cell_style]
-          if col[:calculated_column_formula]
+          if col[:calculated_column_formula] || col[:totals_row_formula]
             parts << "<tableColumn #{col_attrs}>"
-            parts << "<calculatedColumnFormula>#{xml_escape(col[:calculated_column_formula])}</calculatedColumnFormula>"
+            parts << "<calculatedColumnFormula>#{xml_escape(col[:calculated_column_formula])}</calculatedColumnFormula>" if col[:calculated_column_formula]
+            parts << "<totalsRowFormula>#{xml_escape(col[:totals_row_formula])}</totalsRowFormula>" if col[:totals_row_formula]
             parts << "</tableColumn>"
           else
             parts << "<tableColumn #{col_attrs}/>"
@@ -2704,7 +2705,23 @@ module Xlsxrb
 
       parts << "</c:plotArea>"
       legend_pos = chart.dig(:legend, :position) || "r"
-      parts << %(<c:legend><c:legendPos val="#{legend_pos}"/></c:legend>)
+      legend_overlay = chart.dig(:legend, :overlay)
+      parts << %(<c:legend><c:legendPos val="#{legend_pos}"/>)
+      legend_entries = chart.dig(:legend, :entries)
+      if legend_entries
+        legend_entries.each do |entry|
+          parts << %(<c:legendEntry><c:idx val="#{entry[:idx]}"/>)
+          parts << %(<c:delete val="#{entry[:delete] ? 1 : 0}"/>) unless entry[:delete].nil?
+          parts << "</c:legendEntry>"
+        end
+      end
+      parts << %(<c:overlay val="#{legend_overlay ? 1 : 0}"/>) unless legend_overlay.nil?
+      parts << %(</c:legend>)
+      pvo = chart[:plot_vis_only]
+      parts << %(<c:plotVisOnly val="#{pvo ? 1 : 0}"/>) unless pvo.nil?
+      parts << %(<c:dispBlanksAs val="#{chart[:disp_blanks_as]}"/>) if chart[:disp_blanks_as]
+      sdom = chart[:show_d_lbls_over_max]
+      parts << %(<c:showDLblsOverMax val="#{sdom ? 1 : 0}"/>) unless sdom.nil?
       parts << "</c:chart></c:chartSpace>"
       parts.join
     end
