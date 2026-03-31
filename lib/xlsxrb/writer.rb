@@ -1229,7 +1229,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, line_color: nil, line_width: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, line_color: nil, line_width: nil, no_line: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1252,8 +1252,10 @@ module Xlsxrb
       shape[:no_grp] = no_grp unless no_grp.nil?
       shape[:no_rot] = no_rot unless no_rot.nil?
       shape[:fill_color] = fill_color if fill_color
+      shape[:no_fill] = no_fill unless no_fill.nil?
       shape[:line_color] = line_color if line_color
       shape[:line_width] = line_width if line_width
+      shape[:no_line] = no_line unless no_line.nil?
       shape[:text_wrap] = text_wrap if text_wrap
       shape[:text_anchor] = text_anchor if text_anchor
       shape[:text_vert_overflow] = text_vert_overflow if text_vert_overflow
@@ -2796,8 +2798,16 @@ module Xlsxrb
                         "<xdr:cNvSpPr><a:spLocks#{sp_lock_attrs}/></xdr:cNvSpPr>"
                       end
           parts << %(<xdr:nvSpPr><xdr:cNvPr id="#{dp[:id]}" name="#{xml_escape(shape[:name])}"#{shape_descr_attr}#{shape_title_attr}#{shape_hidden_attr}/>#{cnv_sp_pr}</xdr:nvSpPr>)
-          shape_fill_xml = shape[:fill_color] ? %(<a:solidFill><a:srgbClr val="#{xml_escape(shape[:fill_color])}"/></a:solidFill>) : ""
-          shape_line_xml = if shape[:line_color]
+          shape_fill_xml = if shape[:no_fill]
+                             "<a:noFill/>"
+                           elsif shape[:fill_color]
+                             %(<a:solidFill><a:srgbClr val="#{xml_escape(shape[:fill_color])}"/></a:solidFill>)
+                           else
+                             ""
+                           end
+          shape_line_xml = if shape[:no_line]
+                             "<a:ln><a:noFill/></a:ln>"
+                           elsif shape[:line_color]
                              ln_w_attr = shape[:line_width] ? %( w="#{shape[:line_width].to_i}") : ""
                              %(<a:ln#{ln_w_attr}><a:solidFill><a:srgbClr val="#{xml_escape(shape[:line_color])}"/></a:solidFill></a:ln>)
                            else

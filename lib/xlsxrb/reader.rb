@@ -4461,6 +4461,14 @@ module Xlsxrb
               @current_shape[:fill_color] = attributes["val"]
             end
           end
+        when "noFill"
+          if @inside_sp && @current_shape
+            if @inside_ln
+              @current_shape[:no_line] = true
+            else
+              @current_shape[:no_fill] = true
+            end
+          end
         when "from"
           @inside_from = true if @inside_anchor
         when "to"
