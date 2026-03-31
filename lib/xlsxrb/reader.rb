@@ -4436,6 +4436,8 @@ module Xlsxrb
           @inside_legend = true
         when "legendPos"
           @legend[:position] = attributes["val"] if @inside_legend && attributes["val"]
+        when "overlay"
+          @legend[:overlay] = attributes["val"] == "1" if @inside_legend && attributes["val"]
         when "dLbls"
           @inside_dlbls = true if @inside_ser || @chart_type
         when "showVal"
