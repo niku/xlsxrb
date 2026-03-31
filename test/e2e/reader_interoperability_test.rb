@@ -1029,6 +1029,20 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated image with alphaModFix transparency" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_alpha_mod_fix_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    imgs = reader.images
+    assert_equal(1, imgs.size)
+    assert_equal(75_000, imgs[0][:alpha_mod_fix])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated shape with adjust values" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
