@@ -4280,6 +4280,8 @@ module Xlsxrb
         when "chart"
           rid = attributes["r:id"] || attributes["id"]
           @current_chart[:rid] = rid if @inside_graphic_frame && @current_chart && rid
+        when "graphicFrameLocks"
+          @current_chart[:frame_no_grp] = true if @inside_graphic_frame && @current_chart && %w[1 true].include?(attributes["noGrp"])
         when "from"
           @inside_from = true if @inside_anchor
         when "to"
