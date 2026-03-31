@@ -1242,7 +1242,9 @@ module Xlsxrb
         page_over_then_down: opts[:page_over_then_down],
         page_wrap: opts[:page_wrap],
         compact_data: opts[:compact_data],
-        outline_data: opts[:outline_data]
+        outline_data: opts[:outline_data],
+        show_multiple_label: opts[:show_multiple_label],
+        show_data_drop_down: opts[:show_data_drop_down]
       }
     end
 
@@ -2847,6 +2849,8 @@ module Xlsxrb
       pt_attrs << %( outlineData="1") if pivot_table[:outline_data]
       pt_attrs << %( compactData="0") if pivot_table[:compact_data] == false
       pt_attrs << %( showHeaders="0") if pivot_table[:show_headers] == false
+      pt_attrs << %( showMultipleLabel="0") if pivot_table[:show_multiple_label] == false
+      pt_attrs << %( showDataDropDown="0") if pivot_table[:show_data_drop_down] == false
       pt_attrs << %( indent="#{pivot_table[:indent]}") if pivot_table[:indent]
       pt_attrs << ' published="1"' if pivot_table[:published]
       pt_attrs << %( createdVersion="#{pivot_table[:created_version]}") if pivot_table[:created_version]
