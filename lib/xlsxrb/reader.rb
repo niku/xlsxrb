@@ -734,6 +734,7 @@ module Xlsxrb
         chart[:val_axis_orientation] = cl.val_axis_orientation if cl.val_axis_orientation
         chart[:gap_width] = cl.gap_width if cl.gap_width
         chart[:overlap] = cl.overlap if cl.overlap
+        chart[:view_3d] = cl.view_3d if cl.view_3d
       end
       listener.charts
     end
@@ -4387,7 +4388,7 @@ module Xlsxrb
                   :cat_axis_minor_gridlines, :val_axis_minor_gridlines,
                   :show_d_lbls_over_max, :cat_axis_delete, :val_axis_delete,
                   :cat_axis_orientation, :val_axis_orientation,
-                  :gap_width, :overlap
+                  :gap_width, :overlap, :view_3d
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4421,6 +4422,8 @@ module Xlsxrb
         @val_axis_orientation = nil
         @gap_width = nil
         @overlap = nil
+        @view_3d = nil
+        @inside_view_3d = false
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4451,6 +4454,21 @@ module Xlsxrb
           @vary_colors = attributes["val"] == "1" if attributes["val"]
         when "autoTitleDeleted"
           @auto_title_deleted = attributes["val"] == "1" if attributes["val"]
+        when "view3D"
+          @inside_view_3d = true
+          @view_3d = {}
+        when "rotX"
+          @view_3d[:rot_x] = attributes["val"].to_i if @inside_view_3d && attributes["val"]
+        when "hPercent"
+          @view_3d[:h_percent] = attributes["val"].to_i if @inside_view_3d && attributes["val"]
+        when "rotY"
+          @view_3d[:rot_y] = attributes["val"].to_i if @inside_view_3d && attributes["val"]
+        when "depthPercent"
+          @view_3d[:depth_percent] = attributes["val"].to_i if @inside_view_3d && attributes["val"]
+        when "rAngAx"
+          @view_3d[:r_ang_ax] = attributes["val"] == "1" if @inside_view_3d && attributes["val"]
+        when "perspective"
+          @view_3d[:perspective] = attributes["val"].to_i if @inside_view_3d && attributes["val"]
         when "gapWidth"
           @gap_width = attributes["val"]&.to_i if attributes["val"]
         when "overlap"
@@ -4609,6 +4627,8 @@ module Xlsxrb
           @inside_cat_ax = false
         when "valAx"
           @inside_val_ax = false
+        when "view3D"
+          @inside_view_3d = false
         end
       end
 

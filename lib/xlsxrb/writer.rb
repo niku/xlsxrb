@@ -1098,7 +1098,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, gap_width: nil, overlap: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, gap_width: nil, overlap: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1132,6 +1132,7 @@ module Xlsxrb
       chart[:vary_colors] = vary_colors unless vary_colors.nil?
       chart[:style] = style if style
       chart[:rounded_corners] = rounded_corners unless rounded_corners.nil?
+      chart[:view_3d] = view_3d if view_3d
       chart[:name] = name if name
       chart[:description] = description if description
       chart[:edit_as] = edit_as if edit_as
@@ -2701,6 +2702,18 @@ module Xlsxrb
       parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:title]
       atd = chart[:auto_title_deleted]
       parts << %(<c:autoTitleDeleted val="#{atd ? 1 : 0}"/>) unless atd.nil?
+
+      if (v3d = chart[:view_3d])
+        parts << "<c:view3D>"
+        parts << %(<c:rotX val="#{v3d[:rot_x]}"/>) if v3d[:rot_x]
+        parts << %(<c:hPercent val="#{v3d[:h_percent]}"/>) if v3d[:h_percent]
+        parts << %(<c:rotY val="#{v3d[:rot_y]}"/>) if v3d[:rot_y]
+        parts << %(<c:depthPercent val="#{v3d[:depth_percent]}"/>) if v3d[:depth_percent]
+        r_ang = v3d[:r_ang_ax]
+        parts << %(<c:rAngAx val="#{r_ang ? 1 : 0}"/>) unless r_ang.nil?
+        parts << %(<c:perspective val="#{v3d[:perspective]}"/>) if v3d[:perspective]
+        parts << "</c:view3D>"
+      end
 
       parts << "<c:plotArea><c:layout/>"
       parts << "<c:#{chart_type}>"
