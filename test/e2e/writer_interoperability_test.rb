@@ -1933,6 +1933,24 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid firstSliceAng and holeSize for doughnut chart" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :doughnut,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     first_slice_ang: 45,
+                     hole_size: 50)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_pie_angles_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
