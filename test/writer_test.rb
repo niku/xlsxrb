@@ -3829,6 +3829,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits lblOffset and noMultiLvlLbl on cat axis" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_lbl_offset: 50, cat_axis_no_multi_lvl_lbl: true)
+    xlsx_path = File.join(Dir.tmpdir, "lbl_offset_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:lblOffset val="50"/>.*</c:catAx>}m, xml)
+    assert_match(%r{<c:catAx>.*<c:noMultiLvlLbl val="1"/>.*</c:catAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

@@ -753,6 +753,8 @@ module Xlsxrb
         chart[:val_axis_crosses_at] = cl.val_axis_crosses_at if cl.val_axis_crosses_at
         chart[:cat_axis_tick_lbl_skip] = cl.cat_axis_tick_lbl_skip if cl.cat_axis_tick_lbl_skip
         chart[:cat_axis_tick_mark_skip] = cl.cat_axis_tick_mark_skip if cl.cat_axis_tick_mark_skip
+        chart[:cat_axis_lbl_offset] = cl.cat_axis_lbl_offset if cl.cat_axis_lbl_offset
+        chart[:cat_axis_no_multi_lvl_lbl] = cl.cat_axis_no_multi_lvl_lbl unless cl.cat_axis_no_multi_lvl_lbl.nil?
         chart[:val_axis_cross_between] = cl.val_axis_cross_between if cl.val_axis_cross_between
         chart[:val_axis_major_unit] = cl.val_axis_major_unit if cl.val_axis_major_unit
         chart[:val_axis_minor_unit] = cl.val_axis_minor_unit if cl.val_axis_minor_unit
@@ -4433,6 +4435,7 @@ module Xlsxrb
                   :cat_axis_crosses, :val_axis_crosses,
                   :cat_axis_crosses_at, :val_axis_crosses_at,
                   :cat_axis_tick_lbl_skip, :cat_axis_tick_mark_skip,
+                  :cat_axis_lbl_offset, :cat_axis_no_multi_lvl_lbl,
                   :val_axis_cross_between, :val_axis_major_unit, :val_axis_minor_unit,
                   :cat_axis_scaling_max, :cat_axis_scaling_min,
                   :val_axis_scaling_max, :val_axis_scaling_min,
@@ -4494,6 +4497,8 @@ module Xlsxrb
         @val_axis_crosses_at = nil
         @cat_axis_tick_lbl_skip = nil
         @cat_axis_tick_mark_skip = nil
+        @cat_axis_lbl_offset = nil
+        @cat_axis_no_multi_lvl_lbl = nil
         @val_axis_cross_between = nil
         @val_axis_major_unit = nil
         @val_axis_minor_unit = nil
@@ -4728,6 +4733,10 @@ module Xlsxrb
           @cat_axis_tick_lbl_skip = attributes["val"]&.to_i if attributes["val"] && @inside_cat_ax
         when "tickMarkSkip"
           @cat_axis_tick_mark_skip = attributes["val"]&.to_i if attributes["val"] && @inside_cat_ax
+        when "lblOffset"
+          @cat_axis_lbl_offset = attributes["val"]&.to_i if attributes["val"] && @inside_cat_ax
+        when "noMultiLvlLbl"
+          @cat_axis_no_multi_lvl_lbl = attributes["val"] == "1" if attributes["val"] && @inside_cat_ax
         when "axPos"
           if attributes["val"]
             if @inside_cat_ax
