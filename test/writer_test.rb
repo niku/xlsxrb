@@ -4291,6 +4291,20 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits legendEntry with idx and delete" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     legend: { position: "r", entries: [{ idx: 0, delete: true }] })
+    xlsx_path = File.join(Dir.tmpdir, "legentry_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:legendEntry><c:idx val="0"/><c:delete val="1"/></c:legendEntry>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits tickLblSkip and tickMarkSkip on cat axis" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
