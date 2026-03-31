@@ -1213,7 +1213,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1233,6 +1233,8 @@ module Xlsxrb
       shape[:macro] = macro if macro
       shape[:textlink] = textlink if textlink
       shape[:f_locks_text] = f_locks_text unless f_locks_text.nil?
+      shape[:no_grp] = no_grp unless no_grp.nil?
+      shape[:no_rot] = no_rot unless no_rot.nil?
       shape[:edit_as] = edit_as if edit_as
       shape[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
       shape[:prints_with_sheet] = prints_with_sheet unless prints_with_sheet.nil?
@@ -2749,10 +2751,14 @@ module Xlsxrb
           shape_descr_attr = shape[:description] ? %( descr="#{xml_escape(shape[:description])}") : ""
           shape_title_attr = shape[:title] ? %( title="#{xml_escape(shape[:title])}") : ""
           shape_hidden_attr = shape[:hidden] ? ' hidden="1"' : ""
-          cnv_sp_pr = if shape[:f_locks_text]
-                        '<xdr:cNvSpPr><a:spLocks fLocksText="1"/></xdr:cNvSpPr>'
-                      else
+          sp_lock_attrs = +""
+          sp_lock_attrs << ' noGrp="1"' if shape[:no_grp]
+          sp_lock_attrs << ' noRot="1"' if shape[:no_rot]
+          sp_lock_attrs << ' fLocksText="1"' if shape[:f_locks_text]
+          cnv_sp_pr = if sp_lock_attrs.empty?
                         "<xdr:cNvSpPr/>"
+                      else
+                        "<xdr:cNvSpPr><a:spLocks#{sp_lock_attrs}/></xdr:cNvSpPr>"
                       end
           parts << %(<xdr:nvSpPr><xdr:cNvPr id="#{dp[:id]}" name="#{xml_escape(shape[:name])}"#{shape_descr_attr}#{shape_title_attr}#{shape_hidden_attr}/>#{cnv_sp_pr}</xdr:nvSpPr>)
           parts << %(<xdr:spPr><a:prstGeom prst="#{xml_escape(shape[:preset])}"><a:avLst/></a:prstGeom></xdr:spPr>)
