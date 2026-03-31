@@ -4183,6 +4183,8 @@ module Xlsxrb
         when "blip"
           rid = attributes["r:embed"] || attributes["embed"]
           @current_image[:embed_rid] = rid if @inside_pic && @current_image && rid
+        when "alphaModFix"
+          @current_image[:alpha_mod_fix] = attributes["amt"].to_i if @inside_pic && @current_image && attributes["amt"]
         when "srcRect"
           if @inside_pic && @current_image
             sr = {}

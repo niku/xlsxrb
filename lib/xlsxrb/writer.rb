@@ -1090,7 +1090,7 @@ module Xlsxrb
     # Inserts an image from file data into the given sheet.
     # file_data: raw image bytes. ext: file extension (e.g. "png").
     # from_col/from_row: anchor start. to_col/to_row: anchor end.
-    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, no_change_aspect: true, no_crop: nil, line_color: nil, line_width: nil, rotation: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, src_rect: nil, sheet: nil)
+    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, no_change_aspect: true, no_crop: nil, line_color: nil, line_width: nil, rotation: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, src_rect: nil, alpha_mod_fix: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @images.key?(sheet_name)
 
@@ -1118,6 +1118,7 @@ module Xlsxrb
       img[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
       img[:prints_with_sheet] = prints_with_sheet unless prints_with_sheet.nil?
       img[:src_rect] = src_rect if src_rect
+      img[:alpha_mod_fix] = alpha_mod_fix if alpha_mod_fix
       @images[sheet_name] << img
     end
 
@@ -2754,7 +2755,12 @@ module Xlsxrb
                          else
                            ""
                          end
-          parts << %(<xdr:blipFill><a:blip r:embed="#{rid}"/>#{src_rect_xml}<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>)
+          blip_xml = if img[:alpha_mod_fix]
+                       %(<a:blip r:embed="#{rid}"><a:alphaModFix amt="#{img[:alpha_mod_fix]}"/></a:blip>)
+                     else
+                       %(<a:blip r:embed="#{rid}"/>)
+                     end
+          parts << %(<xdr:blipFill>#{blip_xml}#{src_rect_xml}<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>)
           img_line_xml = if img[:line_color]
                            ln_w_attr = img[:line_width] ? %( w="#{img[:line_width].to_i}") : ""
                            %(<a:ln#{ln_w_attr}><a:solidFill><a:srgbClr val="#{xml_escape(img[:line_color])}"/></a:solidFill></a:ln>)
