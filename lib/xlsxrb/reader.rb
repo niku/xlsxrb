@@ -749,6 +749,8 @@ module Xlsxrb
         chart[:val_axis_minor_tick_mark] = cl.val_axis_minor_tick_mark if cl.val_axis_minor_tick_mark
         chart[:cat_axis_crosses] = cl.cat_axis_crosses if cl.cat_axis_crosses
         chart[:val_axis_crosses] = cl.val_axis_crosses if cl.val_axis_crosses
+        chart[:cat_axis_crosses_at] = cl.cat_axis_crosses_at if cl.cat_axis_crosses_at
+        chart[:val_axis_crosses_at] = cl.val_axis_crosses_at if cl.val_axis_crosses_at
         chart[:val_axis_cross_between] = cl.val_axis_cross_between if cl.val_axis_cross_between
         chart[:val_axis_major_unit] = cl.val_axis_major_unit if cl.val_axis_major_unit
         chart[:val_axis_minor_unit] = cl.val_axis_minor_unit if cl.val_axis_minor_unit
@@ -4426,6 +4428,7 @@ module Xlsxrb
                   :cat_axis_major_tick_mark, :cat_axis_minor_tick_mark,
                   :val_axis_major_tick_mark, :val_axis_minor_tick_mark,
                   :cat_axis_crosses, :val_axis_crosses,
+                  :cat_axis_crosses_at, :val_axis_crosses_at,
                   :val_axis_cross_between, :val_axis_major_unit, :val_axis_minor_unit,
                   :cat_axis_scaling_max, :cat_axis_scaling_min,
                   :val_axis_scaling_max, :val_axis_scaling_min,
@@ -4482,6 +4485,8 @@ module Xlsxrb
         @val_axis_minor_tick_mark = nil
         @cat_axis_crosses = nil
         @val_axis_crosses = nil
+        @cat_axis_crosses_at = nil
+        @val_axis_crosses_at = nil
         @val_axis_cross_between = nil
         @val_axis_major_unit = nil
         @val_axis_minor_unit = nil
@@ -4699,6 +4704,14 @@ module Xlsxrb
               @cat_axis_crosses = attributes["val"]
             elsif @inside_val_ax
               @val_axis_crosses = attributes["val"]
+            end
+          end
+        when "crossesAt"
+          if attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_crosses_at = attributes["val"]&.to_f
+            elsif @inside_val_ax
+              @val_axis_crosses_at = attributes["val"]&.to_f
             end
           end
         when "axPos"
