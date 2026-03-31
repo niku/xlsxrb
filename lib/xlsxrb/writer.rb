@@ -2702,6 +2702,7 @@ module Xlsxrb
         if chart[:data_labels]
           dl = chart[:data_labels]
           parts << "<c:dLbls>"
+          parts << %(<c:dLblPos val="#{dl[:position]}"/>) if dl[:position]
           parts << "<c:showLegendKey val=\"#{dl[:show_legend_key] ? 1 : 0}\"/>" unless dl[:show_legend_key].nil?
           parts << "<c:showVal val=\"#{dl[:show_val] ? 1 : 0}\"/>" unless dl[:show_val].nil?
           parts << "<c:showCatName val=\"#{dl[:show_cat_name] ? 1 : 0}\"/>" unless dl[:show_cat_name].nil?
