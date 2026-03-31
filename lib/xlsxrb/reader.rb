@@ -4771,6 +4771,8 @@ module Xlsxrb
           @pivot_table[:col_grand_totals] = attributes["colGrandTotals"] != "0" if attributes["colGrandTotals"]
           @pivot_table[:compact] = attributes["compact"] != "0" if attributes["compact"]
           @pivot_table[:outline] = attributes["outline"] != "0" if attributes["outline"]
+          @pivot_table[:outline_data] = attributes["outlineData"] == "1" if attributes["outlineData"]
+          @pivot_table[:compact_data] = attributes["compactData"] != "0" if attributes["compactData"]
           @pivot_table[:show_headers] = attributes["showHeaders"] != "0" if attributes["showHeaders"]
           @pivot_table[:grand_total_caption] = attributes["grandTotalCaption"] if attributes["grandTotalCaption"]
           @pivot_table[:error_caption] = attributes["errorCaption"] if attributes["errorCaption"]

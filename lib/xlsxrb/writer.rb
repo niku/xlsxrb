@@ -1240,7 +1240,9 @@ module Xlsxrb
         field_print_titles: opts[:field_print_titles],
         preserve_formatting: opts[:preserve_formatting],
         page_over_then_down: opts[:page_over_then_down],
-        page_wrap: opts[:page_wrap]
+        page_wrap: opts[:page_wrap],
+        compact_data: opts[:compact_data],
+        outline_data: opts[:outline_data]
       }
     end
 
@@ -2842,6 +2844,8 @@ module Xlsxrb
       pt_attrs << %( colGrandTotals="0") if pivot_table[:col_grand_totals] == false
       pt_attrs << %( compact="0") if pivot_table[:compact] == false
       pt_attrs << %( outline="0") if pivot_table[:outline] == false
+      pt_attrs << %( outlineData="1") if pivot_table[:outline_data]
+      pt_attrs << %( compactData="0") if pivot_table[:compact_data] == false
       pt_attrs << %( showHeaders="0") if pivot_table[:show_headers] == false
       pt_attrs << %( indent="#{pivot_table[:indent]}") if pivot_table[:indent]
       pt_attrs << ' published="1"' if pivot_table[:published]
