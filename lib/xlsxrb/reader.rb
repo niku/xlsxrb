@@ -4433,6 +4433,8 @@ module Xlsxrb
         @current_text_font = nil
         @inside_effect_lst = false
         @inside_outer_shdw = false
+        @inside_grad_fill = false
+        @current_gs_pos = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4471,6 +4473,15 @@ module Xlsxrb
           @current_shape[:rotation] = attributes["rot"].to_i if @inside_sp && @current_shape && attributes["rot"]
         when "solidFill"
           @inside_solid_fill = true if @inside_sp
+        when "gradFill"
+          if @inside_sp && @current_shape && !@inside_ln
+            @inside_grad_fill = true
+            @current_shape[:gradient_fill] = { stops: [] }
+          end
+        when "gs"
+          @current_gs_pos = attributes["pos"].to_i if @inside_grad_fill && attributes["pos"]
+        when "lin"
+          @current_shape[:gradient_fill][:angle] = attributes["ang"].to_i if @inside_grad_fill && @current_shape && attributes["ang"]
         when "ln"
           if @inside_sp && @current_shape
             @inside_ln = true
@@ -4500,6 +4511,9 @@ module Xlsxrb
             @current_text_font[:color] = attributes["val"]
           elsif @inside_outer_shdw && @current_shape && attributes["val"]
             @current_shape[:outer_shadow][:color] = attributes["val"]
+          elsif @inside_grad_fill && @current_gs_pos && @current_shape && attributes["val"]
+            @current_shape[:gradient_fill][:stops] << { pos: @current_gs_pos, color: attributes["val"] }
+            @current_gs_pos = nil
           elsif @inside_sp && @current_shape && @inside_solid_fill && attributes["val"]
             if @inside_ln
               @current_shape[:line_color] = attributes["val"]
@@ -4599,6 +4613,8 @@ module Xlsxrb
           @inside_effect_lst = false
         when "outerShdw"
           @inside_outer_shdw = false
+        when "gradFill"
+          @inside_grad_fill = false
         when "prstGeom"
           @inside_prst_geom = false
         when "rPr"
