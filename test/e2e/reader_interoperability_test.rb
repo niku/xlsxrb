@@ -1975,7 +1975,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated gapDepth and shape for 3D bar chart" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_bar3d_gap_shape_generated_by_sdk", xlsx_path)
 
@@ -1989,7 +1991,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated bubbleScale, showNegBubbles, sizeRepresents in bubble chart" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_bubble_chart_props_generated_by_sdk", xlsx_path)
 
@@ -1999,6 +2003,21 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     assert_equal(80, charts[0][:bubble_scale])
     assert_equal(false, charts[0][:show_neg_bubbles])
     assert_equal("area", charts[0][:size_represents])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "reader parses SDK-generated crossesAt on value axis" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_axis_crosses_at_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_in_delta(5.0, charts[0][:val_axis_crosses_at])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
