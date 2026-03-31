@@ -1296,6 +1296,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text body properties emits bodyPr attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Hello", text_wrap: "square", text_anchor: "ctr", text_vert_overflow: "clip")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sbody", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/wrap="square"/, drawing_xml)
+    assert_match(/anchor="ctr"/, drawing_xml)
+    assert_match(/vertOverflow="clip"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "insert_image with clientData attrs stores locks_with_sheet and prints_with_sheet" do
     writer = Xlsxrb::Writer.new
     png = "\x89PNG".b

@@ -4463,6 +4463,12 @@ module Xlsxrb
           @inside_to = true if @inside_anchor
         when "txBody"
           @inside_tx_body = true if @inside_sp
+        when "bodyPr"
+          if @inside_sp && @current_shape
+            @current_shape[:text_wrap] = attributes["wrap"] if attributes["wrap"]
+            @current_shape[:text_anchor] = attributes["anchor"] if attributes["anchor"]
+            @current_shape[:text_vert_overflow] = attributes["vertOverflow"] if attributes["vertOverflow"]
+          end
         when "t"
           @inside_t = true if @inside_tx_body
           @text_buffer = +""
