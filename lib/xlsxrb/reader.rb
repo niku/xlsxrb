@@ -732,6 +732,8 @@ module Xlsxrb
         chart[:val_axis_delete] = cl.val_axis_delete unless cl.val_axis_delete.nil?
         chart[:cat_axis_orientation] = cl.cat_axis_orientation if cl.cat_axis_orientation
         chart[:val_axis_orientation] = cl.val_axis_orientation if cl.val_axis_orientation
+        chart[:gap_width] = cl.gap_width if cl.gap_width
+        chart[:overlap] = cl.overlap if cl.overlap
       end
       listener.charts
     end
@@ -4384,7 +4386,8 @@ module Xlsxrb
                   :cat_axis_major_gridlines, :val_axis_major_gridlines,
                   :cat_axis_minor_gridlines, :val_axis_minor_gridlines,
                   :show_d_lbls_over_max, :cat_axis_delete, :val_axis_delete,
-                  :cat_axis_orientation, :val_axis_orientation
+                  :cat_axis_orientation, :val_axis_orientation,
+                  :gap_width, :overlap
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4416,6 +4419,8 @@ module Xlsxrb
         @val_axis_delete = nil
         @cat_axis_orientation = nil
         @val_axis_orientation = nil
+        @gap_width = nil
+        @overlap = nil
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4446,6 +4451,10 @@ module Xlsxrb
           @vary_colors = attributes["val"] == "1" if attributes["val"]
         when "autoTitleDeleted"
           @auto_title_deleted = attributes["val"] == "1" if attributes["val"]
+        when "gapWidth"
+          @gap_width = attributes["val"]&.to_i if attributes["val"]
+        when "overlap"
+          @overlap = attributes["val"]&.to_i if attributes["val"]
         when "ser"
           @inside_ser = true
           @current_ser = {}
