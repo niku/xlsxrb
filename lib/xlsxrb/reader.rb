@@ -735,6 +735,8 @@ module Xlsxrb
         chart[:gap_width] = cl.gap_width if cl.gap_width
         chart[:overlap] = cl.overlap if cl.overlap
         chart[:view_3d] = cl.view_3d if cl.view_3d
+        chart[:cat_axis_num_fmt] = cl.cat_axis_num_fmt if cl.cat_axis_num_fmt
+        chart[:val_axis_num_fmt] = cl.val_axis_num_fmt if cl.val_axis_num_fmt
       end
       listener.charts
     end
@@ -4388,7 +4390,8 @@ module Xlsxrb
                   :cat_axis_minor_gridlines, :val_axis_minor_gridlines,
                   :show_d_lbls_over_max, :cat_axis_delete, :val_axis_delete,
                   :cat_axis_orientation, :val_axis_orientation,
-                  :gap_width, :overlap, :view_3d
+                  :gap_width, :overlap, :view_3d,
+                  :cat_axis_num_fmt, :val_axis_num_fmt
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4423,6 +4426,8 @@ module Xlsxrb
         @gap_width = nil
         @overlap = nil
         @view_3d = nil
+        @cat_axis_num_fmt = nil
+        @val_axis_num_fmt = nil
         @inside_view_3d = false
         @inside_title = false
         @inside_t = false
@@ -4538,6 +4543,16 @@ module Xlsxrb
               @cat_axis_orientation = attributes["val"]
             elsif @inside_val_ax
               @val_axis_orientation = attributes["val"]
+            end
+          end
+        when "numFmt"
+          if (@inside_cat_ax || @inside_val_ax) && attributes["formatCode"]
+            nf = { format_code: attributes["formatCode"] }
+            nf[:source_linked] = attributes["sourceLinked"] == "1" if attributes["sourceLinked"]
+            if @inside_cat_ax
+              @cat_axis_num_fmt = nf
+            elsif @inside_val_ax
+              @val_axis_num_fmt = nf
             end
           end
         when "tickLblPos"

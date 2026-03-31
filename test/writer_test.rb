@@ -3578,6 +3578,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits numFmt on cat and val axes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_num_fmt: { format_code: "General", source_linked: true },
+                     val_axis_num_fmt: { format_code: "0.00", source_linked: false })
+    xlsx_path = File.join(Dir.tmpdir, "axis_numfmt_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:numFmt formatCode="General" sourceLinked="1"/>.*</c:catAx>}m, xml)
+    assert_match(%r{<c:valAx>.*<c:numFmt formatCode="0.00" sourceLinked="0"/>.*</c:valAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

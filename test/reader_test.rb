@@ -5121,4 +5121,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips axis numFmt properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_num_fmt: { format_code: "General", source_linked: true },
+                     val_axis_num_fmt: { format_code: "0.00", source_linked: false })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("General", chart[:cat_axis_num_fmt][:format_code])
+    assert_equal(true, chart[:cat_axis_num_fmt][:source_linked])
+    assert_equal("0.00", chart[:val_axis_num_fmt][:format_code])
+    assert_equal(false, chart[:val_axis_num_fmt][:source_linked])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
