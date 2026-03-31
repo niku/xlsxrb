@@ -3021,12 +3021,10 @@ module Xlsxrb
       legend_overlay = chart.dig(:legend, :overlay)
       parts << %(<c:legend><c:legendPos val="#{legend_pos}"/>)
       legend_entries = chart.dig(:legend, :entries)
-      if legend_entries
-        legend_entries.each do |entry|
-          parts << %(<c:legendEntry><c:idx val="#{entry[:idx]}"/>)
-          parts << %(<c:delete val="#{entry[:delete] ? 1 : 0}"/>) unless entry[:delete].nil?
-          parts << "</c:legendEntry>"
-        end
+      legend_entries&.each do |entry|
+        parts << %(<c:legendEntry><c:idx val="#{entry[:idx]}"/>)
+        parts << %(<c:delete val="#{entry[:delete] ? 1 : 0}"/>) unless entry[:delete].nil?
+        parts << "</c:legendEntry>"
       end
       parts << %(<c:overlay val="#{legend_overlay ? 1 : 0}"/>) unless legend_overlay.nil?
       parts << %(</c:legend>)

@@ -850,6 +850,28 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid chart with legend entries" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.set_cell("C1", 20)
+    writer.add_chart(type: :bar, title: "LegendEntries",
+                     series: [
+                       { cat_ref: "Sheet1!$A$1:$A$2", val_ref: "Sheet1!$B$1:$B$2" },
+                       { cat_ref: "Sheet1!$A$1:$A$2", val_ref: "Sheet1!$C$1:$C$2" }
+                     ],
+                     legend: { position: "b", entries: [{ idx: 1, delete: true }] })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_legend_entries_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid shapes with preset geometry" do
     writer = Xlsxrb::Writer.new
     writer.add_shape(preset: "ellipse", text: "Hello", name: "Oval 1",

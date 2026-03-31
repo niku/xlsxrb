@@ -4686,6 +4686,8 @@ module Xlsxrb
         @inside_val = false
         @inside_f = false
         @inside_legend = false
+        @inside_legend_entry = false
+        @current_legend_entry = nil
         @inside_dlbls = false
         @inside_separator = false
         @inside_cat_ax = false
@@ -4796,6 +4798,23 @@ module Xlsxrb
           @inside_legend = true
         when "legendPos"
           @legend[:position] = attributes["val"] if @inside_legend && attributes["val"]
+        when "legendEntry"
+          if @inside_legend
+            @inside_legend_entry = true
+            @current_legend_entry = {}
+          end
+        when "idx"
+          @current_legend_entry[:idx] = attributes["val"].to_i if @inside_legend_entry && @current_legend_entry && attributes["val"]
+        when "delete"
+          if @inside_legend_entry && @current_legend_entry && attributes["val"]
+            @current_legend_entry[:delete] = attributes["val"] == "1"
+          elsif attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_delete = attributes["val"] == "1"
+            elsif @inside_val_ax
+              @val_axis_delete = attributes["val"] == "1"
+            end
+          end
         when "overlay"
           @legend[:overlay] = attributes["val"] == "1" if @inside_legend && attributes["val"]
         when "dLbls"
@@ -4847,14 +4866,6 @@ module Xlsxrb
               @cat_axis_scaling_min = attributes["val"].to_f
             elsif @inside_val_ax
               @val_axis_scaling_min = attributes["val"].to_f
-            end
-          end
-        when "delete"
-          if attributes["val"]
-            if @inside_cat_ax
-              @cat_axis_delete = attributes["val"] == "1"
-            elsif @inside_val_ax
-              @val_axis_delete = attributes["val"] == "1"
             end
           end
         when "orientation"
@@ -5033,6 +5044,13 @@ module Xlsxrb
           @title_depth -= 1
           @inside_title = false if @title_depth.zero?
           @inside_ax_title = false
+        when "legendEntry"
+          if @inside_legend_entry && @current_legend_entry
+            @legend[:entries] ||= []
+            @legend[:entries] << @current_legend_entry
+          end
+          @current_legend_entry = nil
+          @inside_legend_entry = false
         when "legend"
           @inside_legend = false
         when "dLbls"
