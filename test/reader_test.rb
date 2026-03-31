@@ -1689,6 +1689,25 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips image rotation via a:xfrm rot" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", rotation: 5_400_000)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    imgs = reader.images
+    assert_equal(1, imgs.size)
+    assert_equal(5_400_000, imgs[0][:rotation])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips charts through writer and reader" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -1884,6 +1903,24 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("square", shapes[0][:text_wrap])
     assert_equal("ctr", shapes[0][:text_anchor])
     assert_equal("clip", shapes[0][:text_vert_overflow])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips shape rotation via a:xfrm rot" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", rotation: 5_400_000)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    assert_equal(5_400_000, shapes[0][:rotation])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

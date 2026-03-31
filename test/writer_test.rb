@@ -1042,6 +1042,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "insert_image with rotation emits a:xfrm rot in spPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", rotation: 5_400_000)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-imgrot", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/rot="5400000"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "insert_image with published emits fPublished on anchor" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
@@ -1310,6 +1327,22 @@ class WriterTest < Test::Unit::TestCase
     assert_match(/wrap="square"/, drawing_xml)
     assert_match(/anchor="ctr"/, drawing_xml)
     assert_match(/vertOverflow="clip"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with rotation emits a:xfrm rot in spPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", rotation: 5_400_000)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-srot", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/rot="5400000"/, drawing_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

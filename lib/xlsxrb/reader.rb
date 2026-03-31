@@ -4195,6 +4195,8 @@ module Xlsxrb
           @inside_solid_fill = true if @inside_pic
         when "srgbClr"
           @current_image[:line_color] = attributes["val"] if @inside_pic && @current_image && @inside_solid_fill && @inside_ln && attributes["val"]
+        when "xfrm"
+          @current_image[:rotation] = attributes["rot"].to_i if @inside_pic && @current_image && attributes["rot"]
         when "from"
           @inside_from = true if @inside_anchor
         when "to"
@@ -4436,6 +4438,8 @@ module Xlsxrb
           end
         when "prstGeom"
           @current_shape[:preset] = attributes["prst"] if @inside_sp && @current_shape && attributes["prst"]
+        when "xfrm"
+          @current_shape[:rotation] = attributes["rot"].to_i if @inside_sp && @current_shape && attributes["rot"]
         when "solidFill"
           @inside_solid_fill = true if @inside_sp
         when "ln"
