@@ -4502,6 +4502,22 @@ module Xlsxrb
           end
         when "prstDash"
           @current_shape[:line_dash] = attributes["val"] if @inside_sp && @inside_ln && @current_shape && attributes["val"]
+        when "headEnd"
+          if @inside_sp && @inside_ln && @current_shape
+            he = {}
+            he[:type] = attributes["type"] if attributes["type"]
+            he[:w] = attributes["w"] if attributes["w"]
+            he[:len] = attributes["len"] if attributes["len"]
+            @current_shape[:head_end] = he
+          end
+        when "tailEnd"
+          if @inside_sp && @inside_ln && @current_shape
+            te = {}
+            te[:type] = attributes["type"] if attributes["type"]
+            te[:w] = attributes["w"] if attributes["w"]
+            te[:len] = attributes["len"] if attributes["len"]
+            @current_shape[:tail_end] = te
+          end
         when "spLocks"
           if @inside_sp && @current_shape
             @current_shape[:f_locks_text] = true if %w[1 true].include?(attributes["fLocksText"])

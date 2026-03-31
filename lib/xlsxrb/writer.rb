@@ -1236,7 +1236,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, adjust_values: nil, text_font: nil, autofit: nil, outer_shadow: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, adjust_values: nil, text_font: nil, autofit: nil, outer_shadow: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1263,6 +1263,8 @@ module Xlsxrb
       shape[:line_color] = line_color if line_color
       shape[:line_width] = line_width if line_width
       shape[:line_dash] = line_dash if line_dash
+      shape[:head_end] = head_end if head_end
+      shape[:tail_end] = tail_end if tail_end
       shape[:no_line] = no_line unless no_line.nil?
       shape[:text_wrap] = text_wrap if text_wrap
       shape[:text_anchor] = text_anchor if text_anchor
@@ -2841,11 +2843,13 @@ module Xlsxrb
                            end
           shape_line_xml = if shape[:no_line]
                              "<a:ln><a:noFill/></a:ln>"
-                           elsif shape[:line_color] || shape[:line_dash]
+                           elsif shape[:line_color] || shape[:line_dash] || shape[:head_end] || shape[:tail_end]
                              ln_w_attr = shape[:line_width] ? %( w="#{shape[:line_width].to_i}") : ""
                              fill_part = shape[:line_color] ? %(<a:solidFill><a:srgbClr val="#{xml_escape(shape[:line_color])}"/></a:solidFill>) : ""
                              dash_part = shape[:line_dash] ? %(<a:prstDash val="#{xml_escape(shape[:line_dash])}"/>) : ""
-                             %(<a:ln#{ln_w_attr}>#{fill_part}#{dash_part}</a:ln>)
+                             head_part = build_line_end_xml("headEnd", shape[:head_end])
+                             tail_part = build_line_end_xml("tailEnd", shape[:tail_end])
+                             %(<a:ln#{ln_w_attr}>#{fill_part}#{dash_part}#{head_part}#{tail_part}</a:ln>)
                            else
                              ""
                            end
@@ -3478,6 +3482,16 @@ module Xlsxrb
       ct_xml.scan(/<Override\s+PartName="([^"]+)"\s+ContentType="([^"]+)"/).each do |pn, ct|
         @extra_ct_overrides[pn] ||= ct
       end
+    end
+
+    def build_line_end_xml(element, opts)
+      return "" unless opts
+
+      attrs = +""
+      attrs << %( type="#{xml_escape(opts[:type])}") if opts[:type]
+      attrs << %( w="#{xml_escape(opts[:w])}") if opts[:w]
+      attrs << %( len="#{xml_escape(opts[:len])}") if opts[:len]
+      "<a:#{element}#{attrs}/>"
     end
 
     def xml_escape(value)
