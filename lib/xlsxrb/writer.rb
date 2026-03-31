@@ -1233,7 +1233,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, line_color: nil, line_width: nil, no_line: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, adjust_values: nil, text_font: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, line_color: nil, line_width: nil, no_line: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, adjust_values: nil, text_font: nil, autofit: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1266,6 +1266,7 @@ module Xlsxrb
       shape[:rotation] = rotation if rotation
       shape[:adjust_values] = adjust_values if adjust_values
       shape[:text_font] = text_font if text_font
+      shape[:autofit] = autofit if autofit
       shape[:edit_as] = edit_as if edit_as
       shape[:published] = published unless published.nil?
       shape[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
@@ -2848,7 +2849,18 @@ module Xlsxrb
             body_pr_attrs << %( wrap="#{xml_escape(shape[:text_wrap])}") if shape[:text_wrap]
             body_pr_attrs << %( anchor="#{xml_escape(shape[:text_anchor])}") if shape[:text_anchor]
             body_pr_attrs << %( vertOverflow="#{xml_escape(shape[:text_vert_overflow])}") if shape[:text_vert_overflow]
-            parts << "<xdr:txBody><a:bodyPr#{body_pr_attrs}/><a:lstStyle/>"
+            autofit_xml = case shape[:autofit]
+                          when "none" then "<a:noAutofit/>"
+                          when "shape" then "<a:spAutoFit/>"
+                          when "normal" then "<a:normAutofit/>"
+                          else ""
+                          end
+            body_pr_xml = if autofit_xml.empty?
+                            "<a:bodyPr#{body_pr_attrs}/>"
+                          else
+                            "<a:bodyPr#{body_pr_attrs}>#{autofit_xml}</a:bodyPr>"
+                          end
+            parts << "<xdr:txBody>#{body_pr_xml}<a:lstStyle/>"
             rpr_xml = if shape[:text_font]
                         tf = shape[:text_font]
                         rpr_attrs = +""
