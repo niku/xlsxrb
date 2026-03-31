@@ -889,6 +889,23 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid chart with series marker" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :line, title: "SeriesMarker",
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2", marker_symbol: "diamond", marker_size: 8 }])
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_series_marker_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid shapes with preset geometry" do
     writer = Xlsxrb::Writer.new
     writer.add_shape(preset: "ellipse", text: "Hello", name: "Oval 1",

@@ -2921,6 +2921,12 @@ module Xlsxrb
           end
           parts << "</c:spPr>"
         end
+        if ser[:marker_symbol] || ser[:marker_size]
+          parts << "<c:marker>"
+          parts << %(<c:symbol val="#{xml_escape(ser[:marker_symbol])}"/>) if ser[:marker_symbol]
+          parts << %(<c:size val="#{ser[:marker_size]}"/>) if ser[:marker_size]
+          parts << "</c:marker>"
+        end
         if chart[:data_labels]
           dl = chart[:data_labels]
           parts << "<c:dLbls>"

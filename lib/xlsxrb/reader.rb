@@ -4682,6 +4682,7 @@ module Xlsxrb
         @inside_ser_sp_pr = false
         @inside_ser_solid_fill = false
         @inside_ser_ln = false
+        @inside_ser_marker = false
         @current_ser = nil
         @inside_cat = false
         @inside_val = false
@@ -4750,7 +4751,15 @@ module Xlsxrb
         when "smooth"
           @smooth = attributes["val"] == "1" if attributes["val"] && !@inside_ser
         when "marker"
-          @marker = attributes["val"] == "1" if attributes["val"] && !@inside_ser
+          if attributes["val"] && !@inside_ser
+            @marker = attributes["val"] == "1"
+          elsif @inside_ser
+            @inside_ser_marker = true
+          end
+        when "symbol"
+          @current_ser[:marker_symbol] = attributes["val"] if @inside_ser_marker && @current_ser && attributes["val"]
+        when "size"
+          @current_ser[:marker_size] = attributes["val"].to_i if @inside_ser_marker && @current_ser && attributes["val"]
         when "scatterStyle"
           @scatter_style = attributes["val"] if attributes["val"]
         when "radarStyle"
@@ -5034,6 +5043,7 @@ module Xlsxrb
           @inside_ser_sp_pr = false
           @inside_ser_solid_fill = false
           @inside_ser_ln = false
+          @inside_ser_marker = false
         when "spPr"
           if @inside_ser
             @inside_ser_sp_pr = false
@@ -5044,6 +5054,8 @@ module Xlsxrb
           end
         when "ln"
           @inside_ser_ln = false if @inside_ser
+        when "marker"
+          @inside_ser_marker = false if @inside_ser
         when "solidFill"
           if @inside_ser
             @inside_ser_solid_fill = false
