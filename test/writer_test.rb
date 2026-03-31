@@ -4606,6 +4606,26 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dPt elements for series data_points" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.set_cell("A3", 30)
+    writer.add_chart(type: :pie,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$3",
+                                data_points: [{ idx: 0, fill_color: "FF0000" },
+                                              { idx: 1, fill_color: "00FF00" },
+                                              { idx: 2, fill_color: "0000FF" }] }])
+    xlsx_path = File.join(Dir.tmpdir, "dpt_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:dPt><c:idx val="0"/><c:spPr><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></c:spPr></c:dPt>}, xml)
+    assert_match(%r{<c:dPt><c:idx val="1"/><c:spPr><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></c:spPr></c:dPt>}, xml)
+    assert_match(%r{<c:dPt><c:idx val="2"/><c:spPr><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill></c:spPr></c:dPt>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

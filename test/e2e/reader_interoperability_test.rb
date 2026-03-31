@@ -2459,6 +2459,29 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated series data points in pie chart" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_data_points_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    ser = charts[0][:series].first
+    assert_not_nil(ser[:data_points])
+    assert_equal(3, ser[:data_points].size)
+    assert_equal(0, ser[:data_points][0][:idx])
+    assert_equal("FF0000", ser[:data_points][0][:fill_color])
+    assert_equal(1, ser[:data_points][1][:idx])
+    assert_equal("00FF00", ser[:data_points][1][:fill_color])
+    assert_equal(2, ser[:data_points][2][:idx])
+    assert_equal("0000FF", ser[:data_points][2][:fill_color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
