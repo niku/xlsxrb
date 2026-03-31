@@ -743,6 +743,9 @@ module Xlsxrb
         chart[:val_axis_minor_tick_mark] = cl.val_axis_minor_tick_mark if cl.val_axis_minor_tick_mark
         chart[:cat_axis_crosses] = cl.cat_axis_crosses if cl.cat_axis_crosses
         chart[:val_axis_crosses] = cl.val_axis_crosses if cl.val_axis_crosses
+        chart[:val_axis_cross_between] = cl.val_axis_cross_between if cl.val_axis_cross_between
+        chart[:val_axis_major_unit] = cl.val_axis_major_unit if cl.val_axis_major_unit
+        chart[:val_axis_minor_unit] = cl.val_axis_minor_unit if cl.val_axis_minor_unit
       end
       listener.charts
     end
@@ -4400,7 +4403,8 @@ module Xlsxrb
                   :cat_axis_num_fmt, :val_axis_num_fmt,
                   :cat_axis_major_tick_mark, :cat_axis_minor_tick_mark,
                   :val_axis_major_tick_mark, :val_axis_minor_tick_mark,
-                  :cat_axis_crosses, :val_axis_crosses
+                  :cat_axis_crosses, :val_axis_crosses,
+                  :val_axis_cross_between, :val_axis_major_unit, :val_axis_minor_unit
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4443,6 +4447,9 @@ module Xlsxrb
         @val_axis_minor_tick_mark = nil
         @cat_axis_crosses = nil
         @val_axis_crosses = nil
+        @val_axis_cross_between = nil
+        @val_axis_major_unit = nil
+        @val_axis_minor_unit = nil
         @inside_view_3d = false
         @inside_title = false
         @inside_t = false
@@ -4594,6 +4601,12 @@ module Xlsxrb
               @val_axis_crosses = attributes["val"]
             end
           end
+        when "crossBetween"
+          @val_axis_cross_between = attributes["val"] if @inside_val_ax && attributes["val"]
+        when "majorUnit"
+          @val_axis_major_unit = attributes["val"].to_f if @inside_val_ax && attributes["val"]
+        when "minorUnit"
+          @val_axis_minor_unit = attributes["val"].to_f if @inside_val_ax && attributes["val"]
         when "tickLblPos"
           if attributes["val"]
             if @inside_cat_ax
