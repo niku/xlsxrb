@@ -3519,6 +3519,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits configurable axis orientation" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     val_axis_orientation: "maxMin")
+    xlsx_path = File.join(Dir.tmpdir, "axis_orient_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:valAx>.*<c:orientation val="maxMin"/>.*</c:valAx>}m, xml)
+    assert_match(%r{<c:catAx>.*<c:orientation val="minMax"/>.*</c:catAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits legend overlay element" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

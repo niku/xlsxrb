@@ -730,6 +730,8 @@ module Xlsxrb
         chart[:show_d_lbls_over_max] = cl.show_d_lbls_over_max unless cl.show_d_lbls_over_max.nil?
         chart[:cat_axis_delete] = cl.cat_axis_delete unless cl.cat_axis_delete.nil?
         chart[:val_axis_delete] = cl.val_axis_delete unless cl.val_axis_delete.nil?
+        chart[:cat_axis_orientation] = cl.cat_axis_orientation if cl.cat_axis_orientation
+        chart[:val_axis_orientation] = cl.val_axis_orientation if cl.val_axis_orientation
       end
       listener.charts
     end
@@ -4381,7 +4383,8 @@ module Xlsxrb
                   :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
                   :cat_axis_major_gridlines, :val_axis_major_gridlines,
                   :cat_axis_minor_gridlines, :val_axis_minor_gridlines,
-                  :show_d_lbls_over_max, :cat_axis_delete, :val_axis_delete
+                  :show_d_lbls_over_max, :cat_axis_delete, :val_axis_delete,
+                  :cat_axis_orientation, :val_axis_orientation
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4411,6 +4414,8 @@ module Xlsxrb
         @show_d_lbls_over_max = nil
         @cat_axis_delete = nil
         @val_axis_delete = nil
+        @cat_axis_orientation = nil
+        @val_axis_orientation = nil
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4498,6 +4503,14 @@ module Xlsxrb
               @cat_axis_delete = attributes["val"] == "1"
             elsif @inside_val_ax
               @val_axis_delete = attributes["val"] == "1"
+            end
+          end
+        when "orientation"
+          if attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_orientation = attributes["val"]
+            elsif @inside_val_ax
+              @val_axis_orientation = attributes["val"]
             end
           end
         when "tickLblPos"
