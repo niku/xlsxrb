@@ -1272,7 +1272,9 @@ module Xlsxrb
         show_multiple_label: opts[:show_multiple_label],
         show_data_drop_down: opts[:show_data_drop_down],
         edit_data: opts[:edit_data],
-        disable_field_list: opts[:disable_field_list]
+        disable_field_list: opts[:disable_field_list],
+        visual_totals: opts[:visual_totals],
+        print_drill: opts[:print_drill]
       }
     end
 
@@ -2932,6 +2934,8 @@ module Xlsxrb
       pt_attrs << ' published="1"' if pivot_table[:published]
       pt_attrs << ' editData="1"' if pivot_table[:edit_data]
       pt_attrs << ' disableFieldList="1"' if pivot_table[:disable_field_list]
+      pt_attrs << ' visualTotals="0"' if pivot_table[:visual_totals] == false
+      pt_attrs << ' printDrill="1"' if pivot_table[:print_drill]
       pt_attrs << %( createdVersion="#{pivot_table[:created_version]}") if pivot_table[:created_version]
       pt_attrs << %( updatedVersion="#{pivot_table[:updated_version]}") if pivot_table[:updated_version]
       pt_attrs << %( minRefreshableVersion="#{pivot_table[:min_refreshable_version]}") if pivot_table[:min_refreshable_version]
