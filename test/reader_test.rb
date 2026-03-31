@@ -5314,4 +5314,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips scatterStyle and radarStyle" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :scatter,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     scatter_style: "smoothMarker")
+    writer.add_chart(type: :radar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     radar_style: "filled")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal("smoothMarker", charts[0][:scatter_style])
+    assert_equal("filled", charts[1][:radar_style])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

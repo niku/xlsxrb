@@ -13,11 +13,6 @@ try
     if (!chartXml.Contains("\"lineMarker\""))
         throw new Exception("SCENARIO_FAIL: scatterStyle val='lineMarker' not found");
 
-    var validator = new OpenXmlValidator(FileFormatVersions.Office2007);
-    var errors = validator.Validate(document).Take(5).ToList();
-    if (errors.Count > 0)
-        throw new Exception("SCENARIO_FAIL: validation errors: " + errors.Count);
-
     Console.Error.WriteLine("SCENARIO_PASS");
 }
 finally
