@@ -1300,6 +1300,38 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips pivotTableDefinition applyXxxFormats attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           apply_number_formats: true,
+                           apply_border_formats: true,
+                           apply_font_formats: false,
+                           apply_pattern_formats: false,
+                           apply_alignment_formats: false,
+                           apply_width_height_formats: false)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pts = reader.pivot_tables
+    assert_equal(1, pts.size)
+    assert_equal(true, pts[0][:apply_number_formats])
+    assert_equal(true, pts[0][:apply_border_formats])
+    assert_equal(false, pts[0][:apply_font_formats])
+    assert_equal(false, pts[0][:apply_pattern_formats])
+    assert_equal(false, pts[0][:apply_alignment_formats])
+    assert_equal(false, pts[0][:apply_width_height_formats])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips pivotTableStyleInfo" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

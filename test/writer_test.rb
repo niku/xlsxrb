@@ -1175,6 +1175,36 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(3, pivots[0][:min_refreshable_version])
   end
 
+  test "add_pivot_table with applyXxxFormats attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           apply_number_formats: true,
+                           apply_border_formats: true,
+                           apply_font_formats: false,
+                           apply_pattern_formats: false,
+                           apply_alignment_formats: false,
+                           apply_width_height_formats: false)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-pivot", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/pivotTables/pivotTable1.xml")
+    assert_match(/applyNumberFormats="1"/, xml_content)
+    assert_match(/applyBorderFormats="1"/, xml_content)
+    assert_match(/applyFontFormats="0"/, xml_content)
+    assert_match(/applyPatternFormats="0"/, xml_content)
+    assert_match(/applyAlignmentFormats="0"/, xml_content)
+    assert_match(/applyWidthHeightFormats="0"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_pivot_table with source_name stores worksheetSource name" do
     writer = Xlsxrb::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",
