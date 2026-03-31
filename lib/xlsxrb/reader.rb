@@ -4163,6 +4163,7 @@ module Xlsxrb
           @anchor_from = {}
           @anchor_to = {}
           @anchor_edit_as = attributes["editAs"]
+          @anchor_published = %w[1 true].include?(attributes["fPublished"])
         when "pic"
           @inside_pic = true
           @current_image = {}
@@ -4224,11 +4225,13 @@ module Xlsxrb
         when "twoCellAnchor", "oneCellAnchor"
           @images.last[:locks_with_sheet] = @anchor_locks_with_sheet == "1" if @anchor_locks_with_sheet && !@images.empty?
           @images.last[:prints_with_sheet] = @anchor_prints_with_sheet == "1" if @anchor_prints_with_sheet && !@images.empty?
+          @images.last[:published] = true if @anchor_published && !@images.empty?
           @inside_anchor = false
           @anchor_from = {}
           @anchor_to = {}
           @anchor_locks_with_sheet = nil
           @anchor_prints_with_sheet = nil
+          @anchor_published = false
         when "from"
           @inside_from = false
         when "to"
@@ -4282,6 +4285,7 @@ module Xlsxrb
         case name
         when "twoCellAnchor", "oneCellAnchor"
           @anchor_edit_as = attributes["editAs"]
+          @anchor_published = %w[1 true].include?(attributes["fPublished"])
           @inside_anchor = true
           @anchor_from = {}
           @anchor_to = {}
@@ -4348,10 +4352,12 @@ module Xlsxrb
         when "twoCellAnchor", "oneCellAnchor"
           @charts.last[:locks_with_sheet] = @anchor_locks_with_sheet == "1" if @anchor_locks_with_sheet && !@charts.empty?
           @charts.last[:prints_with_sheet] = @anchor_prints_with_sheet == "1" if @anchor_prints_with_sheet && !@charts.empty?
+          @charts.last[:published] = true if @anchor_published && !@charts.empty?
           @inside_anchor = false
           @anchor_edit_as = nil
           @anchor_locks_with_sheet = nil
           @anchor_prints_with_sheet = nil
+          @anchor_published = false
           @anchor_from = {}
           @anchor_to = {}
         end
@@ -4397,6 +4403,7 @@ module Xlsxrb
           @anchor_from = {}
           @anchor_to = {}
           @anchor_edit_as = attributes["editAs"]
+          @anchor_published = %w[1 true].include?(attributes["fPublished"])
         when "sp"
           @inside_sp = true
           @current_shape = {}
@@ -4458,11 +4465,13 @@ module Xlsxrb
         when "twoCellAnchor", "oneCellAnchor"
           @shapes.last[:locks_with_sheet] = @anchor_locks_with_sheet == "1" if @anchor_locks_with_sheet && !@shapes.empty?
           @shapes.last[:prints_with_sheet] = @anchor_prints_with_sheet == "1" if @anchor_prints_with_sheet && !@shapes.empty?
+          @shapes.last[:published] = true if @anchor_published && !@shapes.empty?
           @inside_anchor = false
           @anchor_from = {}
           @anchor_to = {}
           @anchor_locks_with_sheet = nil
           @anchor_prints_with_sheet = nil
+          @anchor_published = false
         when "from"
           @inside_from = false
         when "to"
