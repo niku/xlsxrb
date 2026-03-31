@@ -3504,6 +3504,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits configurable axis delete attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_delete: true, val_axis_delete: false)
+    xlsx_path = File.join(Dir.tmpdir, "axis_delete_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:delete val="1"/>.*</c:catAx>}m, xml)
+    assert_match(%r{<c:valAx>.*<c:delete val="0"/>.*</c:valAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits legend overlay element" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

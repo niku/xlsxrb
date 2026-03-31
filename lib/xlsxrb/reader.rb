@@ -728,6 +728,8 @@ module Xlsxrb
         chart[:cat_axis_minor_gridlines] = cl.cat_axis_minor_gridlines if cl.cat_axis_minor_gridlines
         chart[:val_axis_minor_gridlines] = cl.val_axis_minor_gridlines if cl.val_axis_minor_gridlines
         chart[:show_d_lbls_over_max] = cl.show_d_lbls_over_max unless cl.show_d_lbls_over_max.nil?
+        chart[:cat_axis_delete] = cl.cat_axis_delete unless cl.cat_axis_delete.nil?
+        chart[:val_axis_delete] = cl.val_axis_delete unless cl.val_axis_delete.nil?
       end
       listener.charts
     end
@@ -4379,7 +4381,7 @@ module Xlsxrb
                   :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
                   :cat_axis_major_gridlines, :val_axis_major_gridlines,
                   :cat_axis_minor_gridlines, :val_axis_minor_gridlines,
-                  :show_d_lbls_over_max
+                  :show_d_lbls_over_max, :cat_axis_delete, :val_axis_delete
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4407,6 +4409,8 @@ module Xlsxrb
         @cat_axis_minor_gridlines = false
         @val_axis_minor_gridlines = false
         @show_d_lbls_over_max = nil
+        @cat_axis_delete = nil
+        @val_axis_delete = nil
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4488,6 +4492,14 @@ module Xlsxrb
           @inside_cat_ax = true
         when "valAx"
           @inside_val_ax = true
+        when "delete"
+          if attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_delete = attributes["val"] == "1"
+            elsif @inside_val_ax
+              @val_axis_delete = attributes["val"] == "1"
+            end
+          end
         when "tickLblPos"
           if attributes["val"]
             if @inside_cat_ax

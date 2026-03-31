@@ -1098,7 +1098,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1121,6 +1121,8 @@ module Xlsxrb
       chart[:val_axis_major_gridlines] = val_axis_major_gridlines unless val_axis_major_gridlines.nil?
       chart[:cat_axis_minor_gridlines] = cat_axis_minor_gridlines unless cat_axis_minor_gridlines.nil?
       chart[:val_axis_minor_gridlines] = val_axis_minor_gridlines unless val_axis_minor_gridlines.nil?
+      chart[:cat_axis_delete] = cat_axis_delete unless cat_axis_delete.nil?
+      chart[:val_axis_delete] = val_axis_delete unless val_axis_delete.nil?
       chart[:grouping] = grouping if grouping
       chart[:bar_dir] = bar_dir if bar_dir
       chart[:vary_colors] = vary_colors unless vary_colors.nil?
@@ -2734,13 +2736,15 @@ module Xlsxrb
       parts << "</c:#{chart_type}>"
 
       unless no_axes
-        parts << '<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/>'
+        cat_del = chart[:cat_axis_delete] ? 1 : 0
+        parts << %(<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="#{cat_del}"/><c:axPos val="b"/>)
         parts << "<c:majorGridlines/>" if chart[:cat_axis_major_gridlines]
         parts << "<c:minorGridlines/>" if chart[:cat_axis_minor_gridlines]
         parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:cat_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:cat_axis_title]
         parts << %(<c:tickLblPos val="#{chart[:cat_axis_tick_lbl_pos]}"/>) if chart[:cat_axis_tick_lbl_pos]
         parts << '<c:crossAx val="2"/></c:catAx>'
-        parts << '<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/>'
+        val_del = chart[:val_axis_delete] ? 1 : 0
+        parts << %(<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="#{val_del}"/><c:axPos val="l"/>)
         parts << "<c:majorGridlines/>" if chart[:val_axis_major_gridlines]
         parts << "<c:minorGridlines/>" if chart[:val_axis_minor_gridlines]
         parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:val_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:val_axis_title]
