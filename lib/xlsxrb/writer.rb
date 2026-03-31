@@ -1098,7 +1098,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, grouping: nil, bar_dir: nil, vary_colors: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1117,6 +1117,7 @@ module Xlsxrb
       chart[:grouping] = grouping if grouping
       chart[:bar_dir] = bar_dir if bar_dir
       chart[:vary_colors] = vary_colors unless vary_colors.nil?
+      chart[:style] = style if style
       chart[:name] = name if name
       chart[:description] = description if description
       chart[:edit_as] = edit_as if edit_as
@@ -2669,9 +2670,10 @@ module Xlsxrb
       no_axes = NO_AXIS_CHARTS.include?(chart_type)
       parts = [
         XML_HEADER,
-        %(<c:chartSpace xmlns:c="#{C_NS}" xmlns:a="#{A_NS}" xmlns:r="#{DOC_REL_NS}">),
-        "<c:chart>"
+        %(<c:chartSpace xmlns:c="#{C_NS}" xmlns:a="#{A_NS}" xmlns:r="#{DOC_REL_NS}">)
       ]
+      parts << %(<c:style val="#{chart[:style]}"/>) if chart[:style]
+      parts << "<c:chart>"
 
       parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:title]
 
