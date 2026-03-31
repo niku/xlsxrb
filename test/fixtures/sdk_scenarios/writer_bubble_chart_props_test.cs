@@ -10,6 +10,8 @@ try
 
     if (!chartXml.Contains("bubbleScale"))
         throw new Exception("SCENARIO_FAIL: bubbleScale not found in chart XML");
+    if (!chartXml.Contains("bubble3D"))
+        throw new Exception("SCENARIO_FAIL: bubble3D not found in chart XML");
     if (!chartXml.Contains("showNegBubbles"))
         throw new Exception("SCENARIO_FAIL: showNegBubbles not found in chart XML");
     if (!chartXml.Contains("sizeRepresents"))

@@ -5377,4 +5377,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips bubble chart properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bubble,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     bubble_3d: true, bubble_scale: 200,
+                     show_neg_bubbles: false, size_represents: "w")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal(true, chart[:bubble_3d])
+    assert_equal(200, chart[:bubble_scale])
+    assert_equal(false, chart[:show_neg_bubbles])
+    assert_equal("w", chart[:size_represents])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

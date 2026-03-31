@@ -736,6 +736,10 @@ module Xlsxrb
         chart[:overlap] = cl.overlap if cl.overlap
         chart[:gap_depth] = cl.gap_depth if cl.gap_depth
         chart[:bar_shape] = cl.bar_shape if cl.bar_shape
+        chart[:bubble_3d] = cl.bubble_3d unless cl.bubble_3d.nil?
+        chart[:bubble_scale] = cl.bubble_scale if cl.bubble_scale
+        chart[:show_neg_bubbles] = cl.show_neg_bubbles unless cl.show_neg_bubbles.nil?
+        chart[:size_represents] = cl.size_represents if cl.size_represents
         chart[:view_3d] = cl.view_3d if cl.view_3d
         chart[:cat_axis_num_fmt] = cl.cat_axis_num_fmt if cl.cat_axis_num_fmt
         chart[:val_axis_num_fmt] = cl.val_axis_num_fmt if cl.val_axis_num_fmt
@@ -4417,6 +4421,7 @@ module Xlsxrb
                   :cat_axis_orientation, :val_axis_orientation,
                   :gap_width, :overlap, :view_3d,
                   :gap_depth, :bar_shape,
+                  :bubble_3d, :bubble_scale, :show_neg_bubbles, :size_represents,
                   :cat_axis_num_fmt, :val_axis_num_fmt,
                   :cat_axis_major_tick_mark, :cat_axis_minor_tick_mark,
                   :val_axis_major_tick_mark, :val_axis_minor_tick_mark,
@@ -4464,6 +4469,10 @@ module Xlsxrb
         @overlap = nil
         @gap_depth = nil
         @bar_shape = nil
+        @bubble_3d = nil
+        @bubble_scale = nil
+        @show_neg_bubbles = nil
+        @size_represents = nil
         @view_3d = nil
         @cat_axis_num_fmt = nil
         @val_axis_num_fmt = nil
@@ -4545,6 +4554,14 @@ module Xlsxrb
           @gap_depth = attributes["val"]&.to_i if attributes["val"]
         when "shape"
           @bar_shape = attributes["val"] if attributes["val"]
+        when "bubble3D"
+          @bubble_3d = attributes["val"] == "1" if attributes["val"] && !@inside_ser
+        when "bubbleScale"
+          @bubble_scale = attributes["val"]&.to_i if attributes["val"]
+        when "showNegBubbles"
+          @show_neg_bubbles = attributes["val"] == "1" if attributes["val"]
+        when "sizeRepresents"
+          @size_represents = attributes["val"] if attributes["val"]
         when "firstSliceAng"
           @first_slice_ang = attributes["val"]&.to_i if attributes["val"]
         when "holeSize"
