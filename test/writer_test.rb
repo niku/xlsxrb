@@ -3534,6 +3534,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits gapWidth and overlap for bar charts" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     gap_width: 200, overlap: -25)
+    xlsx_path = File.join(Dir.tmpdir, "gap_width_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:gapWidth val="200"/>}, xml)
+    assert_match(%r{<c:overlap val="-25"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits legend overlay element" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
