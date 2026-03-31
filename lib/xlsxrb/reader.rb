@@ -4709,6 +4709,26 @@ module Xlsxrb
             key = attr.gsub(/[A-Z]/) { |m| "_#{m.downcase}" }.to_sym
             @pivot_table[key] = %w[1 true].include?(attributes[attr])
           end
+          mff = attributes["multipleFieldFilters"]
+          @pivot_table[:multiple_field_filters] = mff != "0" unless mff.nil?
+          sdr = attributes["showDrill"]
+          @pivot_table[:show_drill] = sdr != "0" unless sdr.nil?
+          sdt = attributes["showDataTips"]
+          @pivot_table[:show_data_tips] = sdt != "0" unless sdt.nil?
+          edr = attributes["enableDrill"]
+          @pivot_table[:enable_drill] = edr != "0" unless edr.nil?
+          smpt = attributes["showMemberPropertyTips"]
+          @pivot_table[:show_member_property_tips] = smpt != "0" unless smpt.nil?
+          ipt = attributes["itemPrintTitles"]
+          @pivot_table[:item_print_titles] = ipt == "1" unless ipt.nil?
+          fpt = attributes["fieldPrintTitles"]
+          @pivot_table[:field_print_titles] = fpt == "1" unless fpt.nil?
+          pf = attributes["preserveFormatting"]
+          @pivot_table[:preserve_formatting] = pf != "0" unless pf.nil?
+          potd = attributes["pageOverThenDown"]
+          @pivot_table[:page_over_then_down] = potd == "1" unless potd.nil?
+          pw = attributes["pageWrap"]
+          @pivot_table[:page_wrap] = pw.to_i if pw
         when "location"
           @pivot_table[:ref] = attributes["ref"] if @pivot_table
           @pivot_table[:row_page_count] = attributes["rowPageCount"]&.to_i if attributes["rowPageCount"]

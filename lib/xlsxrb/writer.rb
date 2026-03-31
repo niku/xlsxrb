@@ -1217,7 +1217,17 @@ module Xlsxrb
         apply_font_formats: opts[:apply_font_formats],
         apply_pattern_formats: opts[:apply_pattern_formats],
         apply_alignment_formats: opts[:apply_alignment_formats],
-        apply_width_height_formats: opts[:apply_width_height_formats]
+        apply_width_height_formats: opts[:apply_width_height_formats],
+        multiple_field_filters: opts[:multiple_field_filters],
+        show_drill: opts[:show_drill],
+        show_data_tips: opts[:show_data_tips],
+        enable_drill: opts[:enable_drill],
+        show_member_property_tips: opts[:show_member_property_tips],
+        item_print_titles: opts[:item_print_titles],
+        field_print_titles: opts[:field_print_titles],
+        preserve_formatting: opts[:preserve_formatting],
+        page_over_then_down: opts[:page_over_then_down],
+        page_wrap: opts[:page_wrap]
       }
     end
 
@@ -2821,6 +2831,16 @@ module Xlsxrb
       pt_attrs << %( applyPatternFormats="#{apf ? 1 : 0}")
       pt_attrs << %( applyAlignmentFormats="#{aaf ? 1 : 0}")
       pt_attrs << %( applyWidthHeightFormats="#{awf ? 1 : 0}")
+      pt_attrs << ' multipleFieldFilters="0"' if pivot_table[:multiple_field_filters] == false
+      pt_attrs << ' showDrill="0"' if pivot_table[:show_drill] == false
+      pt_attrs << ' showDataTips="0"' if pivot_table[:show_data_tips] == false
+      pt_attrs << ' enableDrill="0"' if pivot_table[:enable_drill] == false
+      pt_attrs << ' showMemberPropertyTips="0"' if pivot_table[:show_member_property_tips] == false
+      pt_attrs << ' itemPrintTitles="1"' if pivot_table[:item_print_titles]
+      pt_attrs << ' fieldPrintTitles="1"' if pivot_table[:field_print_titles]
+      pt_attrs << ' preserveFormatting="0"' if pivot_table[:preserve_formatting] == false
+      pt_attrs << ' pageOverThenDown="1"' if pivot_table[:page_over_then_down]
+      pt_attrs << %( pageWrap="#{pivot_table[:page_wrap]}") if pivot_table[:page_wrap]
       parts = [
         XML_HEADER,
         "<pivotTableDefinition#{pt_attrs}>"
