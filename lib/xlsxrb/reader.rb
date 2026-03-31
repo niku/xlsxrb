@@ -4673,6 +4673,8 @@ module Xlsxrb
         @inside_t = false
         @text_buffer = +""
         @inside_ser = false
+        @inside_ser_sp_pr = false
+        @inside_ser_solid_fill = false
         @current_ser = nil
         @inside_cat = false
         @inside_val = false
@@ -4747,6 +4749,12 @@ module Xlsxrb
         when "ser"
           @inside_ser = true
           @current_ser = {}
+        when "spPr"
+          @inside_ser_sp_pr = true if @inside_ser
+        when "solidFill"
+          @inside_ser_solid_fill = true if @inside_ser && @inside_ser_sp_pr
+        when "srgbClr"
+          @current_ser[:fill_color] = attributes["val"] if @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser && attributes["val"]
         when "cat"
           @inside_cat = true if @inside_ser
         when "val"
@@ -4984,6 +4992,12 @@ module Xlsxrb
           @series << @current_ser if @current_ser
           @current_ser = nil
           @inside_ser = false
+          @inside_ser_sp_pr = false
+          @inside_ser_solid_fill = false
+        when "spPr"
+          @inside_ser_sp_pr = false if @inside_ser
+        when "solidFill"
+          @inside_ser_solid_fill = false if @inside_ser
         when "title"
           @title_depth -= 1
           @inside_title = false if @title_depth.zero?

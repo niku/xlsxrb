@@ -2909,6 +2909,7 @@ module Xlsxrb
       all_series.each_with_index do |ser, idx|
         parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{idx}\"/>"
         parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f></c:strRef></c:tx>" if ser[:name]
+        parts << %(<c:spPr><a:solidFill><a:srgbClr val="#{xml_escape(ser[:fill_color])}"/></a:solidFill></c:spPr>) if ser[:fill_color]
         if chart[:data_labels]
           dl = chart[:data_labels]
           parts << "<c:dLbls>"
