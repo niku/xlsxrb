@@ -4673,4 +4673,41 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips pivotTableDefinition extended display and layout attributes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           multiple_field_filters: false, show_drill: false,
+                           show_data_tips: false, enable_drill: false,
+                           show_member_property_tips: false,
+                           item_print_titles: true, field_print_titles: true,
+                           preserve_formatting: false,
+                           page_over_then_down: true, page_wrap: 3)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pt = reader.pivot_tables.first
+    assert_equal(false, pt[:multiple_field_filters])
+    assert_equal(false, pt[:show_drill])
+    assert_equal(false, pt[:show_data_tips])
+    assert_equal(false, pt[:enable_drill])
+    assert_equal(false, pt[:show_member_property_tips])
+    assert_equal(true, pt[:item_print_titles])
+    assert_equal(true, pt[:field_print_titles])
+    assert_equal(false, pt[:preserve_formatting])
+    assert_equal(true, pt[:page_over_then_down])
+    assert_equal(3, pt[:page_wrap])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
