@@ -754,6 +754,8 @@ module Xlsxrb
         chart[:val_axis_log_base] = cl.val_axis_log_base if cl.val_axis_log_base
         chart[:first_slice_ang] = cl.first_slice_ang if cl.first_slice_ang
         chart[:hole_size] = cl.hole_size if cl.hole_size
+        chart[:smooth] = cl.smooth unless cl.smooth.nil?
+        chart[:marker] = cl.marker unless cl.marker.nil?
       end
       listener.charts
     end
@@ -4416,7 +4418,8 @@ module Xlsxrb
                   :cat_axis_scaling_max, :cat_axis_scaling_min,
                   :val_axis_scaling_max, :val_axis_scaling_min,
                   :cat_axis_log_base, :val_axis_log_base,
-                  :first_slice_ang, :hole_size
+                  :first_slice_ang, :hole_size,
+                  :smooth, :marker
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4470,6 +4473,8 @@ module Xlsxrb
         @val_axis_log_base = nil
         @first_slice_ang = nil
         @hole_size = nil
+        @smooth = nil
+        @marker = nil
         @inside_view_3d = false
         @inside_scaling = false
         @inside_title = false
@@ -4525,6 +4530,10 @@ module Xlsxrb
           @first_slice_ang = attributes["val"]&.to_i if attributes["val"]
         when "holeSize"
           @hole_size = attributes["val"]&.to_i if attributes["val"]
+        when "smooth"
+          @smooth = attributes["val"] == "1" if attributes["val"] && !@inside_ser
+        when "marker"
+          @marker = attributes["val"] == "1" if attributes["val"] && !@inside_ser
         when "ser"
           @inside_ser = true
           @current_ser = {}
