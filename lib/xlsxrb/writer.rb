@@ -1228,7 +1228,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, line_color: nil, line_width: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, line_color: nil, line_width: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1253,6 +1253,9 @@ module Xlsxrb
       shape[:fill_color] = fill_color if fill_color
       shape[:line_color] = line_color if line_color
       shape[:line_width] = line_width if line_width
+      shape[:text_wrap] = text_wrap if text_wrap
+      shape[:text_anchor] = text_anchor if text_anchor
+      shape[:text_vert_overflow] = text_vert_overflow if text_vert_overflow
       shape[:edit_as] = edit_as if edit_as
       shape[:published] = published unless published.nil?
       shape[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
@@ -2799,7 +2802,11 @@ module Xlsxrb
                            end
           parts << %(<xdr:spPr>#{shape_fill_xml}<a:prstGeom prst="#{xml_escape(shape[:preset])}"><a:avLst/></a:prstGeom>#{shape_line_xml}</xdr:spPr>)
           if shape[:text]
-            parts << "<xdr:txBody><a:bodyPr/><a:lstStyle/>"
+            body_pr_attrs = +""
+            body_pr_attrs << %( wrap="#{xml_escape(shape[:text_wrap])}") if shape[:text_wrap]
+            body_pr_attrs << %( anchor="#{xml_escape(shape[:text_anchor])}") if shape[:text_anchor]
+            body_pr_attrs << %( vertOverflow="#{xml_escape(shape[:text_vert_overflow])}") if shape[:text_vert_overflow]
+            parts << "<xdr:txBody><a:bodyPr#{body_pr_attrs}/><a:lstStyle/>"
             parts << "<a:p><a:r><a:t>#{xml_escape(shape[:text])}</a:t></a:r></a:p>"
             parts << "</xdr:txBody>"
           end
