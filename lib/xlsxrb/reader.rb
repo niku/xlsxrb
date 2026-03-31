@@ -1657,6 +1657,7 @@ module Xlsxrb
           @formula_si = nil
           @formula_ca = nil
           @formula_aca = nil
+          @formula_bx = nil
           @is_runs = []
           @is_has_runs = false
         when "v"
@@ -1669,6 +1670,7 @@ module Xlsxrb
           @formula_si = si&.to_i
           @formula_ca = true if %w[1 true].include?(attributes["ca"])
           @formula_aca = true if %w[1 true].include?(attributes["aca"])
+          @formula_bx = true if %w[1 true].include?(attributes["bx"])
         when "is"
           @inside_is = true if @current_cell_type == "inlineStr"
         when "r"
@@ -1802,7 +1804,8 @@ module Xlsxrb
             ref: @formula_ref,
             shared_index: @formula_si,
             calculate_always: @formula_ca,
-            aca: @formula_aca
+            aca: @formula_aca,
+            bx: @formula_bx
           )
           return
         end

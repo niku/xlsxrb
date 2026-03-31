@@ -3324,6 +3324,7 @@ module Xlsxrb
         end
         f_attrs << ' ca="1"' if value.calculate_always
         f_attrs << ' aca="1"' if value.aca
+        f_attrs << ' bx="1"' if value.bx
         parts = %(<c r="#{cell_ref}"#{s_attr}><f#{f_attrs}>#{xml_escape(value.expression)}</f>)
         parts << "<v>#{xml_escape(value.cached_value.to_s)}</v>" unless value.cached_value.nil?
         parts << "</c>"
