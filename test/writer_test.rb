@@ -1089,6 +1089,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_chart with frame_macro emits macro on graphicFrame" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "x")
+    writer.add_chart(type: :bar, title: "Sales",
+                     cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
+                     frame_macro: "ChartMacro")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-gf-macro", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/graphicFrame macro="ChartMacro"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with edit_as stores editAs attribute" do
     writer = Xlsxrb::Writer.new
     writer.add_shape(preset: "rect", edit_as: "absolute")

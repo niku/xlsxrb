@@ -4255,6 +4255,7 @@ module Xlsxrb
         when "graphicFrame"
           @inside_graphic_frame = true
           @current_chart = {}
+          @current_chart[:frame_macro] = attributes["macro"] if attributes["macro"] && !attributes["macro"].empty?
         when "cNvPr"
           if @inside_graphic_frame && @current_chart
             @current_chart[:name] = attributes["name"] if attributes["name"]
