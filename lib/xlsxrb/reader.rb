@@ -4424,6 +4424,8 @@ module Xlsxrb
         @inside_solid_fill = false
         @inside_ln = false
         @inside_prst_geom = false
+        @inside_rpr = false
+        @current_text_font = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4474,7 +4476,9 @@ module Xlsxrb
             @current_shape[:no_rot] = true if %w[1 true].include?(attributes["noRot"])
           end
         when "srgbClr"
-          if @inside_sp && @current_shape && @inside_solid_fill && attributes["val"]
+          if @inside_rpr && @current_text_font && @inside_solid_fill && attributes["val"]
+            @current_text_font[:color] = attributes["val"]
+          elsif @inside_sp && @current_shape && @inside_solid_fill && attributes["val"]
             if @inside_ln
               @current_shape[:line_color] = attributes["val"]
             else
@@ -4495,6 +4499,17 @@ module Xlsxrb
           @inside_to = true if @inside_anchor
         when "txBody"
           @inside_tx_body = true if @inside_sp
+        when "rPr"
+          if @inside_tx_body && @inside_sp && @current_shape
+            @inside_rpr = true
+            tf = {}
+            tf[:bold] = true if %w[1 true].include?(attributes["b"])
+            tf[:italic] = true if %w[1 true].include?(attributes["i"])
+            tf[:size] = attributes["sz"].to_i if attributes["sz"]
+            @current_text_font = tf
+          end
+        when "latin"
+          @current_text_font[:name] = attributes["typeface"] if @inside_rpr && @current_text_font && attributes["typeface"]
         when "bodyPr"
           if @inside_sp && @current_shape
             @current_shape[:text_wrap] = attributes["wrap"] if attributes["wrap"]
@@ -4554,6 +4569,10 @@ module Xlsxrb
           @inside_ln = false
         when "prstGeom"
           @inside_prst_geom = false
+        when "rPr"
+          @current_shape[:text_font] = @current_text_font if @inside_rpr && @current_text_font&.any? && @current_shape
+          @inside_rpr = false
+          @current_text_font = nil
         when "t"
           @current_shape[:text] = (@current_shape[:text] || +"") << @text_buffer if @inside_t && @inside_tx_body && @current_shape
           @inside_t = false
