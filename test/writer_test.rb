@@ -1534,6 +1534,22 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("C1", result.ref)
   end
 
+  test "formula calculate_always emits ca attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "NOW()", cached_value: "45000", calculate_always: true))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-ca", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    sheet_xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/ca="1"/, sheet_xml)
+    assert_match(%r{<f ca="1">NOW\(\)</f>}, sheet_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_cell_style with alignment stores alignment attributes" do
     writer = Xlsxrb::Writer.new
     style_id = writer.add_cell_style(

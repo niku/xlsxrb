@@ -1587,6 +1587,7 @@ module Xlsxrb
           @formula_type = nil
           @formula_ref = nil
           @formula_si = nil
+          @formula_ca = nil
           @is_runs = []
           @is_has_runs = false
         when "v"
@@ -1597,6 +1598,7 @@ module Xlsxrb
           @formula_ref = attributes["ref"]
           si = attributes["si"]
           @formula_si = si&.to_i
+          @formula_ca = true if %w[1 true].include?(attributes["ca"])
         when "is"
           @inside_is = true if @current_cell_type == "inlineStr"
         when "r"
@@ -1728,7 +1730,8 @@ module Xlsxrb
             cached_value: cached,
             type: f_type,
             ref: @formula_ref,
-            shared_index: @formula_si
+            shared_index: @formula_si,
+            calculate_always: @formula_ca
           )
           return
         end
