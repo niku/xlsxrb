@@ -3091,6 +3091,7 @@ module Xlsxrb
         elsif value.type == :array
           f_attrs << %( t="array" ref="#{value.ref}") if value.ref
         end
+        f_attrs << ' ca="1"' if value.calculate_always
         parts = %(<c r="#{cell_ref}"#{s_attr}><f#{f_attrs}>#{xml_escape(value.expression)}</f>)
         parts << "<v>#{xml_escape(value.cached_value.to_s)}</v>" unless value.cached_value.nil?
         parts << "</c>"

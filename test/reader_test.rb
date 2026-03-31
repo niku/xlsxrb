@@ -2068,6 +2068,30 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips formula calculate_always through writer and reader" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "NOW()", cached_value: "45000", calculate_always: true))
+    writer.set_cell("B1", Xlsxrb::Formula.new(expression: "A1+1", cached_value: "2"))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    a1 = cells["A1"]
+    assert_instance_of(Xlsxrb::Formula, a1)
+    assert_equal(true, a1.calculate_always)
+    assert_equal("NOW()", a1.expression)
+
+    b1 = cells["B1"]
+    assert_instance_of(Xlsxrb::Formula, b1)
+    assert_nil(b1.calculate_always)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips calcChain through writer and reader" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 10)
