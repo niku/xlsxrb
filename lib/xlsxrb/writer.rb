@@ -1209,7 +1209,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1226,6 +1226,8 @@ module Xlsxrb
       shape[:description] = description if description
       shape[:title] = title if title
       shape[:hidden] = hidden unless hidden.nil?
+      shape[:macro] = macro if macro
+      shape[:textlink] = textlink if textlink
       shape[:edit_as] = edit_as if edit_as
       shape[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
       shape[:prints_with_sheet] = prints_with_sheet unless prints_with_sheet.nil?
@@ -2726,7 +2728,9 @@ module Xlsxrb
           parts << "<xdr:twoCellAnchor#{shape_ea_attr}>"
           parts << anchor_xml("from", shape[:from_col], shape[:from_row], col_off: shape[:from_col_off] || 0, row_off: shape[:from_row_off] || 0)
           parts << anchor_xml("to", shape[:to_col], shape[:to_row], col_off: shape[:to_col_off] || 0, row_off: shape[:to_row_off] || 0)
-          parts << "<xdr:sp>"
+          sp_macro_attr = shape[:macro] ? %( macro="#{xml_escape(shape[:macro])}") : ""
+          sp_textlink_attr = shape[:textlink] ? %( textlink="#{xml_escape(shape[:textlink])}") : ""
+          parts << "<xdr:sp#{sp_macro_attr}#{sp_textlink_attr}>"
           shape_descr_attr = shape[:description] ? %( descr="#{xml_escape(shape[:description])}") : ""
           shape_title_attr = shape[:title] ? %( title="#{xml_escape(shape[:title])}") : ""
           shape_hidden_attr = shape[:hidden] ? ' hidden="1"' : ""

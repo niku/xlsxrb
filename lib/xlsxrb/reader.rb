@@ -4364,6 +4364,8 @@ module Xlsxrb
         when "sp"
           @inside_sp = true
           @current_shape = {}
+          @current_shape[:macro] = attributes["macro"] if attributes["macro"] && !attributes["macro"].empty?
+          @current_shape[:textlink] = attributes["textlink"] if attributes["textlink"] && !attributes["textlink"].empty?
         when "cNvPr"
           if @inside_sp && @current_shape
             @current_shape[:name] = attributes["name"] if attributes["name"]
