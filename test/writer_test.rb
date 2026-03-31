@@ -3717,6 +3717,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits scatterStyle and radarStyle for respective chart types" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :scatter,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     scatter_style: "smoothMarker")
+    writer.add_chart(type: :radar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     radar_style: "filled")
+    xlsx_path = File.join(Dir.tmpdir, "scatter_radar_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml1 = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    xml2 = read_xml_from_xlsx(xlsx_path, "xl/charts/chart2.xml")
+    assert_match(%r{<c:scatterStyle val="smoothMarker"/>}, xml1)
+    assert_match(%r{<c:radarStyle val="filled"/>}, xml2)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
