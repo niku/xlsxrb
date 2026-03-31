@@ -3017,6 +3017,8 @@ module Xlsxrb
             @properties[:tab_color] = attributes["rgb"] if attributes["rgb"]
             @properties[:tab_color_theme] = attributes["theme"].to_i if attributes["theme"]
             @properties[:tab_color_tint] = attributes["tint"].to_f if attributes["tint"]
+            @properties[:tab_color_indexed] = attributes["indexed"].to_i if attributes["indexed"]
+            @properties[:tab_color_auto] = %w[1 true].include?(attributes["auto"]) if attributes["auto"]
           end
         when "outlinePr"
           if @inside_sheet_pr

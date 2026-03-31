@@ -2943,6 +2943,38 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits tabColor with indexed attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.set_sheet_property(:tab_color_indexed, 10)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-tci", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<tabColor indexed="10"/>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits tabColor with auto attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.set_sheet_property(:tab_color_auto, true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-tca", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<tabColor auto="1"/>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits sheetCalcPr fullCalcOnLoad" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "data")
