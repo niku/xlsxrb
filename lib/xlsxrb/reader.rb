@@ -4457,6 +4457,8 @@ module Xlsxrb
           @data_labels[:show_percent] = attributes["val"] == "1" if @inside_dlbls
         when "showLegendKey"
           @data_labels[:show_legend_key] = attributes["val"] == "1" if @inside_dlbls
+        when "showBubbleSize"
+          @data_labels[:show_bubble_size] = attributes["val"] == "1" if @inside_dlbls
         when "catAx"
           @inside_cat_ax = true
         when "valAx"
