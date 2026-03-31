@@ -782,6 +782,8 @@ module Xlsxrb
         chart[:hole_size] = cl.hole_size if cl.hole_size
         chart[:smooth] = cl.smooth unless cl.smooth.nil?
         chart[:marker] = cl.marker unless cl.marker.nil?
+        chart[:drop_lines] = cl.drop_lines unless cl.drop_lines.nil?
+        chart[:hi_low_lines] = cl.hi_low_lines unless cl.hi_low_lines.nil?
         chart[:scatter_style] = cl.scatter_style if cl.scatter_style
         chart[:radar_style] = cl.radar_style if cl.radar_style
         chart[:cat_axis_pos] = cl.cat_axis_pos if cl.cat_axis_pos
@@ -4636,6 +4638,7 @@ module Xlsxrb
                   :cat_axis_log_base, :val_axis_log_base,
                   :first_slice_ang, :hole_size,
                   :smooth, :marker,
+                  :drop_lines, :hi_low_lines,
                   :scatter_style, :radar_style,
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
@@ -4709,6 +4712,8 @@ module Xlsxrb
         @hole_size = nil
         @smooth = nil
         @marker = nil
+        @drop_lines = nil
+        @hi_low_lines = nil
         @scatter_style = nil
         @radar_style = nil
         @cat_axis_pos = nil
@@ -4811,6 +4816,10 @@ module Xlsxrb
           @scatter_style = attributes["val"] if attributes["val"]
         when "radarStyle"
           @radar_style = attributes["val"] if attributes["val"]
+        when "dropLines"
+          @drop_lines = true
+        when "hiLowLines"
+          @hi_low_lines = true
         when "wireframe"
           @wireframe = attributes["val"] == "1" if attributes["val"]
         when "ser"

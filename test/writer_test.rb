@@ -4463,6 +4463,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dropLines and hiLowLines on line chart" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     drop_lines: true, hi_low_lines: true)
+    xlsx_path = File.join(Dir.tmpdir, "drop_hilow_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:dropLines/>}, xml)
+    assert_match(%r{<c:hiLowLines/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits tickLblSkip and tickMarkSkip on cat axis" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
