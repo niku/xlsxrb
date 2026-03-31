@@ -4643,4 +4643,34 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips pivotField defaultSubtotal, insertBlankRow, insertPageBreak, includeNewItemsInFilter" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           field_attrs: {
+                             0 => { default_subtotal: false, insert_blank_row: true,
+                                    insert_page_break: true, include_new_items_in_filter: true }
+                           })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    pt = reader.pivot_tables.first
+    field = pt[:fields].first
+    assert_equal(false, field[:default_subtotal])
+    assert_equal(true, field[:insert_blank_row])
+    assert_equal(true, field[:insert_page_break])
+    assert_equal(true, field[:include_new_items_in_filter])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

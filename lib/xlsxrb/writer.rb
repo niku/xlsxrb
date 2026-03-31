@@ -2853,6 +2853,10 @@ module Xlsxrb
         attrs << %( showAll="#{fa && fa[:show_all] == true ? "1" : "0"}")
         attrs << %( numFmtId="#{fa[:num_fmt_id]}") if fa && fa[:num_fmt_id]
         attrs << %( sortType="#{xml_escape(fa[:sort_type])}") if fa && fa[:sort_type]
+        attrs << ' defaultSubtotal="0"' if fa && fa[:default_subtotal] == false
+        attrs << ' insertBlankRow="1"' if fa && fa[:insert_blank_row]
+        attrs << ' insertPageBreak="1"' if fa && fa[:insert_page_break]
+        attrs << ' includeNewItemsInFilter="1"' if fa && fa[:include_new_items_in_filter]
 
         field_items = pivot_table[:items] && pivot_table[:items][fi]
         if field_items
