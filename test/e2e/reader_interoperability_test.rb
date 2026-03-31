@@ -1158,6 +1158,25 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated shape with line end arrows" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_line_end_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    assert_equal("diamond", shapes[0][:head_end][:type])
+    assert_equal("sm", shapes[0][:head_end][:w])
+    assert_equal("sm", shapes[0][:head_end][:len])
+    assert_equal("arrow", shapes[0][:tail_end][:type])
+    assert_equal("lg", shapes[0][:tail_end][:w])
+    assert_equal("med", shapes[0][:tail_end][:len])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated shapes with preset geometry and text" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
