@@ -3814,6 +3814,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits tickLblSkip and tickMarkSkip on cat axis" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_tick_lbl_skip: 2, cat_axis_tick_mark_skip: 3)
+    xlsx_path = File.join(Dir.tmpdir, "tick_skip_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:tickLblSkip val="2"/>.*</c:catAx>}m, xml)
+    assert_match(%r{<c:catAx>.*<c:tickMarkSkip val="3"/>.*</c:catAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
