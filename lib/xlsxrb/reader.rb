@@ -725,6 +725,8 @@ module Xlsxrb
         chart[:val_axis_tick_lbl_pos] = cl.val_axis_tick_lbl_pos if cl.val_axis_tick_lbl_pos
         chart[:cat_axis_major_gridlines] = cl.cat_axis_major_gridlines if cl.cat_axis_major_gridlines
         chart[:val_axis_major_gridlines] = cl.val_axis_major_gridlines if cl.val_axis_major_gridlines
+        chart[:cat_axis_minor_gridlines] = cl.cat_axis_minor_gridlines if cl.cat_axis_minor_gridlines
+        chart[:val_axis_minor_gridlines] = cl.val_axis_minor_gridlines if cl.val_axis_minor_gridlines
       end
       listener.charts
     end
@@ -4374,7 +4376,8 @@ module Xlsxrb
       attr_reader :chart_type, :title, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
                   :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
                   :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
-                  :cat_axis_major_gridlines, :val_axis_major_gridlines
+                  :cat_axis_major_gridlines, :val_axis_major_gridlines,
+                  :cat_axis_minor_gridlines, :val_axis_minor_gridlines
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4399,6 +4402,8 @@ module Xlsxrb
         @val_axis_tick_lbl_pos = nil
         @cat_axis_major_gridlines = false
         @val_axis_major_gridlines = false
+        @cat_axis_minor_gridlines = false
+        @val_axis_minor_gridlines = false
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4493,6 +4498,12 @@ module Xlsxrb
             @cat_axis_major_gridlines = true
           elsif @inside_val_ax
             @val_axis_major_gridlines = true
+          end
+        when "minorGridlines"
+          if @inside_cat_ax
+            @cat_axis_minor_gridlines = true
+          elsif @inside_val_ax
+            @val_axis_minor_gridlines = true
           end
         when "plotVisOnly"
           @plot_vis_only = attributes["val"] == "1" if attributes["val"]
