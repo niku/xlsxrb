@@ -4332,6 +4332,19 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits series marker with symbol and size" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "diamond", marker_size: 8 }])
+    xlsx_path = File.join(Dir.tmpdir, "ser_marker_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:marker><c:symbol val="diamond"/><c:size val="8"/></c:marker>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits tickLblSkip and tickMarkSkip on cat axis" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
