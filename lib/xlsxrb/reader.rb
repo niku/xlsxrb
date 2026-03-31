@@ -565,6 +565,11 @@ module Xlsxrb
       parse_workbook_metadata[:calc_properties]
     end
 
+    # Returns file recovery properties hash.
+    def file_recovery_properties
+      parse_workbook_metadata[:file_recovery_properties]
+    end
+
     # Returns the calc chain as an array of { ref:, sheet_id: } hashes, or empty array.
     def calc_chain
       xml = extract_zip_entry("xl/calcChain.xml")
@@ -902,7 +907,10 @@ module Xlsxrb
 
     def parse_workbook_metadata
       workbook_xml = extract_zip_entry("xl/workbook.xml")
-      return { workbook_properties: {}, workbook_views: {}, calc_properties: {}, workbook_protection: nil } if workbook_xml.nil? || workbook_xml.empty?
+      if workbook_xml.nil? || workbook_xml.empty?
+        return { workbook_properties: {}, workbook_views: {}, calc_properties: {}, file_recovery_properties: {},
+                 workbook_protection: nil }
+      end
 
       parser = REXML::Parsers::SAX2Parser.new(workbook_xml)
       listener = WorkbookListener.new
@@ -916,7 +924,8 @@ module Xlsxrb
         workbook_protection: listener.workbook_protection,
         file_version: listener.file_version,
         file_sharing: listener.file_sharing,
-        conformance: listener.conformance
+        conformance: listener.conformance,
+        file_recovery_properties: listener.file_recovery_properties
       }
     end
 
@@ -1844,13 +1853,14 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       attr_reader :sheets, :workbook_properties, :workbook_views, :calc_properties, :defined_names,
-                  :workbook_protection, :file_version, :file_sharing, :conformance
+                  :workbook_protection, :file_version, :file_sharing, :conformance, :file_recovery_properties
 
       def initialize
         @sheets = []
         @workbook_properties = {}
         @workbook_views = {}
         @calc_properties = {}
+        @file_recovery_properties = {}
         @defined_names = []
         @workbook_protection = nil
         @file_version = {}
@@ -1984,6 +1994,15 @@ module Xlsxrb
           @calc_properties[:concurrent_manual_count] = cmc.to_i if cmc
           ffc = attributes["forceFullCalc"]
           @calc_properties[:force_full_calc] = %w[1 true].include?(ffc) unless ffc.nil?
+        when "fileRecoveryPr"
+          ar = attributes["autoRecover"]
+          @file_recovery_properties[:auto_recover] = %w[1 true].include?(ar) unless ar.nil?
+          cs = attributes["crashSave"]
+          @file_recovery_properties[:crash_save] = %w[1 true].include?(cs) unless cs.nil?
+          del = attributes["dataExtractLoad"]
+          @file_recovery_properties[:data_extract_load] = %w[1 true].include?(del) unless del.nil?
+          rl = attributes["repairLoad"]
+          @file_recovery_properties[:repair_load] = %w[1 true].include?(rl) unless rl.nil?
         when "workbookProtection"
           prot = {}
           ls = attributes["lockStructure"]

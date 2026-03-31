@@ -53,6 +53,7 @@ module Xlsxrb
       @workbook_properties = {}
       @workbook_views = {}
       @calc_properties = {}
+      @file_recovery_properties = {}
       @sheet_states = {}
       @defined_names = []
       @sheet_properties = { "Sheet1" => {} }
@@ -926,6 +927,16 @@ module Xlsxrb
     # Returns calc properties hash.
     def calc_properties
       @calc_properties.dup
+    end
+
+    # Sets a file recovery property (e.g. :auto_recover, :crash_save).
+    def set_file_recovery_property(name, value)
+      @file_recovery_properties[name] = value
+    end
+
+    # Returns file recovery properties hash.
+    def file_recovery_properties
+      @file_recovery_properties.dup
     end
 
     # Sets sheet protection options.
@@ -1852,6 +1863,20 @@ module Xlsxrb
           parts << %(<pivotCache cacheId="#{ci + 1}" r:id="rId#{pivot_rid_base + ci}"/>)
         end
         parts << "</pivotCaches>"
+      end
+
+      # fileRecoveryPr
+      unless @file_recovery_properties.empty?
+        frp_attrs = []
+        ar = @file_recovery_properties[:auto_recover]
+        frp_attrs << %(autoRecover="#{ar ? 1 : 0}") unless ar.nil?
+        cs = @file_recovery_properties[:crash_save]
+        frp_attrs << %(crashSave="#{cs ? 1 : 0}") unless cs.nil?
+        del = @file_recovery_properties[:data_extract_load]
+        frp_attrs << %(dataExtractLoad="#{del ? 1 : 0}") unless del.nil?
+        rl = @file_recovery_properties[:repair_load]
+        frp_attrs << %(repairLoad="#{rl ? 1 : 0}") unless rl.nil?
+        parts << "<fileRecoveryPr #{frp_attrs.join(" ")}/>" unless frp_attrs.empty?
       end
 
       parts << "</workbook>"

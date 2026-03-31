@@ -2076,6 +2076,19 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated fileRecoveryPr in workbook" do
+    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+
+    assert_openxml_sdk_scenario_passes("reader_file_recovery_pr_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    frp = reader.file_recovery_properties
+    assert_equal(false, frp[:auto_recover])
+    assert_equal(true, frp[:crash_save])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
