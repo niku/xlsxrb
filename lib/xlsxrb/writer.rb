@@ -3330,11 +3330,18 @@ module Xlsxrb
         %(<c r="#{cell_ref}" t="e"#{s_attr}><v>#{xml_escape(value.code)}</v></c>)
       when Formula
         f_attrs = +""
-        if value.type == :shared
+        case value.type
+        when :shared
           f_attrs << %( t="shared" si="#{value.shared_index}")
           f_attrs << %( ref="#{value.ref}") if value.ref
-        elsif value.type == :array
+        when :array
           f_attrs << %( t="array" ref="#{value.ref}") if value.ref
+        when :data_table
+          f_attrs << ' t="dataTable"'
+          f_attrs << ' dt2D="1"' if value.dt2d
+          f_attrs << ' dtr="1"' if value.dtr
+          f_attrs << %( r1="#{value.r1}") if value.r1
+          f_attrs << %( r2="#{value.r2}") if value.r2
         end
         f_attrs << ' ca="1"' if value.calculate_always
         f_attrs << ' aca="1"' if value.aca

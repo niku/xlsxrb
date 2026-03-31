@@ -14,8 +14,8 @@ module Xlsxrb
 
   # Represents a formula with an optional cached value.
   # Optional: type (:shared, :array), ref (range), shared_index (si for shared formulas)
-  Formula = Data.define(:expression, :cached_value, :type, :ref, :shared_index, :calculate_always, :aca, :bx) do
-    def initialize(expression:, cached_value: nil, type: nil, ref: nil, shared_index: nil, calculate_always: nil, aca: nil, bx: nil) # rubocop:disable Naming/MethodParameterName
+  Formula = Data.define(:expression, :cached_value, :type, :ref, :shared_index, :calculate_always, :aca, :bx, :dt2d, :dtr, :r1, :r2) do
+    def initialize(expression:, cached_value: nil, type: nil, ref: nil, shared_index: nil, calculate_always: nil, aca: nil, bx: nil, dt2d: nil, dtr: nil, r1: nil, r2: nil) # rubocop:disable Naming/MethodParameterName
       super
     end
   end

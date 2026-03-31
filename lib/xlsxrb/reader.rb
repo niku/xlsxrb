@@ -1658,6 +1658,10 @@ module Xlsxrb
           @formula_ca = nil
           @formula_aca = nil
           @formula_bx = nil
+          @formula_dt2d = nil
+          @formula_dtr = nil
+          @formula_r1 = nil
+          @formula_r2 = nil
           @is_runs = []
           @is_has_runs = false
         when "v"
@@ -1671,6 +1675,10 @@ module Xlsxrb
           @formula_ca = true if %w[1 true].include?(attributes["ca"])
           @formula_aca = true if %w[1 true].include?(attributes["aca"])
           @formula_bx = true if %w[1 true].include?(attributes["bx"])
+          @formula_dt2d = true if %w[1 true].include?(attributes["dt2D"])
+          @formula_dtr = true if %w[1 true].include?(attributes["dtr"])
+          @formula_r1 = attributes["r1"] if attributes["r1"]
+          @formula_r2 = attributes["r2"] if attributes["r2"]
         when "is"
           @inside_is = true if @current_cell_type == "inlineStr"
         when "r"
@@ -1791,12 +1799,9 @@ module Xlsxrb
       def store_cell_value
         return if @current_cell_ref.nil?
 
-        unless @formula_buffer.empty?
+        unless @formula_buffer.empty? && @formula_type.nil?
           cached = @value_buffer.empty? ? nil : @value_buffer.dup
-          f_type = case @formula_type
-                   when "shared" then :shared
-                   when "array" then :array
-                   end
+          f_type = { "shared" => :shared, "array" => :array, "dataTable" => :data_table }[@formula_type]
           @cells[@current_cell_ref] = Formula.new(
             expression: @formula_buffer.dup,
             cached_value: cached,
@@ -1805,7 +1810,11 @@ module Xlsxrb
             shared_index: @formula_si,
             calculate_always: @formula_ca,
             aca: @formula_aca,
-            bx: @formula_bx
+            bx: @formula_bx,
+            dt2d: @formula_dt2d,
+            dtr: @formula_dtr,
+            r1: @formula_r1,
+            r2: @formula_r2
           )
           return
         end

@@ -1674,6 +1674,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "formula dataTable type emits dt2D dtr r1 r2 attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Xlsxrb::Formula.new(
+                            expression: "", type: :data_table,
+                            dt2d: true, dtr: true, r1: "A$1", r2: "$A1"
+                          ))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dt", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    sheet_xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/t="dataTable"/, sheet_xml)
+    assert_match(/dt2D="1"/, sheet_xml)
+    assert_match(/dtr="1"/, sheet_xml)
+    assert_match(/r1="A\$1"/, sheet_xml)
+    assert_match(/r2="\$A1"/, sheet_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_cell_style with alignment stores alignment attributes" do
     writer = Xlsxrb::Writer.new
     style_id = writer.add_cell_style(
