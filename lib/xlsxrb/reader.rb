@@ -4500,6 +4500,8 @@ module Xlsxrb
             os[:rot_with_shape] = %w[1 true].include?(attributes["rotWithShape"]) if attributes["rotWithShape"]
             @current_shape[:outer_shadow] = os
           end
+        when "prstDash"
+          @current_shape[:line_dash] = attributes["val"] if @inside_sp && @inside_ln && @current_shape && attributes["val"]
         when "spLocks"
           if @inside_sp && @current_shape
             @current_shape[:f_locks_text] = true if %w[1 true].include?(attributes["fLocksText"])
