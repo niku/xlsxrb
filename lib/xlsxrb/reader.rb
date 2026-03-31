@@ -750,6 +750,8 @@ module Xlsxrb
         chart[:cat_axis_scaling_min] = cl.cat_axis_scaling_min if cl.cat_axis_scaling_min
         chart[:val_axis_scaling_max] = cl.val_axis_scaling_max if cl.val_axis_scaling_max
         chart[:val_axis_scaling_min] = cl.val_axis_scaling_min if cl.val_axis_scaling_min
+        chart[:cat_axis_log_base] = cl.cat_axis_log_base if cl.cat_axis_log_base
+        chart[:val_axis_log_base] = cl.val_axis_log_base if cl.val_axis_log_base
       end
       listener.charts
     end
@@ -4410,7 +4412,8 @@ module Xlsxrb
                   :cat_axis_crosses, :val_axis_crosses,
                   :val_axis_cross_between, :val_axis_major_unit, :val_axis_minor_unit,
                   :cat_axis_scaling_max, :cat_axis_scaling_min,
-                  :val_axis_scaling_max, :val_axis_scaling_min
+                  :val_axis_scaling_max, :val_axis_scaling_min,
+                  :cat_axis_log_base, :val_axis_log_base
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4460,6 +4463,8 @@ module Xlsxrb
         @cat_axis_scaling_min = nil
         @val_axis_scaling_max = nil
         @val_axis_scaling_min = nil
+        @cat_axis_log_base = nil
+        @val_axis_log_base = nil
         @inside_view_3d = false
         @inside_scaling = false
         @inside_title = false
@@ -4564,6 +4569,14 @@ module Xlsxrb
           @inside_val_ax = true
         when "scaling"
           @inside_scaling = true if @inside_cat_ax || @inside_val_ax
+        when "logBase"
+          if @inside_scaling && attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_log_base = attributes["val"].to_f
+            elsif @inside_val_ax
+              @val_axis_log_base = attributes["val"].to_f
+            end
+          end
         when "max"
           if @inside_scaling && attributes["val"]
             if @inside_cat_ax
