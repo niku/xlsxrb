@@ -723,6 +723,8 @@ module Xlsxrb
         chart[:rounded_corners] = cl.rounded_corners unless cl.rounded_corners.nil?
         chart[:cat_axis_tick_lbl_pos] = cl.cat_axis_tick_lbl_pos if cl.cat_axis_tick_lbl_pos
         chart[:val_axis_tick_lbl_pos] = cl.val_axis_tick_lbl_pos if cl.val_axis_tick_lbl_pos
+        chart[:cat_axis_major_gridlines] = cl.cat_axis_major_gridlines if cl.cat_axis_major_gridlines
+        chart[:val_axis_major_gridlines] = cl.val_axis_major_gridlines if cl.val_axis_major_gridlines
       end
       listener.charts
     end
@@ -4371,7 +4373,8 @@ module Xlsxrb
 
       attr_reader :chart_type, :title, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
                   :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
-                  :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos
+                  :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
+                  :cat_axis_major_gridlines, :val_axis_major_gridlines
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4394,6 +4397,8 @@ module Xlsxrb
         @rounded_corners = nil
         @cat_axis_tick_lbl_pos = nil
         @val_axis_tick_lbl_pos = nil
+        @cat_axis_major_gridlines = false
+        @val_axis_major_gridlines = false
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4482,6 +4487,12 @@ module Xlsxrb
             elsif @inside_val_ax
               @val_axis_tick_lbl_pos = attributes["val"]
             end
+          end
+        when "majorGridlines"
+          if @inside_cat_ax
+            @cat_axis_major_gridlines = true
+          elsif @inside_val_ax
+            @val_axis_major_gridlines = true
           end
         when "plotVisOnly"
           @plot_vis_only = attributes["val"] == "1" if attributes["val"]
