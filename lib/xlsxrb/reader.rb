@@ -788,6 +788,7 @@ module Xlsxrb
         chart[:val_axis_pos] = cl.val_axis_pos if cl.val_axis_pos
         chart[:wireframe] = cl.wireframe unless cl.wireframe.nil?
         chart[:data_table] = cl.data_table if cl.data_table
+        chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
       end
       listener.charts
     end
@@ -4591,7 +4592,8 @@ module Xlsxrb
                   :scatter_style, :radar_style,
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
-                  :data_table
+                  :data_table,
+                  :plot_area_fill
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4666,6 +4668,10 @@ module Xlsxrb
         @val_axis_pos = nil
         @wireframe = nil
         @data_table = nil
+        @plot_area_fill = nil
+        @inside_plot_area = false
+        @inside_plot_area_sp_pr = false
+        @inside_plot_area_solid_fill = false
         @inside_d_table = false
         @inside_view_3d = false
         @inside_scaling = false
@@ -4693,6 +4699,8 @@ module Xlsxrb
         @chart_type = name if CHART_TYPES.include?(name)
 
         case name
+        when "plotArea"
+          @inside_plot_area = true
         when "grouping"
           @grouping = attributes["val"] if attributes["val"]
         when "barDir"
@@ -4750,11 +4758,23 @@ module Xlsxrb
           @inside_ser = true
           @current_ser = {}
         when "spPr"
-          @inside_ser_sp_pr = true if @inside_ser
+          if @inside_ser
+            @inside_ser_sp_pr = true
+          elsif @inside_plot_area
+            @inside_plot_area_sp_pr = true
+          end
         when "solidFill"
-          @inside_ser_solid_fill = true if @inside_ser && @inside_ser_sp_pr
+          if @inside_ser && @inside_ser_sp_pr
+            @inside_ser_solid_fill = true
+          elsif @inside_plot_area_sp_pr
+            @inside_plot_area_solid_fill = true
+          end
         when "srgbClr"
-          @current_ser[:fill_color] = attributes["val"] if @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser && attributes["val"]
+          if @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser && attributes["val"]
+            @current_ser[:fill_color] = attributes["val"]
+          elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill && attributes["val"]
+            @plot_area_fill = attributes["val"]
+          end
         when "cat"
           @inside_cat = true if @inside_ser
         when "val"
@@ -4995,9 +5015,20 @@ module Xlsxrb
           @inside_ser_sp_pr = false
           @inside_ser_solid_fill = false
         when "spPr"
-          @inside_ser_sp_pr = false if @inside_ser
+          if @inside_ser
+            @inside_ser_sp_pr = false
+          elsif @inside_plot_area
+            @inside_plot_area_sp_pr = false
+            @inside_plot_area_solid_fill = false
+          end
         when "solidFill"
-          @inside_ser_solid_fill = false if @inside_ser
+          if @inside_ser
+            @inside_ser_solid_fill = false
+          elsif @inside_plot_area_sp_pr
+            @inside_plot_area_solid_fill = false
+          end
+        when "plotArea"
+          @inside_plot_area = false
         when "title"
           @title_depth -= 1
           @inside_title = false if @title_depth.zero?

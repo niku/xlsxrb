@@ -4277,6 +4277,20 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits plot area spPr solidFill when plot_area_fill specified" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     plot_area_fill: "F0F0F0")
+    xlsx_path = File.join(Dir.tmpdir, "plotfill_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{</c:valAx><c:spPr><a:solidFill><a:srgbClr val="F0F0F0"/></a:solidFill></c:spPr></c:plotArea>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits tickLblSkip and tickMarkSkip on cat axis" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
