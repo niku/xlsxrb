@@ -939,6 +939,22 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid shape with text font properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Bold",
+                     text_font: { bold: true, italic: true, size: 1400, color: "FF0000", name: "Arial" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer.write(xlsx_path)
+    assert_openxml_sdk_scenario_passes("writer_text_font_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid pivot table with col_fields and items" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "Category")

@@ -1398,6 +1398,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_font emits a:rPr with font attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Bold",
+                     text_font: { bold: true, italic: true, size: 1400, color: "FF0000", name: "Arial" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-rpr", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:rPr b="1" i="1" sz="1400">/, drawing_xml)
+    assert_match(%r{<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>}, drawing_xml)
+    assert_match(%r{<a:latin typeface="Arial"/>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "insert_image with clientData attrs stores locks_with_sheet and prints_with_sheet" do
     writer = Xlsxrb::Writer.new
     png = "\x89PNG".b

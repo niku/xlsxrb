@@ -1990,6 +1990,31 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape text font properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Styled",
+                     text_font: { bold: true, italic: true, size: 1400, color: "0000FF", name: "Calibri" })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    tf = shapes[0][:text_font]
+    assert_not_nil(tf)
+    assert_equal(true, tf[:bold])
+    assert_equal(true, tf[:italic])
+    assert_equal(1400, tf[:size])
+    assert_equal("0000FF", tf[:color])
+    assert_equal("Calibri", tf[:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart editAs attribute" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
