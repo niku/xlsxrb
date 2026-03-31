@@ -1244,7 +1244,9 @@ module Xlsxrb
         compact_data: opts[:compact_data],
         outline_data: opts[:outline_data],
         show_multiple_label: opts[:show_multiple_label],
-        show_data_drop_down: opts[:show_data_drop_down]
+        show_data_drop_down: opts[:show_data_drop_down],
+        edit_data: opts[:edit_data],
+        disable_field_list: opts[:disable_field_list]
       }
     end
 
@@ -2853,6 +2855,8 @@ module Xlsxrb
       pt_attrs << %( showDataDropDown="0") if pivot_table[:show_data_drop_down] == false
       pt_attrs << %( indent="#{pivot_table[:indent]}") if pivot_table[:indent]
       pt_attrs << ' published="1"' if pivot_table[:published]
+      pt_attrs << ' editData="1"' if pivot_table[:edit_data]
+      pt_attrs << ' disableFieldList="1"' if pivot_table[:disable_field_list]
       pt_attrs << %( createdVersion="#{pivot_table[:created_version]}") if pivot_table[:created_version]
       pt_attrs << %( updatedVersion="#{pivot_table[:updated_version]}") if pivot_table[:updated_version]
       pt_attrs << %( minRefreshableVersion="#{pivot_table[:min_refreshable_version]}") if pivot_table[:min_refreshable_version]
