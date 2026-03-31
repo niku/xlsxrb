@@ -4400,6 +4400,7 @@ module Xlsxrb
         @inside_f = false
         @inside_legend = false
         @inside_dlbls = false
+        @inside_separator = false
         @inside_cat_ax = false
         @inside_val_ax = false
         @inside_ax_title = false
@@ -4459,6 +4460,11 @@ module Xlsxrb
           @data_labels[:show_legend_key] = attributes["val"] == "1" if @inside_dlbls
         when "showBubbleSize"
           @data_labels[:show_bubble_size] = attributes["val"] == "1" if @inside_dlbls
+        when "separator"
+          if @inside_dlbls
+            @inside_separator = true
+            @text_buffer = +""
+          end
         when "catAx"
           @inside_cat_ax = true
         when "valAx"
@@ -4475,7 +4481,7 @@ module Xlsxrb
       end
 
       def characters(text)
-        @text_buffer << text if @inside_t || @inside_f
+        @text_buffer << text if @inside_t || @inside_f || @inside_separator
       end
 
       def end_element(_uri, local_name, qname)
@@ -4519,6 +4525,11 @@ module Xlsxrb
           @inside_legend = false
         when "dLbls"
           @inside_dlbls = false
+        when "separator"
+          if @inside_separator
+            @data_labels[:separator] = @text_buffer.dup
+            @inside_separator = false
+          end
         when "catAx"
           @inside_cat_ax = false
         when "valAx"
