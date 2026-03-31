@@ -758,6 +758,8 @@ module Xlsxrb
         chart[:marker] = cl.marker unless cl.marker.nil?
         chart[:scatter_style] = cl.scatter_style if cl.scatter_style
         chart[:radar_style] = cl.radar_style if cl.radar_style
+        chart[:cat_axis_pos] = cl.cat_axis_pos if cl.cat_axis_pos
+        chart[:val_axis_pos] = cl.val_axis_pos if cl.val_axis_pos
       end
       listener.charts
     end
@@ -4422,7 +4424,8 @@ module Xlsxrb
                   :cat_axis_log_base, :val_axis_log_base,
                   :first_slice_ang, :hole_size,
                   :smooth, :marker,
-                  :scatter_style, :radar_style
+                  :scatter_style, :radar_style,
+                  :cat_axis_pos, :val_axis_pos
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4480,6 +4483,8 @@ module Xlsxrb
         @marker = nil
         @scatter_style = nil
         @radar_style = nil
+        @cat_axis_pos = nil
+        @val_axis_pos = nil
         @inside_view_3d = false
         @inside_scaling = false
         @inside_title = false
@@ -4668,6 +4673,14 @@ module Xlsxrb
               @cat_axis_crosses = attributes["val"]
             elsif @inside_val_ax
               @val_axis_crosses = attributes["val"]
+            end
+          end
+        when "axPos"
+          if attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_pos = attributes["val"]
+            elsif @inside_val_ax
+              @val_axis_pos = attributes["val"]
             end
           end
         when "crossBetween"
