@@ -990,6 +990,41 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "insert_image with no_change_aspect false omits noChangeAspect" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", no_change_aspect: false)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-piclock", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_no_match(/noChangeAspect/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "insert_image with no_crop emits noCrop on picLocks" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", no_crop: true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-piclock", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/noCrop="1"/, drawing_xml)
+    assert_match(/noChangeAspect="1"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_chart stores chart definition" do
     writer = Xlsxrb::Writer.new
     writer.add_chart(type: :bar, title: "Sales", cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3")
