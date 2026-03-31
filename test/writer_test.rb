@@ -4246,6 +4246,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dTable with all boolean children" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     data_table: { show_horz_border: true, show_vert_border: true, show_outline: true, show_keys: true })
+    xlsx_path = File.join(Dir.tmpdir, "dtable_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:dTable>/, xml)
+    assert_match(%r{<c:showHorzBorder val="1"/>}, xml)
+    assert_match(%r{<c:showVertBorder val="1"/>}, xml)
+    assert_match(%r{<c:showOutline val="1"/>}, xml)
+    assert_match(%r{<c:showKeys val="1"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits tickLblSkip and tickMarkSkip on cat axis" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
