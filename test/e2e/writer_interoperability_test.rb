@@ -2012,7 +2012,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bubble,
                      series: [{ val_ref: "Sheet1!$A$1" }],
-                     bubble_scale: 80, show_neg_bubbles: false,
+                     bubble_3d: true, bubble_scale: 80, show_neg_bubbles: false,
                      size_represents: "area")
     writer.write(xlsx_path)
 

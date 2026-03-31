@@ -3766,6 +3766,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits bubble chart properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bubble,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     bubble_3d: true, bubble_scale: 200,
+                     show_neg_bubbles: false, size_represents: "w")
+    xlsx_path = File.join(Dir.tmpdir, "bubble_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:bubble3D val="1"/>}, xml)
+    assert_match(%r{<c:bubbleScale val="200"/>}, xml)
+    assert_match(%r{<c:showNegBubbles val="0"/>}, xml)
+    assert_match(%r{<c:sizeRepresents val="w"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

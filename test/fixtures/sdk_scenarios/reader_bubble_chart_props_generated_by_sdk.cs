@@ -18,6 +18,7 @@ chartSpace.InnerXml =
     "<c:chart xmlns:c=\"http://schemas.openxmlformats.org/drawingml/2006/chart\">" +
     "<c:plotArea><c:bubbleChart>" +
     "<c:axId val=\"1\"/><c:axId val=\"2\"/>" +
+    "<c:bubble3D val=\"1\"/>" +
     "<c:bubbleScale val=\"80\"/>" +
     "<c:showNegBubbles val=\"0\"/>" +
     "<c:sizeRepresents val=\"area\"/>" +
