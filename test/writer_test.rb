@@ -3563,6 +3563,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits view3D element with all properties" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     view_3d: { rot_x: 15, rot_y: 20, r_ang_ax: true, perspective: 30,
+                                h_percent: 150, depth_percent: 200 })
+    xlsx_path = File.join(Dir.tmpdir, "view3d_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:view3D>.*<c:rotX val="15"/>.*<c:hPercent val="150"/>.*<c:rotY val="20"/>.*<c:depthPercent val="200"/>.*<c:rAngAx val="1"/>.*<c:perspective val="30"/>.*</c:view3D>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

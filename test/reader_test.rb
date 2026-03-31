@@ -5095,4 +5095,30 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips view3D properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     view_3d: { rot_x: 15, rot_y: 20, r_ang_ax: true, perspective: 30,
+                                h_percent: 150, depth_percent: 200 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    v3d = chart[:view_3d]
+    assert_equal(15, v3d[:rot_x])
+    assert_equal(20, v3d[:rot_y])
+    assert_equal(true, v3d[:r_ang_ax])
+    assert_equal(30, v3d[:perspective])
+    assert_equal(150, v3d[:h_percent])
+    assert_equal(200, v3d[:depth_percent])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
