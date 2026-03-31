@@ -768,6 +768,7 @@ module Xlsxrb
         chart[:radar_style] = cl.radar_style if cl.radar_style
         chart[:cat_axis_pos] = cl.cat_axis_pos if cl.cat_axis_pos
         chart[:val_axis_pos] = cl.val_axis_pos if cl.val_axis_pos
+        chart[:wireframe] = cl.wireframe unless cl.wireframe.nil?
       end
       listener.charts
     end
@@ -4436,7 +4437,8 @@ module Xlsxrb
                   :first_slice_ang, :hole_size,
                   :smooth, :marker,
                   :scatter_style, :radar_style,
-                  :cat_axis_pos, :val_axis_pos
+                  :cat_axis_pos, :val_axis_pos,
+                  :wireframe
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4504,6 +4506,7 @@ module Xlsxrb
         @radar_style = nil
         @cat_axis_pos = nil
         @val_axis_pos = nil
+        @wireframe = nil
         @inside_view_3d = false
         @inside_scaling = false
         @inside_title = false
@@ -4579,6 +4582,8 @@ module Xlsxrb
           @scatter_style = attributes["val"] if attributes["val"]
         when "radarStyle"
           @radar_style = attributes["val"] if attributes["val"]
+        when "wireframe"
+          @wireframe = attributes["val"] == "1" if attributes["val"]
         when "ser"
           @inside_ser = true
           @current_ser = {}
