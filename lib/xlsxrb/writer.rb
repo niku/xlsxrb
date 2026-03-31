@@ -1098,7 +1098,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, gap_width: nil, overlap: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, gap_width: nil, overlap: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1131,6 +1131,8 @@ module Xlsxrb
       chart[:cat_axis_minor_tick_mark] = cat_axis_minor_tick_mark if cat_axis_minor_tick_mark
       chart[:val_axis_major_tick_mark] = val_axis_major_tick_mark if val_axis_major_tick_mark
       chart[:val_axis_minor_tick_mark] = val_axis_minor_tick_mark if val_axis_minor_tick_mark
+      chart[:cat_axis_crosses] = cat_axis_crosses if cat_axis_crosses
+      chart[:val_axis_crosses] = val_axis_crosses if val_axis_crosses
       chart[:gap_width] = gap_width if gap_width
       chart[:overlap] = overlap if overlap
       chart[:grouping] = grouping if grouping
@@ -2774,7 +2776,9 @@ module Xlsxrb
         parts << %(<c:majorTickMark val="#{chart[:cat_axis_major_tick_mark]}"/>) if chart[:cat_axis_major_tick_mark]
         parts << %(<c:minorTickMark val="#{chart[:cat_axis_minor_tick_mark]}"/>) if chart[:cat_axis_minor_tick_mark]
         parts << %(<c:tickLblPos val="#{chart[:cat_axis_tick_lbl_pos]}"/>) if chart[:cat_axis_tick_lbl_pos]
-        parts << '<c:crossAx val="2"/></c:catAx>'
+        parts << '<c:crossAx val="2"/>'
+        parts << %(<c:crosses val="#{chart[:cat_axis_crosses]}"/>) if chart[:cat_axis_crosses]
+        parts << "</c:catAx>"
         val_del = chart[:val_axis_delete] ? 1 : 0
         val_orient = chart[:val_axis_orientation] || "minMax"
         parts << %(<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="#{val_orient}"/></c:scaling><c:delete val="#{val_del}"/><c:axPos val="l"/>)
@@ -2788,7 +2792,9 @@ module Xlsxrb
         parts << %(<c:majorTickMark val="#{chart[:val_axis_major_tick_mark]}"/>) if chart[:val_axis_major_tick_mark]
         parts << %(<c:minorTickMark val="#{chart[:val_axis_minor_tick_mark]}"/>) if chart[:val_axis_minor_tick_mark]
         parts << %(<c:tickLblPos val="#{chart[:val_axis_tick_lbl_pos]}"/>) if chart[:val_axis_tick_lbl_pos]
-        parts << '<c:crossAx val="1"/></c:valAx>'
+        parts << '<c:crossAx val="1"/>'
+        parts << %(<c:crosses val="#{chart[:val_axis_crosses]}"/>) if chart[:val_axis_crosses]
+        parts << "</c:valAx>"
       end
 
       parts << "</c:plotArea>"

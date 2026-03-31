@@ -741,6 +741,8 @@ module Xlsxrb
         chart[:cat_axis_minor_tick_mark] = cl.cat_axis_minor_tick_mark if cl.cat_axis_minor_tick_mark
         chart[:val_axis_major_tick_mark] = cl.val_axis_major_tick_mark if cl.val_axis_major_tick_mark
         chart[:val_axis_minor_tick_mark] = cl.val_axis_minor_tick_mark if cl.val_axis_minor_tick_mark
+        chart[:cat_axis_crosses] = cl.cat_axis_crosses if cl.cat_axis_crosses
+        chart[:val_axis_crosses] = cl.val_axis_crosses if cl.val_axis_crosses
       end
       listener.charts
     end
@@ -4397,7 +4399,8 @@ module Xlsxrb
                   :gap_width, :overlap, :view_3d,
                   :cat_axis_num_fmt, :val_axis_num_fmt,
                   :cat_axis_major_tick_mark, :cat_axis_minor_tick_mark,
-                  :val_axis_major_tick_mark, :val_axis_minor_tick_mark
+                  :val_axis_major_tick_mark, :val_axis_minor_tick_mark,
+                  :cat_axis_crosses, :val_axis_crosses
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4438,6 +4441,8 @@ module Xlsxrb
         @cat_axis_minor_tick_mark = nil
         @val_axis_major_tick_mark = nil
         @val_axis_minor_tick_mark = nil
+        @cat_axis_crosses = nil
+        @val_axis_crosses = nil
         @inside_view_3d = false
         @inside_title = false
         @inside_t = false
@@ -4579,6 +4584,14 @@ module Xlsxrb
               @cat_axis_minor_tick_mark = attributes["val"]
             elsif @inside_val_ax
               @val_axis_minor_tick_mark = attributes["val"]
+            end
+          end
+        when "crosses"
+          if attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_crosses = attributes["val"]
+            elsif @inside_val_ax
+              @val_axis_crosses = attributes["val"]
             end
           end
         when "tickLblPos"

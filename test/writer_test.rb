@@ -3610,6 +3610,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits crosses on cat and val axes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_crosses: "autoZero", val_axis_crosses: "max")
+    xlsx_path = File.join(Dir.tmpdir, "axis_crosses_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:crossAx val="2"/><c:crosses val="autoZero"/>.*</c:catAx>}m, xml)
+    assert_match(%r{<c:valAx>.*<c:crossAx val="1"/><c:crosses val="max"/>.*</c:valAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
