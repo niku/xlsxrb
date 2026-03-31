@@ -2927,6 +2927,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits outlinePr showOutlineSymbols attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "data")
+    writer.set_sheet_property(:show_outline_symbols, false)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sos", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/showOutlineSymbols="0"/, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits sheetCalcPr fullCalcOnLoad" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "data")
