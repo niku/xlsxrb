@@ -3594,6 +3594,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits majorTickMark and minorTickMark on axes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_major_tick_mark: "out", cat_axis_minor_tick_mark: "in",
+                     val_axis_major_tick_mark: "cross", val_axis_minor_tick_mark: "none")
+    xlsx_path = File.join(Dir.tmpdir, "tick_marks_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:majorTickMark val="out"/>.*<c:minorTickMark val="in"/>.*</c:catAx>}m, xml)
+    assert_match(%r{<c:valAx>.*<c:majorTickMark val="cross"/>.*<c:minorTickMark val="none"/>.*</c:valAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
