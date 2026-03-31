@@ -1786,6 +1786,26 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid totalsRowFormula in table column" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Item")
+    writer.set_cell("B1", "Price")
+    writer.add_table("A1:B3", columns: [
+                       "Item",
+                       { name: "Price", totals_row_function: "custom",
+                         totals_row_formula: "SUBTOTAL(109,[Price])" }
+                     ], totals_row_count: 1)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_totals_row_formula_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

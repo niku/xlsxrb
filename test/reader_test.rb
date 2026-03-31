@@ -1097,6 +1097,30 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips totalsRowFormula in table column" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Item")
+    writer.set_cell("B1", "Price")
+    writer.add_table("A1:B5", columns: [
+                       "Item",
+                       { name: "Price", totals_row_function: "custom",
+                         totals_row_formula: "SUBTOTAL(109,[Price])" }
+                     ], totals_row_count: 1)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    tbls = reader.tables
+    cols = tbls[0][:columns]
+    assert_equal("custom", cols[1][:totals_row_function])
+    assert_equal("SUBTOTAL(109,[Price])", cols[1][:totals_row_formula])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart with multiple series and axis titles" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

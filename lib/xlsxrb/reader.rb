@@ -3876,6 +3876,7 @@ module Xlsxrb
         @columns = []
         @current_column = nil
         @inside_calc_formula = false
+        @inside_totals_formula = false
         @text_buffer = +""
       end
 
@@ -3932,6 +3933,9 @@ module Xlsxrb
         when "calculatedColumnFormula"
           @inside_calc_formula = true
           @text_buffer = +""
+        when "totalsRowFormula"
+          @inside_totals_formula = true
+          @text_buffer = +""
         when "tableStyleInfo"
           if @table
             si = {}
@@ -3950,7 +3954,7 @@ module Xlsxrb
       end
 
       def characters(text)
-        @text_buffer << text if @inside_calc_formula
+        @text_buffer << text if @inside_calc_formula || @inside_totals_formula
       end
 
       def end_element(_uri, local_name, qname)
@@ -3959,6 +3963,9 @@ module Xlsxrb
         when "calculatedColumnFormula"
           @current_column[:calculated_column_formula] = @text_buffer.dup if @current_column
           @inside_calc_formula = false
+        when "totalsRowFormula"
+          @current_column[:totals_row_formula] = @text_buffer.dup if @current_column
+          @inside_totals_formula = false
         when "tableColumn"
           @columns << @current_column if @current_column
           @current_column = nil

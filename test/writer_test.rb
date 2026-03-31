@@ -880,6 +880,27 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("Currency", cols[1][:data_cell_style])
   end
 
+  test "emits totalsRowFormula in table column" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Item")
+    writer.set_cell("B1", "Price")
+    writer.add_table("A1:B5", columns: [
+                       "Item",
+                       { name: "Price", totals_row_function: "custom",
+                         totals_row_formula: "SUBTOTAL(109,[Price])" }
+                     ], totals_row_count: 1)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-trf", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    xml_content = read_xml_from_xlsx(xlsx_path, "xl/tables/table1.xml")
+    assert_match(%r{<totalsRowFormula>SUBTOTAL\(109,\[Price\]\)</totalsRowFormula>}, xml_content)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "enables shared string table mode" do
     writer = Xlsxrb::Writer.new
     writer.use_shared_strings!
