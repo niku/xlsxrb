@@ -787,6 +787,7 @@ module Xlsxrb
         chart[:cat_axis_pos] = cl.cat_axis_pos if cl.cat_axis_pos
         chart[:val_axis_pos] = cl.val_axis_pos if cl.val_axis_pos
         chart[:wireframe] = cl.wireframe unless cl.wireframe.nil?
+        chart[:data_table] = cl.data_table if cl.data_table
       end
       listener.charts
     end
@@ -4589,7 +4590,8 @@ module Xlsxrb
                   :smooth, :marker,
                   :scatter_style, :radar_style,
                   :cat_axis_pos, :val_axis_pos,
-                  :wireframe
+                  :wireframe,
+                  :data_table
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4663,6 +4665,8 @@ module Xlsxrb
         @cat_axis_pos = nil
         @val_axis_pos = nil
         @wireframe = nil
+        @data_table = nil
+        @inside_d_table = false
         @inside_view_3d = false
         @inside_scaling = false
         @inside_title = false
@@ -4929,6 +4933,17 @@ module Xlsxrb
           @rounded_corners = attributes["val"] == "1" if attributes["val"]
         when "showDLblsOverMax"
           @show_d_lbls_over_max = attributes["val"] == "1" if attributes["val"]
+        when "dTable"
+          @inside_d_table = true
+          @data_table = {}
+        when "showHorzBorder"
+          @data_table[:show_horz_border] = attributes["val"] == "1" if @inside_d_table && @data_table && attributes["val"]
+        when "showVertBorder"
+          @data_table[:show_vert_border] = attributes["val"] == "1" if @inside_d_table && @data_table && attributes["val"]
+        when "showOutline"
+          @data_table[:show_outline] = attributes["val"] == "1" if @inside_d_table && @data_table && attributes["val"]
+        when "showKeys"
+          @data_table[:show_keys] = attributes["val"] == "1" if @inside_d_table && @data_table && attributes["val"]
         end
       end
 
@@ -4990,6 +5005,8 @@ module Xlsxrb
           @inside_scaling = false
         when "view3D"
           @inside_view_3d = false
+        when "dTable"
+          @inside_d_table = false
         end
       end
 

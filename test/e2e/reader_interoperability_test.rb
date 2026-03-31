@@ -2144,6 +2144,23 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated chart data table (dTable)" do
+    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+
+    assert_openxml_sdk_scenario_passes("reader_chart_data_table_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    dt = charts[0][:data_table]
+    assert_equal(true, dt[:show_horz_border])
+    assert_equal(false, dt[:show_vert_border])
+    assert_equal(true, dt[:show_outline])
+    assert_equal(true, dt[:show_keys])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
