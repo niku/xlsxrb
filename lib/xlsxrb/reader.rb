@@ -784,6 +784,7 @@ module Xlsxrb
         chart[:marker] = cl.marker unless cl.marker.nil?
         chart[:drop_lines] = cl.drop_lines unless cl.drop_lines.nil?
         chart[:hi_low_lines] = cl.hi_low_lines unless cl.hi_low_lines.nil?
+        chart[:up_down_bars] = cl.up_down_bars if cl.up_down_bars
         chart[:scatter_style] = cl.scatter_style if cl.scatter_style
         chart[:radar_style] = cl.radar_style if cl.radar_style
         chart[:cat_axis_pos] = cl.cat_axis_pos if cl.cat_axis_pos
@@ -4639,6 +4640,7 @@ module Xlsxrb
                   :first_slice_ang, :hole_size,
                   :smooth, :marker,
                   :drop_lines, :hi_low_lines,
+                  :up_down_bars,
                   :scatter_style, :radar_style,
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
@@ -4714,6 +4716,8 @@ module Xlsxrb
         @marker = nil
         @drop_lines = nil
         @hi_low_lines = nil
+        @up_down_bars = nil
+        @inside_up_down_bars = false
         @scatter_style = nil
         @radar_style = nil
         @cat_axis_pos = nil
@@ -4781,7 +4785,11 @@ module Xlsxrb
         when "perspective"
           @view_3d[:perspective] = attributes["val"].to_i if @inside_view_3d && attributes["val"]
         when "gapWidth"
-          @gap_width = attributes["val"]&.to_i if attributes["val"]
+          if @inside_up_down_bars && attributes["val"]
+            @up_down_bars[:gap_width] = attributes["val"].to_i
+          elsif attributes["val"]
+            @gap_width = attributes["val"].to_i
+          end
         when "overlap"
           @overlap = attributes["val"]&.to_i if attributes["val"]
         when "gapDepth"
@@ -4820,6 +4828,9 @@ module Xlsxrb
           @drop_lines = true
         when "hiLowLines"
           @hi_low_lines = true
+        when "upDownBars"
+          @inside_up_down_bars = true
+          @up_down_bars = {}
         when "wireframe"
           @wireframe = attributes["val"] == "1" if attributes["val"]
         when "ser"
@@ -5150,6 +5161,8 @@ module Xlsxrb
           @inside_view_3d = false
         when "dTable"
           @inside_d_table = false
+        when "upDownBars"
+          @inside_up_down_bars = false
         end
       end
 
