@@ -5144,4 +5144,27 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips axis tick mark properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_major_tick_mark: "out", cat_axis_minor_tick_mark: "in",
+                     val_axis_major_tick_mark: "cross", val_axis_minor_tick_mark: "none")
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("out", chart[:cat_axis_major_tick_mark])
+    assert_equal("in", chart[:cat_axis_minor_tick_mark])
+    assert_equal("cross", chart[:val_axis_major_tick_mark])
+    assert_equal("none", chart[:val_axis_minor_tick_mark])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
