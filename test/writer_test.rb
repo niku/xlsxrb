@@ -1347,6 +1347,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with no_fill and no_line emits noFill elements" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", no_fill: true, no_line: true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-snofill", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:noFill/>.*<a:prstGeom}, drawing_xml)
+    assert_match(%r{<a:ln><a:noFill/></a:ln>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "insert_image with clientData attrs stores locks_with_sheet and prints_with_sheet" do
     writer = Xlsxrb::Writer.new
     png = "\x89PNG".b
