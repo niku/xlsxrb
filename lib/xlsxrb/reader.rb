@@ -4960,6 +4960,8 @@ module Xlsxrb
           @pivot_table[:published] = attributes["published"] == "1" if attributes["published"]
           @pivot_table[:edit_data] = attributes["editData"] == "1" if attributes["editData"]
           @pivot_table[:disable_field_list] = attributes["disableFieldList"] == "1" if attributes["disableFieldList"]
+          @pivot_table[:visual_totals] = attributes["visualTotals"] != "0" if attributes["visualTotals"]
+          @pivot_table[:print_drill] = attributes["printDrill"] == "1" if attributes["printDrill"]
           @pivot_table[:created_version] = attributes["createdVersion"]&.to_i if attributes["createdVersion"]
           @pivot_table[:updated_version] = attributes["updatedVersion"]&.to_i if attributes["updatedVersion"]
           @pivot_table[:min_refreshable_version] = attributes["minRefreshableVersion"]&.to_i if attributes["minRefreshableVersion"]

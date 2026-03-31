@@ -3331,6 +3331,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits pivotTableDefinition visualTotals and printDrill attributes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", "Val")
+    writer.set_cell("A2", "X")
+    writer.set_cell("B2", 1)
+    writer.add_pivot_table("Sheet1!A1:B2",
+                           row_fields: [0],
+                           data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }],
+                           visual_totals: false, print_drill: true)
+    xlsx_path = File.join(Dir.tmpdir, "ptd_vt_pd_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/pivotTables/pivotTable1.xml")
+    assert_match(/visualTotals="0"/, xml)
+    assert_match(/printDrill="1"/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits chart plotVisOnly and dispBlanksAs attributes" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
