@@ -758,6 +758,7 @@ module Xlsxrb
         chart[:val_axis_cross_between] = cl.val_axis_cross_between if cl.val_axis_cross_between
         chart[:val_axis_major_unit] = cl.val_axis_major_unit if cl.val_axis_major_unit
         chart[:val_axis_minor_unit] = cl.val_axis_minor_unit if cl.val_axis_minor_unit
+        chart[:val_axis_disp_units] = cl.val_axis_disp_units if cl.val_axis_disp_units
         chart[:cat_axis_scaling_max] = cl.cat_axis_scaling_max if cl.cat_axis_scaling_max
         chart[:cat_axis_scaling_min] = cl.cat_axis_scaling_min if cl.cat_axis_scaling_min
         chart[:val_axis_scaling_max] = cl.val_axis_scaling_max if cl.val_axis_scaling_max
@@ -4437,6 +4438,7 @@ module Xlsxrb
                   :cat_axis_tick_lbl_skip, :cat_axis_tick_mark_skip,
                   :cat_axis_lbl_offset, :cat_axis_no_multi_lvl_lbl,
                   :val_axis_cross_between, :val_axis_major_unit, :val_axis_minor_unit,
+                  :val_axis_disp_units,
                   :cat_axis_scaling_max, :cat_axis_scaling_min,
                   :val_axis_scaling_max, :val_axis_scaling_min,
                   :cat_axis_log_base, :val_axis_log_base,
@@ -4502,6 +4504,7 @@ module Xlsxrb
         @val_axis_cross_between = nil
         @val_axis_major_unit = nil
         @val_axis_minor_unit = nil
+        @val_axis_disp_units = nil
         @cat_axis_scaling_max = nil
         @cat_axis_scaling_min = nil
         @val_axis_scaling_max = nil
@@ -4751,6 +4754,8 @@ module Xlsxrb
           @val_axis_major_unit = attributes["val"].to_f if @inside_val_ax && attributes["val"]
         when "minorUnit"
           @val_axis_minor_unit = attributes["val"].to_f if @inside_val_ax && attributes["val"]
+        when "builtInUnit"
+          @val_axis_disp_units = attributes["val"] if @inside_val_ax && attributes["val"]
         when "tickLblPos"
           if attributes["val"]
             if @inside_cat_ax

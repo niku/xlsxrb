@@ -2063,6 +2063,19 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated dispUnits/builtInUnit on value axis" do
+    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+
+    assert_openxml_sdk_scenario_passes("reader_axis_disp_units_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("thousands", charts[0][:val_axis_disp_units])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
