@@ -3030,6 +3030,20 @@ module Xlsxrb
           parts << "<c:separator>#{xml_escape(dl[:separator])}</c:separator>" if dl[:separator]
           parts << "</c:dLbls>"
         end
+        if ser[:trendline]
+          tl = ser[:trendline]
+          parts << "<c:trendline>"
+          parts << "<c:name>#{xml_escape(tl[:name])}</c:name>" if tl[:name]
+          parts << %(<c:trendlineType val="#{xml_escape(tl[:type] || "linear")}"/>)
+          parts << %(<c:order val="#{tl[:order]}"/>) if tl[:order]
+          parts << %(<c:period val="#{tl[:period]}"/>) if tl[:period]
+          parts << %(<c:forward val="#{tl[:forward]}"/>) if tl[:forward]
+          parts << %(<c:backward val="#{tl[:backward]}"/>) if tl[:backward]
+          parts << %(<c:intercept val="#{tl[:intercept]}"/>) if tl[:intercept]
+          parts << %(<c:dispRSqr val="#{tl[:disp_r_sqr] ? 1 : 0}"/>) unless tl[:disp_r_sqr].nil?
+          parts << %(<c:dispEq val="#{tl[:disp_eq] ? 1 : 0}"/>) unless tl[:disp_eq].nil?
+          parts << "</c:trendline>"
+        end
         parts << "<c:cat><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f></c:strRef></c:cat>" if ser[:cat_ref]
         parts << "<c:val><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f></c:numRef></c:val>" if ser[:val_ref]
         parts << "</c:ser>"

@@ -4626,6 +4626,29 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits trendline element in series" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("A2", 2)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2",
+                                trendline: { type: "poly", order: 3, forward: 2.5,
+                                             disp_r_sqr: true, disp_eq: true,
+                                             name: "MyTrend" } }])
+    xlsx_path = File.join(Dir.tmpdir, "trendline_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:trendline>/, xml)
+    assert_match(%r{<c:name>MyTrend</c:name>}, xml)
+    assert_match(%r{<c:trendlineType val="poly"/>}, xml)
+    assert_match(%r{<c:order val="3"/>}, xml)
+    assert_match(%r{<c:forward val="2\.5"/>}, xml)
+    assert_match(%r{<c:dispRSqr val="1"/>}, xml)
+    assert_match(%r{<c:dispEq val="1"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
