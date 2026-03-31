@@ -2246,6 +2246,31 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips formula dataTable type with dt2d dtr r1 r2" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Xlsxrb::Formula.new(
+                            expression: "", type: :data_table,
+                            dt2d: true, dtr: true, r1: "A$1", r2: "$A1"
+                          ))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    a1 = cells["A1"]
+    assert_instance_of(Xlsxrb::Formula, a1)
+    assert_equal(:data_table, a1.type)
+    assert_equal(true, a1.dt2d)
+    assert_equal(true, a1.dtr)
+    assert_equal("A$1", a1.r1)
+    assert_equal("$A1", a1.r2)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips calcChain through writer and reader" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 10)
