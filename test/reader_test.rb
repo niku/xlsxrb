@@ -1669,6 +1669,26 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips image line_color and line_width via a:ln" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", line_color: "FF0000", line_width: 25_400)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    imgs = reader.images
+    assert_equal(1, imgs.size)
+    assert_equal("FF0000", imgs[0][:line_color])
+    assert_equal(25_400, imgs[0][:line_width])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips charts through writer and reader" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

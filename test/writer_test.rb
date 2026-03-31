@@ -1025,6 +1025,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "insert_image with line_color and line_width emits a:ln in spPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", line_color: "0000FF", line_width: 25_400)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-imgln", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:ln w="25400"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill></a:ln>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "insert_image with published emits fPublished on anchor" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

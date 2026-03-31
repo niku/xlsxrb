@@ -1090,7 +1090,7 @@ module Xlsxrb
     # Inserts an image from file data into the given sheet.
     # file_data: raw image bytes. ext: file extension (e.g. "png").
     # from_col/from_row: anchor start. to_col/to_row: anchor end.
-    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, no_change_aspect: true, no_crop: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, no_change_aspect: true, no_crop: nil, line_color: nil, line_width: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @images.key?(sheet_name)
 
@@ -1110,6 +1110,8 @@ module Xlsxrb
       img[:macro] = macro if macro
       img[:no_change_aspect] = no_change_aspect
       img[:no_crop] = no_crop unless no_crop.nil?
+      img[:line_color] = line_color if line_color
+      img[:line_width] = line_width if line_width
       img[:edit_as] = edit_as if edit_as
       img[:published] = published unless published.nil?
       img[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
@@ -2730,7 +2732,13 @@ module Xlsxrb
           pic_locks = pic_lock_attrs.empty? ? "<a:picLocks/>" : "<a:picLocks#{pic_lock_attrs}/>"
           parts << %(<xdr:nvPicPr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(img[:name])}"#{descr_attr}#{title_attr}#{hidden_attr}/><xdr:cNvPicPr>#{pic_locks}</xdr:cNvPicPr></xdr:nvPicPr>)
           parts << %(<xdr:blipFill><a:blip r:embed="#{rid}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>)
-          parts << '<xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>'
+          img_line_xml = if img[:line_color]
+                           ln_w_attr = img[:line_width] ? %( w="#{img[:line_width].to_i}") : ""
+                           %(<a:ln#{ln_w_attr}><a:solidFill><a:srgbClr val="#{xml_escape(img[:line_color])}"/></a:solidFill></a:ln>)
+                         else
+                           ""
+                         end
+          parts << %(<xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>#{img_line_xml}</xdr:spPr>)
           parts << "</xdr:pic>"
           parts << client_data_xml(img)
           parts << "</xdr:twoCellAnchor>"
