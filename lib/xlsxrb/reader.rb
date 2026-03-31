@@ -3026,6 +3026,8 @@ module Xlsxrb
             @properties[:summary_below] = %w[1 true].include?(sb) unless sb.nil?
             sr = attributes["summaryRight"]
             @properties[:summary_right] = %w[1 true].include?(sr) unless sr.nil?
+            sos = attributes["showOutlineSymbols"]
+            @properties[:show_outline_symbols] = %w[1 true].include?(sos) unless sos.nil?
           end
         when "pageSetUpPr"
           if @inside_sheet_pr

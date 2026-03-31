@@ -1938,11 +1938,13 @@ module Xlsxrb
         sb = sheet_props[:summary_below]
         sr = sheet_props[:summary_right]
         as = sheet_props[:apply_styles]
-        unless sb.nil? && sr.nil? && as.nil?
+        sos = sheet_props[:show_outline_symbols]
+        unless sb.nil? && sr.nil? && as.nil? && sos.nil?
           outline_attrs = []
           outline_attrs << %(applyStyles="#{as ? 1 : 0}") unless as.nil?
           outline_attrs << %(summaryBelow="#{sb ? 1 : 0}") unless sb.nil?
           outline_attrs << %(summaryRight="#{sr ? 1 : 0}") unless sr.nil?
+          outline_attrs << %(showOutlineSymbols="#{sos ? 1 : 0}") unless sos.nil?
           sp_children << "<outlinePr #{outline_attrs.join(" ")}/>"
         end
         ftp = sheet_props[:fit_to_page]
