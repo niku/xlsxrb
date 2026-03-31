@@ -4681,6 +4681,7 @@ module Xlsxrb
         @inside_ser = false
         @inside_ser_sp_pr = false
         @inside_ser_solid_fill = false
+        @inside_ser_ln = false
         @current_ser = nil
         @inside_cat = false
         @inside_val = false
@@ -4765,6 +4766,11 @@ module Xlsxrb
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = true
           end
+        when "ln"
+          if @inside_ser && @inside_ser_sp_pr
+            @inside_ser_ln = true
+            @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
+          end
         when "solidFill"
           if @inside_ser && @inside_ser_sp_pr
             @inside_ser_solid_fill = true
@@ -4772,7 +4778,9 @@ module Xlsxrb
             @inside_plot_area_solid_fill = true
           end
         when "srgbClr"
-          if @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser && attributes["val"]
+          if @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser && attributes["val"]
+            @current_ser[:line_color] = attributes["val"]
+          elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser && attributes["val"]
             @current_ser[:fill_color] = attributes["val"]
           elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill && attributes["val"]
             @plot_area_fill = attributes["val"]
@@ -5025,13 +5033,17 @@ module Xlsxrb
           @inside_ser = false
           @inside_ser_sp_pr = false
           @inside_ser_solid_fill = false
+          @inside_ser_ln = false
         when "spPr"
           if @inside_ser
             @inside_ser_sp_pr = false
+            @inside_ser_ln = false
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = false
             @inside_plot_area_solid_fill = false
           end
+        when "ln"
+          @inside_ser_ln = false if @inside_ser
         when "solidFill"
           if @inside_ser
             @inside_ser_solid_fill = false

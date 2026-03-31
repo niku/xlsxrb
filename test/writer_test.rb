@@ -4305,6 +4305,33 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits series spPr with line color and width" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1", line_color: "0000FF", line_width: 2 }])
+    xlsx_path = File.join(Dir.tmpdir, "ser_line_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:spPr><a:ln w="25400"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill></a:ln></c:spPr>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits series spPr with both fill and line" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1", fill_color: "FF0000", line_color: "0000FF", line_width: 1 }])
+    xlsx_path = File.join(Dir.tmpdir, "ser_fill_line_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:ln w="12700">}, xml)
+    assert_match(%r{<a:ln w="12700"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill></a:ln>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits tickLblSkip and tickMarkSkip on cat axis" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

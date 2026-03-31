@@ -978,6 +978,22 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated chart with series line formatting" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_series_line_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    ser = charts[0][:series][0]
+    assert_equal("FF5500", ser[:line_color])
+    assert_equal(3.0, ser[:line_width])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated shapes with preset geometry and text" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

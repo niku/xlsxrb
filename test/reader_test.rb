@@ -6016,6 +6016,45 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips chart series line_color and line_width" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1", line_color: "0000FF", line_width: 2 }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("0000FF", chart[:series][0][:line_color])
+    assert_equal(2.0, chart[:series][0][:line_width])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips chart series with both fill_color and line_color" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1", fill_color: "FF0000", line_color: "0000FF", line_width: 1.5 }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("FF0000", chart[:series][0][:fill_color])
+    assert_equal("0000FF", chart[:series][0][:line_color])
+    assert_in_delta(1.5, chart[:series][0][:line_width], 0.01)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips tickLblSkip and tickMarkSkip on cat axis" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
