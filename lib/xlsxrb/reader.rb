@@ -715,6 +715,8 @@ module Xlsxrb
         chart[:val_axis_title] = cl.val_axis_title if cl.val_axis_title
         chart[:grouping] = cl.grouping if cl.grouping
         chart[:bar_dir] = cl.bar_dir if cl.bar_dir
+        chart[:plot_vis_only] = cl.plot_vis_only unless cl.plot_vis_only.nil?
+        chart[:disp_blanks_as] = cl.disp_blanks_as if cl.disp_blanks_as
       end
       listener.charts
     end
@@ -4362,7 +4364,7 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       attr_reader :chart_type, :title, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
-                  :grouping, :bar_dir
+                  :grouping, :bar_dir, :plot_vis_only, :disp_blanks_as
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4377,6 +4379,8 @@ module Xlsxrb
         @val_axis_title = nil
         @grouping = nil
         @bar_dir = nil
+        @plot_vis_only = nil
+        @disp_blanks_as = nil
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4442,6 +4446,10 @@ module Xlsxrb
           @inside_cat_ax = true
         when "valAx"
           @inside_val_ax = true
+        when "plotVisOnly"
+          @plot_vis_only = attributes["val"] == "1" if attributes["val"]
+        when "dispBlanksAs"
+          @disp_blanks_as = attributes["val"] if attributes["val"]
         end
       end
 
