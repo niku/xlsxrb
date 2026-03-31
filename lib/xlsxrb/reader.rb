@@ -4159,6 +4159,11 @@ module Xlsxrb
         when "blip"
           rid = attributes["r:embed"] || attributes["embed"]
           @current_image[:embed_rid] = rid if @inside_pic && @current_image && rid
+        when "picLocks"
+          if @inside_pic && @current_image
+            @current_image[:no_change_aspect] = true if %w[1 true].include?(attributes["noChangeAspect"])
+            @current_image[:no_crop] = true if %w[1 true].include?(attributes["noCrop"])
+          end
         when "from"
           @inside_from = true if @inside_anchor
         when "to"
