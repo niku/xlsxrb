@@ -4725,6 +4725,11 @@ module Xlsxrb
           @current_field[:subtotal_top] = attributes["subtotalTop"] != "0" if attributes["subtotalTop"]
           @current_field[:num_fmt_id] = attributes["numFmtId"]&.to_i if attributes["numFmtId"]
           @current_field[:sort_type] = attributes["sortType"] if attributes["sortType"]
+          ds = attributes["defaultSubtotal"]
+          @current_field[:default_subtotal] = ds != "0" unless ds.nil?
+          @current_field[:insert_blank_row] = true if attributes["insertBlankRow"] == "1"
+          @current_field[:insert_page_break] = true if attributes["insertPageBreak"] == "1"
+          @current_field[:include_new_items_in_filter] = true if attributes["includeNewItemsInFilter"] == "1"
           @current_items = []
         when "items"
           @inside_items = true if @inside_pivot_field
