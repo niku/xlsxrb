@@ -1211,7 +1211,13 @@ module Xlsxrb
         cache_created_version: opts[:cache_created_version], cache_record_count: opts[:cache_record_count],
         cache_optimize_memory: opts[:cache_optimize_memory],
         row_page_count: opts[:row_page_count], col_page_count: opts[:col_page_count],
-        field_attrs: opts[:field_attrs]
+        field_attrs: opts[:field_attrs],
+        apply_number_formats: opts[:apply_number_formats],
+        apply_border_formats: opts[:apply_border_formats],
+        apply_font_formats: opts[:apply_font_formats],
+        apply_pattern_formats: opts[:apply_pattern_formats],
+        apply_alignment_formats: opts[:apply_alignment_formats],
+        apply_width_height_formats: opts[:apply_width_height_formats]
       }
     end
 
@@ -2786,7 +2792,18 @@ module Xlsxrb
       pt_attrs << %( createdVersion="#{pivot_table[:created_version]}") if pivot_table[:created_version]
       pt_attrs << %( updatedVersion="#{pivot_table[:updated_version]}") if pivot_table[:updated_version]
       pt_attrs << %( minRefreshableVersion="#{pivot_table[:min_refreshable_version]}") if pivot_table[:min_refreshable_version]
-      pt_attrs << %( applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1")
+      anf = pivot_table.fetch(:apply_number_formats, false)
+      abf = pivot_table.fetch(:apply_border_formats, false)
+      aff = pivot_table.fetch(:apply_font_formats, false)
+      apf = pivot_table.fetch(:apply_pattern_formats, false)
+      aaf = pivot_table.fetch(:apply_alignment_formats, false)
+      awf = pivot_table.fetch(:apply_width_height_formats, true)
+      pt_attrs << %( applyNumberFormats="#{anf ? 1 : 0}")
+      pt_attrs << %( applyBorderFormats="#{abf ? 1 : 0}")
+      pt_attrs << %( applyFontFormats="#{aff ? 1 : 0}")
+      pt_attrs << %( applyPatternFormats="#{apf ? 1 : 0}")
+      pt_attrs << %( applyAlignmentFormats="#{aaf ? 1 : 0}")
+      pt_attrs << %( applyWidthHeightFormats="#{awf ? 1 : 0}")
       parts = [
         XML_HEADER,
         "<pivotTableDefinition#{pt_attrs}>"

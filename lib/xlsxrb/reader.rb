@@ -4692,6 +4692,13 @@ module Xlsxrb
           @pivot_table[:created_version] = attributes["createdVersion"]&.to_i if attributes["createdVersion"]
           @pivot_table[:updated_version] = attributes["updatedVersion"]&.to_i if attributes["updatedVersion"]
           @pivot_table[:min_refreshable_version] = attributes["minRefreshableVersion"]&.to_i if attributes["minRefreshableVersion"]
+          %w[applyNumberFormats applyBorderFormats applyFontFormats
+             applyPatternFormats applyAlignmentFormats applyWidthHeightFormats].each do |attr|
+            next if attributes[attr].nil?
+
+            key = attr.gsub(/[A-Z]/) { |m| "_#{m.downcase}" }.to_sym
+            @pivot_table[key] = %w[1 true].include?(attributes[attr])
+          end
         when "location"
           @pivot_table[:ref] = attributes["ref"] if @pivot_table
           @pivot_table[:row_page_count] = attributes["rowPageCount"]&.to_i if attributes["rowPageCount"]
