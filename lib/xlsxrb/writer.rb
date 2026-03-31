@@ -1098,7 +1098,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, grouping: nil, bar_dir: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, grouping: nil, bar_dir: nil, vary_colors: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1116,6 +1116,7 @@ module Xlsxrb
       chart[:val_axis_title] = val_axis_title if val_axis_title
       chart[:grouping] = grouping if grouping
       chart[:bar_dir] = bar_dir if bar_dir
+      chart[:vary_colors] = vary_colors unless vary_colors.nil?
       chart[:name] = name if name
       chart[:description] = description if description
       chart[:edit_as] = edit_as if edit_as
@@ -2683,6 +2684,8 @@ module Xlsxrb
       elsif GROUPING_CHARTS.include?(chart_type)
         parts << %(<c:grouping val="#{chart[:grouping] || "standard"}"/>)
       end
+      vc = chart[:vary_colors]
+      parts << %(<c:varyColors val="#{vc ? 1 : 0}"/>) unless vc.nil?
 
       all_series = chart[:series] || []
       all_series.each_with_index do |ser, idx|
