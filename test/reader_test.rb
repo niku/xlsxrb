@@ -2056,6 +2056,31 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape outer shadow" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Shadow",
+                     outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "FF0000", algn: "tl" })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    os = shapes[0][:outer_shadow]
+    assert_not_nil(os)
+    assert_equal(50_800, os[:blur_rad])
+    assert_equal(38_100, os[:dist])
+    assert_equal(2_700_000, os[:dir])
+    assert_equal("FF0000", os[:color])
+    assert_equal("tl", os[:algn])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart editAs attribute" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

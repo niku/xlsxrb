@@ -4431,6 +4431,8 @@ module Xlsxrb
         @inside_prst_geom = false
         @inside_rpr = false
         @current_text_font = nil
+        @inside_effect_lst = false
+        @inside_outer_shdw = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4474,6 +4476,19 @@ module Xlsxrb
             @inside_ln = true
             @current_shape[:line_width] = attributes["w"].to_i if attributes["w"]
           end
+        when "effectLst"
+          @inside_effect_lst = true if @inside_sp
+        when "outerShdw"
+          if @inside_sp && @inside_effect_lst && @current_shape
+            @inside_outer_shdw = true
+            os = {}
+            os[:blur_rad] = attributes["blurRad"].to_i if attributes["blurRad"]
+            os[:dist] = attributes["dist"].to_i if attributes["dist"]
+            os[:dir] = attributes["dir"].to_i if attributes["dir"]
+            os[:algn] = attributes["algn"] if attributes["algn"]
+            os[:rot_with_shape] = %w[1 true].include?(attributes["rotWithShape"]) if attributes["rotWithShape"]
+            @current_shape[:outer_shadow] = os
+          end
         when "spLocks"
           if @inside_sp && @current_shape
             @current_shape[:f_locks_text] = true if %w[1 true].include?(attributes["fLocksText"])
@@ -4483,6 +4498,8 @@ module Xlsxrb
         when "srgbClr"
           if @inside_rpr && @current_text_font && @inside_solid_fill && attributes["val"]
             @current_text_font[:color] = attributes["val"]
+          elsif @inside_outer_shdw && @current_shape && attributes["val"]
+            @current_shape[:outer_shadow][:color] = attributes["val"]
           elsif @inside_sp && @current_shape && @inside_solid_fill && attributes["val"]
             if @inside_ln
               @current_shape[:line_color] = attributes["val"]
@@ -4578,6 +4595,10 @@ module Xlsxrb
           @inside_solid_fill = false
         when "ln"
           @inside_ln = false
+        when "effectLst"
+          @inside_effect_lst = false
+        when "outerShdw"
+          @inside_outer_shdw = false
         when "prstGeom"
           @inside_prst_geom = false
         when "rPr"
