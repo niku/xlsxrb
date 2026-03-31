@@ -1592,6 +1592,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "formula bx emits bx attribute" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "SUM(B1:B10)", bx: true))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-bx", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    sheet_xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/bx="1"/, sheet_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_cell_style with alignment stores alignment attributes" do
     writer = Xlsxrb::Writer.new
     style_id = writer.add_cell_style(
