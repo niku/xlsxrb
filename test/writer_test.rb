@@ -1766,6 +1766,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "set_cell_phonetic emits ph attribute on cell" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "テスト")
+    writer.set_cell_phonetic("A1")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-ph", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    sheet_xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
+    assert_match(/ph="1"/, sheet_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_cell_style with alignment stores alignment attributes" do
     writer = Xlsxrb::Writer.new
     style_id = writer.add_cell_style(

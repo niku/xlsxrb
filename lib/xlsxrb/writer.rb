@@ -30,6 +30,7 @@ module Xlsxrb
       @merge_cells = { "Sheet1" => [] }
       @hyperlinks = { "Sheet1" => {} }
       @cell_styles = { "Sheet1" => {} }
+      @cell_phonetic = { "Sheet1" => {} }
       @auto_filters = { "Sheet1" => nil }
       @filter_columns = { "Sheet1" => {} }
       @sort_state = { "Sheet1" => nil }
@@ -103,6 +104,7 @@ module Xlsxrb
       @merge_cells[name] = []
       @hyperlinks[name] = {}
       @cell_styles[name] = {}
+      @cell_phonetic[name] = {}
       @auto_filters[name] = nil
       @filter_columns[name] = {}
       @sort_state[name] = nil
@@ -459,6 +461,15 @@ module Xlsxrb
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @cell_styles.key?(sheet_name)
 
       @cell_styles[sheet_name][cell_address] = { xf_index: style_id }
+    end
+
+    # Marks a cell as containing phonetic text (ph="1" on the <c> element).
+    def set_cell_phonetic(cell_address, sheet: nil)
+      validate_cell_address!(cell_address)
+      sheet_name = sheet || @sheet_order.first
+      raise ArgumentError, "unknown sheet: #{sheet_name}" unless @cell_phonetic.key?(sheet_name)
+
+      @cell_phonetic[sheet_name][cell_address] = true
     end
 
     # Registers a differential format (dxf) for conditional formatting. Returns dxf_id.
@@ -1452,7 +1463,8 @@ module Xlsxrb
           cell_watches: @cell_watches[sheet_name],
           ignored_errors: @ignored_errors[sheet_name],
           data_consol: @data_consolidate[sheet_name],
-          sheet_scenarios: @scenarios[sheet_name]
+          sheet_scenarios: @scenarios[sheet_name],
+          cell_phonetic: @cell_phonetic[sheet_name]
         )
 
         # Generate drawing XML + media + chart entries.
@@ -1947,7 +1959,7 @@ module Xlsxrb
       parts.join
     end
 
-    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [], ignored_errors: [], data_consol: nil, sheet_scenarios: nil)
+    def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [], ignored_errors: [], data_consol: nil, sheet_scenarios: nil, cell_phonetic: {})
       needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
       worksheet_attrs = %(xmlns="#{SSML_NS}")
       worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
@@ -2162,7 +2174,7 @@ module Xlsxrb
         row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|
           cell_ref = "#{col_letter}#{row_num}"
           style_idx = resolve_style_index(sheet_cell_styles[cell_ref])
-          parts << cell_xml(cell_ref, value, style_idx, sst)
+          parts << cell_xml(cell_ref, value, style_idx, sst, ph: cell_phonetic[cell_ref])
         end
         parts << "</row>"
       end
@@ -3341,11 +3353,12 @@ module Xlsxrb
       end.join
     end
 
-    def cell_xml(cell_ref, value, style_idx, sst = nil)
+    def cell_xml(cell_ref, value, style_idx, sst = nil, ph: nil) # rubocop:disable Naming/MethodParameterName
       s_attr = style_idx ? %( s="#{style_idx}") : ""
+      ph_attr = ph ? ' ph="1"' : ""
       case value
       when CellError
-        %(<c r="#{cell_ref}" t="e"#{s_attr}><v>#{xml_escape(value.code)}</v></c>)
+        %(<c r="#{cell_ref}" t="e"#{s_attr}#{ph_attr}><v>#{xml_escape(value.code)}</v></c>)
       when Formula
         f_attrs = +""
         case value.type
@@ -3364,7 +3377,7 @@ module Xlsxrb
         f_attrs << ' ca="1"' if value.calculate_always
         f_attrs << ' aca="1"' if value.aca
         f_attrs << ' bx="1"' if value.bx
-        parts = %(<c r="#{cell_ref}"#{s_attr}><f#{f_attrs}>#{xml_escape(value.expression)}</f>)
+        parts = %(<c r="#{cell_ref}"#{s_attr}#{ph_attr}><f#{f_attrs}>#{xml_escape(value.expression)}</f>)
         parts << "<v>#{xml_escape(value.cached_value.to_s)}</v>" unless value.cached_value.nil?
         parts << "</c>"
         parts
@@ -3372,31 +3385,31 @@ module Xlsxrb
         if sst
           rt_sst, = sst
           idx = rt_sst[value]
-          %(<c r="#{cell_ref}" t="s"#{s_attr}><v>#{idx}</v></c>)
+          %(<c r="#{cell_ref}" t="s"#{s_attr}#{ph_attr}><v>#{idx}</v></c>)
         else
-          %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}><is>#{rich_text_xml(value)}</is></c>)
+          %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}#{ph_attr}><is>#{rich_text_xml(value)}</is></c>)
         end
       when true, false
-        %(<c r="#{cell_ref}" t="b"#{s_attr}><v>#{value ? 1 : 0}</v></c>)
+        %(<c r="#{cell_ref}" t="b"#{s_attr}#{ph_attr}><v>#{value ? 1 : 0}</v></c>)
       when Time
         serial = Xlsxrb.datetime_to_serial(value)
         dt_style = resolve_style_index(datetime_num_fmt_id)
         dt_attr = dt_style ? %( s="#{dt_style}") : ""
-        %(<c r="#{cell_ref}"#{dt_attr}><v>#{serial}</v></c>)
+        %(<c r="#{cell_ref}"#{dt_attr}#{ph_attr}><v>#{serial}</v></c>)
       when Date
         serial = Xlsxrb.date_to_serial(value)
         date_style = resolve_style_index(date_num_fmt_id)
         ds_attr = date_style ? %( s="#{date_style}") : ""
-        %(<c r="#{cell_ref}"#{ds_attr}><v>#{serial}</v></c>)
+        %(<c r="#{cell_ref}"#{ds_attr}#{ph_attr}><v>#{serial}</v></c>)
       when Numeric
-        %(<c r="#{cell_ref}"#{s_attr}><v>#{value}</v></c>)
+        %(<c r="#{cell_ref}"#{s_attr}#{ph_attr}><v>#{value}</v></c>)
       else
         if sst
           _, str_sst = sst
           idx = str_sst[value.to_s]
-          %(<c r="#{cell_ref}" t="s"#{s_attr}><v>#{idx}</v></c>)
+          %(<c r="#{cell_ref}" t="s"#{s_attr}#{ph_attr}><v>#{idx}</v></c>)
         else
-          %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}><is><t>#{xml_escape(value)}</t></is></c>)
+          %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}#{ph_attr}><is><t>#{xml_escape(value)}</t></is></c>)
         end
       end
     end
