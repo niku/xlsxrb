@@ -720,6 +720,7 @@ module Xlsxrb
         chart[:disp_blanks_as] = cl.disp_blanks_as if cl.disp_blanks_as
         chart[:style] = cl.style if cl.style
         chart[:auto_title_deleted] = cl.auto_title_deleted unless cl.auto_title_deleted.nil?
+        chart[:rounded_corners] = cl.rounded_corners unless cl.rounded_corners.nil?
       end
       listener.charts
     end
@@ -4367,7 +4368,8 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       attr_reader :chart_type, :title, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
-                  :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted
+                  :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
+                  :rounded_corners
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4387,6 +4389,7 @@ module Xlsxrb
         @disp_blanks_as = nil
         @style = nil
         @auto_title_deleted = nil
+        @rounded_corners = nil
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4464,6 +4467,8 @@ module Xlsxrb
           @disp_blanks_as = attributes["val"] if attributes["val"]
         when "style"
           @style = attributes["val"]&.to_i if attributes["val"]
+        when "roundedCorners"
+          @rounded_corners = attributes["val"] == "1" if attributes["val"]
         end
       end
 
