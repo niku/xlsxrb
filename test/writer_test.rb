@@ -1076,6 +1076,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "insert_image with src_rect emits a:srcRect in blipFill" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", src_rect: { top: 10_000, bottom: 20_000, left: 5000, right: 15_000 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-srcrect", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:srcRect t="10000" b="20000" l="5000" r="15000"/>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_chart stores chart definition" do
     writer = Xlsxrb::Writer.new
     writer.add_chart(type: :bar, title: "Sales", cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3")

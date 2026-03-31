@@ -1708,6 +1708,30 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips image src_rect cropping" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", src_rect: { top: 10_000, bottom: 20_000, left: 5000, right: 15_000 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    imgs = reader.images
+    assert_equal(1, imgs.size)
+    sr = imgs[0][:src_rect]
+    assert_not_nil(sr)
+    assert_equal(10_000, sr[:top])
+    assert_equal(20_000, sr[:bottom])
+    assert_equal(5000, sr[:left])
+    assert_equal(15_000, sr[:right])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips charts through writer and reader" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

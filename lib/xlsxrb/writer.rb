@@ -1090,7 +1090,7 @@ module Xlsxrb
     # Inserts an image from file data into the given sheet.
     # file_data: raw image bytes. ext: file extension (e.g. "png").
     # from_col/from_row: anchor start. to_col/to_row: anchor end.
-    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, no_change_aspect: true, no_crop: nil, line_color: nil, line_width: nil, rotation: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, no_change_aspect: true, no_crop: nil, line_color: nil, line_width: nil, rotation: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, src_rect: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @images.key?(sheet_name)
 
@@ -1117,6 +1117,7 @@ module Xlsxrb
       img[:published] = published unless published.nil?
       img[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
       img[:prints_with_sheet] = prints_with_sheet unless prints_with_sheet.nil?
+      img[:src_rect] = src_rect if src_rect
       @images[sheet_name] << img
     end
 
@@ -2740,7 +2741,18 @@ module Xlsxrb
           pic_lock_attrs << ' noCrop="1"' if img[:no_crop]
           pic_locks = pic_lock_attrs.empty? ? "<a:picLocks/>" : "<a:picLocks#{pic_lock_attrs}/>"
           parts << %(<xdr:nvPicPr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(img[:name])}"#{descr_attr}#{title_attr}#{hidden_attr}/><xdr:cNvPicPr>#{pic_locks}</xdr:cNvPicPr></xdr:nvPicPr>)
-          parts << %(<xdr:blipFill><a:blip r:embed="#{rid}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>)
+          src_rect_xml = if img[:src_rect]
+                           sr = img[:src_rect]
+                           sr_attrs = +""
+                           sr_attrs << %( t="#{sr[:top]}") if sr[:top]
+                           sr_attrs << %( b="#{sr[:bottom]}") if sr[:bottom]
+                           sr_attrs << %( l="#{sr[:left]}") if sr[:left]
+                           sr_attrs << %( r="#{sr[:right]}") if sr[:right]
+                           "<a:srcRect#{sr_attrs}/>"
+                         else
+                           ""
+                         end
+          parts << %(<xdr:blipFill><a:blip r:embed="#{rid}"/>#{src_rect_xml}<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>)
           img_line_xml = if img[:line_color]
                            ln_w_attr = img[:line_width] ? %( w="#{img[:line_width].to_i}") : ""
                            %(<a:ln#{ln_w_attr}><a:solidFill><a:srgbClr val="#{xml_escape(img[:line_color])}"/></a:solidFill></a:ln>)

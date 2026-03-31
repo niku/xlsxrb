@@ -4183,6 +4183,15 @@ module Xlsxrb
         when "blip"
           rid = attributes["r:embed"] || attributes["embed"]
           @current_image[:embed_rid] = rid if @inside_pic && @current_image && rid
+        when "srcRect"
+          if @inside_pic && @current_image
+            sr = {}
+            sr[:top] = attributes["t"].to_i if attributes["t"]
+            sr[:bottom] = attributes["b"].to_i if attributes["b"]
+            sr[:left] = attributes["l"].to_i if attributes["l"]
+            sr[:right] = attributes["r"].to_i if attributes["r"]
+            @current_image[:src_rect] = sr unless sr.empty?
+          end
         when "picLocks"
           if @inside_pic && @current_image
             @current_image[:no_change_aspect] = true if %w[1 true].include?(attributes["noChangeAspect"])
