@@ -2094,6 +2094,24 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips formula aca attribute through writer and reader" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "SUM(B1:B10)", type: :array, ref: "A1", aca: true))
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    cells = reader.cells
+    a1 = cells["A1"]
+    assert_instance_of(Xlsxrb::Formula, a1)
+    assert_equal(true, a1.aca)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips calcChain through writer and reader" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 10)
