@@ -2995,6 +2995,11 @@ module Xlsxrb
       all_series.each_with_index do |ser, idx|
         parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{idx}\"/>"
         parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f></c:strRef></c:tx>" if ser[:name]
+        ser[:data_points]&.each do |dp|
+          parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
+          parts << %(<c:spPr><a:solidFill><a:srgbClr val="#{xml_escape(dp[:fill_color])}"/></a:solidFill></c:spPr>) if dp[:fill_color]
+          parts << "</c:dPt>"
+        end
         if ser[:fill_color] || ser[:line_color] || ser[:line_width]
           parts << "<c:spPr>"
           parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:fill_color])}"/></a:solidFill>) if ser[:fill_color]

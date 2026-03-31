@@ -6377,4 +6377,35 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart series data_points" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.set_cell("A3", 30)
+    writer.add_chart(type: :pie,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$3",
+                                data_points: [{ idx: 0, fill_color: "FF0000" },
+                                              { idx: 1, fill_color: "00FF00" },
+                                              { idx: 2, fill_color: "0000FF" }] }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series].first
+    assert_not_nil(ser[:data_points])
+    assert_equal(3, ser[:data_points].size)
+    assert_equal(0, ser[:data_points][0][:idx])
+    assert_equal("FF0000", ser[:data_points][0][:fill_color])
+    assert_equal(1, ser[:data_points][1][:idx])
+    assert_equal("00FF00", ser[:data_points][1][:fill_color])
+    assert_equal(2, ser[:data_points][2][:idx])
+    assert_equal("0000FF", ser[:data_points][2][:fill_color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

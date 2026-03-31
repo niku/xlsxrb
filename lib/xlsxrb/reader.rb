@@ -4794,6 +4794,10 @@ module Xlsxrb
         @inside_ser_solid_fill = false
         @inside_ser_ln = false
         @inside_ser_marker = false
+        @inside_dpt = false
+        @inside_dpt_sp_pr = false
+        @inside_dpt_solid_fill = false
+        @current_dpt = nil
         @current_ser = nil
         @inside_cat = false
         @inside_val = false
@@ -4891,8 +4895,15 @@ module Xlsxrb
         when "ser"
           @inside_ser = true
           @current_ser = {}
-        when "spPr"
+        when "dPt"
           if @inside_ser
+            @inside_dpt = true
+            @current_dpt = {}
+          end
+        when "spPr"
+          if @inside_dpt
+            @inside_dpt_sp_pr = true
+          elsif @inside_ser
             @inside_ser_sp_pr = true
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = true
@@ -4903,13 +4914,17 @@ module Xlsxrb
             @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
           end
         when "solidFill"
-          if @inside_ser && @inside_ser_sp_pr
+          if @inside_dpt && @inside_dpt_sp_pr
+            @inside_dpt_solid_fill = true
+          elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_solid_fill = true
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = true
           end
         when "srgbClr"
-          if @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser && attributes["val"]
+          if @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_solid_fill && @current_dpt && attributes["val"]
+            @current_dpt[:fill_color] = attributes["val"]
+          elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser && attributes["val"]
             @current_ser[:line_color] = attributes["val"]
           elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser && attributes["val"]
             @current_ser[:fill_color] = attributes["val"]
@@ -4943,7 +4958,11 @@ module Xlsxrb
             @current_legend_entry = {}
           end
         when "idx"
-          @current_legend_entry[:idx] = attributes["val"].to_i if @inside_legend_entry && @current_legend_entry && attributes["val"]
+          if @inside_dpt && @current_dpt && attributes["val"]
+            @current_dpt[:idx] = attributes["val"].to_i
+          elsif @inside_legend_entry && @current_legend_entry && attributes["val"]
+            @current_legend_entry[:idx] = attributes["val"].to_i
+          end
         when "delete"
           if @inside_legend_entry && @current_legend_entry && attributes["val"]
             @current_legend_entry[:delete] = attributes["val"] == "1"
@@ -5158,6 +5177,15 @@ module Xlsxrb
           @inside_cat = false
         when "val"
           @inside_val = false
+        when "dPt"
+          if @inside_dpt && @current_dpt && @current_ser
+            @current_ser[:data_points] ||= []
+            @current_ser[:data_points] << @current_dpt
+          end
+          @current_dpt = nil
+          @inside_dpt = false
+          @inside_dpt_sp_pr = false
+          @inside_dpt_solid_fill = false
         when "ser"
           @series << @current_ser if @current_ser
           @current_ser = nil
@@ -5167,7 +5195,10 @@ module Xlsxrb
           @inside_ser_ln = false
           @inside_ser_marker = false
         when "spPr"
-          if @inside_ser
+          if @inside_dpt
+            @inside_dpt_sp_pr = false
+            @inside_dpt_solid_fill = false
+          elsif @inside_ser
             @inside_ser_sp_pr = false
             @inside_ser_ln = false
           elsif @inside_plot_area
@@ -5179,7 +5210,9 @@ module Xlsxrb
         when "marker"
           @inside_ser_marker = false if @inside_ser
         when "solidFill"
-          if @inside_ser
+          if @inside_dpt
+            @inside_dpt_solid_fill = false
+          elsif @inside_ser
             @inside_ser_solid_fill = false
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = false
