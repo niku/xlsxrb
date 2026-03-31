@@ -1934,6 +1934,10 @@ module Xlsxrb
           tc_attrs = [%(theme="#{sheet_props[:tab_color_theme]}")]
           tc_attrs << %(tint="#{sheet_props[:tab_color_tint]}") if sheet_props[:tab_color_tint]
           sp_children << "<tabColor #{tc_attrs.join(" ")}/>"
+        elsif sheet_props[:tab_color_indexed]
+          sp_children << %(<tabColor indexed="#{sheet_props[:tab_color_indexed]}"/>)
+        elsif sheet_props[:tab_color_auto]
+          sp_children << '<tabColor auto="1"/>'
         end
         sb = sheet_props[:summary_below]
         sr = sheet_props[:summary_right]
