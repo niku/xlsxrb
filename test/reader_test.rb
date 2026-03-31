@@ -6408,4 +6408,38 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart series trendline" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("A2", 2)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2",
+                                trendline: { type: "poly", order: 3,
+                                             forward: 2.5, backward: 1.0,
+                                             intercept: 0.5,
+                                             disp_r_sqr: true, disp_eq: false,
+                                             name: "MyTrend" } }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series].first
+    tl = ser[:trendline]
+    assert_not_nil(tl)
+    assert_equal("poly", tl[:type])
+    assert_equal(3, tl[:order])
+    assert_in_delta(2.5, tl[:forward])
+    assert_in_delta(1.0, tl[:backward])
+    assert_in_delta(0.5, tl[:intercept])
+    assert_equal(true, tl[:disp_r_sqr])
+    assert_equal(false, tl[:disp_eq])
+    assert_equal("MyTrend", tl[:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

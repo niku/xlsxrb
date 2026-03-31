@@ -4798,6 +4798,9 @@ module Xlsxrb
         @inside_dpt_sp_pr = false
         @inside_dpt_solid_fill = false
         @current_dpt = nil
+        @inside_trendline = false
+        @inside_trendline_name = false
+        @current_trendline = nil
         @current_ser = nil
         @inside_cat = false
         @inside_val = false
@@ -4899,6 +4902,32 @@ module Xlsxrb
           if @inside_ser
             @inside_dpt = true
             @current_dpt = {}
+          end
+        when "trendline"
+          if @inside_ser
+            @inside_trendline = true
+            @current_trendline = {}
+          end
+        when "trendlineType"
+          @current_trendline[:type] = attributes["val"] if @inside_trendline && @current_trendline && attributes["val"]
+        when "order"
+          @current_trendline[:order] = attributes["val"].to_i if @inside_trendline && @current_trendline && attributes["val"]
+        when "period"
+          @current_trendline[:period] = attributes["val"].to_i if @inside_trendline && @current_trendline && attributes["val"]
+        when "forward"
+          @current_trendline[:forward] = attributes["val"].to_f if @inside_trendline && @current_trendline && attributes["val"]
+        when "backward"
+          @current_trendline[:backward] = attributes["val"].to_f if @inside_trendline && @current_trendline && attributes["val"]
+        when "intercept"
+          @current_trendline[:intercept] = attributes["val"].to_f if @inside_trendline && @current_trendline && attributes["val"]
+        when "dispRSqr"
+          @current_trendline[:disp_r_sqr] = attributes["val"] == "1" if @inside_trendline && @current_trendline && attributes["val"]
+        when "dispEq"
+          @current_trendline[:disp_eq] = attributes["val"] == "1" if @inside_trendline && @current_trendline && attributes["val"]
+        when "name"
+          if @inside_trendline
+            @inside_trendline_name = true
+            @text_buffer = +""
           end
         when "spPr"
           if @inside_dpt
@@ -5145,7 +5174,7 @@ module Xlsxrb
       end
 
       def characters(text)
-        @text_buffer << text if @inside_t || @inside_f || @inside_separator
+        @text_buffer << text if @inside_t || @inside_f || @inside_separator || @inside_trendline_name
       end
 
       def end_element(_uri, local_name, qname)
@@ -5186,6 +5215,14 @@ module Xlsxrb
           @inside_dpt = false
           @inside_dpt_sp_pr = false
           @inside_dpt_solid_fill = false
+        when "trendline"
+          @current_ser[:trendline] = @current_trendline if @inside_trendline && @current_trendline && @current_ser
+          @current_trendline = nil
+          @inside_trendline = false
+          @inside_trendline_name = false
+        when "name"
+          @current_trendline[:name] = @text_buffer.dup if @inside_trendline_name && @current_trendline
+          @inside_trendline_name = false
         when "ser"
           @series << @current_ser if @current_ser
           @current_ser = nil
