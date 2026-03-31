@@ -4394,7 +4394,11 @@ module Xlsxrb
         when "prstGeom"
           @current_shape[:preset] = attributes["prst"] if @inside_sp && @current_shape && attributes["prst"]
         when "spLocks"
-          @current_shape[:f_locks_text] = true if @inside_sp && @current_shape && %w[1 true].include?(attributes["fLocksText"])
+          if @inside_sp && @current_shape
+            @current_shape[:f_locks_text] = true if %w[1 true].include?(attributes["fLocksText"])
+            @current_shape[:no_grp] = true if %w[1 true].include?(attributes["noGrp"])
+            @current_shape[:no_rot] = true if %w[1 true].include?(attributes["noRot"])
+          end
         when "from"
           @inside_from = true if @inside_anchor
         when "to"
