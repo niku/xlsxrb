@@ -52,6 +52,14 @@ module Xlsxrb
       parse_worksheet_row_attributes(worksheet_xml)
     end
 
+    # Returns cell addresses marked as phonetic: { "A1" => true }.
+    def cell_phonetic(sheet: nil)
+      worksheet_xml = load_worksheet_xml(sheet)
+      return {} if worksheet_xml.nil? || worksheet_xml.empty?
+
+      parse_worksheet_cell_phonetic(worksheet_xml)
+    end
+
     # Returns merged cell ranges as ["A1:B2", "C3:D4"].
     def merged_cells(sheet: nil)
       worksheet_xml = load_worksheet_xml(sheet)
@@ -1269,6 +1277,14 @@ module Xlsxrb
       listener.row_attributes
     end
 
+    def parse_worksheet_cell_phonetic(xml)
+      parser = REXML::Parsers::SAX2Parser.new(xml)
+      listener = WorksheetListener.new([])
+      parser.listen(listener)
+      parser.parse
+      listener.cell_phonetic
+    end
+
     def parse_worksheet_merge_cells(xml)
       parser = REXML::Parsers::SAX2Parser.new(xml)
       listener = MergeCellsListener.new
@@ -1617,12 +1633,13 @@ module Xlsxrb
     class WorksheetListener
       include REXML::SAX2Listener
 
-      attr_reader :cells, :row_attributes
+      attr_reader :cells, :row_attributes, :cell_phonetic
 
       def initialize(shared_strings = [])
         @shared_strings = shared_strings
         @cells = {}
         @row_attributes = {}
+        @cell_phonetic = {}
         @current_cell_ref = nil
         @current_cell_type = nil
         @inside_value = false
@@ -1649,6 +1666,7 @@ module Xlsxrb
         when "c"
           @current_cell_ref = attributes["r"]
           @current_cell_type = attributes["t"]
+          @current_cell_ph = %w[1 true].include?(attributes["ph"])
           @value_buffer = +""
           @inline_text_buffer = +""
           @formula_buffer = +""
@@ -1767,6 +1785,7 @@ module Xlsxrb
           @inside_is = false
         when "c"
           store_cell_value
+          @cell_phonetic[@current_cell_ref] = true if @current_cell_ph
           @current_cell_ref = nil
           @current_cell_type = nil
           @value_buffer = +""
