@@ -4153,6 +4153,8 @@ module Xlsxrb
         @text_buffer = +""
         @anchor_from = {}
         @anchor_to = {}
+        @inside_ln = false
+        @inside_solid_fill = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4184,6 +4186,15 @@ module Xlsxrb
             @current_image[:no_change_aspect] = true if %w[1 true].include?(attributes["noChangeAspect"])
             @current_image[:no_crop] = true if %w[1 true].include?(attributes["noCrop"])
           end
+        when "ln"
+          if @inside_pic && @current_image
+            @inside_ln = true
+            @current_image[:line_width] = attributes["w"].to_i if attributes["w"]
+          end
+        when "solidFill"
+          @inside_solid_fill = true if @inside_pic
+        when "srgbClr"
+          @current_image[:line_color] = attributes["val"] if @inside_pic && @current_image && @inside_solid_fill && @inside_ln && attributes["val"]
         when "from"
           @inside_from = true if @inside_anchor
         when "to"
@@ -4236,6 +4247,10 @@ module Xlsxrb
           @inside_from = false
         when "to"
           @inside_to = false
+        when "ln"
+          @inside_ln = false
+        when "solidFill"
+          @inside_solid_fill = false
         when "col", "colOff", "row", "rowOff"
           if @current_field
             val = @text_buffer.to_i
