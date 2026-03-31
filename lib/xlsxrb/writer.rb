@@ -1079,7 +1079,7 @@ module Xlsxrb
     # Inserts an image from file data into the given sheet.
     # file_data: raw image bytes. ext: file extension (e.g. "png").
     # from_col/from_row: anchor start. to_col/to_row: anchor end.
-    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, name: nil, description: nil, title: nil, hidden: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @images.key?(sheet_name)
 
@@ -1096,6 +1096,7 @@ module Xlsxrb
       img[:description] = description if description
       img[:title] = title if title
       img[:hidden] = hidden unless hidden.nil?
+      img[:macro] = macro if macro
       img[:edit_as] = edit_as if edit_as
       img[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
       img[:prints_with_sheet] = prints_with_sheet unless prints_with_sheet.nil?
@@ -2690,7 +2691,8 @@ module Xlsxrb
           parts << %(<xdr:twoCellAnchor editAs="#{xml_escape(ea)}">)
           parts << anchor_xml("from", img[:from_col], img[:from_row], col_off: img[:from_col_off] || 0, row_off: img[:from_row_off] || 0)
           parts << anchor_xml("to", img[:to_col], img[:to_row], col_off: img[:to_col_off] || 0, row_off: img[:to_row_off] || 0)
-          parts << "<xdr:pic>"
+          macro_attr = img[:macro] ? %( macro="#{xml_escape(img[:macro])}") : ""
+          parts << "<xdr:pic#{macro_attr}>"
           descr_attr = img[:description] ? %( descr="#{xml_escape(img[:description])}") : ""
           title_attr = img[:title] ? %( title="#{xml_escape(img[:title])}") : ""
           hidden_attr = img[:hidden] ? ' hidden="1"' : ""

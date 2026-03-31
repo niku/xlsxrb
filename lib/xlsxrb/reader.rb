@@ -4138,6 +4138,7 @@ module Xlsxrb
         when "pic"
           @inside_pic = true
           @current_image = {}
+          @current_image[:macro] = attributes["macro"] if attributes["macro"] && !attributes["macro"].empty?
         when "cNvPr"
           if @inside_pic && @current_image
             @current_image[:name] = attributes["name"] if attributes["name"]
