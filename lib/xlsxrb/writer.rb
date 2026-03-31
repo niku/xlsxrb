@@ -1232,7 +1232,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, line_color: nil, line_width: nil, no_line: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, line_color: nil, line_width: nil, no_line: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, adjust_values: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1263,6 +1263,7 @@ module Xlsxrb
       shape[:text_anchor] = text_anchor if text_anchor
       shape[:text_vert_overflow] = text_vert_overflow if text_vert_overflow
       shape[:rotation] = rotation if rotation
+      shape[:adjust_values] = adjust_values if adjust_values
       shape[:edit_as] = edit_as if edit_as
       shape[:published] = published unless published.nil?
       shape[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
@@ -2828,7 +2829,13 @@ module Xlsxrb
                              ""
                            end
           shape_xfrm_xml = shape[:rotation] ? %(<a:xfrm rot="#{shape[:rotation].to_i}"><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm>) : ""
-          parts << %(<xdr:spPr>#{shape_xfrm_xml}#{shape_fill_xml}<a:prstGeom prst="#{xml_escape(shape[:preset])}"><a:avLst/></a:prstGeom>#{shape_line_xml}</xdr:spPr>)
+          av_lst_xml = if shape[:adjust_values]&.any?
+                         gds = shape[:adjust_values].map { |gd| %(<a:gd name="#{xml_escape(gd[:name])}" fmla="#{xml_escape(gd[:fmla])}"/>) }
+                         "<a:avLst>#{gds.join}</a:avLst>"
+                       else
+                         "<a:avLst/>"
+                       end
+          parts << %(<xdr:spPr>#{shape_xfrm_xml}#{shape_fill_xml}<a:prstGeom prst="#{xml_escape(shape[:preset])}">#{av_lst_xml}</a:prstGeom>#{shape_line_xml}</xdr:spPr>)
           if shape[:text]
             body_pr_attrs = +""
             body_pr_attrs << %( wrap="#{xml_escape(shape[:text_wrap])}") if shape[:text_wrap]

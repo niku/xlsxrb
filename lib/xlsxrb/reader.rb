@@ -4423,6 +4423,7 @@ module Xlsxrb
         @anchor_to = {}
         @inside_solid_fill = false
         @inside_ln = false
+        @inside_prst_geom = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4448,7 +4449,15 @@ module Xlsxrb
             @current_shape[:hidden] = %w[1 true].include?(attributes["hidden"]) if attributes["hidden"]
           end
         when "prstGeom"
-          @current_shape[:preset] = attributes["prst"] if @inside_sp && @current_shape && attributes["prst"]
+          if @inside_sp && @current_shape && attributes["prst"]
+            @current_shape[:preset] = attributes["prst"]
+            @inside_prst_geom = true
+          end
+        when "gd"
+          if @inside_prst_geom && @inside_sp && @current_shape && attributes["name"] && attributes["fmla"]
+            @current_shape[:adjust_values] ||= []
+            @current_shape[:adjust_values] << { name: attributes["name"], fmla: attributes["fmla"] }
+          end
         when "xfrm"
           @current_shape[:rotation] = attributes["rot"].to_i if @inside_sp && @current_shape && attributes["rot"]
         when "solidFill"
@@ -4543,6 +4552,8 @@ module Xlsxrb
           @inside_solid_fill = false
         when "ln"
           @inside_ln = false
+        when "prstGeom"
+          @inside_prst_geom = false
         when "t"
           @current_shape[:text] = (@current_shape[:text] || +"") << @text_buffer if @inside_t && @inside_tx_body && @current_shape
           @inside_t = false
