@@ -727,6 +727,7 @@ module Xlsxrb
         chart[:val_axis_major_gridlines] = cl.val_axis_major_gridlines if cl.val_axis_major_gridlines
         chart[:cat_axis_minor_gridlines] = cl.cat_axis_minor_gridlines if cl.cat_axis_minor_gridlines
         chart[:val_axis_minor_gridlines] = cl.val_axis_minor_gridlines if cl.val_axis_minor_gridlines
+        chart[:show_d_lbls_over_max] = cl.show_d_lbls_over_max unless cl.show_d_lbls_over_max.nil?
       end
       listener.charts
     end
@@ -4377,7 +4378,8 @@ module Xlsxrb
                   :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
                   :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
                   :cat_axis_major_gridlines, :val_axis_major_gridlines,
-                  :cat_axis_minor_gridlines, :val_axis_minor_gridlines
+                  :cat_axis_minor_gridlines, :val_axis_minor_gridlines,
+                  :show_d_lbls_over_max
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4404,6 +4406,7 @@ module Xlsxrb
         @val_axis_major_gridlines = false
         @cat_axis_minor_gridlines = false
         @val_axis_minor_gridlines = false
+        @show_d_lbls_over_max = nil
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4513,6 +4516,8 @@ module Xlsxrb
           @style = attributes["val"]&.to_i if attributes["val"]
         when "roundedCorners"
           @rounded_corners = attributes["val"] == "1" if attributes["val"]
+        when "showDLblsOverMax"
+          @show_d_lbls_over_max = attributes["val"] == "1" if attributes["val"]
         end
       end
 
