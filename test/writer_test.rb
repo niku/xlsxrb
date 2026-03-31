@@ -3418,6 +3418,21 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits minorGridlines on chart axes" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_minor_gridlines: true)
+    xlsx_path = File.join(Dir.tmpdir, "minor_gridlines_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:minorGridlines/>.*</c:catAx>}m, xml)
+    refute_match(%r{<c:valAx>.*<c:minorGridlines/>.*</c:valAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits legend overlay element" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
