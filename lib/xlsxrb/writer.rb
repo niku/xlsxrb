@@ -1098,7 +1098,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, gap_width: nil, overlap: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, gap_width: nil, overlap: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, name: nil, description: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1140,6 +1140,8 @@ module Xlsxrb
       chart[:cat_axis_scaling_min] = cat_axis_scaling_min if cat_axis_scaling_min
       chart[:val_axis_scaling_max] = val_axis_scaling_max if val_axis_scaling_max
       chart[:val_axis_scaling_min] = val_axis_scaling_min if val_axis_scaling_min
+      chart[:cat_axis_log_base] = cat_axis_log_base if cat_axis_log_base
+      chart[:val_axis_log_base] = val_axis_log_base if val_axis_log_base
       chart[:gap_width] = gap_width if gap_width
       chart[:overlap] = overlap if overlap
       chart[:grouping] = grouping if grouping
@@ -2772,7 +2774,9 @@ module Xlsxrb
       unless no_axes
         cat_del = chart[:cat_axis_delete] ? 1 : 0
         cat_orient = chart[:cat_axis_orientation] || "minMax"
-        parts << %(<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="#{cat_orient}"/>)
+        parts << %(<c:catAx><c:axId val="1"/><c:scaling>)
+        parts << %(<c:logBase val="#{chart[:cat_axis_log_base]}"/>) if chart[:cat_axis_log_base]
+        parts << %(<c:orientation val="#{cat_orient}"/>)
         parts << %(<c:max val="#{chart[:cat_axis_scaling_max]}"/>) if chart[:cat_axis_scaling_max]
         parts << %(<c:min val="#{chart[:cat_axis_scaling_min]}"/>) if chart[:cat_axis_scaling_min]
         parts << %(</c:scaling><c:delete val="#{cat_del}"/><c:axPos val="b"/>)
@@ -2791,7 +2795,9 @@ module Xlsxrb
         parts << "</c:catAx>"
         val_del = chart[:val_axis_delete] ? 1 : 0
         val_orient = chart[:val_axis_orientation] || "minMax"
-        parts << %(<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="#{val_orient}"/>)
+        parts << %(<c:valAx><c:axId val="2"/><c:scaling>)
+        parts << %(<c:logBase val="#{chart[:val_axis_log_base]}"/>) if chart[:val_axis_log_base]
+        parts << %(<c:orientation val="#{val_orient}"/>)
         parts << %(<c:max val="#{chart[:val_axis_scaling_max]}"/>) if chart[:val_axis_scaling_max]
         parts << %(<c:min val="#{chart[:val_axis_scaling_min]}"/>) if chart[:val_axis_scaling_min]
         parts << %(</c:scaling><c:delete val="#{val_del}"/><c:axPos val="l"/>)
