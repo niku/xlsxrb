@@ -4393,6 +4393,7 @@ module Xlsxrb
         @text_buffer = +""
         @anchor_from = {}
         @anchor_to = {}
+        @inside_solid_fill = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4419,12 +4420,16 @@ module Xlsxrb
           end
         when "prstGeom"
           @current_shape[:preset] = attributes["prst"] if @inside_sp && @current_shape && attributes["prst"]
+        when "solidFill"
+          @inside_solid_fill = true if @inside_sp
         when "spLocks"
           if @inside_sp && @current_shape
             @current_shape[:f_locks_text] = true if %w[1 true].include?(attributes["fLocksText"])
             @current_shape[:no_grp] = true if %w[1 true].include?(attributes["noGrp"])
             @current_shape[:no_rot] = true if %w[1 true].include?(attributes["noRot"])
           end
+        when "srgbClr"
+          @current_shape[:fill_color] = attributes["val"] if @inside_sp && @current_shape && @inside_solid_fill && attributes["val"]
         when "from"
           @inside_from = true if @inside_anchor
         when "to"
@@ -4478,6 +4483,8 @@ module Xlsxrb
           @inside_to = false
         when "txBody"
           @inside_tx_body = false
+        when "solidFill"
+          @inside_solid_fill = false
         when "t"
           @current_shape[:text] = (@current_shape[:text] || +"") << @text_buffer if @inside_t && @inside_tx_body && @current_shape
           @inside_t = false
