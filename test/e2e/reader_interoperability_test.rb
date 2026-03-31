@@ -2023,7 +2023,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated wireframe element in surface chart" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_surface_wireframe_generated_by_sdk", xlsx_path)
 
@@ -2036,7 +2038,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated tickLblSkip and tickMarkSkip on category axis" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_tick_skip_generated_by_sdk", xlsx_path)
 
@@ -2050,7 +2054,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated lblOffset and noMultiLvlLbl on category axis" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_lbl_offset_generated_by_sdk", xlsx_path)
 
@@ -2064,7 +2070,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated dispUnits/builtInUnit on value axis" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_disp_units_generated_by_sdk", xlsx_path)
 
@@ -2077,7 +2085,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated fileRecoveryPr in workbook" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_file_recovery_pr_generated_by_sdk", xlsx_path)
 
@@ -2090,7 +2100,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated shape solidFill color" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_shape_fill_color_generated_by_sdk", xlsx_path)
 
@@ -2103,7 +2115,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated shape line color and width" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_shape_line_generated_by_sdk", xlsx_path)
 
@@ -2117,7 +2131,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated image line color and width" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_image_line_generated_by_sdk", xlsx_path)
 
@@ -2131,7 +2147,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated shape noFill and noLine" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_shape_no_fill_no_line_generated_by_sdk", xlsx_path)
 
@@ -2145,7 +2163,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated chart data table (dTable)" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_chart_data_table_generated_by_sdk", xlsx_path)
 
@@ -2162,7 +2182,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated chart series fill color" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_chart_series_fill_generated_by_sdk", xlsx_path)
 
@@ -2175,7 +2197,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "reader parses SDK-generated chart plot area fill color" do
-    xlsx_path = Tempfile.new(["xlsxrb-sdk", ".xlsx"]).tap(&:close).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sdk", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_chart_plot_area_fill_generated_by_sdk", xlsx_path)
 
