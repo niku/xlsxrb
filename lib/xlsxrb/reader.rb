@@ -4140,6 +4140,8 @@ module Xlsxrb
             @current_image[:name] = attributes["name"] if attributes["name"]
             @current_image[:id] = attributes["id"]&.to_i
             @current_image[:description] = attributes["descr"] if attributes["descr"]
+            @current_image[:title] = attributes["title"] if attributes["title"]
+            @current_image[:hidden] = %w[1 true].include?(attributes["hidden"]) if attributes["hidden"]
           end
         when "blip"
           rid = attributes["r:embed"] || attributes["embed"]
@@ -4253,6 +4255,8 @@ module Xlsxrb
           if @inside_graphic_frame && @current_chart
             @current_chart[:name] = attributes["name"] if attributes["name"]
             @current_chart[:description] = attributes["descr"] if attributes["descr"]
+            @current_chart[:frame_title] = attributes["title"] if attributes["title"]
+            @current_chart[:frame_hidden] = %w[1 true].include?(attributes["hidden"]) if attributes["hidden"]
           end
         when "chart"
           rid = attributes["r:id"] || attributes["id"]
@@ -4361,6 +4365,8 @@ module Xlsxrb
             @current_shape[:name] = attributes["name"] if attributes["name"]
             @current_shape[:id] = attributes["id"]&.to_i
             @current_shape[:description] = attributes["descr"] if attributes["descr"]
+            @current_shape[:title] = attributes["title"] if attributes["title"]
+            @current_shape[:hidden] = %w[1 true].include?(attributes["hidden"]) if attributes["hidden"]
           end
         when "prstGeom"
           @current_shape[:preset] = attributes["prst"] if @inside_sp && @current_shape && attributes["prst"]

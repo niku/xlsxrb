@@ -946,6 +946,33 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("Company logo image", imgs[0][:description])
   end
 
+  test "insert_image stores title and hidden attributes" do
+    writer = Xlsxrb::Writer.new
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", title: "My tooltip", hidden: true)
+    imgs = writer.images
+    assert_equal("My tooltip", imgs[0][:title])
+    assert_equal(true, imgs[0][:hidden])
+  end
+
+  test "emits cNvPr title and hidden on image" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    png = "\x89PNG".b
+    writer.insert_image(png, ext: "png", name: "Pic1", title: "Tooltip", hidden: true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-cnvpr", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/title="Tooltip"/, drawing_xml)
+    assert_match(/hidden="1"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_chart stores chart definition" do
     writer = Xlsxrb::Writer.new
     writer.add_chart(type: :bar, title: "Sales", cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3")
