@@ -2319,6 +2319,23 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid shape with autofit modes" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "No autofit", autofit: "none")
+    writer.add_shape(preset: "rect", text: "Shape autofit", autofit: "shape")
+    writer.add_shape(preset: "rect", text: "Normal autofit", autofit: "normal")
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_autofit_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid noFill and noLine on shape" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

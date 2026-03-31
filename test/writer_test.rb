@@ -1434,6 +1434,54 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with autofit none emits a:noAutofit" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "No autofit", autofit: "none")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-autofit", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:bodyPr[^>]*><a:noAutofit/></a:bodyPr>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with autofit shape emits a:spAutoFit" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Shape autofit", autofit: "shape")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-autofit", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:bodyPr[^>]*><a:spAutoFit/></a:bodyPr>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with autofit normal emits a:normAutofit" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Normal autofit", autofit: "normal")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-autofit", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:bodyPr[^>]*><a:normAutofit/></a:bodyPr>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "insert_image with clientData attrs stores locks_with_sheet and prints_with_sheet" do
     writer = Xlsxrb::Writer.new
     png = "\x89PNG".b
