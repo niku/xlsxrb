@@ -734,6 +734,8 @@ module Xlsxrb
         chart[:val_axis_orientation] = cl.val_axis_orientation if cl.val_axis_orientation
         chart[:gap_width] = cl.gap_width if cl.gap_width
         chart[:overlap] = cl.overlap if cl.overlap
+        chart[:gap_depth] = cl.gap_depth if cl.gap_depth
+        chart[:bar_shape] = cl.bar_shape if cl.bar_shape
         chart[:view_3d] = cl.view_3d if cl.view_3d
         chart[:cat_axis_num_fmt] = cl.cat_axis_num_fmt if cl.cat_axis_num_fmt
         chart[:val_axis_num_fmt] = cl.val_axis_num_fmt if cl.val_axis_num_fmt
@@ -4414,6 +4416,7 @@ module Xlsxrb
                   :show_d_lbls_over_max, :cat_axis_delete, :val_axis_delete,
                   :cat_axis_orientation, :val_axis_orientation,
                   :gap_width, :overlap, :view_3d,
+                  :gap_depth, :bar_shape,
                   :cat_axis_num_fmt, :val_axis_num_fmt,
                   :cat_axis_major_tick_mark, :cat_axis_minor_tick_mark,
                   :val_axis_major_tick_mark, :val_axis_minor_tick_mark,
@@ -4459,6 +4462,8 @@ module Xlsxrb
         @val_axis_orientation = nil
         @gap_width = nil
         @overlap = nil
+        @gap_depth = nil
+        @bar_shape = nil
         @view_3d = nil
         @cat_axis_num_fmt = nil
         @val_axis_num_fmt = nil
@@ -4536,6 +4541,10 @@ module Xlsxrb
           @gap_width = attributes["val"]&.to_i if attributes["val"]
         when "overlap"
           @overlap = attributes["val"]&.to_i if attributes["val"]
+        when "gapDepth"
+          @gap_depth = attributes["val"]&.to_i if attributes["val"]
+        when "shape"
+          @bar_shape = attributes["val"] if attributes["val"]
         when "firstSliceAng"
           @first_slice_ang = attributes["val"]&.to_i if attributes["val"]
         when "holeSize"
