@@ -719,6 +719,7 @@ module Xlsxrb
         chart[:plot_vis_only] = cl.plot_vis_only unless cl.plot_vis_only.nil?
         chart[:disp_blanks_as] = cl.disp_blanks_as if cl.disp_blanks_as
         chart[:style] = cl.style if cl.style
+        chart[:auto_title_deleted] = cl.auto_title_deleted unless cl.auto_title_deleted.nil?
       end
       listener.charts
     end
@@ -4366,7 +4367,7 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       attr_reader :chart_type, :title, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
-                  :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style
+                  :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4385,6 +4386,7 @@ module Xlsxrb
         @plot_vis_only = nil
         @disp_blanks_as = nil
         @style = nil
+        @auto_title_deleted = nil
         @inside_title = false
         @inside_t = false
         @text_buffer = +""
@@ -4412,6 +4414,8 @@ module Xlsxrb
           @bar_dir = attributes["val"] if attributes["val"]
         when "varyColors"
           @vary_colors = attributes["val"] == "1" if attributes["val"]
+        when "autoTitleDeleted"
+          @auto_title_deleted = attributes["val"] == "1" if attributes["val"]
         when "ser"
           @inside_ser = true
           @current_ser = {}
