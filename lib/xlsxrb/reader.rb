@@ -4623,7 +4623,14 @@ module Xlsxrb
         when "cs"
           @current_text_font[:cs_font] = attributes["typeface"] if @inside_rpr && @current_text_font && attributes["typeface"]
         when "pPr"
-          @current_shape[:text_align] = attributes["algn"] if @inside_tx_body && @inside_sp && @current_shape && attributes["algn"]
+          if @inside_tx_body && @inside_sp && @current_shape
+            @current_shape[:text_align] = attributes["algn"] if attributes["algn"]
+            ti = {}
+            ti[:left] = attributes["marL"].to_i if attributes["marL"]
+            ti[:right] = attributes["marR"].to_i if attributes["marR"]
+            ti[:indent] = attributes["indent"].to_i if attributes["indent"]
+            @current_shape[:text_indent] = ti unless ti.empty?
+          end
         when "bodyPr"
           if @inside_sp && @current_shape
             @current_shape[:text_rot] = attributes["rot"].to_i if attributes["rot"]
