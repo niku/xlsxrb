@@ -4736,6 +4736,41 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_chart with title as hash emits formatted chart title" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :bar,
+                     title: { text: "My Chart", font: { bold: true, italic: true, size: 1400, color: "FF0000", name: "Arial" } },
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-chart-title", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr b="1" i="1" sz="1400"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:latin typeface="Arial"/></a:rPr><a:t>My Chart</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_chart with title as plain string still works" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :bar, title: "Simple Title", series: [{ val_ref: "Sheet1!$A$1:$A$1" }])
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-chart-plain", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Simple Title</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

@@ -721,6 +721,7 @@ module Xlsxrb
         cp.parse
         chart[:chart_type] = cl.chart_type
         chart[:title] = cl.title
+        chart[:title_font] = cl.title_font if cl.title_font
         chart[:series] = cl.series unless cl.series.empty?
         chart[:legend] = cl.legend unless cl.legend.empty?
         chart[:data_labels] = cl.data_labels unless cl.data_labels.empty?
@@ -4719,7 +4720,7 @@ module Xlsxrb
     class ChartTypeListener
       include REXML::SAX2Listener
 
-      attr_reader :chart_type, :title, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
+      attr_reader :chart_type, :title, :title_font, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
                   :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
                   :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
                   :cat_axis_major_gridlines, :val_axis_major_gridlines,
@@ -4757,6 +4758,7 @@ module Xlsxrb
       def initialize
         @chart_type = nil
         @title = nil
+        @title_font = nil
         @series = []
         @legend = {}
         @data_labels = {}
@@ -4864,6 +4866,7 @@ module Xlsxrb
         @inside_cat_ax = false
         @inside_val_ax = false
         @inside_ax_title = false
+        @inside_title_rpr = false
         @title_depth = 0
       end
 
@@ -5002,7 +5005,9 @@ module Xlsxrb
             @inside_plot_area_solid_fill = true
           end
         when "srgbClr"
-          if @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_solid_fill && @current_dpt && attributes["val"]
+          if @inside_title_rpr && @title_font && attributes["val"]
+            @title_font[:color] = attributes["val"]
+          elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_solid_fill && @current_dpt && attributes["val"]
             @current_dpt[:fill_color] = attributes["val"]
           elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser && attributes["val"]
             @current_ser[:line_color] = attributes["val"]
@@ -5028,6 +5033,16 @@ module Xlsxrb
         when "t"
           @inside_t = true
           @text_buffer = +""
+        when "rPr"
+          if @inside_title && @title_depth == 1 && !@inside_ax_title
+            @inside_title_rpr = true
+            @title_font ||= {}
+            @title_font[:bold] = true if attributes["b"] == "1"
+            @title_font[:italic] = true if attributes["i"] == "1"
+            @title_font[:size] = attributes["sz"].to_i if attributes["sz"]
+          end
+        when "latin"
+          @title_font[:name] = attributes["typeface"] if @inside_title_rpr && @title_font && attributes["typeface"]
         when "legend"
           @inside_legend = true
         when "legendPos"
@@ -5311,6 +5326,7 @@ module Xlsxrb
           @title_depth -= 1
           @inside_title = false if @title_depth.zero?
           @inside_ax_title = false
+          @inside_title_rpr = false
         when "legendEntry"
           if @inside_legend_entry && @current_legend_entry
             @legend[:entries] ||= []

@@ -6564,4 +6564,49 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart title with font formatting" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :bar,
+                     title: { text: "My Chart", font: { bold: true, italic: true, size: 1400, color: "FF0000", name: "Arial" } },
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("My Chart", chart[:title])
+    tf = chart[:title_font]
+    assert_not_nil(tf)
+    assert_equal(true, tf[:bold])
+    assert_equal(true, tf[:italic])
+    assert_equal(1400, tf[:size])
+    assert_equal("FF0000", tf[:color])
+    assert_equal("Arial", tf[:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips chart title without font returns nil title_font" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :bar, title: "Plain Title", series: [{ val_ref: "Sheet1!$A$1:$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("Plain Title", chart[:title])
+    assert_nil(chart[:title_font])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

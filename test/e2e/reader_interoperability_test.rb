@@ -2581,6 +2581,26 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated chart with formatted title" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_chart_title_font_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("SDK Formatted Title", chart[:title])
+    tf = chart[:title_font]
+    assert_not_nil(tf)
+    assert_equal(true, tf[:bold])
+    assert_equal(true, tf[:italic])
+    assert_equal(1800, tf[:size])
+    assert_equal("0000FF", tf[:color])
+    assert_equal("Calibri", tf[:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
