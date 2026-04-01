@@ -4718,6 +4718,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with reflection emits a:effectLst with a:reflection" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Reflect",
+                     reflection: { blur_rad: 6_350, st_a: 52_000, end_a: 300, dist: 0, dir: 5_400_000,
+                                   sy: -100_000, algn: "bl", rot_with_shape: false })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reflect", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:effectLst><a:reflection blurRad="6350" stA="52000" endA="300" dist="0" dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/></a:effectLst>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

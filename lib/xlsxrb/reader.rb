@@ -4524,6 +4524,23 @@ module Xlsxrb
             se[:rad] = attributes["rad"].to_i if attributes["rad"]
             @current_shape[:soft_edge] = se
           end
+        when "reflection"
+          if @inside_sp && @inside_effect_lst && @current_shape
+            rf = {}
+            rf[:blur_rad] = attributes["blurRad"].to_i if attributes["blurRad"]
+            rf[:st_a] = attributes["stA"].to_i if attributes["stA"]
+            rf[:end_a] = attributes["endA"].to_i if attributes["endA"]
+            rf[:dist] = attributes["dist"].to_i if attributes["dist"]
+            rf[:dir] = attributes["dir"].to_i if attributes["dir"]
+            rf[:fade_dir] = attributes["fadeDir"].to_i if attributes["fadeDir"]
+            rf[:sx] = attributes["sx"].to_i if attributes["sx"]
+            rf[:sy] = attributes["sy"].to_i if attributes["sy"]
+            rf[:kx] = attributes["kx"].to_i if attributes["kx"]
+            rf[:ky] = attributes["ky"].to_i if attributes["ky"]
+            rf[:algn] = attributes["algn"] if attributes["algn"]
+            rf[:rot_with_shape] = %w[1 true].include?(attributes["rotWithShape"]) if attributes["rotWithShape"]
+            @current_shape[:reflection] = rf
+          end
         when "prstDash"
           @current_shape[:line_dash] = attributes["val"] if @inside_sp && @inside_ln && @current_shape && attributes["val"]
         when "headEnd"

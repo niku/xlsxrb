@@ -6535,4 +6535,33 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips shape reflection effect" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Reflect",
+                     reflection: { blur_rad: 6_350, st_a: 52_000, end_a: 300, dist: 0, dir: 5_400_000,
+                                   sy: -100_000, algn: "bl", rot_with_shape: false })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    rf = shapes[0][:reflection]
+    assert_not_nil(rf)
+    assert_equal(6_350, rf[:blur_rad])
+    assert_equal(52_000, rf[:st_a])
+    assert_equal(300, rf[:end_a])
+    assert_equal(0, rf[:dist])
+    assert_equal(5_400_000, rf[:dir])
+    assert_equal(-100_000, rf[:sy])
+    assert_equal("bl", rf[:algn])
+    assert_equal(false, rf[:rot_with_shape])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
