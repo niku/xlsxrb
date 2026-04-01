@@ -4608,6 +4608,7 @@ module Xlsxrb
             tf[:strike] = attributes["strike"] if attributes["strike"]
             tf[:underline] = attributes["u"] if attributes["u"]
             tf[:baseline] = attributes["baseline"].to_i if attributes["baseline"]
+            tf[:spacing] = attributes["spc"].to_i if attributes["spc"]
             tf[:size] = attributes["sz"].to_i if attributes["sz"]
             @current_text_font = tf
           end
