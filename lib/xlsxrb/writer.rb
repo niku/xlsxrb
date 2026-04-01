@@ -3067,13 +3067,19 @@ module Xlsxrb
           parts << %(<c:spPr><a:solidFill><a:srgbClr val="#{xml_escape(dp[:fill_color])}"/></a:solidFill></c:spPr>) if dp[:fill_color]
           parts << "</c:dPt>"
         end
-        if ser[:fill_color] || ser[:line_color] || ser[:line_width]
+        if ser[:fill_color] || ser[:line_color] || ser[:line_width] || ser[:line_cap] || ser[:line_join]
           parts << "<c:spPr>"
           parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:fill_color])}"/></a:solidFill>) if ser[:fill_color]
-          if ser[:line_color] || ser[:line_width]
+          if ser[:line_color] || ser[:line_width] || ser[:line_cap] || ser[:line_join]
             lw = ser[:line_width] ? %( w="#{(ser[:line_width] * 12_700).to_i}") : ""
-            parts << "<a:ln#{lw}>"
+            lc = ser[:line_cap] ? %( cap="#{xml_escape(ser[:line_cap])}") : ""
+            parts << "<a:ln#{lw}#{lc}>"
             parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:line_color])}"/></a:solidFill>) if ser[:line_color]
+            case ser[:line_join]
+            when "round" then parts << "<a:round/>"
+            when "bevel" then parts << "<a:bevel/>"
+            when "miter" then parts << "<a:miter/>"
+            end
             parts << "</a:ln>"
           end
           parts << "</c:spPr>"
