@@ -4948,6 +4948,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_font ea_font emits a:ea element in a:rPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "CJK",
+                     text_font: { ea_font: "MS Gothic" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-ea", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:rPr><a:ea typeface="MS Gothic"/></a:rPr>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_chart with cat_axis_label_rotation emits txPr with rot on catAx" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "Cat")
