@@ -2992,6 +2992,28 @@ module Xlsxrb
       parts.join
     end
 
+    def build_chart_title_xml(title_spec)
+      if title_spec.is_a?(Hash)
+        text = xml_escape(title_spec[:text].to_s)
+        font = title_spec[:font] || {}
+        rpr_attrs = +""
+        rpr_attrs << %( b="1") if font[:bold]
+        rpr_attrs << %( i="1") if font[:italic]
+        rpr_attrs << %( sz="#{font[:size]}") if font[:size]
+        rpr_children = +""
+        rpr_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(font[:color])}"/></a:solidFill>) if font[:color]
+        rpr_children << %(<a:latin typeface="#{xml_escape(font[:name])}"/>) if font[:name]
+        rpr_xml = if rpr_children.empty?
+                    "<a:rPr#{rpr_attrs}/>"
+                  else
+                    "<a:rPr#{rpr_attrs}>#{rpr_children}</a:rPr>"
+                  end
+        "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r>#{rpr_xml}<a:t>#{text}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>"
+      else
+        "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(title_spec)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>"
+      end
+    end
+
     def generate_chart_xml(chart)
       chart_type = CHART_TYPE_MAP[chart[:type]] || "barChart"
       no_axes = NO_AXIS_CHARTS.include?(chart_type)
@@ -3004,7 +3026,7 @@ module Xlsxrb
       parts << %(<c:style val="#{chart[:style]}"/>) if chart[:style]
       parts << "<c:chart>"
 
-      parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:title]
+      parts << build_chart_title_xml(chart[:title]) if chart[:title]
       atd = chart[:auto_title_deleted]
       parts << %(<c:autoTitleDeleted val="#{atd ? 1 : 0}"/>) unless atd.nil?
 
