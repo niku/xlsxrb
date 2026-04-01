@@ -4626,6 +4626,7 @@ module Xlsxrb
           @current_shape[:text_align] = attributes["algn"] if @inside_tx_body && @inside_sp && @current_shape && attributes["algn"]
         when "bodyPr"
           if @inside_sp && @current_shape
+            @current_shape[:text_rot] = attributes["rot"].to_i if attributes["rot"]
             @current_shape[:text_wrap] = attributes["wrap"] if attributes["wrap"]
             @current_shape[:text_anchor] = attributes["anchor"] if attributes["anchor"]
             @current_shape[:text_vert_overflow] = attributes["vertOverflow"] if attributes["vertOverflow"]
