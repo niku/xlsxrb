@@ -2962,6 +2962,7 @@ module Xlsxrb
                         rpr_attrs << %( u="#{xml_escape(tf[:underline])}") if tf[:underline]
                         rpr_attrs << %( baseline="#{tf[:baseline]}") if tf[:baseline]
                         rpr_attrs << %( spc="#{tf[:spacing]}") if tf[:spacing]
+                        rpr_attrs << %( kern="#{tf[:kern]}") if tf[:kern]
                         rpr_attrs << %( cap="#{xml_escape(tf[:cap])}") if tf[:cap]
                         rpr_attrs << %( lang="#{xml_escape(tf[:lang])}") if tf[:lang]
                         rpr_children = +""
