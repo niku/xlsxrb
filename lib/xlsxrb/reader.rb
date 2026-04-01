@@ -4637,6 +4637,7 @@ module Xlsxrb
             @current_shape[:text_rot] = attributes["rot"].to_i if attributes["rot"]
             @current_shape[:text_wrap] = attributes["wrap"] if attributes["wrap"]
             @current_shape[:text_anchor] = attributes["anchor"] if attributes["anchor"]
+            @current_shape[:text_anchor_ctr] = %w[1 true].include?(attributes["anchorCtr"]) if attributes["anchorCtr"]
             @current_shape[:text_vert_overflow] = attributes["vertOverflow"] if attributes["vertOverflow"]
             @current_shape[:text_vertical] = attributes["vert"] if attributes["vert"]
             ins = {}
