@@ -4433,6 +4433,7 @@ module Xlsxrb
         @current_text_font = nil
         @inside_effect_lst = false
         @inside_outer_shdw = false
+        @inside_inner_shdw = false
         @inside_grad_fill = false
         @current_gs_pos = nil
       end
@@ -4500,6 +4501,15 @@ module Xlsxrb
             os[:rot_with_shape] = %w[1 true].include?(attributes["rotWithShape"]) if attributes["rotWithShape"]
             @current_shape[:outer_shadow] = os
           end
+        when "innerShdw"
+          if @inside_sp && @inside_effect_lst && @current_shape
+            @inside_inner_shdw = true
+            is = {}
+            is[:blur_rad] = attributes["blurRad"].to_i if attributes["blurRad"]
+            is[:dist] = attributes["dist"].to_i if attributes["dist"]
+            is[:dir] = attributes["dir"].to_i if attributes["dir"]
+            @current_shape[:inner_shadow] = is
+          end
         when "prstDash"
           @current_shape[:line_dash] = attributes["val"] if @inside_sp && @inside_ln && @current_shape && attributes["val"]
         when "headEnd"
@@ -4529,6 +4539,8 @@ module Xlsxrb
             @current_text_font[:color] = attributes["val"]
           elsif @inside_outer_shdw && @current_shape && attributes["val"]
             @current_shape[:outer_shadow][:color] = attributes["val"]
+          elsif @inside_inner_shdw && @current_shape && attributes["val"]
+            @current_shape[:inner_shadow][:color] = attributes["val"]
           elsif @inside_grad_fill && @current_gs_pos && @current_shape && attributes["val"]
             @current_shape[:gradient_fill][:stops] << { pos: @current_gs_pos, color: attributes["val"] }
             @current_gs_pos = nil
@@ -4631,6 +4643,8 @@ module Xlsxrb
           @inside_effect_lst = false
         when "outerShdw"
           @inside_outer_shdw = false
+        when "innerShdw"
+          @inside_inner_shdw = false
         when "gradFill"
           @inside_grad_fill = false
         when "prstGeom"
@@ -4801,6 +4815,8 @@ module Xlsxrb
         @inside_trendline = false
         @inside_trendline_name = false
         @current_trendline = nil
+        @inside_err_bars = false
+        @current_err_bars = nil
         @current_ser = nil
         @inside_cat = false
         @inside_val = false

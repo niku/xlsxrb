@@ -1236,7 +1236,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, adjust_values: nil, text_font: nil, autofit: nil, outer_shadow: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, adjust_values: nil, text_font: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1274,6 +1274,7 @@ module Xlsxrb
       shape[:text_font] = text_font if text_font
       shape[:autofit] = autofit if autofit
       shape[:outer_shadow] = outer_shadow if outer_shadow
+      shape[:inner_shadow] = inner_shadow if inner_shadow
       shape[:gradient_fill] = gradient_fill if gradient_fill
       shape[:edit_as] = edit_as if edit_as
       shape[:published] = published unless published.nil?
@@ -2860,16 +2861,29 @@ module Xlsxrb
                        else
                          "<a:avLst/>"
                        end
-          effect_lst_xml = if shape[:outer_shadow]
-                             os = shape[:outer_shadow]
-                             os_attrs = +""
-                             os_attrs << %( blurRad="#{os[:blur_rad]}") if os[:blur_rad]
-                             os_attrs << %( dist="#{os[:dist]}") if os[:dist]
-                             os_attrs << %( dir="#{os[:dir]}") if os[:dir]
-                             os_attrs << %( algn="#{xml_escape(os[:algn])}") if os[:algn]
-                             os_attrs << %( rotWithShape="#{os[:rot_with_shape] ? 1 : 0}") unless os[:rot_with_shape].nil?
-                             os_color = os[:color] ? %(<a:srgbClr val="#{xml_escape(os[:color])}"/>) : ""
-                             "<a:effectLst><a:outerShdw#{os_attrs}>#{os_color}</a:outerShdw></a:effectLst>"
+          effect_lst_xml = if shape[:outer_shadow] || shape[:inner_shadow]
+                             effect_children = +""
+                             if shape[:outer_shadow]
+                               os = shape[:outer_shadow]
+                               os_attrs = +""
+                               os_attrs << %( blurRad="#{os[:blur_rad]}") if os[:blur_rad]
+                               os_attrs << %( dist="#{os[:dist]}") if os[:dist]
+                               os_attrs << %( dir="#{os[:dir]}") if os[:dir]
+                               os_attrs << %( algn="#{xml_escape(os[:algn])}") if os[:algn]
+                               os_attrs << %( rotWithShape="#{os[:rot_with_shape] ? 1 : 0}") unless os[:rot_with_shape].nil?
+                               os_color = os[:color] ? %(<a:srgbClr val="#{xml_escape(os[:color])}"/>) : ""
+                               effect_children << "<a:outerShdw#{os_attrs}>#{os_color}</a:outerShdw>"
+                             end
+                             if shape[:inner_shadow]
+                               is = shape[:inner_shadow]
+                               is_attrs = +""
+                               is_attrs << %( blurRad="#{is[:blur_rad]}") if is[:blur_rad]
+                               is_attrs << %( dist="#{is[:dist]}") if is[:dist]
+                               is_attrs << %( dir="#{is[:dir]}") if is[:dir]
+                               is_color = is[:color] ? %(<a:srgbClr val="#{xml_escape(is[:color])}"/>) : ""
+                               effect_children << "<a:innerShdw#{is_attrs}>#{is_color}</a:innerShdw>"
+                             end
+                             "<a:effectLst>#{effect_children}</a:effectLst>"
                            else
                              ""
                            end
@@ -3043,6 +3057,16 @@ module Xlsxrb
           parts << %(<c:dispRSqr val="#{tl[:disp_r_sqr] ? 1 : 0}"/>) unless tl[:disp_r_sqr].nil?
           parts << %(<c:dispEq val="#{tl[:disp_eq] ? 1 : 0}"/>) unless tl[:disp_eq].nil?
           parts << "</c:trendline>"
+        end
+        if ser[:error_bars]
+          eb = ser[:error_bars]
+          parts << "<c:errBars>"
+          parts << %(<c:errDir val="#{xml_escape(eb[:direction])}"/>) if eb[:direction]
+          parts << %(<c:errBarType val="#{xml_escape(eb[:bar_type] || "both")}"/>)
+          parts << %(<c:errValType val="#{xml_escape(eb[:val_type] || "fixedVal")}"/>)
+          parts << %(<c:noEndCap val="#{eb[:no_end_cap] ? 1 : 0}"/>) unless eb[:no_end_cap].nil?
+          parts << %(<c:val val="#{eb[:val]}"/>) if eb[:val]
+          parts << "</c:errBars>"
         end
         parts << "<c:cat><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f></c:strRef></c:cat>" if ser[:cat_ref]
         parts << "<c:val><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f></c:numRef></c:val>" if ser[:val_ref]
