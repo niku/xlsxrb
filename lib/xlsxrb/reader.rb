@@ -4624,6 +4624,12 @@ module Xlsxrb
             @current_shape[:text_anchor] = attributes["anchor"] if attributes["anchor"]
             @current_shape[:text_vert_overflow] = attributes["vertOverflow"] if attributes["vertOverflow"]
             @current_shape[:text_vertical] = attributes["vert"] if attributes["vert"]
+            ins = {}
+            ins[:left] = attributes["lIns"].to_i if attributes["lIns"]
+            ins[:top] = attributes["tIns"].to_i if attributes["tIns"]
+            ins[:right] = attributes["rIns"].to_i if attributes["rIns"]
+            ins[:bottom] = attributes["bIns"].to_i if attributes["bIns"]
+            @current_shape[:text_insets] = ins unless ins.empty?
           end
         when "noAutofit"
           @current_shape[:autofit] = "none" if @inside_sp && @current_shape

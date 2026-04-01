@@ -4928,6 +4928,26 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_insets emits lIns tIns rIns bIns on a:bodyPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Padded",
+                     text_insets: { left: 91_440, top: 45_720, right: 91_440, bottom: 45_720 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-insets", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/lIns="91440"/, drawing_xml)
+    assert_match(/tIns="45720"/, drawing_xml)
+    assert_match(/rIns="91440"/, drawing_xml)
+    assert_match(/bIns="45720"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

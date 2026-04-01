@@ -1207,6 +1207,25 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated shape with text inset margins" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_text_insets_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    ins = shapes[0][:text_insets]
+    assert_not_nil(ins)
+    assert_equal(91_440, ins[:left])
+    assert_equal(45_720, ins[:top])
+    assert_equal(91_440, ins[:right])
+    assert_equal(45_720, ins[:bottom])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated shapes with autofit modes" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

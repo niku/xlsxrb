@@ -6796,4 +6796,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips shape text inset margins" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Padded",
+                     text_insets: { left: 91_440, top: 45_720, right: 91_440, bottom: 45_720 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    ins = shapes[0][:text_insets]
+    assert_not_nil(ins)
+    assert_equal(91_440, ins[:left])
+    assert_equal(45_720, ins[:top])
+    assert_equal(91_440, ins[:right])
+    assert_equal(45_720, ins[:bottom])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
