@@ -2558,6 +2558,29 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated shape with reflection effect" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_reflection_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    rf = shapes[0][:reflection]
+    assert_not_nil(rf)
+    assert_equal(12_700, rf[:blur_rad])
+    assert_equal(40_000, rf[:st_a])
+    assert_equal(0, rf[:end_a])
+    assert_equal(25_400, rf[:dist])
+    assert_equal(5_400_000, rf[:dir])
+    assert_equal(-90_000, rf[:sy])
+    assert_equal("bl", rf[:algn])
+    assert_equal(false, rf[:rot_with_shape])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

@@ -2589,6 +2589,23 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid shape with reflection effect" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Reflect",
+                     reflection: { blur_rad: 6_350, st_a: 52_000, end_a: 300, dist: 0, dir: 5_400_000,
+                                   sy: -100_000, algn: "bl", rot_with_shape: false })
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_reflection_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
