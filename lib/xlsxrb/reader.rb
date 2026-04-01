@@ -4440,6 +4440,8 @@ module Xlsxrb
         @inside_glow = false
         @inside_grad_fill = false
         @current_gs_pos = nil
+        @inside_spc_bef = false
+        @inside_spc_aft = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4632,6 +4634,19 @@ module Xlsxrb
             ti[:indent] = attributes["indent"].to_i if attributes["indent"]
             @current_shape[:text_indent] = ti unless ti.empty?
           end
+        when "spcBef"
+          @inside_spc_bef = true if @inside_tx_body && @inside_sp
+        when "spcAft"
+          @inside_spc_aft = true if @inside_tx_body && @inside_sp
+        when "spcPts"
+          if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
+            @current_shape[:text_spacing] ||= {}
+            if @inside_spc_bef
+              @current_shape[:text_spacing][:before] = attributes["val"].to_i
+            elsif @inside_spc_aft
+              @current_shape[:text_spacing][:after] = attributes["val"].to_i
+            end
+          end
         when "bodyPr"
           if @inside_sp && @current_shape
             @current_shape[:text_rot] = attributes["rot"].to_i if attributes["rot"]
@@ -4716,6 +4731,10 @@ module Xlsxrb
           @inside_grad_fill = false
         when "prstGeom"
           @inside_prst_geom = false
+        when "spcBef"
+          @inside_spc_bef = false
+        when "spcAft"
+          @inside_spc_aft = false
         when "rPr"
           @current_shape[:text_font] = @current_text_font if @inside_rpr && @current_text_font&.any? && @current_shape
           @inside_rpr = false
