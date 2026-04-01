@@ -6442,4 +6442,54 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips shape inner shadow" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "InnerShadow",
+                     inner_shadow: { blur_rad: 63_500, dist: 25_400, dir: 5_400_000, color: "FF0000" })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    is = shapes[0][:inner_shadow]
+    assert_not_nil(is)
+    assert_equal(63_500, is[:blur_rad])
+    assert_equal(25_400, is[:dist])
+    assert_equal(5_400_000, is[:dir])
+    assert_equal("FF0000", is[:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips shape with both outer and inner shadow" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "BothShadows",
+                     outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" },
+                     inner_shadow: { blur_rad: 63_500, dist: 25_400, dir: 5_400_000, color: "FF0000" })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    os = shapes[0][:outer_shadow]
+    assert_not_nil(os)
+    assert_equal(50_800, os[:blur_rad])
+    is = shapes[0][:inner_shadow]
+    assert_not_nil(is)
+    assert_equal(63_500, is[:blur_rad])
+    assert_equal("FF0000", is[:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

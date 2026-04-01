@@ -4649,6 +4649,41 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with inner_shadow emits a:effectLst with a:innerShdw" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "InnerShadow",
+                     inner_shadow: { blur_rad: 63_500, dist: 25_400, dir: 5_400_000, color: "FF0000" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-inner-shadow", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:effectLst><a:innerShdw blurRad="63500" dist="25400" dir="5400000"><a:srgbClr val="FF0000"/></a:innerShdw></a:effectLst>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with both outer_shadow and inner_shadow emits both in a:effectLst" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "BothShadows",
+                     outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" },
+                     inner_shadow: { blur_rad: 63_500, dist: 25_400, dir: 5_400_000, color: "FF0000" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-both-shadow", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:effectLst>.*<a:outerShdw.*</a:outerShdw>.*<a:innerShdw.*</a:innerShdw>.*</a:effectLst>}m, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
