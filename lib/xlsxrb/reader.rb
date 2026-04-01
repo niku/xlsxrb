@@ -4623,6 +4623,7 @@ module Xlsxrb
             @current_shape[:text_wrap] = attributes["wrap"] if attributes["wrap"]
             @current_shape[:text_anchor] = attributes["anchor"] if attributes["anchor"]
             @current_shape[:text_vert_overflow] = attributes["vertOverflow"] if attributes["vertOverflow"]
+            @current_shape[:text_vertical] = attributes["vert"] if attributes["vert"]
           end
         when "noAutofit"
           @current_shape[:autofit] = "none" if @inside_sp && @current_shape
