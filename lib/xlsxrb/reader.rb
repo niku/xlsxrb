@@ -4607,6 +4607,7 @@ module Xlsxrb
             tf[:italic] = true if %w[1 true].include?(attributes["i"])
             tf[:strike] = attributes["strike"] if attributes["strike"]
             tf[:underline] = attributes["u"] if attributes["u"]
+            tf[:baseline] = attributes["baseline"].to_i if attributes["baseline"]
             tf[:size] = attributes["sz"].to_i if attributes["sz"]
             @current_text_font = tf
           end
