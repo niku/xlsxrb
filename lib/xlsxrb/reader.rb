@@ -793,6 +793,8 @@ module Xlsxrb
         chart[:wireframe] = cl.wireframe unless cl.wireframe.nil?
         chart[:data_table] = cl.data_table if cl.data_table
         chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
+        chart[:cat_axis_label_rotation] = cl.cat_axis_label_rotation if cl.cat_axis_label_rotation
+        chart[:val_axis_label_rotation] = cl.val_axis_label_rotation if cl.val_axis_label_rotation
       end
       listener.charts
     end
@@ -4765,7 +4767,8 @@ module Xlsxrb
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
                   :data_table,
-                  :plot_area_fill
+                  :plot_area_fill,
+                  :cat_axis_label_rotation, :val_axis_label_rotation
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -4883,6 +4886,7 @@ module Xlsxrb
         @inside_ax_title = false
         @inside_title_rpr = false
         @title_depth = 0
+        @inside_axis_tx_pr = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -5217,6 +5221,16 @@ module Xlsxrb
           @val_axis_minor_unit = attributes["val"].to_f if @inside_val_ax && attributes["val"]
         when "builtInUnit"
           @val_axis_disp_units = attributes["val"] if @inside_val_ax && attributes["val"]
+        when "txPr"
+          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax
+        when "bodyPr"
+          if @inside_axis_tx_pr && attributes["rot"]
+            if @inside_cat_ax
+              @cat_axis_label_rotation = attributes["rot"].to_i
+            elsif @inside_val_ax
+              @val_axis_label_rotation = attributes["rot"].to_i
+            end
+          end
         when "tickLblPos"
           if attributes["val"]
             if @inside_cat_ax
@@ -5367,8 +5381,10 @@ module Xlsxrb
           end
         when "catAx"
           @inside_cat_ax = false
+          @inside_axis_tx_pr = false
         when "valAx"
           @inside_val_ax = false
+          @inside_axis_tx_pr = false
         when "scaling"
           @inside_scaling = false
         when "view3D"

@@ -4948,6 +4948,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_chart with cat_axis_label_rotation emits txPr with rot on catAx" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     cat_axis_label_rotation: -2_700_000)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-axis-rot", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:txPr><a:bodyPr rot="-2700000"/>.*</c:catAx>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
