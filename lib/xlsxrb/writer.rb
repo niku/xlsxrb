@@ -2945,6 +2945,7 @@ module Xlsxrb
                         rpr_attrs << %( strike="#{xml_escape(tf[:strike])}") if tf[:strike]
                         rpr_attrs << %( u="#{xml_escape(tf[:underline])}") if tf[:underline]
                         rpr_attrs << %( baseline="#{tf[:baseline]}") if tf[:baseline]
+                        rpr_attrs << %( spc="#{tf[:spacing]}") if tf[:spacing]
                         rpr_children = +""
                         rpr_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(tf[:color])}"/></a:solidFill>) if tf[:color]
                         rpr_children << %(<a:latin typeface="#{xml_escape(tf[:name])}"/>) if tf[:name]
