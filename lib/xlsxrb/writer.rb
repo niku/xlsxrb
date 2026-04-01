@@ -1238,7 +1238,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_align: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_align: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1283,6 +1283,7 @@ module Xlsxrb
       shape[:text_indent] = text_indent if text_indent
       shape[:text_anchor_ctr] = text_anchor_ctr unless text_anchor_ctr.nil?
       shape[:text_spacing] = text_spacing if text_spacing
+      shape[:text_rtl] = text_rtl unless text_rtl.nil?
       shape[:autofit] = autofit if autofit
       shape[:outer_shadow] = outer_shadow if outer_shadow
       shape[:inner_shadow] = inner_shadow if inner_shadow
@@ -2987,6 +2988,7 @@ module Xlsxrb
                       end
             ppr_attrs = +""
             ppr_attrs << %( algn="#{xml_escape(shape[:text_align])}") if shape[:text_align]
+            ppr_attrs << %( rtl="1") if shape[:text_rtl]
             if shape[:text_indent]
               ti = shape[:text_indent]
               ppr_attrs << %( marL="#{ti[:left]}") if ti[:left]

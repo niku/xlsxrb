@@ -4628,6 +4628,7 @@ module Xlsxrb
         when "pPr"
           if @inside_tx_body && @inside_sp && @current_shape
             @current_shape[:text_align] = attributes["algn"] if attributes["algn"]
+            @current_shape[:text_rtl] = %w[1 true].include?(attributes["rtl"]) if attributes["rtl"]
             ti = {}
             ti[:left] = attributes["marL"].to_i if attributes["marL"]
             ti[:right] = attributes["marR"].to_i if attributes["marR"]

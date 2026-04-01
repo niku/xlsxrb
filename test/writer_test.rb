@@ -5101,6 +5101,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_rtl emits rtl attribute on a:pPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "RTL",
+                     text_rtl: true)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-rtl", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:pPr rtl="1"/>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_chart with cat_axis_label_rotation emits txPr with rot on catAx" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "Cat")
