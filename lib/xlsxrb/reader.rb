@@ -4615,6 +4615,8 @@ module Xlsxrb
           end
         when "latin"
           @current_text_font[:name] = attributes["typeface"] if @inside_rpr && @current_text_font && attributes["typeface"]
+        when "pPr"
+          @current_shape[:text_align] = attributes["algn"] if @inside_tx_body && @inside_sp && @current_shape && attributes["algn"]
         when "bodyPr"
           if @inside_sp && @current_shape
             @current_shape[:text_wrap] = attributes["wrap"] if attributes["wrap"]
