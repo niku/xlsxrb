@@ -4434,6 +4434,7 @@ module Xlsxrb
         @inside_effect_lst = false
         @inside_outer_shdw = false
         @inside_inner_shdw = false
+        @inside_glow = false
         @inside_grad_fill = false
         @current_gs_pos = nil
       end
@@ -4510,6 +4511,13 @@ module Xlsxrb
             is[:dir] = attributes["dir"].to_i if attributes["dir"]
             @current_shape[:inner_shadow] = is
           end
+        when "glow"
+          if @inside_sp && @inside_effect_lst && @current_shape
+            @inside_glow = true
+            gl = {}
+            gl[:rad] = attributes["rad"].to_i if attributes["rad"]
+            @current_shape[:glow] = gl
+          end
         when "prstDash"
           @current_shape[:line_dash] = attributes["val"] if @inside_sp && @inside_ln && @current_shape && attributes["val"]
         when "headEnd"
@@ -4541,6 +4549,8 @@ module Xlsxrb
             @current_shape[:outer_shadow][:color] = attributes["val"]
           elsif @inside_inner_shdw && @current_shape && attributes["val"]
             @current_shape[:inner_shadow][:color] = attributes["val"]
+          elsif @inside_glow && @current_shape && attributes["val"]
+            @current_shape[:glow][:color] = attributes["val"]
           elsif @inside_grad_fill && @current_gs_pos && @current_shape && attributes["val"]
             @current_shape[:gradient_fill][:stops] << { pos: @current_gs_pos, color: attributes["val"] }
             @current_gs_pos = nil
@@ -4645,6 +4655,8 @@ module Xlsxrb
           @inside_outer_shdw = false
         when "innerShdw"
           @inside_inner_shdw = false
+        when "glow"
+          @inside_glow = false
         when "gradFill"
           @inside_grad_fill = false
         when "prstGeom"
