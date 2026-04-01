@@ -4616,6 +4616,7 @@ module Xlsxrb
             tf[:kern] = attributes["kern"].to_i if attributes["kern"]
             tf[:cap] = attributes["cap"] if attributes["cap"]
             tf[:lang] = attributes["lang"] if attributes["lang"]
+            tf[:alt_lang] = attributes["altLang"] if attributes["altLang"]
             tf[:size] = attributes["sz"].to_i if attributes["sz"]
             @current_text_font = tf
           end

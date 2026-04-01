@@ -2973,6 +2973,7 @@ module Xlsxrb
                         rpr_attrs << %( kern="#{tf[:kern]}") if tf[:kern]
                         rpr_attrs << %( cap="#{xml_escape(tf[:cap])}") if tf[:cap]
                         rpr_attrs << %( lang="#{xml_escape(tf[:lang])}") if tf[:lang]
+                        rpr_attrs << %( altLang="#{xml_escape(tf[:alt_lang])}") if tf[:alt_lang]
                         rpr_children = +""
                         rpr_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(tf[:color])}"/></a:solidFill>) if tf[:color]
                         rpr_children << %(<a:latin typeface="#{xml_escape(tf[:name])}"/>) if tf[:name]
