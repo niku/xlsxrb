@@ -4995,7 +4995,14 @@ module Xlsxrb
           if @inside_ser && @inside_ser_sp_pr
             @inside_ser_ln = true
             @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
+            @current_ser[:line_cap] = attributes["cap"] if @current_ser && attributes["cap"]
           end
+        when "round"
+          @current_ser[:line_join] = "round" if @inside_ser && @inside_ser_ln && @current_ser
+        when "bevel"
+          @current_ser[:line_join] = "bevel" if @inside_ser && @inside_ser_ln && @current_ser
+        when "miter"
+          @current_ser[:line_join] = "miter" if @inside_ser && @inside_ser_ln && @current_ser
         when "solidFill"
           if @inside_dpt && @inside_dpt_sp_pr
             @inside_dpt_solid_fill = true
