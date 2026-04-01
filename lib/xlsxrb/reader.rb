@@ -4518,6 +4518,12 @@ module Xlsxrb
             gl[:rad] = attributes["rad"].to_i if attributes["rad"]
             @current_shape[:glow] = gl
           end
+        when "softEdge"
+          if @inside_sp && @inside_effect_lst && @current_shape
+            se = {}
+            se[:rad] = attributes["rad"].to_i if attributes["rad"]
+            @current_shape[:soft_edge] = se
+          end
         when "prstDash"
           @current_shape[:line_dash] = attributes["val"] if @inside_sp && @inside_ln && @current_shape && attributes["val"]
         when "headEnd"
