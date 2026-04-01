@@ -1304,6 +1304,22 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated shape with text kerning" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_text_kern_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    tf = shapes[0][:text_font]
+    assert_not_nil(tf)
+    assert_equal(1200, tf[:kern])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated shapes with autofit modes" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

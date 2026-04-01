@@ -6905,6 +6905,27 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape text_font kern" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Kerned",
+                     text_font: { kern: 1200 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    tf = shapes[0][:text_font]
+    assert_not_nil(tf)
+    assert_equal(1200, tf[:kern])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart axis label rotation" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
