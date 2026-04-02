@@ -4786,8 +4786,8 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = File.join(Dir.tmpdir, "scatter_xy_#{Process.pid}.xlsx")
     writer.write(xlsx_path)
     xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
-    assert_match(%r{<c:xVal><c:strRef><c:f>Sheet1!\$A\$1</c:f></c:strRef></c:xVal>}, xml)
-    assert_match(%r{<c:yVal><c:numRef><c:f>Sheet1!\$B\$1</c:f></c:numRef></c:yVal>}, xml)
+    assert_match(%r{<c:xVal><c:strRef><c:f>Sheet1!\$A\$1</c:f><c:strCache>}, xml)
+    assert_match(%r{<c:yVal><c:numRef><c:f>Sheet1!\$B\$1</c:f><c:numCache>}, xml)
     assert_no_match(/<c:cat>/, xml)
     assert_no_match(/<c:val>/, xml)
   ensure
@@ -4882,7 +4882,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = File.join(Dir.tmpdir, "bub_size_#{Process.pid}.xlsx")
     writer.write(xlsx_path)
     xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
-    assert_match(%r{<c:bubbleSize><c:numRef><c:f>Sheet1!\$C\$1</c:f></c:numRef></c:bubbleSize>}, xml)
+    assert_match(%r{<c:bubbleSize><c:numRef><c:f>Sheet1!\$C\$1</c:f><c:numCache>}, xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -6489,6 +6489,41 @@ class WriterTest < Test::Unit::TestCase
     assert_match(%r{<c:majorTimeUnit val="months"/>}, chart_xml)
     assert_match(%r{<c:majorUnit val="1"/>}, chart_xml)
     assert_no_match(/<c:catAx>/, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits numCache and strCache for chart refs" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Jan")
+    writer.set_cell("A2", "Feb")
+    writer.set_cell("A3", "Mar")
+    writer.set_cell("B1", 10)
+    writer.set_cell("B2", 20)
+    writer.set_cell("B3", 30)
+    writer.set_cell("C1", "Sales")
+    writer.add_chart(type: :bar, series: [
+                       { name: "Sheet1!$C$1", cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3" }
+                     ])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-cache", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+
+    # numCache for val_ref
+    assert_match(%r{<c:numCache>.*<c:formatCode>General</c:formatCode>.*<c:ptCount val="3"/>}m, chart_xml)
+    assert_match(%r{<c:pt idx="0"><c:v>10</c:v></c:pt>}, chart_xml)
+    assert_match(%r{<c:pt idx="2"><c:v>30</c:v></c:pt>}, chart_xml)
+
+    # strCache for cat_ref
+    assert_match(%r{<c:strCache>.*<c:ptCount val="3"/>}m, chart_xml)
+    assert_match(%r{<c:strCache>.*<c:pt idx="0"><c:v>Jan</c:v></c:pt>}m, chart_xml)
+    assert_match(%r{<c:strCache>.*<c:pt idx="2"><c:v>Mar</c:v></c:pt>}m, chart_xml)
+
+    # strCache for series name
+    assert_match(%r{<c:tx><c:strRef><c:f>Sheet1!\$C\$1</c:f><c:strCache><c:ptCount val="1"/>.*Sales}m, chart_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
