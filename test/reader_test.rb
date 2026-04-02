@@ -8728,4 +8728,30 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart wall and floor" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     view_3d: { rot_x: 15, rot_y: 20 },
+                     floor: { fill_color: "FF0000" },
+                     back_wall: { fill_color: "00FF00", line_color: "0000FF", line_width: 12_700 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("FF0000", charts[0][:floor][:fill_color])
+    assert_equal("00FF00", charts[0][:back_wall][:fill_color])
+    assert_equal("0000FF", charts[0][:back_wall][:line_color])
+    assert_equal(12_700, charts[0][:back_wall][:line_width])
+    assert_nil(charts[0][:side_wall])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
