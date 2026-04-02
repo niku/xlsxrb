@@ -8970,4 +8970,30 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips axis title with font" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     cat_axis_title: { text: "Cats", font: { bold: true, size: 1400, name: "Calibri" } },
+                     val_axis_title: { text: "Vals", font: { italic: true, color: "00FF00" } },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal("Cats", charts[0][:cat_axis_title])
+    assert_equal(true, charts[0][:cat_axis_title_font][:bold])
+    assert_equal(1400, charts[0][:cat_axis_title_font][:size])
+    assert_equal("Calibri", charts[0][:cat_axis_title_font][:name])
+    assert_equal("Vals", charts[0][:val_axis_title])
+    assert_equal(true, charts[0][:val_axis_title_font][:italic])
+    assert_equal("00FF00", charts[0][:val_axis_title_font][:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
