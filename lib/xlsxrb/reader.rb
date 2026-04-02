@@ -5289,6 +5289,7 @@ module Xlsxrb
         @inside_dpt = false
         @inside_dpt_sp_pr = false
         @inside_dpt_solid_fill = false
+        @inside_dpt_ln = false
         @current_dpt = nil
         @inside_trendline = false
         @inside_trendline_name = false
@@ -5434,7 +5435,10 @@ module Xlsxrb
             @inside_plot_area_sp_pr = true
           end
         when "ln"
-          if @inside_ser && @inside_ser_sp_pr
+          if @inside_dpt && @inside_dpt_sp_pr
+            @inside_dpt_ln = true
+            @current_dpt[:line_width] = attributes["w"].to_i / 12_700.0 if @current_dpt && attributes["w"]
+          elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_ln = true
             @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
             @current_ser[:line_cap] = attributes["cap"] if @current_ser && attributes["cap"]
@@ -5459,6 +5463,8 @@ module Xlsxrb
         when "srgbClr"
           if @inside_title_rpr && @title_font && attributes["val"]
             @title_font[:color] = attributes["val"]
+          elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_ln && @current_dpt && attributes["val"]
+            @current_dpt[:line_color] = attributes["val"]
           elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_solid_fill && @current_dpt && attributes["val"]
             @current_dpt[:fill_color] = attributes["val"]
           elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser && attributes["val"]
@@ -5743,6 +5749,7 @@ module Xlsxrb
           @inside_dpt = false
           @inside_dpt_sp_pr = false
           @inside_dpt_solid_fill = false
+          @inside_dpt_ln = false
         when "trendline"
           @current_ser[:trendline] = @current_trendline if @inside_trendline && @current_trendline && @current_ser
           @current_trendline = nil
@@ -5771,6 +5778,7 @@ module Xlsxrb
             @inside_plot_area_solid_fill = false
           end
         when "ln"
+          @inside_dpt_ln = false if @inside_dpt
           @inside_ser_ln = false if @inside_ser
         when "marker"
           @inside_ser_marker = false if @inside_ser

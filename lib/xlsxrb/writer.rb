@@ -3357,7 +3357,15 @@ module Xlsxrb
         parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f></c:strRef></c:tx>" if ser[:name]
         ser[:data_points]&.each do |dp|
           parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
-          parts << %(<c:spPr><a:solidFill><a:srgbClr val="#{xml_escape(dp[:fill_color])}"/></a:solidFill></c:spPr>) if dp[:fill_color]
+          dp_sp_children = +""
+          dp_sp_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(dp[:fill_color])}"/></a:solidFill>) if dp[:fill_color]
+          dp_sp_children << "<a:noFill/>" if dp[:no_fill]
+          if dp[:line_color] || dp[:line_width]
+            dp_ln_attrs = dp[:line_width] ? %( w="#{(dp[:line_width] * 12_700).to_i}") : ""
+            dp_ln_fill = dp[:line_color] ? %(<a:solidFill><a:srgbClr val="#{xml_escape(dp[:line_color])}"/></a:solidFill>) : ""
+            dp_sp_children << "<a:ln#{dp_ln_attrs}>#{dp_ln_fill}</a:ln>"
+          end
+          parts << "<c:spPr>#{dp_sp_children}</c:spPr>" unless dp_sp_children.empty?
           parts << "</c:dPt>"
         end
         if ser[:fill_color] || ser[:line_color] || ser[:line_width] || ser[:line_cap] || ser[:line_join]
