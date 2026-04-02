@@ -4435,6 +4435,7 @@ module Xlsxrb
         @inside_prst_geom = false
         @inside_rpr = false
         @inside_end_para_rpr = false
+        @inside_def_rpr = false
         @current_text_font = nil
         @inside_effect_lst = false
         @inside_outer_shdw = false
@@ -4688,6 +4689,31 @@ module Xlsxrb
             ti[:indent] = attributes["indent"].to_i if attributes["indent"]
             @current_shape[:text_indent] = ti unless ti.empty?
           end
+        when "defRPr"
+          if @inside_tx_body && @inside_sp && @current_shape
+            @inside_rpr = true
+            @inside_def_rpr = true
+            tf = {}
+            tf[:bold] = true if %w[1 true].include?(attributes["b"])
+            tf[:italic] = true if %w[1 true].include?(attributes["i"])
+            tf[:no_proof] = true if %w[1 true].include?(attributes["noProof"])
+            tf[:normalize_h] = true if %w[1 true].include?(attributes["normalizeH"])
+            tf[:kumimoji] = true if %w[1 true].include?(attributes["kumimoji"])
+            tf[:strike] = attributes["strike"] if attributes["strike"]
+            tf[:underline] = attributes["u"] if attributes["u"]
+            tf[:baseline] = attributes["baseline"].to_i if attributes["baseline"]
+            tf[:spacing] = attributes["spc"].to_i if attributes["spc"]
+            tf[:kern] = attributes["kern"].to_i if attributes["kern"]
+            tf[:cap] = attributes["cap"] if attributes["cap"]
+            tf[:lang] = attributes["lang"] if attributes["lang"]
+            tf[:alt_lang] = attributes["altLang"] if attributes["altLang"]
+            tf[:dirty] = true if %w[1 true].include?(attributes["dirty"])
+            tf[:smt_clean] = true if %w[1 true].include?(attributes["smtClean"])
+            tf[:err] = true if %w[1 true].include?(attributes["err"])
+            tf[:bmk] = attributes["bmk"] if attributes["bmk"]
+            tf[:size] = attributes["sz"].to_i if attributes["sz"]
+            @current_text_font = tf
+          end
         when "spcBef"
           @inside_spc_bef = true if @inside_tx_body && @inside_sp
         when "spcAft"
@@ -4875,6 +4901,11 @@ module Xlsxrb
           @current_shape[:text_end_para_rpr] = @current_text_font if @inside_end_para_rpr && @current_text_font&.any? && @current_shape
           @inside_rpr = false
           @inside_end_para_rpr = false
+          @current_text_font = nil
+        when "defRPr"
+          @current_shape[:text_def_rpr] = @current_text_font if @inside_def_rpr && @current_text_font&.any? && @current_shape
+          @inside_rpr = false
+          @inside_def_rpr = false
           @current_text_font = nil
         when "t"
           @current_shape[:text] = (@current_shape[:text] || +"") << @text_buffer if @inside_t && @inside_tx_body && @current_shape

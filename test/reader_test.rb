@@ -7738,6 +7738,29 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape text_def_rpr" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "DR",
+                     text_def_rpr: { lang: "en-US", size: 1100, bold: true })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    dr = shapes[0][:text_def_rpr]
+    assert_not_nil(dr)
+    assert_equal("en-US", dr[:lang])
+    assert_equal(1100, dr[:size])
+    assert_equal(true, dr[:bold])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape text_font alt_lang" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

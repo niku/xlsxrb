@@ -5708,6 +5708,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_def_rpr emits a:defRPr inside a:pPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "DR",
+                     text_def_rpr: { lang: "en-US", size: 1100 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-defrpr", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:pPr>.*<a:defRPr[^>]*lang="en-US"/m, drawing_xml)
+    assert_match(/<a:defRPr[^>]*sz="1100"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_font alt_lang emits altLang attribute on a:rPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
