@@ -6418,6 +6418,40 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writes schemeClr for shape fill and line" do
+    writer = Xlsxrb::Writer.new
+    writer.add_shape(fill_color: { scheme: "accent1" }, line_color: { scheme: "dk1" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-scheme", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:solidFill><a:schemeClr val="accent1"/></a:solidFill>}, drawing_xml)
+    assert_match(%r{<a:ln[^>]*><a:solidFill><a:schemeClr val="dk1"/></a:solidFill></a:ln>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "writes schemeClr for chart series fill" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     series: [{ val_ref: "Sheet1!B1", fill_color: { scheme: "accent2" } }])
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-scheme-chart", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<a:solidFill><a:schemeClr val="accent2"/></a:solidFill>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

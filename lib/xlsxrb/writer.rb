@@ -2833,7 +2833,7 @@ module Xlsxrb
           parts << %(<xdr:blipFill>#{blip_xml}#{src_rect_xml}<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>)
           img_line_xml = if img[:line_color]
                            ln_w_attr = img[:line_width] ? %( w="#{img[:line_width].to_i}") : ""
-                           %(<a:ln#{ln_w_attr}><a:solidFill><a:srgbClr val="#{xml_escape(img[:line_color])}"/></a:solidFill></a:ln>)
+                           %(<a:ln#{ln_w_attr}><a:solidFill>#{color_xml(img[:line_color])}</a:solidFill></a:ln>)
                          else
                            ""
                          end
@@ -2899,7 +2899,7 @@ module Xlsxrb
                              gf_attrs = +""
                              gf_attrs << %( rotWithShape="#{gf[:rot_with_shape] ? 1 : 0}") unless gf[:rot_with_shape].nil?
                              gf_attrs << %( flip="#{xml_escape(gf[:flip])}") if gf[:flip]
-                             gs_xml = (gf[:stops] || []).map { |gs| %(<a:gs pos="#{gs[:pos]}"><a:srgbClr val="#{xml_escape(gs[:color])}"/></a:gs>) }.join
+                             gs_xml = (gf[:stops] || []).map { |gs| %(<a:gs pos="#{gs[:pos]}">#{color_xml(gs[:color])}</a:gs>) }.join
                              type_xml = if gf[:path]
                                           %(<a:path path="#{xml_escape(gf[:path])}"/>)
                                         elsif gf[:angle]
@@ -2913,8 +2913,8 @@ module Xlsxrb
                            elsif shape[:pattern_fill]
                              pf = shape[:pattern_fill]
                              pf_children = +""
-                             pf_children << %(<a:fgClr><a:srgbClr val="#{xml_escape(pf[:fg_color])}"/></a:fgClr>) if pf[:fg_color]
-                             pf_children << %(<a:bgClr><a:srgbClr val="#{xml_escape(pf[:bg_color])}"/></a:bgClr>) if pf[:bg_color]
+                             pf_children << %(<a:fgClr>#{color_xml(pf[:fg_color])}</a:fgClr>) if pf[:fg_color]
+                             pf_children << %(<a:bgClr>#{color_xml(pf[:bg_color])}</a:bgClr>) if pf[:bg_color]
                              %(<a:pattFill prst="#{xml_escape(pf[:preset])}">#{pf_children}</a:pattFill>)
                            else
                              ""
@@ -3146,7 +3146,7 @@ module Xlsxrb
       end
       if para[:bullet]
         bu = para[:bullet]
-        ppr_children << %(<a:buClr><a:srgbClr val="#{xml_escape(bu[:color])}"/></a:buClr>) if bu[:color]
+        ppr_children << %(<a:buClr>#{color_xml(bu[:color])}</a:buClr>) if bu[:color]
         ppr_children << %(<a:buSzPts val="#{bu[:size_pts]}"/>) if bu[:size_pts]
         ppr_children << %(<a:buSzPct val="#{bu[:size_pct]}"/>) if bu[:size_pct]
         ppr_children << %(<a:buFont typeface="#{xml_escape(bu[:font])}"/>) if bu[:font]
@@ -3203,8 +3203,8 @@ module Xlsxrb
       attrs << %( err="1") if font[:err]
       attrs << %( bmk="#{xml_escape(font[:bmk])}") if font[:bmk]
       children = +""
-      children << %(<a:solidFill><a:srgbClr val="#{xml_escape(font[:color])}"/></a:solidFill>) if font[:color]
-      children << %(<a:highlight><a:srgbClr val="#{xml_escape(font[:highlight])}"/></a:highlight>) if font[:highlight]
+      children << %(<a:solidFill>#{color_xml(font[:color])}</a:solidFill>) if font[:color]
+      children << %(<a:highlight>#{color_xml(font[:highlight])}</a:highlight>) if font[:highlight]
       children << %(<a:latin typeface="#{xml_escape(font[:name])}"/>) if font[:name]
       children << %(<a:ea typeface="#{xml_escape(font[:ea_font])}"/>) if font[:ea_font]
       children << %(<a:cs typeface="#{xml_escape(font[:cs_font])}"/>) if font[:cs_font]
@@ -3214,7 +3214,7 @@ module Xlsxrb
       if font[:line_color] || font[:line_width] || font[:line_dash] || font[:line_cap] || font[:line_join]
         ln_attrs = +(font[:line_width] ? %( w="#{font[:line_width].to_i}") : "")
         ln_attrs << %( cap="#{xml_escape(font[:line_cap])}") if font[:line_cap]
-        ln_fill = font[:line_color] ? %(<a:solidFill><a:srgbClr val="#{xml_escape(font[:line_color])}"/></a:solidFill>) : ""
+        ln_fill = font[:line_color] ? %(<a:solidFill>#{color_xml(font[:line_color])}</a:solidFill>) : ""
         ln_dash = font[:line_dash] ? %(<a:prstDash val="#{xml_escape(font[:line_dash])}"/>) : ""
         ln_join = case font[:line_join]
                   when "round" then "<a:round/>"
@@ -3325,7 +3325,7 @@ module Xlsxrb
         rpr_attrs << %( i="1") if font[:italic]
         rpr_attrs << %( sz="#{font[:size]}") if font[:size]
         rpr_children = +""
-        rpr_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(font[:color])}"/></a:solidFill>) if font[:color]
+        rpr_children << %(<a:solidFill>#{color_xml(font[:color])}</a:solidFill>) if font[:color]
         rpr_children << %(<a:latin typeface="#{xml_escape(font[:name])}"/>) if font[:name]
         rpr_xml = if rpr_children.empty?
                     "<a:rPr#{rpr_attrs}/>"
@@ -3338,18 +3338,28 @@ module Xlsxrb
       end
     end
 
-    def srgb_clr_xml(color, alpha: nil, transforms: nil)
+    def color_xml(color, alpha: nil, transforms: nil)
+      if color.is_a?(Hash) && color[:scheme]
+        tag = "schemeClr"
+        val = xml_escape(color[:scheme])
+        transforms = color[:transforms] || transforms
+      else
+        tag = "srgbClr"
+        val = xml_escape(color)
+      end
       children = +""
       children << %(<a:alpha val="#{alpha}"/>) if alpha
       (transforms || []).each do |t|
         children << %(<a:#{xml_escape(t[:type])} val="#{t[:val]}"/>)
       end
       if children.empty?
-        %(<a:srgbClr val="#{xml_escape(color)}"/>)
+        %(<a:#{tag} val="#{val}"/>)
       else
-        %(<a:srgbClr val="#{xml_escape(color)}">#{children}</a:srgbClr>)
+        %(<a:#{tag} val="#{val}">#{children}</a:#{tag}>)
       end
     end
+
+    alias srgb_clr_xml color_xml
 
     def build_axis_txpr(rotation, font)
       return "" unless rotation || font
@@ -3361,7 +3371,7 @@ module Xlsxrb
         rpr_attrs << %( sz="#{(font[:size] * 100).to_i}") if font[:size]
         rpr_attrs << %( b="1") if font[:bold]
         rpr_attrs << %( i="1") if font[:italic]
-        rpr_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(font[:color])}"/></a:solidFill>) if font[:color]
+        rpr_children << %(<a:solidFill>#{color_xml(font[:color])}</a:solidFill>) if font[:color]
         rpr_children << %(<a:latin typeface="#{xml_escape(font[:name])}"/>) if font[:name]
       end
       def_rpr = if rpr_children.empty?
@@ -3442,11 +3452,11 @@ module Xlsxrb
           parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
           parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
           dp_sp_children = +""
-          dp_sp_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(dp[:fill_color])}"/></a:solidFill>) if dp[:fill_color]
+          dp_sp_children << %(<a:solidFill>#{color_xml(dp[:fill_color])}</a:solidFill>) if dp[:fill_color]
           dp_sp_children << "<a:noFill/>" if dp[:no_fill]
           if dp[:line_color] || dp[:line_width]
             dp_ln_attrs = dp[:line_width] ? %( w="#{(dp[:line_width] * 12_700).to_i}") : ""
-            dp_ln_fill = dp[:line_color] ? %(<a:solidFill><a:srgbClr val="#{xml_escape(dp[:line_color])}"/></a:solidFill>) : ""
+            dp_ln_fill = dp[:line_color] ? %(<a:solidFill>#{color_xml(dp[:line_color])}</a:solidFill>) : ""
             dp_sp_children << "<a:ln#{dp_ln_attrs}>#{dp_ln_fill}</a:ln>"
           end
           parts << "<c:spPr>#{dp_sp_children}</c:spPr>" unless dp_sp_children.empty?
@@ -3454,14 +3464,14 @@ module Xlsxrb
         end
         if ser[:fill_color] || ser[:no_fill] || ser[:line_color] || ser[:no_line] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
           parts << "<c:spPr>"
-          parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:fill_color])}"/></a:solidFill>) if ser[:fill_color]
+          parts << %(<a:solidFill>#{color_xml(ser[:fill_color])}</a:solidFill>) if ser[:fill_color]
           parts << "<a:noFill/>" if ser[:no_fill]
           if ser[:line_color] || ser[:no_line] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
             lw = ser[:line_width] ? %( w="#{(ser[:line_width] * 12_700).to_i}") : ""
             lc = ser[:line_cap] ? %( cap="#{xml_escape(ser[:line_cap])}") : ""
             parts << "<a:ln#{lw}#{lc}>"
             parts << "<a:noFill/>" if ser[:no_line]
-            parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:line_color])}"/></a:solidFill>) if ser[:line_color]
+            parts << %(<a:solidFill>#{color_xml(ser[:line_color])}</a:solidFill>) if ser[:line_color]
             parts << %(<a:prstDash val="#{xml_escape(ser[:line_dash])}"/>) if ser[:line_dash]
             case ser[:line_join]
             when "round" then parts << "<a:round/>"
@@ -3479,11 +3489,11 @@ module Xlsxrb
           parts << %(<c:size val="#{ser[:marker_size]}"/>) if ser[:marker_size]
           if ser[:marker_fill] || ser[:marker_line_color]
             parts << "<c:spPr>"
-            parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:marker_fill])}"/></a:solidFill>) if ser[:marker_fill]
+            parts << %(<a:solidFill>#{color_xml(ser[:marker_fill])}</a:solidFill>) if ser[:marker_fill]
             if ser[:marker_line_color]
               mk_ln_w = ser[:marker_line_width] ? %( w="#{(ser[:marker_line_width] * 12_700).to_i}") : ""
               parts << "<a:ln#{mk_ln_w}>"
-              parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:marker_line_color])}"/></a:solidFill>)
+              parts << %(<a:solidFill>#{color_xml(ser[:marker_line_color])}</a:solidFill>)
               parts << "</a:ln>"
             end
             parts << "</c:spPr>"
@@ -3661,10 +3671,10 @@ module Xlsxrb
 
       if chart[:plot_area_fill] || chart[:plot_area_line_color]
         pa_sp = +""
-        pa_sp << %(<a:solidFill><a:srgbClr val="#{xml_escape(chart[:plot_area_fill])}"/></a:solidFill>) if chart[:plot_area_fill]
+        pa_sp << %(<a:solidFill>#{color_xml(chart[:plot_area_fill])}</a:solidFill>) if chart[:plot_area_fill]
         if chart[:plot_area_line_color]
           pa_ln_w = chart[:plot_area_line_width] ? %( w="#{chart[:plot_area_line_width].to_i}") : ""
-          pa_sp << "<a:ln#{pa_ln_w}><a:solidFill><a:srgbClr val=\"#{xml_escape(chart[:plot_area_line_color])}\"/></a:solidFill></a:ln>"
+          pa_sp << "<a:ln#{pa_ln_w}><a:solidFill>#{color_xml(chart[:plot_area_line_color])}</a:solidFill></a:ln>"
         end
         parts << "<c:spPr>#{pa_sp}</c:spPr>"
       end
