@@ -818,6 +818,7 @@ module Xlsxrb
         chart[:plot_area_line_color] = cl.plot_area_line_color if cl.plot_area_line_color
         chart[:plot_area_line_width] = cl.plot_area_line_width if cl.plot_area_line_width
         chart[:plot_area_line_dash] = cl.plot_area_line_dash if cl.plot_area_line_dash
+        chart[:plot_area_no_fill] = cl.plot_area_no_fill if cl.plot_area_no_fill
         chart[:plot_area_layout] = cl.plot_area_layout if cl.plot_area_layout
         chart[:cat_axis_label_rotation] = cl.cat_axis_label_rotation if cl.cat_axis_label_rotation
         chart[:val_axis_label_rotation] = cl.val_axis_label_rotation if cl.val_axis_label_rotation
@@ -5287,7 +5288,7 @@ module Xlsxrb
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
                   :data_table,
-                  :plot_area_fill, :plot_area_line_color, :plot_area_line_width, :plot_area_line_dash,
+                  :plot_area_fill, :plot_area_no_fill, :plot_area_line_color, :plot_area_line_width, :plot_area_line_dash,
                   :plot_area_layout,
                   :cat_axis_label_rotation, :val_axis_label_rotation,
                   :cat_axis_font, :val_axis_font,
@@ -5427,6 +5428,7 @@ module Xlsxrb
         @wireframe = nil
         @data_table = nil
         @plot_area_fill = nil
+        @plot_area_no_fill = nil
         @plot_area_line_color = nil
         @plot_area_line_width = nil
         @plot_area_line_dash = nil
@@ -5972,6 +5974,8 @@ module Xlsxrb
             @legend[:no_fill] = true
           elsif @inside_d_table_sp_pr && @data_table
             @data_table[:no_fill] = true
+          elsif @inside_plot_area_sp_pr
+            @plot_area_no_fill = true
           elsif @inside_chart_space_sp_pr
             @chart_no_fill = true
           end
