@@ -5372,6 +5372,11 @@ module Xlsxrb
         @inside_hi_low_lines_solid_fill = false
         @up_down_bars = nil
         @inside_up_down_bars = false
+        @inside_up_bars = false
+        @inside_down_bars = false
+        @inside_up_down_bar_sp_pr = false
+        @inside_up_down_bar_ln = false
+        @inside_up_down_bar_solid_fill = false
         @scatter_style = nil
         @radar_style = nil
         @cat_axis_pos = nil
@@ -5581,6 +5586,10 @@ module Xlsxrb
         when "upDownBars"
           @inside_up_down_bars = true
           @up_down_bars = {}
+        when "upBars"
+          @inside_up_bars = true if @inside_up_down_bars
+        when "downBars"
+          @inside_down_bars = true if @inside_up_down_bars
         when "wireframe"
           @wireframe = attributes["val"] == "1" if attributes["val"]
         when "ser"
@@ -5651,6 +5660,8 @@ module Xlsxrb
             @inside_drop_lines_sp_pr = true
           elsif @inside_hi_low_lines
             @inside_hi_low_lines_sp_pr = true
+          elsif @inside_up_bars || @inside_down_bars
+            @inside_up_down_bar_sp_pr = true
           elsif @inside_gridlines
             @inside_gridlines_sp_pr = true
           elsif @inside_cat_ax || @inside_val_ax
@@ -5702,6 +5713,13 @@ module Xlsxrb
             if attributes["w"]
               @hi_low_lines = {} if @hi_low_lines == true
               @hi_low_lines[:line_width] = attributes["w"].to_i / 12_700.0
+            end
+          elsif @inside_up_down_bar_sp_pr
+            @inside_up_down_bar_ln = true
+            bar_key = @inside_up_bars ? :up_bars : :down_bars
+            if attributes["w"]
+              @up_down_bars[bar_key] ||= {}
+              @up_down_bars[bar_key][:line_width] = attributes["w"].to_i / 12_700.0
             end
           elsif @inside_gridlines_sp_pr
             @inside_gridlines_ln = true
@@ -5781,6 +5799,8 @@ module Xlsxrb
             @inside_drop_lines_solid_fill = true
           elsif @inside_hi_low_lines_sp_pr
             @inside_hi_low_lines_solid_fill = true
+          elsif @inside_up_down_bar_sp_pr
+            @inside_up_down_bar_solid_fill = true
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = true
           elsif @inside_gridlines_sp_pr
@@ -6337,6 +6357,10 @@ module Xlsxrb
             @inside_hi_low_lines_sp_pr = false
             @inside_hi_low_lines_ln = false
             @inside_hi_low_lines_solid_fill = false
+          elsif @inside_up_down_bar_sp_pr
+            @inside_up_down_bar_sp_pr = false
+            @inside_up_down_bar_ln = false
+            @inside_up_down_bar_solid_fill = false
           elsif @inside_ser
             @inside_ser_sp_pr = false
             @inside_ser_ln = false
@@ -6378,6 +6402,7 @@ module Xlsxrb
           @inside_ser_ln = false if @inside_ser
           @inside_drop_lines_ln = false if @inside_drop_lines_sp_pr
           @inside_hi_low_lines_ln = false if @inside_hi_low_lines_sp_pr
+          @inside_up_down_bar_ln = false if @inside_up_down_bar_sp_pr
           @inside_gridlines_ln = false if @inside_gridlines_sp_pr
           @inside_ax_ln = false if @inside_ax_sp_pr
           @inside_wall_ln = false if @inside_wall_sp_pr
@@ -6405,6 +6430,8 @@ module Xlsxrb
             @inside_drop_lines_solid_fill = false
           elsif @inside_hi_low_lines_sp_pr
             @inside_hi_low_lines_solid_fill = false
+          elsif @inside_up_down_bar_sp_pr
+            @inside_up_down_bar_solid_fill = false
           elsif @inside_gridlines_sp_pr
             @inside_gridlines_solid_fill = false
           elsif @inside_ax_sp_pr
@@ -6496,6 +6523,21 @@ module Xlsxrb
           @inside_axis_def_rpr = false
         when "upDownBars"
           @inside_up_down_bars = false
+          @inside_up_bars = false
+          @inside_down_bars = false
+          @inside_up_down_bar_sp_pr = false
+          @inside_up_down_bar_ln = false
+          @inside_up_down_bar_solid_fill = false
+        when "upBars"
+          @inside_up_bars = false
+          @inside_up_down_bar_sp_pr = false
+          @inside_up_down_bar_ln = false
+          @inside_up_down_bar_solid_fill = false
+        when "downBars"
+          @inside_down_bars = false
+          @inside_up_down_bar_sp_pr = false
+          @inside_up_down_bar_ln = false
+          @inside_up_down_bar_solid_fill = false
         when "dropLines"
           @inside_drop_lines = false
           @inside_drop_lines_sp_pr = false
@@ -6562,6 +6604,14 @@ module Xlsxrb
         elsif @inside_hi_low_lines_sp_pr && @inside_hi_low_lines_ln && @inside_hi_low_lines_solid_fill
           @hi_low_lines = {} if @hi_low_lines == true
           @hi_low_lines[:line_color] = color_value
+        elsif @inside_up_down_bar_sp_pr && @inside_up_down_bar_ln && @inside_up_down_bar_solid_fill
+          bar_key = @inside_up_bars ? :up_bars : :down_bars
+          @up_down_bars[bar_key] ||= {}
+          @up_down_bars[bar_key][:line_color] = color_value
+        elsif @inside_up_down_bar_sp_pr && @inside_up_down_bar_solid_fill
+          bar_key = @inside_up_bars ? :up_bars : :down_bars
+          @up_down_bars[bar_key] ||= {}
+          @up_down_bars[bar_key][:fill_color] = color_value
         elsif @inside_plot_area_sp_pr && @inside_plot_area_ln && @inside_plot_area_solid_fill
           @plot_area_line_color = color_value
         elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill
