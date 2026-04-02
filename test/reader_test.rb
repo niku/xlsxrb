@@ -8996,4 +8996,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart title spPr" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     title: { text: "Revenue", fill_color: "FFEECC", line_color: "CC6600", line_width: 0.5 },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal("Revenue", charts[0][:title])
+    assert_equal("FFEECC", charts[0][:title_fill_color])
+    assert_equal("CC6600", charts[0][:title_line_color])
+    assert_in_delta(0.5, charts[0][:title_line_width], 0.01)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

@@ -3338,10 +3338,23 @@ module Xlsxrb
                   else
                     "<a:rPr#{rpr_attrs}>#{rpr_children}</a:rPr>"
                   end
-        "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r>#{rpr_xml}<a:t>#{text}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"#{overlay_val}\"/></c:title>"
+        sp_xml = build_title_sp_pr(title_spec)
+        "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r>#{rpr_xml}<a:t>#{text}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"#{overlay_val}\"/>#{sp_xml}</c:title>"
       else
         "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(title_spec)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"#{overlay_val}\"/></c:title>"
       end
+    end
+
+    def build_title_sp_pr(spec)
+      children = +""
+      children << %(<a:solidFill>#{color_xml(spec[:fill_color])}</a:solidFill>) if spec[:fill_color]
+      children << "<a:noFill/>" if spec[:no_fill]
+      if spec[:line_color] || spec[:line_width]
+        lw = spec[:line_width] ? %( w="#{(spec[:line_width] * 12_700).to_i}") : ""
+        lf = spec[:line_color] ? %(<a:solidFill>#{color_xml(spec[:line_color])}</a:solidFill>) : ""
+        children << "<a:ln#{lw}>#{lf}</a:ln>"
+      end
+      children.empty? ? "" : "<c:spPr>#{children}</c:spPr>"
     end
 
     # Resolves a cell reference like "Sheet1!$A$1:$A$5" to an array of values from @sheets.
