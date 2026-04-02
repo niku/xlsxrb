@@ -4632,6 +4632,7 @@ module Xlsxrb
           if @inside_tx_body && @inside_sp && @current_shape
             @current_shape[:text_align] = attributes["algn"] if attributes["algn"]
             @current_shape[:text_font_align] = attributes["fontAlgn"] if attributes["fontAlgn"]
+            @current_shape[:text_def_tab_sz] = attributes["defTabSz"].to_i if attributes["defTabSz"]
             @current_shape[:text_rtl] = %w[1 true].include?(attributes["rtl"]) if attributes["rtl"]
             ti = {}
             ti[:left] = attributes["marL"].to_i if attributes["marL"]
