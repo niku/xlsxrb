@@ -1238,7 +1238,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, line_cap: nil, line_align: nil, line_compound: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_num_col: nil, text_spc_col: nil, text_rtl_col: nil, text_from_word_art: nil, text_upright: nil, text_compat_ln_spc: nil, text_force_aa: nil, text_warp: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_end_para_rpr: nil, text_def_rpr: nil, text_align: nil, text_font_align: nil, text_def_tab_sz: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, text_ea_ln_brk: nil, text_latin_ln_brk: nil, text_hanging_punct: nil, text_tab_stops: nil, text_bullet: nil, text_level: nil, text_paragraphs: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, line_cap: nil, line_align: nil, line_compound: nil, line_join: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_num_col: nil, text_spc_col: nil, text_rtl_col: nil, text_from_word_art: nil, text_upright: nil, text_compat_ln_spc: nil, text_force_aa: nil, text_warp: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_end_para_rpr: nil, text_def_rpr: nil, text_align: nil, text_font_align: nil, text_def_tab_sz: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, text_ea_ln_brk: nil, text_latin_ln_brk: nil, text_hanging_punct: nil, text_tab_stops: nil, text_bullet: nil, text_level: nil, text_paragraphs: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1268,6 +1268,7 @@ module Xlsxrb
       shape[:line_cap] = line_cap if line_cap
       shape[:line_align] = line_align if line_align
       shape[:line_compound] = line_compound if line_compound
+      shape[:line_join] = line_join if line_join
       shape[:head_end] = head_end if head_end
       shape[:tail_end] = tail_end if tail_end
       shape[:no_line] = no_line unless no_line.nil?
@@ -2881,7 +2882,7 @@ module Xlsxrb
                            end
           shape_line_xml = if shape[:no_line]
                              "<a:ln><a:noFill/></a:ln>"
-                           elsif shape[:line_color] || shape[:line_dash] || shape[:head_end] || shape[:tail_end] || shape[:line_cap] || shape[:line_align] || shape[:line_compound]
+                           elsif shape[:line_color] || shape[:line_dash] || shape[:head_end] || shape[:tail_end] || shape[:line_cap] || shape[:line_align] || shape[:line_compound] || shape[:line_join]
                              ln_attrs = +(shape[:line_width] ? %( w="#{shape[:line_width].to_i}") : "")
                              ln_attrs << %( cap="#{xml_escape(shape[:line_cap])}") if shape[:line_cap]
                              ln_attrs << %( algn="#{xml_escape(shape[:line_align])}") if shape[:line_align]
@@ -2890,7 +2891,13 @@ module Xlsxrb
                              dash_part = shape[:line_dash] ? %(<a:prstDash val="#{xml_escape(shape[:line_dash])}"/>) : ""
                              head_part = build_line_end_xml("headEnd", shape[:head_end])
                              tail_part = build_line_end_xml("tailEnd", shape[:tail_end])
-                             %(<a:ln#{ln_attrs}>#{fill_part}#{dash_part}#{head_part}#{tail_part}</a:ln>)
+                             join_part = case shape[:line_join]
+                                         when "round" then "<a:round/>"
+                                         when "bevel" then "<a:bevel/>"
+                                         when "miter" then "<a:miter/>"
+                                         else ""
+                                         end
+                             %(<a:ln#{ln_attrs}>#{fill_part}#{dash_part}#{head_part}#{tail_part}#{join_part}</a:ln>)
                            else
                              ""
                            end

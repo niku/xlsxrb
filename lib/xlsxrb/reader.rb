@@ -4563,6 +4563,12 @@ module Xlsxrb
           end
         when "prstDash"
           @current_shape[:line_dash] = attributes["val"] if @inside_sp && @inside_ln && @current_shape && attributes["val"]
+        when "round"
+          @current_shape[:line_join] = "round" if @inside_sp && @inside_ln && @current_shape
+        when "bevel"
+          @current_shape[:line_join] = "bevel" if @inside_sp && @inside_ln && @current_shape
+        when "miter"
+          @current_shape[:line_join] = "miter" if @inside_sp && @inside_ln && @current_shape
         when "headEnd"
           if @inside_sp && @inside_ln && @current_shape
             he = {}
