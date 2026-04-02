@@ -4434,6 +4434,7 @@ module Xlsxrb
         @inside_ln = false
         @inside_rpr_ln = false
         @inside_rpr_effect_lst = false
+        @inside_cust_dash = false
         @inside_prst_geom = false
         @inside_rpr = false
         @inside_end_para_rpr = false
@@ -4655,6 +4656,16 @@ module Xlsxrb
             @current_text_font[:line_dash] = attributes["val"]
           elsif @inside_sp && @inside_ln && @current_shape && attributes["val"]
             @current_shape[:line_dash] = attributes["val"]
+          end
+        when "custDash"
+          @inside_cust_dash = true if @inside_sp && @inside_ln && @current_shape
+        when "ds"
+          if @inside_cust_dash && @inside_sp && @inside_ln && @current_shape
+            ds = {}
+            ds[:d] = attributes["d"].to_i if attributes["d"]
+            ds[:sp] = attributes["sp"].to_i if attributes["sp"]
+            @current_shape[:line_custom_dash] ||= []
+            @current_shape[:line_custom_dash] << ds
           end
         when "round"
           if @inside_rpr_ln && @current_text_font
@@ -5034,6 +5045,7 @@ module Xlsxrb
         when "ln"
           @inside_ln = false
           @inside_rpr_ln = false
+          @inside_cust_dash = false
         when "effectLst"
           @inside_effect_lst = false
           @inside_rpr_effect_lst = false
