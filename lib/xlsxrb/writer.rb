@@ -3626,7 +3626,13 @@ module Xlsxrb
         uses_xy = %w[scatterChart bubbleChart].include?(chart_type)
         cat_tag = uses_xy ? "xVal" : "cat"
         val_tag = uses_xy ? "yVal" : "val"
-        parts << "<c:#{cat_tag}><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f>#{str_cache_xml(ser[:cat_ref])}</c:strRef></c:#{cat_tag}>" if ser[:cat_ref]
+        if ser[:cat_ref]
+          parts << if uses_xy || ser[:cat_ref_type] == :num
+                     "<c:#{cat_tag}><c:numRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f>#{num_cache_xml(ser[:cat_ref])}</c:numRef></c:#{cat_tag}>"
+                   else
+                     "<c:#{cat_tag}><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f>#{str_cache_xml(ser[:cat_ref])}</c:strRef></c:#{cat_tag}>"
+                   end
+        end
         parts << "<c:#{val_tag}><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f>#{num_cache_xml(ser[:val_ref])}</c:numRef></c:#{val_tag}>" if ser[:val_ref]
         parts << "<c:bubbleSize><c:numRef><c:f>#{xml_escape(ser[:bubble_size_ref])}</c:f>#{num_cache_xml(ser[:bubble_size_ref])}</c:numRef></c:bubbleSize>" if ser[:bubble_size_ref]
         parts << %(<c:smooth val="#{ser[:smooth] ? 1 : 0}"/>) unless ser[:smooth].nil?

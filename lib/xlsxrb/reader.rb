@@ -5674,6 +5674,8 @@ module Xlsxrb
         when "f"
           @inside_f = true
           @text_buffer = +""
+        when "numRef"
+          @current_ser[:cat_ref_type] = :num if @inside_ser && @inside_cat && @current_ser
         when "numCache"
           @inside_num_cache = true
           @cache_values = []
@@ -6055,7 +6057,9 @@ module Xlsxrb
           @inside_cache_pt = false
         when "numCache"
           if @inside_num_cache && @inside_ser && @current_ser
-            if @inside_val
+            if @inside_cat
+              @current_ser[:cat_cache] = @cache_values.dup
+            elsif @inside_val
               @current_ser[:val_cache] = @cache_values.dup
             elsif @inside_bubble_size
               @current_ser[:bubble_size_cache] = @cache_values.dup

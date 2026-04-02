@@ -8867,4 +8867,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips cat_ref_type for scatter chart numRef" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1.0)
+    writer.set_cell("A2", 2.0)
+    writer.set_cell("B1", 10)
+    writer.set_cell("B2", 20)
+    writer.add_chart(type: :scatter, series: [
+                       { cat_ref: "Sheet1!$A$1:$A$2", val_ref: "Sheet1!$B$1:$B$2" }
+                     ])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    ser = charts[0][:series][0]
+    assert_equal(:num, ser[:cat_ref_type])
+    assert_equal(["1.0", "2.0"], ser[:cat_cache])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
