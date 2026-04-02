@@ -6397,6 +6397,27 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writes chart wall and floor" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     view_3d: { rot_x: 15, rot_y: 20 },
+                     floor: { fill_color: "FF0000" },
+                     back_wall: { fill_color: "00FF00", line_color: "0000FF", line_width: 12_700 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-wall", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:floor><c:spPr><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></c:spPr></c:floor>}, chart_xml)
+    assert_match(%r{<c:backWall><c:spPr><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill><a:ln w="12700"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill></a:ln></c:spPr></c:backWall>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

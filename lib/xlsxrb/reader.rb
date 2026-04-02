@@ -806,6 +806,9 @@ module Xlsxrb
         chart[:cat_axis_line_width] = cl.cat_axis_line_width if cl.cat_axis_line_width
         chart[:val_axis_line_color] = cl.val_axis_line_color if cl.val_axis_line_color
         chart[:val_axis_line_width] = cl.val_axis_line_width if cl.val_axis_line_width
+        chart[:floor] = cl.floor if cl.floor
+        chart[:side_wall] = cl.side_wall if cl.side_wall
+        chart[:back_wall] = cl.back_wall if cl.back_wall
       end
       listener.charts
     end
@@ -5242,7 +5245,8 @@ module Xlsxrb
                   :cat_axis_label_rotation, :val_axis_label_rotation,
                   :cat_axis_font, :val_axis_font,
                   :cat_axis_line_color, :cat_axis_line_width,
-                  :val_axis_line_color, :val_axis_line_width
+                  :val_axis_line_color, :val_axis_line_width,
+                  :floor, :side_wall, :back_wall
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -5341,6 +5345,14 @@ module Xlsxrb
         @val_axis_line_width = nil
         @inside_d_table = false
         @inside_view_3d = false
+        @inside_wall = false
+        @current_wall = nil
+        @inside_wall_sp_pr = false
+        @inside_wall_ln = false
+        @inside_wall_solid_fill = false
+        @floor = nil
+        @side_wall = nil
+        @back_wall = nil
         @inside_scaling = false
         @inside_title = false
         @inside_t = false
@@ -5417,6 +5429,15 @@ module Xlsxrb
           @view_3d[:r_ang_ax] = attributes["val"] == "1" if @inside_view_3d && attributes["val"]
         when "perspective"
           @view_3d[:perspective] = attributes["val"].to_i if @inside_view_3d && attributes["val"]
+        when "floor"
+          @inside_wall = true
+          @current_wall = (@floor ||= {})
+        when "sideWall"
+          @inside_wall = true
+          @current_wall = (@side_wall ||= {})
+        when "backWall"
+          @inside_wall = true
+          @current_wall = (@back_wall ||= {})
         when "gapWidth"
           if @inside_up_down_bars && attributes["val"]
             @up_down_bars[:gap_width] = attributes["val"].to_i
@@ -5538,6 +5559,8 @@ module Xlsxrb
             @inside_ser_sp_pr = true
           elsif @inside_cat_ax || @inside_val_ax
             @inside_ax_sp_pr = true
+          elsif @inside_wall && @current_wall
+            @inside_wall_sp_pr = true
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = true
           end
@@ -5564,6 +5587,9 @@ module Xlsxrb
                 @val_axis_line_width = attributes["w"].to_i
               end
             end
+          elsif @inside_wall_sp_pr
+            @inside_wall_ln = true
+            @current_wall[:line_width] = attributes["w"].to_i if @current_wall && attributes["w"]
           end
         when "round"
           @current_ser[:line_join] = "round" if @inside_ser && @inside_ser_ln && @current_ser
@@ -5587,6 +5613,8 @@ module Xlsxrb
             @inside_plot_area_solid_fill = true
           elsif @inside_ax_sp_pr
             @inside_ax_solid_fill = true
+          elsif @inside_wall_sp_pr
+            @inside_wall_solid_fill = true
           end
         when "noFill"
           if @inside_ser && @inside_ser_ln && @current_ser
@@ -5625,6 +5653,10 @@ module Xlsxrb
             elsif @inside_val_ax
               @val_axis_line_color = attributes["val"]
             end
+          elsif @inside_wall_sp_pr && @inside_wall_ln && @inside_wall_solid_fill && @current_wall && attributes["val"]
+            @current_wall[:line_color] = attributes["val"]
+          elsif @inside_wall_sp_pr && @inside_wall_solid_fill && @current_wall && attributes["val"]
+            @current_wall[:fill_color] = attributes["val"]
           end
         when "cat", "xVal"
           @inside_cat = true if @inside_ser
@@ -6028,6 +6060,10 @@ module Xlsxrb
             @inside_ax_sp_pr = false
             @inside_ax_ln = false
             @inside_ax_solid_fill = false
+          elsif @inside_wall
+            @inside_wall_sp_pr = false
+            @inside_wall_ln = false
+            @inside_wall_solid_fill = false
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = false
             @inside_plot_area_solid_fill = false
@@ -6038,6 +6074,7 @@ module Xlsxrb
           @inside_marker_ln = false if @inside_marker_sp_pr
           @inside_ser_ln = false if @inside_ser
           @inside_ax_ln = false if @inside_ax_sp_pr
+          @inside_wall_ln = false if @inside_wall_sp_pr
           @inside_plot_area_ln = false if @inside_plot_area_sp_pr
         when "marker"
           @inside_ser_marker = false if @inside_ser
@@ -6050,6 +6087,8 @@ module Xlsxrb
             @inside_ser_solid_fill = false
           elsif @inside_ax_sp_pr
             @inside_ax_solid_fill = false
+          elsif @inside_wall_sp_pr
+            @inside_wall_solid_fill = false
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = false
           end
@@ -6099,6 +6138,12 @@ module Xlsxrb
           @inside_scaling = false
         when "view3D"
           @inside_view_3d = false
+        when "floor", "sideWall", "backWall"
+          @inside_wall = false
+          @current_wall = nil
+          @inside_wall_sp_pr = false
+          @inside_wall_ln = false
+          @inside_wall_solid_fill = false
         when "dTable"
           @inside_d_table = false
         when "upDownBars"

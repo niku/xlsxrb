@@ -1131,7 +1131,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, title_overlay: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, drop_lines: nil, hi_low_lines: nil, up_down_bars: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, cat_axis_line_color: nil, cat_axis_line_width: nil, val_axis_line_color: nil, val_axis_line_width: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, title_overlay: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, floor: nil, side_wall: nil, back_wall: nil, drop_lines: nil, hi_low_lines: nil, up_down_bars: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, cat_axis_line_color: nil, cat_axis_line_width: nil, val_axis_line_color: nil, val_axis_line_width: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1208,6 +1208,9 @@ module Xlsxrb
       chart[:style] = style if style
       chart[:rounded_corners] = rounded_corners unless rounded_corners.nil?
       chart[:view_3d] = view_3d if view_3d
+      chart[:floor] = floor if floor
+      chart[:side_wall] = side_wall if side_wall
+      chart[:back_wall] = back_wall if back_wall
       chart[:name] = name if name
       chart[:description] = description if description
       chart[:frame_title] = frame_title if frame_title
@@ -3395,6 +3398,20 @@ module Xlsxrb
         parts << %(<c:rAngAx val="#{r_ang ? 1 : 0}"/>) unless r_ang.nil?
         parts << %(<c:perspective val="#{v3d[:perspective]}"/>) if v3d[:perspective]
         parts << "</c:view3D>"
+      end
+
+      %i[floor side_wall back_wall].each do |wall_key|
+        next unless (wall = chart[wall_key])
+
+        tag = { floor: "floor", side_wall: "sideWall", back_wall: "backWall" }[wall_key]
+        parts << "<c:#{tag}><c:spPr>"
+        parts << "<a:solidFill>#{srgb_clr_xml(wall[:fill_color])}</a:solidFill>" if wall[:fill_color]
+        parts << "<a:noFill/>" if wall[:no_fill]
+        if wall[:line_color]
+          w_attr = wall[:line_width] ? %( w="#{wall[:line_width]}") : ""
+          parts << "<a:ln#{w_attr}><a:solidFill>#{srgb_clr_xml(wall[:line_color])}</a:solidFill></a:ln>"
+        end
+        parts << "</c:spPr></c:#{tag}>"
       end
 
       parts << "<c:plotArea><c:layout/>"
