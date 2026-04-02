@@ -4786,7 +4786,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = File.join(Dir.tmpdir, "scatter_xy_#{Process.pid}.xlsx")
     writer.write(xlsx_path)
     xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
-    assert_match(%r{<c:xVal><c:strRef><c:f>Sheet1!\$A\$1</c:f><c:strCache>}, xml)
+    assert_match(%r{<c:xVal><c:numRef><c:f>Sheet1!\$A\$1</c:f><c:numCache>}, xml)
     assert_match(%r{<c:yVal><c:numRef><c:f>Sheet1!\$B\$1</c:f><c:numCache>}, xml)
     assert_no_match(/<c:cat>/, xml)
     assert_no_match(/<c:val>/, xml)
@@ -6524,6 +6524,27 @@ class WriterTest < Test::Unit::TestCase
 
     # strCache for series name
     assert_match(%r{<c:tx><c:strRef><c:f>Sheet1!\$C\$1</c:f><c:strCache><c:ptCount val="1"/>.*Sales}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits numRef for xVal on scatter chart cat_ref" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1.5)
+    writer.set_cell("A2", 2.5)
+    writer.set_cell("B1", 10)
+    writer.set_cell("B2", 20)
+    writer.add_chart(type: :scatter, series: [
+                       { cat_ref: "Sheet1!$A$1:$A$2", val_ref: "Sheet1!$B$1:$B$2" }
+                     ])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-numxval", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:xVal><c:numRef><c:f>Sheet1!\$A\$1:\$A\$2</c:f><c:numCache>}, chart_xml)
+    assert_no_match(/<c:xVal><c:strRef>/, chart_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
