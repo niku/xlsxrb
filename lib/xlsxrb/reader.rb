@@ -727,6 +727,7 @@ module Xlsxrb
         chart[:title_no_fill] = cl.title_no_fill if cl.title_no_fill
         chart[:title_line_color] = cl.title_line_color if cl.title_line_color
         chart[:title_line_width] = cl.title_line_width if cl.title_line_width
+        chart[:title_line_dash] = cl.title_line_dash if cl.title_line_dash
         chart[:series] = cl.series unless cl.series.empty?
         chart[:legend] = cl.legend unless cl.legend.empty?
         if cl.legend_font
@@ -741,9 +742,11 @@ module Xlsxrb
         chart[:cat_axis_title_fill] = cl.cat_axis_title_fill if cl.cat_axis_title_fill
         chart[:cat_axis_title_line_color] = cl.cat_axis_title_line_color if cl.cat_axis_title_line_color
         chart[:cat_axis_title_line_width] = cl.cat_axis_title_line_width if cl.cat_axis_title_line_width
+        chart[:cat_axis_title_line_dash] = cl.cat_axis_title_line_dash if cl.cat_axis_title_line_dash
         chart[:val_axis_title_fill] = cl.val_axis_title_fill if cl.val_axis_title_fill
         chart[:val_axis_title_line_color] = cl.val_axis_title_line_color if cl.val_axis_title_line_color
         chart[:val_axis_title_line_width] = cl.val_axis_title_line_width if cl.val_axis_title_line_width
+        chart[:val_axis_title_line_dash] = cl.val_axis_title_line_dash if cl.val_axis_title_line_dash
         chart[:grouping] = cl.grouping if cl.grouping
         chart[:bar_dir] = cl.bar_dir if cl.bar_dir
         chart[:vary_colors] = cl.vary_colors unless cl.vary_colors.nil?
@@ -5251,7 +5254,7 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       attr_reader :chart_type, :title, :title_overlay, :title_font,
-                  :title_fill_color, :title_no_fill, :title_line_color, :title_line_width,
+                  :title_fill_color, :title_no_fill, :title_line_color, :title_line_width, :title_line_dash,
                   :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
                   :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
                   :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
@@ -5296,8 +5299,8 @@ module Xlsxrb
                   :cat_axis_major_time_unit, :cat_axis_minor_time_unit,
                   :cat_axis_major_unit, :cat_axis_minor_unit,
                   :cat_axis_title_font, :val_axis_title_font,
-                  :cat_axis_title_fill, :cat_axis_title_line_color, :cat_axis_title_line_width,
-                  :val_axis_title_fill, :val_axis_title_line_color, :val_axis_title_line_width,
+                  :cat_axis_title_fill, :cat_axis_title_line_color, :cat_axis_title_line_width, :cat_axis_title_line_dash,
+                  :val_axis_title_fill, :val_axis_title_line_color, :val_axis_title_line_width, :val_axis_title_line_dash,
                   :chart_fill, :chart_line_color, :chart_line_width, :chart_line_dash
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
@@ -5312,6 +5315,7 @@ module Xlsxrb
         @title_no_fill = nil
         @title_line_color = nil
         @title_line_width = nil
+        @title_line_dash = nil
         @inside_title_sp_pr = false
         @inside_title_ln = false
         @inside_title_solid_fill = false
@@ -5526,9 +5530,11 @@ module Xlsxrb
         @cat_axis_title_fill = nil
         @cat_axis_title_line_color = nil
         @cat_axis_title_line_width = nil
+        @cat_axis_title_line_dash = nil
         @val_axis_title_fill = nil
         @val_axis_title_line_color = nil
         @val_axis_title_line_width = nil
+        @val_axis_title_line_dash = nil
         @inside_title_rpr = false
         @title_depth = 0
         @inside_axis_tx_pr = false
@@ -5881,12 +5887,20 @@ module Xlsxrb
             @current_wall[:line_dash] = attributes["val"]
           elsif @inside_plot_area_sp_pr && @inside_plot_area_ln && attributes["val"]
             @plot_area_line_dash = attributes["val"]
+          elsif @inside_ax_title_sp_pr && @inside_ax_title_ln && attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_title_line_dash = attributes["val"]
+            elsif @inside_val_ax
+              @val_axis_title_line_dash = attributes["val"]
+            end
           elsif @inside_ax_sp_pr && @inside_ax_ln && attributes["val"]
             if @inside_cat_ax
               @cat_axis_line_dash = attributes["val"]
             elsif @inside_val_ax
               @val_axis_line_dash = attributes["val"]
             end
+          elsif @inside_title_sp_pr && @inside_title_ln && attributes["val"]
+            @title_line_dash = attributes["val"]
           elsif @inside_chart_space_sp_pr && @inside_chart_space_ln && attributes["val"]
             @chart_line_dash = attributes["val"]
           end

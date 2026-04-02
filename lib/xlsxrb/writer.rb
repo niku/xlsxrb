@@ -3359,10 +3359,11 @@ module Xlsxrb
       children = +""
       children << %(<a:solidFill>#{color_xml(spec[:fill_color])}</a:solidFill>) if spec[:fill_color]
       children << "<a:noFill/>" if spec[:no_fill]
-      if spec[:line_color] || spec[:line_width]
+      if spec[:line_color] || spec[:line_width] || spec[:line_dash]
         lw = spec[:line_width] ? %( w="#{(spec[:line_width] * 12_700).to_i}") : ""
         lf = spec[:line_color] ? %(<a:solidFill>#{color_xml(spec[:line_color])}</a:solidFill>) : ""
-        children << "<a:ln#{lw}>#{lf}</a:ln>"
+        ld = spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(spec[:line_dash])}"/>) : ""
+        children << "<a:ln#{lw}>#{lf}#{ld}</a:ln>"
       end
       children.empty? ? "" : "<c:spPr>#{children}</c:spPr>"
     end
