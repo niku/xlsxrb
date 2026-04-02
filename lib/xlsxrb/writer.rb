@@ -3172,6 +3172,63 @@ module Xlsxrb
                   end
         children << "<a:ln#{ln_attrs}>#{ln_fill}#{ln_dash}#{ln_join}</a:ln>"
       end
+      if font[:outer_shadow] || font[:inner_shadow] || font[:glow] || font[:soft_edge] || font[:reflection] || font[:blur]
+        eff = +""
+        if font[:outer_shadow]
+          os = font[:outer_shadow]
+          oa = +""
+          oa << %( blurRad="#{os[:blur_rad]}") if os[:blur_rad]
+          oa << %( dist="#{os[:dist]}") if os[:dist]
+          oa << %( dir="#{os[:dir]}") if os[:dir]
+          oa << %( algn="#{xml_escape(os[:algn])}") if os[:algn]
+          oa << %( rotWithShape="#{os[:rot_with_shape] ? 1 : 0}") unless os[:rot_with_shape].nil?
+          oc = os[:color] ? %(<a:srgbClr val="#{xml_escape(os[:color])}"/>) : ""
+          eff << "<a:outerShdw#{oa}>#{oc}</a:outerShdw>"
+        end
+        if font[:glow]
+          gl = font[:glow]
+          ga = +(gl[:rad] ? %( rad="#{gl[:rad]}") : "")
+          gc = gl[:color] ? %(<a:srgbClr val="#{xml_escape(gl[:color])}"/>) : ""
+          eff << "<a:glow#{ga}>#{gc}</a:glow>"
+        end
+        if font[:inner_shadow]
+          is = font[:inner_shadow]
+          ia = +""
+          ia << %( blurRad="#{is[:blur_rad]}") if is[:blur_rad]
+          ia << %( dist="#{is[:dist]}") if is[:dist]
+          ia << %( dir="#{is[:dir]}") if is[:dir]
+          ic = is[:color] ? %(<a:srgbClr val="#{xml_escape(is[:color])}"/>) : ""
+          eff << "<a:innerShdw#{ia}>#{ic}</a:innerShdw>"
+        end
+        if font[:reflection]
+          rf = font[:reflection]
+          ra = +""
+          ra << %( blurRad="#{rf[:blur_rad]}") if rf[:blur_rad]
+          ra << %( stA="#{rf[:st_a]}") if rf[:st_a]
+          ra << %( endA="#{rf[:end_a]}") if rf[:end_a]
+          ra << %( dist="#{rf[:dist]}") unless rf[:dist].nil?
+          ra << %( dir="#{rf[:dir]}") if rf[:dir]
+          ra << %( fadeDir="#{rf[:fade_dir]}") if rf[:fade_dir]
+          ra << %( sx="#{rf[:sx]}") if rf[:sx]
+          ra << %( sy="#{rf[:sy]}") if rf[:sy]
+          ra << %( kx="#{rf[:kx]}") if rf[:kx]
+          ra << %( ky="#{rf[:ky]}") if rf[:ky]
+          ra << %( algn="#{xml_escape(rf[:algn])}") if rf[:algn]
+          ra << %( rotWithShape="#{rf[:rot_with_shape] ? 1 : 0}") unless rf[:rot_with_shape].nil?
+          eff << "<a:reflection#{ra}/>"
+        end
+        if font[:soft_edge]
+          se = font[:soft_edge]
+          eff << %(<a:softEdge rad="#{se[:rad]}"/>)
+        end
+        if font[:blur]
+          bl = font[:blur]
+          ba = +(bl[:rad] ? %( rad="#{bl[:rad]}") : "")
+          ba << %( grow="#{bl[:grow] ? 1 : 0}") unless bl[:grow].nil?
+          eff << "<a:blur#{ba}/>"
+        end
+        children << "<a:effectLst>#{eff}</a:effectLst>"
+      end
       if children.empty?
         "<#{tag}#{attrs}/>"
       else

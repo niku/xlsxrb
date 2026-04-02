@@ -5200,6 +5200,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_font outer_shadow emits a:effectLst in a:rPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "TextShadow",
+                     text_font: { bold: true, outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" } })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-rpreffect", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:rPr b="1"><a:effectLst><a:outerShdw blurRad="50800" dist="38100" dir="2700000"><a:srgbClr val="000000"/></a:outerShdw></a:effectLst></a:rPr>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_font highlight emits a:highlight element in a:rPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
