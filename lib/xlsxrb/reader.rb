@@ -5389,7 +5389,11 @@ module Xlsxrb
         when "holeSize"
           @hole_size = attributes["val"]&.to_i if attributes["val"]
         when "smooth"
-          @smooth = attributes["val"] == "1" if attributes["val"] && !@inside_ser
+          if @inside_ser && @current_ser && attributes["val"]
+            @current_ser[:smooth] = attributes["val"] == "1"
+          elsif attributes["val"]
+            @smooth = attributes["val"] == "1"
+          end
         when "marker"
           if attributes["val"] && !@inside_ser
             @marker = attributes["val"] == "1"

@@ -5031,6 +5031,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_chart with per-series smooth emits c:smooth inside c:ser" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2", smooth: true }])
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-sersmooth", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:smooth val="1"/></c:ser>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_font strike emits strike attribute on a:rPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
