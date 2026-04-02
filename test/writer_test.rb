@@ -4408,6 +4408,20 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits chartSpace spPr with chart_no_fill" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     chart_no_fill: true)
+    xlsx_path = File.join(Dir.tmpdir, "chart_space_nf_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{</c:chart>.*<c:spPr><a:noFill/></c:spPr>.*</c:chartSpace>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits showDLblsOverMax element" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
