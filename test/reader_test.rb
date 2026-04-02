@@ -7289,6 +7289,31 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape text_tab_stops" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Tabs",
+                     text_tab_stops: [{ pos: 914_400, align: "l" }, { pos: 1_828_800, align: "r" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    tabs = shapes[0][:text_tab_stops]
+    assert_not_nil(tabs)
+    assert_equal(2, tabs.size)
+    assert_equal(914_400, tabs[0][:pos])
+    assert_equal("l", tabs[0][:align])
+    assert_equal(1_828_800, tabs[1][:pos])
+    assert_equal("r", tabs[1][:align])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape text_font alt_lang" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
