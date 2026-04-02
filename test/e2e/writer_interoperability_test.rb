@@ -2500,6 +2500,24 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid plot area line dash" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     plot_area_line_color: "0000FF",
+                     plot_area_line_dash: "dash")
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_plot_area_line_dash_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid chart space fill and border" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
