@@ -5910,8 +5910,16 @@ module Xlsxrb
             @current_ser[:no_fill] = true
           elsif @inside_dpt && @inside_dpt_sp_pr && @current_dpt
             @current_dpt[:no_fill] = true
+          elsif @inside_up_down_bar_sp_pr
+            bar_key = @inside_up_bars ? :up_bars : :down_bars
+            @up_down_bars[bar_key] ||= {}
+            @up_down_bars[bar_key][:no_fill] = true
+          elsif @inside_wall_sp_pr && @current_wall
+            @current_wall[:no_fill] = true
           elsif @inside_title_sp_pr
             @title_no_fill = true
+          elsif @inside_dlbls_sp_pr
+            @data_labels[:no_fill] = true
           elsif @inside_legend_sp_pr
             @legend[:no_fill] = true
           elsif @inside_d_table_sp_pr && @data_table
