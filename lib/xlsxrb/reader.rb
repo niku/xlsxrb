@@ -4445,6 +4445,7 @@ module Xlsxrb
         @inside_spc_aft = false
         @inside_lnspc = false
         @inside_tab_lst = false
+        @inside_bu_clr = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4580,6 +4581,9 @@ module Xlsxrb
             @current_text_font[:color] = attributes["val"]
           elsif @inside_rpr && @current_text_font && @inside_highlight && attributes["val"]
             @current_text_font[:highlight] = attributes["val"]
+          elsif @inside_bu_clr && @inside_sp && @current_shape && attributes["val"]
+            @current_shape[:text_bullet] ||= {}
+            @current_shape[:text_bullet][:color] = attributes["val"]
           elsif @inside_outer_shdw && @current_shape && attributes["val"]
             @current_shape[:outer_shadow][:color] = attributes["val"]
           elsif @inside_inner_shdw && @current_shape && attributes["val"]
@@ -4671,6 +4675,8 @@ module Xlsxrb
             @current_shape[:text_bullet] ||= {}
             @current_shape[:text_bullet][:type] = "none"
           end
+        when "buClr"
+          @inside_bu_clr = true if @inside_tx_body && @inside_sp
         when "buFont"
           if @inside_tx_body && @inside_sp && @current_shape && attributes["typeface"]
             @current_shape[:text_bullet] ||= {}
@@ -4812,6 +4818,8 @@ module Xlsxrb
           @inside_lnspc = false
         when "tabLst"
           @inside_tab_lst = false
+        when "buClr"
+          @inside_bu_clr = false
         when "rPr"
           @current_shape[:text_font] = @current_text_font if @inside_rpr && @current_text_font&.any? && @current_shape
           @inside_rpr = false
