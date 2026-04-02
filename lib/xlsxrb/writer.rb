@@ -3024,6 +3024,18 @@ module Xlsxrb
                           when "none" then "<a:noAutofit/>"
                           when "shape" then "<a:spAutoFit/>"
                           when "normal" then "<a:normAutofit/>"
+                          when Hash
+                            af = shape[:autofit]
+                            case af[:type]
+                            when "normal"
+                              na_attrs = +""
+                              na_attrs << %( fontScale="#{af[:font_scale]}") if af[:font_scale]
+                              na_attrs << %( lnSpcReduction="#{af[:ln_spc_reduction]}") if af[:ln_spc_reduction]
+                              "<a:normAutofit#{na_attrs}/>"
+                            when "none" then "<a:noAutofit/>"
+                            when "shape" then "<a:spAutoFit/>"
+                            else ""
+                            end
                           else ""
                           end
             body_pr_children << autofit_xml
