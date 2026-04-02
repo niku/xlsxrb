@@ -3019,7 +3019,6 @@ module Xlsxrb
     end
 
     def paragraph_xml(para)
-      rpr_xml = para[:font] ? text_char_props_xml("a:rPr", para[:font]) : ""
       ppr_attrs = +""
       ppr_attrs << %( algn="#{xml_escape(para[:align])}") if para[:align]
       ppr_attrs << %( fontAlgn="#{xml_escape(para[:font_align])}") if para[:font_align]
@@ -3088,7 +3087,16 @@ module Xlsxrb
                   "<a:pPr#{ppr_attrs}>#{ppr_children}</a:pPr>"
                 end
       end_para_rpr_xml = para[:end_para_rpr] ? text_char_props_xml("a:endParaRPr", para[:end_para_rpr]) : ""
-      "<a:p>#{ppr_xml}<a:r>#{rpr_xml}<a:t>#{xml_escape(para[:text] || "")}</a:t></a:r>#{end_para_rpr_xml}</a:p>"
+      runs_xml = if para[:runs]
+                   para[:runs].map do |run|
+                     run_rpr = run[:font] ? text_char_props_xml("a:rPr", run[:font]) : ""
+                     "<a:r>#{run_rpr}<a:t>#{xml_escape(run[:text] || "")}</a:t></a:r>"
+                   end.join
+                 else
+                   rpr_xml = para[:font] ? text_char_props_xml("a:rPr", para[:font]) : ""
+                   "<a:r>#{rpr_xml}<a:t>#{xml_escape(para[:text] || "")}</a:t></a:r>"
+                 end
+      "<a:p>#{ppr_xml}#{runs_xml}#{end_para_rpr_xml}</a:p>"
     end
 
     def text_char_props_xml(tag, font)

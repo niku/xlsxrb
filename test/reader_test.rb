@@ -7819,6 +7819,78 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips paragraph with multiple runs" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text_paragraphs: [
+                       { runs: [
+                         { text: "Bold", font: { bold: true } },
+                         { text: " Italic", font: { italic: true } }
+                       ] }
+                     ])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    shape = shapes[0]
+
+    # Backward compat: text is concatenation of runs
+    assert_equal("Bold Italic", shape[:text])
+
+    # Single paragraph, so no text_paragraphs at shape level
+    assert_nil(shape[:text_paragraphs])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips multiple paragraphs with multiple runs" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text_paragraphs: [
+                       { runs: [
+                         { text: "Hello", font: { bold: true } },
+                         { text: " World" }
+                       ] },
+                       { text: "Second" }
+                     ])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    shape = shapes[0]
+
+    assert_equal("Hello World\nSecond", shape[:text])
+
+    paras = shape[:text_paragraphs]
+    assert_not_nil(paras)
+    assert_equal(2, paras.size)
+
+    # First paragraph has multiple runs
+    assert_equal("Hello World", paras[0][:text])
+    runs = paras[0][:runs]
+    assert_not_nil(runs)
+    assert_equal(2, runs.size)
+    assert_equal("Hello", runs[0][:text])
+    assert_equal(true, runs[0][:font][:bold])
+    assert_equal(" World", runs[1][:text])
+
+    # Second has single run, no :runs key
+    assert_equal("Second", paras[1][:text])
+    assert_nil(paras[1][:runs])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape text_font alt_lang" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

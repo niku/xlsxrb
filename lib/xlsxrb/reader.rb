@@ -4450,6 +4450,8 @@ module Xlsxrb
         @inside_bu_clr = false
         @current_paragraph = nil
         @paragraphs_for_shape = nil
+        @inside_r = false
+        @current_run = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4621,6 +4623,11 @@ module Xlsxrb
           @paragraphs_for_shape = [] if @inside_sp
         when "p"
           @current_paragraph = {} if @inside_tx_body && @inside_sp
+        when "r"
+          if @inside_tx_body && @inside_sp && @current_paragraph
+            @inside_r = true
+            @current_run = {}
+          end
         when "rPr"
           if @inside_tx_body && @inside_sp && @current_shape
             @inside_rpr = true
@@ -4897,7 +4904,13 @@ module Xlsxrb
         when "buClr"
           @inside_bu_clr = false
         when "rPr"
-          @current_paragraph[:font] = @current_text_font if @inside_rpr && !@inside_end_para_rpr && !@inside_def_rpr && @current_text_font&.any? && @current_paragraph
+          if @inside_rpr && !@inside_end_para_rpr && !@inside_def_rpr && @current_text_font&.any?
+            if @current_run
+              @current_run[:font] = @current_text_font
+            elsif @current_paragraph
+              @current_paragraph[:font] = @current_text_font
+            end
+          end
           @inside_rpr = false
           @current_text_font = nil
         when "endParaRPr"
@@ -4911,10 +4924,24 @@ module Xlsxrb
           @inside_def_rpr = false
           @current_text_font = nil
         when "t"
-          @current_paragraph[:text] = (@current_paragraph[:text] || +"") << @text_buffer if @inside_t && @inside_tx_body && @current_paragraph
+          if @inside_t && @inside_tx_body
+            if @current_run
+              @current_run[:text] = (@current_run[:text] || +"") << @text_buffer
+            elsif @current_paragraph
+              @current_paragraph[:text] = (@current_paragraph[:text] || +"") << @text_buffer
+            end
+          end
           @inside_t = false
+        when "r"
+          if @inside_r && @current_run && @current_paragraph
+            @current_paragraph[:runs] ||= []
+            @current_paragraph[:runs] << @current_run
+            @current_run = nil
+            @inside_r = false
+          end
         when "p"
           if @inside_tx_body && @inside_sp && @current_paragraph && @paragraphs_for_shape
+            finalize_paragraph_runs(@current_paragraph)
             @paragraphs_for_shape << @current_paragraph
             merge_paragraph_to_shape(@current_paragraph, @current_shape) if @current_shape
             @current_paragraph = nil
@@ -4937,6 +4964,18 @@ module Xlsxrb
       end
 
       private
+
+      def finalize_paragraph_runs(para)
+        return unless para[:runs]&.any?
+
+        # Set paragraph text from concatenation of all run texts
+        para[:text] = para[:runs].filter_map { |r| r[:text] }.join unless para[:text]
+        # Set paragraph font from last run's font for backward compat
+        last_font = para[:runs].rfind { |r| r[:font] }&.dig(:font)
+        para[:font] = last_font if last_font && !para[:font]
+        # Remove :runs key when only one run (simplify output)
+        para.delete(:runs) if para[:runs].size <= 1
+      end
 
       def merge_paragraph_to_shape(para, shape)
         shape[:text] = shape[:text] ? "#{shape[:text]}\n#{para[:text]}" : para[:text] if para[:text]
