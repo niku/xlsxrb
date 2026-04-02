@@ -8792,4 +8792,29 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart legend font" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     legend: { position: "b", font: { size: 12, bold: true, color: "FF0000", name: "Calibri" } })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    legend = charts[0][:legend]
+    assert_equal("b", legend[:position])
+    assert_equal(12.0, legend[:font][:size])
+    assert_equal(true, legend[:font][:bold])
+    assert_equal("FF0000", legend[:font][:color])
+    assert_equal("Calibri", legend[:font][:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
