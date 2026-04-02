@@ -1615,6 +1615,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with line_miter_limit emits lim attribute on a:miter" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "ML", line_color: "000000", line_join: "miter", line_miter_limit: 800_000)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-miterlim", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:miter lim="800000"/>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with head_end and tail_end emits arrow elements" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
