@@ -723,6 +723,9 @@ module Xlsxrb
         chart[:title] = cl.title
         chart[:title_overlay] = cl.title_overlay unless cl.title_overlay.nil?
         chart[:title_font] = cl.title_font if cl.title_font
+        chart[:title_fill_color] = cl.title_fill_color if cl.title_fill_color
+        chart[:title_line_color] = cl.title_line_color if cl.title_line_color
+        chart[:title_line_width] = cl.title_line_width if cl.title_line_width
         chart[:series] = cl.series unless cl.series.empty?
         chart[:legend] = cl.legend unless cl.legend.empty?
         if cl.legend_font
@@ -5230,7 +5233,9 @@ module Xlsxrb
     class ChartTypeListener
       include REXML::SAX2Listener
 
-      attr_reader :chart_type, :title, :title_overlay, :title_font, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
+      attr_reader :chart_type, :title, :title_overlay, :title_font,
+                  :title_fill_color, :title_line_color, :title_line_width,
+                  :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
                   :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
                   :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
                   :cat_axis_major_gridlines, :val_axis_major_gridlines,
@@ -5281,6 +5286,12 @@ module Xlsxrb
         @title = nil
         @title_overlay = nil
         @title_font = nil
+        @title_fill_color = nil
+        @title_line_color = nil
+        @title_line_width = nil
+        @inside_title_sp_pr = false
+        @inside_title_ln = false
+        @inside_title_solid_fill = false
         @series = []
         @legend = {}
         @data_labels = {}
@@ -5619,6 +5630,8 @@ module Xlsxrb
             @inside_legend_sp_pr = true
           elsif @inside_d_table
             @inside_d_table_sp_pr = true
+          elsif @inside_title && @title_depth == 1 && !@inside_ax_title
+            @inside_title_sp_pr = true
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = true
           end
@@ -5662,6 +5675,9 @@ module Xlsxrb
           elsif @inside_d_table_sp_pr
             @inside_d_table_ln = true
             @data_table[:line_width] = attributes["w"].to_i / 12_700.0 if @data_table && attributes["w"]
+          elsif @inside_title_sp_pr
+            @inside_title_ln = true
+            @title_line_width = attributes["w"].to_i / 12_700.0 if attributes["w"]
           end
         when "round"
           @current_ser[:line_join] = "round" if @inside_ser && @inside_ser_ln && @current_ser
@@ -5693,6 +5709,8 @@ module Xlsxrb
             @inside_legend_solid_fill = true
           elsif @inside_d_table_sp_pr
             @inside_d_table_solid_fill = true
+          elsif @inside_title_sp_pr
+            @inside_title_solid_fill = true
           end
         when "noFill"
           if @inside_ser && @inside_ser_ln && @current_ser
@@ -6226,6 +6244,10 @@ module Xlsxrb
             @inside_d_table_sp_pr = false
             @inside_d_table_ln = false
             @inside_d_table_solid_fill = false
+          elsif @inside_title && @title_depth == 1
+            @inside_title_sp_pr = false
+            @inside_title_ln = false
+            @inside_title_solid_fill = false
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = false
             @inside_plot_area_solid_fill = false
@@ -6240,9 +6262,13 @@ module Xlsxrb
           @inside_wall_ln = false if @inside_wall_sp_pr
           @inside_legend_ln = false if @inside_legend_sp_pr
           @inside_d_table_ln = false if @inside_d_table_sp_pr
+          @inside_title_ln = false if @inside_title_sp_pr
           @inside_plot_area_ln = false if @inside_plot_area_sp_pr
         when "marker"
           @inside_ser_marker = false if @inside_ser
+        when "rPr"
+          @inside_title_rpr = false
+          @inside_ax_title_rpr = false
         when "solidFill"
           if @inside_dpt
             @inside_dpt_solid_fill = false
@@ -6401,6 +6427,10 @@ module Xlsxrb
           @data_table[:line_color] = color_value
         elsif @inside_d_table_sp_pr && @inside_d_table_solid_fill && @data_table
           @data_table[:fill_color] = color_value
+        elsif @inside_title_sp_pr && @inside_title_ln && @inside_title_solid_fill
+          @title_line_color = color_value
+        elsif @inside_title_sp_pr && @inside_title_solid_fill
+          @title_fill_color = color_value
         end
       end
 
