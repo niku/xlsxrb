@@ -4884,6 +4884,20 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits series marker no line" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
+                                marker_fill: "FF0000", marker_no_line: true }])
+    xlsx_path = File.join(Dir.tmpdir, "ser_mknl_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:ln><a:noFill/></a:ln></c:spPr></c:marker>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits invertIfNegative on series" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

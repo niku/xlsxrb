@@ -5966,6 +5966,8 @@ module Xlsxrb
         when "noFill"
           if @inside_ser && @inside_ser_ln && @current_ser
             @current_ser[:no_line] = true
+          elsif @inside_marker_sp_pr && @inside_marker_ln && @current_ser
+            @current_ser[:marker_no_line] = true
           elsif @inside_ser && @inside_ser_sp_pr && @current_ser
             @current_ser[:no_fill] = true
           elsif @inside_marker_sp_pr && @current_ser
