@@ -7120,6 +7120,55 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape text_font outer_shadow effect" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Shadow",
+                     text_font: { bold: true, outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" } })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    tf = shapes[0][:text_font]
+    assert_equal(true, tf[:bold])
+    os = tf[:outer_shadow]
+    assert_not_nil(os)
+    assert_equal(50_800, os[:blur_rad])
+    assert_equal(38_100, os[:dist])
+    assert_equal(2_700_000, os[:dir])
+    assert_equal("000000", os[:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips shape text_font glow effect" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Glow",
+                     text_font: { glow: { rad: 101_600, color: "FF0000" } })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    tf = shapes[0][:text_font]
+    gl = tf[:glow]
+    assert_not_nil(gl)
+    assert_equal(101_600, gl[:rad])
+    assert_equal("FF0000", gl[:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape text_font highlight" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

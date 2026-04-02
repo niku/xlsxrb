@@ -4433,6 +4433,7 @@ module Xlsxrb
         @inside_highlight = false
         @inside_ln = false
         @inside_rpr_ln = false
+        @inside_rpr_effect_lst = false
         @inside_prst_geom = false
         @inside_rpr = false
         @inside_end_para_rpr = false
@@ -4528,9 +4529,22 @@ module Xlsxrb
             @current_shape[:line_compound] = attributes["cmpd"] if attributes["cmpd"]
           end
         when "effectLst"
-          @inside_effect_lst = true if @inside_sp
+          if @inside_rpr && @current_text_font
+            @inside_rpr_effect_lst = true
+          elsif @inside_sp
+            @inside_effect_lst = true
+          end
         when "outerShdw"
-          if @inside_sp && @inside_effect_lst && @current_shape
+          if @inside_rpr_effect_lst && @current_text_font
+            @inside_outer_shdw = true
+            os = {}
+            os[:blur_rad] = attributes["blurRad"].to_i if attributes["blurRad"]
+            os[:dist] = attributes["dist"].to_i if attributes["dist"]
+            os[:dir] = attributes["dir"].to_i if attributes["dir"]
+            os[:algn] = attributes["algn"] if attributes["algn"]
+            os[:rot_with_shape] = %w[1 true].include?(attributes["rotWithShape"]) if attributes["rotWithShape"]
+            @current_text_font[:outer_shadow] = os
+          elsif @inside_sp && @inside_effect_lst && @current_shape
             @inside_outer_shdw = true
             os = {}
             os[:blur_rad] = attributes["blurRad"].to_i if attributes["blurRad"]
@@ -4541,7 +4555,14 @@ module Xlsxrb
             @current_shape[:outer_shadow] = os
           end
         when "innerShdw"
-          if @inside_sp && @inside_effect_lst && @current_shape
+          if @inside_rpr_effect_lst && @current_text_font
+            @inside_inner_shdw = true
+            is = {}
+            is[:blur_rad] = attributes["blurRad"].to_i if attributes["blurRad"]
+            is[:dist] = attributes["dist"].to_i if attributes["dist"]
+            is[:dir] = attributes["dir"].to_i if attributes["dir"]
+            @current_text_font[:inner_shadow] = is
+          elsif @inside_sp && @inside_effect_lst && @current_shape
             @inside_inner_shdw = true
             is = {}
             is[:blur_rad] = attributes["blurRad"].to_i if attributes["blurRad"]
@@ -4550,27 +4571,56 @@ module Xlsxrb
             @current_shape[:inner_shadow] = is
           end
         when "glow"
-          if @inside_sp && @inside_effect_lst && @current_shape
+          if @inside_rpr_effect_lst && @current_text_font
+            @inside_glow = true
+            gl = {}
+            gl[:rad] = attributes["rad"].to_i if attributes["rad"]
+            @current_text_font[:glow] = gl
+          elsif @inside_sp && @inside_effect_lst && @current_shape
             @inside_glow = true
             gl = {}
             gl[:rad] = attributes["rad"].to_i if attributes["rad"]
             @current_shape[:glow] = gl
           end
         when "softEdge"
-          if @inside_sp && @inside_effect_lst && @current_shape
+          if @inside_rpr_effect_lst && @current_text_font
+            se = {}
+            se[:rad] = attributes["rad"].to_i if attributes["rad"]
+            @current_text_font[:soft_edge] = se
+          elsif @inside_sp && @inside_effect_lst && @current_shape
             se = {}
             se[:rad] = attributes["rad"].to_i if attributes["rad"]
             @current_shape[:soft_edge] = se
           end
         when "blur"
-          if @inside_sp && @inside_effect_lst && @current_shape
+          if @inside_rpr_effect_lst && @current_text_font
+            bl = {}
+            bl[:rad] = attributes["rad"].to_i if attributes["rad"]
+            bl[:grow] = %w[1 true].include?(attributes["grow"]) if attributes["grow"]
+            @current_text_font[:blur] = bl
+          elsif @inside_sp && @inside_effect_lst && @current_shape
             bl = {}
             bl[:rad] = attributes["rad"].to_i if attributes["rad"]
             bl[:grow] = %w[1 true].include?(attributes["grow"]) if attributes["grow"]
             @current_shape[:blur] = bl
           end
         when "reflection"
-          if @inside_sp && @inside_effect_lst && @current_shape
+          if @inside_rpr_effect_lst && @current_text_font
+            rf = {}
+            rf[:blur_rad] = attributes["blurRad"].to_i if attributes["blurRad"]
+            rf[:st_a] = attributes["stA"].to_i if attributes["stA"]
+            rf[:end_a] = attributes["endA"].to_i if attributes["endA"]
+            rf[:dist] = attributes["dist"].to_i if attributes["dist"]
+            rf[:dir] = attributes["dir"].to_i if attributes["dir"]
+            rf[:fade_dir] = attributes["fadeDir"].to_i if attributes["fadeDir"]
+            rf[:sx] = attributes["sx"].to_i if attributes["sx"]
+            rf[:sy] = attributes["sy"].to_i if attributes["sy"]
+            rf[:kx] = attributes["kx"].to_i if attributes["kx"]
+            rf[:ky] = attributes["ky"].to_i if attributes["ky"]
+            rf[:algn] = attributes["algn"] if attributes["algn"]
+            rf[:rot_with_shape] = %w[1 true].include?(attributes["rotWithShape"]) if attributes["rotWithShape"]
+            @current_text_font[:reflection] = rf
+          elsif @inside_sp && @inside_effect_lst && @current_shape
             rf = {}
             rf[:blur_rad] = attributes["blurRad"].to_i if attributes["blurRad"]
             rf[:st_a] = attributes["stA"].to_i if attributes["stA"]
@@ -4644,6 +4694,12 @@ module Xlsxrb
           elsif @inside_bu_clr && @inside_sp && @current_paragraph && attributes["val"]
             @current_paragraph[:bullet] ||= {}
             @current_paragraph[:bullet][:color] = attributes["val"]
+          elsif @inside_outer_shdw && @inside_rpr_effect_lst && @current_text_font && attributes["val"]
+            @current_text_font[:outer_shadow][:color] = attributes["val"]
+          elsif @inside_inner_shdw && @inside_rpr_effect_lst && @current_text_font && attributes["val"]
+            @current_text_font[:inner_shadow][:color] = attributes["val"]
+          elsif @inside_glow && @inside_rpr_effect_lst && @current_text_font && attributes["val"]
+            @current_text_font[:glow][:color] = attributes["val"]
           elsif @inside_outer_shdw && @current_shape && attributes["val"]
             @current_shape[:outer_shadow][:color] = attributes["val"]
           elsif @inside_inner_shdw && @current_shape && attributes["val"]
@@ -4948,6 +5004,7 @@ module Xlsxrb
           @inside_rpr_ln = false
         when "effectLst"
           @inside_effect_lst = false
+          @inside_rpr_effect_lst = false
         when "outerShdw"
           @inside_outer_shdw = false
         when "innerShdw"
