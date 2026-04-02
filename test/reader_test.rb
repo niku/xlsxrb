@@ -8863,6 +8863,32 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips plot area manual layout" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     plot_area_layout: { target: "inner", x: 0.1, y: 0.2, w: 0.7, h: 0.6 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    layout = charts[0][:plot_area_layout]
+    assert_not_nil(layout)
+    assert_equal("inner", layout[:target])
+    assert_in_delta(0.1, layout[:x], 0.001)
+    assert_in_delta(0.2, layout[:y], 0.001)
+    assert_in_delta(0.7, layout[:w], 0.001)
+    assert_in_delta(0.6, layout[:h], 0.001)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips per-point data labels" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

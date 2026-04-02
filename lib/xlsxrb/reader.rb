@@ -813,6 +813,7 @@ module Xlsxrb
         chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
         chart[:plot_area_line_color] = cl.plot_area_line_color if cl.plot_area_line_color
         chart[:plot_area_line_width] = cl.plot_area_line_width if cl.plot_area_line_width
+        chart[:plot_area_layout] = cl.plot_area_layout if cl.plot_area_layout
         chart[:cat_axis_label_rotation] = cl.cat_axis_label_rotation if cl.cat_axis_label_rotation
         chart[:val_axis_label_rotation] = cl.val_axis_label_rotation if cl.val_axis_label_rotation
         chart[:cat_axis_font] = cl.cat_axis_font if cl.cat_axis_font
@@ -5278,6 +5279,7 @@ module Xlsxrb
                   :wireframe,
                   :data_table,
                   :plot_area_fill, :plot_area_line_color, :plot_area_line_width,
+                  :plot_area_layout,
                   :cat_axis_label_rotation, :val_axis_label_rotation,
                   :cat_axis_font, :val_axis_font,
                   :cat_axis_fill, :val_axis_fill,
@@ -5415,6 +5417,7 @@ module Xlsxrb
         @plot_area_line_color = nil
         @plot_area_line_width = nil
         @inside_plot_area = false
+        @inside_plot_area_layout = false
         @inside_plot_area_sp_pr = false
         @inside_plot_area_ln = false
         @inside_plot_area_solid_fill = false
@@ -6002,24 +6005,34 @@ module Xlsxrb
           @legend[:position] = attributes["val"] if @inside_legend && attributes["val"]
         when "manualLayout"
           @inside_legend_layout = true if @inside_legend
+          @inside_plot_area_layout = true if @inside_plot_area && !@inside_legend
         when "layoutTarget"
           (@legend[:layout] ||= {})[:target] = attributes["val"] if @inside_legend_layout && attributes["val"]
+          (@plot_area_layout ||= {})[:target] = attributes["val"] if @inside_plot_area_layout && attributes["val"]
         when "xMode"
           (@legend[:layout] ||= {})[:x_mode] = attributes["val"] if @inside_legend_layout && attributes["val"]
+          (@plot_area_layout ||= {})[:x_mode] = attributes["val"] if @inside_plot_area_layout && attributes["val"]
         when "yMode"
           (@legend[:layout] ||= {})[:y_mode] = attributes["val"] if @inside_legend_layout && attributes["val"]
+          (@plot_area_layout ||= {})[:y_mode] = attributes["val"] if @inside_plot_area_layout && attributes["val"]
         when "wMode"
           (@legend[:layout] ||= {})[:w_mode] = attributes["val"] if @inside_legend_layout && attributes["val"]
+          (@plot_area_layout ||= {})[:w_mode] = attributes["val"] if @inside_plot_area_layout && attributes["val"]
         when "hMode"
           (@legend[:layout] ||= {})[:h_mode] = attributes["val"] if @inside_legend_layout && attributes["val"]
+          (@plot_area_layout ||= {})[:h_mode] = attributes["val"] if @inside_plot_area_layout && attributes["val"]
         when "x"
           (@legend[:layout] ||= {})[:x] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
+          (@plot_area_layout ||= {})[:x] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
         when "y"
           (@legend[:layout] ||= {})[:y] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
+          (@plot_area_layout ||= {})[:y] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
         when "w"
           (@legend[:layout] ||= {})[:w] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
+          (@plot_area_layout ||= {})[:w] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
         when "h"
           (@legend[:layout] ||= {})[:h] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
+          (@plot_area_layout ||= {})[:h] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
         when "legendEntry"
           if @inside_legend
             @inside_legend_entry = true
@@ -6579,6 +6592,7 @@ module Xlsxrb
           @inside_chart = false
         when "plotArea"
           @inside_plot_area = false
+          @inside_plot_area_layout = false
         when "title"
           @title_depth -= 1
           @inside_title = false if @title_depth.zero?

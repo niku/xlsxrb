@@ -2973,6 +2973,27 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated plot area manual layout" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_plot_area_layout_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    layout = chart[:plot_area_layout]
+    assert_not_nil(layout)
+    assert_equal("inner", layout[:target])
+    assert_equal("edge", layout[:x_mode])
+    assert_equal("edge", layout[:y_mode])
+    assert_in_delta(0.15, layout[:x], 0.001)
+    assert_in_delta(0.1, layout[:y], 0.001)
+    assert_in_delta(0.75, layout[:w], 0.001)
+    assert_in_delta(0.65, layout[:h], 0.001)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
