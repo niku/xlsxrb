@@ -4716,6 +4716,50 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits invertIfNegative on series" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1", invert_if_negative: true }])
+    xlsx_path = File.join(Dir.tmpdir, "ser_iin_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:invertIfNegative val="1"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits explosion on series and data point" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :pie,
+                     series: [{ val_ref: "Sheet1!$A$1", explosion: 25,
+                                data_points: [{ idx: 0, explosion: 50 }] }])
+    xlsx_path = File.join(Dir.tmpdir, "ser_exp_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:explosion val="25"/>}, xml)
+    assert_match(%r{<c:dPt><c:idx val="0"/><c:explosion val="50"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits xVal and yVal for scatter chart series" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :scatter,
+                     series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1" }])
+    xlsx_path = File.join(Dir.tmpdir, "scatter_xy_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:xVal><c:strRef><c:f>Sheet1!\$A\$1</c:f></c:strRef></c:xVal>}, xml)
+    assert_match(%r{<c:yVal><c:numRef><c:f>Sheet1!\$B\$1</c:f></c:numRef></c:yVal>}, xml)
+    assert_no_match(/<c:cat>/, xml)
+    assert_no_match(/<c:val>/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits dropLines and hiLowLines on line chart" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

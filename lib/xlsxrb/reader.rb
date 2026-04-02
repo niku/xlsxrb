@@ -5397,6 +5397,14 @@ module Xlsxrb
           elsif attributes["val"]
             @smooth = attributes["val"] == "1"
           end
+        when "invertIfNegative"
+          @current_ser[:invert_if_negative] = attributes["val"] == "1" if @inside_ser && @current_ser && attributes["val"]
+        when "explosion"
+          if @inside_dpt && @current_dpt && attributes["val"]
+            @current_dpt[:explosion] = attributes["val"].to_i
+          elsif @inside_ser && @current_ser && attributes["val"]
+            @current_ser[:explosion] = attributes["val"].to_i
+          end
         when "marker"
           if attributes["val"] && !@inside_ser
             @marker = attributes["val"] == "1"
@@ -5521,9 +5529,9 @@ module Xlsxrb
           elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill && attributes["val"]
             @plot_area_fill = attributes["val"]
           end
-        when "cat"
+        when "cat", "xVal"
           @inside_cat = true if @inside_ser
-        when "val"
+        when "val", "yVal"
           @inside_val = true if @inside_ser
         when "f"
           @inside_f = true
@@ -5783,9 +5791,9 @@ module Xlsxrb
             end
           end
           @inside_f = false
-        when "cat"
+        when "cat", "xVal"
           @inside_cat = false
-        when "val"
+        when "val", "yVal"
           @inside_val = false
         when "dPt"
           if @inside_dpt && @current_dpt && @current_ser
