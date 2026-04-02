@@ -3458,8 +3458,7 @@ module Xlsxrb
           end
           parts << "</c:marker>"
         end
-        if chart[:data_labels]
-          dl = chart[:data_labels]
+        if (dl = ser[:data_labels] || chart[:data_labels])
           parts << "<c:dLbls>"
           parts << %(<c:dLblPos val="#{dl[:position]}"/>) if dl[:position]
           parts << "<c:showLegendKey val=\"#{dl[:show_legend_key] ? 1 : 0}\"/>" unless dl[:show_legend_key].nil?

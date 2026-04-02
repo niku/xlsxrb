@@ -6570,6 +6570,31 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips per-series data labels" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                data_labels: { show_val: true, position: "outEnd" } },
+                              { val_ref: "Sheet1!$A$2" }],
+                     data_labels: { show_cat_name: true })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser0 = chart[:series][0]
+    assert_equal(true, ser0[:data_labels][:show_val])
+    assert_equal("outEnd", ser0[:data_labels][:position])
+    ser1 = chart[:series][1]
+    assert_equal(true, ser1[:data_labels][:show_cat_name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips axis font properties" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

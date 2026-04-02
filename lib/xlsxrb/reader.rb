@@ -5339,6 +5339,7 @@ module Xlsxrb
         @inside_legend_entry = false
         @current_legend_entry = nil
         @inside_dlbls = false
+        @dlbl_target = nil
         @inside_separator = false
         @inside_cat_ax = false
         @inside_val_ax = false
@@ -5622,21 +5623,49 @@ module Xlsxrb
             @title_overlay = attributes["val"] == "1"
           end
         when "dLbls"
-          @inside_dlbls = true if @inside_ser || @chart_type
+          if @inside_ser || @chart_type
+            @inside_dlbls = true
+            @dlbl_target = if @inside_ser && @current_ser
+                             (@current_ser[:data_labels] ||= {})
+                           else
+                             @data_labels
+                           end
+          end
         when "showVal"
-          @data_labels[:show_val] = attributes["val"] == "1" if @inside_dlbls
+          if @inside_dlbls
+            @dlbl_target[:show_val] = attributes["val"] == "1"
+            @data_labels[:show_val] = attributes["val"] == "1" if @dlbl_target != @data_labels
+          end
         when "showCatName"
-          @data_labels[:show_cat_name] = attributes["val"] == "1" if @inside_dlbls
+          if @inside_dlbls
+            @dlbl_target[:show_cat_name] = attributes["val"] == "1"
+            @data_labels[:show_cat_name] = attributes["val"] == "1" if @dlbl_target != @data_labels
+          end
         when "showSerName"
-          @data_labels[:show_ser_name] = attributes["val"] == "1" if @inside_dlbls
+          if @inside_dlbls
+            @dlbl_target[:show_ser_name] = attributes["val"] == "1"
+            @data_labels[:show_ser_name] = attributes["val"] == "1" if @dlbl_target != @data_labels
+          end
         when "showPercent"
-          @data_labels[:show_percent] = attributes["val"] == "1" if @inside_dlbls
+          if @inside_dlbls
+            @dlbl_target[:show_percent] = attributes["val"] == "1"
+            @data_labels[:show_percent] = attributes["val"] == "1" if @dlbl_target != @data_labels
+          end
         when "showLegendKey"
-          @data_labels[:show_legend_key] = attributes["val"] == "1" if @inside_dlbls
+          if @inside_dlbls
+            @dlbl_target[:show_legend_key] = attributes["val"] == "1"
+            @data_labels[:show_legend_key] = attributes["val"] == "1" if @dlbl_target != @data_labels
+          end
         when "dLblPos"
-          @data_labels[:position] = attributes["val"] if @inside_dlbls && attributes["val"]
+          if @inside_dlbls && attributes["val"]
+            @dlbl_target[:position] = attributes["val"]
+            @data_labels[:position] = attributes["val"] if @dlbl_target != @data_labels
+          end
         when "showBubbleSize"
-          @data_labels[:show_bubble_size] = attributes["val"] == "1" if @inside_dlbls
+          if @inside_dlbls
+            @dlbl_target[:show_bubble_size] = attributes["val"] == "1"
+            @data_labels[:show_bubble_size] = attributes["val"] == "1" if @dlbl_target != @data_labels
+          end
         when "separator"
           if @inside_dlbls
             @inside_separator = true
@@ -5932,9 +5961,11 @@ module Xlsxrb
           @inside_legend = false
         when "dLbls"
           @inside_dlbls = false
+          @dlbl_target = nil
         when "separator"
           if @inside_separator
-            @data_labels[:separator] = @text_buffer.dup
+            @dlbl_target[:separator] = @text_buffer.dup if @dlbl_target
+            @data_labels[:separator] = @text_buffer.dup if @dlbl_target && @dlbl_target != @data_labels
             @inside_separator = false
           end
         when "catAx"
