@@ -737,6 +737,12 @@ module Xlsxrb
         chart[:val_axis_title] = cl.val_axis_title if cl.val_axis_title
         chart[:cat_axis_title_font] = cl.cat_axis_title_font if cl.cat_axis_title_font
         chart[:val_axis_title_font] = cl.val_axis_title_font if cl.val_axis_title_font
+        chart[:cat_axis_title_fill] = cl.cat_axis_title_fill if cl.cat_axis_title_fill
+        chart[:cat_axis_title_line_color] = cl.cat_axis_title_line_color if cl.cat_axis_title_line_color
+        chart[:cat_axis_title_line_width] = cl.cat_axis_title_line_width if cl.cat_axis_title_line_width
+        chart[:val_axis_title_fill] = cl.val_axis_title_fill if cl.val_axis_title_fill
+        chart[:val_axis_title_line_color] = cl.val_axis_title_line_color if cl.val_axis_title_line_color
+        chart[:val_axis_title_line_width] = cl.val_axis_title_line_width if cl.val_axis_title_line_width
         chart[:grouping] = cl.grouping if cl.grouping
         chart[:bar_dir] = cl.bar_dir if cl.bar_dir
         chart[:vary_colors] = cl.vary_colors unless cl.vary_colors.nil?
@@ -5280,6 +5286,8 @@ module Xlsxrb
                   :cat_axis_major_time_unit, :cat_axis_minor_time_unit,
                   :cat_axis_major_unit, :cat_axis_minor_unit,
                   :cat_axis_title_font, :val_axis_title_font,
+                  :cat_axis_title_fill, :cat_axis_title_line_color, :cat_axis_title_line_width,
+                  :val_axis_title_fill, :val_axis_title_line_color, :val_axis_title_line_width,
                   :chart_fill, :chart_line_color, :chart_line_width
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
@@ -5487,8 +5495,17 @@ module Xlsxrb
         @inside_val_ax = false
         @inside_ax_title = false
         @inside_ax_title_rpr = false
+        @inside_ax_title_sp_pr = false
+        @inside_ax_title_ln = false
+        @inside_ax_title_solid_fill = false
         @cat_axis_title_font = nil
         @val_axis_title_font = nil
+        @cat_axis_title_fill = nil
+        @cat_axis_title_line_color = nil
+        @cat_axis_title_line_width = nil
+        @val_axis_title_fill = nil
+        @val_axis_title_line_color = nil
+        @val_axis_title_line_width = nil
         @inside_title_rpr = false
         @title_depth = 0
         @inside_axis_tx_pr = false
@@ -5677,6 +5694,8 @@ module Xlsxrb
             @inside_up_down_bar_sp_pr = true
           elsif @inside_gridlines
             @inside_gridlines_sp_pr = true
+          elsif @inside_ax_title
+            @inside_ax_title_sp_pr = true
           elsif @inside_cat_ax || @inside_val_ax
             @inside_ax_sp_pr = true
           elsif @inside_wall && @current_wall
@@ -5735,6 +5754,16 @@ module Xlsxrb
             if attributes["w"]
               @up_down_bars[bar_key] ||= {}
               @up_down_bars[bar_key][:line_width] = attributes["w"].to_i / 12_700.0
+            end
+          elsif @inside_ax_title_sp_pr
+            @inside_ax_title_ln = true
+            if attributes["w"]
+              lw = attributes["w"].to_i / 12_700.0
+              if @inside_cat_ax
+                @cat_axis_title_line_width = lw
+              elsif @inside_val_ax
+                @val_axis_title_line_width = lw
+              end
             end
           elsif @inside_gridlines_sp_pr
             @inside_gridlines_ln = true
@@ -5819,6 +5848,8 @@ module Xlsxrb
             @inside_hi_low_lines_solid_fill = true
           elsif @inside_up_down_bar_sp_pr
             @inside_up_down_bar_solid_fill = true
+          elsif @inside_ax_title_sp_pr
+            @inside_ax_title_solid_fill = true
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = true
           elsif @inside_gridlines_sp_pr
@@ -6381,6 +6412,10 @@ module Xlsxrb
             @inside_up_down_bar_sp_pr = false
             @inside_up_down_bar_ln = false
             @inside_up_down_bar_solid_fill = false
+          elsif @inside_ax_title_sp_pr
+            @inside_ax_title_sp_pr = false
+            @inside_ax_title_ln = false
+            @inside_ax_title_solid_fill = false
           elsif @inside_ser
             @inside_ser_sp_pr = false
             @inside_ser_ln = false
@@ -6427,6 +6462,7 @@ module Xlsxrb
           @inside_drop_lines_ln = false if @inside_drop_lines_sp_pr
           @inside_hi_low_lines_ln = false if @inside_hi_low_lines_sp_pr
           @inside_up_down_bar_ln = false if @inside_up_down_bar_sp_pr
+          @inside_ax_title_ln = false if @inside_ax_title_sp_pr
           @inside_gridlines_ln = false if @inside_gridlines_sp_pr
           @inside_ax_ln = false if @inside_ax_sp_pr
           @inside_wall_ln = false if @inside_wall_sp_pr
@@ -6457,6 +6493,8 @@ module Xlsxrb
             @inside_hi_low_lines_solid_fill = false
           elsif @inside_up_down_bar_sp_pr
             @inside_up_down_bar_solid_fill = false
+          elsif @inside_ax_title_sp_pr
+            @inside_ax_title_solid_fill = false
           elsif @inside_gridlines_sp_pr
             @inside_gridlines_solid_fill = false
           elsif @inside_ax_sp_pr
@@ -6483,6 +6521,9 @@ module Xlsxrb
           @inside_title = false if @title_depth.zero?
           @inside_ax_title = false
           @inside_ax_title_rpr = false
+          @inside_ax_title_sp_pr = false
+          @inside_ax_title_ln = false
+          @inside_ax_title_solid_fill = false
           @inside_title_rpr = false
         when "legendEntry"
           if @inside_legend_entry && @current_legend_entry
@@ -6602,6 +6643,18 @@ module Xlsxrb
             (@cat_axis_title_font ||= {})[:color] = color_value
           elsif @inside_val_ax
             (@val_axis_title_font ||= {})[:color] = color_value
+          end
+        elsif @inside_ax_title_sp_pr && @inside_ax_title_ln && @inside_ax_title_solid_fill
+          if @inside_cat_ax
+            @cat_axis_title_line_color = color_value
+          elsif @inside_val_ax
+            @val_axis_title_line_color = color_value
+          end
+        elsif @inside_ax_title_sp_pr && @inside_ax_title_solid_fill
+          if @inside_cat_ax
+            @cat_axis_title_fill = color_value
+          elsif @inside_val_ax
+            @val_axis_title_fill = color_value
           end
         elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_ln && @current_dpt
           @current_dpt[:line_color] = color_value

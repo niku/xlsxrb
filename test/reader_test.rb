@@ -9188,4 +9188,31 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips axis title spPr with fill and line" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     cat_axis_title: { text: "Category", fill_color: "FFEECC", line_color: "CC6600", line_width: 0.5 },
+                     val_axis_title: { text: "Value", fill_color: "EEFFEE", line_color: "006600", line_width: 1.0 },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("Category", chart[:cat_axis_title])
+    assert_equal("FFEECC", chart[:cat_axis_title_fill])
+    assert_equal("CC6600", chart[:cat_axis_title_line_color])
+    assert_in_delta(0.5, chart[:cat_axis_title_line_width], 0.01)
+    assert_equal("Value", chart[:val_axis_title])
+    assert_equal("EEFFEE", chart[:val_axis_title_fill])
+    assert_equal("006600", chart[:val_axis_title_line_color])
+    assert_in_delta(1.0, chart[:val_axis_title_line_width], 0.01)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
