@@ -814,6 +814,7 @@ module Xlsxrb
         chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
         chart[:plot_area_line_color] = cl.plot_area_line_color if cl.plot_area_line_color
         chart[:plot_area_line_width] = cl.plot_area_line_width if cl.plot_area_line_width
+        chart[:plot_area_line_dash] = cl.plot_area_line_dash if cl.plot_area_line_dash
         chart[:plot_area_layout] = cl.plot_area_layout if cl.plot_area_layout
         chart[:cat_axis_label_rotation] = cl.cat_axis_label_rotation if cl.cat_axis_label_rotation
         chart[:val_axis_label_rotation] = cl.val_axis_label_rotation if cl.val_axis_label_rotation
@@ -5279,7 +5280,7 @@ module Xlsxrb
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
                   :data_table,
-                  :plot_area_fill, :plot_area_line_color, :plot_area_line_width,
+                  :plot_area_fill, :plot_area_line_color, :plot_area_line_width, :plot_area_line_dash,
                   :plot_area_layout,
                   :cat_axis_label_rotation, :val_axis_label_rotation,
                   :cat_axis_font, :val_axis_font,
@@ -5418,6 +5419,7 @@ module Xlsxrb
         @plot_area_fill = nil
         @plot_area_line_color = nil
         @plot_area_line_width = nil
+        @plot_area_line_dash = nil
         @inside_plot_area = false
         @inside_plot_area_layout = false
         @inside_plot_area_sp_pr = false
@@ -5871,6 +5873,8 @@ module Xlsxrb
             @up_down_bars[bar_key][:line_dash] = attributes["val"]
           elsif @inside_wall_sp_pr && @inside_wall_ln && @current_wall && attributes["val"]
             @current_wall[:line_dash] = attributes["val"]
+          elsif @inside_plot_area_sp_pr && @inside_plot_area_ln && attributes["val"]
+            @plot_area_line_dash = attributes["val"]
           end
         when "miter"
           if @inside_ser && @inside_ser_ln && @current_ser
