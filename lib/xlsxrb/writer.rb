@@ -3779,6 +3779,19 @@ module Xlsxrb
         parts << "</c:legendEntry>"
       end
       parts << %(<c:overlay val="#{legend_overlay ? 1 : 0}"/>) unless legend_overlay.nil?
+      leg_sp_children = +""
+      leg_fill = chart.dig(:legend, :fill_color)
+      leg_sp_children << %(<a:solidFill>#{color_xml(leg_fill)}</a:solidFill>) if leg_fill
+      leg_no_fill = chart.dig(:legend, :no_fill)
+      leg_sp_children << "<a:noFill/>" if leg_no_fill
+      leg_lc = chart.dig(:legend, :line_color)
+      leg_lw = chart.dig(:legend, :line_width)
+      if leg_lc || leg_lw
+        lw_attr = leg_lw ? %( w="#{(leg_lw * 12_700).to_i}") : ""
+        lf = leg_lc ? %(<a:solidFill>#{color_xml(leg_lc)}</a:solidFill>) : ""
+        leg_sp_children << "<a:ln#{lw_attr}>#{lf}</a:ln>"
+      end
+      parts << "<c:spPr>#{leg_sp_children}</c:spPr>" unless leg_sp_children.empty?
       if (lfont = chart.dig(:legend, :font))
         parts << build_axis_txpr(nil, lfont)
       end

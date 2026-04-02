@@ -5418,6 +5418,9 @@ module Xlsxrb
         @inside_legend_entry = false
         @current_legend_entry = nil
         @legend_font = nil
+        @inside_legend_sp_pr = false
+        @inside_legend_ln = false
+        @inside_legend_solid_fill = false
         @inside_dlbls = false
         @inside_dlbl = false
         @current_dlbl = nil
@@ -5596,6 +5599,8 @@ module Xlsxrb
             @inside_ax_sp_pr = true
           elsif @inside_wall && @current_wall
             @inside_wall_sp_pr = true
+          elsif @inside_legend
+            @inside_legend_sp_pr = true
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = true
           end
@@ -5625,6 +5630,9 @@ module Xlsxrb
           elsif @inside_wall_sp_pr
             @inside_wall_ln = true
             @current_wall[:line_width] = attributes["w"].to_i if @current_wall && attributes["w"]
+          elsif @inside_legend_sp_pr
+            @inside_legend_ln = true
+            @legend[:line_width] = attributes["w"].to_i / 12_700.0 if attributes["w"]
           end
         when "round"
           @current_ser[:line_join] = "round" if @inside_ser && @inside_ser_ln && @current_ser
@@ -5650,12 +5658,16 @@ module Xlsxrb
             @inside_ax_solid_fill = true
           elsif @inside_wall_sp_pr
             @inside_wall_solid_fill = true
+          elsif @inside_legend_sp_pr
+            @inside_legend_solid_fill = true
           end
         when "noFill"
           if @inside_ser && @inside_ser_ln && @current_ser
             @current_ser[:no_line] = true
           elsif @inside_ser && @inside_ser_sp_pr && @current_ser
             @current_ser[:no_fill] = true
+          elsif @inside_legend_sp_pr
+            @legend[:no_fill] = true
           end
         when "srgbClr"
           assign_chart_color(attributes["val"]) if attributes["val"]
@@ -6135,6 +6147,10 @@ module Xlsxrb
             @inside_wall_sp_pr = false
             @inside_wall_ln = false
             @inside_wall_solid_fill = false
+          elsif @inside_legend
+            @inside_legend_sp_pr = false
+            @inside_legend_ln = false
+            @inside_legend_solid_fill = false
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = false
             @inside_plot_area_solid_fill = false
@@ -6146,6 +6162,7 @@ module Xlsxrb
           @inside_ser_ln = false if @inside_ser
           @inside_ax_ln = false if @inside_ax_sp_pr
           @inside_wall_ln = false if @inside_wall_sp_pr
+          @inside_legend_ln = false if @inside_legend_sp_pr
           @inside_plot_area_ln = false if @inside_plot_area_sp_pr
         when "marker"
           @inside_ser_marker = false if @inside_ser
@@ -6263,6 +6280,10 @@ module Xlsxrb
           @current_wall[:line_color] = color_value
         elsif @inside_wall_sp_pr && @inside_wall_solid_fill && @current_wall
           @current_wall[:fill_color] = color_value
+        elsif @inside_legend_sp_pr && @inside_legend_ln && @inside_legend_solid_fill
+          @legend[:line_color] = color_value
+        elsif @inside_legend_sp_pr && @inside_legend_solid_fill
+          @legend[:fill_color] = color_value
         end
       end
 

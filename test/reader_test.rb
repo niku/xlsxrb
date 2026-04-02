@@ -8891,4 +8891,26 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips legend fill and line color" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     legend: { position: "b", fill_color: "FFFF00", line_color: "0000FF", line_width: 1.5 },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal("b", charts[0][:legend][:position])
+    assert_equal("FFFF00", charts[0][:legend][:fill_color])
+    assert_equal("0000FF", charts[0][:legend][:line_color])
+    assert_in_delta(1.5, charts[0][:legend][:line_width], 0.01)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
