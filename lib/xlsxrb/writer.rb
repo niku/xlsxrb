@@ -3648,6 +3648,14 @@ module Xlsxrb
           tl = ser[:trendline]
           parts << "<c:trendline>"
           parts << "<c:name>#{xml_escape(tl[:name])}</c:name>" if tl[:name]
+          tl_sp_children = +""
+          if tl[:line_color] || tl[:line_width] || tl[:line_dash]
+            tl_ln_w = tl[:line_width] ? %( w="#{(tl[:line_width] * 12_700).to_i}") : ""
+            tl_ln_f = tl[:line_color] ? %(<a:solidFill>#{color_xml(tl[:line_color])}</a:solidFill>) : ""
+            tl_ln_d = tl[:line_dash] ? %(<a:prstDash val="#{xml_escape(tl[:line_dash])}"/>) : ""
+            tl_sp_children << "<a:ln#{tl_ln_w}>#{tl_ln_f}#{tl_ln_d}</a:ln>"
+          end
+          parts << "<c:spPr>#{tl_sp_children}</c:spPr>" unless tl_sp_children.empty?
           parts << %(<c:trendlineType val="#{xml_escape(tl[:type] || "linear")}"/>)
           parts << %(<c:order val="#{tl[:order]}"/>) if tl[:order]
           parts << %(<c:period val="#{tl[:period]}"/>) if tl[:period]
