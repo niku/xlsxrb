@@ -5468,6 +5468,8 @@ module Xlsxrb
           @current_ser[:line_join] = "round" if @inside_ser && @inside_ser_ln && @current_ser
         when "bevel"
           @current_ser[:line_join] = "bevel" if @inside_ser && @inside_ser_ln && @current_ser
+        when "prstDash"
+          @current_ser[:line_dash] = attributes["val"] if @inside_ser && @inside_ser_ln && @current_ser && attributes["val"]
         when "miter"
           if @inside_ser && @inside_ser_ln && @current_ser
             @current_ser[:line_join] = "miter"
