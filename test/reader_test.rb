@@ -8817,4 +8817,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips dateAx with time units" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "2024-01-01")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :line, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     cat_axis_type: :date, cat_axis_base_time_unit: "months",
+                     cat_axis_major_time_unit: "months", cat_axis_major_unit: 1)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal(:date, charts[0][:cat_axis_type])
+    assert_equal("months", charts[0][:cat_axis_base_time_unit])
+    assert_equal("months", charts[0][:cat_axis_major_time_unit])
+    assert_equal(1.0, charts[0][:cat_axis_major_unit])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

@@ -813,6 +813,12 @@ module Xlsxrb
         chart[:floor] = cl.floor if cl.floor
         chart[:side_wall] = cl.side_wall if cl.side_wall
         chart[:back_wall] = cl.back_wall if cl.back_wall
+        chart[:cat_axis_type] = cl.cat_axis_type if cl.cat_axis_type
+        chart[:cat_axis_base_time_unit] = cl.cat_axis_base_time_unit if cl.cat_axis_base_time_unit
+        chart[:cat_axis_major_time_unit] = cl.cat_axis_major_time_unit if cl.cat_axis_major_time_unit
+        chart[:cat_axis_minor_time_unit] = cl.cat_axis_minor_time_unit if cl.cat_axis_minor_time_unit
+        chart[:cat_axis_major_unit] = cl.cat_axis_major_unit if cl.cat_axis_major_unit
+        chart[:cat_axis_minor_unit] = cl.cat_axis_minor_unit if cl.cat_axis_minor_unit
       end
       listener.charts
     end
@@ -5259,7 +5265,10 @@ module Xlsxrb
                   :cat_axis_line_color, :cat_axis_line_width,
                   :val_axis_line_color, :val_axis_line_width,
                   :floor, :side_wall, :back_wall,
-                  :legend_font
+                  :legend_font,
+                  :cat_axis_type, :cat_axis_base_time_unit,
+                  :cat_axis_major_time_unit, :cat_axis_minor_time_unit,
+                  :cat_axis_major_unit, :cat_axis_minor_unit
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -5339,6 +5348,12 @@ module Xlsxrb
         @scatter_style = nil
         @radar_style = nil
         @cat_axis_pos = nil
+        @cat_axis_type = nil
+        @cat_axis_base_time_unit = nil
+        @cat_axis_major_time_unit = nil
+        @cat_axis_minor_time_unit = nil
+        @cat_axis_major_unit = nil
+        @cat_axis_minor_unit = nil
         @val_axis_pos = nil
         @wireframe = nil
         @data_table = nil
@@ -5786,6 +5801,9 @@ module Xlsxrb
           end
         when "catAx"
           @inside_cat_ax = true
+        when "dateAx"
+          @inside_cat_ax = true
+          @cat_axis_type = :date
         when "valAx"
           @inside_val_ax = true
         when "scaling"
@@ -5887,9 +5905,23 @@ module Xlsxrb
         when "crossBetween"
           @val_axis_cross_between = attributes["val"] if @inside_val_ax && attributes["val"]
         when "majorUnit"
-          @val_axis_major_unit = attributes["val"].to_f if @inside_val_ax && attributes["val"]
+          if @inside_cat_ax && @cat_axis_type == :date && attributes["val"]
+            @cat_axis_major_unit = attributes["val"].to_f
+          elsif @inside_val_ax && attributes["val"]
+            @val_axis_major_unit = attributes["val"].to_f
+          end
         when "minorUnit"
-          @val_axis_minor_unit = attributes["val"].to_f if @inside_val_ax && attributes["val"]
+          if @inside_cat_ax && @cat_axis_type == :date && attributes["val"]
+            @cat_axis_minor_unit = attributes["val"].to_f
+          elsif @inside_val_ax && attributes["val"]
+            @val_axis_minor_unit = attributes["val"].to_f
+          end
+        when "baseTimeUnit"
+          @cat_axis_base_time_unit = attributes["val"] if @inside_cat_ax && attributes["val"]
+        when "majorTimeUnit"
+          @cat_axis_major_time_unit = attributes["val"] if @inside_cat_ax && attributes["val"]
+        when "minorTimeUnit"
+          @cat_axis_minor_time_unit = attributes["val"] if @inside_cat_ax && attributes["val"]
         when "builtInUnit"
           @val_axis_disp_units = attributes["val"] if @inside_val_ax && attributes["val"]
         when "txPr"
@@ -6112,7 +6144,7 @@ module Xlsxrb
             @data_labels[:separator] = @text_buffer.dup if @dlbl_target && @dlbl_target != @data_labels
             @inside_separator = false
           end
-        when "catAx"
+        when "catAx", "dateAx"
           @inside_cat_ax = false
           @inside_axis_tx_pr = false
           @inside_axis_def_rpr = false

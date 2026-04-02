@@ -6470,6 +6470,29 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writes dateAx with time units" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "2024-01-01")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :line, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     cat_axis_type: :date, cat_axis_base_time_unit: "months",
+                     cat_axis_major_time_unit: "months", cat_axis_major_unit: 1)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dateax", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:dateAx>/, chart_xml)
+    assert_match(%r{<c:baseTimeUnit val="months"/>}, chart_xml)
+    assert_match(%r{<c:majorTimeUnit val="months"/>}, chart_xml)
+    assert_match(%r{<c:majorUnit val="1"/>}, chart_xml)
+    assert_no_match(/<c:catAx>/, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
