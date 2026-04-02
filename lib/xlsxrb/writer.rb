@@ -3589,6 +3589,21 @@ module Xlsxrb
             parts << "<c:showBubbleSize val=\"#{lbl[:show_bubble_size] ? 1 : 0}\"/>" unless lbl[:show_bubble_size].nil?
             parts << "</c:dLbl>"
           end
+          if dl[:num_fmt]
+            nf = dl[:num_fmt]
+            nf_src = nf[:source_linked] ? ' sourceLinked="1"' : ""
+            parts << %(<c:numFmt formatCode="#{xml_escape(nf[:format_code])}"#{nf_src}/>)
+          end
+          dl_sp_children = +""
+          dl_sp_children << %(<a:solidFill>#{color_xml(dl[:fill_color])}</a:solidFill>) if dl[:fill_color]
+          dl_sp_children << "<a:noFill/>" if dl[:no_fill]
+          if dl[:line_color] || dl[:line_width]
+            dl_lw = dl[:line_width] ? %( w="#{(dl[:line_width] * 12_700).to_i}") : ""
+            dl_lf = dl[:line_color] ? %(<a:solidFill>#{color_xml(dl[:line_color])}</a:solidFill>) : ""
+            dl_sp_children << "<a:ln#{dl_lw}>#{dl_lf}</a:ln>"
+          end
+          parts << "<c:spPr>#{dl_sp_children}</c:spPr>" unless dl_sp_children.empty?
+          parts << build_axis_txpr(nil, dl[:font]) if dl[:font]
           parts << %(<c:dLblPos val="#{dl[:position]}"/>) if dl[:position]
           parts << "<c:showLegendKey val=\"#{dl[:show_legend_key] ? 1 : 0}\"/>" unless dl[:show_legend_key].nil?
           parts << "<c:showVal val=\"#{dl[:show_val] ? 1 : 0}\"/>" unless dl[:show_val].nil?
