@@ -3344,6 +3344,75 @@ module Xlsxrb
       end
     end
 
+    # Resolves a cell reference like "Sheet1!$A$1:$A$5" to an array of values from @sheets.
+    def resolve_sheet_ref(ref)
+      return nil unless ref
+
+      m = if ref.start_with?("'")
+            ref.match(/\A'([^']+)'!(.+)\z/)
+
+          else
+            ref.match(/\A([^!]+)!(.+)\z/)
+
+          end
+      return nil unless m
+
+      sheet_name = m[1]
+      range_part = m[2]
+      return nil unless @sheets.key?(sheet_name)
+
+      range_part = range_part.delete("$")
+      cells = if range_part.include?(":")
+                start_cell, end_cell = range_part.split(":", 2)
+                enumerate_cell_range(start_cell, end_cell)
+              else
+                [range_part]
+              end
+      cells.map { |addr| @sheets[sheet_name][addr] }
+    end
+
+    def enumerate_cell_range(start_cell, end_cell)
+      sc = start_cell.match(/\A([A-Z]+)(\d+)\z/)
+      ec = end_cell.match(/\A([A-Z]+)(\d+)\z/)
+      return [start_cell] unless sc && ec
+
+      start_col = column_letter_to_index(sc[1])
+      start_row = sc[2].to_i
+      end_col = column_letter_to_index(ec[1])
+      end_row = ec[2].to_i
+      cells = []
+      (start_row..end_row).each do |row|
+        (start_col..end_col).each do |col|
+          cells << "#{index_to_column_letter(col)}#{row}"
+        end
+      end
+      cells
+    end
+
+    def num_cache_xml(ref)
+      values = resolve_sheet_ref(ref)
+      return "" unless values
+
+      pts = values.each_with_index.filter_map do |v, i|
+        next unless v
+
+        %(<c:pt idx="#{i}"><c:v>#{xml_escape(v.to_s)}</c:v></c:pt>)
+      end
+      %(<c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="#{values.size}"/>#{pts.join}</c:numCache>)
+    end
+
+    def str_cache_xml(ref)
+      values = resolve_sheet_ref(ref)
+      return "" unless values
+
+      pts = values.each_with_index.filter_map do |v, i|
+        next unless v
+
+        %(<c:pt idx="#{i}"><c:v>#{xml_escape(v.to_s)}</c:v></c:pt>)
+      end
+      %(<c:strCache><c:ptCount val="#{values.size}"/>#{pts.join}</c:strCache>)
+    end
+
     def color_xml(color, alpha: nil, transforms: nil)
       if color.is_a?(Hash) && color[:scheme]
         tag = "schemeClr"
@@ -3450,7 +3519,7 @@ module Xlsxrb
       all_series.each_with_index do |ser, idx|
         ser_order = ser[:order] || idx
         parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{ser_order}\"/>"
-        parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f></c:strRef></c:tx>" if ser[:name]
+        parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f>#{str_cache_xml(ser[:name])}</c:strRef></c:tx>" if ser[:name]
         iin = ser[:invert_if_negative]
         parts << %(<c:invertIfNegative val="#{iin ? 1 : 0}"/>) unless iin.nil?
         parts << %(<c:explosion val="#{ser[:explosion]}"/>) if ser[:explosion]
@@ -3557,9 +3626,9 @@ module Xlsxrb
         uses_xy = %w[scatterChart bubbleChart].include?(chart_type)
         cat_tag = uses_xy ? "xVal" : "cat"
         val_tag = uses_xy ? "yVal" : "val"
-        parts << "<c:#{cat_tag}><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f></c:strRef></c:#{cat_tag}>" if ser[:cat_ref]
-        parts << "<c:#{val_tag}><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f></c:numRef></c:#{val_tag}>" if ser[:val_ref]
-        parts << "<c:bubbleSize><c:numRef><c:f>#{xml_escape(ser[:bubble_size_ref])}</c:f></c:numRef></c:bubbleSize>" if ser[:bubble_size_ref]
+        parts << "<c:#{cat_tag}><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f>#{str_cache_xml(ser[:cat_ref])}</c:strRef></c:#{cat_tag}>" if ser[:cat_ref]
+        parts << "<c:#{val_tag}><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f>#{num_cache_xml(ser[:val_ref])}</c:numRef></c:#{val_tag}>" if ser[:val_ref]
+        parts << "<c:bubbleSize><c:numRef><c:f>#{xml_escape(ser[:bubble_size_ref])}</c:f>#{num_cache_xml(ser[:bubble_size_ref])}</c:numRef></c:bubbleSize>" if ser[:bubble_size_ref]
         parts << %(<c:smooth val="#{ser[:smooth] ? 1 : 0}"/>) unless ser[:smooth].nil?
         parts << "</c:ser>"
       end

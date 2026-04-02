@@ -5408,6 +5408,12 @@ module Xlsxrb
         @inside_val = false
         @inside_bubble_size = false
         @inside_f = false
+        @inside_num_cache = false
+        @inside_str_cache = false
+        @inside_cache_pt = false
+        @inside_cache_v = false
+        @current_cache_idx = 0
+        @cache_values = []
         @inside_legend = false
         @inside_legend_entry = false
         @current_legend_entry = nil
@@ -5668,6 +5674,22 @@ module Xlsxrb
         when "f"
           @inside_f = true
           @text_buffer = +""
+        when "numCache"
+          @inside_num_cache = true
+          @cache_values = []
+        when "strCache"
+          @inside_str_cache = true
+          @cache_values = []
+        when "pt"
+          if (@inside_num_cache || @inside_str_cache) && attributes["idx"]
+            @inside_cache_pt = true
+            @current_cache_idx = attributes["idx"].to_i
+          end
+        when "v"
+          if @inside_cache_pt
+            @inside_cache_v = true
+            @text_buffer = +""
+          end
         when "title"
           @title_depth += 1
           if @inside_cat_ax || @inside_val_ax
@@ -5994,7 +6016,7 @@ module Xlsxrb
       end
 
       def characters(text)
-        @text_buffer << text if @inside_t || @inside_f || @inside_separator || @inside_trendline_name
+        @text_buffer << text if @inside_t || @inside_f || @inside_separator || @inside_trendline_name || @inside_cache_v
       end
 
       def end_element(_uri, local_name, qname)
@@ -6024,6 +6046,33 @@ module Xlsxrb
             end
           end
           @inside_f = false
+        when "v"
+          if @inside_cache_v
+            @cache_values[@current_cache_idx] = @text_buffer.dup
+            @inside_cache_v = false
+          end
+        when "pt"
+          @inside_cache_pt = false
+        when "numCache"
+          if @inside_num_cache && @inside_ser && @current_ser
+            if @inside_val
+              @current_ser[:val_cache] = @cache_values.dup
+            elsif @inside_bubble_size
+              @current_ser[:bubble_size_cache] = @cache_values.dup
+            end
+          end
+          @inside_num_cache = false
+          @cache_values = []
+        when "strCache"
+          if @inside_str_cache && @inside_ser && @current_ser
+            if @inside_cat
+              @current_ser[:cat_cache] = @cache_values.dup
+            else
+              @current_ser[:name_cache] = @cache_values.dup
+            end
+          end
+          @inside_str_cache = false
+          @cache_values = []
         when "cat", "xVal"
           @inside_cat = false
         when "val", "yVal"
