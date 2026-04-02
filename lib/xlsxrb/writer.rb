@@ -3939,7 +3939,11 @@ module Xlsxrb
       legend_entries = chart.dig(:legend, :entries)
       legend_entries&.each do |entry|
         parts << %(<c:legendEntry><c:idx val="#{entry[:idx]}"/>)
-        parts << %(<c:delete val="#{entry[:delete] ? 1 : 0}"/>) unless entry[:delete].nil?
+        if !entry[:delete].nil?
+          parts << %(<c:delete val="#{entry[:delete] ? 1 : 0}"/>)
+        elsif entry[:font]
+          parts << build_axis_txpr(nil, entry[:font])
+        end
         parts << "</c:legendEntry>"
       end
       legend_layout = chart.dig(:legend, :layout)
