@@ -5968,6 +5968,8 @@ module Xlsxrb
             @current_ser[:no_line] = true
           elsif @inside_ser && @inside_ser_sp_pr && @current_ser
             @current_ser[:no_fill] = true
+          elsif @inside_marker_sp_pr && @current_ser
+            @current_ser[:marker_no_fill] = true
           elsif @inside_dpt && @inside_dpt_sp_pr && @current_dpt
             @current_dpt[:no_fill] = true
           elsif @inside_up_down_bar_sp_pr
