@@ -3727,7 +3727,21 @@ module Xlsxrb
           parts << "<c:dropLines/>"
         end
       end
-      parts << "<c:hiLowLines/>" if chart[:hi_low_lines]
+      if chart[:hi_low_lines]
+        hl_spec = chart[:hi_low_lines]
+        if hl_spec.is_a?(Hash)
+          hl_sp = +""
+          if hl_spec[:line_color] || hl_spec[:line_width] || hl_spec[:line_dash]
+            hl_lw = hl_spec[:line_width] ? %( w="#{(hl_spec[:line_width] * 12_700).to_i}") : ""
+            hl_lf = hl_spec[:line_color] ? %(<a:solidFill>#{color_xml(hl_spec[:line_color])}</a:solidFill>) : ""
+            hl_ld = hl_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(hl_spec[:line_dash])}"/>) : ""
+            hl_sp << "<a:ln#{hl_lw}>#{hl_lf}#{hl_ld}</a:ln>"
+          end
+          parts << (hl_sp.empty? ? "<c:hiLowLines/>" : "<c:hiLowLines><c:spPr>#{hl_sp}</c:spPr></c:hiLowLines>")
+        else
+          parts << "<c:hiLowLines/>"
+        end
+      end
       if chart[:up_down_bars]
         udb = chart[:up_down_bars]
         parts << "<c:upDownBars>"

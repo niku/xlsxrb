@@ -5366,6 +5366,10 @@ module Xlsxrb
         @inside_drop_lines_ln = false
         @inside_drop_lines_solid_fill = false
         @hi_low_lines = nil
+        @inside_hi_low_lines = false
+        @inside_hi_low_lines_sp_pr = false
+        @inside_hi_low_lines_ln = false
+        @inside_hi_low_lines_solid_fill = false
         @up_down_bars = nil
         @inside_up_down_bars = false
         @scatter_style = nil
@@ -5573,6 +5577,7 @@ module Xlsxrb
           @inside_drop_lines = true
         when "hiLowLines"
           @hi_low_lines = true
+          @inside_hi_low_lines = true
         when "upDownBars"
           @inside_up_down_bars = true
           @up_down_bars = {}
@@ -5644,6 +5649,8 @@ module Xlsxrb
             @inside_ser_sp_pr = true
           elsif @inside_drop_lines
             @inside_drop_lines_sp_pr = true
+          elsif @inside_hi_low_lines
+            @inside_hi_low_lines_sp_pr = true
           elsif @inside_gridlines
             @inside_gridlines_sp_pr = true
           elsif @inside_cat_ax || @inside_val_ax
@@ -5689,6 +5696,12 @@ module Xlsxrb
             if attributes["w"]
               @drop_lines = {} if @drop_lines == true
               @drop_lines[:line_width] = attributes["w"].to_i / 12_700.0
+            end
+          elsif @inside_hi_low_lines_sp_pr
+            @inside_hi_low_lines_ln = true
+            if attributes["w"]
+              @hi_low_lines = {} if @hi_low_lines == true
+              @hi_low_lines[:line_width] = attributes["w"].to_i / 12_700.0
             end
           elsif @inside_gridlines_sp_pr
             @inside_gridlines_ln = true
@@ -5742,6 +5755,9 @@ module Xlsxrb
           elsif @inside_drop_lines_ln && attributes["val"]
             @drop_lines = {} if @drop_lines == true
             @drop_lines[:line_dash] = attributes["val"]
+          elsif @inside_hi_low_lines_ln && attributes["val"]
+            @hi_low_lines = {} if @hi_low_lines == true
+            @hi_low_lines[:line_dash] = attributes["val"]
           end
         when "miter"
           if @inside_ser && @inside_ser_ln && @current_ser
@@ -5763,6 +5779,8 @@ module Xlsxrb
             @inside_ser_solid_fill = true
           elsif @inside_drop_lines_sp_pr
             @inside_drop_lines_solid_fill = true
+          elsif @inside_hi_low_lines_sp_pr
+            @inside_hi_low_lines_solid_fill = true
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = true
           elsif @inside_gridlines_sp_pr
@@ -6315,6 +6333,10 @@ module Xlsxrb
             @inside_drop_lines_sp_pr = false
             @inside_drop_lines_ln = false
             @inside_drop_lines_solid_fill = false
+          elsif @inside_hi_low_lines_sp_pr
+            @inside_hi_low_lines_sp_pr = false
+            @inside_hi_low_lines_ln = false
+            @inside_hi_low_lines_solid_fill = false
           elsif @inside_ser
             @inside_ser_sp_pr = false
             @inside_ser_ln = false
@@ -6355,6 +6377,7 @@ module Xlsxrb
           @inside_err_bars_ln = false if @inside_err_bars_sp_pr
           @inside_ser_ln = false if @inside_ser
           @inside_drop_lines_ln = false if @inside_drop_lines_sp_pr
+          @inside_hi_low_lines_ln = false if @inside_hi_low_lines_sp_pr
           @inside_gridlines_ln = false if @inside_gridlines_sp_pr
           @inside_ax_ln = false if @inside_ax_sp_pr
           @inside_wall_ln = false if @inside_wall_sp_pr
@@ -6380,6 +6403,8 @@ module Xlsxrb
             @inside_ser_solid_fill = false
           elsif @inside_drop_lines_sp_pr
             @inside_drop_lines_solid_fill = false
+          elsif @inside_hi_low_lines_sp_pr
+            @inside_hi_low_lines_solid_fill = false
           elsif @inside_gridlines_sp_pr
             @inside_gridlines_solid_fill = false
           elsif @inside_ax_sp_pr
@@ -6476,6 +6501,11 @@ module Xlsxrb
           @inside_drop_lines_sp_pr = false
           @inside_drop_lines_ln = false
           @inside_drop_lines_solid_fill = false
+        when "hiLowLines"
+          @inside_hi_low_lines = false
+          @inside_hi_low_lines_sp_pr = false
+          @inside_hi_low_lines_ln = false
+          @inside_hi_low_lines_solid_fill = false
         end
       end
 
@@ -6529,6 +6559,9 @@ module Xlsxrb
         elsif @inside_drop_lines_sp_pr && @inside_drop_lines_ln && @inside_drop_lines_solid_fill
           @drop_lines = {} if @drop_lines == true
           @drop_lines[:line_color] = color_value
+        elsif @inside_hi_low_lines_sp_pr && @inside_hi_low_lines_ln && @inside_hi_low_lines_solid_fill
+          @hi_low_lines = {} if @hi_low_lines == true
+          @hi_low_lines[:line_color] = color_value
         elsif @inside_plot_area_sp_pr && @inside_plot_area_ln && @inside_plot_area_solid_fill
           @plot_area_line_color = color_value
         elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill
