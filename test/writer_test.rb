@@ -5748,6 +5748,30 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_paragraphs runs generates multiple a:r elements" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text_paragraphs: [
+                       { runs: [
+                         { text: "Bold", font: { bold: true } },
+                         { text: " Normal" },
+                         { text: " Italic", font: { italic: true } }
+                       ] }
+                     ])
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-multiruns", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:r><a:rPr b="1"/><a:t>Bold</a:t></a:r>}, drawing_xml)
+    assert_match(%r{<a:r><a:t> Normal</a:t></a:r>}, drawing_xml)
+    assert_match(%r{<a:r><a:rPr i="1"/><a:t> Italic</a:t></a:r>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_font alt_lang emits altLang attribute on a:rPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
