@@ -721,6 +721,7 @@ module Xlsxrb
         cp.parse
         chart[:chart_type] = cl.chart_type
         chart[:title] = cl.title
+        chart[:title_overlay] = cl.title_overlay unless cl.title_overlay.nil?
         chart[:title_font] = cl.title_font if cl.title_font
         chart[:series] = cl.series unless cl.series.empty?
         chart[:legend] = cl.legend unless cl.legend.empty?
@@ -768,6 +769,8 @@ module Xlsxrb
         chart[:cat_axis_tick_lbl_skip] = cl.cat_axis_tick_lbl_skip if cl.cat_axis_tick_lbl_skip
         chart[:cat_axis_tick_mark_skip] = cl.cat_axis_tick_mark_skip if cl.cat_axis_tick_mark_skip
         chart[:cat_axis_lbl_offset] = cl.cat_axis_lbl_offset if cl.cat_axis_lbl_offset
+        chart[:cat_axis_auto] = cl.cat_axis_auto unless cl.cat_axis_auto.nil?
+        chart[:cat_axis_lbl_algn] = cl.cat_axis_lbl_algn if cl.cat_axis_lbl_algn
         chart[:cat_axis_no_multi_lvl_lbl] = cl.cat_axis_no_multi_lvl_lbl unless cl.cat_axis_no_multi_lvl_lbl.nil?
         chart[:val_axis_cross_between] = cl.val_axis_cross_between if cl.val_axis_cross_between
         chart[:val_axis_major_unit] = cl.val_axis_major_unit if cl.val_axis_major_unit
@@ -5181,7 +5184,7 @@ module Xlsxrb
     class ChartTypeListener
       include REXML::SAX2Listener
 
-      attr_reader :chart_type, :title, :title_font, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
+      attr_reader :chart_type, :title, :title_overlay, :title_font, :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
                   :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
                   :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
                   :cat_axis_major_gridlines, :val_axis_major_gridlines,
@@ -5197,7 +5200,8 @@ module Xlsxrb
                   :cat_axis_crosses, :val_axis_crosses,
                   :cat_axis_crosses_at, :val_axis_crosses_at,
                   :cat_axis_tick_lbl_skip, :cat_axis_tick_mark_skip,
-                  :cat_axis_lbl_offset, :cat_axis_no_multi_lvl_lbl,
+                  :cat_axis_lbl_offset, :cat_axis_auto, :cat_axis_lbl_algn,
+                  :cat_axis_no_multi_lvl_lbl,
                   :val_axis_cross_between, :val_axis_major_unit, :val_axis_minor_unit,
                   :val_axis_disp_units,
                   :cat_axis_scaling_max, :cat_axis_scaling_min,
@@ -5220,6 +5224,7 @@ module Xlsxrb
       def initialize
         @chart_type = nil
         @title = nil
+        @title_overlay = nil
         @title_font = nil
         @series = []
         @legend = {}
@@ -5267,6 +5272,8 @@ module Xlsxrb
         @cat_axis_tick_lbl_skip = nil
         @cat_axis_tick_mark_skip = nil
         @cat_axis_lbl_offset = nil
+        @cat_axis_auto = nil
+        @cat_axis_lbl_algn = nil
         @cat_axis_no_multi_lvl_lbl = nil
         @val_axis_cross_between = nil
         @val_axis_major_unit = nil
@@ -5323,6 +5330,7 @@ module Xlsxrb
         @current_ser = nil
         @inside_cat = false
         @inside_val = false
+        @inside_bubble_size = false
         @inside_f = false
         @inside_legend = false
         @inside_legend_entry = false
@@ -5444,7 +5452,11 @@ module Xlsxrb
         when "trendlineType"
           @current_trendline[:type] = attributes["val"] if @inside_trendline && @current_trendline && attributes["val"]
         when "order"
-          @current_trendline[:order] = attributes["val"].to_i if @inside_trendline && @current_trendline && attributes["val"]
+          if @inside_trendline && @current_trendline && attributes["val"]
+            @current_trendline[:order] = attributes["val"].to_i
+          elsif @inside_ser && @current_ser && attributes["val"]
+            @current_ser[:order] = attributes["val"].to_i
+          end
         when "period"
           @current_trendline[:period] = attributes["val"].to_i if @inside_trendline && @current_trendline && attributes["val"]
         when "forward"
@@ -5533,6 +5545,8 @@ module Xlsxrb
           @inside_cat = true if @inside_ser
         when "val", "yVal"
           @inside_val = true if @inside_ser
+        when "bubbleSize"
+          @inside_bubble_size = true if @inside_ser
         when "f"
           @inside_f = true
           @text_buffer = +""
@@ -5582,7 +5596,11 @@ module Xlsxrb
             end
           end
         when "overlay"
-          @legend[:overlay] = attributes["val"] == "1" if @inside_legend && attributes["val"]
+          if @inside_legend && attributes["val"]
+            @legend[:overlay] = attributes["val"] == "1"
+          elsif @inside_title && @title_depth == 1 && !@inside_ax_title && attributes["val"]
+            @title_overlay = attributes["val"] == "1"
+          end
         when "dLbls"
           @inside_dlbls = true if @inside_ser || @chart_type
         when "showVal"
@@ -5688,6 +5706,10 @@ module Xlsxrb
           @cat_axis_tick_lbl_skip = attributes["val"]&.to_i if attributes["val"] && @inside_cat_ax
         when "tickMarkSkip"
           @cat_axis_tick_mark_skip = attributes["val"]&.to_i if attributes["val"] && @inside_cat_ax
+        when "auto"
+          @cat_axis_auto = attributes["val"] == "1" if attributes["val"] && @inside_cat_ax
+        when "lblAlgn"
+          @cat_axis_lbl_algn = attributes["val"] if attributes["val"] && @inside_cat_ax
         when "lblOffset"
           @cat_axis_lbl_offset = attributes["val"]&.to_i if attributes["val"] && @inside_cat_ax
         when "noMultiLvlLbl"
@@ -5786,6 +5808,8 @@ module Xlsxrb
               @current_ser[:cat_ref] = @text_buffer.dup
             elsif @inside_val
               @current_ser[:val_ref] = @text_buffer.dup
+            elsif @inside_bubble_size
+              @current_ser[:bubble_size_ref] = @text_buffer.dup
             else
               @current_ser[:name] = @text_buffer.dup
             end
@@ -5795,6 +5819,8 @@ module Xlsxrb
           @inside_cat = false
         when "val", "yVal"
           @inside_val = false
+        when "bubbleSize"
+          @inside_bubble_size = false
         when "dPt"
           if @inside_dpt && @current_dpt && @current_ser
             @current_ser[:data_points] ||= []
