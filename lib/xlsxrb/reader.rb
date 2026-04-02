@@ -725,6 +725,10 @@ module Xlsxrb
         chart[:title_font] = cl.title_font if cl.title_font
         chart[:series] = cl.series unless cl.series.empty?
         chart[:legend] = cl.legend unless cl.legend.empty?
+        if cl.legend_font
+          chart[:legend] ||= {}
+          chart[:legend][:font] = cl.legend_font
+        end
         chart[:data_labels] = cl.data_labels unless cl.data_labels.empty?
         chart[:cat_axis_title] = cl.cat_axis_title if cl.cat_axis_title
         chart[:val_axis_title] = cl.val_axis_title if cl.val_axis_title
@@ -5254,7 +5258,8 @@ module Xlsxrb
                   :cat_axis_font, :val_axis_font,
                   :cat_axis_line_color, :cat_axis_line_width,
                   :val_axis_line_color, :val_axis_line_width,
-                  :floor, :side_wall, :back_wall
+                  :floor, :side_wall, :back_wall,
+                  :legend_font
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -5391,6 +5396,7 @@ module Xlsxrb
         @inside_legend = false
         @inside_legend_entry = false
         @current_legend_entry = nil
+        @legend_font = nil
         @inside_dlbls = false
         @inside_dlbl = false
         @current_dlbl = nil
@@ -5671,6 +5677,8 @@ module Xlsxrb
               (@cat_axis_font ||= {})[:name] = attributes["typeface"]
             elsif @inside_val_ax
               (@val_axis_font ||= {})[:name] = attributes["typeface"]
+            elsif @inside_legend
+              (@legend_font ||= {})[:name] = attributes["typeface"]
             end
           elsif @inside_title_rpr && @title_font && attributes["typeface"]
             @title_font[:name] = attributes["typeface"]
@@ -5885,7 +5893,7 @@ module Xlsxrb
         when "builtInUnit"
           @val_axis_disp_units = attributes["val"] if @inside_val_ax && attributes["val"]
         when "txPr"
-          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax
+          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend
         when "bodyPr"
           if @inside_axis_tx_pr && attributes["rot"]
             if @inside_cat_ax
@@ -5905,6 +5913,8 @@ module Xlsxrb
               @cat_axis_font = (@cat_axis_font || {}).merge(font)
             elsif @inside_val_ax
               @val_axis_font = (@val_axis_font || {}).merge(font)
+            elsif @inside_legend
+              @legend_font = (@legend_font || {}).merge(font)
             end
           end
         when "tickLblPos"
@@ -6084,6 +6094,8 @@ module Xlsxrb
           @inside_legend_entry = false
         when "legend"
           @inside_legend = false
+          @inside_axis_tx_pr = false
+          @inside_axis_def_rpr = false
         when "dLbls"
           @inside_dlbls = false
           @dlbl_target = nil
@@ -6135,6 +6147,8 @@ module Xlsxrb
             (@cat_axis_font ||= {})[:color] = color_value
           elsif @inside_val_ax
             (@val_axis_font ||= {})[:color] = color_value
+          elsif @inside_legend
+            (@legend_font ||= {})[:color] = color_value
           end
         elsif @inside_title_rpr && @title_font
           @title_font[:color] = color_value

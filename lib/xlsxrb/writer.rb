@@ -3690,6 +3690,9 @@ module Xlsxrb
         parts << "</c:legendEntry>"
       end
       parts << %(<c:overlay val="#{legend_overlay ? 1 : 0}"/>) unless legend_overlay.nil?
+      if (lfont = chart.dig(:legend, :font))
+        parts << build_axis_txpr(nil, lfont)
+      end
       parts << %(</c:legend>)
       pvo = chart[:plot_vis_only]
       parts << %(<c:plotVisOnly val="#{pvo ? 1 : 0}"/>) unless pvo.nil?
