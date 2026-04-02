@@ -4644,6 +4644,7 @@ module Xlsxrb
             @current_shape[:text_ea_ln_brk] = %w[1 true].include?(attributes["eaLnBrk"]) if attributes["eaLnBrk"]
             @current_shape[:text_latin_ln_brk] = %w[1 true].include?(attributes["latinLnBrk"]) if attributes["latinLnBrk"]
             @current_shape[:text_hanging_punct] = %w[1 true].include?(attributes["hangingPunct"]) if attributes["hangingPunct"]
+            @current_shape[:text_level] = attributes["lvl"].to_i if attributes["lvl"]
             ti = {}
             ti[:left] = attributes["marL"].to_i if attributes["marL"]
             ti[:right] = attributes["marR"].to_i if attributes["marR"]
