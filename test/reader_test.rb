@@ -8913,4 +8913,31 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips dTable spPr and font" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     data_table: { show_keys: true, fill_color: "DDDDDD", line_color: "111111", line_width: 0.5,
+                                   font: { size: 10, bold: true, name: "Calibri" } },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    dt = charts[0][:data_table]
+    assert_equal(true, dt[:show_keys])
+    assert_equal("DDDDDD", dt[:fill_color])
+    assert_equal("111111", dt[:line_color])
+    assert_in_delta(0.5, dt[:line_width], 0.01)
+    assert_equal(10.0, dt[:font][:size])
+    assert_equal(true, dt[:font][:bold])
+    assert_equal("Calibri", dt[:font][:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

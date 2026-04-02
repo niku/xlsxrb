@@ -3755,6 +3755,16 @@ module Xlsxrb
         parts << %(<c:showVertBorder val="#{dt[:show_vert_border] ? 1 : 0}"/>) unless dt[:show_vert_border].nil?
         parts << %(<c:showOutline val="#{dt[:show_outline] ? 1 : 0}"/>) unless dt[:show_outline].nil?
         parts << %(<c:showKeys val="#{dt[:show_keys] ? 1 : 0}"/>) unless dt[:show_keys].nil?
+        dt_sp_children = +""
+        dt_sp_children << %(<a:solidFill>#{color_xml(dt[:fill_color])}</a:solidFill>) if dt[:fill_color]
+        dt_sp_children << "<a:noFill/>" if dt[:no_fill]
+        if dt[:line_color] || dt[:line_width]
+          dt_ln_w = dt[:line_width] ? %( w="#{(dt[:line_width] * 12_700).to_i}") : ""
+          dt_ln_f = dt[:line_color] ? %(<a:solidFill>#{color_xml(dt[:line_color])}</a:solidFill>) : ""
+          dt_sp_children << "<a:ln#{dt_ln_w}>#{dt_ln_f}</a:ln>"
+        end
+        parts << "<c:spPr>#{dt_sp_children}</c:spPr>" unless dt_sp_children.empty?
+        parts << build_axis_txpr(nil, dt[:font]) if dt[:font]
         parts << "</c:dTable>"
       end
 

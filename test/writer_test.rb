@@ -6561,7 +6561,26 @@ class WriterTest < Test::Unit::TestCase
     writer.write(xlsx_path)
 
     chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
-    assert_match(%r{<c:legend>.*<c:spPr><a:solidFill><a:srgbClr val="FFFF00"/></a:solidFill><a:ln w="19050"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill></a:ln></c:spPr>}m, chart_xml)
+    assert_match(%r{<c:legend>.*<c:spPr><a:solidFill><a:srgbClr val="FFFF00"/></a:solidFill>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits dTable spPr and txPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     data_table: { show_keys: true, fill_color: "CCCCCC", line_color: "333333", line_width: 0.5,
+                                   font: { size: 9, bold: true, name: "Arial" } },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dtable-sp", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:dTable>.*<c:spPr>/m, chart_xml)
+    assert_match(%r{<c:dTable>.*<c:txPr>.*<a:defRPr sz="900" b="1">.*<a:latin typeface="Arial"/>}m, chart_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

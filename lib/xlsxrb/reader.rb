@@ -5372,6 +5372,10 @@ module Xlsxrb
         @val_axis_line_color = nil
         @val_axis_line_width = nil
         @inside_d_table = false
+        @inside_d_table_sp_pr = false
+        @inside_d_table_ln = false
+        @inside_d_table_solid_fill = false
+        @d_table_font = nil
         @inside_view_3d = false
         @inside_wall = false
         @current_wall = nil
@@ -5601,6 +5605,8 @@ module Xlsxrb
             @inside_wall_sp_pr = true
           elsif @inside_legend
             @inside_legend_sp_pr = true
+          elsif @inside_d_table
+            @inside_d_table_sp_pr = true
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = true
           end
@@ -5633,6 +5639,9 @@ module Xlsxrb
           elsif @inside_legend_sp_pr
             @inside_legend_ln = true
             @legend[:line_width] = attributes["w"].to_i / 12_700.0 if attributes["w"]
+          elsif @inside_d_table_sp_pr
+            @inside_d_table_ln = true
+            @data_table[:line_width] = attributes["w"].to_i / 12_700.0 if @data_table && attributes["w"]
           end
         when "round"
           @current_ser[:line_join] = "round" if @inside_ser && @inside_ser_ln && @current_ser
@@ -5660,6 +5669,8 @@ module Xlsxrb
             @inside_wall_solid_fill = true
           elsif @inside_legend_sp_pr
             @inside_legend_solid_fill = true
+          elsif @inside_d_table_sp_pr
+            @inside_d_table_solid_fill = true
           end
         when "noFill"
           if @inside_ser && @inside_ser_ln && @current_ser
@@ -5668,6 +5679,8 @@ module Xlsxrb
             @current_ser[:no_fill] = true
           elsif @inside_legend_sp_pr
             @legend[:no_fill] = true
+          elsif @inside_d_table_sp_pr && @data_table
+            @data_table[:no_fill] = true
           end
         when "srgbClr"
           assign_chart_color(attributes["val"]) if attributes["val"]
@@ -5730,6 +5743,8 @@ module Xlsxrb
               (@val_axis_font ||= {})[:name] = attributes["typeface"]
             elsif @inside_legend
               (@legend_font ||= {})[:name] = attributes["typeface"]
+            elsif @inside_d_table
+              (@d_table_font ||= {})[:name] = attributes["typeface"]
             end
           elsif @inside_title_rpr && @title_font && attributes["typeface"]
             @title_font[:name] = attributes["typeface"]
@@ -5961,7 +5976,7 @@ module Xlsxrb
         when "builtInUnit"
           @val_axis_disp_units = attributes["val"] if @inside_val_ax && attributes["val"]
         when "txPr"
-          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend
+          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_d_table
         when "bodyPr"
           if @inside_axis_tx_pr && attributes["rot"]
             if @inside_cat_ax
@@ -5983,6 +5998,8 @@ module Xlsxrb
               @val_axis_font = (@val_axis_font || {}).merge(font)
             elsif @inside_legend
               @legend_font = (@legend_font || {}).merge(font)
+            elsif @inside_d_table
+              @d_table_font = (@d_table_font || {}).merge(font)
             end
           end
         when "tickLblPos"
@@ -6151,6 +6168,10 @@ module Xlsxrb
             @inside_legend_sp_pr = false
             @inside_legend_ln = false
             @inside_legend_solid_fill = false
+          elsif @inside_d_table
+            @inside_d_table_sp_pr = false
+            @inside_d_table_ln = false
+            @inside_d_table_solid_fill = false
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = false
             @inside_plot_area_solid_fill = false
@@ -6163,6 +6184,7 @@ module Xlsxrb
           @inside_ax_ln = false if @inside_ax_sp_pr
           @inside_wall_ln = false if @inside_wall_sp_pr
           @inside_legend_ln = false if @inside_legend_sp_pr
+          @inside_d_table_ln = false if @inside_d_table_sp_pr
           @inside_plot_area_ln = false if @inside_plot_area_sp_pr
         when "marker"
           @inside_ser_marker = false if @inside_ser
@@ -6235,7 +6257,13 @@ module Xlsxrb
           @inside_wall_ln = false
           @inside_wall_solid_fill = false
         when "dTable"
+          @data_table[:font] = @d_table_font if @d_table_font && @data_table
           @inside_d_table = false
+          @inside_d_table_sp_pr = false
+          @inside_d_table_ln = false
+          @inside_d_table_solid_fill = false
+          @inside_axis_tx_pr = false
+          @inside_axis_def_rpr = false
         when "upDownBars"
           @inside_up_down_bars = false
         end
@@ -6251,6 +6279,8 @@ module Xlsxrb
             (@val_axis_font ||= {})[:color] = color_value
           elsif @inside_legend
             (@legend_font ||= {})[:color] = color_value
+          elsif @inside_d_table
+            (@d_table_font ||= {})[:color] = color_value
           end
         elsif @inside_title_rpr && @title_font
           @title_font[:color] = color_value
@@ -6284,6 +6314,10 @@ module Xlsxrb
           @legend[:line_color] = color_value
         elsif @inside_legend_sp_pr && @inside_legend_solid_fill
           @legend[:fill_color] = color_value
+        elsif @inside_d_table_sp_pr && @inside_d_table_ln && @inside_d_table_solid_fill && @data_table
+          @data_table[:line_color] = color_value
+        elsif @inside_d_table_sp_pr && @inside_d_table_solid_fill && @data_table
+          @data_table[:fill_color] = color_value
         end
       end
 
