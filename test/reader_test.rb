@@ -8694,4 +8694,38 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips per-point data labels" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.set_cell("B2", 20)
+    writer.add_chart(type: :pie, cat_ref: "Sheet1!A1:A2", val_ref: "Sheet1!B1:B2",
+                     data_labels: {
+                       show_val: true,
+                       labels: [
+                         { idx: 0, show_percent: true, position: "bestFit" },
+                         { idx: 1, show_cat_name: true }
+                       ]
+                     })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    dl = charts[0][:data_labels]
+    assert_equal(true, dl[:show_val])
+    assert_equal(2, dl[:labels].size)
+    assert_equal(0, dl[:labels][0][:idx])
+    assert_equal(true, dl[:labels][0][:show_percent])
+    assert_equal("bestFit", dl[:labels][0][:position])
+    assert_equal(1, dl[:labels][1][:idx])
+    assert_equal(true, dl[:labels][1][:show_cat_name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

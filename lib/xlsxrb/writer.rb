@@ -3475,6 +3475,18 @@ module Xlsxrb
         end
         if (dl = ser[:data_labels] || chart[:data_labels])
           parts << "<c:dLbls>"
+          dl[:labels]&.each do |lbl|
+            parts << "<c:dLbl>"
+            parts << %(<c:idx val="#{lbl[:idx]}"/>)
+            parts << %(<c:dLblPos val="#{lbl[:position]}"/>) if lbl[:position]
+            parts << "<c:showLegendKey val=\"#{lbl[:show_legend_key] ? 1 : 0}\"/>" unless lbl[:show_legend_key].nil?
+            parts << "<c:showVal val=\"#{lbl[:show_val] ? 1 : 0}\"/>" unless lbl[:show_val].nil?
+            parts << "<c:showCatName val=\"#{lbl[:show_cat_name] ? 1 : 0}\"/>" unless lbl[:show_cat_name].nil?
+            parts << "<c:showSerName val=\"#{lbl[:show_ser_name] ? 1 : 0}\"/>" unless lbl[:show_ser_name].nil?
+            parts << "<c:showPercent val=\"#{lbl[:show_percent] ? 1 : 0}\"/>" unless lbl[:show_percent].nil?
+            parts << "<c:showBubbleSize val=\"#{lbl[:show_bubble_size] ? 1 : 0}\"/>" unless lbl[:show_bubble_size].nil?
+            parts << "</c:dLbl>"
+          end
           parts << %(<c:dLblPos val="#{dl[:position]}"/>) if dl[:position]
           parts << "<c:showLegendKey val=\"#{dl[:show_legend_key] ? 1 : 0}\"/>" unless dl[:show_legend_key].nil?
           parts << "<c:showVal val=\"#{dl[:show_val] ? 1 : 0}\"/>" unless dl[:show_val].nil?
