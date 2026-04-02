@@ -840,6 +840,7 @@ module Xlsxrb
         chart[:chart_fill] = cl.chart_fill if cl.chart_fill
         chart[:chart_line_color] = cl.chart_line_color if cl.chart_line_color
         chart[:chart_line_width] = cl.chart_line_width if cl.chart_line_width
+        chart[:chart_line_dash] = cl.chart_line_dash if cl.chart_line_dash
       end
       listener.charts
     end
@@ -5297,7 +5298,7 @@ module Xlsxrb
                   :cat_axis_title_font, :val_axis_title_font,
                   :cat_axis_title_fill, :cat_axis_title_line_color, :cat_axis_title_line_width,
                   :val_axis_title_fill, :val_axis_title_line_color, :val_axis_title_line_width,
-                  :chart_fill, :chart_line_color, :chart_line_width
+                  :chart_fill, :chart_line_color, :chart_line_width, :chart_line_dash
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -5317,6 +5318,7 @@ module Xlsxrb
         @chart_fill = nil
         @chart_line_color = nil
         @chart_line_width = nil
+        @chart_line_dash = nil
         @inside_chart = false
         @inside_chart_space_sp_pr = false
         @inside_chart_space_ln = false
@@ -5885,6 +5887,8 @@ module Xlsxrb
             elsif @inside_val_ax
               @val_axis_line_dash = attributes["val"]
             end
+          elsif @inside_chart_space_sp_pr && @inside_chart_space_ln && attributes["val"]
+            @chart_line_dash = attributes["val"]
           end
         when "miter"
           if @inside_ser && @inside_ser_ln && @current_ser
