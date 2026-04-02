@@ -3146,6 +3146,8 @@ module Xlsxrb
       children << %(<a:ea typeface="#{xml_escape(font[:ea_font])}"/>) if font[:ea_font]
       children << %(<a:cs typeface="#{xml_escape(font[:cs_font])}"/>) if font[:cs_font]
       children << %(<a:sym typeface="#{xml_escape(font[:sym_font])}"/>) if font[:sym_font]
+      children << "<a:uFillTx/>" if font[:u_fill_tx]
+      children << "<a:uLnTx/>" if font[:u_ln_tx]
       if font[:line_color] || font[:line_width] || font[:line_dash] || font[:line_cap] || font[:line_join]
         ln_attrs = +(font[:line_width] ? %( w="#{font[:line_width].to_i}") : "")
         ln_attrs << %( cap="#{xml_escape(font[:line_cap])}") if font[:line_cap]

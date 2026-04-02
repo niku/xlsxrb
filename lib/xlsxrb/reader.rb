@@ -4736,6 +4736,10 @@ module Xlsxrb
           @current_text_font[:cs_font] = attributes["typeface"] if @inside_rpr && @current_text_font && attributes["typeface"]
         when "sym"
           @current_text_font[:sym_font] = attributes["typeface"] if @inside_rpr && @current_text_font && attributes["typeface"]
+        when "uFillTx"
+          @current_text_font[:u_fill_tx] = true if @inside_rpr && @current_text_font
+        when "uLnTx"
+          @current_text_font[:u_ln_tx] = true if @inside_rpr && @current_text_font
         when "pPr"
           if @inside_tx_body && @inside_sp && @current_paragraph
             @current_paragraph[:align] = attributes["algn"] if attributes["algn"]
