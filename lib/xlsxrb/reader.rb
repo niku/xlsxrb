@@ -4620,6 +4620,9 @@ module Xlsxrb
             tf = {}
             tf[:bold] = true if %w[1 true].include?(attributes["b"])
             tf[:italic] = true if %w[1 true].include?(attributes["i"])
+            tf[:no_proof] = true if %w[1 true].include?(attributes["noProof"])
+            tf[:normalize_h] = true if %w[1 true].include?(attributes["normalizeH"])
+            tf[:kumimoji] = true if %w[1 true].include?(attributes["kumimoji"])
             tf[:strike] = attributes["strike"] if attributes["strike"]
             tf[:underline] = attributes["u"] if attributes["u"]
             tf[:baseline] = attributes["baseline"].to_i if attributes["baseline"]
@@ -4731,6 +4734,7 @@ module Xlsxrb
             @current_shape[:text_from_word_art] = %w[1 true].include?(attributes["fromWordArt"]) if attributes["fromWordArt"]
             @current_shape[:text_upright] = %w[1 true].include?(attributes["upright"]) if attributes["upright"]
             @current_shape[:text_compat_ln_spc] = %w[1 true].include?(attributes["compatLnSpc"]) if attributes["compatLnSpc"]
+            @current_shape[:text_force_aa] = %w[1 true].include?(attributes["forceAA"]) if attributes["forceAA"]
             @current_shape[:text_vertical] = attributes["vert"] if attributes["vert"]
             ins = {}
             ins[:left] = attributes["lIns"].to_i if attributes["lIns"]
