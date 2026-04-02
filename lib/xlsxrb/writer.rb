@@ -3375,8 +3375,12 @@ module Xlsxrb
       all_series.each_with_index do |ser, idx|
         parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{idx}\"/>"
         parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f></c:strRef></c:tx>" if ser[:name]
+        iin = ser[:invert_if_negative]
+        parts << %(<c:invertIfNegative val="#{iin ? 1 : 0}"/>) unless iin.nil?
+        parts << %(<c:explosion val="#{ser[:explosion]}"/>) if ser[:explosion]
         ser[:data_points]&.each do |dp|
           parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
+          parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
           dp_sp_children = +""
           dp_sp_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(dp[:fill_color])}"/></a:solidFill>) if dp[:fill_color]
           dp_sp_children << "<a:noFill/>" if dp[:no_fill]
@@ -3463,8 +3467,11 @@ module Xlsxrb
           parts << %(<c:val val="#{eb[:val]}"/>) if eb[:val]
           parts << "</c:errBars>"
         end
-        parts << "<c:cat><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f></c:strRef></c:cat>" if ser[:cat_ref]
-        parts << "<c:val><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f></c:numRef></c:val>" if ser[:val_ref]
+        uses_xy = %w[scatterChart bubbleChart].include?(chart_type)
+        cat_tag = uses_xy ? "xVal" : "cat"
+        val_tag = uses_xy ? "yVal" : "val"
+        parts << "<c:#{cat_tag}><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f></c:strRef></c:#{cat_tag}>" if ser[:cat_ref]
+        parts << "<c:#{val_tag}><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f></c:numRef></c:#{val_tag}>" if ser[:val_ref]
         parts << %(<c:smooth val="#{ser[:smooth] ? 1 : 0}"/>) unless ser[:smooth].nil?
         parts << "</c:ser>"
       end
