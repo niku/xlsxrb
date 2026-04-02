@@ -3712,7 +3712,21 @@ module Xlsxrb
       parts << %(<c:sizeRepresents val="#{chart[:size_represents]}"/>) if chart[:size_represents]
       parts << %(<c:firstSliceAng val="#{chart[:first_slice_ang]}"/>) if chart[:first_slice_ang]
       parts << %(<c:holeSize val="#{chart[:hole_size]}"/>) if chart[:hole_size]
-      parts << "<c:dropLines/>" if chart[:drop_lines]
+      if chart[:drop_lines]
+        dl_spec = chart[:drop_lines]
+        if dl_spec.is_a?(Hash)
+          dl_sp = +""
+          if dl_spec[:line_color] || dl_spec[:line_width] || dl_spec[:line_dash]
+            dl_lw = dl_spec[:line_width] ? %( w="#{(dl_spec[:line_width] * 12_700).to_i}") : ""
+            dl_lf = dl_spec[:line_color] ? %(<a:solidFill>#{color_xml(dl_spec[:line_color])}</a:solidFill>) : ""
+            dl_ld = dl_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(dl_spec[:line_dash])}"/>) : ""
+            dl_sp << "<a:ln#{dl_lw}>#{dl_lf}#{dl_ld}</a:ln>"
+          end
+          parts << (dl_sp.empty? ? "<c:dropLines/>" : "<c:dropLines><c:spPr>#{dl_sp}</c:spPr></c:dropLines>")
+        else
+          parts << "<c:dropLines/>"
+        end
+      end
       parts << "<c:hiLowLines/>" if chart[:hi_low_lines]
       if chart[:up_down_bars]
         udb = chart[:up_down_bars]

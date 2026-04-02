@@ -4935,6 +4935,20 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dropLines spPr with line_color, line_width, and line_dash" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     drop_lines: { line_color: "0000FF", line_width: 1.0, line_dash: "sysDot" })
+    xlsx_path = File.join(Dir.tmpdir, "drop_sppr_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:dropLines><c:spPr>.*<a:ln w="12700">.*<a:solidFill>.*<a:srgbClr val="0000FF"/>.*</a:solidFill>.*<a:prstDash val="sysDot"/>.*</a:ln>.*</c:spPr></c:dropLines>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits upDownBars with gapWidth on line chart" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

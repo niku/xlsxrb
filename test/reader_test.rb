@@ -6823,6 +6823,26 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips chart dropLines with spPr" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     drop_lines: { line_color: "0000FF", line_width: 1.0, line_dash: "sysDot" })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    dl = chart[:drop_lines]
+    assert_equal({ line_color: "0000FF", line_width: 1.0, line_dash: "sysDot" }, dl)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart upDownBars with gapWidth" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
