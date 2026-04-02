@@ -2979,6 +2979,7 @@ module Xlsxrb
                         rpr_children << %(<a:latin typeface="#{xml_escape(tf[:name])}"/>) if tf[:name]
                         rpr_children << %(<a:ea typeface="#{xml_escape(tf[:ea_font])}"/>) if tf[:ea_font]
                         rpr_children << %(<a:cs typeface="#{xml_escape(tf[:cs_font])}"/>) if tf[:cs_font]
+                        rpr_children << %(<a:sym typeface="#{xml_escape(tf[:sym_font])}"/>) if tf[:sym_font]
                         if rpr_children.empty?
                           "<a:rPr#{rpr_attrs}/>"
                         else

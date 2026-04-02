@@ -4626,6 +4626,8 @@ module Xlsxrb
           @current_text_font[:ea_font] = attributes["typeface"] if @inside_rpr && @current_text_font && attributes["typeface"]
         when "cs"
           @current_text_font[:cs_font] = attributes["typeface"] if @inside_rpr && @current_text_font && attributes["typeface"]
+        when "sym"
+          @current_text_font[:sym_font] = attributes["typeface"] if @inside_rpr && @current_text_font && attributes["typeface"]
         when "pPr"
           if @inside_tx_body && @inside_sp && @current_shape
             @current_shape[:text_align] = attributes["algn"] if attributes["algn"]
