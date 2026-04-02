@@ -3388,13 +3388,15 @@ module Xlsxrb
           parts << "<c:spPr>#{dp_sp_children}</c:spPr>" unless dp_sp_children.empty?
           parts << "</c:dPt>"
         end
-        if ser[:fill_color] || ser[:line_color] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
+        if ser[:fill_color] || ser[:no_fill] || ser[:line_color] || ser[:no_line] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
           parts << "<c:spPr>"
           parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:fill_color])}"/></a:solidFill>) if ser[:fill_color]
-          if ser[:line_color] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
+          parts << "<a:noFill/>" if ser[:no_fill]
+          if ser[:line_color] || ser[:no_line] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
             lw = ser[:line_width] ? %( w="#{(ser[:line_width] * 12_700).to_i}") : ""
             lc = ser[:line_cap] ? %( cap="#{xml_escape(ser[:line_cap])}") : ""
             parts << "<a:ln#{lw}#{lc}>"
+            parts << "<a:noFill/>" if ser[:no_line]
             parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:line_color])}"/></a:solidFill>) if ser[:line_color]
             parts << %(<a:prstDash val="#{xml_escape(ser[:line_dash])}"/>) if ser[:line_dash]
             case ser[:line_join]

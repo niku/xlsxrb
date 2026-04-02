@@ -5483,6 +5483,12 @@ module Xlsxrb
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = true
           end
+        when "noFill"
+          if @inside_ser && @inside_ser_ln && @current_ser
+            @current_ser[:no_line] = true
+          elsif @inside_ser && @inside_ser_sp_pr && @current_ser
+            @current_ser[:no_fill] = true
+          end
         when "srgbClr"
           if @inside_title_rpr && @title_font && attributes["val"]
             @title_font[:color] = attributes["val"]
