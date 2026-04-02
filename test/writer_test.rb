@@ -6739,6 +6739,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits axis title spPr with fill and line" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     cat_axis_title: { text: "Category", fill_color: "FFEECC", line_color: "CC6600", line_width: 0.5 },
+                     val_axis_title: { text: "Value", fill_color: "EEFFEE", line_color: "006600", line_width: 1.0 },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-axtitlesp", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:title>.*<c:overlay val="0"/><c:spPr><a:solidFill><a:srgbClr val="FFEECC"/></a:solidFill><a:ln w="6350"><a:solidFill><a:srgbClr val="CC6600"/></a:solidFill></a:ln></c:spPr></c:title>}m, chart_xml)
+    assert_match(%r{<c:valAx>.*<c:title>.*<c:overlay val="0"/><c:spPr><a:solidFill><a:srgbClr val="EEFFEE"/></a:solidFill><a:ln w="12700"><a:solidFill><a:srgbClr val="006600"/></a:solidFill></a:ln></c:spPr></c:title>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits chart title spPr with fill and line" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
