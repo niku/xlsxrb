@@ -724,6 +724,7 @@ module Xlsxrb
         chart[:title_overlay] = cl.title_overlay unless cl.title_overlay.nil?
         chart[:title_font] = cl.title_font if cl.title_font
         chart[:title_fill_color] = cl.title_fill_color if cl.title_fill_color
+        chart[:title_no_fill] = cl.title_no_fill if cl.title_no_fill
         chart[:title_line_color] = cl.title_line_color if cl.title_line_color
         chart[:title_line_width] = cl.title_line_width if cl.title_line_width
         chart[:series] = cl.series unless cl.series.empty?
@@ -5246,7 +5247,7 @@ module Xlsxrb
       include REXML::SAX2Listener
 
       attr_reader :chart_type, :title, :title_overlay, :title_font,
-                  :title_fill_color, :title_line_color, :title_line_width,
+                  :title_fill_color, :title_no_fill, :title_line_color, :title_line_width,
                   :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
                   :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
                   :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
@@ -5304,6 +5305,7 @@ module Xlsxrb
         @title_overlay = nil
         @title_font = nil
         @title_fill_color = nil
+        @title_no_fill = nil
         @title_line_color = nil
         @title_line_width = nil
         @inside_title_sp_pr = false
@@ -5906,6 +5908,10 @@ module Xlsxrb
             @current_ser[:no_line] = true
           elsif @inside_ser && @inside_ser_sp_pr && @current_ser
             @current_ser[:no_fill] = true
+          elsif @inside_dpt && @inside_dpt_sp_pr && @current_dpt
+            @current_dpt[:no_fill] = true
+          elsif @inside_title_sp_pr
+            @title_no_fill = true
           elsif @inside_legend_sp_pr
             @legend[:no_fill] = true
           elsif @inside_d_table_sp_pr && @data_table
