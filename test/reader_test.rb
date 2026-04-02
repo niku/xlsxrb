@@ -6570,6 +6570,33 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips axis font properties" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_font: { size: 12, bold: true, color: "FF0000", name: "Arial" },
+                     val_axis_font: { size: 10, italic: true })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    cf = chart[:cat_axis_font]
+    assert_equal(12.0, cf[:size])
+    assert_equal(true, cf[:bold])
+    assert_equal("FF0000", cf[:color])
+    assert_equal("Arial", cf[:name])
+    vf = chart[:val_axis_font]
+    assert_equal(10.0, vf[:size])
+    assert_equal(true, vf[:italic])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips title overlay" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

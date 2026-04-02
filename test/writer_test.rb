@@ -4760,6 +4760,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits axis font properties in txPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_font: { size: 12, bold: true, color: "FF0000", name: "Arial" },
+                     val_axis_font: { size: 10, italic: true })
+    xlsx_path = File.join(Dir.tmpdir, "axfont_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:txPr>.*<a:defRPr sz="1200" b="1"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:latin typeface="Arial"/></a:defRPr>.*</c:txPr>.*</c:catAx>}m, xml)
+    assert_match(%r{<c:valAx>.*<c:txPr>.*<a:defRPr sz="1000" i="1"/>.*</c:txPr>.*</c:valAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits title overlay on chart title" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

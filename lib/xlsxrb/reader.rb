@@ -798,6 +798,8 @@ module Xlsxrb
         chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
         chart[:cat_axis_label_rotation] = cl.cat_axis_label_rotation if cl.cat_axis_label_rotation
         chart[:val_axis_label_rotation] = cl.val_axis_label_rotation if cl.val_axis_label_rotation
+        chart[:cat_axis_font] = cl.cat_axis_font if cl.cat_axis_font
+        chart[:val_axis_font] = cl.val_axis_font if cl.val_axis_font
       end
       listener.charts
     end
@@ -5216,7 +5218,8 @@ module Xlsxrb
                   :wireframe,
                   :data_table,
                   :plot_area_fill,
-                  :cat_axis_label_rotation, :val_axis_label_rotation
+                  :cat_axis_label_rotation, :val_axis_label_rotation,
+                  :cat_axis_font, :val_axis_font
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -5343,6 +5346,9 @@ module Xlsxrb
         @inside_title_rpr = false
         @title_depth = 0
         @inside_axis_tx_pr = false
+        @inside_axis_def_rpr = false
+        @cat_axis_font = nil
+        @val_axis_font = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -5524,7 +5530,13 @@ module Xlsxrb
             @current_ser[:no_fill] = true
           end
         when "srgbClr"
-          if @inside_title_rpr && @title_font && attributes["val"]
+          if @inside_axis_def_rpr && attributes["val"]
+            if @inside_cat_ax
+              (@cat_axis_font ||= {})[:color] = attributes["val"]
+            elsif @inside_val_ax
+              (@val_axis_font ||= {})[:color] = attributes["val"]
+            end
+          elsif @inside_title_rpr && @title_font && attributes["val"]
             @title_font[:color] = attributes["val"]
           elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_ln && @current_dpt && attributes["val"]
             @current_dpt[:line_color] = attributes["val"]
@@ -5569,7 +5581,15 @@ module Xlsxrb
             @title_font[:size] = attributes["sz"].to_i if attributes["sz"]
           end
         when "latin"
-          @title_font[:name] = attributes["typeface"] if @inside_title_rpr && @title_font && attributes["typeface"]
+          if @inside_axis_def_rpr && attributes["typeface"]
+            if @inside_cat_ax
+              (@cat_axis_font ||= {})[:name] = attributes["typeface"]
+            elsif @inside_val_ax
+              (@val_axis_font ||= {})[:name] = attributes["typeface"]
+            end
+          elsif @inside_title_rpr && @title_font && attributes["typeface"]
+            @title_font[:name] = attributes["typeface"]
+          end
         when "legend"
           @inside_legend = true
         when "legendPos"
@@ -5740,6 +5760,19 @@ module Xlsxrb
               @val_axis_label_rotation = attributes["rot"].to_i
             end
           end
+        when "defRPr"
+          if @inside_axis_tx_pr
+            @inside_axis_def_rpr = true
+            font = {}
+            font[:size] = attributes["sz"].to_i / 100.0 if attributes["sz"]
+            font[:bold] = true if attributes["b"] == "1"
+            font[:italic] = true if attributes["i"] == "1"
+            if @inside_cat_ax
+              @cat_axis_font = (@cat_axis_font || {}).merge(font)
+            elsif @inside_val_ax
+              @val_axis_font = (@val_axis_font || {}).merge(font)
+            end
+          end
         when "tickLblPos"
           if attributes["val"]
             if @inside_cat_ax
@@ -5907,9 +5940,13 @@ module Xlsxrb
         when "catAx"
           @inside_cat_ax = false
           @inside_axis_tx_pr = false
+          @inside_axis_def_rpr = false
         when "valAx"
           @inside_val_ax = false
           @inside_axis_tx_pr = false
+          @inside_axis_def_rpr = false
+        when "txPr"
+          @inside_axis_def_rpr = false if @inside_axis_tx_pr
         when "scaling"
           @inside_scaling = false
         when "view3D"
