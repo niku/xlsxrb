@@ -5861,6 +5861,16 @@ module Xlsxrb
             @legend[:line_dash] = attributes["val"]
           elsif @inside_d_table_sp_pr && @inside_d_table_ln && attributes["val"]
             @data_table[:line_dash] = attributes["val"]
+          elsif @inside_dlbls_sp_pr && @inside_dlbls_ln && attributes["val"]
+            @data_labels[:line_dash] = attributes["val"]
+          elsif @inside_dpt && @inside_dpt_ln && @current_dpt && attributes["val"]
+            @current_dpt[:line_dash] = attributes["val"]
+          elsif @inside_up_down_bar_sp_pr && @inside_up_down_bar_ln && attributes["val"]
+            bar_key = @inside_up_bars ? :up_bars : :down_bars
+            @up_down_bars[bar_key] ||= {}
+            @up_down_bars[bar_key][:line_dash] = attributes["val"]
+          elsif @inside_wall_sp_pr && @inside_wall_ln && @current_wall && attributes["val"]
+            @current_wall[:line_dash] = attributes["val"]
           end
         when "miter"
           if @inside_ser && @inside_ser_ln && @current_ser
