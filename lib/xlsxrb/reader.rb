@@ -4444,6 +4444,7 @@ module Xlsxrb
         @inside_spc_bef = false
         @inside_spc_aft = false
         @inside_lnspc = false
+        @inside_tab_lst = false
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4655,6 +4656,15 @@ module Xlsxrb
           @inside_spc_aft = true if @inside_tx_body && @inside_sp
         when "lnSpc"
           @inside_lnspc = true if @inside_tx_body && @inside_sp
+        when "tabLst"
+          @inside_tab_lst = true if @inside_tx_body && @inside_sp
+        when "tab"
+          if @inside_tab_lst && @inside_tx_body && @inside_sp && @current_shape && attributes["pos"]
+            tab = { pos: attributes["pos"].to_i }
+            tab[:align] = attributes["algn"] if attributes["algn"]
+            @current_shape[:text_tab_stops] ||= []
+            @current_shape[:text_tab_stops] << tab
+          end
         when "spcPts"
           if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
             @current_shape[:text_spacing] ||= {}
@@ -4766,6 +4776,8 @@ module Xlsxrb
           @inside_spc_aft = false
         when "lnSpc"
           @inside_lnspc = false
+        when "tabLst"
+          @inside_tab_lst = false
         when "rPr"
           @current_shape[:text_font] = @current_text_font if @inside_rpr && @current_text_font&.any? && @current_shape
           @inside_rpr = false
