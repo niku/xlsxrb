@@ -4760,6 +4760,8 @@ module Xlsxrb
           @current_shape[:autofit] = "shape" if @inside_sp && @current_shape
         when "normAutofit"
           @current_shape[:autofit] = "normal" if @inside_sp && @current_shape
+        when "prstTxWarp"
+          @current_shape[:text_warp] = { preset: attributes["prst"] } if @inside_sp && @current_shape && attributes["prst"]
         when "t"
           @inside_t = true if @inside_tx_body
           @text_buffer = +""
