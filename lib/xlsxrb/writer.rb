@@ -1238,7 +1238,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_num_col: nil, text_spc_col: nil, text_rtl_col: nil, text_from_word_art: nil, text_upright: nil, text_compat_ln_spc: nil, text_force_aa: nil, text_warp: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_end_para_rpr: nil, text_def_rpr: nil, text_align: nil, text_font_align: nil, text_def_tab_sz: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, text_ea_ln_brk: nil, text_latin_ln_brk: nil, text_hanging_punct: nil, text_tab_stops: nil, text_bullet: nil, text_level: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_num_col: nil, text_spc_col: nil, text_rtl_col: nil, text_from_word_art: nil, text_upright: nil, text_compat_ln_spc: nil, text_force_aa: nil, text_warp: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_end_para_rpr: nil, text_def_rpr: nil, text_align: nil, text_font_align: nil, text_def_tab_sz: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, text_ea_ln_brk: nil, text_latin_ln_brk: nil, text_hanging_punct: nil, text_tab_stops: nil, text_bullet: nil, text_level: nil, text_paragraphs: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1302,6 +1302,7 @@ module Xlsxrb
       shape[:text_tab_stops] = text_tab_stops if text_tab_stops
       shape[:text_bullet] = text_bullet if text_bullet
       shape[:text_level] = text_level if text_level
+      shape[:text_paragraphs] = text_paragraphs if text_paragraphs
       shape[:autofit] = autofit if autofit
       shape[:outer_shadow] = outer_shadow if outer_shadow
       shape[:inner_shadow] = inner_shadow if inner_shadow
@@ -2949,7 +2950,7 @@ module Xlsxrb
                              ""
                            end
           parts << %(<xdr:spPr>#{shape_xfrm_xml}<a:prstGeom prst="#{xml_escape(shape[:preset])}">#{av_lst_xml}</a:prstGeom>#{shape_fill_xml}#{shape_line_xml}#{effect_lst_xml}</xdr:spPr>)
-          if shape[:text]
+          if shape[:text] || shape[:text_paragraphs]
             body_pr_attrs = +""
             body_pr_attrs << %( rot="#{shape[:text_rot]}") if shape[:text_rot]
             body_pr_attrs << %( spcFirstLastPara="1") if shape[:text_spc_first_last_para]
@@ -2991,76 +2992,20 @@ module Xlsxrb
                             "<a:bodyPr#{body_pr_attrs}>#{body_pr_children}</a:bodyPr>"
                           end
             parts << "<xdr:txBody>#{body_pr_xml}<a:lstStyle/>"
-            rpr_xml = shape[:text_font] ? text_char_props_xml("a:rPr", shape[:text_font]) : ""
-            ppr_attrs = +""
-            ppr_attrs << %( algn="#{xml_escape(shape[:text_align])}") if shape[:text_align]
-            ppr_attrs << %( fontAlgn="#{xml_escape(shape[:text_font_align])}") if shape[:text_font_align]
-            ppr_attrs << %( defTabSz="#{shape[:text_def_tab_sz]}") if shape[:text_def_tab_sz]
-            ppr_attrs << %( rtl="1") if shape[:text_rtl]
-            ppr_attrs << %( eaLnBrk="1") if shape[:text_ea_ln_brk]
-            ppr_attrs << %( latinLnBrk="1") if shape[:text_latin_ln_brk]
-            ppr_attrs << %( hangingPunct="1") if shape[:text_hanging_punct]
-            ppr_attrs << %( lvl="#{shape[:text_level]}") if shape[:text_level]
-            if shape[:text_indent]
-              ti = shape[:text_indent]
-              ppr_attrs << %( marL="#{ti[:left]}") if ti[:left]
-              ppr_attrs << %( marR="#{ti[:right]}") if ti[:right]
-              ppr_attrs << %( indent="#{ti[:indent]}") if ti[:indent]
+            if shape[:text_paragraphs]
+              shape[:text_paragraphs].each { |para| parts << paragraph_xml(para) }
+            elsif shape[:text]
+              parts << paragraph_xml(
+                text: shape[:text], font: shape[:text_font],
+                align: shape[:text_align], font_align: shape[:text_font_align],
+                def_tab_sz: shape[:text_def_tab_sz], rtl: shape[:text_rtl],
+                ea_ln_brk: shape[:text_ea_ln_brk], latin_ln_brk: shape[:text_latin_ln_brk],
+                hanging_punct: shape[:text_hanging_punct], level: shape[:text_level],
+                indent: shape[:text_indent], spacing: shape[:text_spacing],
+                tab_stops: shape[:text_tab_stops], bullet: shape[:text_bullet],
+                def_rpr: shape[:text_def_rpr], end_para_rpr: shape[:text_end_para_rpr]
+              )
             end
-            ppr_children = +""
-            if shape[:text_spacing]
-              ts = shape[:text_spacing]
-              if ts[:line]
-                ppr_children << %(<a:lnSpc><a:spcPts val="#{ts[:line]}"/></a:lnSpc>)
-              elsif ts[:line_pct]
-                ppr_children << %(<a:lnSpc><a:spcPct val="#{ts[:line_pct]}"/></a:lnSpc>)
-              end
-              if ts[:before]
-                ppr_children << %(<a:spcBef><a:spcPts val="#{ts[:before]}"/></a:spcBef>)
-              elsif ts[:before_pct]
-                ppr_children << %(<a:spcBef><a:spcPct val="#{ts[:before_pct]}"/></a:spcBef>)
-              end
-              if ts[:after]
-                ppr_children << %(<a:spcAft><a:spcPts val="#{ts[:after]}"/></a:spcAft>)
-              elsif ts[:after_pct]
-                ppr_children << %(<a:spcAft><a:spcPct val="#{ts[:after_pct]}"/></a:spcAft>)
-              end
-            end
-            if shape[:text_tab_stops]&.any?
-              tabs = shape[:text_tab_stops].map do |tab|
-                tab_attrs = %( pos="#{tab[:pos]}")
-                tab_attrs << %( algn="#{xml_escape(tab[:align])}") if tab[:align]
-                "<a:tab#{tab_attrs}/>"
-              end
-              ppr_children << "<a:tabLst>#{tabs.join}</a:tabLst>"
-            end
-            if shape[:text_bullet]
-              bu = shape[:text_bullet]
-              ppr_children << %(<a:buClr><a:srgbClr val="#{xml_escape(bu[:color])}"/></a:buClr>) if bu[:color]
-              ppr_children << %(<a:buSzPts val="#{bu[:size_pts]}"/>) if bu[:size_pts]
-              ppr_children << %(<a:buSzPct val="#{bu[:size_pct]}"/>) if bu[:size_pct]
-              ppr_children << %(<a:buFont typeface="#{xml_escape(bu[:font])}"/>) if bu[:font]
-              case bu[:type]
-              when "none"
-                ppr_children << "<a:buNone/>"
-              when "char"
-                ppr_children << %(<a:buChar char="#{xml_escape(bu[:char])}"/>)
-              when "auto"
-                auto_attrs = %( type="#{xml_escape(bu[:auto_type])}")
-                auto_attrs << %( startAt="#{bu[:start_at]}") if bu[:start_at]
-                ppr_children << "<a:buAutoNum#{auto_attrs}/>"
-              end
-            end
-            ppr_children << text_char_props_xml("a:defRPr", shape[:text_def_rpr]) if shape[:text_def_rpr]
-            ppr_xml = if ppr_attrs.empty? && ppr_children.empty?
-                        ""
-                      elsif ppr_children.empty?
-                        "<a:pPr#{ppr_attrs}/>"
-                      else
-                        "<a:pPr#{ppr_attrs}>#{ppr_children}</a:pPr>"
-                      end
-            end_para_rpr_xml = shape[:text_end_para_rpr] ? text_char_props_xml("a:endParaRPr", shape[:text_end_para_rpr]) : ""
-            parts << "<a:p>#{ppr_xml}<a:r>#{rpr_xml}<a:t>#{xml_escape(shape[:text])}</a:t></a:r>#{end_para_rpr_xml}</a:p>"
             parts << "</xdr:txBody>"
           end
           parts << "</xdr:sp>"
@@ -3071,6 +3016,79 @@ module Xlsxrb
 
       parts << "</xdr:wsDr>"
       parts.join
+    end
+
+    def paragraph_xml(para)
+      rpr_xml = para[:font] ? text_char_props_xml("a:rPr", para[:font]) : ""
+      ppr_attrs = +""
+      ppr_attrs << %( algn="#{xml_escape(para[:align])}") if para[:align]
+      ppr_attrs << %( fontAlgn="#{xml_escape(para[:font_align])}") if para[:font_align]
+      ppr_attrs << %( defTabSz="#{para[:def_tab_sz]}") if para[:def_tab_sz]
+      ppr_attrs << %( rtl="1") if para[:rtl]
+      ppr_attrs << %( eaLnBrk="1") if para[:ea_ln_brk]
+      ppr_attrs << %( latinLnBrk="1") if para[:latin_ln_brk]
+      ppr_attrs << %( hangingPunct="1") if para[:hanging_punct]
+      ppr_attrs << %( lvl="#{para[:level]}") if para[:level]
+      if para[:indent]
+        ti = para[:indent]
+        ppr_attrs << %( marL="#{ti[:left]}") if ti[:left]
+        ppr_attrs << %( marR="#{ti[:right]}") if ti[:right]
+        ppr_attrs << %( indent="#{ti[:indent]}") if ti[:indent]
+      end
+      ppr_children = +""
+      if para[:spacing]
+        ts = para[:spacing]
+        if ts[:line]
+          ppr_children << %(<a:lnSpc><a:spcPts val="#{ts[:line]}"/></a:lnSpc>)
+        elsif ts[:line_pct]
+          ppr_children << %(<a:lnSpc><a:spcPct val="#{ts[:line_pct]}"/></a:lnSpc>)
+        end
+        if ts[:before]
+          ppr_children << %(<a:spcBef><a:spcPts val="#{ts[:before]}"/></a:spcBef>)
+        elsif ts[:before_pct]
+          ppr_children << %(<a:spcBef><a:spcPct val="#{ts[:before_pct]}"/></a:spcBef>)
+        end
+        if ts[:after]
+          ppr_children << %(<a:spcAft><a:spcPts val="#{ts[:after]}"/></a:spcAft>)
+        elsif ts[:after_pct]
+          ppr_children << %(<a:spcAft><a:spcPct val="#{ts[:after_pct]}"/></a:spcAft>)
+        end
+      end
+      if para[:tab_stops]&.any?
+        tabs = para[:tab_stops].map do |tab|
+          tab_attrs = %( pos="#{tab[:pos]}")
+          tab_attrs << %( algn="#{xml_escape(tab[:align])}") if tab[:align]
+          "<a:tab#{tab_attrs}/>"
+        end
+        ppr_children << "<a:tabLst>#{tabs.join}</a:tabLst>"
+      end
+      if para[:bullet]
+        bu = para[:bullet]
+        ppr_children << %(<a:buClr><a:srgbClr val="#{xml_escape(bu[:color])}"/></a:buClr>) if bu[:color]
+        ppr_children << %(<a:buSzPts val="#{bu[:size_pts]}"/>) if bu[:size_pts]
+        ppr_children << %(<a:buSzPct val="#{bu[:size_pct]}"/>) if bu[:size_pct]
+        ppr_children << %(<a:buFont typeface="#{xml_escape(bu[:font])}"/>) if bu[:font]
+        case bu[:type]
+        when "none"
+          ppr_children << "<a:buNone/>"
+        when "char"
+          ppr_children << %(<a:buChar char="#{xml_escape(bu[:char])}"/>)
+        when "auto"
+          auto_attrs = %( type="#{xml_escape(bu[:auto_type])}")
+          auto_attrs << %( startAt="#{bu[:start_at]}") if bu[:start_at]
+          ppr_children << "<a:buAutoNum#{auto_attrs}/>"
+        end
+      end
+      ppr_children << text_char_props_xml("a:defRPr", para[:def_rpr]) if para[:def_rpr]
+      ppr_xml = if ppr_attrs.empty? && ppr_children.empty?
+                  ""
+                elsif ppr_children.empty?
+                  "<a:pPr#{ppr_attrs}/>"
+                else
+                  "<a:pPr#{ppr_attrs}>#{ppr_children}</a:pPr>"
+                end
+      end_para_rpr_xml = para[:end_para_rpr] ? text_char_props_xml("a:endParaRPr", para[:end_para_rpr]) : ""
+      "<a:p>#{ppr_xml}<a:r>#{rpr_xml}<a:t>#{xml_escape(para[:text] || "")}</a:t></a:r>#{end_para_rpr_xml}</a:p>"
     end
 
     def text_char_props_xml(tag, font)
