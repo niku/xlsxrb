@@ -2917,6 +2917,20 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated chart space line dash" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_chart_space_line_dash_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("333333", chart[:chart_line_color])
+    assert_equal("lgDash", chart[:chart_line_dash])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated axis title spPr with fill and line" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
