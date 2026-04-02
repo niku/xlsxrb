@@ -4600,8 +4600,10 @@ module Xlsxrb
         when "miter"
           if @inside_rpr_ln && @current_text_font
             @current_text_font[:line_join] = "miter"
+            @current_text_font[:line_miter_limit] = attributes["lim"].to_i if attributes["lim"]
           elsif @inside_sp && @inside_ln && @current_shape
             @current_shape[:line_join] = "miter"
+            @current_shape[:line_miter_limit] = attributes["lim"].to_i if attributes["lim"]
           end
         when "headEnd"
           if @inside_sp && @inside_ln && @current_shape
@@ -5355,7 +5357,10 @@ module Xlsxrb
         when "bevel"
           @current_ser[:line_join] = "bevel" if @inside_ser && @inside_ser_ln && @current_ser
         when "miter"
-          @current_ser[:line_join] = "miter" if @inside_ser && @inside_ser_ln && @current_ser
+          if @inside_ser && @inside_ser_ln && @current_ser
+            @current_ser[:line_join] = "miter"
+            @current_ser[:line_miter_limit] = attributes["lim"].to_i if attributes["lim"]
+          end
         when "solidFill"
           if @inside_dpt && @inside_dpt_sp_pr
             @inside_dpt_solid_fill = true
