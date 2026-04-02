@@ -3626,12 +3626,13 @@ module Xlsxrb
           end
           parts << "</c:spPr>"
         end
-        if ser[:marker_symbol] || ser[:marker_size] || ser[:marker_fill] || ser[:marker_line_color] || ser[:marker_line_dash]
+        if ser[:marker_symbol] || ser[:marker_size] || ser[:marker_fill] || ser[:marker_no_fill] || ser[:marker_line_color] || ser[:marker_line_dash]
           parts << "<c:marker>"
           parts << %(<c:symbol val="#{xml_escape(ser[:marker_symbol])}"/>) if ser[:marker_symbol]
           parts << %(<c:size val="#{ser[:marker_size]}"/>) if ser[:marker_size]
-          if ser[:marker_fill] || ser[:marker_line_color] || ser[:marker_line_dash]
+          if ser[:marker_fill] || ser[:marker_no_fill] || ser[:marker_line_color] || ser[:marker_line_dash]
             parts << "<c:spPr>"
+            parts << "<a:noFill/>" if ser[:marker_no_fill]
             parts << %(<a:solidFill>#{color_xml(ser[:marker_fill])}</a:solidFill>) if ser[:marker_fill]
             if ser[:marker_line_color] || ser[:marker_line_dash]
               mk_ln_w = ser[:marker_line_width] ? %( w="#{(ser[:marker_line_width] * 12_700).to_i}") : ""
