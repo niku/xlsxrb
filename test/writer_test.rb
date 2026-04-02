@@ -4272,6 +4272,37 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits showLeaderLines and leaderLines in dLbls" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :pie,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     data_labels: { show_val: true, show_leader_lines: true,
+                                    leader_lines: { line_color: "FF0000", line_width: 0.5, line_dash: "dash" } })
+    xlsx_path = File.join(Dir.tmpdir, "leader_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:showLeaderLines val="1"/>}, xml)
+    assert_match(%r{<c:leaderLines><c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:prstDash val="dash"/></a:ln></c:spPr></c:leaderLines>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits plain leaderLines element without spPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :pie,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     data_labels: { show_val: true, show_leader_lines: true, leader_lines: true })
+    xlsx_path = File.join(Dir.tmpdir, "leader_plain_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:showLeaderLines val="1"/>}, xml)
+    assert_match(%r{<c:leaderLines/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits dLblPos in data labels" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

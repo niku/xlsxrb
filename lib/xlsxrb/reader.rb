@@ -5491,6 +5491,10 @@ module Xlsxrb
         @dlbls_font = nil
         @dlbl_target = nil
         @inside_separator = false
+        @inside_leader_lines = false
+        @inside_leader_lines_sp_pr = false
+        @inside_leader_lines_ln = false
+        @inside_leader_lines_solid_fill = false
         @inside_cat_ax = false
         @inside_val_ax = false
         @inside_ax_title = false
@@ -5678,6 +5682,8 @@ module Xlsxrb
             @inside_dpt_sp_pr = true
           elsif @inside_ser_marker
             @inside_marker_sp_pr = true
+          elsif @inside_leader_lines
+            @inside_leader_lines_sp_pr = true
           elsif @inside_dlbls && !@inside_dlbl
             @inside_dlbls_sp_pr = true
           elsif @inside_trendline
@@ -5732,6 +5738,16 @@ module Xlsxrb
           elsif @inside_err_bars_sp_pr
             @inside_err_bars_ln = true
             @current_err_bars[:line_width] = attributes["w"].to_i / 12_700.0 if @current_err_bars && attributes["w"]
+          elsif @inside_leader_lines_sp_pr
+            @inside_leader_lines_ln = true
+            if attributes["w"] && @inside_dlbls
+              ll = (@dlbl_target[:leader_lines] ||= {})
+              ll[:line_width] = attributes["w"].to_i / 12_700.0
+              if @dlbl_target != @data_labels
+                ll2 = (@data_labels[:leader_lines] ||= {})
+                ll2[:line_width] = attributes["w"].to_i / 12_700.0
+              end
+            end
           elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_ln = true
             @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
@@ -5823,6 +5839,13 @@ module Xlsxrb
           elsif @inside_hi_low_lines_ln && attributes["val"]
             @hi_low_lines = {} if @hi_low_lines == true
             @hi_low_lines[:line_dash] = attributes["val"]
+          elsif @inside_leader_lines_ln && @inside_dlbls && attributes["val"]
+            ll = (@dlbl_target[:leader_lines] ||= {})
+            ll[:line_dash] = attributes["val"]
+            if @dlbl_target != @data_labels
+              ll2 = (@data_labels[:leader_lines] ||= {})
+              ll2[:line_dash] = attributes["val"]
+            end
           end
         when "miter"
           if @inside_ser && @inside_ser_ln && @current_ser
@@ -5840,6 +5863,8 @@ module Xlsxrb
             @inside_trendline_solid_fill = true
           elsif @inside_err_bars_sp_pr
             @inside_err_bars_solid_fill = true
+          elsif @inside_leader_lines_sp_pr
+            @inside_leader_lines_solid_fill = true
           elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_solid_fill = true
           elsif @inside_drop_lines_sp_pr
@@ -6066,6 +6091,13 @@ module Xlsxrb
             @inside_separator = true
             @text_buffer = +""
           end
+        when "showLeaderLines"
+          if @inside_dlbls && attributes["val"]
+            @dlbl_target[:show_leader_lines] = attributes["val"] == "1"
+            @data_labels[:show_leader_lines] = attributes["val"] == "1" if @dlbl_target != @data_labels
+          end
+        when "leaderLines"
+          @inside_leader_lines = true if @inside_dlbls
         when "catAx"
           @inside_cat_ax = true
         when "dateAx"
@@ -6388,6 +6420,10 @@ module Xlsxrb
             @inside_marker_sp_pr = false
             @inside_marker_ln = false
             @inside_marker_solid_fill = false
+          elsif @inside_leader_lines_sp_pr
+            @inside_leader_lines_sp_pr = false
+            @inside_leader_lines_ln = false
+            @inside_leader_lines_solid_fill = false
           elsif @inside_dlbls_sp_pr
             @inside_dlbls_sp_pr = false
             @inside_dlbls_ln = false
@@ -6455,6 +6491,7 @@ module Xlsxrb
         when "ln"
           @inside_dpt_ln = false if @inside_dpt
           @inside_marker_ln = false if @inside_marker_sp_pr
+          @inside_leader_lines_ln = false if @inside_leader_lines_sp_pr
           @inside_dlbls_ln = false if @inside_dlbls_sp_pr
           @inside_trendline_ln = false if @inside_trendline_sp_pr
           @inside_err_bars_ln = false if @inside_err_bars_sp_pr
@@ -6547,6 +6584,10 @@ module Xlsxrb
           @inside_dlbls_sp_pr = false
           @inside_dlbls_ln = false
           @inside_dlbls_solid_fill = false
+          @inside_leader_lines = false
+          @inside_leader_lines_sp_pr = false
+          @inside_leader_lines_ln = false
+          @inside_leader_lines_solid_fill = false
           @dlbls_font = nil
           @inside_axis_tx_pr = false
           @inside_axis_def_rpr = false
@@ -6618,6 +6659,11 @@ module Xlsxrb
           @inside_hi_low_lines_sp_pr = false
           @inside_hi_low_lines_ln = false
           @inside_hi_low_lines_solid_fill = false
+        when "leaderLines"
+          @inside_leader_lines = false
+          @inside_leader_lines_sp_pr = false
+          @inside_leader_lines_ln = false
+          @inside_leader_lines_solid_fill = false
         end
       end
 
@@ -6664,6 +6710,13 @@ module Xlsxrb
           @current_ser[:marker_line_color] = color_value
         elsif @inside_marker_sp_pr && @inside_marker_solid_fill && @current_ser
           @current_ser[:marker_fill] = color_value
+        elsif @inside_leader_lines_sp_pr && @inside_leader_lines_ln && @inside_leader_lines_solid_fill
+          ll = (@dlbl_target[:leader_lines] ||= {})
+          ll[:line_color] = color_value
+          if @dlbl_target != @data_labels
+            ll2 = (@data_labels[:leader_lines] ||= {})
+            ll2[:line_color] = color_value
+          end
         elsif @inside_dlbls_sp_pr && @inside_dlbls_ln && @inside_dlbls_solid_fill
           dl_target = @dlbl_target || @data_labels
           dl_target[:line_color] = color_value
