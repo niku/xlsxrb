@@ -1933,6 +1933,35 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape fill_color_transforms" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", fill_color: "FF0000",
+                     fill_color_transforms: [{ type: "tint", val: 50_000 }, { type: "shade", val: 80_000 }],
+                     line_color: "0000FF",
+                     line_color_transforms: [{ type: "lumMod", val: 60_000 }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    ft = shapes[0][:fill_color_transforms]
+    assert_equal(2, ft.size)
+    assert_equal("tint", ft[0][:type])
+    assert_equal(50_000, ft[0][:val])
+    assert_equal("shade", ft[1][:type])
+    assert_equal(80_000, ft[1][:val])
+    lt = shapes[0][:line_color_transforms]
+    assert_equal(1, lt.size)
+    assert_equal("lumMod", lt[0][:type])
+    assert_equal(60_000, lt[0][:val])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape line_color and line_width via a:ln" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
