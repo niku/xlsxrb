@@ -5366,6 +5366,57 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_bullet none emits a:buNone in a:pPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "NoBullet",
+                     text_bullet: { type: "none" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-bunone", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:pPr><a:buNone/></a:pPr>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with text_bullet char emits a:buChar in a:pPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Bullet",
+                     text_bullet: { type: "char", char: "\u2022" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-buchar", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:buChar char="/, drawing_xml.force_encoding("UTF-8"))
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with text_bullet auto emits a:buAutoNum in a:pPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Numbered",
+                     text_bullet: { type: "auto", auto_type: "arabicPeriod", start_at: 5 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-buauto", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:buAutoNum type="arabicPeriod" startAt="5"/>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_font alt_lang emits altLang attribute on a:rPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

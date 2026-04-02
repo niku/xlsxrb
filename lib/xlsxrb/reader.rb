@@ -4665,6 +4665,16 @@ module Xlsxrb
             @current_shape[:text_tab_stops] ||= []
             @current_shape[:text_tab_stops] << tab
           end
+        when "buNone"
+          @current_shape[:text_bullet] = { type: "none" } if @inside_tx_body && @inside_sp && @current_shape
+        when "buChar"
+          @current_shape[:text_bullet] = { type: "char", char: attributes["char"] } if @inside_tx_body && @inside_sp && @current_shape && attributes["char"]
+        when "buAutoNum"
+          if @inside_tx_body && @inside_sp && @current_shape && attributes["type"]
+            bu = { type: "auto", auto_type: attributes["type"] }
+            bu[:start_at] = attributes["startAt"].to_i if attributes["startAt"]
+            @current_shape[:text_bullet] = bu
+          end
         when "spcPts"
           if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
             @current_shape[:text_spacing] ||= {}
