@@ -3357,6 +3357,23 @@ module Xlsxrb
       children.empty? ? "" : "<c:spPr>#{children}</c:spPr>"
     end
 
+    def gridlines_xml(tag, spec)
+      return "" unless spec
+
+      if spec.is_a?(Hash)
+        sp_children = +""
+        if spec[:line_color] || spec[:line_width] || spec[:line_dash]
+          lw = spec[:line_width] ? %( w="#{(spec[:line_width] * 12_700).to_i}") : ""
+          lf = spec[:line_color] ? %(<a:solidFill>#{color_xml(spec[:line_color])}</a:solidFill>) : ""
+          ld = spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(spec[:line_dash])}"/>) : ""
+          sp_children << "<a:ln#{lw}>#{lf}#{ld}</a:ln>"
+        end
+        sp_children.empty? ? "<c:#{tag}/>" : "<c:#{tag}><c:spPr>#{sp_children}</c:spPr></c:#{tag}>"
+      else
+        "<c:#{tag}/>"
+      end
+    end
+
     # Resolves a cell reference like "Sheet1!$A$1:$A$5" to an array of values from @sheets.
     def resolve_sheet_ref(ref)
       return nil unless ref
@@ -3705,8 +3722,8 @@ module Xlsxrb
         parts << %(<c:max val="#{chart[:cat_axis_scaling_max]}"/>) if chart[:cat_axis_scaling_max]
         parts << %(<c:min val="#{chart[:cat_axis_scaling_min]}"/>) if chart[:cat_axis_scaling_min]
         parts << %(</c:scaling><c:delete val="#{cat_del}"/><c:axPos val="#{chart[:cat_axis_pos] || "b"}"/>)
-        parts << "<c:majorGridlines/>" if chart[:cat_axis_major_gridlines]
-        parts << "<c:minorGridlines/>" if chart[:cat_axis_minor_gridlines]
+        parts << gridlines_xml("majorGridlines", chart[:cat_axis_major_gridlines])
+        parts << gridlines_xml("minorGridlines", chart[:cat_axis_minor_gridlines])
         parts << build_chart_title_xml(chart[:cat_axis_title]) if chart[:cat_axis_title]
         if (cnf = chart[:cat_axis_num_fmt])
           sl = cnf[:source_linked] ? 1 : 0
@@ -3749,8 +3766,8 @@ module Xlsxrb
         parts << %(<c:max val="#{chart[:val_axis_scaling_max]}"/>) if chart[:val_axis_scaling_max]
         parts << %(<c:min val="#{chart[:val_axis_scaling_min]}"/>) if chart[:val_axis_scaling_min]
         parts << %(</c:scaling><c:delete val="#{val_del}"/><c:axPos val="#{chart[:val_axis_pos] || "l"}"/>)
-        parts << "<c:majorGridlines/>" if chart[:val_axis_major_gridlines]
-        parts << "<c:minorGridlines/>" if chart[:val_axis_minor_gridlines]
+        parts << gridlines_xml("majorGridlines", chart[:val_axis_major_gridlines])
+        parts << gridlines_xml("minorGridlines", chart[:val_axis_minor_gridlines])
         parts << build_chart_title_xml(chart[:val_axis_title]) if chart[:val_axis_title]
         if (vnf = chart[:val_axis_num_fmt])
           sl = vnf[:source_linked] ? 1 : 0
