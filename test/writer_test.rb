@@ -4757,6 +4757,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits legendEntry with font txPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     legend: { position: "r",
+                               entries: [{ idx: 0, font: { size: 12, bold: true, name: "Arial" } }] })
+    xlsx_path = File.join(Dir.tmpdir, "legentry_font_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:legendEntry><c:idx val="0"/><c:txPr>.*<a:defRPr sz="1200" b="1"><a:latin typeface="Arial"/></a:defRPr>}m, xml)
+    assert_no_match(/<c:legendEntry>.*<c:delete/m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits series spPr with line color and width" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
