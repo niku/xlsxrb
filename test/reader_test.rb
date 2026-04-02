@@ -6883,6 +6883,34 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips chart upDownBars with up_bars and down_bars spPr" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     up_down_bars: { gap_width: 100,
+                                     up_bars: { fill_color: "00FF00", line_color: "008000", line_width: 1.0 },
+                                     down_bars: { fill_color: "FF0000", line_color: "800000", line_width: 0.5 } })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    udb = chart[:up_down_bars]
+    assert_equal(100, udb[:gap_width])
+    assert_equal("00FF00", udb[:up_bars][:fill_color])
+    assert_equal("008000", udb[:up_bars][:line_color])
+    assert_in_delta(1.0, udb[:up_bars][:line_width])
+    assert_equal("FF0000", udb[:down_bars][:fill_color])
+    assert_equal("800000", udb[:down_bars][:line_color])
+    assert_in_delta(0.5, udb[:down_bars][:line_width])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips tickLblSkip and tickMarkSkip on cat axis" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

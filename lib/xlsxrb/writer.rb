@@ -3746,7 +3746,23 @@ module Xlsxrb
         udb = chart[:up_down_bars]
         parts << "<c:upDownBars>"
         parts << %(<c:gapWidth val="#{udb[:gap_width]}"/>) if udb.is_a?(Hash) && udb[:gap_width]
-        parts << "<c:upBars/><c:downBars/>"
+        %i[up_bars down_bars].each do |bar_key|
+          tag = bar_key == :up_bars ? "upBars" : "downBars"
+          bar = udb.is_a?(Hash) ? udb[bar_key] : nil
+          if bar
+            bar_sp = +""
+            bar_sp << %(<a:solidFill>#{color_xml(bar[:fill_color])}</a:solidFill>) if bar[:fill_color]
+            bar_sp << "<a:noFill/>" if bar[:no_fill]
+            if bar[:line_color] || bar[:line_width]
+              b_lw = bar[:line_width] ? %( w="#{(bar[:line_width] * 12_700).to_i}") : ""
+              b_lf = bar[:line_color] ? %(<a:solidFill>#{color_xml(bar[:line_color])}</a:solidFill>) : ""
+              bar_sp << "<a:ln#{b_lw}>#{b_lf}</a:ln>"
+            end
+            parts << (bar_sp.empty? ? "<c:#{tag}/>" : "<c:#{tag}><c:spPr>#{bar_sp}</c:spPr></c:#{tag}>")
+          else
+            parts << "<c:#{tag}/>"
+          end
+        end
         parts << "</c:upDownBars>"
       end
       mk = chart[:marker]

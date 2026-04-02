@@ -4977,6 +4977,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits upDownBars with up_bars and down_bars spPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     up_down_bars: { gap_width: 100,
+                                     up_bars: { fill_color: "00FF00", line_color: "008000", line_width: 1.0 },
+                                     down_bars: { fill_color: "FF0000", line_color: "800000", line_width: 0.5 } })
+    xlsx_path = File.join(Dir.tmpdir, "updown_sppr_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:upBars><c:spPr>.*<a:solidFill>.*<a:srgbClr val="00FF00"/>.*</a:solidFill>.*<a:ln w="12700">.*<a:solidFill>.*<a:srgbClr val="008000"/>.*</a:solidFill>.*</a:ln>.*</c:spPr></c:upBars>}m, xml)
+    assert_match(%r{<c:downBars><c:spPr>.*<a:solidFill>.*<a:srgbClr val="FF0000"/>.*</a:solidFill>.*<a:ln w="6350">.*<a:solidFill>.*<a:srgbClr val="800000"/>.*</a:solidFill>.*</a:ln>.*</c:spPr></c:downBars>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits tickLblSkip and tickMarkSkip on cat axis" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
