@@ -817,6 +817,8 @@ module Xlsxrb
         chart[:val_axis_label_rotation] = cl.val_axis_label_rotation if cl.val_axis_label_rotation
         chart[:cat_axis_font] = cl.cat_axis_font if cl.cat_axis_font
         chart[:val_axis_font] = cl.val_axis_font if cl.val_axis_font
+        chart[:cat_axis_fill] = cl.cat_axis_fill if cl.cat_axis_fill
+        chart[:val_axis_fill] = cl.val_axis_fill if cl.val_axis_fill
         chart[:cat_axis_line_color] = cl.cat_axis_line_color if cl.cat_axis_line_color
         chart[:cat_axis_line_width] = cl.cat_axis_line_width if cl.cat_axis_line_width
         chart[:val_axis_line_color] = cl.val_axis_line_color if cl.val_axis_line_color
@@ -5278,6 +5280,7 @@ module Xlsxrb
                   :plot_area_fill, :plot_area_line_color, :plot_area_line_width,
                   :cat_axis_label_rotation, :val_axis_label_rotation,
                   :cat_axis_font, :val_axis_font,
+                  :cat_axis_fill, :val_axis_fill,
                   :cat_axis_line_color, :cat_axis_line_width,
                   :val_axis_line_color, :val_axis_line_width,
                   :floor, :side_wall, :back_wall,
@@ -5418,6 +5421,8 @@ module Xlsxrb
         @inside_ax_sp_pr = false
         @inside_ax_ln = false
         @inside_ax_solid_fill = false
+        @cat_axis_fill = nil
+        @val_axis_fill = nil
         @cat_axis_line_color = nil
         @cat_axis_line_width = nil
         @val_axis_line_color = nil
@@ -6783,6 +6788,12 @@ module Xlsxrb
             @cat_axis_line_color = color_value
           elsif @inside_val_ax
             @val_axis_line_color = color_value
+          end
+        elsif @inside_ax_sp_pr && @inside_ax_solid_fill
+          if @inside_cat_ax
+            @cat_axis_fill = color_value
+          elsif @inside_val_ax
+            @val_axis_fill = color_value
           end
         elsif @inside_wall_sp_pr && @inside_wall_ln && @inside_wall_solid_fill && @current_wall
           @current_wall[:line_color] = color_value
