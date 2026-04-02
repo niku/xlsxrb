@@ -4430,6 +4430,7 @@ module Xlsxrb
         @anchor_from = {}
         @anchor_to = {}
         @inside_solid_fill = false
+        @inside_highlight = false
         @inside_ln = false
         @inside_prst_geom = false
         @inside_rpr = false
@@ -4481,6 +4482,8 @@ module Xlsxrb
           @current_shape[:rotation] = attributes["rot"].to_i if @inside_sp && @current_shape && attributes["rot"]
         when "solidFill"
           @inside_solid_fill = true if @inside_sp
+        when "highlight"
+          @inside_highlight = true if @inside_rpr && @inside_sp
         when "gradFill"
           if @inside_sp && @current_shape && !@inside_ln
             @inside_grad_fill = true
@@ -4574,6 +4577,8 @@ module Xlsxrb
         when "srgbClr"
           if @inside_rpr && @current_text_font && @inside_solid_fill && attributes["val"]
             @current_text_font[:color] = attributes["val"]
+          elsif @inside_rpr && @current_text_font && @inside_highlight && attributes["val"]
+            @current_text_font[:highlight] = attributes["val"]
           elsif @inside_outer_shdw && @current_shape && attributes["val"]
             @current_shape[:outer_shadow][:color] = attributes["val"]
           elsif @inside_inner_shdw && @current_shape && attributes["val"]
@@ -4730,6 +4735,8 @@ module Xlsxrb
           @inside_tx_body = false
         when "solidFill"
           @inside_solid_fill = false
+        when "highlight"
+          @inside_highlight = false
         when "ln"
           @inside_ln = false
         when "effectLst"

@@ -2978,6 +2978,7 @@ module Xlsxrb
                         rpr_attrs << %( altLang="#{xml_escape(tf[:alt_lang])}") if tf[:alt_lang]
                         rpr_children = +""
                         rpr_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(tf[:color])}"/></a:solidFill>) if tf[:color]
+                        rpr_children << %(<a:highlight><a:srgbClr val="#{xml_escape(tf[:highlight])}"/></a:highlight>) if tf[:highlight]
                         rpr_children << %(<a:latin typeface="#{xml_escape(tf[:name])}"/>) if tf[:name]
                         rpr_children << %(<a:ea typeface="#{xml_escape(tf[:ea_font])}"/>) if tf[:ea_font]
                         rpr_children << %(<a:cs typeface="#{xml_escape(tf[:cs_font])}"/>) if tf[:cs_font]

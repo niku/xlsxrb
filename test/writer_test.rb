@@ -5033,6 +5033,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_font highlight emits a:highlight element in a:rPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Highlighted",
+                     text_font: { highlight: "FFFF00" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-hl", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:rPr><a:highlight><a:srgbClr val="FFFF00"/></a:highlight></a:rPr>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_rot emits rot attribute on a:bodyPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
