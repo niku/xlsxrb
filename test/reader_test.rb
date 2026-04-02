@@ -2216,6 +2216,32 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape line_custom_dash" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "CustDash",
+                     line_color: "000000",
+                     line_custom_dash: [{ d: 300_000, sp: 100_000 }, { d: 100_000, sp: 100_000 }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    cd = shapes[0][:line_custom_dash]
+    assert_not_nil(cd)
+    assert_equal(2, cd.size)
+    assert_equal(300_000, cd[0][:d])
+    assert_equal(100_000, cd[0][:sp])
+    assert_equal(100_000, cd[1][:d])
+    assert_equal(100_000, cd[1][:sp])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape line end arrows" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
