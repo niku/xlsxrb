@@ -6487,6 +6487,29 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips chart series marker fill and line" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle", marker_size: 6,
+                                marker_fill: "FF0000", marker_line_color: "000000", marker_line_width: 1 }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series].first
+    assert_equal("circle", ser[:marker_symbol])
+    assert_equal("FF0000", ser[:marker_fill])
+    assert_equal("000000", ser[:marker_line_color])
+    assert_equal(1.0, ser[:marker_line_width])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart dropLines and hiLowLines" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

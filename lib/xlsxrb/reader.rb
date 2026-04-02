@@ -5307,6 +5307,9 @@ module Xlsxrb
         @inside_ser_solid_fill = false
         @inside_ser_ln = false
         @inside_ser_marker = false
+        @inside_marker_sp_pr = false
+        @inside_marker_ln = false
+        @inside_marker_solid_fill = false
         @inside_dpt = false
         @inside_dpt_sp_pr = false
         @inside_dpt_solid_fill = false
@@ -5454,6 +5457,8 @@ module Xlsxrb
         when "spPr"
           if @inside_dpt
             @inside_dpt_sp_pr = true
+          elsif @inside_ser_marker
+            @inside_marker_sp_pr = true
           elsif @inside_ser
             @inside_ser_sp_pr = true
           elsif @inside_plot_area
@@ -5463,6 +5468,9 @@ module Xlsxrb
           if @inside_dpt && @inside_dpt_sp_pr
             @inside_dpt_ln = true
             @current_dpt[:line_width] = attributes["w"].to_i / 12_700.0 if @current_dpt && attributes["w"]
+          elsif @inside_marker_sp_pr && @current_ser
+            @inside_marker_ln = true
+            @current_ser[:marker_line_width] = attributes["w"].to_i / 12_700.0 if attributes["w"]
           elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_ln = true
             @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
@@ -5482,6 +5490,8 @@ module Xlsxrb
         when "solidFill"
           if @inside_dpt && @inside_dpt_sp_pr
             @inside_dpt_solid_fill = true
+          elsif @inside_marker_sp_pr
+            @inside_marker_solid_fill = true
           elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_solid_fill = true
           elsif @inside_plot_area_sp_pr
@@ -5500,6 +5510,10 @@ module Xlsxrb
             @current_dpt[:line_color] = attributes["val"]
           elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_solid_fill && @current_dpt && attributes["val"]
             @current_dpt[:fill_color] = attributes["val"]
+          elsif @inside_marker_sp_pr && @inside_marker_ln && @inside_marker_solid_fill && @current_ser && attributes["val"]
+            @current_ser[:marker_line_color] = attributes["val"]
+          elsif @inside_marker_sp_pr && @inside_marker_solid_fill && @current_ser && attributes["val"]
+            @current_ser[:marker_fill] = attributes["val"]
           elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser && attributes["val"]
             @current_ser[:line_color] = attributes["val"]
           elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser && attributes["val"]
@@ -5799,10 +5813,17 @@ module Xlsxrb
           @inside_ser_solid_fill = false
           @inside_ser_ln = false
           @inside_ser_marker = false
+          @inside_marker_sp_pr = false
+          @inside_marker_ln = false
+          @inside_marker_solid_fill = false
         when "spPr"
           if @inside_dpt
             @inside_dpt_sp_pr = false
             @inside_dpt_solid_fill = false
+          elsif @inside_marker_sp_pr
+            @inside_marker_sp_pr = false
+            @inside_marker_ln = false
+            @inside_marker_solid_fill = false
           elsif @inside_ser
             @inside_ser_sp_pr = false
             @inside_ser_ln = false
@@ -5812,12 +5833,15 @@ module Xlsxrb
           end
         when "ln"
           @inside_dpt_ln = false if @inside_dpt
+          @inside_marker_ln = false if @inside_marker_sp_pr
           @inside_ser_ln = false if @inside_ser
         when "marker"
           @inside_ser_marker = false if @inside_ser
         when "solidFill"
           if @inside_dpt
             @inside_dpt_solid_fill = false
+          elsif @inside_marker_sp_pr
+            @inside_marker_solid_fill = false
           elsif @inside_ser
             @inside_ser_solid_fill = false
           elsif @inside_plot_area_sp_pr
