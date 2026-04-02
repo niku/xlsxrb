@@ -1482,6 +1482,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with autofit hash normal and fontScale emits attributes on a:normAutofit" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Scaled",
+                     autofit: { type: "normal", font_scale: 90_000, ln_spc_reduction: 20_000 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-autofit", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:normAutofit fontScale="90000" lnSpcReduction="20000"/>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with outer_shadow emits a:effectLst with a:outerShdw" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

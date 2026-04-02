@@ -2056,6 +2056,28 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape normAutofit with fontScale and lnSpcReduction" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Scaled",
+                     autofit: { type: "normal", font_scale: 90_000, ln_spc_reduction: 20_000 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    af = shapes[0][:autofit]
+    assert_equal("normal", af[:type])
+    assert_equal(90_000, af[:font_scale])
+    assert_equal(20_000, af[:ln_spc_reduction])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape outer shadow" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

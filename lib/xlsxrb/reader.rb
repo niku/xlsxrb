@@ -4961,7 +4961,16 @@ module Xlsxrb
         when "spAutoFit"
           @current_shape[:autofit] = "shape" if @inside_sp && @current_shape
         when "normAutofit"
-          @current_shape[:autofit] = "normal" if @inside_sp && @current_shape
+          if @inside_sp && @current_shape
+            if attributes["fontScale"] || attributes["lnSpcReduction"]
+              af = { type: "normal" }
+              af[:font_scale] = attributes["fontScale"].to_i if attributes["fontScale"]
+              af[:ln_spc_reduction] = attributes["lnSpcReduction"].to_i if attributes["lnSpcReduction"]
+              @current_shape[:autofit] = af
+            else
+              @current_shape[:autofit] = "normal"
+            end
+          end
         when "prstTxWarp"
           @current_shape[:text_warp] = { preset: attributes["prst"] } if @inside_sp && @current_shape && attributes["prst"]
         when "t"
