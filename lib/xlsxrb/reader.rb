@@ -4744,6 +4744,15 @@ module Xlsxrb
               @current_shape[:no_fill] = true
             end
           end
+        when "alpha"
+          if @inside_sp && @current_shape && attributes["val"]
+            alpha_val = attributes["val"].to_i
+            if @inside_ln && @inside_solid_fill && !@inside_rpr
+              @current_shape[:line_alpha] = alpha_val
+            elsif @inside_solid_fill && !@inside_ln && !@inside_rpr
+              @current_shape[:fill_alpha] = alpha_val
+            end
+          end
         when "from"
           @inside_from = true if @inside_anchor
         when "to"
