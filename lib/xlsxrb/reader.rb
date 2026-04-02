@@ -4448,6 +4448,8 @@ module Xlsxrb
         @inside_lnspc = false
         @inside_tab_lst = false
         @inside_bu_clr = false
+        @current_paragraph = nil
+        @paragraphs_for_shape = nil
       end
 
       def start_element(_uri, local_name, qname, attributes)
@@ -4583,9 +4585,9 @@ module Xlsxrb
             @current_text_font[:color] = attributes["val"]
           elsif @inside_rpr && @current_text_font && @inside_highlight && attributes["val"]
             @current_text_font[:highlight] = attributes["val"]
-          elsif @inside_bu_clr && @inside_sp && @current_shape && attributes["val"]
-            @current_shape[:text_bullet] ||= {}
-            @current_shape[:text_bullet][:color] = attributes["val"]
+          elsif @inside_bu_clr && @inside_sp && @current_paragraph && attributes["val"]
+            @current_paragraph[:bullet] ||= {}
+            @current_paragraph[:bullet][:color] = attributes["val"]
           elsif @inside_outer_shdw && @current_shape && attributes["val"]
             @current_shape[:outer_shadow][:color] = attributes["val"]
           elsif @inside_inner_shdw && @current_shape && attributes["val"]
@@ -4616,6 +4618,9 @@ module Xlsxrb
           @inside_to = true if @inside_anchor
         when "txBody"
           @inside_tx_body = true if @inside_sp
+          @paragraphs_for_shape = [] if @inside_sp
+        when "p"
+          @current_paragraph = {} if @inside_tx_body && @inside_sp
         when "rPr"
           if @inside_tx_body && @inside_sp && @current_shape
             @inside_rpr = true
@@ -4674,20 +4679,20 @@ module Xlsxrb
         when "sym"
           @current_text_font[:sym_font] = attributes["typeface"] if @inside_rpr && @current_text_font && attributes["typeface"]
         when "pPr"
-          if @inside_tx_body && @inside_sp && @current_shape
-            @current_shape[:text_align] = attributes["algn"] if attributes["algn"]
-            @current_shape[:text_font_align] = attributes["fontAlgn"] if attributes["fontAlgn"]
-            @current_shape[:text_def_tab_sz] = attributes["defTabSz"].to_i if attributes["defTabSz"]
-            @current_shape[:text_rtl] = %w[1 true].include?(attributes["rtl"]) if attributes["rtl"]
-            @current_shape[:text_ea_ln_brk] = %w[1 true].include?(attributes["eaLnBrk"]) if attributes["eaLnBrk"]
-            @current_shape[:text_latin_ln_brk] = %w[1 true].include?(attributes["latinLnBrk"]) if attributes["latinLnBrk"]
-            @current_shape[:text_hanging_punct] = %w[1 true].include?(attributes["hangingPunct"]) if attributes["hangingPunct"]
-            @current_shape[:text_level] = attributes["lvl"].to_i if attributes["lvl"]
+          if @inside_tx_body && @inside_sp && @current_paragraph
+            @current_paragraph[:align] = attributes["algn"] if attributes["algn"]
+            @current_paragraph[:font_align] = attributes["fontAlgn"] if attributes["fontAlgn"]
+            @current_paragraph[:def_tab_sz] = attributes["defTabSz"].to_i if attributes["defTabSz"]
+            @current_paragraph[:rtl] = %w[1 true].include?(attributes["rtl"]) if attributes["rtl"]
+            @current_paragraph[:ea_ln_brk] = %w[1 true].include?(attributes["eaLnBrk"]) if attributes["eaLnBrk"]
+            @current_paragraph[:latin_ln_brk] = %w[1 true].include?(attributes["latinLnBrk"]) if attributes["latinLnBrk"]
+            @current_paragraph[:hanging_punct] = %w[1 true].include?(attributes["hangingPunct"]) if attributes["hangingPunct"]
+            @current_paragraph[:level] = attributes["lvl"].to_i if attributes["lvl"]
             ti = {}
             ti[:left] = attributes["marL"].to_i if attributes["marL"]
             ti[:right] = attributes["marR"].to_i if attributes["marR"]
             ti[:indent] = attributes["indent"].to_i if attributes["indent"]
-            @current_shape[:text_indent] = ti unless ti.empty?
+            @current_paragraph[:indent] = ti unless ti.empty?
           end
         when "defRPr"
           if @inside_tx_body && @inside_sp && @current_shape
@@ -4723,67 +4728,67 @@ module Xlsxrb
         when "tabLst"
           @inside_tab_lst = true if @inside_tx_body && @inside_sp
         when "tab"
-          if @inside_tab_lst && @inside_tx_body && @inside_sp && @current_shape && attributes["pos"]
+          if @inside_tab_lst && @inside_tx_body && @inside_sp && @current_paragraph && attributes["pos"]
             tab = { pos: attributes["pos"].to_i }
             tab[:align] = attributes["algn"] if attributes["algn"]
-            @current_shape[:text_tab_stops] ||= []
-            @current_shape[:text_tab_stops] << tab
+            @current_paragraph[:tab_stops] ||= []
+            @current_paragraph[:tab_stops] << tab
           end
         when "buNone"
-          if @inside_tx_body && @inside_sp && @current_shape
-            @current_shape[:text_bullet] ||= {}
-            @current_shape[:text_bullet][:type] = "none"
+          if @inside_tx_body && @inside_sp && @current_paragraph
+            @current_paragraph[:bullet] ||= {}
+            @current_paragraph[:bullet][:type] = "none"
           end
         when "buClr"
           @inside_bu_clr = true if @inside_tx_body && @inside_sp
         when "buFont"
-          if @inside_tx_body && @inside_sp && @current_shape && attributes["typeface"]
-            @current_shape[:text_bullet] ||= {}
-            @current_shape[:text_bullet][:font] = attributes["typeface"]
+          if @inside_tx_body && @inside_sp && @current_paragraph && attributes["typeface"]
+            @current_paragraph[:bullet] ||= {}
+            @current_paragraph[:bullet][:font] = attributes["typeface"]
           end
         when "buSzPts"
-          if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
-            @current_shape[:text_bullet] ||= {}
-            @current_shape[:text_bullet][:size_pts] = attributes["val"].to_i
+          if @inside_tx_body && @inside_sp && @current_paragraph && attributes["val"]
+            @current_paragraph[:bullet] ||= {}
+            @current_paragraph[:bullet][:size_pts] = attributes["val"].to_i
           end
         when "buSzPct"
-          if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
-            @current_shape[:text_bullet] ||= {}
-            @current_shape[:text_bullet][:size_pct] = attributes["val"].to_i
+          if @inside_tx_body && @inside_sp && @current_paragraph && attributes["val"]
+            @current_paragraph[:bullet] ||= {}
+            @current_paragraph[:bullet][:size_pct] = attributes["val"].to_i
           end
         when "buChar"
-          if @inside_tx_body && @inside_sp && @current_shape && attributes["char"]
-            @current_shape[:text_bullet] ||= {}
-            @current_shape[:text_bullet][:type] = "char"
-            @current_shape[:text_bullet][:char] = attributes["char"]
+          if @inside_tx_body && @inside_sp && @current_paragraph && attributes["char"]
+            @current_paragraph[:bullet] ||= {}
+            @current_paragraph[:bullet][:type] = "char"
+            @current_paragraph[:bullet][:char] = attributes["char"]
           end
         when "buAutoNum"
-          if @inside_tx_body && @inside_sp && @current_shape && attributes["type"]
-            @current_shape[:text_bullet] ||= {}
-            @current_shape[:text_bullet][:type] = "auto"
-            @current_shape[:text_bullet][:auto_type] = attributes["type"]
-            @current_shape[:text_bullet][:start_at] = attributes["startAt"].to_i if attributes["startAt"]
+          if @inside_tx_body && @inside_sp && @current_paragraph && attributes["type"]
+            @current_paragraph[:bullet] ||= {}
+            @current_paragraph[:bullet][:type] = "auto"
+            @current_paragraph[:bullet][:auto_type] = attributes["type"]
+            @current_paragraph[:bullet][:start_at] = attributes["startAt"].to_i if attributes["startAt"]
           end
         when "spcPts"
-          if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
-            @current_shape[:text_spacing] ||= {}
+          if @inside_tx_body && @inside_sp && @current_paragraph && attributes["val"]
+            @current_paragraph[:spacing] ||= {}
             if @inside_spc_bef
-              @current_shape[:text_spacing][:before] = attributes["val"].to_i
+              @current_paragraph[:spacing][:before] = attributes["val"].to_i
             elsif @inside_spc_aft
-              @current_shape[:text_spacing][:after] = attributes["val"].to_i
+              @current_paragraph[:spacing][:after] = attributes["val"].to_i
             elsif @inside_lnspc
-              @current_shape[:text_spacing][:line] = attributes["val"].to_i
+              @current_paragraph[:spacing][:line] = attributes["val"].to_i
             end
           end
         when "spcPct"
-          if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
-            @current_shape[:text_spacing] ||= {}
+          if @inside_tx_body && @inside_sp && @current_paragraph && attributes["val"]
+            @current_paragraph[:spacing] ||= {}
             if @inside_spc_bef
-              @current_shape[:text_spacing][:before_pct] = attributes["val"].to_i
+              @current_paragraph[:spacing][:before_pct] = attributes["val"].to_i
             elsif @inside_spc_aft
-              @current_shape[:text_spacing][:after_pct] = attributes["val"].to_i
+              @current_paragraph[:spacing][:after_pct] = attributes["val"].to_i
             elsif @inside_lnspc
-              @current_shape[:text_spacing][:line_pct] = attributes["val"].to_i
+              @current_paragraph[:spacing][:line_pct] = attributes["val"].to_i
             end
           end
         when "bodyPr"
@@ -4863,8 +4868,6 @@ module Xlsxrb
           @inside_from = false
         when "to"
           @inside_to = false
-        when "txBody"
-          @inside_tx_body = false
         when "solidFill"
           @inside_solid_fill = false
         when "highlight"
@@ -4894,22 +4897,32 @@ module Xlsxrb
         when "buClr"
           @inside_bu_clr = false
         when "rPr"
-          @current_shape[:text_font] = @current_text_font if @inside_rpr && !@inside_end_para_rpr && @current_text_font&.any? && @current_shape
+          @current_paragraph[:font] = @current_text_font if @inside_rpr && !@inside_end_para_rpr && !@inside_def_rpr && @current_text_font&.any? && @current_paragraph
           @inside_rpr = false
           @current_text_font = nil
         when "endParaRPr"
-          @current_shape[:text_end_para_rpr] = @current_text_font if @inside_end_para_rpr && @current_text_font&.any? && @current_shape
+          @current_paragraph[:end_para_rpr] = @current_text_font if @inside_end_para_rpr && @current_text_font&.any? && @current_paragraph
           @inside_rpr = false
           @inside_end_para_rpr = false
           @current_text_font = nil
         when "defRPr"
-          @current_shape[:text_def_rpr] = @current_text_font if @inside_def_rpr && @current_text_font&.any? && @current_shape
+          @current_paragraph[:def_rpr] = @current_text_font if @inside_def_rpr && @current_text_font&.any? && @current_paragraph
           @inside_rpr = false
           @inside_def_rpr = false
           @current_text_font = nil
         when "t"
-          @current_shape[:text] = (@current_shape[:text] || +"") << @text_buffer if @inside_t && @inside_tx_body && @current_shape
+          @current_paragraph[:text] = (@current_paragraph[:text] || +"") << @text_buffer if @inside_t && @inside_tx_body && @current_paragraph
           @inside_t = false
+        when "p"
+          if @inside_tx_body && @inside_sp && @current_paragraph && @paragraphs_for_shape
+            @paragraphs_for_shape << @current_paragraph
+            merge_paragraph_to_shape(@current_paragraph, @current_shape) if @current_shape
+            @current_paragraph = nil
+          end
+        when "txBody"
+          @current_shape[:text_paragraphs] = @paragraphs_for_shape if @inside_tx_body && @inside_sp && @current_shape && @paragraphs_for_shape && @paragraphs_for_shape.size > 1
+          @inside_tx_body = false
+          @paragraphs_for_shape = nil
         when "col", "colOff", "row", "rowOff"
           if @current_field
             val = @text_buffer.to_i
@@ -4924,6 +4937,25 @@ module Xlsxrb
       end
 
       private
+
+      def merge_paragraph_to_shape(para, shape)
+        shape[:text] = shape[:text] ? "#{shape[:text]}\n#{para[:text]}" : para[:text] if para[:text]
+        shape[:text_font] = para[:font] if para[:font]
+        shape[:text_align] = para[:align] if para[:align]
+        shape[:text_font_align] = para[:font_align] if para[:font_align]
+        shape[:text_def_tab_sz] = para[:def_tab_sz] if para[:def_tab_sz]
+        shape[:text_rtl] = para[:rtl] unless para[:rtl].nil?
+        shape[:text_ea_ln_brk] = para[:ea_ln_brk] unless para[:ea_ln_brk].nil?
+        shape[:text_latin_ln_brk] = para[:latin_ln_brk] unless para[:latin_ln_brk].nil?
+        shape[:text_hanging_punct] = para[:hanging_punct] unless para[:hanging_punct].nil?
+        shape[:text_level] = para[:level] if para[:level]
+        shape[:text_indent] = para[:indent] if para[:indent]
+        shape[:text_spacing] = para[:spacing] if para[:spacing]
+        shape[:text_tab_stops] = para[:tab_stops] if para[:tab_stops]
+        shape[:text_bullet] = para[:bullet] if para[:bullet]
+        shape[:text_end_para_rpr] = para[:end_para_rpr] if para[:end_para_rpr]
+        shape[:text_def_rpr] = para[:def_rpr] if para[:def_rpr]
+      end
 
       def element_name(local_name, qname)
         if local_name.nil? || local_name.empty?

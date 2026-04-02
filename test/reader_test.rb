@@ -7761,6 +7761,64 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape text_paragraphs with multiple paragraphs" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text_paragraphs: [
+                       { text: "First", font: { bold: true }, align: "ctr" },
+                       { text: "Second", font: { italic: true } }
+                     ])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    shape = shapes[0]
+
+    # Backward compat: flat text is joined with newlines
+    assert_equal("First\nSecond", shape[:text])
+
+    # text_paragraphs array present for multi-paragraph
+    paras = shape[:text_paragraphs]
+    assert_not_nil(paras)
+    assert_equal(2, paras.size)
+
+    assert_equal("First", paras[0][:text])
+    assert_equal(true, paras[0][:font][:bold])
+    assert_equal("ctr", paras[0][:align])
+
+    assert_equal("Second", paras[1][:text])
+    assert_equal(true, paras[1][:font][:italic])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips single paragraph without text_paragraphs key" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Solo",
+                     text_font: { bold: true })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    shape = shapes[0]
+    assert_equal("Solo", shape[:text])
+    assert_equal(true, shape[:text_font][:bold])
+    assert_nil(shape[:text_paragraphs])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape text_font alt_lang" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
