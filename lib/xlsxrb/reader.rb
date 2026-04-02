@@ -824,8 +824,10 @@ module Xlsxrb
         chart[:val_axis_fill] = cl.val_axis_fill if cl.val_axis_fill
         chart[:cat_axis_line_color] = cl.cat_axis_line_color if cl.cat_axis_line_color
         chart[:cat_axis_line_width] = cl.cat_axis_line_width if cl.cat_axis_line_width
+        chart[:cat_axis_line_dash] = cl.cat_axis_line_dash if cl.cat_axis_line_dash
         chart[:val_axis_line_color] = cl.val_axis_line_color if cl.val_axis_line_color
         chart[:val_axis_line_width] = cl.val_axis_line_width if cl.val_axis_line_width
+        chart[:val_axis_line_dash] = cl.val_axis_line_dash if cl.val_axis_line_dash
         chart[:floor] = cl.floor if cl.floor
         chart[:side_wall] = cl.side_wall if cl.side_wall
         chart[:back_wall] = cl.back_wall if cl.back_wall
@@ -5285,8 +5287,8 @@ module Xlsxrb
                   :cat_axis_label_rotation, :val_axis_label_rotation,
                   :cat_axis_font, :val_axis_font,
                   :cat_axis_fill, :val_axis_fill,
-                  :cat_axis_line_color, :cat_axis_line_width,
-                  :val_axis_line_color, :val_axis_line_width,
+                  :cat_axis_line_color, :cat_axis_line_width, :cat_axis_line_dash,
+                  :val_axis_line_color, :val_axis_line_width, :val_axis_line_dash,
                   :floor, :side_wall, :back_wall,
                   :legend_font,
                   :cat_axis_type, :cat_axis_base_time_unit,
@@ -5432,8 +5434,10 @@ module Xlsxrb
         @val_axis_fill = nil
         @cat_axis_line_color = nil
         @cat_axis_line_width = nil
+        @cat_axis_line_dash = nil
         @val_axis_line_color = nil
         @val_axis_line_width = nil
+        @val_axis_line_dash = nil
         @inside_d_table = false
         @inside_d_table_sp_pr = false
         @inside_d_table_ln = false
@@ -5875,6 +5879,12 @@ module Xlsxrb
             @current_wall[:line_dash] = attributes["val"]
           elsif @inside_plot_area_sp_pr && @inside_plot_area_ln && attributes["val"]
             @plot_area_line_dash = attributes["val"]
+          elsif @inside_ax_sp_pr && @inside_ax_ln && attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_line_dash = attributes["val"]
+            elsif @inside_val_ax
+              @val_axis_line_dash = attributes["val"]
+            end
           end
         when "miter"
           if @inside_ser && @inside_ser_ln && @current_ser

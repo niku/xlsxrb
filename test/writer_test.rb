@@ -6548,6 +6548,26 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writes axis line dash" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     cat_axis_line_color: "FF0000", cat_axis_line_dash: "dot",
+                     val_axis_line_color: "00FF00", val_axis_line_dash: "dashDot")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-ax-ld", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:spPr><a:ln><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:prstDash val="dot"/></a:ln></c:spPr>.*</c:catAx>}m, chart_xml)
+    assert_match(%r{<c:valAx>.*<c:spPr><a:ln><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill><a:prstDash val="dashDot"/></a:ln></c:spPr>.*</c:valAx>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writes per-point data labels" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", "Cat")
