@@ -5857,6 +5857,10 @@ module Xlsxrb
               ll2 = (@data_labels[:leader_lines] ||= {})
               ll2[:line_dash] = attributes["val"]
             end
+          elsif @inside_legend_sp_pr && @inside_legend_ln && attributes["val"]
+            @legend[:line_dash] = attributes["val"]
+          elsif @inside_d_table_sp_pr && @inside_d_table_ln && attributes["val"]
+            @data_table[:line_dash] = attributes["val"]
           end
         when "miter"
           if @inside_ser && @inside_ser_ln && @current_ser

@@ -3912,10 +3912,11 @@ module Xlsxrb
         dt_sp_children = +""
         dt_sp_children << %(<a:solidFill>#{color_xml(dt[:fill_color])}</a:solidFill>) if dt[:fill_color]
         dt_sp_children << "<a:noFill/>" if dt[:no_fill]
-        if dt[:line_color] || dt[:line_width]
+        if dt[:line_color] || dt[:line_width] || dt[:line_dash]
           dt_ln_w = dt[:line_width] ? %( w="#{(dt[:line_width] * 12_700).to_i}") : ""
           dt_ln_f = dt[:line_color] ? %(<a:solidFill>#{color_xml(dt[:line_color])}</a:solidFill>) : ""
-          dt_sp_children << "<a:ln#{dt_ln_w}>#{dt_ln_f}</a:ln>"
+          dt_ln_d = dt[:line_dash] ? %(<a:prstDash val="#{xml_escape(dt[:line_dash])}"/>) : ""
+          dt_sp_children << "<a:ln#{dt_ln_w}>#{dt_ln_f}#{dt_ln_d}</a:ln>"
         end
         parts << "<c:spPr>#{dt_sp_children}</c:spPr>" unless dt_sp_children.empty?
         parts << build_axis_txpr(nil, dt[:font]) if dt[:font]
@@ -3968,10 +3969,12 @@ module Xlsxrb
       leg_sp_children << "<a:noFill/>" if leg_no_fill
       leg_lc = chart.dig(:legend, :line_color)
       leg_lw = chart.dig(:legend, :line_width)
-      if leg_lc || leg_lw
+      leg_ld = chart.dig(:legend, :line_dash)
+      if leg_lc || leg_lw || leg_ld
         lw_attr = leg_lw ? %( w="#{(leg_lw * 12_700).to_i}") : ""
         lf = leg_lc ? %(<a:solidFill>#{color_xml(leg_lc)}</a:solidFill>) : ""
-        leg_sp_children << "<a:ln#{lw_attr}>#{lf}</a:ln>"
+        ld = leg_ld ? %(<a:prstDash val="#{xml_escape(leg_ld)}"/>) : ""
+        leg_sp_children << "<a:ln#{lw_attr}>#{lf}#{ld}</a:ln>"
       end
       parts << "<c:spPr>#{leg_sp_children}</c:spPr>" unless leg_sp_children.empty?
       if (lfont = chart.dig(:legend, :font))
