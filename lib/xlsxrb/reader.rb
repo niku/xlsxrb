@@ -4676,6 +4676,16 @@ module Xlsxrb
             @current_shape[:text_bullet] ||= {}
             @current_shape[:text_bullet][:font] = attributes["typeface"]
           end
+        when "buSzPts"
+          if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
+            @current_shape[:text_bullet] ||= {}
+            @current_shape[:text_bullet][:size_pts] = attributes["val"].to_i
+          end
+        when "buSzPct"
+          if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
+            @current_shape[:text_bullet] ||= {}
+            @current_shape[:text_bullet][:size_pct] = attributes["val"].to_i
+          end
         when "buChar"
           if @inside_tx_body && @inside_sp && @current_shape && attributes["char"]
             @current_shape[:text_bullet] ||= {}
