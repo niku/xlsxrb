@@ -5118,6 +5118,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_spacing line emits lnSpc in a:pPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "LineSpaced",
+                     text_spacing: { line: 1200 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-lnspc", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:pPr><a:lnSpc><a:spcPts val="1200"/></a:lnSpc></a:pPr>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_horz_overflow emits horzOverflow attribute on a:bodyPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

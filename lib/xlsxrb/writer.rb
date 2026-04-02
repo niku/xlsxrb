@@ -3004,6 +3004,7 @@ module Xlsxrb
             ppr_children = +""
             if shape[:text_spacing]
               ts = shape[:text_spacing]
+              ppr_children << %(<a:lnSpc><a:spcPts val="#{ts[:line]}"/></a:lnSpc>) if ts[:line]
               ppr_children << %(<a:spcBef><a:spcPts val="#{ts[:before]}"/></a:spcBef>) if ts[:before]
               ppr_children << %(<a:spcAft><a:spcPts val="#{ts[:after]}"/></a:spcAft>) if ts[:after]
             end
