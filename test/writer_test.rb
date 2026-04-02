@@ -5047,6 +5047,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits trendline spPr with line_color, line_width, and line_dash" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("A2", 2)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2",
+                                trendline: { type: "linear",
+                                             line_color: "FF0000",
+                                             line_width: 2.0,
+                                             line_dash: "dash" } }])
+    xlsx_path = File.join(Dir.tmpdir, "trendline_sppr_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:trendline>/, xml)
+    assert_match(%r{<c:spPr>.*<a:ln w="25400">.*<a:solidFill>.*<a:srgbClr val="FF0000"/>.*</a:solidFill>.*<a:prstDash val="dash"/>.*</a:ln>.*</c:spPr>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with inner_shadow emits a:effectLst with a:innerShdw" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

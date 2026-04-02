@@ -5424,6 +5424,9 @@ module Xlsxrb
         @inside_trendline = false
         @inside_trendline_name = false
         @current_trendline = nil
+        @inside_trendline_sp_pr = false
+        @inside_trendline_ln = false
+        @inside_trendline_solid_fill = false
         @inside_err_bars = false
         @current_err_bars = nil
         @current_ser = nil
@@ -5625,6 +5628,8 @@ module Xlsxrb
             @inside_marker_sp_pr = true
           elsif @inside_dlbls && !@inside_dlbl
             @inside_dlbls_sp_pr = true
+          elsif @inside_trendline
+            @inside_trendline_sp_pr = true
           elsif @inside_ser
             @inside_ser_sp_pr = true
           elsif @inside_gridlines
@@ -5657,6 +5662,9 @@ module Xlsxrb
               dl_target[:line_width] = lw
               @data_labels[:line_width] = lw if dl_target != @data_labels
             end
+          elsif @inside_trendline_sp_pr
+            @inside_trendline_ln = true
+            @current_trendline[:line_width] = attributes["w"].to_i / 12_700.0 if @current_trendline && attributes["w"]
           elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_ln = true
             @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
@@ -5704,6 +5712,8 @@ module Xlsxrb
             gl = {} if gl == true
             gl[:line_dash] = attributes["val"]
             instance_variable_set(:"@#{@gridlines_target}", gl)
+          elsif @inside_trendline_ln && @current_trendline && attributes["val"]
+            @current_trendline[:line_dash] = attributes["val"]
           elsif @inside_ser && @inside_ser_ln && @current_ser && attributes["val"]
             @current_ser[:line_dash] = attributes["val"]
           end
@@ -5719,6 +5729,8 @@ module Xlsxrb
             @inside_marker_solid_fill = true
           elsif @inside_dlbls_sp_pr
             @inside_dlbls_solid_fill = true
+          elsif @inside_trendline_sp_pr
+            @inside_trendline_solid_fill = true
           elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_solid_fill = true
           elsif @inside_plot_area_sp_pr
@@ -6225,6 +6237,9 @@ module Xlsxrb
           @current_trendline = nil
           @inside_trendline = false
           @inside_trendline_name = false
+          @inside_trendline_sp_pr = false
+          @inside_trendline_ln = false
+          @inside_trendline_solid_fill = false
         when "errBars"
           @current_ser[:error_bars] = @current_err_bars if @inside_err_bars && @current_err_bars && @current_ser
           @current_err_bars = nil
@@ -6255,6 +6270,10 @@ module Xlsxrb
             @inside_dlbls_sp_pr = false
             @inside_dlbls_ln = false
             @inside_dlbls_solid_fill = false
+          elsif @inside_trendline_sp_pr
+            @inside_trendline_sp_pr = false
+            @inside_trendline_ln = false
+            @inside_trendline_solid_fill = false
           elsif @inside_ser
             @inside_ser_sp_pr = false
             @inside_ser_ln = false
@@ -6291,6 +6310,7 @@ module Xlsxrb
           @inside_dpt_ln = false if @inside_dpt
           @inside_marker_ln = false if @inside_marker_sp_pr
           @inside_dlbls_ln = false if @inside_dlbls_sp_pr
+          @inside_trendline_ln = false if @inside_trendline_sp_pr
           @inside_ser_ln = false if @inside_ser
           @inside_gridlines_ln = false if @inside_gridlines_sp_pr
           @inside_ax_ln = false if @inside_ax_sp_pr
@@ -6309,6 +6329,8 @@ module Xlsxrb
             @inside_dpt_solid_fill = false
           elsif @inside_marker_sp_pr
             @inside_marker_solid_fill = false
+          elsif @inside_trendline_sp_pr
+            @inside_trendline_solid_fill = false
           elsif @inside_ser
             @inside_ser_solid_fill = false
           elsif @inside_gridlines_sp_pr
@@ -6444,6 +6466,8 @@ module Xlsxrb
           dl_target = @dlbl_target || @data_labels
           dl_target[:fill_color] = color_value
           @data_labels[:fill_color] = color_value if dl_target != @data_labels
+        elsif @inside_trendline_sp_pr && @inside_trendline_ln && @inside_trendline_solid_fill && @current_trendline
+          @current_trendline[:line_color] = color_value
         elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser
           @current_ser[:line_color] = color_value
         elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser
