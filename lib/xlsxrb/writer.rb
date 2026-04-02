@@ -3593,6 +3593,12 @@ module Xlsxrb
         ser[:data_points]&.each do |dp|
           parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
           parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
+          if dp[:marker_symbol] || dp[:marker_size]
+            parts << "<c:marker>"
+            parts << %(<c:symbol val="#{xml_escape(dp[:marker_symbol])}"/>) if dp[:marker_symbol]
+            parts << %(<c:size val="#{dp[:marker_size]}"/>) if dp[:marker_size]
+            parts << "</c:marker>"
+          end
           dp_sp_children = +""
           dp_sp_children << %(<a:solidFill>#{color_xml(dp[:fill_color])}</a:solidFill>) if dp[:fill_color]
           dp_sp_children << "<a:noFill/>" if dp[:no_fill]

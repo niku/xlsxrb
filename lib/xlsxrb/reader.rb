@@ -5481,6 +5481,7 @@ module Xlsxrb
         @inside_marker_ln = false
         @inside_marker_solid_fill = false
         @inside_dpt = false
+        @inside_dpt_marker = false
         @inside_dpt_sp_pr = false
         @inside_dpt_solid_fill = false
         @inside_dpt_ln = false
@@ -5635,15 +5636,25 @@ module Xlsxrb
             @current_ser[:explosion] = attributes["val"].to_i
           end
         when "marker"
-          if attributes["val"] && !@inside_ser
+          if @inside_dpt
+            @inside_dpt_marker = true
+          elsif attributes["val"] && !@inside_ser
             @marker = attributes["val"] == "1"
           elsif @inside_ser
             @inside_ser_marker = true
           end
         when "symbol"
-          @current_ser[:marker_symbol] = attributes["val"] if @inside_ser_marker && @current_ser && attributes["val"]
+          if @inside_dpt_marker && @current_dpt && attributes["val"]
+            @current_dpt[:marker_symbol] = attributes["val"]
+          elsif @inside_ser_marker && @current_ser && attributes["val"]
+            @current_ser[:marker_symbol] = attributes["val"]
+          end
         when "size"
-          @current_ser[:marker_size] = attributes["val"].to_i if @inside_ser_marker && @current_ser && attributes["val"]
+          if @inside_dpt_marker && @current_dpt && attributes["val"]
+            @current_dpt[:marker_size] = attributes["val"].to_i
+          elsif @inside_ser_marker && @current_ser && attributes["val"]
+            @current_ser[:marker_size] = attributes["val"].to_i
+          end
         when "scatterStyle"
           @scatter_style = attributes["val"] if attributes["val"]
         when "radarStyle"
@@ -6515,6 +6526,7 @@ module Xlsxrb
           end
           @current_dpt = nil
           @inside_dpt = false
+          @inside_dpt_marker = false
           @inside_dpt_sp_pr = false
           @inside_dpt_solid_fill = false
           @inside_dpt_ln = false
@@ -6644,7 +6656,11 @@ module Xlsxrb
           @inside_plot_area_ln = false if @inside_plot_area_sp_pr
           @inside_chart_space_ln = false if @inside_chart_space_sp_pr
         when "marker"
-          @inside_ser_marker = false if @inside_ser
+          if @inside_dpt
+            @inside_dpt_marker = false
+          elsif @inside_ser
+            @inside_ser_marker = false
+          end
         when "rPr"
           @inside_title_rpr = false
           @inside_ax_title_rpr = false
