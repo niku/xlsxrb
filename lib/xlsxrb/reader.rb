@@ -841,6 +841,7 @@ module Xlsxrb
         chart[:cat_axis_major_unit] = cl.cat_axis_major_unit if cl.cat_axis_major_unit
         chart[:cat_axis_minor_unit] = cl.cat_axis_minor_unit if cl.cat_axis_minor_unit
         chart[:chart_fill] = cl.chart_fill if cl.chart_fill
+        chart[:chart_no_fill] = cl.chart_no_fill if cl.chart_no_fill
         chart[:chart_line_color] = cl.chart_line_color if cl.chart_line_color
         chart[:chart_line_width] = cl.chart_line_width if cl.chart_line_width
         chart[:chart_line_dash] = cl.chart_line_dash if cl.chart_line_dash
@@ -5301,7 +5302,7 @@ module Xlsxrb
                   :cat_axis_title_font, :val_axis_title_font,
                   :cat_axis_title_fill, :cat_axis_title_line_color, :cat_axis_title_line_width, :cat_axis_title_line_dash,
                   :val_axis_title_fill, :val_axis_title_line_color, :val_axis_title_line_width, :val_axis_title_line_dash,
-                  :chart_fill, :chart_line_color, :chart_line_width, :chart_line_dash
+                  :chart_fill, :chart_no_fill, :chart_line_color, :chart_line_width, :chart_line_dash
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -5320,6 +5321,7 @@ module Xlsxrb
         @inside_title_ln = false
         @inside_title_solid_fill = false
         @chart_fill = nil
+        @chart_no_fill = nil
         @chart_line_color = nil
         @chart_line_width = nil
         @chart_line_dash = nil
@@ -5970,6 +5972,8 @@ module Xlsxrb
             @legend[:no_fill] = true
           elsif @inside_d_table_sp_pr && @data_table
             @data_table[:no_fill] = true
+          elsif @inside_chart_space_sp_pr
+            @chart_no_fill = true
           end
         when "srgbClr"
           assign_chart_color(attributes["val"]) if attributes["val"]
