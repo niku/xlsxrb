@@ -3041,6 +3041,7 @@ module Xlsxrb
             end
             if shape[:text_bullet]
               bu = shape[:text_bullet]
+              ppr_children << %(<a:buFont typeface="#{xml_escape(bu[:font])}"/>) if bu[:font]
               case bu[:type]
               when "none"
                 ppr_children << "<a:buNone/>"
