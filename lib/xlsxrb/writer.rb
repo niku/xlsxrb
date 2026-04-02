@@ -3596,7 +3596,9 @@ module Xlsxrb
           dp_sp_children = +""
           dp_sp_children << %(<a:solidFill>#{color_xml(dp[:fill_color])}</a:solidFill>) if dp[:fill_color]
           dp_sp_children << "<a:noFill/>" if dp[:no_fill]
-          if dp[:line_color] || dp[:line_width] || dp[:line_dash]
+          if dp[:no_line]
+            dp_sp_children << "<a:ln><a:noFill/></a:ln>"
+          elsif dp[:line_color] || dp[:line_width] || dp[:line_dash]
             dp_ln_attrs = dp[:line_width] ? %( w="#{(dp[:line_width] * 12_700).to_i}") : ""
             dp_ln_fill = dp[:line_color] ? %(<a:solidFill>#{color_xml(dp[:line_color])}</a:solidFill>) : ""
             dp_ln_dash = dp[:line_dash] ? %(<a:prstDash val="#{xml_escape(dp[:line_dash])}"/>) : ""
