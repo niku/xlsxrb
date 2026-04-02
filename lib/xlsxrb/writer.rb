@@ -3006,6 +3006,10 @@ module Xlsxrb
                         rpr_attrs << %( cap="#{xml_escape(tf[:cap])}") if tf[:cap]
                         rpr_attrs << %( lang="#{xml_escape(tf[:lang])}") if tf[:lang]
                         rpr_attrs << %( altLang="#{xml_escape(tf[:alt_lang])}") if tf[:alt_lang]
+                        rpr_attrs << %( dirty="1") if tf[:dirty]
+                        rpr_attrs << %( smtClean="1") if tf[:smt_clean]
+                        rpr_attrs << %( err="1") if tf[:err]
+                        rpr_attrs << %( bmk="#{xml_escape(tf[:bmk])}") if tf[:bmk]
                         rpr_children = +""
                         rpr_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(tf[:color])}"/></a:solidFill>) if tf[:color]
                         rpr_children << %(<a:highlight><a:srgbClr val="#{xml_escape(tf[:highlight])}"/></a:highlight>) if tf[:highlight]
