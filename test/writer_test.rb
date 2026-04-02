@@ -4760,6 +4760,46 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits title overlay on chart title" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar, title: "Test", title_overlay: true,
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_path = File.join(Dir.tmpdir, "title_ov_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:title>.*<c:overlay val="1"/>.*</c:title>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits custom series order" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1", order: 5 }])
+    xlsx_path = File.join(Dir.tmpdir, "ser_order_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:ser><c:idx val="0"/><c:order val="5"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits bubbleSize ref on bubble chart series" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bubble,
+                     series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1",
+                                bubble_size_ref: "Sheet1!$C$1" }])
+    xlsx_path = File.join(Dir.tmpdir, "bub_size_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:bubbleSize><c:numRef><c:f>Sheet1!\$C\$1</c:f></c:numRef></c:bubbleSize>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits dropLines and hiLowLines on line chart" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
@@ -4815,6 +4855,21 @@ class WriterTest < Test::Unit::TestCase
     xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
     assert_match(%r{<c:catAx>.*<c:lblOffset val="50"/>.*</c:catAx>}m, xml)
     assert_match(%r{<c:catAx>.*<c:noMultiLvlLbl val="1"/>.*</c:catAx>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits auto and lblAlgn on cat axis" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_auto: true, cat_axis_lbl_algn: "ctr")
+    xlsx_path = File.join(Dir.tmpdir, "auto_lblalgn_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:auto val="1"/>.*</c:catAx>}m, xml)
+    assert_match(%r{<c:catAx>.*<c:lblAlgn val="ctr"/>.*</c:catAx>}m, xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
