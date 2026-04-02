@@ -4332,6 +4332,20 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits gridlines with spPr formatting" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     val_axis_major_gridlines: { line_color: "CCCCCC", line_width: 0.5, line_dash: "dash" })
+    xlsx_path = File.join(Dir.tmpdir, "gridlines_sppr_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:majorGridlines><c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="CCCCCC"/></a:solidFill><a:prstDash val="dash"/></a:ln></c:spPr></c:majorGridlines>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits showDLblsOverMax element" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

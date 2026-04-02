@@ -5311,6 +5311,11 @@ module Xlsxrb
         @val_axis_major_gridlines = false
         @cat_axis_minor_gridlines = false
         @val_axis_minor_gridlines = false
+        @inside_gridlines = false
+        @inside_gridlines_sp_pr = false
+        @inside_gridlines_ln = false
+        @inside_gridlines_solid_fill = false
+        @gridlines_target = nil
         @show_d_lbls_over_max = nil
         @cat_axis_delete = nil
         @val_axis_delete = nil
@@ -5622,6 +5627,8 @@ module Xlsxrb
             @inside_dlbls_sp_pr = true
           elsif @inside_ser
             @inside_ser_sp_pr = true
+          elsif @inside_gridlines
+            @inside_gridlines_sp_pr = true
           elsif @inside_cat_ax || @inside_val_ax
             @inside_ax_sp_pr = true
           elsif @inside_wall && @current_wall
@@ -5654,6 +5661,14 @@ module Xlsxrb
             @inside_ser_ln = true
             @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
             @current_ser[:line_cap] = attributes["cap"] if @current_ser && attributes["cap"]
+          elsif @inside_gridlines_sp_pr
+            @inside_gridlines_ln = true
+            if attributes["w"] && @gridlines_target
+              gl = instance_variable_get(:"@#{@gridlines_target}")
+              gl = {} if gl == true
+              gl[:line_width] = attributes["w"].to_i / 12_700.0
+              instance_variable_set(:"@#{@gridlines_target}", gl)
+            end
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_ln = true
             @plot_area_line_width = attributes["w"].to_i if attributes["w"]
@@ -5684,7 +5699,14 @@ module Xlsxrb
         when "bevel"
           @current_ser[:line_join] = "bevel" if @inside_ser && @inside_ser_ln && @current_ser
         when "prstDash"
-          @current_ser[:line_dash] = attributes["val"] if @inside_ser && @inside_ser_ln && @current_ser && attributes["val"]
+          if @inside_gridlines_ln && @gridlines_target && attributes["val"]
+            gl = instance_variable_get(:"@#{@gridlines_target}")
+            gl = {} if gl == true
+            gl[:line_dash] = attributes["val"]
+            instance_variable_set(:"@#{@gridlines_target}", gl)
+          elsif @inside_ser && @inside_ser_ln && @current_ser && attributes["val"]
+            @current_ser[:line_dash] = attributes["val"]
+          end
         when "miter"
           if @inside_ser && @inside_ser_ln && @current_ser
             @current_ser[:line_join] = "miter"
@@ -5701,6 +5723,8 @@ module Xlsxrb
             @inside_ser_solid_fill = true
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = true
+          elsif @inside_gridlines_sp_pr
+            @inside_gridlines_solid_fill = true
           elsif @inside_ax_sp_pr
             @inside_ax_solid_fill = true
           elsif @inside_wall_sp_pr
@@ -6079,16 +6103,22 @@ module Xlsxrb
             end
           end
         when "majorGridlines"
+          @inside_gridlines = true
           if @inside_cat_ax
             @cat_axis_major_gridlines = true
+            @gridlines_target = :cat_axis_major_gridlines
           elsif @inside_val_ax
             @val_axis_major_gridlines = true
+            @gridlines_target = :val_axis_major_gridlines
           end
         when "minorGridlines"
+          @inside_gridlines = true
           if @inside_cat_ax
             @cat_axis_minor_gridlines = true
+            @gridlines_target = :cat_axis_minor_gridlines
           elsif @inside_val_ax
             @val_axis_minor_gridlines = true
+            @gridlines_target = :val_axis_minor_gridlines
           end
         when "plotVisOnly"
           @plot_vis_only = attributes["val"] == "1" if attributes["val"]
@@ -6228,6 +6258,10 @@ module Xlsxrb
           elsif @inside_ser
             @inside_ser_sp_pr = false
             @inside_ser_ln = false
+          elsif @inside_gridlines
+            @inside_gridlines_sp_pr = false
+            @inside_gridlines_ln = false
+            @inside_gridlines_solid_fill = false
           elsif @inside_cat_ax || @inside_val_ax
             @inside_ax_sp_pr = false
             @inside_ax_ln = false
@@ -6258,6 +6292,7 @@ module Xlsxrb
           @inside_marker_ln = false if @inside_marker_sp_pr
           @inside_dlbls_ln = false if @inside_dlbls_sp_pr
           @inside_ser_ln = false if @inside_ser
+          @inside_gridlines_ln = false if @inside_gridlines_sp_pr
           @inside_ax_ln = false if @inside_ax_sp_pr
           @inside_wall_ln = false if @inside_wall_sp_pr
           @inside_legend_ln = false if @inside_legend_sp_pr
@@ -6276,6 +6311,8 @@ module Xlsxrb
             @inside_marker_solid_fill = false
           elsif @inside_ser
             @inside_ser_solid_fill = false
+          elsif @inside_gridlines_sp_pr
+            @inside_gridlines_solid_fill = false
           elsif @inside_ax_sp_pr
             @inside_ax_solid_fill = false
           elsif @inside_wall_sp_pr
@@ -6283,6 +6320,12 @@ module Xlsxrb
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = false
           end
+        when "majorGridlines", "minorGridlines"
+          @inside_gridlines = false
+          @inside_gridlines_sp_pr = false
+          @inside_gridlines_ln = false
+          @inside_gridlines_solid_fill = false
+          @gridlines_target = nil
         when "plotArea"
           @inside_plot_area = false
         when "title"
@@ -6409,6 +6452,11 @@ module Xlsxrb
           @plot_area_line_color = color_value
         elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill
           @plot_area_fill = color_value
+        elsif @inside_gridlines_sp_pr && @inside_gridlines_ln && @inside_gridlines_solid_fill && @gridlines_target
+          gl = instance_variable_get(:"@#{@gridlines_target}")
+          gl = {} if gl == true
+          gl[:line_color] = color_value
+          instance_variable_set(:"@#{@gridlines_target}", gl)
         elsif @inside_ax_sp_pr && @inside_ax_ln && @inside_ax_solid_fill
           if @inside_cat_ax
             @cat_axis_line_color = color_value
