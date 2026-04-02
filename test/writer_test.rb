@@ -4828,6 +4828,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits error bars spPr with line_color, line_width, and line_dash" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                error_bars: { direction: "y", bar_type: "both",
+                                              val_type: "fixedVal", val: 5,
+                                              line_color: "00FF00",
+                                              line_width: 1.5,
+                                              line_dash: "lgDash" } }])
+    xlsx_path = File.join(Dir.tmpdir, "errbars_sppr_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:errBars>/, xml)
+    assert_match(%r{<c:spPr>.*<a:ln w="19050">.*<a:solidFill>.*<a:srgbClr val="00FF00"/>.*</a:solidFill>.*<a:prstDash val="lgDash"/>.*</a:ln>.*</c:spPr>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits per-series data labels" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

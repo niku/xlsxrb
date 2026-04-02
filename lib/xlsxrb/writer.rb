@@ -3674,6 +3674,14 @@ module Xlsxrb
           parts << %(<c:errValType val="#{xml_escape(eb[:val_type] || "fixedVal")}"/>)
           parts << %(<c:noEndCap val="#{eb[:no_end_cap] ? 1 : 0}"/>) unless eb[:no_end_cap].nil?
           parts << %(<c:val val="#{eb[:val]}"/>) if eb[:val]
+          eb_sp_children = +""
+          if eb[:line_color] || eb[:line_width] || eb[:line_dash]
+            eb_ln_w = eb[:line_width] ? %( w="#{(eb[:line_width] * 12_700).to_i}") : ""
+            eb_ln_f = eb[:line_color] ? %(<a:solidFill>#{color_xml(eb[:line_color])}</a:solidFill>) : ""
+            eb_ln_d = eb[:line_dash] ? %(<a:prstDash val="#{xml_escape(eb[:line_dash])}"/>) : ""
+            eb_sp_children << "<a:ln#{eb_ln_w}>#{eb_ln_f}#{eb_ln_d}</a:ln>"
+          end
+          parts << "<c:spPr>#{eb_sp_children}</c:spPr>" unless eb_sp_children.empty?
           parts << "</c:errBars>"
         end
         uses_xy = %w[scatterChart bubbleChart].include?(chart_type)
