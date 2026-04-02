@@ -4640,6 +4640,9 @@ module Xlsxrb
             @current_shape[:text_font_align] = attributes["fontAlgn"] if attributes["fontAlgn"]
             @current_shape[:text_def_tab_sz] = attributes["defTabSz"].to_i if attributes["defTabSz"]
             @current_shape[:text_rtl] = %w[1 true].include?(attributes["rtl"]) if attributes["rtl"]
+            @current_shape[:text_ea_ln_brk] = %w[1 true].include?(attributes["eaLnBrk"]) if attributes["eaLnBrk"]
+            @current_shape[:text_latin_ln_brk] = %w[1 true].include?(attributes["latinLnBrk"]) if attributes["latinLnBrk"]
+            @current_shape[:text_hanging_punct] = %w[1 true].include?(attributes["hangingPunct"]) if attributes["hangingPunct"]
             ti = {}
             ti[:left] = attributes["marL"].to_i if attributes["marL"]
             ti[:right] = attributes["marR"].to_i if attributes["marR"]
