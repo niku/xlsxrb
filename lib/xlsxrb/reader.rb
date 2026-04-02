@@ -5372,6 +5372,8 @@ module Xlsxrb
         @inside_legend_entry = false
         @current_legend_entry = nil
         @inside_dlbls = false
+        @inside_dlbl = false
+        @current_dlbl = nil
         @dlbl_target = nil
         @inside_separator = false
         @inside_cat_ax = false
@@ -5675,7 +5677,9 @@ module Xlsxrb
             @current_legend_entry = {}
           end
         when "idx"
-          if @inside_dpt && @current_dpt && attributes["val"]
+          if @inside_dlbl && @current_dlbl && attributes["val"]
+            @current_dlbl[:idx] = attributes["val"].to_i
+          elsif @inside_dpt && @current_dpt && attributes["val"]
             @current_dpt[:idx] = attributes["val"].to_i
           elsif @inside_legend_entry && @current_legend_entry && attributes["val"]
             @current_legend_entry[:idx] = attributes["val"].to_i
@@ -5705,38 +5709,57 @@ module Xlsxrb
                              @data_labels
                            end
           end
-        when "showVal"
+        when "dLbl"
           if @inside_dlbls
+            @inside_dlbl = true
+            @current_dlbl = {}
+          end
+        when "showVal"
+          if @inside_dlbl && @current_dlbl
+            @current_dlbl[:show_val] = attributes["val"] == "1"
+          elsif @inside_dlbls
             @dlbl_target[:show_val] = attributes["val"] == "1"
             @data_labels[:show_val] = attributes["val"] == "1" if @dlbl_target != @data_labels
           end
         when "showCatName"
-          if @inside_dlbls
+          if @inside_dlbl && @current_dlbl
+            @current_dlbl[:show_cat_name] = attributes["val"] == "1"
+          elsif @inside_dlbls
             @dlbl_target[:show_cat_name] = attributes["val"] == "1"
             @data_labels[:show_cat_name] = attributes["val"] == "1" if @dlbl_target != @data_labels
           end
         when "showSerName"
-          if @inside_dlbls
+          if @inside_dlbl && @current_dlbl
+            @current_dlbl[:show_ser_name] = attributes["val"] == "1"
+          elsif @inside_dlbls
             @dlbl_target[:show_ser_name] = attributes["val"] == "1"
             @data_labels[:show_ser_name] = attributes["val"] == "1" if @dlbl_target != @data_labels
           end
         when "showPercent"
-          if @inside_dlbls
+          if @inside_dlbl && @current_dlbl
+            @current_dlbl[:show_percent] = attributes["val"] == "1"
+          elsif @inside_dlbls
             @dlbl_target[:show_percent] = attributes["val"] == "1"
             @data_labels[:show_percent] = attributes["val"] == "1" if @dlbl_target != @data_labels
           end
         when "showLegendKey"
-          if @inside_dlbls
+          if @inside_dlbl && @current_dlbl
+            @current_dlbl[:show_legend_key] = attributes["val"] == "1"
+          elsif @inside_dlbls
             @dlbl_target[:show_legend_key] = attributes["val"] == "1"
             @data_labels[:show_legend_key] = attributes["val"] == "1" if @dlbl_target != @data_labels
           end
         when "dLblPos"
-          if @inside_dlbls && attributes["val"]
+          if @inside_dlbl && @current_dlbl && attributes["val"]
+            @current_dlbl[:position] = attributes["val"]
+          elsif @inside_dlbls && attributes["val"]
             @dlbl_target[:position] = attributes["val"]
             @data_labels[:position] = attributes["val"] if @dlbl_target != @data_labels
           end
         when "showBubbleSize"
-          if @inside_dlbls
+          if @inside_dlbl && @current_dlbl
+            @current_dlbl[:show_bubble_size] = attributes["val"] == "1"
+          elsif @inside_dlbls
             @dlbl_target[:show_bubble_size] = attributes["val"] == "1"
             @data_labels[:show_bubble_size] = attributes["val"] == "1" if @dlbl_target != @data_labels
           end
@@ -6049,6 +6072,13 @@ module Xlsxrb
         when "dLbls"
           @inside_dlbls = false
           @dlbl_target = nil
+        when "dLbl"
+          if @inside_dlbl && @current_dlbl && @dlbl_target
+            (@dlbl_target[:labels] ||= []) << @current_dlbl
+            (@data_labels[:labels] ||= []) << @current_dlbl if @dlbl_target != @data_labels
+          end
+          @current_dlbl = nil
+          @inside_dlbl = false
         when "separator"
           if @inside_separator
             @dlbl_target[:separator] = @text_buffer.dup if @dlbl_target

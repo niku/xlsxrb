@@ -6370,6 +6370,33 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writes per-point data labels" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.set_cell("B2", 20)
+    writer.add_chart(type: :pie, cat_ref: "Sheet1!A1:A2", val_ref: "Sheet1!B1:B2",
+                     data_labels: {
+                       show_val: true,
+                       labels: [
+                         { idx: 0, show_percent: true, position: "bestFit" },
+                         { idx: 1, show_cat_name: true }
+                       ]
+                     })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dlbl", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:dLbl><c:idx val="0"/><c:dLblPos val="bestFit"/><c:showPercent val="1"/></c:dLbl>}, chart_xml)
+    assert_match(%r{<c:dLbl><c:idx val="1"/><c:showCatName val="1"/></c:dLbl>}, chart_xml)
+    assert_match(%r{<c:showVal val="1"/>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
