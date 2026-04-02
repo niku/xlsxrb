@@ -4674,6 +4674,10 @@ module Xlsxrb
             @current_shape[:text_horz_overflow] = attributes["horzOverflow"] if attributes["horzOverflow"]
             @current_shape[:text_num_col] = attributes["numCol"].to_i if attributes["numCol"]
             @current_shape[:text_spc_col] = attributes["spcCol"].to_i if attributes["spcCol"]
+            @current_shape[:text_rtl_col] = %w[1 true].include?(attributes["rtlCol"]) if attributes["rtlCol"]
+            @current_shape[:text_from_word_art] = %w[1 true].include?(attributes["fromWordArt"]) if attributes["fromWordArt"]
+            @current_shape[:text_upright] = %w[1 true].include?(attributes["upright"]) if attributes["upright"]
+            @current_shape[:text_compat_ln_spc] = %w[1 true].include?(attributes["compatLnSpc"]) if attributes["compatLnSpc"]
             @current_shape[:text_vertical] = attributes["vert"] if attributes["vert"]
             ins = {}
             ins[:left] = attributes["lIns"].to_i if attributes["lIns"]
