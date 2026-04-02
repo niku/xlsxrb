@@ -6858,6 +6858,40 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits legend line_dash in spPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     legend: { position: "r", line_color: "000000", line_dash: "dash" },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-legdash", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:legend>.*<c:spPr><a:ln><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:prstDash val="dash"/></a:ln></c:spPr>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits data table line_dash in spPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     data_table: { show_keys: true, line_color: "999999", line_dash: "dot" },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dtdash", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:dTable>.*<c:spPr><a:ln><a:solidFill><a:srgbClr val="999999"/></a:solidFill><a:prstDash val="dot"/></a:ln></c:spPr>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits chart title spPr with fill and line" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
