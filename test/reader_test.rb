@@ -6569,6 +6569,31 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips chart data_point line_color and line_width" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :pie,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2",
+                                data_points: [{ idx: 0, fill_color: "FF0000", line_color: "000000", line_width: 2 }] }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series].first
+    dp = ser[:data_points][0]
+    assert_equal(0, dp[:idx])
+    assert_equal("FF0000", dp[:fill_color])
+    assert_equal("000000", dp[:line_color])
+    assert_equal(2.0, dp[:line_width])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart series trendline" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
