@@ -4769,6 +4769,15 @@ module Xlsxrb
               @current_shape[:fill_alpha] = alpha_val
             end
           end
+        when "tint", "shade", "lumMod", "lumOff", "satMod", "satOff", "hueMod", "hueOff"
+          if @inside_sp && @current_shape && @inside_solid_fill && !@inside_rpr && attributes["val"]
+            t = { type: name, val: attributes["val"].to_i }
+            if @inside_ln
+              (@current_shape[:line_color_transforms] ||= []) << t
+            else
+              (@current_shape[:fill_color_transforms] ||= []) << t
+            end
+          end
         when "from"
           @inside_from = true if @inside_anchor
         when "to"
