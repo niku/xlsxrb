@@ -6607,6 +6607,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits axis title with font formatting" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     cat_axis_title: { text: "Category", font: { bold: true, size: 1400, name: "Arial" } },
+                     val_axis_title: { text: "Value", font: { italic: true, color: "FF0000" } },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-axtitle", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:title>.*<a:rPr b="1" sz="1400">.*<a:latin typeface="Arial"/>.*<a:t>Category</a:t>}m, chart_xml)
+    assert_match(%r{<c:valAx>.*<c:title>.*<a:rPr i="1">.*<a:srgbClr val="FF0000"/>.*<a:t>Value</a:t>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

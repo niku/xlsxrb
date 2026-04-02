@@ -3694,7 +3694,7 @@ module Xlsxrb
         parts << %(</c:scaling><c:delete val="#{cat_del}"/><c:axPos val="#{chart[:cat_axis_pos] || "b"}"/>)
         parts << "<c:majorGridlines/>" if chart[:cat_axis_major_gridlines]
         parts << "<c:minorGridlines/>" if chart[:cat_axis_minor_gridlines]
-        parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:cat_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:cat_axis_title]
+        parts << build_chart_title_xml(chart[:cat_axis_title]) if chart[:cat_axis_title]
         if (cnf = chart[:cat_axis_num_fmt])
           sl = cnf[:source_linked] ? 1 : 0
           parts << %(<c:numFmt formatCode="#{xml_escape(cnf[:format_code])}" sourceLinked="#{sl}"/>)
@@ -3738,7 +3738,7 @@ module Xlsxrb
         parts << %(</c:scaling><c:delete val="#{val_del}"/><c:axPos val="#{chart[:val_axis_pos] || "l"}"/>)
         parts << "<c:majorGridlines/>" if chart[:val_axis_major_gridlines]
         parts << "<c:minorGridlines/>" if chart[:val_axis_minor_gridlines]
-        parts << "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(chart[:val_axis_title])}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"0\"/></c:title>" if chart[:val_axis_title]
+        parts << build_chart_title_xml(chart[:val_axis_title]) if chart[:val_axis_title]
         if (vnf = chart[:val_axis_num_fmt])
           sl = vnf[:source_linked] ? 1 : 0
           parts << %(<c:numFmt formatCode="#{xml_escape(vnf[:format_code])}" sourceLinked="#{sl}"/>)

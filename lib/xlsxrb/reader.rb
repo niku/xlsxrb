@@ -732,6 +732,8 @@ module Xlsxrb
         chart[:data_labels] = cl.data_labels unless cl.data_labels.empty?
         chart[:cat_axis_title] = cl.cat_axis_title if cl.cat_axis_title
         chart[:val_axis_title] = cl.val_axis_title if cl.val_axis_title
+        chart[:cat_axis_title_font] = cl.cat_axis_title_font if cl.cat_axis_title_font
+        chart[:val_axis_title_font] = cl.val_axis_title_font if cl.val_axis_title_font
         chart[:grouping] = cl.grouping if cl.grouping
         chart[:bar_dir] = cl.bar_dir if cl.bar_dir
         chart[:vary_colors] = cl.vary_colors unless cl.vary_colors.nil?
@@ -5268,7 +5270,8 @@ module Xlsxrb
                   :legend_font,
                   :cat_axis_type, :cat_axis_base_time_unit,
                   :cat_axis_major_time_unit, :cat_axis_minor_time_unit,
-                  :cat_axis_major_unit, :cat_axis_minor_unit
+                  :cat_axis_major_unit, :cat_axis_minor_unit,
+                  :cat_axis_title_font, :val_axis_title_font
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -5437,6 +5440,9 @@ module Xlsxrb
         @inside_cat_ax = false
         @inside_val_ax = false
         @inside_ax_title = false
+        @inside_ax_title_rpr = false
+        @cat_axis_title_font = nil
+        @val_axis_title_font = nil
         @inside_title_rpr = false
         @title_depth = 0
         @inside_axis_tx_pr = false
@@ -5744,7 +5750,20 @@ module Xlsxrb
           @inside_t = true
           @text_buffer = +""
         when "rPr"
-          if @inside_title && @title_depth == 1 && !@inside_ax_title
+          if @inside_ax_title
+            if @inside_cat_ax
+              @cat_axis_title_font ||= {}
+              @cat_axis_title_font[:bold] = true if attributes["b"] == "1"
+              @cat_axis_title_font[:italic] = true if attributes["i"] == "1"
+              @cat_axis_title_font[:size] = attributes["sz"].to_i if attributes["sz"]
+            elsif @inside_val_ax
+              @val_axis_title_font ||= {}
+              @val_axis_title_font[:bold] = true if attributes["b"] == "1"
+              @val_axis_title_font[:italic] = true if attributes["i"] == "1"
+              @val_axis_title_font[:size] = attributes["sz"].to_i if attributes["sz"]
+            end
+            @inside_ax_title_rpr = true
+          elsif @inside_title && @title_depth == 1
             @inside_title_rpr = true
             @title_font ||= {}
             @title_font[:bold] = true if attributes["b"] == "1"
@@ -5766,6 +5785,12 @@ module Xlsxrb
             end
           elsif @inside_title_rpr && @title_font && attributes["typeface"]
             @title_font[:name] = attributes["typeface"]
+          elsif @inside_ax_title_rpr && attributes["typeface"]
+            if @inside_cat_ax
+              (@cat_axis_title_font ||= {})[:name] = attributes["typeface"]
+            elsif @inside_val_ax
+              (@val_axis_title_font ||= {})[:name] = attributes["typeface"]
+            end
           end
         when "legend"
           @inside_legend = true
@@ -6238,6 +6263,7 @@ module Xlsxrb
           @title_depth -= 1
           @inside_title = false if @title_depth.zero?
           @inside_ax_title = false
+          @inside_ax_title_rpr = false
           @inside_title_rpr = false
         when "legendEntry"
           if @inside_legend_entry && @current_legend_entry
@@ -6327,6 +6353,12 @@ module Xlsxrb
           end
         elsif @inside_title_rpr && @title_font
           @title_font[:color] = color_value
+        elsif @inside_ax_title_rpr
+          if @inside_cat_ax
+            (@cat_axis_title_font ||= {})[:color] = color_value
+          elsif @inside_val_ax
+            (@val_axis_title_font ||= {})[:color] = color_value
+          end
         elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_ln && @current_dpt
           @current_dpt[:line_color] = color_value
         elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_solid_fill && @current_dpt
