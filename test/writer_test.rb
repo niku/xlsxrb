@@ -5169,6 +5169,40 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_num_col emits numCol attribute on a:bodyPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Columns",
+                     text_num_col: 2)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-numcol", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/numCol="2"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with text_spc_col emits spcCol attribute on a:bodyPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "ColSpacing",
+                     text_spc_col: 457_200)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-spccol", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/spcCol="457200"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_spc_first_last_para emits spcFirstLastPara on a:bodyPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
