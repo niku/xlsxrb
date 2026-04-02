@@ -3409,10 +3409,21 @@ module Xlsxrb
           end
           parts << "</c:spPr>"
         end
-        if ser[:marker_symbol] || ser[:marker_size]
+        if ser[:marker_symbol] || ser[:marker_size] || ser[:marker_fill] || ser[:marker_line_color]
           parts << "<c:marker>"
           parts << %(<c:symbol val="#{xml_escape(ser[:marker_symbol])}"/>) if ser[:marker_symbol]
           parts << %(<c:size val="#{ser[:marker_size]}"/>) if ser[:marker_size]
+          if ser[:marker_fill] || ser[:marker_line_color]
+            parts << "<c:spPr>"
+            parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:marker_fill])}"/></a:solidFill>) if ser[:marker_fill]
+            if ser[:marker_line_color]
+              mk_ln_w = ser[:marker_line_width] ? %( w="#{(ser[:marker_line_width] * 12_700).to_i}") : ""
+              parts << "<a:ln#{mk_ln_w}>"
+              parts << %(<a:solidFill><a:srgbClr val="#{xml_escape(ser[:marker_line_color])}"/></a:solidFill>)
+              parts << "</a:ln>"
+            end
+            parts << "</c:spPr>"
+          end
           parts << "</c:marker>"
         end
         if chart[:data_labels]
