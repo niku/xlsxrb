@@ -5152,6 +5152,41 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_spacing line_pct emits spcPct in lnSpc" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "PctLine",
+                     text_spacing: { line_pct: 150_000 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-lnspcpct", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:lnSpc><a:spcPct val="150000"/></a:lnSpc>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with text_spacing before_pct and after_pct emits spcPct in spcBef and spcAft" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "PctSpacing",
+                     text_spacing: { before_pct: 50_000, after_pct: 100_000 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-spcpct", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:spcBef><a:spcPct val="50000"/></a:spcBef>}, drawing_xml)
+    assert_match(%r{<a:spcAft><a:spcPct val="100000"/></a:spcAft>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_horz_overflow emits horzOverflow attribute on a:bodyPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

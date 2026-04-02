@@ -3032,9 +3032,21 @@ module Xlsxrb
             ppr_children = +""
             if shape[:text_spacing]
               ts = shape[:text_spacing]
-              ppr_children << %(<a:lnSpc><a:spcPts val="#{ts[:line]}"/></a:lnSpc>) if ts[:line]
-              ppr_children << %(<a:spcBef><a:spcPts val="#{ts[:before]}"/></a:spcBef>) if ts[:before]
-              ppr_children << %(<a:spcAft><a:spcPts val="#{ts[:after]}"/></a:spcAft>) if ts[:after]
+              if ts[:line]
+                ppr_children << %(<a:lnSpc><a:spcPts val="#{ts[:line]}"/></a:lnSpc>)
+              elsif ts[:line_pct]
+                ppr_children << %(<a:lnSpc><a:spcPct val="#{ts[:line_pct]}"/></a:lnSpc>)
+              end
+              if ts[:before]
+                ppr_children << %(<a:spcBef><a:spcPts val="#{ts[:before]}"/></a:spcBef>)
+              elsif ts[:before_pct]
+                ppr_children << %(<a:spcBef><a:spcPct val="#{ts[:before_pct]}"/></a:spcBef>)
+              end
+              if ts[:after]
+                ppr_children << %(<a:spcAft><a:spcPts val="#{ts[:after]}"/></a:spcAft>)
+              elsif ts[:after_pct]
+                ppr_children << %(<a:spcAft><a:spcPct val="#{ts[:after_pct]}"/></a:spcAft>)
+              end
             end
             if shape[:text_tab_stops]&.any?
               tabs = shape[:text_tab_stops].map do |tab|

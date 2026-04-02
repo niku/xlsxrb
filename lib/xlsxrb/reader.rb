@@ -4719,6 +4719,17 @@ module Xlsxrb
               @current_shape[:text_spacing][:line] = attributes["val"].to_i
             end
           end
+        when "spcPct"
+          if @inside_tx_body && @inside_sp && @current_shape && attributes["val"]
+            @current_shape[:text_spacing] ||= {}
+            if @inside_spc_bef
+              @current_shape[:text_spacing][:before_pct] = attributes["val"].to_i
+            elsif @inside_spc_aft
+              @current_shape[:text_spacing][:after_pct] = attributes["val"].to_i
+            elsif @inside_lnspc
+              @current_shape[:text_spacing][:line_pct] = attributes["val"].to_i
+            end
+          end
         when "bodyPr"
           if @inside_sp && @current_shape
             @current_shape[:text_rot] = attributes["rot"].to_i if attributes["rot"]
