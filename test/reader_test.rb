@@ -9241,4 +9241,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips legend manual layout" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     legend: { position: "b", layout: { x: 0.1, y: 0.8, w: 0.8, h: 0.15 } },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    layout = chart[:legend][:layout]
+    assert_not_nil(layout)
+    assert_in_delta(0.1, layout[:x], 0.001)
+    assert_in_delta(0.8, layout[:y], 0.001)
+    assert_in_delta(0.8, layout[:w], 0.001)
+    assert_in_delta(0.15, layout[:h], 0.001)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
