@@ -1532,6 +1532,54 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with line_cap emits cap attribute on a:ln" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Cap", line_color: "000000", line_cap: "rnd")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-linecap", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:ln cap="rnd">/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with line_align emits algn attribute on a:ln" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Align", line_color: "000000", line_align: "in")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-linealign", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:ln algn="in">/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with line_compound emits cmpd attribute on a:ln" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Cmpd", line_color: "000000", line_compound: "dbl")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-linecmpd", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:ln cmpd="dbl">/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with head_end and tail_end emits arrow elements" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

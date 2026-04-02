@@ -4505,6 +4505,9 @@ module Xlsxrb
           if @inside_sp && @current_shape
             @inside_ln = true
             @current_shape[:line_width] = attributes["w"].to_i if attributes["w"]
+            @current_shape[:line_cap] = attributes["cap"] if attributes["cap"]
+            @current_shape[:line_align] = attributes["algn"] if attributes["algn"]
+            @current_shape[:line_compound] = attributes["cmpd"] if attributes["cmpd"]
           end
         when "effectLst"
           @inside_effect_lst = true if @inside_sp
