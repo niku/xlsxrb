@@ -5672,6 +5672,42 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with text_end_para_rpr emits a:endParaRPr element" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "EPR",
+                     text_end_para_rpr: { lang: "en-US", size: 1100 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-endpararpr", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:endParaRPr[^>]*lang="en-US"/, drawing_xml)
+    assert_match(/<a:endParaRPr[^>]*sz="1100"/, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "add_shape with text_end_para_rpr with children emits full a:endParaRPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "EPR2",
+                     text_end_para_rpr: { lang: "en-US", name: "Arial", bold: true })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-endpararpr2", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:endParaRPr[^>]*b="1"[^>]*lang="en-US"/, drawing_xml)
+    assert_match(%r{<a:endParaRPr[^/]*>.*<a:latin typeface="Arial"/>.*</a:endParaRPr>}m, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text_font alt_lang emits altLang attribute on a:rPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

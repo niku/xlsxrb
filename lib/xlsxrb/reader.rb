@@ -4434,6 +4434,7 @@ module Xlsxrb
         @inside_ln = false
         @inside_prst_geom = false
         @inside_rpr = false
+        @inside_end_para_rpr = false
         @current_text_font = nil
         @inside_effect_lst = false
         @inside_outer_shdw = false
@@ -4617,6 +4618,31 @@ module Xlsxrb
         when "rPr"
           if @inside_tx_body && @inside_sp && @current_shape
             @inside_rpr = true
+            tf = {}
+            tf[:bold] = true if %w[1 true].include?(attributes["b"])
+            tf[:italic] = true if %w[1 true].include?(attributes["i"])
+            tf[:no_proof] = true if %w[1 true].include?(attributes["noProof"])
+            tf[:normalize_h] = true if %w[1 true].include?(attributes["normalizeH"])
+            tf[:kumimoji] = true if %w[1 true].include?(attributes["kumimoji"])
+            tf[:strike] = attributes["strike"] if attributes["strike"]
+            tf[:underline] = attributes["u"] if attributes["u"]
+            tf[:baseline] = attributes["baseline"].to_i if attributes["baseline"]
+            tf[:spacing] = attributes["spc"].to_i if attributes["spc"]
+            tf[:kern] = attributes["kern"].to_i if attributes["kern"]
+            tf[:cap] = attributes["cap"] if attributes["cap"]
+            tf[:lang] = attributes["lang"] if attributes["lang"]
+            tf[:alt_lang] = attributes["altLang"] if attributes["altLang"]
+            tf[:dirty] = true if %w[1 true].include?(attributes["dirty"])
+            tf[:smt_clean] = true if %w[1 true].include?(attributes["smtClean"])
+            tf[:err] = true if %w[1 true].include?(attributes["err"])
+            tf[:bmk] = attributes["bmk"] if attributes["bmk"]
+            tf[:size] = attributes["sz"].to_i if attributes["sz"]
+            @current_text_font = tf
+          end
+        when "endParaRPr"
+          if @inside_tx_body && @inside_sp && @current_shape
+            @inside_rpr = true
+            @inside_end_para_rpr = true
             tf = {}
             tf[:bold] = true if %w[1 true].include?(attributes["b"])
             tf[:italic] = true if %w[1 true].include?(attributes["i"])
@@ -4842,8 +4868,13 @@ module Xlsxrb
         when "buClr"
           @inside_bu_clr = false
         when "rPr"
-          @current_shape[:text_font] = @current_text_font if @inside_rpr && @current_text_font&.any? && @current_shape
+          @current_shape[:text_font] = @current_text_font if @inside_rpr && !@inside_end_para_rpr && @current_text_font&.any? && @current_shape
           @inside_rpr = false
+          @current_text_font = nil
+        when "endParaRPr"
+          @current_shape[:text_end_para_rpr] = @current_text_font if @inside_end_para_rpr && @current_text_font&.any? && @current_shape
+          @inside_rpr = false
+          @inside_end_para_rpr = false
           @current_text_font = nil
         when "t"
           @current_shape[:text] = (@current_shape[:text] || +"") << @text_buffer if @inside_t && @inside_tx_body && @current_shape

@@ -1238,7 +1238,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_num_col: nil, text_spc_col: nil, text_rtl_col: nil, text_from_word_art: nil, text_upright: nil, text_compat_ln_spc: nil, text_force_aa: nil, text_warp: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_align: nil, text_font_align: nil, text_def_tab_sz: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, text_ea_ln_brk: nil, text_latin_ln_brk: nil, text_hanging_punct: nil, text_tab_stops: nil, text_bullet: nil, text_level: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_num_col: nil, text_spc_col: nil, text_rtl_col: nil, text_from_word_art: nil, text_upright: nil, text_compat_ln_spc: nil, text_force_aa: nil, text_warp: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_end_para_rpr: nil, text_align: nil, text_font_align: nil, text_def_tab_sz: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, text_ea_ln_brk: nil, text_latin_ln_brk: nil, text_hanging_punct: nil, text_tab_stops: nil, text_bullet: nil, text_level: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1287,6 +1287,7 @@ module Xlsxrb
       shape[:rotation] = rotation if rotation
       shape[:adjust_values] = adjust_values if adjust_values
       shape[:text_font] = text_font if text_font
+      shape[:text_end_para_rpr] = text_end_para_rpr if text_end_para_rpr
       shape[:text_align] = text_align if text_align
       shape[:text_font_align] = text_font_align if text_font_align
       shape[:text_def_tab_sz] = text_def_tab_sz if text_def_tab_sz
@@ -2989,42 +2990,7 @@ module Xlsxrb
                             "<a:bodyPr#{body_pr_attrs}>#{body_pr_children}</a:bodyPr>"
                           end
             parts << "<xdr:txBody>#{body_pr_xml}<a:lstStyle/>"
-            rpr_xml = if shape[:text_font]
-                        tf = shape[:text_font]
-                        rpr_attrs = +""
-                        rpr_attrs << %( b="1") if tf[:bold]
-                        rpr_attrs << %( i="1") if tf[:italic]
-                        rpr_attrs << %( noProof="1") if tf[:no_proof]
-                        rpr_attrs << %( normalizeH="1") if tf[:normalize_h]
-                        rpr_attrs << %( kumimoji="1") if tf[:kumimoji]
-                        rpr_attrs << %( sz="#{tf[:size]}") if tf[:size]
-                        rpr_attrs << %( strike="#{xml_escape(tf[:strike])}") if tf[:strike]
-                        rpr_attrs << %( u="#{xml_escape(tf[:underline])}") if tf[:underline]
-                        rpr_attrs << %( baseline="#{tf[:baseline]}") if tf[:baseline]
-                        rpr_attrs << %( spc="#{tf[:spacing]}") if tf[:spacing]
-                        rpr_attrs << %( kern="#{tf[:kern]}") if tf[:kern]
-                        rpr_attrs << %( cap="#{xml_escape(tf[:cap])}") if tf[:cap]
-                        rpr_attrs << %( lang="#{xml_escape(tf[:lang])}") if tf[:lang]
-                        rpr_attrs << %( altLang="#{xml_escape(tf[:alt_lang])}") if tf[:alt_lang]
-                        rpr_attrs << %( dirty="1") if tf[:dirty]
-                        rpr_attrs << %( smtClean="1") if tf[:smt_clean]
-                        rpr_attrs << %( err="1") if tf[:err]
-                        rpr_attrs << %( bmk="#{xml_escape(tf[:bmk])}") if tf[:bmk]
-                        rpr_children = +""
-                        rpr_children << %(<a:solidFill><a:srgbClr val="#{xml_escape(tf[:color])}"/></a:solidFill>) if tf[:color]
-                        rpr_children << %(<a:highlight><a:srgbClr val="#{xml_escape(tf[:highlight])}"/></a:highlight>) if tf[:highlight]
-                        rpr_children << %(<a:latin typeface="#{xml_escape(tf[:name])}"/>) if tf[:name]
-                        rpr_children << %(<a:ea typeface="#{xml_escape(tf[:ea_font])}"/>) if tf[:ea_font]
-                        rpr_children << %(<a:cs typeface="#{xml_escape(tf[:cs_font])}"/>) if tf[:cs_font]
-                        rpr_children << %(<a:sym typeface="#{xml_escape(tf[:sym_font])}"/>) if tf[:sym_font]
-                        if rpr_children.empty?
-                          "<a:rPr#{rpr_attrs}/>"
-                        else
-                          "<a:rPr#{rpr_attrs}>#{rpr_children}</a:rPr>"
-                        end
-                      else
-                        ""
-                      end
+            rpr_xml = shape[:text_font] ? text_char_props_xml("a:rPr", shape[:text_font]) : ""
             ppr_attrs = +""
             ppr_attrs << %( algn="#{xml_escape(shape[:text_align])}") if shape[:text_align]
             ppr_attrs << %( fontAlgn="#{xml_escape(shape[:text_font_align])}") if shape[:text_font_align]
@@ -3091,7 +3057,8 @@ module Xlsxrb
                       else
                         "<a:pPr#{ppr_attrs}>#{ppr_children}</a:pPr>"
                       end
-            parts << "<a:p>#{ppr_xml}<a:r>#{rpr_xml}<a:t>#{xml_escape(shape[:text])}</a:t></a:r></a:p>"
+            end_para_rpr_xml = shape[:text_end_para_rpr] ? text_char_props_xml("a:endParaRPr", shape[:text_end_para_rpr]) : ""
+            parts << "<a:p>#{ppr_xml}<a:r>#{rpr_xml}<a:t>#{xml_escape(shape[:text])}</a:t></a:r>#{end_para_rpr_xml}</a:p>"
             parts << "</xdr:txBody>"
           end
           parts << "</xdr:sp>"
@@ -3102,6 +3069,40 @@ module Xlsxrb
 
       parts << "</xdr:wsDr>"
       parts.join
+    end
+
+    def text_char_props_xml(tag, font)
+      attrs = +""
+      attrs << %( b="1") if font[:bold]
+      attrs << %( i="1") if font[:italic]
+      attrs << %( noProof="1") if font[:no_proof]
+      attrs << %( normalizeH="1") if font[:normalize_h]
+      attrs << %( kumimoji="1") if font[:kumimoji]
+      attrs << %( sz="#{font[:size]}") if font[:size]
+      attrs << %( strike="#{xml_escape(font[:strike])}") if font[:strike]
+      attrs << %( u="#{xml_escape(font[:underline])}") if font[:underline]
+      attrs << %( baseline="#{font[:baseline]}") if font[:baseline]
+      attrs << %( spc="#{font[:spacing]}") if font[:spacing]
+      attrs << %( kern="#{font[:kern]}") if font[:kern]
+      attrs << %( cap="#{xml_escape(font[:cap])}") if font[:cap]
+      attrs << %( lang="#{xml_escape(font[:lang])}") if font[:lang]
+      attrs << %( altLang="#{xml_escape(font[:alt_lang])}") if font[:alt_lang]
+      attrs << %( dirty="1") if font[:dirty]
+      attrs << %( smtClean="1") if font[:smt_clean]
+      attrs << %( err="1") if font[:err]
+      attrs << %( bmk="#{xml_escape(font[:bmk])}") if font[:bmk]
+      children = +""
+      children << %(<a:solidFill><a:srgbClr val="#{xml_escape(font[:color])}"/></a:solidFill>) if font[:color]
+      children << %(<a:highlight><a:srgbClr val="#{xml_escape(font[:highlight])}"/></a:highlight>) if font[:highlight]
+      children << %(<a:latin typeface="#{xml_escape(font[:name])}"/>) if font[:name]
+      children << %(<a:ea typeface="#{xml_escape(font[:ea_font])}"/>) if font[:ea_font]
+      children << %(<a:cs typeface="#{xml_escape(font[:cs_font])}"/>) if font[:cs_font]
+      children << %(<a:sym typeface="#{xml_escape(font[:sym_font])}"/>) if font[:sym_font]
+      if children.empty?
+        "<#{tag}#{attrs}/>"
+      else
+        "<#{tag}#{attrs}>#{children}</#{tag}>"
+      end
     end
 
     def anchor_xml(tag, col, row, col_off: 0, row_off: 0)
