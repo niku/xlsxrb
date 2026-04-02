@@ -1516,6 +1516,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with gradient_fill path emits a:path element" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "RadGrad",
+                     gradient_fill: { stops: [{ pos: 0, color: "FFFFFF" }, { pos: 100_000, color: "000000" }],
+                                      path: "circle", rot_with_shape: true })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-gradpath", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:gradFill rotWithShape="1">/, drawing_xml)
+    assert_match(%r{<a:path path="circle"/>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with pattern_fill emits a:pattFill" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

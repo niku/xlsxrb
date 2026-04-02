@@ -2877,9 +2877,20 @@ module Xlsxrb
                              %(<a:solidFill><a:srgbClr val="#{xml_escape(shape[:fill_color])}"/></a:solidFill>)
                            elsif shape[:gradient_fill]
                              gf = shape[:gradient_fill]
+                             gf_attrs = +""
+                             gf_attrs << %( rotWithShape="#{gf[:rot_with_shape] ? 1 : 0}") unless gf[:rot_with_shape].nil?
+                             gf_attrs << %( flip="#{xml_escape(gf[:flip])}") if gf[:flip]
                              gs_xml = (gf[:stops] || []).map { |gs| %(<a:gs pos="#{gs[:pos]}"><a:srgbClr val="#{xml_escape(gs[:color])}"/></a:gs>) }.join
-                             lin_xml = gf[:angle] ? %(<a:lin ang="#{gf[:angle]}" scaled="0"/>) : ""
-                             "<a:gradFill><a:gsLst>#{gs_xml}</a:gsLst>#{lin_xml}</a:gradFill>"
+                             type_xml = if gf[:path]
+                                          %(<a:path path="#{xml_escape(gf[:path])}"/>)
+                                        elsif gf[:angle]
+                                          scaled_attr = gf[:scaled] ? %( scaled="1") : %( scaled="0")
+                                          %(<a:lin ang="#{gf[:angle]}"#{scaled_attr}/>)
+                                        else
+                                          ""
+                                        end
+                             tile_xml = gf[:tile_rect] ? %(<a:tileRect#{gf[:tile_rect].map { |k, v| %( #{k}="#{v}") }.join}/>) : ""
+                             "<a:gradFill#{gf_attrs}><a:gsLst>#{gs_xml}</a:gsLst>#{type_xml}#{tile_xml}</a:gradFill>"
                            elsif shape[:pattern_fill]
                              pf = shape[:pattern_fill]
                              pf_children = +""

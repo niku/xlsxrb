@@ -2107,6 +2107,30 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape gradient_fill path with rot_with_shape" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "RadGrad",
+                     gradient_fill: { stops: [{ pos: 0, color: "FFFFFF" }, { pos: 100_000, color: "000000" }],
+                                      path: "circle", rot_with_shape: true })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    assert_equal(1, shapes.size)
+    gf = shapes[0][:gradient_fill]
+    assert_not_nil(gf)
+    assert_equal("circle", gf[:path])
+    assert_equal(true, gf[:rot_with_shape])
+    assert_equal(2, gf[:stops].size)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape pattern_fill" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

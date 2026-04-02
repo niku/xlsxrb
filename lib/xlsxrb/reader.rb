@@ -4500,7 +4500,10 @@ module Xlsxrb
         when "gradFill"
           if @inside_sp && @current_shape && !@inside_ln
             @inside_grad_fill = true
-            @current_shape[:gradient_fill] = { stops: [] }
+            gf = { stops: [] }
+            gf[:rot_with_shape] = %w[1 true].include?(attributes["rotWithShape"]) if attributes["rotWithShape"]
+            gf[:flip] = attributes["flip"] if attributes["flip"]
+            @current_shape[:gradient_fill] = gf
           end
         when "pattFill"
           if @inside_sp && @current_shape && !@inside_ln
@@ -4514,7 +4517,18 @@ module Xlsxrb
         when "gs"
           @current_gs_pos = attributes["pos"].to_i if @inside_grad_fill && attributes["pos"]
         when "lin"
-          @current_shape[:gradient_fill][:angle] = attributes["ang"].to_i if @inside_grad_fill && @current_shape && attributes["ang"]
+          if @inside_grad_fill && @current_shape
+            @current_shape[:gradient_fill][:angle] = attributes["ang"].to_i if attributes["ang"]
+            @current_shape[:gradient_fill][:scaled] = %w[1 true].include?(attributes["scaled"]) if attributes["scaled"]
+          end
+        when "path"
+          @current_shape[:gradient_fill][:path] = attributes["path"] if @inside_grad_fill && @current_shape && attributes["path"]
+        when "tileRect"
+          if @inside_grad_fill && @current_shape
+            tr = {}
+            %w[l t r b].each { |a| tr[a.to_sym] = attributes[a] if attributes[a] }
+            @current_shape[:gradient_fill][:tile_rect] = tr unless tr.empty?
+          end
         when "ln"
           if @inside_rpr && @current_text_font
             @inside_ln = true
