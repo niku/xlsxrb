@@ -1131,7 +1131,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, title_overlay: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, drop_lines: nil, hi_low_lines: nil, up_down_bars: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, title_overlay: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, drop_lines: nil, hi_low_lines: nil, up_down_bars: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1223,6 +1223,8 @@ module Xlsxrb
       chart[:show_d_lbls_over_max] = show_d_lbls_over_max unless show_d_lbls_over_max.nil?
       chart[:data_table] = data_table if data_table
       chart[:plot_area_fill] = plot_area_fill if plot_area_fill
+      chart[:plot_area_line_color] = plot_area_line_color if plot_area_line_color
+      chart[:plot_area_line_width] = plot_area_line_width if plot_area_line_width
       chart[:drop_lines] = drop_lines unless drop_lines.nil?
       chart[:hi_low_lines] = hi_low_lines unless hi_low_lines.nil?
       chart[:up_down_bars] = up_down_bars if up_down_bars
@@ -2960,14 +2962,14 @@ module Xlsxrb
                                os_attrs << %( dir="#{os[:dir]}") if os[:dir]
                                os_attrs << %( algn="#{xml_escape(os[:algn])}") if os[:algn]
                                os_attrs << %( rotWithShape="#{os[:rot_with_shape] ? 1 : 0}") unless os[:rot_with_shape].nil?
-                               os_color = os[:color] ? %(<a:srgbClr val="#{xml_escape(os[:color])}"/>) : ""
+                               os_color = os[:color] ? srgb_clr_xml(os[:color], alpha: os[:alpha]) : ""
                                effect_children << "<a:outerShdw#{os_attrs}>#{os_color}</a:outerShdw>"
                              end
                              if shape[:glow]
                                gl = shape[:glow]
                                gl_attrs = +""
                                gl_attrs << %( rad="#{gl[:rad]}") if gl[:rad]
-                               gl_color = gl[:color] ? %(<a:srgbClr val="#{xml_escape(gl[:color])}"/>) : ""
+                               gl_color = gl[:color] ? srgb_clr_xml(gl[:color], alpha: gl[:alpha]) : ""
                                effect_children << "<a:glow#{gl_attrs}>#{gl_color}</a:glow>"
                              end
                              if shape[:inner_shadow]
@@ -2976,7 +2978,7 @@ module Xlsxrb
                                is_attrs << %( blurRad="#{is[:blur_rad]}") if is[:blur_rad]
                                is_attrs << %( dist="#{is[:dist]}") if is[:dist]
                                is_attrs << %( dir="#{is[:dir]}") if is[:dir]
-                               is_color = is[:color] ? %(<a:srgbClr val="#{xml_escape(is[:color])}"/>) : ""
+                               is_color = is[:color] ? srgb_clr_xml(is[:color], alpha: is[:alpha]) : ""
                                effect_children << "<a:innerShdw#{is_attrs}>#{is_color}</a:innerShdw>"
                              end
                              if shape[:reflection]
@@ -3226,13 +3228,13 @@ module Xlsxrb
           oa << %( dir="#{os[:dir]}") if os[:dir]
           oa << %( algn="#{xml_escape(os[:algn])}") if os[:algn]
           oa << %( rotWithShape="#{os[:rot_with_shape] ? 1 : 0}") unless os[:rot_with_shape].nil?
-          oc = os[:color] ? %(<a:srgbClr val="#{xml_escape(os[:color])}"/>) : ""
+          oc = os[:color] ? srgb_clr_xml(os[:color], alpha: os[:alpha]) : ""
           eff << "<a:outerShdw#{oa}>#{oc}</a:outerShdw>"
         end
         if font[:glow]
           gl = font[:glow]
           ga = +(gl[:rad] ? %( rad="#{gl[:rad]}") : "")
-          gc = gl[:color] ? %(<a:srgbClr val="#{xml_escape(gl[:color])}"/>) : ""
+          gc = gl[:color] ? srgb_clr_xml(gl[:color], alpha: gl[:alpha]) : ""
           eff << "<a:glow#{ga}>#{gc}</a:glow>"
         end
         if font[:inner_shadow]
@@ -3241,7 +3243,7 @@ module Xlsxrb
           ia << %( blurRad="#{is[:blur_rad]}") if is[:blur_rad]
           ia << %( dist="#{is[:dist]}") if is[:dist]
           ia << %( dir="#{is[:dir]}") if is[:dir]
-          ic = is[:color] ? %(<a:srgbClr val="#{xml_escape(is[:color])}"/>) : ""
+          ic = is[:color] ? srgb_clr_xml(is[:color], alpha: is[:alpha]) : ""
           eff << "<a:innerShdw#{ia}>#{ic}</a:innerShdw>"
         end
         if font[:reflection]
@@ -3612,7 +3614,15 @@ module Xlsxrb
         parts << "</c:dTable>"
       end
 
-      parts << %(<c:spPr><a:solidFill><a:srgbClr val="#{xml_escape(chart[:plot_area_fill])}"/></a:solidFill></c:spPr>) if chart[:plot_area_fill]
+      if chart[:plot_area_fill] || chart[:plot_area_line_color]
+        pa_sp = +""
+        pa_sp << %(<a:solidFill><a:srgbClr val="#{xml_escape(chart[:plot_area_fill])}"/></a:solidFill>) if chart[:plot_area_fill]
+        if chart[:plot_area_line_color]
+          pa_ln_w = chart[:plot_area_line_width] ? %( w="#{chart[:plot_area_line_width].to_i}") : ""
+          pa_sp << "<a:ln#{pa_ln_w}><a:solidFill><a:srgbClr val=\"#{xml_escape(chart[:plot_area_line_color])}\"/></a:solidFill></a:ln>"
+        end
+        parts << "<c:spPr>#{pa_sp}</c:spPr>"
+      end
 
       parts << "</c:plotArea>"
       legend_pos = chart.dig(:legend, :position) || "r"

@@ -796,6 +796,8 @@ module Xlsxrb
         chart[:wireframe] = cl.wireframe unless cl.wireframe.nil?
         chart[:data_table] = cl.data_table if cl.data_table
         chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
+        chart[:plot_area_line_color] = cl.plot_area_line_color if cl.plot_area_line_color
+        chart[:plot_area_line_width] = cl.plot_area_line_width if cl.plot_area_line_width
         chart[:cat_axis_label_rotation] = cl.cat_axis_label_rotation if cl.cat_axis_label_rotation
         chart[:val_axis_label_rotation] = cl.val_axis_label_rotation if cl.val_axis_label_rotation
         chart[:cat_axis_font] = cl.cat_axis_font if cl.cat_axis_font
@@ -4763,7 +4765,13 @@ module Xlsxrb
         when "alpha"
           if @inside_sp && @current_shape && attributes["val"]
             alpha_val = attributes["val"].to_i
-            if @inside_ln && @inside_solid_fill && !@inside_rpr
+            if @inside_outer_shdw && !@inside_rpr_effect_lst
+              @current_shape[:outer_shadow][:alpha] = alpha_val if @current_shape[:outer_shadow]
+            elsif @inside_inner_shdw && !@inside_rpr_effect_lst
+              @current_shape[:inner_shadow][:alpha] = alpha_val if @current_shape[:inner_shadow]
+            elsif @inside_glow && !@inside_rpr_effect_lst
+              @current_shape[:glow][:alpha] = alpha_val if @current_shape[:glow]
+            elsif @inside_ln && @inside_solid_fill && !@inside_rpr
               @current_shape[:line_alpha] = alpha_val
             elsif @inside_solid_fill && !@inside_ln && !@inside_rpr
               @current_shape[:fill_alpha] = alpha_val
@@ -5226,7 +5234,7 @@ module Xlsxrb
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
                   :data_table,
-                  :plot_area_fill,
+                  :plot_area_fill, :plot_area_line_color, :plot_area_line_width,
                   :cat_axis_label_rotation, :val_axis_label_rotation,
                   :cat_axis_font, :val_axis_font
 
@@ -5312,8 +5320,11 @@ module Xlsxrb
         @wireframe = nil
         @data_table = nil
         @plot_area_fill = nil
+        @plot_area_line_color = nil
+        @plot_area_line_width = nil
         @inside_plot_area = false
         @inside_plot_area_sp_pr = false
+        @inside_plot_area_ln = false
         @inside_plot_area_solid_fill = false
         @inside_d_table = false
         @inside_view_3d = false
@@ -5485,6 +5496,19 @@ module Xlsxrb
           @current_trendline[:disp_r_sqr] = attributes["val"] == "1" if @inside_trendline && @current_trendline && attributes["val"]
         when "dispEq"
           @current_trendline[:disp_eq] = attributes["val"] == "1" if @inside_trendline && @current_trendline && attributes["val"]
+        when "errBars"
+          if @inside_ser
+            @inside_err_bars = true
+            @current_err_bars = {}
+          end
+        when "errDir"
+          @current_err_bars[:direction] = attributes["val"] if @inside_err_bars && @current_err_bars && attributes["val"]
+        when "errBarType"
+          @current_err_bars[:bar_type] = attributes["val"] if @inside_err_bars && @current_err_bars && attributes["val"]
+        when "errValType"
+          @current_err_bars[:val_type] = attributes["val"] if @inside_err_bars && @current_err_bars && attributes["val"]
+        when "noEndCap"
+          @current_err_bars[:no_end_cap] = attributes["val"] == "1" if @inside_err_bars && @current_err_bars && attributes["val"]
         when "name"
           if @inside_trendline
             @inside_trendline_name = true
@@ -5511,6 +5535,9 @@ module Xlsxrb
             @inside_ser_ln = true
             @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
             @current_ser[:line_cap] = attributes["cap"] if @current_ser && attributes["cap"]
+          elsif @inside_plot_area_sp_pr
+            @inside_plot_area_ln = true
+            @plot_area_line_width = attributes["w"].to_i if attributes["w"]
           end
         when "round"
           @current_ser[:line_join] = "round" if @inside_ser && @inside_ser_ln && @current_ser
@@ -5560,13 +5587,19 @@ module Xlsxrb
             @current_ser[:line_color] = attributes["val"]
           elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser && attributes["val"]
             @current_ser[:fill_color] = attributes["val"]
+          elsif @inside_plot_area_sp_pr && @inside_plot_area_ln && @inside_plot_area_solid_fill && attributes["val"]
+            @plot_area_line_color = attributes["val"]
           elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill && attributes["val"]
             @plot_area_fill = attributes["val"]
           end
         when "cat", "xVal"
           @inside_cat = true if @inside_ser
         when "val", "yVal"
-          @inside_val = true if @inside_ser
+          if @inside_err_bars && @current_err_bars && attributes["val"]
+            @current_err_bars[:val] = attributes["val"].to_f
+          elsif @inside_ser
+            @inside_val = true
+          end
         when "bubbleSize"
           @inside_bubble_size = true if @inside_ser
         when "f"
@@ -5907,6 +5940,10 @@ module Xlsxrb
           @current_trendline = nil
           @inside_trendline = false
           @inside_trendline_name = false
+        when "errBars"
+          @current_ser[:error_bars] = @current_err_bars if @inside_err_bars && @current_err_bars && @current_ser
+          @current_err_bars = nil
+          @inside_err_bars = false
         when "name"
           @current_trendline[:name] = @text_buffer.dup if @inside_trendline_name && @current_trendline
           @inside_trendline_name = false
@@ -5935,11 +5972,13 @@ module Xlsxrb
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = false
             @inside_plot_area_solid_fill = false
+            @inside_plot_area_ln = false
           end
         when "ln"
           @inside_dpt_ln = false if @inside_dpt
           @inside_marker_ln = false if @inside_marker_sp_pr
           @inside_ser_ln = false if @inside_ser
+          @inside_plot_area_ln = false if @inside_plot_area_sp_pr
         when "marker"
           @inside_ser_marker = false if @inside_ser
         when "solidFill"
