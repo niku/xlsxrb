@@ -5870,6 +5870,8 @@ module Xlsxrb
             @current_err_bars[:line_dash] = attributes["val"]
           elsif @inside_ser && @inside_ser_ln && @current_ser && attributes["val"]
             @current_ser[:line_dash] = attributes["val"]
+          elsif @inside_marker_sp_pr && @inside_marker_ln && @current_ser && attributes["val"]
+            @current_ser[:marker_line_dash] = attributes["val"]
           elsif @inside_drop_lines_ln && attributes["val"]
             @drop_lines = {} if @drop_lines == true
             @drop_lines[:line_dash] = attributes["val"]
