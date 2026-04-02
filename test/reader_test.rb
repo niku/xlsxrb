@@ -8670,4 +8670,28 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart axis line color and width" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     cat_axis_line_color: "FF0000", cat_axis_line_width: 25_400,
+                     val_axis_line_color: "00FF00", val_axis_line_width: 12_700)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("FF0000", charts[0][:cat_axis_line_color])
+    assert_equal(25_400, charts[0][:cat_axis_line_width])
+    assert_equal("00FF00", charts[0][:val_axis_line_color])
+    assert_equal(12_700, charts[0][:val_axis_line_width])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

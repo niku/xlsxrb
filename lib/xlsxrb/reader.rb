@@ -802,6 +802,10 @@ module Xlsxrb
         chart[:val_axis_label_rotation] = cl.val_axis_label_rotation if cl.val_axis_label_rotation
         chart[:cat_axis_font] = cl.cat_axis_font if cl.cat_axis_font
         chart[:val_axis_font] = cl.val_axis_font if cl.val_axis_font
+        chart[:cat_axis_line_color] = cl.cat_axis_line_color if cl.cat_axis_line_color
+        chart[:cat_axis_line_width] = cl.cat_axis_line_width if cl.cat_axis_line_width
+        chart[:val_axis_line_color] = cl.val_axis_line_color if cl.val_axis_line_color
+        chart[:val_axis_line_width] = cl.val_axis_line_width if cl.val_axis_line_width
       end
       listener.charts
     end
@@ -5236,7 +5240,9 @@ module Xlsxrb
                   :data_table,
                   :plot_area_fill, :plot_area_line_color, :plot_area_line_width,
                   :cat_axis_label_rotation, :val_axis_label_rotation,
-                  :cat_axis_font, :val_axis_font
+                  :cat_axis_font, :val_axis_font,
+                  :cat_axis_line_color, :cat_axis_line_width,
+                  :val_axis_line_color, :val_axis_line_width
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -5326,6 +5332,13 @@ module Xlsxrb
         @inside_plot_area_sp_pr = false
         @inside_plot_area_ln = false
         @inside_plot_area_solid_fill = false
+        @inside_ax_sp_pr = false
+        @inside_ax_ln = false
+        @inside_ax_solid_fill = false
+        @cat_axis_line_color = nil
+        @cat_axis_line_width = nil
+        @val_axis_line_color = nil
+        @val_axis_line_width = nil
         @inside_d_table = false
         @inside_view_3d = false
         @inside_scaling = false
@@ -5521,6 +5534,8 @@ module Xlsxrb
             @inside_marker_sp_pr = true
           elsif @inside_ser
             @inside_ser_sp_pr = true
+          elsif @inside_cat_ax || @inside_val_ax
+            @inside_ax_sp_pr = true
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = true
           end
@@ -5538,6 +5553,15 @@ module Xlsxrb
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_ln = true
             @plot_area_line_width = attributes["w"].to_i if attributes["w"]
+          elsif @inside_ax_sp_pr
+            @inside_ax_ln = true
+            if attributes["w"]
+              if @inside_cat_ax
+                @cat_axis_line_width = attributes["w"].to_i
+              elsif @inside_val_ax
+                @val_axis_line_width = attributes["w"].to_i
+              end
+            end
           end
         when "round"
           @current_ser[:line_join] = "round" if @inside_ser && @inside_ser_ln && @current_ser
@@ -5559,6 +5583,8 @@ module Xlsxrb
             @inside_ser_solid_fill = true
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = true
+          elsif @inside_ax_sp_pr
+            @inside_ax_solid_fill = true
           end
         when "noFill"
           if @inside_ser && @inside_ser_ln && @current_ser
@@ -5591,6 +5617,12 @@ module Xlsxrb
             @plot_area_line_color = attributes["val"]
           elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill && attributes["val"]
             @plot_area_fill = attributes["val"]
+          elsif @inside_ax_sp_pr && @inside_ax_ln && @inside_ax_solid_fill && attributes["val"]
+            if @inside_cat_ax
+              @cat_axis_line_color = attributes["val"]
+            elsif @inside_val_ax
+              @val_axis_line_color = attributes["val"]
+            end
           end
         when "cat", "xVal"
           @inside_cat = true if @inside_ser
@@ -5969,6 +6001,10 @@ module Xlsxrb
           elsif @inside_ser
             @inside_ser_sp_pr = false
             @inside_ser_ln = false
+          elsif @inside_cat_ax || @inside_val_ax
+            @inside_ax_sp_pr = false
+            @inside_ax_ln = false
+            @inside_ax_solid_fill = false
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = false
             @inside_plot_area_solid_fill = false
@@ -5978,6 +6014,7 @@ module Xlsxrb
           @inside_dpt_ln = false if @inside_dpt
           @inside_marker_ln = false if @inside_marker_sp_pr
           @inside_ser_ln = false if @inside_ser
+          @inside_ax_ln = false if @inside_ax_sp_pr
           @inside_plot_area_ln = false if @inside_plot_area_sp_pr
         when "marker"
           @inside_ser_marker = false if @inside_ser
@@ -5988,6 +6025,8 @@ module Xlsxrb
             @inside_marker_solid_fill = false
           elsif @inside_ser
             @inside_ser_solid_fill = false
+          elsif @inside_ax_sp_pr
+            @inside_ax_solid_fill = false
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = false
           end
