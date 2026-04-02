@@ -740,10 +740,12 @@ module Xlsxrb
         chart[:cat_axis_title_font] = cl.cat_axis_title_font if cl.cat_axis_title_font
         chart[:val_axis_title_font] = cl.val_axis_title_font if cl.val_axis_title_font
         chart[:cat_axis_title_fill] = cl.cat_axis_title_fill if cl.cat_axis_title_fill
+        chart[:cat_axis_title_no_fill] = cl.cat_axis_title_no_fill if cl.cat_axis_title_no_fill
         chart[:cat_axis_title_line_color] = cl.cat_axis_title_line_color if cl.cat_axis_title_line_color
         chart[:cat_axis_title_line_width] = cl.cat_axis_title_line_width if cl.cat_axis_title_line_width
         chart[:cat_axis_title_line_dash] = cl.cat_axis_title_line_dash if cl.cat_axis_title_line_dash
         chart[:val_axis_title_fill] = cl.val_axis_title_fill if cl.val_axis_title_fill
+        chart[:val_axis_title_no_fill] = cl.val_axis_title_no_fill if cl.val_axis_title_no_fill
         chart[:val_axis_title_line_color] = cl.val_axis_title_line_color if cl.val_axis_title_line_color
         chart[:val_axis_title_line_width] = cl.val_axis_title_line_width if cl.val_axis_title_line_width
         chart[:val_axis_title_line_dash] = cl.val_axis_title_line_dash if cl.val_axis_title_line_dash
@@ -5303,8 +5305,8 @@ module Xlsxrb
                   :cat_axis_major_time_unit, :cat_axis_minor_time_unit,
                   :cat_axis_major_unit, :cat_axis_minor_unit,
                   :cat_axis_title_font, :val_axis_title_font,
-                  :cat_axis_title_fill, :cat_axis_title_line_color, :cat_axis_title_line_width, :cat_axis_title_line_dash,
-                  :val_axis_title_fill, :val_axis_title_line_color, :val_axis_title_line_width, :val_axis_title_line_dash,
+                  :cat_axis_title_fill, :cat_axis_title_no_fill, :cat_axis_title_line_color, :cat_axis_title_line_width, :cat_axis_title_line_dash,
+                  :val_axis_title_fill, :val_axis_title_no_fill, :val_axis_title_line_color, :val_axis_title_line_width, :val_axis_title_line_dash,
                   :chart_fill, :chart_no_fill, :chart_line_color, :chart_line_width, :chart_line_dash
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
@@ -5536,10 +5538,12 @@ module Xlsxrb
         @cat_axis_title_font = nil
         @val_axis_title_font = nil
         @cat_axis_title_fill = nil
+        @cat_axis_title_no_fill = nil
         @cat_axis_title_line_color = nil
         @cat_axis_title_line_width = nil
         @cat_axis_title_line_dash = nil
         @val_axis_title_fill = nil
+        @val_axis_title_no_fill = nil
         @val_axis_title_line_color = nil
         @val_axis_title_line_width = nil
         @val_axis_title_line_dash = nil
@@ -5970,6 +5974,10 @@ module Xlsxrb
             @up_down_bars[bar_key][:no_fill] = true
           elsif @inside_wall_sp_pr && @current_wall
             @current_wall[:no_fill] = true
+          elsif @inside_ax_title_sp_pr && @inside_cat_ax
+            @cat_axis_title_no_fill = true
+          elsif @inside_ax_title_sp_pr && @inside_val_ax
+            @val_axis_title_no_fill = true
           elsif @inside_title_sp_pr
             @title_no_fill = true
           elsif @inside_dlbls_sp_pr

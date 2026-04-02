@@ -6928,6 +6928,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits axis title noFill in spPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     cat_axis_title: { text: "Category", no_fill: true },
+                     val_axis_title: { text: "Value", no_fill: true },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-axtitlenf", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:title>.*<c:spPr><a:noFill/></c:spPr></c:title>}m, chart_xml)
+    assert_match(%r{<c:valAx>.*<c:title>.*<c:spPr><a:noFill/></c:spPr></c:title>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits axis fill in spPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
