@@ -3645,6 +3645,23 @@ module Xlsxrb
           parts << "<c:showPercent val=\"#{dl[:show_percent] ? 1 : 0}\"/>" unless dl[:show_percent].nil?
           parts << "<c:showBubbleSize val=\"#{dl[:show_bubble_size] ? 1 : 0}\"/>" unless dl[:show_bubble_size].nil?
           parts << "<c:separator>#{xml_escape(dl[:separator])}</c:separator>" if dl[:separator]
+          sl = dl[:show_leader_lines]
+          parts << "<c:showLeaderLines val=\"#{sl ? 1 : 0}\"/>" unless sl.nil?
+          if dl[:leader_lines]
+            ll_spec = dl[:leader_lines]
+            if ll_spec.is_a?(Hash)
+              ll_sp = +""
+              if ll_spec[:line_color] || ll_spec[:line_width] || ll_spec[:line_dash]
+                ll_lw = ll_spec[:line_width] ? %( w="#{(ll_spec[:line_width] * 12_700).to_i}") : ""
+                ll_lf = ll_spec[:line_color] ? %(<a:solidFill>#{color_xml(ll_spec[:line_color])}</a:solidFill>) : ""
+                ll_ld = ll_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(ll_spec[:line_dash])}"/>) : ""
+                ll_sp << "<a:ln#{ll_lw}>#{ll_lf}#{ll_ld}</a:ln>"
+              end
+              parts << (ll_sp.empty? ? "<c:leaderLines/>" : "<c:leaderLines><c:spPr>#{ll_sp}</c:spPr></c:leaderLines>")
+            else
+              parts << "<c:leaderLines/>"
+            end
+          end
           parts << "</c:dLbls>"
         end
         if ser[:trendline]

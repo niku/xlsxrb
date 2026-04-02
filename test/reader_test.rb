@@ -9215,4 +9215,30 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips leader lines with spPr in data labels" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :pie,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     data_labels: { show_val: true, show_leader_lines: true,
+                                    leader_lines: { line_color: "FF0000", line_width: 0.5, line_dash: "dash" } })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    dl = chart[:data_labels]
+    assert_equal(true, dl[:show_leader_lines])
+    ll = dl[:leader_lines]
+    assert_not_nil(ll)
+    assert_equal("FF0000", ll[:line_color])
+    assert_in_delta(0.5, ll[:line_width], 0.01)
+    assert_equal("dash", ll[:line_dash])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
