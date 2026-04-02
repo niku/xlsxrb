@@ -3913,6 +3913,20 @@ module Xlsxrb
         parts << %(<c:delete val="#{entry[:delete] ? 1 : 0}"/>) unless entry[:delete].nil?
         parts << "</c:legendEntry>"
       end
+      legend_layout = chart.dig(:legend, :layout)
+      if legend_layout.is_a?(Hash)
+        ml_parts = +""
+        ml_parts << %(<c:layoutTarget val="#{xml_escape(legend_layout[:target])}"/>) if legend_layout[:target]
+        ml_parts << %(<c:xMode val="#{xml_escape(legend_layout[:x_mode])}"/>) if legend_layout[:x_mode]
+        ml_parts << %(<c:yMode val="#{xml_escape(legend_layout[:y_mode])}"/>) if legend_layout[:y_mode]
+        ml_parts << %(<c:wMode val="#{xml_escape(legend_layout[:w_mode])}"/>) if legend_layout[:w_mode]
+        ml_parts << %(<c:hMode val="#{xml_escape(legend_layout[:h_mode])}"/>) if legend_layout[:h_mode]
+        ml_parts << %(<c:x val="#{legend_layout[:x]}"/>) if legend_layout[:x]
+        ml_parts << %(<c:y val="#{legend_layout[:y]}"/>) if legend_layout[:y]
+        ml_parts << %(<c:w val="#{legend_layout[:w]}"/>) if legend_layout[:w]
+        ml_parts << %(<c:h val="#{legend_layout[:h]}"/>) if legend_layout[:h]
+        parts << "<c:layout><c:manualLayout>#{ml_parts}</c:manualLayout></c:layout>" unless ml_parts.empty?
+      end
       parts << %(<c:overlay val="#{legend_overlay ? 1 : 0}"/>) unless legend_overlay.nil?
       leg_sp_children = +""
       leg_fill = chart.dig(:legend, :fill_color)

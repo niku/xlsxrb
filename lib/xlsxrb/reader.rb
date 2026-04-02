@@ -5477,6 +5477,7 @@ module Xlsxrb
         @cache_values = []
         @inside_legend = false
         @inside_legend_entry = false
+        @inside_legend_layout = false
         @current_legend_entry = nil
         @legend_font = nil
         @inside_legend_sp_pr = false
@@ -5994,6 +5995,26 @@ module Xlsxrb
           @inside_legend = true
         when "legendPos"
           @legend[:position] = attributes["val"] if @inside_legend && attributes["val"]
+        when "manualLayout"
+          @inside_legend_layout = true if @inside_legend
+        when "layoutTarget"
+          (@legend[:layout] ||= {})[:target] = attributes["val"] if @inside_legend_layout && attributes["val"]
+        when "xMode"
+          (@legend[:layout] ||= {})[:x_mode] = attributes["val"] if @inside_legend_layout && attributes["val"]
+        when "yMode"
+          (@legend[:layout] ||= {})[:y_mode] = attributes["val"] if @inside_legend_layout && attributes["val"]
+        when "wMode"
+          (@legend[:layout] ||= {})[:w_mode] = attributes["val"] if @inside_legend_layout && attributes["val"]
+        when "hMode"
+          (@legend[:layout] ||= {})[:h_mode] = attributes["val"] if @inside_legend_layout && attributes["val"]
+        when "x"
+          (@legend[:layout] ||= {})[:x] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
+        when "y"
+          (@legend[:layout] ||= {})[:y] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
+        when "w"
+          (@legend[:layout] ||= {})[:w] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
+        when "h"
+          (@legend[:layout] ||= {})[:h] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
         when "legendEntry"
           if @inside_legend
             @inside_legend_entry = true
@@ -6571,6 +6592,7 @@ module Xlsxrb
           @inside_legend_entry = false
         when "legend"
           @inside_legend = false
+          @inside_legend_layout = false
           @inside_axis_tx_pr = false
           @inside_axis_def_rpr = false
         when "dLbls"

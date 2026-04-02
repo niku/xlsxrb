@@ -6710,6 +6710,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits legend manual layout with position coordinates" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     legend: { position: "b", layout: { x: 0.1, y: 0.8, w: 0.8, h: 0.15 } },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-legendlayout", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:layout><c:manualLayout><c:x val="0.1"/><c:y val="0.8"/><c:w val="0.8"/><c:h val="0.15"/></c:manualLayout></c:layout>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits dTable spPr and txPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
