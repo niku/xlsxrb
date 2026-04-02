@@ -6585,6 +6585,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dLbls numFmt spPr and txPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 100)
+    writer.add_chart(type: :bar,
+                     data_labels: { show_val: true,
+                                    num_fmt: { format_code: "$#,##0", source_linked: true },
+                                    fill_color: "FFFFCC", line_color: "999999", line_width: 0.75,
+                                    font: { size: 8, bold: true } },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dlbls-fmt", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:numFmt formatCode="\$#,##0" sourceLinked="1"/>}, chart_xml)
+    assert_match(/<c:dLbls>.*<c:spPr>/m, chart_xml)
+    assert_match(%r{<c:dLbls>.*<c:txPr>.*<a:defRPr sz="800" b="1"/>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

@@ -5428,6 +5428,10 @@ module Xlsxrb
         @inside_dlbls = false
         @inside_dlbl = false
         @current_dlbl = nil
+        @inside_dlbls_sp_pr = false
+        @inside_dlbls_ln = false
+        @inside_dlbls_solid_fill = false
+        @dlbls_font = nil
         @dlbl_target = nil
         @inside_separator = false
         @inside_cat_ax = false
@@ -5597,6 +5601,8 @@ module Xlsxrb
             @inside_dpt_sp_pr = true
           elsif @inside_ser_marker
             @inside_marker_sp_pr = true
+          elsif @inside_dlbls && !@inside_dlbl
+            @inside_dlbls_sp_pr = true
           elsif @inside_ser
             @inside_ser_sp_pr = true
           elsif @inside_cat_ax || @inside_val_ax
@@ -5617,6 +5623,14 @@ module Xlsxrb
           elsif @inside_marker_sp_pr && @current_ser
             @inside_marker_ln = true
             @current_ser[:marker_line_width] = attributes["w"].to_i / 12_700.0 if attributes["w"]
+          elsif @inside_dlbls_sp_pr
+            @inside_dlbls_ln = true
+            if attributes["w"]
+              lw = attributes["w"].to_i / 12_700.0
+              dl_target = @dlbl_target || @data_labels
+              dl_target[:line_width] = lw
+              @data_labels[:line_width] = lw if dl_target != @data_labels
+            end
           elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_ln = true
             @current_ser[:line_width] = attributes["w"].to_i / 12_700.0 if @current_ser && attributes["w"]
@@ -5659,6 +5673,8 @@ module Xlsxrb
             @inside_dpt_solid_fill = true
           elsif @inside_marker_sp_pr
             @inside_marker_solid_fill = true
+          elsif @inside_dlbls_sp_pr
+            @inside_dlbls_solid_fill = true
           elsif @inside_ser && @inside_ser_sp_pr
             @inside_ser_solid_fill = true
           elsif @inside_plot_area_sp_pr
@@ -5745,6 +5761,8 @@ module Xlsxrb
               (@legend_font ||= {})[:name] = attributes["typeface"]
             elsif @inside_d_table
               (@d_table_font ||= {})[:name] = attributes["typeface"]
+            elsif @inside_dlbls
+              (@dlbls_font ||= {})[:name] = attributes["typeface"]
             end
           elsif @inside_title_rpr && @title_font && attributes["typeface"]
             @title_font[:name] = attributes["typeface"]
@@ -5900,6 +5918,11 @@ module Xlsxrb
             elsif @inside_val_ax
               @val_axis_num_fmt = nf
             end
+          elsif @inside_dlbls && !@inside_dlbl && attributes["formatCode"]
+            nf = { format_code: attributes["formatCode"] }
+            nf[:source_linked] = attributes["sourceLinked"] == "1" if attributes["sourceLinked"]
+            @dlbl_target[:num_fmt] = nf
+            @data_labels[:num_fmt] = nf if @dlbl_target != @data_labels
           end
         when "majorTickMark"
           if attributes["val"]
@@ -5976,7 +5999,7 @@ module Xlsxrb
         when "builtInUnit"
           @val_axis_disp_units = attributes["val"] if @inside_val_ax && attributes["val"]
         when "txPr"
-          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_d_table
+          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_d_table || (@inside_dlbls && !@inside_dlbl)
         when "bodyPr"
           if @inside_axis_tx_pr && attributes["rot"]
             if @inside_cat_ax
@@ -6000,6 +6023,8 @@ module Xlsxrb
               @legend_font = (@legend_font || {}).merge(font)
             elsif @inside_d_table
               @d_table_font = (@d_table_font || {}).merge(font)
+            elsif @inside_dlbls
+              @dlbls_font = (@dlbls_font || {}).merge(font)
             end
           end
         when "tickLblPos"
@@ -6153,6 +6178,10 @@ module Xlsxrb
             @inside_marker_sp_pr = false
             @inside_marker_ln = false
             @inside_marker_solid_fill = false
+          elsif @inside_dlbls_sp_pr
+            @inside_dlbls_sp_pr = false
+            @inside_dlbls_ln = false
+            @inside_dlbls_solid_fill = false
           elsif @inside_ser
             @inside_ser_sp_pr = false
             @inside_ser_ln = false
@@ -6180,6 +6209,7 @@ module Xlsxrb
         when "ln"
           @inside_dpt_ln = false if @inside_dpt
           @inside_marker_ln = false if @inside_marker_sp_pr
+          @inside_dlbls_ln = false if @inside_dlbls_sp_pr
           @inside_ser_ln = false if @inside_ser
           @inside_ax_ln = false if @inside_ax_sp_pr
           @inside_wall_ln = false if @inside_wall_sp_pr
@@ -6221,8 +6251,19 @@ module Xlsxrb
           @inside_axis_tx_pr = false
           @inside_axis_def_rpr = false
         when "dLbls"
+          if @dlbls_font
+            dl_target = @dlbl_target || @data_labels
+            dl_target[:font] = @dlbls_font
+            @data_labels[:font] = @dlbls_font if dl_target != @data_labels
+          end
           @inside_dlbls = false
           @dlbl_target = nil
+          @inside_dlbls_sp_pr = false
+          @inside_dlbls_ln = false
+          @inside_dlbls_solid_fill = false
+          @dlbls_font = nil
+          @inside_axis_tx_pr = false
+          @inside_axis_def_rpr = false
         when "dLbl"
           if @inside_dlbl && @current_dlbl && @dlbl_target
             (@dlbl_target[:labels] ||= []) << @current_dlbl
@@ -6281,6 +6322,8 @@ module Xlsxrb
             (@legend_font ||= {})[:color] = color_value
           elsif @inside_d_table
             (@d_table_font ||= {})[:color] = color_value
+          elsif @inside_dlbls
+            (@dlbls_font ||= {})[:color] = color_value
           end
         elsif @inside_title_rpr && @title_font
           @title_font[:color] = color_value
@@ -6292,6 +6335,14 @@ module Xlsxrb
           @current_ser[:marker_line_color] = color_value
         elsif @inside_marker_sp_pr && @inside_marker_solid_fill && @current_ser
           @current_ser[:marker_fill] = color_value
+        elsif @inside_dlbls_sp_pr && @inside_dlbls_ln && @inside_dlbls_solid_fill
+          dl_target = @dlbl_target || @data_labels
+          dl_target[:line_color] = color_value
+          @data_labels[:line_color] = color_value if dl_target != @data_labels
+        elsif @inside_dlbls_sp_pr && @inside_dlbls_solid_fill
+          dl_target = @dlbl_target || @data_labels
+          dl_target[:fill_color] = color_value
+          @data_labels[:fill_color] = color_value if dl_target != @data_labels
         elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser
           @current_ser[:line_color] = color_value
         elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser

@@ -8940,4 +8940,34 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips dLbls numFmt font and spPr" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 50)
+    writer.add_chart(type: :bar,
+                     data_labels: { show_val: true,
+                                    num_fmt: { format_code: "0.00%", source_linked: true },
+                                    fill_color: "EEEEFF", line_color: "444444",
+                                    font: { size: 11, bold: true, name: "Verdana" } },
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    dl = charts[0][:data_labels]
+    assert_equal(true, dl[:show_val])
+    assert_equal("0.00%", dl[:num_fmt][:format_code])
+    assert_equal(true, dl[:num_fmt][:source_linked])
+    assert_equal("EEEEFF", dl[:fill_color])
+    assert_equal("444444", dl[:line_color])
+    assert_equal(11.0, dl[:font][:size])
+    assert_equal(true, dl[:font][:bold])
+    assert_equal("Verdana", dl[:font][:name])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
