@@ -2154,6 +2154,26 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips shape shadow alpha" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "test")
+    writer.add_shape(preset: "rect", text: "Shadow",
+                     outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000", alpha: 50_000 })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    shapes = reader.shapes
+    os = shapes[0][:outer_shadow]
+    assert_equal("000000", os[:color])
+    assert_equal(50_000, os[:alpha])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape gradient fill" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -6599,6 +6619,31 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips error bars on series" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                error_bars: { direction: "y", bar_type: "both",
+                                              val_type: "fixedVal", no_end_cap: true, val: 5 } }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    eb = chart[:series].first[:error_bars]
+    assert_equal("y", eb[:direction])
+    assert_equal("both", eb[:bar_type])
+    assert_equal("fixedVal", eb[:val_type])
+    assert_equal(true, eb[:no_end_cap])
+    assert_equal(5.0, eb[:val])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips per-series data labels" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -8601,6 +8646,27 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(1, charts.size)
     assert_equal(-2_700_000, charts[0][:cat_axis_label_rotation])
     assert_equal(-5_400_000, charts[0][:val_axis_label_rotation])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips chart plot area line color and width" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     plot_area_line_color: "0000FF", plot_area_line_width: 12_700)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("0000FF", charts[0][:plot_area_line_color])
+    assert_equal(12_700, charts[0][:plot_area_line_width])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

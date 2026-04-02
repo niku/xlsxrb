@@ -1549,6 +1549,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with outer_shadow alpha emits a:alpha inside shadow color" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Shadow",
+                     outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000", alpha: 50_000 })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-shdwalpha", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:outerShdw blurRad="50800" dist="38100" dir="2700000"><a:srgbClr val="000000"><a:alpha val="50000"/></a:srgbClr></a:outerShdw>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with gradient_fill emits a:gradFill with stops and lin" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
@@ -4777,6 +4794,26 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits error bars on series" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                error_bars: { direction: "y", bar_type: "both",
+                                              val_type: "fixedVal", no_end_cap: true, val: 5 } }])
+    xlsx_path = File.join(Dir.tmpdir, "errbars_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:errBars>/, xml)
+    assert_match(%r{<c:errDir val="y"/>}, xml)
+    assert_match(%r{<c:errBarType val="both"/>}, xml)
+    assert_match(%r{<c:errValType val="fixedVal"/>}, xml)
+    assert_match(%r{<c:noEndCap val="1"/>}, xml)
+    assert_match(%r{<c:val val="5"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits per-series data labels" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
@@ -6291,6 +6328,24 @@ class WriterTest < Test::Unit::TestCase
 
     chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
     assert_match(%r{<c:catAx>.*<c:txPr><a:bodyPr rot="-2700000"/>.*</c:catAx>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "writes plot area line color and width" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", "Cat")
+    writer.set_cell("B1", 10)
+    writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
+                     plot_area_line_color: "0000FF", plot_area_line_width: 12_700)
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-plot-line", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:plotArea>.*<c:spPr>.*<a:ln w="12700"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill></a:ln>.*</c:spPr>.*</c:plotArea>}m, chart_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
