@@ -3528,9 +3528,11 @@ module Xlsxrb
         parts << "<c:#{tag}><c:spPr>"
         parts << "<a:solidFill>#{srgb_clr_xml(wall[:fill_color])}</a:solidFill>" if wall[:fill_color]
         parts << "<a:noFill/>" if wall[:no_fill]
-        if wall[:line_color]
+        if wall[:line_color] || wall[:line_dash]
           w_attr = wall[:line_width] ? %( w="#{wall[:line_width]}") : ""
-          parts << "<a:ln#{w_attr}><a:solidFill>#{srgb_clr_xml(wall[:line_color])}</a:solidFill></a:ln>"
+          w_fill = wall[:line_color] ? %(<a:solidFill>#{srgb_clr_xml(wall[:line_color])}</a:solidFill>) : ""
+          w_dash = wall[:line_dash] ? %(<a:prstDash val="#{xml_escape(wall[:line_dash])}"/>) : ""
+          parts << "<a:ln#{w_attr}>#{w_fill}#{w_dash}</a:ln>"
         end
         parts << "</c:spPr></c:#{tag}>"
       end
@@ -3585,10 +3587,11 @@ module Xlsxrb
           dp_sp_children = +""
           dp_sp_children << %(<a:solidFill>#{color_xml(dp[:fill_color])}</a:solidFill>) if dp[:fill_color]
           dp_sp_children << "<a:noFill/>" if dp[:no_fill]
-          if dp[:line_color] || dp[:line_width]
+          if dp[:line_color] || dp[:line_width] || dp[:line_dash]
             dp_ln_attrs = dp[:line_width] ? %( w="#{(dp[:line_width] * 12_700).to_i}") : ""
             dp_ln_fill = dp[:line_color] ? %(<a:solidFill>#{color_xml(dp[:line_color])}</a:solidFill>) : ""
-            dp_sp_children << "<a:ln#{dp_ln_attrs}>#{dp_ln_fill}</a:ln>"
+            dp_ln_dash = dp[:line_dash] ? %(<a:prstDash val="#{xml_escape(dp[:line_dash])}"/>) : ""
+            dp_sp_children << "<a:ln#{dp_ln_attrs}>#{dp_ln_fill}#{dp_ln_dash}</a:ln>"
           end
           parts << "<c:spPr>#{dp_sp_children}</c:spPr>" unless dp_sp_children.empty?
           parts << "</c:dPt>"
@@ -3653,10 +3656,11 @@ module Xlsxrb
           dl_sp_children = +""
           dl_sp_children << %(<a:solidFill>#{color_xml(dl[:fill_color])}</a:solidFill>) if dl[:fill_color]
           dl_sp_children << "<a:noFill/>" if dl[:no_fill]
-          if dl[:line_color] || dl[:line_width]
+          if dl[:line_color] || dl[:line_width] || dl[:line_dash]
             dl_lw = dl[:line_width] ? %( w="#{(dl[:line_width] * 12_700).to_i}") : ""
             dl_lf = dl[:line_color] ? %(<a:solidFill>#{color_xml(dl[:line_color])}</a:solidFill>) : ""
-            dl_sp_children << "<a:ln#{dl_lw}>#{dl_lf}</a:ln>"
+            dl_ld = dl[:line_dash] ? %(<a:prstDash val="#{xml_escape(dl[:line_dash])}"/>) : ""
+            dl_sp_children << "<a:ln#{dl_lw}>#{dl_lf}#{dl_ld}</a:ln>"
           end
           parts << "<c:spPr>#{dl_sp_children}</c:spPr>" unless dl_sp_children.empty?
           parts << build_axis_txpr(nil, dl[:font]) if dl[:font]
@@ -3796,10 +3800,11 @@ module Xlsxrb
             bar_sp = +""
             bar_sp << %(<a:solidFill>#{color_xml(bar[:fill_color])}</a:solidFill>) if bar[:fill_color]
             bar_sp << "<a:noFill/>" if bar[:no_fill]
-            if bar[:line_color] || bar[:line_width]
+            if bar[:line_color] || bar[:line_width] || bar[:line_dash]
               b_lw = bar[:line_width] ? %( w="#{(bar[:line_width] * 12_700).to_i}") : ""
               b_lf = bar[:line_color] ? %(<a:solidFill>#{color_xml(bar[:line_color])}</a:solidFill>) : ""
-              bar_sp << "<a:ln#{b_lw}>#{b_lf}</a:ln>"
+              b_ld = bar[:line_dash] ? %(<a:prstDash val="#{xml_escape(bar[:line_dash])}"/>) : ""
+              bar_sp << "<a:ln#{b_lw}>#{b_lf}#{b_ld}</a:ln>"
             end
             parts << (bar_sp.empty? ? "<c:#{tag}/>" : "<c:#{tag}><c:spPr>#{bar_sp}</c:spPr></c:#{tag}>")
           else
