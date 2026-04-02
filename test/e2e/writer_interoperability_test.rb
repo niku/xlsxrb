@@ -2500,6 +2500,25 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid chart space fill and border" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     chart_fill: "EEEEEE",
+                     chart_line_color: "333333",
+                     chart_line_width: 1.0)
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_chart_space_fill_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer generates valid series data points on pie chart" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

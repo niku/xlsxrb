@@ -824,6 +824,9 @@ module Xlsxrb
         chart[:cat_axis_minor_time_unit] = cl.cat_axis_minor_time_unit if cl.cat_axis_minor_time_unit
         chart[:cat_axis_major_unit] = cl.cat_axis_major_unit if cl.cat_axis_major_unit
         chart[:cat_axis_minor_unit] = cl.cat_axis_minor_unit if cl.cat_axis_minor_unit
+        chart[:chart_fill] = cl.chart_fill if cl.chart_fill
+        chart[:chart_line_color] = cl.chart_line_color if cl.chart_line_color
+        chart[:chart_line_width] = cl.chart_line_width if cl.chart_line_width
       end
       listener.charts
     end
@@ -5276,7 +5279,8 @@ module Xlsxrb
                   :cat_axis_type, :cat_axis_base_time_unit,
                   :cat_axis_major_time_unit, :cat_axis_minor_time_unit,
                   :cat_axis_major_unit, :cat_axis_minor_unit,
-                  :cat_axis_title_font, :val_axis_title_font
+                  :cat_axis_title_font, :val_axis_title_font,
+                  :chart_fill, :chart_line_color, :chart_line_width
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
@@ -5292,6 +5296,13 @@ module Xlsxrb
         @inside_title_sp_pr = false
         @inside_title_ln = false
         @inside_title_solid_fill = false
+        @chart_fill = nil
+        @chart_line_color = nil
+        @chart_line_width = nil
+        @inside_chart = false
+        @inside_chart_space_sp_pr = false
+        @inside_chart_space_ln = false
+        @inside_chart_space_solid_fill = false
         @series = []
         @legend = {}
         @data_labels = {}
@@ -5491,6 +5502,8 @@ module Xlsxrb
         @chart_type = name if CHART_TYPES.include?(name)
 
         case name
+        when "chart"
+          @inside_chart = true
         when "plotArea"
           @inside_plot_area = true
         when "grouping"
@@ -5676,6 +5689,8 @@ module Xlsxrb
             @inside_title_sp_pr = true
           elsif @inside_plot_area
             @inside_plot_area_sp_pr = true
+          elsif !@inside_chart
+            @inside_chart_space_sp_pr = true
           end
         when "ln"
           if @inside_dpt && @inside_dpt_sp_pr
@@ -5753,6 +5768,9 @@ module Xlsxrb
           elsif @inside_title_sp_pr
             @inside_title_ln = true
             @title_line_width = attributes["w"].to_i / 12_700.0 if attributes["w"]
+          elsif @inside_chart_space_sp_pr
+            @inside_chart_space_ln = true
+            @chart_line_width = attributes["w"].to_i / 12_700.0 if attributes["w"]
           end
         when "round"
           @current_ser[:line_join] = "round" if @inside_ser && @inside_ser_ln && @current_ser
@@ -5815,6 +5833,8 @@ module Xlsxrb
             @inside_d_table_solid_fill = true
           elsif @inside_title_sp_pr
             @inside_title_solid_fill = true
+          elsif @inside_chart_space_sp_pr
+            @inside_chart_space_solid_fill = true
           end
         when "noFill"
           if @inside_ser && @inside_ser_ln && @current_ser
@@ -6392,6 +6412,10 @@ module Xlsxrb
             @inside_plot_area_sp_pr = false
             @inside_plot_area_solid_fill = false
             @inside_plot_area_ln = false
+          elsif @inside_chart_space_sp_pr
+            @inside_chart_space_sp_pr = false
+            @inside_chart_space_ln = false
+            @inside_chart_space_solid_fill = false
           end
         when "ln"
           @inside_dpt_ln = false if @inside_dpt
@@ -6410,6 +6434,7 @@ module Xlsxrb
           @inside_d_table_ln = false if @inside_d_table_sp_pr
           @inside_title_ln = false if @inside_title_sp_pr
           @inside_plot_area_ln = false if @inside_plot_area_sp_pr
+          @inside_chart_space_ln = false if @inside_chart_space_sp_pr
         when "marker"
           @inside_ser_marker = false if @inside_ser
         when "rPr"
@@ -6440,6 +6465,8 @@ module Xlsxrb
             @inside_wall_solid_fill = false
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = false
+          elsif @inside_chart_space_sp_pr
+            @inside_chart_space_solid_fill = false
           end
         when "majorGridlines", "minorGridlines"
           @inside_gridlines = false
@@ -6447,6 +6474,8 @@ module Xlsxrb
           @inside_gridlines_ln = false
           @inside_gridlines_solid_fill = false
           @gridlines_target = nil
+        when "chart"
+          @inside_chart = false
         when "plotArea"
           @inside_plot_area = false
         when "title"
@@ -6643,6 +6672,10 @@ module Xlsxrb
           @title_line_color = color_value
         elsif @inside_title_sp_pr && @inside_title_solid_fill
           @title_fill_color = color_value
+        elsif @inside_chart_space_sp_pr && @inside_chart_space_ln && @inside_chart_space_solid_fill
+          @chart_line_color = color_value
+        elsif @inside_chart_space_sp_pr && @inside_chart_space_solid_fill
+          @chart_fill = color_value
         end
       end
 
