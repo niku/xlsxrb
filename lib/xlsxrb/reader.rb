@@ -4631,6 +4631,10 @@ module Xlsxrb
             tf[:cap] = attributes["cap"] if attributes["cap"]
             tf[:lang] = attributes["lang"] if attributes["lang"]
             tf[:alt_lang] = attributes["altLang"] if attributes["altLang"]
+            tf[:dirty] = true if %w[1 true].include?(attributes["dirty"])
+            tf[:smt_clean] = true if %w[1 true].include?(attributes["smtClean"])
+            tf[:err] = true if %w[1 true].include?(attributes["err"])
+            tf[:bmk] = attributes["bmk"] if attributes["bmk"]
             tf[:size] = attributes["sz"].to_i if attributes["sz"]
             @current_text_font = tf
           end
