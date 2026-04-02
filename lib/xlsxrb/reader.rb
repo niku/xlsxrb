@@ -4228,6 +4228,8 @@ module Xlsxrb
           @inside_solid_fill = true if @inside_pic
         when "srgbClr"
           @current_image[:line_color] = attributes["val"] if @inside_pic && @current_image && @inside_solid_fill && @inside_ln && attributes["val"]
+        when "schemeClr"
+          @current_image[:line_color] = { scheme: attributes["val"] } if @inside_pic && @current_image && @inside_solid_fill && @inside_ln && attributes["val"]
         when "xfrm"
           @current_image[:rotation] = attributes["rot"].to_i if @inside_pic && @current_image && attributes["rot"]
         when "from"
@@ -4724,43 +4726,9 @@ module Xlsxrb
             @current_shape[:no_rot] = true if %w[1 true].include?(attributes["noRot"])
           end
         when "srgbClr"
-          if @inside_rpr_ln && @current_text_font && @inside_solid_fill && attributes["val"]
-            @current_text_font[:line_color] = attributes["val"]
-          elsif @inside_rpr && @current_text_font && @inside_solid_fill && attributes["val"]
-            @current_text_font[:color] = attributes["val"]
-          elsif @inside_rpr && @current_text_font && @inside_highlight && attributes["val"]
-            @current_text_font[:highlight] = attributes["val"]
-          elsif @inside_bu_clr && @inside_sp && @current_paragraph && attributes["val"]
-            @current_paragraph[:bullet] ||= {}
-            @current_paragraph[:bullet][:color] = attributes["val"]
-          elsif @inside_outer_shdw && @inside_rpr_effect_lst && @current_text_font && attributes["val"]
-            @current_text_font[:outer_shadow][:color] = attributes["val"]
-          elsif @inside_inner_shdw && @inside_rpr_effect_lst && @current_text_font && attributes["val"]
-            @current_text_font[:inner_shadow][:color] = attributes["val"]
-          elsif @inside_glow && @inside_rpr_effect_lst && @current_text_font && attributes["val"]
-            @current_text_font[:glow][:color] = attributes["val"]
-          elsif @inside_outer_shdw && @current_shape && attributes["val"]
-            @current_shape[:outer_shadow][:color] = attributes["val"]
-          elsif @inside_inner_shdw && @current_shape && attributes["val"]
-            @current_shape[:inner_shadow][:color] = attributes["val"]
-          elsif @inside_glow && @current_shape && attributes["val"]
-            @current_shape[:glow][:color] = attributes["val"]
-          elsif @inside_grad_fill && @current_gs_pos && @current_shape && attributes["val"]
-            @current_shape[:gradient_fill][:stops] << { pos: @current_gs_pos, color: attributes["val"] }
-            @current_gs_pos = nil
-          elsif @inside_patt_fill && @current_shape && attributes["val"]
-            if @inside_fg_clr
-              @current_shape[:pattern_fill][:fg_color] = attributes["val"]
-            elsif @inside_bg_clr
-              @current_shape[:pattern_fill][:bg_color] = attributes["val"]
-            end
-          elsif @inside_sp && @current_shape && @inside_solid_fill && !@inside_rpr && attributes["val"]
-            if @inside_ln
-              @current_shape[:line_color] = attributes["val"]
-            else
-              @current_shape[:fill_color] = attributes["val"]
-            end
-          end
+          assign_shape_color(attributes["val"]) if attributes["val"]
+        when "schemeClr"
+          assign_shape_color({ scheme: attributes["val"] }) if attributes["val"]
         when "noFill"
           if @inside_sp && @current_shape
             if @inside_ln
@@ -5165,6 +5133,46 @@ module Xlsxrb
       end
 
       private
+
+      def assign_shape_color(color_value)
+        if @inside_rpr_ln && @current_text_font && @inside_solid_fill
+          @current_text_font[:line_color] = color_value
+        elsif @inside_rpr && @current_text_font && @inside_solid_fill
+          @current_text_font[:color] = color_value
+        elsif @inside_rpr && @current_text_font && @inside_highlight
+          @current_text_font[:highlight] = color_value
+        elsif @inside_bu_clr && @inside_sp && @current_paragraph
+          @current_paragraph[:bullet] ||= {}
+          @current_paragraph[:bullet][:color] = color_value
+        elsif @inside_outer_shdw && @inside_rpr_effect_lst && @current_text_font
+          @current_text_font[:outer_shadow][:color] = color_value
+        elsif @inside_inner_shdw && @inside_rpr_effect_lst && @current_text_font
+          @current_text_font[:inner_shadow][:color] = color_value
+        elsif @inside_glow && @inside_rpr_effect_lst && @current_text_font
+          @current_text_font[:glow][:color] = color_value
+        elsif @inside_outer_shdw && @current_shape
+          @current_shape[:outer_shadow][:color] = color_value
+        elsif @inside_inner_shdw && @current_shape
+          @current_shape[:inner_shadow][:color] = color_value
+        elsif @inside_glow && @current_shape
+          @current_shape[:glow][:color] = color_value
+        elsif @inside_grad_fill && @current_gs_pos && @current_shape
+          @current_shape[:gradient_fill][:stops] << { pos: @current_gs_pos, color: color_value }
+          @current_gs_pos = nil
+        elsif @inside_patt_fill && @current_shape
+          if @inside_fg_clr
+            @current_shape[:pattern_fill][:fg_color] = color_value
+          elsif @inside_bg_clr
+            @current_shape[:pattern_fill][:bg_color] = color_value
+          end
+        elsif @inside_sp && @current_shape && @inside_solid_fill && !@inside_rpr
+          if @inside_ln
+            @current_shape[:line_color] = color_value
+          else
+            @current_shape[:fill_color] = color_value
+          end
+        end
+      end
 
       def finalize_paragraph_runs(para)
         return unless para[:runs]&.any?
@@ -5623,41 +5631,9 @@ module Xlsxrb
             @current_ser[:no_fill] = true
           end
         when "srgbClr"
-          if @inside_axis_def_rpr && attributes["val"]
-            if @inside_cat_ax
-              (@cat_axis_font ||= {})[:color] = attributes["val"]
-            elsif @inside_val_ax
-              (@val_axis_font ||= {})[:color] = attributes["val"]
-            end
-          elsif @inside_title_rpr && @title_font && attributes["val"]
-            @title_font[:color] = attributes["val"]
-          elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_ln && @current_dpt && attributes["val"]
-            @current_dpt[:line_color] = attributes["val"]
-          elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_solid_fill && @current_dpt && attributes["val"]
-            @current_dpt[:fill_color] = attributes["val"]
-          elsif @inside_marker_sp_pr && @inside_marker_ln && @inside_marker_solid_fill && @current_ser && attributes["val"]
-            @current_ser[:marker_line_color] = attributes["val"]
-          elsif @inside_marker_sp_pr && @inside_marker_solid_fill && @current_ser && attributes["val"]
-            @current_ser[:marker_fill] = attributes["val"]
-          elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser && attributes["val"]
-            @current_ser[:line_color] = attributes["val"]
-          elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser && attributes["val"]
-            @current_ser[:fill_color] = attributes["val"]
-          elsif @inside_plot_area_sp_pr && @inside_plot_area_ln && @inside_plot_area_solid_fill && attributes["val"]
-            @plot_area_line_color = attributes["val"]
-          elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill && attributes["val"]
-            @plot_area_fill = attributes["val"]
-          elsif @inside_ax_sp_pr && @inside_ax_ln && @inside_ax_solid_fill && attributes["val"]
-            if @inside_cat_ax
-              @cat_axis_line_color = attributes["val"]
-            elsif @inside_val_ax
-              @val_axis_line_color = attributes["val"]
-            end
-          elsif @inside_wall_sp_pr && @inside_wall_ln && @inside_wall_solid_fill && @current_wall && attributes["val"]
-            @current_wall[:line_color] = attributes["val"]
-          elsif @inside_wall_sp_pr && @inside_wall_solid_fill && @current_wall && attributes["val"]
-            @current_wall[:fill_color] = attributes["val"]
-          end
+          assign_chart_color(attributes["val"]) if attributes["val"]
+        when "schemeClr"
+          assign_chart_color({ scheme: attributes["val"] }) if attributes["val"]
         when "cat", "xVal"
           @inside_cat = true if @inside_ser
         when "val", "yVal"
@@ -6152,6 +6128,44 @@ module Xlsxrb
       end
 
       private
+
+      def assign_chart_color(color_value)
+        if @inside_axis_def_rpr
+          if @inside_cat_ax
+            (@cat_axis_font ||= {})[:color] = color_value
+          elsif @inside_val_ax
+            (@val_axis_font ||= {})[:color] = color_value
+          end
+        elsif @inside_title_rpr && @title_font
+          @title_font[:color] = color_value
+        elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_ln && @current_dpt
+          @current_dpt[:line_color] = color_value
+        elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_solid_fill && @current_dpt
+          @current_dpt[:fill_color] = color_value
+        elsif @inside_marker_sp_pr && @inside_marker_ln && @inside_marker_solid_fill && @current_ser
+          @current_ser[:marker_line_color] = color_value
+        elsif @inside_marker_sp_pr && @inside_marker_solid_fill && @current_ser
+          @current_ser[:marker_fill] = color_value
+        elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser
+          @current_ser[:line_color] = color_value
+        elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser
+          @current_ser[:fill_color] = color_value
+        elsif @inside_plot_area_sp_pr && @inside_plot_area_ln && @inside_plot_area_solid_fill
+          @plot_area_line_color = color_value
+        elsif @inside_plot_area_sp_pr && @inside_plot_area_solid_fill
+          @plot_area_fill = color_value
+        elsif @inside_ax_sp_pr && @inside_ax_ln && @inside_ax_solid_fill
+          if @inside_cat_ax
+            @cat_axis_line_color = color_value
+          elsif @inside_val_ax
+            @val_axis_line_color = color_value
+          end
+        elsif @inside_wall_sp_pr && @inside_wall_ln && @inside_wall_solid_fill && @current_wall
+          @current_wall[:line_color] = color_value
+        elsif @inside_wall_sp_pr && @inside_wall_solid_fill && @current_wall
+          @current_wall[:fill_color] = color_value
+        end
+      end
 
       def element_name(local_name, qname)
         if local_name.nil? || local_name.empty?
