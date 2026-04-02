@@ -4432,6 +4432,7 @@ module Xlsxrb
         @inside_solid_fill = false
         @inside_highlight = false
         @inside_ln = false
+        @inside_rpr_ln = false
         @inside_prst_geom = false
         @inside_rpr = false
         @inside_end_para_rpr = false
@@ -4514,7 +4515,12 @@ module Xlsxrb
         when "lin"
           @current_shape[:gradient_fill][:angle] = attributes["ang"].to_i if @inside_grad_fill && @current_shape && attributes["ang"]
         when "ln"
-          if @inside_sp && @current_shape
+          if @inside_rpr && @current_text_font
+            @inside_ln = true
+            @inside_rpr_ln = true
+            @current_text_font[:line_width] = attributes["w"].to_i if attributes["w"]
+            @current_text_font[:line_cap] = attributes["cap"] if attributes["cap"]
+          elsif @inside_sp && @current_shape
             @inside_ln = true
             @current_shape[:line_width] = attributes["w"].to_i if attributes["w"]
             @current_shape[:line_cap] = attributes["cap"] if attributes["cap"]
@@ -4574,13 +4580,29 @@ module Xlsxrb
             @current_shape[:reflection] = rf
           end
         when "prstDash"
-          @current_shape[:line_dash] = attributes["val"] if @inside_sp && @inside_ln && @current_shape && attributes["val"]
+          if @inside_rpr_ln && @current_text_font && attributes["val"]
+            @current_text_font[:line_dash] = attributes["val"]
+          elsif @inside_sp && @inside_ln && @current_shape && attributes["val"]
+            @current_shape[:line_dash] = attributes["val"]
+          end
         when "round"
-          @current_shape[:line_join] = "round" if @inside_sp && @inside_ln && @current_shape
+          if @inside_rpr_ln && @current_text_font
+            @current_text_font[:line_join] = "round"
+          elsif @inside_sp && @inside_ln && @current_shape
+            @current_shape[:line_join] = "round"
+          end
         when "bevel"
-          @current_shape[:line_join] = "bevel" if @inside_sp && @inside_ln && @current_shape
+          if @inside_rpr_ln && @current_text_font
+            @current_text_font[:line_join] = "bevel"
+          elsif @inside_sp && @inside_ln && @current_shape
+            @current_shape[:line_join] = "bevel"
+          end
         when "miter"
-          @current_shape[:line_join] = "miter" if @inside_sp && @inside_ln && @current_shape
+          if @inside_rpr_ln && @current_text_font
+            @current_text_font[:line_join] = "miter"
+          elsif @inside_sp && @inside_ln && @current_shape
+            @current_shape[:line_join] = "miter"
+          end
         when "headEnd"
           if @inside_sp && @inside_ln && @current_shape
             he = {}
@@ -4604,7 +4626,9 @@ module Xlsxrb
             @current_shape[:no_rot] = true if %w[1 true].include?(attributes["noRot"])
           end
         when "srgbClr"
-          if @inside_rpr && @current_text_font && @inside_solid_fill && attributes["val"]
+          if @inside_rpr_ln && @current_text_font && @inside_solid_fill && attributes["val"]
+            @current_text_font[:line_color] = attributes["val"]
+          elsif @inside_rpr && @current_text_font && @inside_solid_fill && attributes["val"]
             @current_text_font[:color] = attributes["val"]
           elsif @inside_rpr && @current_text_font && @inside_highlight && attributes["val"]
             @current_text_font[:highlight] = attributes["val"]
@@ -4626,7 +4650,7 @@ module Xlsxrb
             elsif @inside_bg_clr
               @current_shape[:pattern_fill][:bg_color] = attributes["val"]
             end
-          elsif @inside_sp && @current_shape && @inside_solid_fill && attributes["val"]
+          elsif @inside_sp && @current_shape && @inside_solid_fill && !@inside_rpr && attributes["val"]
             if @inside_ln
               @current_shape[:line_color] = attributes["val"]
             else
@@ -4908,6 +4932,7 @@ module Xlsxrb
           @inside_highlight = false
         when "ln"
           @inside_ln = false
+          @inside_rpr_ln = false
         when "effectLst"
           @inside_effect_lst = false
         when "outerShdw"
