@@ -4442,6 +4442,9 @@ module Xlsxrb
         @inside_inner_shdw = false
         @inside_glow = false
         @inside_grad_fill = false
+        @inside_patt_fill = false
+        @inside_fg_clr = false
+        @inside_bg_clr = false
         @current_gs_pos = nil
         @inside_spc_bef = false
         @inside_spc_aft = false
@@ -4497,6 +4500,15 @@ module Xlsxrb
             @inside_grad_fill = true
             @current_shape[:gradient_fill] = { stops: [] }
           end
+        when "pattFill"
+          if @inside_sp && @current_shape && !@inside_ln
+            @inside_patt_fill = true
+            @current_shape[:pattern_fill] = { preset: attributes["prst"] } if attributes["prst"]
+          end
+        when "fgClr"
+          @inside_fg_clr = true if @inside_patt_fill
+        when "bgClr"
+          @inside_bg_clr = true if @inside_patt_fill
         when "gs"
           @current_gs_pos = attributes["pos"].to_i if @inside_grad_fill && attributes["pos"]
         when "lin"
@@ -4608,6 +4620,12 @@ module Xlsxrb
           elsif @inside_grad_fill && @current_gs_pos && @current_shape && attributes["val"]
             @current_shape[:gradient_fill][:stops] << { pos: @current_gs_pos, color: attributes["val"] }
             @current_gs_pos = nil
+          elsif @inside_patt_fill && @current_shape && attributes["val"]
+            if @inside_fg_clr
+              @current_shape[:pattern_fill][:fg_color] = attributes["val"]
+            elsif @inside_bg_clr
+              @current_shape[:pattern_fill][:bg_color] = attributes["val"]
+            end
           elsif @inside_sp && @current_shape && @inside_solid_fill && attributes["val"]
             if @inside_ln
               @current_shape[:line_color] = attributes["val"]
@@ -4900,6 +4918,12 @@ module Xlsxrb
           @inside_glow = false
         when "gradFill"
           @inside_grad_fill = false
+        when "pattFill"
+          @inside_patt_fill = false
+        when "fgClr"
+          @inside_fg_clr = false
+        when "bgClr"
+          @inside_bg_clr = false
         when "prstGeom"
           @inside_prst_geom = false
         when "spcBef"

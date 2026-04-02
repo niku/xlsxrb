@@ -1238,7 +1238,7 @@ module Xlsxrb
     # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
     # text: optional text body string.
     # from_col/from_row/to_col/to_row: anchor coordinates.
-    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, line_cap: nil, line_align: nil, line_compound: nil, line_join: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_num_col: nil, text_spc_col: nil, text_rtl_col: nil, text_from_word_art: nil, text_upright: nil, text_compat_ln_spc: nil, text_force_aa: nil, text_warp: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_end_para_rpr: nil, text_def_rpr: nil, text_align: nil, text_font_align: nil, text_def_tab_sz: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, text_ea_ln_brk: nil, text_latin_ln_brk: nil, text_hanging_punct: nil, text_tab_stops: nil, text_bullet: nil, text_level: nil, text_paragraphs: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
+    def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, no_fill: nil, gradient_fill: nil, pattern_fill: nil, line_color: nil, line_width: nil, no_line: nil, line_dash: nil, line_cap: nil, line_align: nil, line_compound: nil, line_join: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_num_col: nil, text_spc_col: nil, text_rtl_col: nil, text_from_word_art: nil, text_upright: nil, text_compat_ln_spc: nil, text_force_aa: nil, text_warp: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_end_para_rpr: nil, text_def_rpr: nil, text_align: nil, text_font_align: nil, text_def_tab_sz: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, text_ea_ln_brk: nil, text_latin_ln_brk: nil, text_hanging_punct: nil, text_tab_stops: nil, text_bullet: nil, text_level: nil, text_paragraphs: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
 
@@ -1314,6 +1314,7 @@ module Xlsxrb
       shape[:soft_edge] = soft_edge if soft_edge
       shape[:reflection] = reflection if reflection
       shape[:gradient_fill] = gradient_fill if gradient_fill
+      shape[:pattern_fill] = pattern_fill if pattern_fill
       shape[:edit_as] = edit_as if edit_as
       shape[:published] = published unless published.nil?
       shape[:locks_with_sheet] = locks_with_sheet unless locks_with_sheet.nil?
@@ -2877,6 +2878,12 @@ module Xlsxrb
                              gs_xml = (gf[:stops] || []).map { |gs| %(<a:gs pos="#{gs[:pos]}"><a:srgbClr val="#{xml_escape(gs[:color])}"/></a:gs>) }.join
                              lin_xml = gf[:angle] ? %(<a:lin ang="#{gf[:angle]}" scaled="0"/>) : ""
                              "<a:gradFill><a:gsLst>#{gs_xml}</a:gsLst>#{lin_xml}</a:gradFill>"
+                           elsif shape[:pattern_fill]
+                             pf = shape[:pattern_fill]
+                             pf_children = +""
+                             pf_children << %(<a:fgClr><a:srgbClr val="#{xml_escape(pf[:fg_color])}"/></a:fgClr>) if pf[:fg_color]
+                             pf_children << %(<a:bgClr><a:srgbClr val="#{xml_escape(pf[:bg_color])}"/></a:bgClr>) if pf[:bg_color]
+                             %(<a:pattFill prst="#{xml_escape(pf[:preset])}">#{pf_children}</a:pattFill>)
                            else
                              ""
                            end

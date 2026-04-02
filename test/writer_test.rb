@@ -1516,6 +1516,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape with pattern_fill emits a:pattFill" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", text: "Patt",
+                     pattern_fill: { preset: "ltDnDiag", fg_color: "FF0000", bg_color: "FFFFFF" })
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-pattfill", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(/<a:pattFill prst="ltDnDiag">/, drawing_xml)
+    assert_match(%r{<a:fgClr><a:srgbClr val="FF0000"/></a:fgClr>}, drawing_xml)
+    assert_match(%r{<a:bgClr><a:srgbClr val="FFFFFF"/></a:bgClr>}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with line_dash emits a:prstDash in a:ln" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
