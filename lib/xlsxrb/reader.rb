@@ -4562,6 +4562,13 @@ module Xlsxrb
             se[:rad] = attributes["rad"].to_i if attributes["rad"]
             @current_shape[:soft_edge] = se
           end
+        when "blur"
+          if @inside_sp && @inside_effect_lst && @current_shape
+            bl = {}
+            bl[:rad] = attributes["rad"].to_i if attributes["rad"]
+            bl[:grow] = %w[1 true].include?(attributes["grow"]) if attributes["grow"]
+            @current_shape[:blur] = bl
+          end
         when "reflection"
           if @inside_sp && @inside_effect_lst && @current_shape
             rf = {}
