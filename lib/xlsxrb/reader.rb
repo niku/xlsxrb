@@ -825,7 +825,9 @@ module Xlsxrb
         chart[:cat_axis_font] = cl.cat_axis_font if cl.cat_axis_font
         chart[:val_axis_font] = cl.val_axis_font if cl.val_axis_font
         chart[:cat_axis_fill] = cl.cat_axis_fill if cl.cat_axis_fill
+        chart[:cat_axis_no_fill] = cl.cat_axis_no_fill if cl.cat_axis_no_fill
         chart[:val_axis_fill] = cl.val_axis_fill if cl.val_axis_fill
+        chart[:val_axis_no_fill] = cl.val_axis_no_fill if cl.val_axis_no_fill
         chart[:cat_axis_line_color] = cl.cat_axis_line_color if cl.cat_axis_line_color
         chart[:cat_axis_line_width] = cl.cat_axis_line_width if cl.cat_axis_line_width
         chart[:cat_axis_line_dash] = cl.cat_axis_line_dash if cl.cat_axis_line_dash
@@ -5292,7 +5294,7 @@ module Xlsxrb
                   :plot_area_layout,
                   :cat_axis_label_rotation, :val_axis_label_rotation,
                   :cat_axis_font, :val_axis_font,
-                  :cat_axis_fill, :val_axis_fill,
+                  :cat_axis_fill, :cat_axis_no_fill, :val_axis_fill, :val_axis_no_fill,
                   :cat_axis_line_color, :cat_axis_line_width, :cat_axis_line_dash,
                   :val_axis_line_color, :val_axis_line_width, :val_axis_line_dash,
                   :floor, :side_wall, :back_wall,
@@ -5441,7 +5443,9 @@ module Xlsxrb
         @inside_ax_ln = false
         @inside_ax_solid_fill = false
         @cat_axis_fill = nil
+        @cat_axis_no_fill = nil
         @val_axis_fill = nil
+        @val_axis_no_fill = nil
         @cat_axis_line_color = nil
         @cat_axis_line_width = nil
         @cat_axis_line_dash = nil
@@ -5974,6 +5978,10 @@ module Xlsxrb
             @legend[:no_fill] = true
           elsif @inside_d_table_sp_pr && @data_table
             @data_table[:no_fill] = true
+          elsif @inside_ax_sp_pr && @inside_cat_ax
+            @cat_axis_no_fill = true
+          elsif @inside_ax_sp_pr && @inside_val_ax
+            @val_axis_no_fill = true
           elsif @inside_plot_area_sp_pr
             @plot_area_no_fill = true
           elsif @inside_chart_space_sp_pr
