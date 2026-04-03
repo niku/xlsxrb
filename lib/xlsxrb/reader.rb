@@ -6321,6 +6321,10 @@ module Xlsxrb
             elsif @inside_val_ax
               @val_axis_num_fmt = nf
             end
+          elsif @inside_dlbl && @current_dlbl && attributes["formatCode"]
+            nf = { format_code: attributes["formatCode"] }
+            nf[:source_linked] = attributes["sourceLinked"] == "1" if attributes["sourceLinked"]
+            @current_dlbl[:num_fmt] = nf
           elsif @inside_dlbls && !@inside_dlbl && attributes["formatCode"]
             nf = { format_code: attributes["formatCode"] }
             nf[:source_linked] = attributes["sourceLinked"] == "1" if attributes["sourceLinked"]
