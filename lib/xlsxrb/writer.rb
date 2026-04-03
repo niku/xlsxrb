@@ -4131,6 +4131,17 @@ module Xlsxrb
                             end
                 parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
               end
+              dul_sp = +""
+              dul_sp << %(<a:solidFill>#{color_xml(dul[:fill_color])}</a:solidFill>) if dul[:fill_color]
+              dul_sp << "<a:noFill/>" if dul[:no_fill]
+              if dul[:line_color] || dul[:line_width] || dul[:line_dash]
+                dul_lw = dul[:line_width] ? %( w="#{(dul[:line_width] * 12_700).to_i}") : ""
+                dul_lf = dul[:line_color] ? %(<a:solidFill>#{color_xml(dul[:line_color])}</a:solidFill>) : ""
+                dul_ld = dul[:line_dash] ? %(<a:prstDash val="#{xml_escape(dul[:line_dash])}"/>) : ""
+                dul_sp << "<a:ln#{dul_lw}>#{dul_lf}#{dul_ld}</a:ln>"
+              end
+              parts << "<c:spPr>#{dul_sp}</c:spPr>" unless dul_sp.empty?
+              parts << build_axis_txpr(nil, dul[:font]) if dul[:font]
               parts << "</c:dispUnitsLbl>"
             end
             parts << "</c:dispUnits>"

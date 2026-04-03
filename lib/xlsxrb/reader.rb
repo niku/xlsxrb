@@ -5404,6 +5404,10 @@ module Xlsxrb
         @val_axis_disp_units = nil
         @inside_disp_units = false
         @inside_disp_units_lbl = false
+        @inside_disp_units_lbl_sp_pr = false
+        @inside_disp_units_lbl_ln = false
+        @inside_disp_units_lbl_solid_fill = false
+        @disp_units_lbl_font = nil
         @cat_axis_scaling_max = nil
         @cat_axis_scaling_min = nil
         @val_axis_scaling_max = nil
@@ -5846,6 +5850,8 @@ module Xlsxrb
             @inside_gridlines_sp_pr = true
           elsif @inside_ax_title
             @inside_ax_title_sp_pr = true
+          elsif @inside_disp_units_lbl
+            @inside_disp_units_lbl_sp_pr = true
           elsif @inside_cat_ax || @inside_val_ax
             @inside_ax_sp_pr = true
           elsif @inside_wall && @current_wall
@@ -5942,6 +5948,14 @@ module Xlsxrb
               elsif @inside_val_ax
                 @val_axis_title_line_width = lw
               end
+            end
+          elsif @inside_disp_units_lbl_sp_pr
+            @inside_disp_units_lbl_ln = true
+            if attributes["w"]
+              du = @val_axis_disp_units
+              du = {} unless du.is_a?(Hash)
+              @val_axis_disp_units = du
+              (du[:label] ||= {})[:line_width] = attributes["w"].to_i / 12_700.0
             end
           elsif @inside_gridlines_sp_pr
             @inside_gridlines_ln = true
@@ -6043,6 +6057,11 @@ module Xlsxrb
             elsif @inside_val_ax
               @val_axis_title_line_dash = attributes["val"]
             end
+          elsif @inside_disp_units_lbl_ln && attributes["val"]
+            du = @val_axis_disp_units
+            du = {} unless du.is_a?(Hash)
+            @val_axis_disp_units = du
+            (du[:label] ||= {})[:line_dash] = attributes["val"]
           elsif @inside_ax_sp_pr && @inside_ax_ln && attributes["val"]
             if @inside_cat_ax
               @cat_axis_line_dash = attributes["val"]
@@ -6092,6 +6111,8 @@ module Xlsxrb
             @inside_up_down_bar_solid_fill = true
           elsif @inside_ax_title_sp_pr
             @inside_ax_title_solid_fill = true
+          elsif @inside_disp_units_lbl_sp_pr
+            @inside_disp_units_lbl_solid_fill = true
           elsif @inside_plot_area_sp_pr
             @inside_plot_area_solid_fill = true
           elsif @inside_gridlines_sp_pr
@@ -6148,6 +6169,11 @@ module Xlsxrb
             @data_labels[:no_fill] = true
           elsif @inside_trendline_lbl_sp_pr && @current_trendline
             (@current_trendline[:label] ||= {})[:no_fill] = true
+          elsif @inside_disp_units_lbl_sp_pr
+            du = @val_axis_disp_units
+            du = {} unless du.is_a?(Hash)
+            @val_axis_disp_units = du
+            (du[:label] ||= {})[:no_fill] = true
           elsif @inside_legend_sp_pr
             @legend[:no_fill] = true
           elsif @inside_d_table_sp_pr && @data_table
@@ -6229,7 +6255,9 @@ module Xlsxrb
           end
         when "latin"
           if @inside_axis_def_rpr && attributes["typeface"]
-            if @inside_cat_ax
+            if @inside_disp_units_lbl
+              (@disp_units_lbl_font ||= {})[:name] = attributes["typeface"]
+            elsif @inside_cat_ax
               (@cat_axis_font ||= {})[:name] = attributes["typeface"]
             elsif @inside_val_ax
               (@val_axis_font ||= {})[:name] = attributes["typeface"]
@@ -6569,7 +6597,9 @@ module Xlsxrb
             font[:size] = attributes["sz"].to_i / 100.0 if attributes["sz"]
             font[:bold] = true if attributes["b"] == "1"
             font[:italic] = true if attributes["i"] == "1"
-            if @inside_cat_ax
+            if @inside_disp_units_lbl
+              @disp_units_lbl_font = (@disp_units_lbl_font || {}).merge(font)
+            elsif @inside_cat_ax
               @cat_axis_font = (@cat_axis_font || {}).merge(font)
             elsif @inside_val_ax
               @val_axis_font = (@val_axis_font || {}).merge(font)
@@ -6845,6 +6875,10 @@ module Xlsxrb
             @inside_gridlines_sp_pr = false
             @inside_gridlines_ln = false
             @inside_gridlines_solid_fill = false
+          elsif @inside_disp_units_lbl_sp_pr
+            @inside_disp_units_lbl_sp_pr = false
+            @inside_disp_units_lbl_ln = false
+            @inside_disp_units_lbl_solid_fill = false
           elsif @inside_cat_ax || @inside_val_ax
             @inside_ax_sp_pr = false
             @inside_ax_ln = false
@@ -6891,6 +6925,7 @@ module Xlsxrb
           @inside_ser_lines_ln = false if @inside_ser_lines_sp_pr
           @inside_up_down_bar_ln = false if @inside_up_down_bar_sp_pr
           @inside_ax_title_ln = false if @inside_ax_title_sp_pr
+          @inside_disp_units_lbl_ln = false if @inside_disp_units_lbl_sp_pr
           @inside_gridlines_ln = false if @inside_gridlines_sp_pr
           @inside_ax_ln = false if @inside_ax_sp_pr
           @inside_wall_ln = false if @inside_wall_sp_pr
@@ -6939,6 +6974,8 @@ module Xlsxrb
             @inside_ax_title_solid_fill = false
           elsif @inside_gridlines_sp_pr
             @inside_gridlines_solid_fill = false
+          elsif @inside_disp_units_lbl_sp_pr
+            @inside_disp_units_lbl_solid_fill = false
           elsif @inside_ax_sp_pr
             @inside_ax_solid_fill = false
           elsif @inside_wall_sp_pr
@@ -7033,11 +7070,29 @@ module Xlsxrb
           @inside_axis_def_rpr = false
           @inside_disp_units = false
           @inside_disp_units_lbl = false
+          @inside_disp_units_lbl_sp_pr = false
+          @inside_disp_units_lbl_ln = false
+          @inside_disp_units_lbl_solid_fill = false
+          @disp_units_lbl_font = nil
         when "dispUnits"
           @inside_disp_units = false
           @inside_disp_units_lbl = false
+          @inside_disp_units_lbl_sp_pr = false
+          @inside_disp_units_lbl_ln = false
+          @inside_disp_units_lbl_solid_fill = false
+          @disp_units_lbl_font = nil
         when "dispUnitsLbl"
+          if @disp_units_lbl_font
+            du = @val_axis_disp_units
+            du = {} unless du.is_a?(Hash)
+            @val_axis_disp_units = du
+            (du[:label] ||= {})[:font] = @disp_units_lbl_font
+          end
           @inside_disp_units_lbl = false
+          @inside_disp_units_lbl_sp_pr = false
+          @inside_disp_units_lbl_ln = false
+          @inside_disp_units_lbl_solid_fill = false
+          @disp_units_lbl_font = nil
         when "txPr"
           @inside_axis_def_rpr = false if @inside_axis_tx_pr
         when "scaling"
@@ -7115,7 +7170,9 @@ module Xlsxrb
 
       def assign_chart_color(color_value)
         if @inside_axis_def_rpr
-          if @inside_cat_ax
+          if @inside_disp_units_lbl
+            (@disp_units_lbl_font ||= {})[:color] = color_value
+          elsif @inside_cat_ax
             (@cat_axis_font ||= {})[:color] = color_value
           elsif @inside_val_ax
             (@val_axis_font ||= {})[:color] = color_value
@@ -7237,6 +7294,16 @@ module Xlsxrb
           elsif @inside_val_ax
             @val_axis_fill = color_value
           end
+        elsif @inside_disp_units_lbl_sp_pr && @inside_disp_units_lbl_ln && @inside_disp_units_lbl_solid_fill
+          du = @val_axis_disp_units
+          du = {} unless du.is_a?(Hash)
+          @val_axis_disp_units = du
+          (du[:label] ||= {})[:line_color] = color_value
+        elsif @inside_disp_units_lbl_sp_pr && @inside_disp_units_lbl_solid_fill
+          du = @val_axis_disp_units
+          du = {} unless du.is_a?(Hash)
+          @val_axis_disp_units = du
+          (du[:label] ||= {})[:fill_color] = color_value
         elsif @inside_wall_sp_pr && @inside_wall_ln && @inside_wall_solid_fill && @current_wall
           @current_wall[:line_color] = color_value
         elsif @inside_wall_sp_pr && @inside_wall_solid_fill && @current_wall

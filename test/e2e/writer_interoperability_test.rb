@@ -3744,6 +3744,25 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "SDK validates writer dispUnitsLbl styling" do
+    xlsx_path = File.join(Dir.tmpdir, "writer_disp_units_lbl_styling_#{Process.pid}.xlsx")
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     val_axis_disp_units: { built_in_unit: "thousands",
+                                            label: { fill_color: "FFFF00",
+                                                     line_color: "0000FF",
+                                                     line_width: 1.5,
+                                                     line_dash: "dash",
+                                                     font: { size: 10, bold: true, color: "FF0000" } } })
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_disp_units_lbl_styling_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
