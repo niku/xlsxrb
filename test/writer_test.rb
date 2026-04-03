@@ -5331,6 +5331,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dLbl with custom text" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :pie,
+                     data_labels: { show_val: true,
+                                    labels: [{ idx: 0, text: "Custom Label" }] },
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
+    xlsx_path = File.join(Dir.tmpdir, "dlbl_tx_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:dLbl><c:idx val="0"/><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Custom Label</a:t></a:r></a:p></c:rich></c:tx></c:dLbl>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits trendline element in series" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

@@ -5521,6 +5521,7 @@ module Xlsxrb
         @inside_legend_solid_fill = false
         @inside_dlbls = false
         @inside_dlbl = false
+        @inside_dlbl_tx = false
         @current_dlbl = nil
         @inside_dlbls_sp_pr = false
         @inside_dlbls_ln = false
@@ -6205,6 +6206,8 @@ module Xlsxrb
             @inside_dlbl = true
             @current_dlbl = {}
           end
+        when "tx"
+          @inside_dlbl_tx = true if @inside_dlbl
         when "showVal"
           if @inside_dlbl && @current_dlbl
             @current_dlbl[:show_val] = attributes["val"] == "1"
@@ -6485,7 +6488,9 @@ module Xlsxrb
         name = element_name(local_name, qname)
         case name
         when "t"
-          if @inside_ax_title
+          if @inside_dlbl_tx && @current_dlbl
+            @current_dlbl[:text] = (@current_dlbl[:text] || +"") << @text_buffer
+          elsif @inside_ax_title
             if @inside_cat_ax
               @cat_axis_title = @text_buffer.dup
             elsif @inside_val_ax
@@ -6787,6 +6792,9 @@ module Xlsxrb
           end
           @current_dlbl = nil
           @inside_dlbl = false
+          @inside_dlbl_tx = false
+        when "tx"
+          @inside_dlbl_tx = false if @inside_dlbl
         when "separator"
           if @inside_separator
             @dlbl_target[:separator] = @text_buffer.dup if @dlbl_target

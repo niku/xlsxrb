@@ -3291,6 +3291,22 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated dLbl custom text" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_dlbl_text_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series][0]
+    dlbl = ser[:data_labels][:labels][0]
+    assert_equal(0, dlbl[:idx])
+    assert_equal("SDK Custom", dlbl[:text])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
