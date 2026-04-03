@@ -3773,6 +3773,21 @@ module Xlsxrb
           parts << %(<c:intercept val="#{tl[:intercept]}"/>) if tl[:intercept]
           parts << %(<c:dispRSqr val="#{tl[:disp_r_sqr] ? 1 : 0}"/>) unless tl[:disp_r_sqr].nil?
           parts << %(<c:dispEq val="#{tl[:disp_eq] ? 1 : 0}"/>) unless tl[:disp_eq].nil?
+          if tl[:label]
+            lbl = tl[:label]
+            parts << "<c:trendlineLbl>"
+            if lbl[:num_fmt]
+              nf = lbl[:num_fmt]
+              nf_src = nf.is_a?(Hash) ? nf : { format_code: nf }
+              nf_linked = if nf_src.key?(:source_linked)
+                            nf_src[:source_linked] ? 1 : 0
+                          else
+                            0
+                          end
+              parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
+            end
+            parts << "</c:trendlineLbl>"
+          end
           parts << "</c:trendline>"
         end
         if ser[:error_bars]
