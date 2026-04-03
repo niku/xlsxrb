@@ -3686,6 +3686,16 @@ module Xlsxrb
                 lnf_src = lnf[:source_linked] ? ' sourceLinked="1"' : ""
                 parts << %(<c:numFmt formatCode="#{xml_escape(lnf[:format_code])}"#{lnf_src}/>)
               end
+              lbl_sp = +""
+              lbl_sp << %(<a:solidFill>#{color_xml(lbl[:fill_color])}</a:solidFill>) if lbl[:fill_color]
+              lbl_sp << "<a:noFill/>" if lbl[:no_fill]
+              if lbl[:line_color] || lbl[:line_width] || lbl[:line_dash]
+                lbl_lw = lbl[:line_width] ? %( w="#{(lbl[:line_width] * 12_700).to_i}") : ""
+                lbl_lf = lbl[:line_color] ? %(<a:solidFill>#{color_xml(lbl[:line_color])}</a:solidFill>) : ""
+                lbl_ld = lbl[:line_dash] ? %(<a:prstDash val="#{xml_escape(lbl[:line_dash])}"/>) : ""
+                lbl_sp << "<a:ln#{lbl_lw}>#{lbl_lf}#{lbl_ld}</a:ln>"
+              end
+              parts << "<c:spPr>#{lbl_sp}</c:spPr>" unless lbl_sp.empty?
               parts << %(<c:dLblPos val="#{lbl[:position]}"/>) if lbl[:position]
               parts << "<c:showLegendKey val=\"#{lbl[:show_legend_key] ? 1 : 0}\"/>" unless lbl[:show_legend_key].nil?
               parts << "<c:showVal val=\"#{lbl[:show_val] ? 1 : 0}\"/>" unless lbl[:show_val].nil?
