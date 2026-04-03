@@ -6803,8 +6803,12 @@ module Xlsxrb
           @inside_dlbl_tx = false if @inside_dlbl
         when "separator"
           if @inside_separator
-            @dlbl_target[:separator] = @text_buffer.dup if @dlbl_target
-            @data_labels[:separator] = @text_buffer.dup if @dlbl_target && @dlbl_target != @data_labels
+            if @inside_dlbl && @current_dlbl
+              @current_dlbl[:separator] = @text_buffer.dup
+            elsif @dlbl_target
+              @dlbl_target[:separator] = @text_buffer.dup
+              @data_labels[:separator] = @text_buffer.dup if @dlbl_target != @data_labels
+            end
             @inside_separator = false
           end
         when "catAx", "dateAx"
