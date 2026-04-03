@@ -5684,6 +5684,44 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits trendlineLbl with spPr and txPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                trendline: { type: "linear", disp_eq: true,
+                                             label: { num_fmt: "0.00%",
+                                                      fill_color: "FFFF00",
+                                                      line_color: "0000FF",
+                                                      line_width: 1.5,
+                                                      line_dash: "dash",
+                                                      font: { size: 10, bold: true, color: "FF0000" } } } }])
+    xlsx_path = File.join(Dir.tmpdir, "trendline_lbl_sppr_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:trendlineLbl>/, xml)
+    assert_match(/<c:numFmt formatCode="0\.00%"/, xml)
+    assert_match(%r{<c:spPr><a:solidFill><a:srgbClr val="FFFF00"/></a:solidFill><a:ln w="19050"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill><a:prstDash val="dash"/></a:ln></c:spPr>}, xml)
+    assert_match(/<a:defRPr sz="1000" b="1">/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits trendlineLbl with no_fill" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                trendline: { type: "linear", disp_eq: true,
+                                             label: { no_fill: true } } }])
+    xlsx_path = File.join(Dir.tmpdir, "trendline_lbl_nofill_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:trendlineLbl><c:spPr><a:noFill/></c:spPr></c:trendlineLbl>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits multiple trendlines via trendlines array" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

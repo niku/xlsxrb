@@ -5526,6 +5526,10 @@ module Xlsxrb
         @inside_trendline_ln = false
         @inside_trendline_solid_fill = false
         @inside_trendline_lbl = false
+        @inside_trendline_lbl_sp_pr = false
+        @inside_trendline_lbl_ln = false
+        @inside_trendline_lbl_solid_fill = false
+        @trendline_lbl_font = nil
         @inside_err_bars = false
         @current_err_bars = nil
         @inside_err_bars_sp_pr = false
@@ -5822,6 +5826,8 @@ module Xlsxrb
             @inside_dlbl_sp_pr = true
           elsif @inside_dlbls && !@inside_dlbl
             @inside_dlbls_sp_pr = true
+          elsif @inside_trendline_lbl
+            @inside_trendline_lbl_sp_pr = true
           elsif @inside_trendline
             @inside_trendline_sp_pr = true
           elsif @inside_err_bars
@@ -5879,6 +5885,9 @@ module Xlsxrb
               dl_target[:line_width] = lw
               @data_labels[:line_width] = lw if dl_target != @data_labels
             end
+          elsif @inside_trendline_lbl_sp_pr
+            @inside_trendline_lbl_ln = true
+            (@current_trendline[:label] ||= {})[:line_width] = attributes["w"].to_i / 12_700.0 if @current_trendline && attributes["w"]
           elsif @inside_trendline_sp_pr
             @inside_trendline_ln = true
             @current_trendline[:line_width] = attributes["w"].to_i / 12_700.0 if @current_trendline && attributes["w"]
@@ -5982,6 +5991,8 @@ module Xlsxrb
             gl = {} if gl == true
             gl[:line_dash] = attributes["val"]
             instance_variable_set(:"@#{@gridlines_target}", gl)
+          elsif @inside_trendline_lbl_ln && @current_trendline && attributes["val"]
+            (@current_trendline[:label] ||= {})[:line_dash] = attributes["val"]
           elsif @inside_trendline_ln && @current_trendline && attributes["val"]
             @current_trendline[:line_dash] = attributes["val"]
           elsif @inside_err_bars_ln && @current_err_bars && attributes["val"]
@@ -6061,6 +6072,8 @@ module Xlsxrb
             @inside_dlbl_solid_fill = true
           elsif @inside_dlbls_sp_pr
             @inside_dlbls_solid_fill = true
+          elsif @inside_trendline_lbl_sp_pr
+            @inside_trendline_lbl_solid_fill = true
           elsif @inside_trendline_sp_pr
             @inside_trendline_solid_fill = true
           elsif @inside_err_bars_sp_pr
@@ -6133,6 +6146,8 @@ module Xlsxrb
             @current_dlbl[:no_fill] = true
           elsif @inside_dlbls_sp_pr
             @data_labels[:no_fill] = true
+          elsif @inside_trendline_lbl_sp_pr && @current_trendline
+            (@current_trendline[:label] ||= {})[:no_fill] = true
           elsif @inside_legend_sp_pr
             @legend[:no_fill] = true
           elsif @inside_d_table_sp_pr && @data_table
@@ -6228,6 +6243,8 @@ module Xlsxrb
               (@current_dlbl[:font] ||= {})[:name] = attributes["typeface"]
             elsif @inside_dlbls
               (@dlbls_font ||= {})[:name] = attributes["typeface"]
+            elsif @inside_trendline_lbl && @current_trendline
+              (@trendline_lbl_font ||= {})[:name] = attributes["typeface"]
             end
           elsif @inside_title_rpr && @title_font && attributes["typeface"]
             @title_font[:name] = attributes["typeface"]
@@ -6536,7 +6553,7 @@ module Xlsxrb
         when "dispUnitsLbl"
           @inside_disp_units_lbl = true if @inside_disp_units
         when "txPr"
-          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_legend_entry || @inside_d_table || @inside_dlbls
+          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_legend_entry || @inside_d_table || @inside_dlbls || @inside_trendline_lbl
         when "bodyPr"
           if @inside_axis_tx_pr && attributes["rot"]
             if @inside_cat_ax
@@ -6566,6 +6583,8 @@ module Xlsxrb
               @current_dlbl[:font] = (@current_dlbl[:font] || {}).merge(font)
             elsif @inside_dlbls
               @dlbls_font = (@dlbls_font || {}).merge(font)
+            elsif @inside_trendline_lbl && @current_trendline
+              @trendline_lbl_font = (@trendline_lbl_font || {}).merge(font)
             end
           end
         when "tickLblPos"
@@ -6718,8 +6737,17 @@ module Xlsxrb
           @inside_trendline_ln = false
           @inside_trendline_solid_fill = false
           @inside_trendline_lbl = false
+          @inside_trendline_lbl_sp_pr = false
+          @inside_trendline_lbl_ln = false
+          @inside_trendline_lbl_solid_fill = false
+          @trendline_lbl_font = nil
         when "trendlineLbl"
+          (@current_trendline[:label] ||= {})[:font] = @trendline_lbl_font if @trendline_lbl_font && @current_trendline
           @inside_trendline_lbl = false
+          @inside_trendline_lbl_sp_pr = false
+          @inside_trendline_lbl_ln = false
+          @inside_trendline_lbl_solid_fill = false
+          @trendline_lbl_font = nil
         when "errBars"
           if @inside_err_bars && @current_err_bars && @current_ser
             (@current_ser[:error_bars_list] ||= []) << @current_err_bars
@@ -6778,6 +6806,10 @@ module Xlsxrb
             @inside_dlbls_sp_pr = false
             @inside_dlbls_ln = false
             @inside_dlbls_solid_fill = false
+          elsif @inside_trendline_lbl_sp_pr
+            @inside_trendline_lbl_sp_pr = false
+            @inside_trendline_lbl_ln = false
+            @inside_trendline_lbl_solid_fill = false
           elsif @inside_trendline_sp_pr
             @inside_trendline_sp_pr = false
             @inside_trendline_ln = false
@@ -6850,6 +6882,7 @@ module Xlsxrb
           @inside_leader_lines_ln = false if @inside_leader_lines_sp_pr
           @inside_dlbl_ln = false if @inside_dlbl_sp_pr
           @inside_dlbls_ln = false if @inside_dlbls_sp_pr
+          @inside_trendline_lbl_ln = false if @inside_trendline_lbl_sp_pr
           @inside_trendline_ln = false if @inside_trendline_sp_pr
           @inside_err_bars_ln = false if @inside_err_bars_sp_pr
           @inside_ser_ln = false if @inside_ser
@@ -6886,6 +6919,8 @@ module Xlsxrb
             @inside_marker_solid_fill = false
           elsif @inside_dlbl_sp_pr
             @inside_dlbl_solid_fill = false
+          elsif @inside_trendline_lbl_sp_pr
+            @inside_trendline_lbl_solid_fill = false
           elsif @inside_trendline_sp_pr
             @inside_trendline_solid_fill = false
           elsif @inside_err_bars_sp_pr
@@ -7094,6 +7129,8 @@ module Xlsxrb
             (@current_dlbl[:font] ||= {})[:color] = color_value
           elsif @inside_dlbls
             (@dlbls_font ||= {})[:color] = color_value
+          elsif @inside_trendline_lbl && @current_trendline
+            (@trendline_lbl_font ||= {})[:color] = color_value
           end
         elsif @inside_title_rpr && @title_font
           @title_font[:color] = color_value
@@ -7150,6 +7187,10 @@ module Xlsxrb
           dl_target = @dlbl_target || @data_labels
           dl_target[:fill_color] = color_value
           @data_labels[:fill_color] = color_value if dl_target != @data_labels
+        elsif @inside_trendline_lbl_sp_pr && @inside_trendline_lbl_ln && @inside_trendline_lbl_solid_fill && @current_trendline
+          (@current_trendline[:label] ||= {})[:line_color] = color_value
+        elsif @inside_trendline_lbl_sp_pr && @inside_trendline_lbl_solid_fill && @current_trendline
+          (@current_trendline[:label] ||= {})[:fill_color] = color_value
         elsif @inside_trendline_sp_pr && @inside_trendline_ln && @inside_trendline_solid_fill && @current_trendline
           @current_trendline[:line_color] = color_value
         elsif @inside_err_bars_sp_pr && @inside_err_bars_ln && @inside_err_bars_solid_fill && @current_err_bars
