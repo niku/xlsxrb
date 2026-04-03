@@ -3696,6 +3696,7 @@ module Xlsxrb
                 lbl_sp << "<a:ln#{lbl_lw}>#{lbl_lf}#{lbl_ld}</a:ln>"
               end
               parts << "<c:spPr>#{lbl_sp}</c:spPr>" unless lbl_sp.empty?
+              parts << build_axis_txpr(nil, lbl[:font]) if lbl[:font]
               parts << %(<c:dLblPos val="#{lbl[:position]}"/>) if lbl[:position]
               parts << "<c:showLegendKey val=\"#{lbl[:show_legend_key] ? 1 : 0}\"/>" unless lbl[:show_legend_key].nil?
               parts << "<c:showVal val=\"#{lbl[:show_val] ? 1 : 0}\"/>" unless lbl[:show_val].nil?

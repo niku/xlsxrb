@@ -6133,6 +6133,8 @@ module Xlsxrb
               (@legend_font ||= {})[:name] = attributes["typeface"]
             elsif @inside_d_table
               (@d_table_font ||= {})[:name] = attributes["typeface"]
+            elsif @inside_dlbl && @current_dlbl
+              (@current_dlbl[:font] ||= {})[:name] = attributes["typeface"]
             elsif @inside_dlbls
               (@dlbls_font ||= {})[:name] = attributes["typeface"]
             end
@@ -6422,7 +6424,7 @@ module Xlsxrb
         when "builtInUnit"
           @val_axis_disp_units = attributes["val"] if @inside_val_ax && attributes["val"]
         when "txPr"
-          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_legend_entry || @inside_d_table || (@inside_dlbls && !@inside_dlbl)
+          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_legend_entry || @inside_d_table || @inside_dlbls
         when "bodyPr"
           if @inside_axis_tx_pr && attributes["rot"]
             if @inside_cat_ax
@@ -6448,6 +6450,8 @@ module Xlsxrb
               @legend_font = (@legend_font || {}).merge(font)
             elsif @inside_d_table
               @d_table_font = (@d_table_font || {}).merge(font)
+            elsif @inside_dlbl && @current_dlbl
+              @current_dlbl[:font] = (@current_dlbl[:font] || {}).merge(font)
             elsif @inside_dlbls
               @dlbls_font = (@dlbls_font || {}).merge(font)
             end
@@ -6914,6 +6918,8 @@ module Xlsxrb
             (@legend_font ||= {})[:color] = color_value
           elsif @inside_d_table
             (@d_table_font ||= {})[:color] = color_value
+          elsif @inside_dlbl && @current_dlbl
+            (@current_dlbl[:font] ||= {})[:color] = color_value
           elsif @inside_dlbls
             (@dlbls_font ||= {})[:color] = color_value
           end

@@ -3441,6 +3441,26 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid dLbl font" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :pie,
+                     data_labels: { show_val: true,
+                                    labels: [{ idx: 0,
+                                               font: { size: 14, bold: true, color: "FF0000" } }] },
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_dlbl_font_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
