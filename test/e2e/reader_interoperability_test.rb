@@ -3374,6 +3374,28 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated dLbl font" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_dlbl_font_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series][0]
+    dlbl = ser[:data_labels][:labels][0]
+    assert_equal(0, dlbl[:idx])
+    font = dlbl[:font]
+    assert_not_nil(font)
+    assert_equal(16, font[:size])
+    assert_equal(true, font[:bold])
+    assert_equal(true, font[:italic])
+    assert_equal("Arial", font[:name])
+    assert_equal("0000FF", font[:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

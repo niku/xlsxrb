@@ -9843,6 +9843,33 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips dLbl font" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :pie,
+                     data_labels: { show_val: true,
+                                    labels: [{ idx: 0,
+                                               font: { size: 14, bold: true, color: "FF0000" } }] },
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    dl = charts[0][:data_labels]
+    lbl = dl[:labels][0]
+    assert_equal(0, lbl[:idx])
+    assert_equal(14, lbl[:font][:size])
+    assert_equal(true, lbl[:font][:bold])
+    assert_equal("FF0000", lbl[:font][:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips up/down bars line_dash" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
