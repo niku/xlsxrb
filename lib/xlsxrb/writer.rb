@@ -3593,10 +3593,19 @@ module Xlsxrb
         ser[:data_points]&.each do |dp|
           parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
           parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
-          if dp[:marker_symbol] || dp[:marker_size]
+          if dp[:marker_symbol] || dp[:marker_size] || dp[:marker_fill] || dp[:marker_line_color]
             parts << "<c:marker>"
             parts << %(<c:symbol val="#{xml_escape(dp[:marker_symbol])}"/>) if dp[:marker_symbol]
             parts << %(<c:size val="#{dp[:marker_size]}"/>) if dp[:marker_size]
+            if dp[:marker_fill] || dp[:marker_line_color]
+              mk_sp = +""
+              mk_sp << %(<a:solidFill>#{color_xml(dp[:marker_fill])}</a:solidFill>) if dp[:marker_fill]
+              if dp[:marker_line_color]
+                mk_ln_w = dp[:marker_line_width] ? %( w="#{(dp[:marker_line_width] * 12_700).to_i}") : ""
+                mk_sp << "<a:ln#{mk_ln_w}><a:solidFill>#{color_xml(dp[:marker_line_color])}</a:solidFill></a:ln>"
+              end
+              parts << "<c:spPr>#{mk_sp}</c:spPr>"
+            end
             parts << "</c:marker>"
           end
           dp_sp_children = +""
