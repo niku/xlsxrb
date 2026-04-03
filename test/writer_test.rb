@@ -5180,6 +5180,27 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits custSplit with secondPiePt elements on ofPieChart" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.set_cell("A3", 30)
+    writer.set_cell("A4", 40)
+    writer.add_chart(type: :of_pie,
+                     of_pie_type: "pie",
+                     split_type: "cust",
+                     cust_split: [1, 3],
+                     series: [{ val_ref: "Sheet1!$A$1:$A$4" }])
+    xlsx_path = File.join(Dir.tmpdir, "cust_split_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:splitType val="cust"/>}, xml)
+    assert_match(%r{<c:custSplit><c:secondPiePt val="1"/><c:secondPiePt val="3"/></c:custSplit>}, xml)
+    assert_no_match(/<c:splitPos/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits upDownBars with gapWidth on line chart" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
