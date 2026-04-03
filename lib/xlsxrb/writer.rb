@@ -3677,6 +3677,7 @@ module Xlsxrb
           dl[:labels]&.each do |lbl|
             parts << "<c:dLbl>"
             parts << %(<c:idx val="#{lbl[:idx]}"/>)
+            parts << "<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(lbl[:text])}</a:t></a:r></a:p></c:rich></c:tx>" if lbl[:text]
             parts << %(<c:dLblPos val="#{lbl[:position]}"/>) if lbl[:position]
             parts << "<c:showLegendKey val=\"#{lbl[:show_legend_key] ? 1 : 0}\"/>" unless lbl[:show_legend_key].nil?
             parts << "<c:showVal val=\"#{lbl[:show_val] ? 1 : 0}\"/>" unless lbl[:show_val].nil?
