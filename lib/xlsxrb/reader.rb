@@ -816,6 +816,7 @@ module Xlsxrb
         chart[:cat_axis_pos] = cl.cat_axis_pos if cl.cat_axis_pos
         chart[:val_axis_pos] = cl.val_axis_pos if cl.val_axis_pos
         chart[:wireframe] = cl.wireframe unless cl.wireframe.nil?
+        chart[:band_fmts] = cl.band_fmts if cl.band_fmts
         chart[:data_table] = cl.data_table if cl.data_table
         chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
         chart[:plot_area_line_color] = cl.plot_area_line_color if cl.plot_area_line_color
@@ -5292,6 +5293,7 @@ module Xlsxrb
                   :scatter_style, :radar_style,
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
+                  :band_fmts,
                   :data_table,
                   :plot_area_fill, :plot_area_no_fill, :plot_area_line_color, :plot_area_line_width, :plot_area_line_dash,
                   :plot_area_layout,
@@ -5436,6 +5438,13 @@ module Xlsxrb
         @cat_axis_minor_unit = nil
         @val_axis_pos = nil
         @wireframe = nil
+        @band_fmts = nil
+        @inside_band_fmts = false
+        @inside_band_fmt = false
+        @inside_band_fmt_sp_pr = false
+        @inside_band_fmt_ln = false
+        @inside_band_fmt_solid_fill = false
+        @current_band_fmt = nil
         @data_table = nil
         @plot_area_fill = nil
         @plot_area_no_fill = nil
@@ -5698,6 +5707,14 @@ module Xlsxrb
           @inside_down_bars = true if @inside_up_down_bars
         when "wireframe"
           @wireframe = attributes["val"] == "1" if attributes["val"]
+        when "bandFmts"
+          @inside_band_fmts = true
+          @band_fmts = []
+        when "bandFmt"
+          if @inside_band_fmts
+            @inside_band_fmt = true
+            @current_band_fmt = {}
+          end
         when "ser"
           @inside_ser = true
           @current_ser = {}
@@ -5750,7 +5767,9 @@ module Xlsxrb
             @text_buffer = +""
           end
         when "spPr"
-          if @inside_dpt_marker
+          if @inside_band_fmt
+            @inside_band_fmt_sp_pr = true
+          elsif @inside_dpt_marker
             @inside_dpt_marker_sp_pr = true
           elsif @inside_dpt
             @inside_dpt_sp_pr = true
@@ -5796,7 +5815,10 @@ module Xlsxrb
             @inside_chart_space_sp_pr = true
           end
         when "ln"
-          if @inside_dpt_marker_sp_pr && @current_dpt
+          if @inside_band_fmt_sp_pr && @current_band_fmt
+            @inside_band_fmt_ln = true
+            @current_band_fmt[:line_width] = attributes["w"].to_i / 12_700.0 if attributes["w"]
+          elsif @inside_dpt_marker_sp_pr && @current_dpt
             @inside_dpt_marker_ln = true
             @current_dpt[:marker_line_width] = attributes["w"].to_i / 12_700.0 if attributes["w"]
           elsif @inside_dpt && @inside_dpt_sp_pr
@@ -5912,7 +5934,9 @@ module Xlsxrb
         when "bevel"
           @current_ser[:line_join] = "bevel" if @inside_ser && @inside_ser_ln && @current_ser
         when "prstDash"
-          if @inside_gridlines_ln && @gridlines_target && attributes["val"]
+          if @inside_band_fmt_ln && @current_band_fmt && attributes["val"]
+            @current_band_fmt[:line_dash] = attributes["val"]
+          elsif @inside_gridlines_ln && @gridlines_target && attributes["val"]
             gl = instance_variable_get(:"@#{@gridlines_target}")
             gl = {} if gl == true
             gl[:line_dash] = attributes["val"]
@@ -5984,7 +6008,9 @@ module Xlsxrb
             @current_ser[:line_miter_limit] = attributes["lim"].to_i if attributes["lim"]
           end
         when "solidFill"
-          if @inside_dpt_marker_sp_pr
+          if @inside_band_fmt_sp_pr
+            @inside_band_fmt_solid_fill = true
+          elsif @inside_dpt_marker_sp_pr
             @inside_dpt_marker_solid_fill = true
           elsif @inside_dpt && @inside_dpt_sp_pr
             @inside_dpt_solid_fill = true
@@ -6030,7 +6056,9 @@ module Xlsxrb
             @inside_chart_space_solid_fill = true
           end
         when "noFill"
-          if @inside_dpt_marker_sp_pr && @inside_dpt_marker_ln && @current_dpt
+          if @inside_band_fmt_sp_pr && @current_band_fmt
+            @current_band_fmt[:no_fill] = true
+          elsif @inside_dpt_marker_sp_pr && @inside_dpt_marker_ln && @current_dpt
             @current_dpt[:marker_no_line] = true
           elsif @inside_dpt_marker_sp_pr && @current_dpt
             @current_dpt[:marker_no_fill] = true
@@ -6209,7 +6237,9 @@ module Xlsxrb
             @current_legend_entry = {}
           end
         when "idx"
-          if @inside_dlbl && @current_dlbl && attributes["val"]
+          if @inside_band_fmt && @current_band_fmt && attributes["val"]
+            @current_band_fmt[:idx] = attributes["val"].to_i
+          elsif @inside_dlbl && @current_dlbl && attributes["val"]
             @current_dlbl[:idx] = attributes["val"].to_i
           elsif @inside_dpt && @current_dpt && attributes["val"]
             @current_dpt[:idx] = attributes["val"].to_i
@@ -6640,7 +6670,11 @@ module Xlsxrb
           @inside_marker_ln = false
           @inside_marker_solid_fill = false
         when "spPr"
-          if @inside_dpt_marker_sp_pr
+          if @inside_band_fmt_sp_pr
+            @inside_band_fmt_sp_pr = false
+            @inside_band_fmt_ln = false
+            @inside_band_fmt_solid_fill = false
+          elsif @inside_dpt_marker_sp_pr
             @inside_dpt_marker_sp_pr = false
             @inside_dpt_marker_ln = false
             @inside_dpt_marker_solid_fill = false
@@ -6728,6 +6762,7 @@ module Xlsxrb
             @inside_chart_space_solid_fill = false
           end
         when "ln"
+          @inside_band_fmt_ln = false if @inside_band_fmt_sp_pr
           @inside_dpt_marker_ln = false if @inside_dpt_marker_sp_pr
           @inside_dpt_ln = false if @inside_dpt
           @inside_marker_ln = false if @inside_marker_sp_pr
@@ -6760,7 +6795,9 @@ module Xlsxrb
           @inside_title_rpr = false
           @inside_ax_title_rpr = false
         when "solidFill"
-          if @inside_dpt_marker_sp_pr
+          if @inside_band_fmt_sp_pr
+            @inside_band_fmt_solid_fill = false
+          elsif @inside_dpt_marker_sp_pr
             @inside_dpt_marker_solid_fill = false
           elsif @inside_dpt
             @inside_dpt_solid_fill = false
@@ -6930,6 +6967,17 @@ module Xlsxrb
           @inside_ser_lines_sp_pr = false
           @inside_ser_lines_ln = false
           @inside_ser_lines_solid_fill = false
+        when "bandFmt"
+          if @inside_band_fmt && @current_band_fmt
+            @band_fmts << @current_band_fmt
+            @current_band_fmt = nil
+            @inside_band_fmt = false
+            @inside_band_fmt_sp_pr = false
+            @inside_band_fmt_ln = false
+            @inside_band_fmt_solid_fill = false
+          end
+        when "bandFmts"
+          @inside_band_fmts = false
         when "leaderLines"
           @inside_leader_lines = false
           @inside_leader_lines_sp_pr = false
@@ -6977,6 +7025,10 @@ module Xlsxrb
           elsif @inside_val_ax
             @val_axis_title_fill = color_value
           end
+        elsif @inside_band_fmt_sp_pr && @inside_band_fmt_ln && @inside_band_fmt_solid_fill && @current_band_fmt
+          @current_band_fmt[:line_color] = color_value
+        elsif @inside_band_fmt_sp_pr && @inside_band_fmt_solid_fill && @current_band_fmt
+          @current_band_fmt[:fill_color] = color_value
         elsif @inside_dpt_marker_sp_pr && @inside_dpt_marker_ln && @inside_dpt_marker_solid_fill && @current_dpt
           @current_dpt[:marker_line_color] = color_value
         elsif @inside_dpt_marker_sp_pr && @inside_dpt_marker_solid_fill && @current_dpt

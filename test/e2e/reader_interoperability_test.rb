@@ -3414,6 +3414,28 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated bandFmts" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_band_fmts_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    bf = chart[:band_fmts]
+    assert_not_nil(bf)
+    assert_equal(2, bf.size)
+    assert_equal(0, bf[0][:idx])
+    assert_equal("FF0000", bf[0][:fill_color])
+    assert_equal("333333", bf[0][:line_color])
+    assert_equal(1.5, bf[0][:line_width])
+    assert_equal("lgDash", bf[0][:line_dash])
+    assert_equal(1, bf[1][:idx])
+    assert_equal("00FF00", bf[1][:fill_color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

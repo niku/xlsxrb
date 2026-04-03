@@ -5127,6 +5127,35 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits bandFmts on surface chart" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :surface,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     band_fmts: [{ idx: 0, fill_color: "FF0000" },
+                                 { idx: 1, fill_color: "00FF00" }])
+    xlsx_path = File.join(Dir.tmpdir, "band_fmts_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:bandFmts>.*<c:bandFmt><c:idx val="0"/><c:spPr><a:solidFill>.*<a:srgbClr val="FF0000"/>.*</a:solidFill></c:spPr></c:bandFmt>.*<c:bandFmt><c:idx val="1"/><c:spPr><a:solidFill>.*<a:srgbClr val="00FF00"/>.*</a:solidFill></c:spPr></c:bandFmt>.*</c:bandFmts>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits bandFmt with line styling" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :surface,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     band_fmts: [{ idx: 0, fill_color: "AABBCC", line_color: "112233", line_width: 2.0, line_dash: "dash" }])
+    xlsx_path = File.join(Dir.tmpdir, "band_fmts_line_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:bandFmt><c:idx val="0"/><c:spPr><a:solidFill>.*<a:srgbClr val="AABBCC"/>.*</a:solidFill><a:ln w="25400">.*<a:solidFill>.*<a:srgbClr val="112233"/>.*</a:solidFill>.*<a:prstDash val="dash"/>.*</a:ln></c:spPr></c:bandFmt>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits upDownBars with gapWidth on line chart" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
