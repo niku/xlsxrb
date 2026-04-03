@@ -7392,6 +7392,38 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips multiple trendlines via trendlines array" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("A2", 4)
+    writer.set_cell("A3", 9)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$3",
+                                trendlines: [
+                                  { type: "linear", name: "Linear" },
+                                  { type: "poly", order: 2, name: "Quadratic" }
+                                ] }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series].first
+    assert_equal(2, ser[:trendlines].size)
+    assert_equal("linear", ser[:trendlines][0][:type])
+    assert_equal("Linear", ser[:trendlines][0][:name])
+    assert_equal("poly", ser[:trendlines][1][:type])
+    assert_equal("Quadratic", ser[:trendlines][1][:name])
+    assert_equal(2, ser[:trendlines][1][:order])
+    # backward compat: :trendline returns first
+    assert_equal("linear", ser[:trendline][:type])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips shape inner shadow" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

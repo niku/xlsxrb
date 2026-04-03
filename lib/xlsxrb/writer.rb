@@ -3760,8 +3760,8 @@ module Xlsxrb
           end
           parts << "</c:dLbls>"
         end
-        if ser[:trendline]
-          tl = ser[:trendline]
+        trendline_list = ser[:trendlines] || (ser[:trendline] ? [ser[:trendline]] : [])
+        trendline_list.each do |tl|
           parts << "<c:trendline>"
           parts << "<c:name>#{xml_escape(tl[:name])}</c:name>" if tl[:name]
           tl_sp_children = +""

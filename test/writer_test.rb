@@ -5628,6 +5628,30 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits multiple trendlines via trendlines array" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("A2", 4)
+    writer.set_cell("A3", 9)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$3",
+                                trendlines: [
+                                  { type: "linear", name: "Linear" },
+                                  { type: "poly", order: 2, name: "Quadratic" }
+                                ] }])
+    xlsx_path = File.join(Dir.tmpdir, "multi_trendline_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_equal(2, xml.scan("<c:trendline>").size)
+    assert_match(%r{<c:trendlineType val="linear"/>}, xml)
+    assert_match(%r{<c:trendlineType val="poly"/>}, xml)
+    assert_match(%r{<c:name>Linear</c:name>}, xml)
+    assert_match(%r{<c:name>Quadratic</c:name>}, xml)
+    assert_match(%r{<c:order val="2"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with inner_shadow emits a:effectLst with a:innerShdw" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
