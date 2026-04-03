@@ -5648,7 +5648,11 @@ module Xlsxrb
         when "gapDepth"
           @gap_depth = attributes["val"]&.to_i if attributes["val"]
         when "shape"
-          @bar_shape = attributes["val"] if attributes["val"]
+          if @inside_ser && @current_ser && attributes["val"]
+            @current_ser[:shape] = attributes["val"]
+          elsif attributes["val"]
+            @bar_shape = attributes["val"]
+          end
         when "bubble3D"
           if @inside_dpt && @current_dpt && attributes["val"]
             @current_dpt[:bubble_3d] = attributes["val"] == "1"

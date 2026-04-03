@@ -3830,6 +3830,7 @@ module Xlsxrb
         parts << "<c:#{val_tag}><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f>#{num_cache_xml(ser[:val_ref])}</c:numRef></c:#{val_tag}>" if ser[:val_ref]
         parts << "<c:bubbleSize><c:numRef><c:f>#{xml_escape(ser[:bubble_size_ref])}</c:f>#{num_cache_xml(ser[:bubble_size_ref])}</c:numRef></c:bubbleSize>" if ser[:bubble_size_ref]
         parts << %(<c:smooth val="#{ser[:smooth] ? 1 : 0}"/>) unless ser[:smooth].nil?
+        parts << %(<c:shape val="#{xml_escape(ser[:shape])}"/>) if ser[:shape]
         parts << "</c:ser>"
       end
 

@@ -5003,6 +5003,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits per-series shape on bar chart" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("A2", 2)
+    writer.add_chart(type: :bar3d,
+                     series: [{ val_ref: "Sheet1!$A$1", shape: "cone" },
+                              { val_ref: "Sheet1!$A$2", shape: "pyramid" }])
+    xlsx_path = File.join(Dir.tmpdir, "ser_shape_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    ser_blocks = xml.scan(%r{<c:ser>.*?</c:ser>}m)
+    assert_equal(2, ser_blocks.size)
+    assert_match(%r{<c:shape val="cone"/>}, ser_blocks[0])
+    assert_match(%r{<c:shape val="pyramid"/>}, ser_blocks[1])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits per-series data labels" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
