@@ -5482,6 +5482,9 @@ module Xlsxrb
         @inside_marker_solid_fill = false
         @inside_dpt = false
         @inside_dpt_marker = false
+        @inside_dpt_marker_sp_pr = false
+        @inside_dpt_marker_solid_fill = false
+        @inside_dpt_marker_ln = false
         @inside_dpt_sp_pr = false
         @inside_dpt_solid_fill = false
         @inside_dpt_ln = false
@@ -5726,7 +5729,9 @@ module Xlsxrb
             @text_buffer = +""
           end
         when "spPr"
-          if @inside_dpt
+          if @inside_dpt_marker
+            @inside_dpt_marker_sp_pr = true
+          elsif @inside_dpt
             @inside_dpt_sp_pr = true
           elsif @inside_ser_marker
             @inside_marker_sp_pr = true
@@ -5766,7 +5771,10 @@ module Xlsxrb
             @inside_chart_space_sp_pr = true
           end
         when "ln"
-          if @inside_dpt && @inside_dpt_sp_pr
+          if @inside_dpt_marker_sp_pr && @current_dpt
+            @inside_dpt_marker_ln = true
+            @current_dpt[:marker_line_width] = attributes["w"].to_i / 12_700.0 if attributes["w"]
+          elsif @inside_dpt && @inside_dpt_sp_pr
             @inside_dpt_ln = true
             @current_dpt[:line_width] = attributes["w"].to_i / 12_700.0 if @current_dpt && attributes["w"]
           elsif @inside_marker_sp_pr && @current_ser
@@ -5935,7 +5943,9 @@ module Xlsxrb
             @current_ser[:line_miter_limit] = attributes["lim"].to_i if attributes["lim"]
           end
         when "solidFill"
-          if @inside_dpt && @inside_dpt_sp_pr
+          if @inside_dpt_marker_sp_pr
+            @inside_dpt_marker_solid_fill = true
+          elsif @inside_dpt && @inside_dpt_sp_pr
             @inside_dpt_solid_fill = true
           elsif @inside_marker_sp_pr
             @inside_marker_solid_fill = true
@@ -6527,6 +6537,9 @@ module Xlsxrb
           @current_dpt = nil
           @inside_dpt = false
           @inside_dpt_marker = false
+          @inside_dpt_marker_sp_pr = false
+          @inside_dpt_marker_solid_fill = false
+          @inside_dpt_marker_ln = false
           @inside_dpt_sp_pr = false
           @inside_dpt_solid_fill = false
           @inside_dpt_ln = false
@@ -6560,7 +6573,11 @@ module Xlsxrb
           @inside_marker_ln = false
           @inside_marker_solid_fill = false
         when "spPr"
-          if @inside_dpt
+          if @inside_dpt_marker_sp_pr
+            @inside_dpt_marker_sp_pr = false
+            @inside_dpt_marker_ln = false
+            @inside_dpt_marker_solid_fill = false
+          elsif @inside_dpt
             @inside_dpt_sp_pr = false
             @inside_dpt_solid_fill = false
           elsif @inside_marker_sp_pr
@@ -6636,6 +6653,7 @@ module Xlsxrb
             @inside_chart_space_solid_fill = false
           end
         when "ln"
+          @inside_dpt_marker_ln = false if @inside_dpt_marker_sp_pr
           @inside_dpt_ln = false if @inside_dpt
           @inside_marker_ln = false if @inside_marker_sp_pr
           @inside_leader_lines_ln = false if @inside_leader_lines_sp_pr
@@ -6665,7 +6683,9 @@ module Xlsxrb
           @inside_title_rpr = false
           @inside_ax_title_rpr = false
         when "solidFill"
-          if @inside_dpt
+          if @inside_dpt_marker_sp_pr
+            @inside_dpt_marker_solid_fill = false
+          elsif @inside_dpt
             @inside_dpt_solid_fill = false
           elsif @inside_marker_sp_pr
             @inside_marker_solid_fill = false
@@ -6859,6 +6879,10 @@ module Xlsxrb
           elsif @inside_val_ax
             @val_axis_title_fill = color_value
           end
+        elsif @inside_dpt_marker_sp_pr && @inside_dpt_marker_ln && @inside_dpt_marker_solid_fill && @current_dpt
+          @current_dpt[:marker_line_color] = color_value
+        elsif @inside_dpt_marker_sp_pr && @inside_dpt_marker_solid_fill && @current_dpt
+          @current_dpt[:marker_fill] = color_value
         elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_ln && @current_dpt
           @current_dpt[:line_color] = color_value
         elsif @inside_dpt && @inside_dpt_sp_pr && @inside_dpt_solid_fill && @current_dpt

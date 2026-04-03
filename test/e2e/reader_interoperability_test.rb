@@ -2857,6 +2857,25 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated data point marker spPr" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_dpt_marker_sp_pr_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series][0]
+    dp = ser[:data_points][0]
+    assert_equal("square", dp[:marker_symbol])
+    assert_equal(6, dp[:marker_size])
+    assert_equal("00FF00", dp[:marker_fill])
+    assert_equal("0000FF", dp[:marker_line_color])
+    assert_in_delta(1.5, dp[:marker_line_width], 0.01)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "reader parses SDK-generated trendline in line chart series" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

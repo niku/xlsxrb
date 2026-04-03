@@ -5252,6 +5252,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dPt marker with fill and line" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2",
+                                data_points: [{ idx: 0, marker_symbol: "square", marker_size: 6,
+                                                marker_fill: "00FF00", marker_line_color: "0000FF", marker_line_width: 1.5 }] }])
+    xlsx_path = File.join(Dir.tmpdir, "dpt_mkr_sp_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:marker><c:symbol val="square"/><c:size val="6"/><c:spPr><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill><a:ln w="19050"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill></a:ln></c:spPr></c:marker>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits trendline element in series" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

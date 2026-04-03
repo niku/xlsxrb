@@ -9607,6 +9607,31 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips data point marker fill and line" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2",
+                                data_points: [{ idx: 0, marker_symbol: "square", marker_size: 6,
+                                                marker_fill: "00FF00", marker_line_color: "0000FF",
+                                                marker_line_width: 1.5 }] }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    dp = charts[0][:series][0][:data_points]
+    assert_equal("00FF00", dp[0][:marker_fill])
+    assert_equal("0000FF", dp[0][:marker_line_color])
+    assert_in_delta(1.5, dp[0][:marker_line_width], 0.01)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips up/down bars line_dash" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
