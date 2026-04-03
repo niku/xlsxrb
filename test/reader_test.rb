@@ -6420,6 +6420,26 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips surface3DChart type" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :surface3d,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     wireframe: true)
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("surface3DChart", chart[:chart_type])
+    assert_equal(true, chart[:wireframe])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart data_table" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
