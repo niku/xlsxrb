@@ -5268,6 +5268,37 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dPt marker with noFill and noLine" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2",
+                                data_points: [{ idx: 0, marker_symbol: "circle", marker_no_fill: true, marker_no_line: true }] }])
+    xlsx_path = File.join(Dir.tmpdir, "dpt_mkr_nf_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:marker><c:symbol val="circle"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr></c:marker>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits dPt marker with line_dash" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2",
+                                data_points: [{ idx: 0, marker_symbol: "triangle",
+                                                marker_line_color: "FF0000", marker_line_dash: "dash" }] }])
+    xlsx_path = File.join(Dir.tmpdir, "dpt_mkr_ld_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<a:ln><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:prstDash val="dash"/></a:ln>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits trendline element in series" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

@@ -5891,6 +5891,8 @@ module Xlsxrb
             @current_ser[:line_dash] = attributes["val"]
           elsif @inside_marker_sp_pr && @inside_marker_ln && @current_ser && attributes["val"]
             @current_ser[:marker_line_dash] = attributes["val"]
+          elsif @inside_dpt_marker_sp_pr && @inside_dpt_marker_ln && @current_dpt && attributes["val"]
+            @current_dpt[:marker_line_dash] = attributes["val"]
           elsif @inside_drop_lines_ln && attributes["val"]
             @drop_lines = {} if @drop_lines == true
             @drop_lines[:line_dash] = attributes["val"]
@@ -5985,7 +5987,11 @@ module Xlsxrb
             @inside_chart_space_solid_fill = true
           end
         when "noFill"
-          if @inside_ser && @inside_ser_ln && @current_ser
+          if @inside_dpt_marker_sp_pr && @inside_dpt_marker_ln && @current_dpt
+            @current_dpt[:marker_no_line] = true
+          elsif @inside_dpt_marker_sp_pr && @current_dpt
+            @current_dpt[:marker_no_fill] = true
+          elsif @inside_ser && @inside_ser_ln && @current_ser
             @current_ser[:no_line] = true
           elsif @inside_marker_sp_pr && @inside_marker_ln && @current_ser
             @current_ser[:marker_no_line] = true
