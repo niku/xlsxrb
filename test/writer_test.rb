@@ -4727,6 +4727,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits surface3DChart with three axis IDs and serAx" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :surface3d,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     wireframe: true)
+    xlsx_path = File.join(Dir.tmpdir, "surface3d_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:surface3DChart>/, xml)
+    assert_match(%r{<c:wireframe val="1"/>}, xml)
+    # 3 axIds in the chart type element
+    assert_match(%r{<c:axId val="1"/><c:axId val="2"/><c:axId val="3"/>}, xml)
+    assert_match(%r{<c:serAx><c:axId val="3"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits dTable with all boolean children" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

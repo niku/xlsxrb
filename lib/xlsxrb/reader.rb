@@ -5319,7 +5319,7 @@ module Xlsxrb
                   :chart_fill, :chart_no_fill, :chart_line_color, :chart_line_width, :chart_line_dash
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
-                       bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart
+                       bar3DChart line3DChart pie3DChart area3DChart surfaceChart surface3DChart stockChart bubbleChart
                        ofPieChart].freeze
 
       def initialize

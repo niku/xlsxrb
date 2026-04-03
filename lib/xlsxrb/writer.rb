@@ -1711,11 +1711,13 @@ module Xlsxrb
       area: "areaChart", scatter: "scatterChart", doughnut: "doughnutChart",
       radar: "radarChart", bar3d: "bar3DChart", line3d: "line3DChart",
       pie3d: "pie3DChart", area3d: "area3DChart", surface: "surfaceChart",
+      surface3d: "surface3DChart",
       stock: "stockChart", bubble: "bubbleChart",
       of_pie: "ofPieChart"
     }.freeze
 
     NO_AXIS_CHARTS = %w[pieChart doughnutChart pie3DChart ofPieChart].freeze
+    THREE_AXIS_CHARTS = %w[surface3DChart].freeze
     GROUPING_CHARTS = %w[barChart lineChart areaChart bar3DChart line3DChart area3DChart].freeze
 
     private
@@ -3997,7 +3999,11 @@ module Xlsxrb
       parts << %(<c:marker val="#{mk ? 1 : 0}"/>) unless mk.nil?
       sm = chart[:smooth]
       parts << %(<c:smooth val="#{sm ? 1 : 0}"/>) unless sm.nil?
-      parts << '<c:axId val="1"/><c:axId val="2"/>' unless no_axes
+      three_axes = THREE_AXIS_CHARTS.include?(chart_type)
+      unless no_axes
+        parts << '<c:axId val="1"/><c:axId val="2"/>'
+        parts << '<c:axId val="3"/>' if three_axes
+      end
       parts << "</c:#{chart_type}>"
 
       unless no_axes
@@ -4122,6 +4128,11 @@ module Xlsxrb
           end
         end
         parts << "</c:valAx>"
+
+        if three_axes
+          parts << '<c:serAx><c:axId val="3"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
+          parts << '<c:delete val="0"/><c:axPos val="b"/><c:crossAx val="2"/></c:serAx>'
+        end
       end
 
       if chart[:data_table]
