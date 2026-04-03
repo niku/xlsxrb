@@ -6803,6 +6803,37 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips multiple errBars per series on scatter chart" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("B1", 2)
+    writer.add_chart(type: :scatter,
+                     series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1",
+                                error_bars_list: [
+                                  { direction: "x", bar_type: "both", val_type: "fixedVal", val: 0.5 },
+                                  { direction: "y", bar_type: "both", val_type: "fixedVal", val: 1.0 }
+                                ] }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series][0]
+
+    assert_equal(2, ser[:error_bars_list].size)
+    assert_equal("x", ser[:error_bars_list][0][:direction])
+    assert_equal(0.5, ser[:error_bars_list][0][:val])
+    assert_equal("y", ser[:error_bars_list][1][:direction])
+    assert_equal(1.0, ser[:error_bars_list][1][:val])
+    # backward compat: :error_bars is first element
+    assert_equal("x", ser[:error_bars][:direction])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips per-series data labels" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

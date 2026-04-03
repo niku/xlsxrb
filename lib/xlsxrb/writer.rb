@@ -3797,8 +3797,8 @@ module Xlsxrb
           end
           parts << "</c:trendline>"
         end
-        if ser[:error_bars]
-          eb = ser[:error_bars]
+        err_bars_list = ser[:error_bars_list] || (ser[:error_bars] ? [ser[:error_bars]] : [])
+        err_bars_list.each do |eb|
           parts << "<c:errBars>"
           parts << %(<c:errDir val="#{xml_escape(eb[:direction])}"/>) if eb[:direction]
           parts << %(<c:errBarType val="#{xml_escape(eb[:bar_type] || "both")}"/>)

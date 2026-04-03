@@ -3639,6 +3639,27 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid multiple errBars on scatter chart" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("B1", 2)
+    writer.add_chart(type: :scatter,
+                     series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1",
+                                error_bars_list: [
+                                  { direction: "x", bar_type: "both", val_type: "fixedVal", val: 0.5 },
+                                  { direction: "y", bar_type: "both", val_type: "fixedVal", val: 1.0 }
+                                ] }])
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_multi_err_bars_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

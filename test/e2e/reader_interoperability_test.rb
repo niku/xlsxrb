@@ -3558,6 +3558,26 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated multiple errBars" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_multi_err_bars_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series][0]
+    assert_equal(2, ser[:error_bars_list].size)
+    assert_equal("x", ser[:error_bars_list][0][:direction])
+    assert_equal(0.5, ser[:error_bars_list][0][:val])
+    assert_equal("y", ser[:error_bars_list][1][:direction])
+    assert_equal(1.0, ser[:error_bars_list][1][:val])
+    # backward compat
+    assert_equal("x", ser[:error_bars][:direction])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
