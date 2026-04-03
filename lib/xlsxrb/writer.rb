@@ -3804,6 +3804,8 @@ module Xlsxrb
           parts << %(<c:errBarType val="#{xml_escape(eb[:bar_type] || "both")}"/>)
           parts << %(<c:errValType val="#{xml_escape(eb[:val_type] || "fixedVal")}"/>)
           parts << %(<c:noEndCap val="#{eb[:no_end_cap] ? 1 : 0}"/>) unless eb[:no_end_cap].nil?
+          parts << "<c:plus><c:numRef><c:f>#{xml_escape(eb[:plus])}</c:f></c:numRef></c:plus>" if eb[:plus]
+          parts << "<c:minus><c:numRef><c:f>#{xml_escape(eb[:minus])}</c:f></c:numRef></c:minus>" if eb[:minus]
           parts << %(<c:val val="#{eb[:val]}"/>) if eb[:val]
           eb_sp_children = +""
           if eb[:line_color] || eb[:line_width] || eb[:line_dash]

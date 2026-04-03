@@ -4981,6 +4981,28 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits custom error bars with plus and minus references" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("B1", 0.5)
+    writer.set_cell("C1", 0.3)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                error_bars: { direction: "y", bar_type: "both",
+                                              val_type: "cust",
+                                              plus: "Sheet1!$B$1",
+                                              minus: "Sheet1!$C$1" } }])
+    xlsx_path = File.join(Dir.tmpdir, "errbars_cust_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:errValType val="cust"/>}, xml)
+    assert_match(%r{<c:plus><c:numRef><c:f>Sheet1!\$B\$1</c:f></c:numRef></c:plus>}, xml)
+    assert_match(%r{<c:minus><c:numRef><c:f>Sheet1!\$C\$1</c:f></c:numRef></c:minus>}, xml)
+    assert_no_match(/<c:val val=/, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits per-series data labels" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
