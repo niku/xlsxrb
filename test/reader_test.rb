@@ -6754,6 +6754,34 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips custom error bars with plus and minus references" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("B1", 0.5)
+    writer.set_cell("C1", 0.3)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                error_bars: { direction: "y", bar_type: "both",
+                                              val_type: "cust",
+                                              plus: "Sheet1!$B$1",
+                                              minus: "Sheet1!$C$1" } }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    eb = chart[:series].first[:error_bars]
+    assert_not_nil(eb)
+    assert_equal("cust", eb[:val_type])
+    assert_equal("Sheet1!$B$1", eb[:plus])
+    assert_equal("Sheet1!$C$1", eb[:minus])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips per-series data labels" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

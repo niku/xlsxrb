@@ -3508,6 +3508,23 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated custom error bars with plus and minus" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_err_bars_cust_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    eb = chart[:series].first[:error_bars]
+    assert_not_nil(eb)
+    assert_equal("cust", eb[:val_type])
+    assert_equal("Sheet1!$B$1", eb[:plus])
+    assert_equal("Sheet1!$C$1", eb[:minus])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

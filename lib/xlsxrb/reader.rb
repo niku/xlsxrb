@@ -5531,6 +5531,8 @@ module Xlsxrb
         @inside_err_bars_sp_pr = false
         @inside_err_bars_ln = false
         @inside_err_bars_solid_fill = false
+        @inside_err_bars_plus = false
+        @inside_err_bars_minus = false
         @current_ser = nil
         @inside_cat = false
         @inside_val = false
@@ -5792,6 +5794,10 @@ module Xlsxrb
           @current_err_bars[:val_type] = attributes["val"] if @inside_err_bars && @current_err_bars && attributes["val"]
         when "noEndCap"
           @current_err_bars[:no_end_cap] = attributes["val"] == "1" if @inside_err_bars && @current_err_bars && attributes["val"]
+        when "plus"
+          @inside_err_bars_plus = true if @inside_err_bars
+        when "minus"
+          @inside_err_bars_minus = true if @inside_err_bars
         when "name"
           if @inside_trendline
             @inside_trendline_name = true
@@ -6629,7 +6635,13 @@ module Xlsxrb
           end
           @inside_t = false
         when "f"
-          if @inside_ser
+          if @inside_err_bars && @current_err_bars
+            if @inside_err_bars_plus
+              @current_err_bars[:plus] = @text_buffer.dup
+            elsif @inside_err_bars_minus
+              @current_err_bars[:minus] = @text_buffer.dup
+            end
+          elsif @inside_ser
             if @inside_cat
               @current_ser[:cat_ref] = @text_buffer.dup
             elsif @inside_val
@@ -6708,6 +6720,12 @@ module Xlsxrb
           @inside_err_bars_sp_pr = false
           @inside_err_bars_ln = false
           @inside_err_bars_solid_fill = false
+          @inside_err_bars_plus = false
+          @inside_err_bars_minus = false
+        when "plus"
+          @inside_err_bars_plus = false if @inside_err_bars
+        when "minus"
+          @inside_err_bars_minus = false if @inside_err_bars
         when "name"
           @current_trendline[:name] = @text_buffer.dup if @inside_trendline_name && @current_trendline
           @inside_trendline_name = false

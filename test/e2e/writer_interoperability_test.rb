@@ -3577,6 +3577,28 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid custom error bars with plus and minus" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("B1", 1.5)
+    writer.set_cell("C1", 0.8)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                error_bars: { direction: "y", bar_type: "both",
+                                              val_type: "cust",
+                                              plus: "Sheet1!$B$1",
+                                              minus: "Sheet1!$C$1" } }])
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_err_bars_cust_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
