@@ -5631,7 +5631,11 @@ module Xlsxrb
             @smooth = attributes["val"] == "1"
           end
         when "invertIfNegative"
-          @current_ser[:invert_if_negative] = attributes["val"] == "1" if @inside_ser && @current_ser && attributes["val"]
+          if @inside_dpt && @current_dpt && attributes["val"]
+            @current_dpt[:invert_if_negative] = attributes["val"] == "1"
+          elsif @inside_ser && @current_ser && attributes["val"]
+            @current_ser[:invert_if_negative] = attributes["val"] == "1"
+          end
         when "explosion"
           if @inside_dpt && @current_dpt && attributes["val"]
             @current_dpt[:explosion] = attributes["val"].to_i
