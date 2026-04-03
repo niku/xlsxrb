@@ -1131,7 +1131,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, title_overlay: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_no_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, plot_area_line_dash: nil, plot_area_layout: nil, floor: nil, side_wall: nil, back_wall: nil, drop_lines: nil, hi_low_lines: nil, up_down_bars: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, cat_axis_line_color: nil, cat_axis_line_width: nil, cat_axis_line_dash: nil, val_axis_line_color: nil, val_axis_line_width: nil, val_axis_line_dash: nil, cat_axis_fill: nil, cat_axis_no_fill: nil, val_axis_fill: nil, val_axis_no_fill: nil, cat_axis_type: nil, cat_axis_base_time_unit: nil, cat_axis_major_time_unit: nil, cat_axis_minor_time_unit: nil, cat_axis_major_unit: nil, cat_axis_minor_unit: nil, chart_fill: nil, chart_no_fill: nil, chart_line_color: nil, chart_line_width: nil, chart_line_dash: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, title_overlay: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_no_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, plot_area_line_dash: nil, plot_area_layout: nil, floor: nil, side_wall: nil, back_wall: nil, drop_lines: nil, hi_low_lines: nil, ser_lines: nil, up_down_bars: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, cat_axis_line_color: nil, cat_axis_line_width: nil, cat_axis_line_dash: nil, val_axis_line_color: nil, val_axis_line_width: nil, val_axis_line_dash: nil, cat_axis_fill: nil, cat_axis_no_fill: nil, val_axis_fill: nil, val_axis_no_fill: nil, cat_axis_type: nil, cat_axis_base_time_unit: nil, cat_axis_major_time_unit: nil, cat_axis_minor_time_unit: nil, cat_axis_major_unit: nil, cat_axis_minor_unit: nil, chart_fill: nil, chart_no_fill: nil, chart_line_color: nil, chart_line_width: nil, chart_line_dash: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1233,6 +1233,7 @@ module Xlsxrb
       chart[:plot_area_layout] = plot_area_layout if plot_area_layout
       chart[:drop_lines] = drop_lines unless drop_lines.nil?
       chart[:hi_low_lines] = hi_low_lines unless hi_low_lines.nil?
+      chart[:ser_lines] = ser_lines unless ser_lines.nil?
       chart[:up_down_bars] = up_down_bars if up_down_bars
       chart[:cat_axis_label_rotation] = cat_axis_label_rotation if cat_axis_label_rotation
       chart[:val_axis_label_rotation] = val_axis_label_rotation if val_axis_label_rotation
@@ -3819,6 +3820,21 @@ module Xlsxrb
       parts << %(<c:sizeRepresents val="#{chart[:size_represents]}"/>) if chart[:size_represents]
       parts << %(<c:firstSliceAng val="#{chart[:first_slice_ang]}"/>) if chart[:first_slice_ang]
       parts << %(<c:holeSize val="#{chart[:hole_size]}"/>) if chart[:hole_size]
+      if chart[:ser_lines]
+        sl_spec = chart[:ser_lines]
+        if sl_spec.is_a?(Hash)
+          sl_sp = +""
+          if sl_spec[:line_color] || sl_spec[:line_width] || sl_spec[:line_dash]
+            sl_lw = sl_spec[:line_width] ? %( w="#{(sl_spec[:line_width] * 12_700).to_i}") : ""
+            sl_lf = sl_spec[:line_color] ? %(<a:solidFill>#{color_xml(sl_spec[:line_color])}</a:solidFill>) : ""
+            sl_ld = sl_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(sl_spec[:line_dash])}"/>) : ""
+            sl_sp << "<a:ln#{sl_lw}>#{sl_lf}#{sl_ld}</a:ln>"
+          end
+          parts << (sl_sp.empty? ? "<c:serLines/>" : "<c:serLines><c:spPr>#{sl_sp}</c:spPr></c:serLines>")
+        else
+          parts << "<c:serLines/>"
+        end
+      end
       if chart[:drop_lines]
         dl_spec = chart[:drop_lines]
         if dl_spec.is_a?(Hash)

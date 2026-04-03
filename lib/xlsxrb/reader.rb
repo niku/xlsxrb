@@ -809,6 +809,7 @@ module Xlsxrb
         chart[:marker] = cl.marker unless cl.marker.nil?
         chart[:drop_lines] = cl.drop_lines unless cl.drop_lines.nil?
         chart[:hi_low_lines] = cl.hi_low_lines unless cl.hi_low_lines.nil?
+        chart[:ser_lines] = cl.ser_lines unless cl.ser_lines.nil?
         chart[:up_down_bars] = cl.up_down_bars if cl.up_down_bars
         chart[:scatter_style] = cl.scatter_style if cl.scatter_style
         chart[:radar_style] = cl.radar_style if cl.radar_style
@@ -5286,7 +5287,7 @@ module Xlsxrb
                   :cat_axis_log_base, :val_axis_log_base,
                   :first_slice_ang, :hole_size,
                   :smooth, :marker,
-                  :drop_lines, :hi_low_lines,
+                  :drop_lines, :hi_low_lines, :ser_lines,
                   :up_down_bars,
                   :scatter_style, :radar_style,
                   :cat_axis_pos, :val_axis_pos,
@@ -5412,6 +5413,11 @@ module Xlsxrb
         @inside_hi_low_lines_sp_pr = false
         @inside_hi_low_lines_ln = false
         @inside_hi_low_lines_solid_fill = false
+        @ser_lines = nil
+        @inside_ser_lines = false
+        @inside_ser_lines_sp_pr = false
+        @inside_ser_lines_ln = false
+        @inside_ser_lines_solid_fill = false
         @up_down_bars = nil
         @inside_up_down_bars = false
         @inside_up_bars = false
@@ -5680,6 +5686,9 @@ module Xlsxrb
         when "hiLowLines"
           @hi_low_lines = true
           @inside_hi_low_lines = true
+        when "serLines"
+          @ser_lines = true
+          @inside_ser_lines = true
         when "upDownBars"
           @inside_up_down_bars = true
           @up_down_bars = {}
@@ -5763,6 +5772,8 @@ module Xlsxrb
             @inside_drop_lines_sp_pr = true
           elsif @inside_hi_low_lines
             @inside_hi_low_lines_sp_pr = true
+          elsif @inside_ser_lines
+            @inside_ser_lines_sp_pr = true
           elsif @inside_up_bars || @inside_down_bars
             @inside_up_down_bar_sp_pr = true
           elsif @inside_gridlines
@@ -5836,6 +5847,12 @@ module Xlsxrb
             if attributes["w"]
               @hi_low_lines = {} if @hi_low_lines == true
               @hi_low_lines[:line_width] = attributes["w"].to_i / 12_700.0
+            end
+          elsif @inside_ser_lines_sp_pr
+            @inside_ser_lines_ln = true
+            if attributes["w"]
+              @ser_lines = {} if @ser_lines == true
+              @ser_lines[:line_width] = attributes["w"].to_i / 12_700.0
             end
           elsif @inside_up_down_bar_sp_pr
             @inside_up_down_bar_ln = true
@@ -5916,6 +5933,9 @@ module Xlsxrb
           elsif @inside_hi_low_lines_ln && attributes["val"]
             @hi_low_lines = {} if @hi_low_lines == true
             @hi_low_lines[:line_dash] = attributes["val"]
+          elsif @inside_ser_lines_ln && attributes["val"]
+            @ser_lines = {} if @ser_lines == true
+            @ser_lines[:line_dash] = attributes["val"]
           elsif @inside_leader_lines_ln && @inside_dlbls && attributes["val"]
             ll = (@dlbl_target[:leader_lines] ||= {})
             ll[:line_dash] = attributes["val"]
@@ -5986,6 +6006,8 @@ module Xlsxrb
             @inside_drop_lines_solid_fill = true
           elsif @inside_hi_low_lines_sp_pr
             @inside_hi_low_lines_solid_fill = true
+          elsif @inside_ser_lines_sp_pr
+            @inside_ser_lines_solid_fill = true
           elsif @inside_up_down_bar_sp_pr
             @inside_up_down_bar_solid_fill = true
           elsif @inside_ax_title_sp_pr
@@ -6657,6 +6679,10 @@ module Xlsxrb
             @inside_hi_low_lines_sp_pr = false
             @inside_hi_low_lines_ln = false
             @inside_hi_low_lines_solid_fill = false
+          elsif @inside_ser_lines_sp_pr
+            @inside_ser_lines_sp_pr = false
+            @inside_ser_lines_ln = false
+            @inside_ser_lines_solid_fill = false
           elsif @inside_up_down_bar_sp_pr
             @inside_up_down_bar_sp_pr = false
             @inside_up_down_bar_ln = false
@@ -6713,6 +6739,7 @@ module Xlsxrb
           @inside_ser_ln = false if @inside_ser
           @inside_drop_lines_ln = false if @inside_drop_lines_sp_pr
           @inside_hi_low_lines_ln = false if @inside_hi_low_lines_sp_pr
+          @inside_ser_lines_ln = false if @inside_ser_lines_sp_pr
           @inside_up_down_bar_ln = false if @inside_up_down_bar_sp_pr
           @inside_ax_title_ln = false if @inside_ax_title_sp_pr
           @inside_gridlines_ln = false if @inside_gridlines_sp_pr
@@ -6751,6 +6778,8 @@ module Xlsxrb
             @inside_drop_lines_solid_fill = false
           elsif @inside_hi_low_lines_sp_pr
             @inside_hi_low_lines_solid_fill = false
+          elsif @inside_ser_lines_sp_pr
+            @inside_ser_lines_solid_fill = false
           elsif @inside_up_down_bar_sp_pr
             @inside_up_down_bar_solid_fill = false
           elsif @inside_ax_title_sp_pr
@@ -6896,6 +6925,11 @@ module Xlsxrb
           @inside_hi_low_lines_sp_pr = false
           @inside_hi_low_lines_ln = false
           @inside_hi_low_lines_solid_fill = false
+        when "serLines"
+          @inside_ser_lines = false
+          @inside_ser_lines_sp_pr = false
+          @inside_ser_lines_ln = false
+          @inside_ser_lines_solid_fill = false
         when "leaderLines"
           @inside_leader_lines = false
           @inside_leader_lines_sp_pr = false
@@ -6988,6 +7022,9 @@ module Xlsxrb
         elsif @inside_hi_low_lines_sp_pr && @inside_hi_low_lines_ln && @inside_hi_low_lines_solid_fill
           @hi_low_lines = {} if @hi_low_lines == true
           @hi_low_lines[:line_color] = color_value
+        elsif @inside_ser_lines_sp_pr && @inside_ser_lines_ln && @inside_ser_lines_solid_fill
+          @ser_lines = {} if @ser_lines == true
+          @ser_lines[:line_color] = color_value
         elsif @inside_up_down_bar_sp_pr && @inside_up_down_bar_ln && @inside_up_down_bar_solid_fill
           bar_key = @inside_up_bars ? :up_bars : :down_bars
           @up_down_bars[bar_key] ||= {}
