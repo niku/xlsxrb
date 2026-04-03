@@ -4020,7 +4020,32 @@ module Xlsxrb
         parts << %(<c:crossBetween val="#{chart[:val_axis_cross_between]}"/>) if chart[:val_axis_cross_between]
         parts << %(<c:majorUnit val="#{chart[:val_axis_major_unit]}"/>) if chart[:val_axis_major_unit]
         parts << %(<c:minorUnit val="#{chart[:val_axis_minor_unit]}"/>) if chart[:val_axis_minor_unit]
-        parts << %(<c:dispUnits><c:builtInUnit val="#{chart[:val_axis_disp_units]}"/></c:dispUnits>) if chart[:val_axis_disp_units]
+        if chart[:val_axis_disp_units]
+          du = chart[:val_axis_disp_units]
+          if du.is_a?(Hash)
+            parts << "<c:dispUnits>"
+            parts << %(<c:builtInUnit val="#{xml_escape(du[:built_in_unit])}"/>) if du[:built_in_unit]
+            parts << %(<c:custUnit val="#{du[:cust_unit]}"/>) if du[:cust_unit]
+            if du[:label]
+              dul = du[:label]
+              parts << "<c:dispUnitsLbl>"
+              if dul[:num_fmt]
+                nf = dul[:num_fmt]
+                nf_src = nf.is_a?(Hash) ? nf : { format_code: nf }
+                nf_linked = if nf_src.key?(:source_linked)
+                              nf_src[:source_linked] ? 1 : 0
+                            else
+                              0
+                            end
+                parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
+              end
+              parts << "</c:dispUnitsLbl>"
+            end
+            parts << "</c:dispUnits>"
+          else
+            parts << %(<c:dispUnits><c:builtInUnit val="#{xml_escape(du.to_s)}"/></c:dispUnits>)
+          end
+        end
         parts << "</c:valAx>"
       end
 
