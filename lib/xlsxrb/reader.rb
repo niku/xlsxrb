@@ -5613,7 +5613,11 @@ module Xlsxrb
         when "shape"
           @bar_shape = attributes["val"] if attributes["val"]
         when "bubble3D"
-          @bubble_3d = attributes["val"] == "1" if attributes["val"] && !@inside_ser
+          if @inside_dpt && @current_dpt && attributes["val"]
+            @current_dpt[:bubble_3d] = attributes["val"] == "1"
+          elsif attributes["val"] && !@inside_ser
+            @bubble_3d = attributes["val"] == "1"
+          end
         when "bubbleScale"
           @bubble_scale = attributes["val"]&.to_i if attributes["val"]
         when "showNegBubbles"

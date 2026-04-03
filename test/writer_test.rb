@@ -5314,6 +5314,23 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dPt with bubble3D" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("B1", 20)
+    writer.set_cell("C1", 5)
+    writer.add_chart(type: :bubble,
+                     series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1",
+                                bubble_size_ref: "Sheet1!$C$1",
+                                data_points: [{ idx: 0, bubble_3d: true, fill_color: "FF0000" }] }])
+    xlsx_path = File.join(Dir.tmpdir, "dpt_b3d_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:dPt><c:idx val="0"/><c:bubble3D val="1"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits trendline element in series" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

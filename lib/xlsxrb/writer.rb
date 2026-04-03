@@ -3594,7 +3594,6 @@ module Xlsxrb
           parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
           dp_iin = dp[:invert_if_negative]
           parts << %(<c:invertIfNegative val="#{dp_iin ? 1 : 0}"/>) unless dp_iin.nil?
-          parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
           if dp[:marker_symbol] || dp[:marker_size] || dp[:marker_fill] || dp[:marker_no_fill] || dp[:marker_line_color] || dp[:marker_line_dash] || dp[:marker_no_line]
             parts << "<c:marker>"
             parts << %(<c:symbol val="#{xml_escape(dp[:marker_symbol])}"/>) if dp[:marker_symbol]
@@ -3615,6 +3614,9 @@ module Xlsxrb
             end
             parts << "</c:marker>"
           end
+          dp_b3d = dp[:bubble_3d]
+          parts << %(<c:bubble3D val="#{dp_b3d ? 1 : 0}"/>) unless dp_b3d.nil?
+          parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
           dp_sp_children = +""
           dp_sp_children << %(<a:solidFill>#{color_xml(dp[:fill_color])}</a:solidFill>) if dp[:fill_color]
           dp_sp_children << "<a:noFill/>" if dp[:no_fill]
