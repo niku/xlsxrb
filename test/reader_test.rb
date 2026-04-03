@@ -7323,6 +7323,38 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips dispUnitsLbl spPr and txPr" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     val_axis_disp_units: { built_in_unit: "thousands",
+                                            label: { fill_color: "FFFF00",
+                                                     line_color: "0000FF",
+                                                     line_width: 1.5,
+                                                     line_dash: "dash",
+                                                     font: { size: 10, bold: true, color: "FF0000" } } })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    du = chart[:val_axis_disp_units]
+    lbl = du[:label]
+    assert_not_nil(lbl)
+    assert_equal("FFFF00", lbl[:fill_color])
+    assert_equal("0000FF", lbl[:line_color])
+    assert_equal("dash", lbl[:line_dash])
+    assert_equal(10, lbl[:font][:size])
+    assert_equal(true, lbl[:font][:bold])
+    assert_equal("FF0000", lbl[:font][:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart series data_points" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
