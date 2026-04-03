@@ -5021,6 +5021,26 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits multiple errBars for x and y directions on scatter chart" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.set_cell("B1", 2)
+    writer.add_chart(type: :scatter,
+                     series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1",
+                                error_bars_list: [
+                                  { direction: "x", bar_type: "both", val_type: "fixedVal", val: 0.5 },
+                                  { direction: "y", bar_type: "both", val_type: "fixedVal", val: 1.0 }
+                                ] }])
+    xlsx_path = File.join(Dir.tmpdir, "multi_errbar_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_equal(2, xml.scan("<c:errBars>").size)
+    assert_match(%r{<c:errDir val="x"/>}, xml)
+    assert_match(%r{<c:errDir val="y"/>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits per-series data labels" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)

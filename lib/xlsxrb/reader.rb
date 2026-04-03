@@ -6721,7 +6721,10 @@ module Xlsxrb
         when "trendlineLbl"
           @inside_trendline_lbl = false
         when "errBars"
-          @current_ser[:error_bars] = @current_err_bars if @inside_err_bars && @current_err_bars && @current_ser
+          if @inside_err_bars && @current_err_bars && @current_ser
+            (@current_ser[:error_bars_list] ||= []) << @current_err_bars
+            @current_ser[:error_bars] = @current_ser[:error_bars_list].first
+          end
           @current_err_bars = nil
           @inside_err_bars = false
           @inside_err_bars_sp_pr = false
