@@ -820,6 +820,7 @@ module Xlsxrb
         chart[:of_pie_type] = cl.of_pie_type if cl.of_pie_type
         chart[:split_type] = cl.split_type if cl.split_type
         chart[:split_pos] = cl.split_pos if cl.split_pos
+        chart[:cust_split] = cl.cust_split if cl.cust_split&.any?
         chart[:second_pie_size] = cl.second_pie_size if cl.second_pie_size
         chart[:data_table] = cl.data_table if cl.data_table
         chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
@@ -5298,7 +5299,7 @@ module Xlsxrb
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
                   :band_fmts,
-                  :of_pie_type, :split_type, :split_pos, :second_pie_size,
+                  :of_pie_type, :split_type, :split_pos, :cust_split, :second_pie_size,
                   :data_table,
                   :plot_area_fill, :plot_area_no_fill, :plot_area_line_color, :plot_area_line_width, :plot_area_line_dash,
                   :plot_area_layout,
@@ -5450,6 +5451,8 @@ module Xlsxrb
         @of_pie_type = nil
         @split_type = nil
         @split_pos = nil
+        @cust_split = nil
+        @inside_cust_split = false
         @second_pie_size = nil
         @inside_band_fmts = false
         @inside_band_fmt = false
@@ -5708,6 +5711,11 @@ module Xlsxrb
           @split_type = attributes["val"] if attributes["val"]
         when "splitPos"
           @split_pos = attributes["val"].to_f if attributes["val"]
+        when "custSplit"
+          @cust_split = []
+          @inside_cust_split = true
+        when "secondPiePt"
+          @cust_split << attributes["val"].to_i if @inside_cust_split && attributes["val"]
         when "secondPieSize"
           @second_pie_size = attributes["val"].to_i if attributes["val"]
         when "dropLines"
@@ -7019,6 +7027,8 @@ module Xlsxrb
           @inside_ser_lines_sp_pr = false
           @inside_ser_lines_ln = false
           @inside_ser_lines_solid_fill = false
+        when "custSplit"
+          @inside_cust_split = false
         when "bandFmt"
           if @inside_band_fmt && @current_band_fmt
             @band_fmts << @current_band_fmt

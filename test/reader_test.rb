@@ -7045,6 +7045,33 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips ofPieChart with custSplit" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.set_cell("A3", 30)
+    writer.set_cell("A4", 40)
+    writer.add_chart(type: :of_pie,
+                     of_pie_type: "pie",
+                     split_type: "cust",
+                     cust_split: [1, 3],
+                     series: [{ val_ref: "Sheet1!$A$1:$A$4" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("ofPieChart", chart[:chart_type])
+    assert_equal("pie", chart[:of_pie_type])
+    assert_equal("cust", chart[:split_type])
+    assert_equal([1, 3], chart[:cust_split])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart upDownBars with gapWidth" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

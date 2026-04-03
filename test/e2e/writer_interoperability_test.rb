@@ -3555,6 +3555,28 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid custSplit on ofPieChart" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("B1", 20)
+    writer.set_cell("C1", 30)
+    writer.set_cell("D1", 40)
+    writer.add_chart(type: :of_pie,
+                     of_pie_type: "pie",
+                     split_type: "cust",
+                     cust_split: [1, 3],
+                     series: [{ val_ref: "Sheet1!$A$1:$D$1" }])
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_cust_split_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
