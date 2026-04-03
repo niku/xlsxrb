@@ -3681,6 +3681,11 @@ module Xlsxrb
               parts << '<c:delete val="1"/>'
             else
               parts << "<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(lbl[:text])}</a:t></a:r></a:p></c:rich></c:tx>" if lbl[:text]
+              if lbl[:num_fmt]
+                lnf = lbl[:num_fmt]
+                lnf_src = lnf[:source_linked] ? ' sourceLinked="1"' : ""
+                parts << %(<c:numFmt formatCode="#{xml_escape(lnf[:format_code])}"#{lnf_src}/>)
+              end
               parts << %(<c:dLblPos val="#{lbl[:position]}"/>) if lbl[:position]
               parts << "<c:showLegendKey val=\"#{lbl[:show_legend_key] ? 1 : 0}\"/>" unless lbl[:show_legend_key].nil?
               parts << "<c:showVal val=\"#{lbl[:show_val] ? 1 : 0}\"/>" unless lbl[:show_val].nil?
