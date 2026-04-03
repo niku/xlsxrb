@@ -6964,6 +6964,58 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips bandFmts with fill_color" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :surface,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     band_fmts: [{ idx: 0, fill_color: "FF0000" },
+                                 { idx: 1, fill_color: "00FF00" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    bf = chart[:band_fmts]
+    assert_not_nil(bf)
+    assert_equal(2, bf.size)
+    assert_equal(0, bf[0][:idx])
+    assert_equal("FF0000", bf[0][:fill_color])
+    assert_equal(1, bf[1][:idx])
+    assert_equal("00FF00", bf[1][:fill_color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips bandFmt with line styling" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :surface,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     band_fmts: [{ idx: 0, fill_color: "AABBCC", line_color: "112233", line_width: 2.0, line_dash: "dash" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    bf = chart[:band_fmts]
+    assert_not_nil(bf)
+    assert_equal(1, bf.size)
+    assert_equal(0, bf[0][:idx])
+    assert_equal("AABBCC", bf[0][:fill_color])
+    assert_equal("112233", bf[0][:line_color])
+    assert_equal(2.0, bf[0][:line_width])
+    assert_equal("dash", bf[0][:line_dash])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart upDownBars with gapWidth" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
