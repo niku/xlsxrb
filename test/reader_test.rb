@@ -7143,6 +7143,30 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips dispUnitsLbl with numFmt" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     val_axis_disp_units: { built_in_unit: "thousands",
+                                            label: { num_fmt: "#,##0" } })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    du = chart[:val_axis_disp_units]
+    assert_instance_of(Hash, du)
+    assert_equal("thousands", du[:built_in_unit])
+    assert_not_nil(du[:label])
+    assert_equal({ format_code: "#,##0", source_linked: false }, du[:label][:num_fmt])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips chart series data_points" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

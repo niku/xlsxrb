@@ -3454,6 +3454,26 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated dispUnitsLbl" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_disp_units_lbl_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    du = chart[:val_axis_disp_units]
+    assert_instance_of(Hash, du)
+    assert_equal("thousands", du[:built_in_unit])
+    assert_not_nil(du[:label])
+    nf = du[:label][:num_fmt]
+    assert_not_nil(nf)
+    assert_equal("#,##0.0", nf[:format_code])
+    assert_equal(false, nf[:source_linked])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

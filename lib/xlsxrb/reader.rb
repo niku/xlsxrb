@@ -5395,6 +5395,8 @@ module Xlsxrb
         @val_axis_major_unit = nil
         @val_axis_minor_unit = nil
         @val_axis_disp_units = nil
+        @inside_disp_units = false
+        @inside_disp_units_lbl = false
         @cat_axis_scaling_max = nil
         @cat_axis_scaling_min = nil
         @val_axis_scaling_max = nil
@@ -6390,6 +6392,15 @@ module Xlsxrb
             nf = { format_code: attributes["formatCode"] }
             nf[:source_linked] = attributes["sourceLinked"] == "1" if attributes["sourceLinked"]
             (@current_trendline[:label] ||= {})[:num_fmt] = nf
+          elsif @inside_disp_units_lbl && attributes["formatCode"]
+            nf = { format_code: attributes["formatCode"] }
+            nf[:source_linked] = attributes["sourceLinked"] == "1" if attributes["sourceLinked"]
+            if @val_axis_disp_units.is_a?(String)
+              @val_axis_disp_units = { built_in_unit: @val_axis_disp_units }
+            elsif @val_axis_disp_units.nil?
+              @val_axis_disp_units = {}
+            end
+            (@val_axis_disp_units[:label] ||= {})[:num_fmt] = nf
           elsif (@inside_cat_ax || @inside_val_ax) && attributes["formatCode"]
             nf = { format_code: attributes["formatCode"] }
             nf[:source_linked] = attributes["sourceLinked"] == "1" if attributes["sourceLinked"]
@@ -6481,7 +6492,13 @@ module Xlsxrb
         when "minorTimeUnit"
           @cat_axis_minor_time_unit = attributes["val"] if @inside_cat_ax && attributes["val"]
         when "builtInUnit"
-          @val_axis_disp_units = attributes["val"] if @inside_val_ax && attributes["val"]
+          @val_axis_disp_units = attributes["val"] if @inside_val_ax && @inside_disp_units && attributes["val"]
+        when "custUnit"
+          @val_axis_disp_units = { cust_unit: attributes["val"].to_f } if @inside_val_ax && @inside_disp_units && attributes["val"]
+        when "dispUnits"
+          @inside_disp_units = true if @inside_val_ax
+        when "dispUnitsLbl"
+          @inside_disp_units_lbl = true if @inside_disp_units
         when "txPr"
           @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_legend_entry || @inside_d_table || @inside_dlbls
         when "bodyPr"
@@ -6925,6 +6942,13 @@ module Xlsxrb
           @inside_val_ax = false
           @inside_axis_tx_pr = false
           @inside_axis_def_rpr = false
+          @inside_disp_units = false
+          @inside_disp_units_lbl = false
+        when "dispUnits"
+          @inside_disp_units = false
+          @inside_disp_units_lbl = false
+        when "dispUnitsLbl"
+          @inside_disp_units_lbl = false
         when "txPr"
           @inside_axis_def_rpr = false if @inside_axis_tx_pr
         when "scaling"
