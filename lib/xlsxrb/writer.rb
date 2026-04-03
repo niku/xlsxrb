@@ -3592,6 +3592,8 @@ module Xlsxrb
         parts << %(<c:explosion val="#{ser[:explosion]}"/>) if ser[:explosion]
         ser[:data_points]&.each do |dp|
           parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
+          dp_iin = dp[:invert_if_negative]
+          parts << %(<c:invertIfNegative val="#{dp_iin ? 1 : 0}"/>) unless dp_iin.nil?
           parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
           if dp[:marker_symbol] || dp[:marker_size] || dp[:marker_fill] || dp[:marker_no_fill] || dp[:marker_line_color] || dp[:marker_line_dash] || dp[:marker_no_line]
             parts << "<c:marker>"
