@@ -3693,6 +3693,7 @@ module Xlsxrb
               parts << "<c:showSerName val=\"#{lbl[:show_ser_name] ? 1 : 0}\"/>" unless lbl[:show_ser_name].nil?
               parts << "<c:showPercent val=\"#{lbl[:show_percent] ? 1 : 0}\"/>" unless lbl[:show_percent].nil?
               parts << "<c:showBubbleSize val=\"#{lbl[:show_bubble_size] ? 1 : 0}\"/>" unless lbl[:show_bubble_size].nil?
+              parts << "<c:separator>#{xml_escape(lbl[:separator])}</c:separator>" if lbl[:separator]
             end
             parts << "</c:dLbl>"
           end
