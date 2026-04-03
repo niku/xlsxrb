@@ -5510,6 +5510,7 @@ module Xlsxrb
         @inside_trendline_sp_pr = false
         @inside_trendline_ln = false
         @inside_trendline_solid_fill = false
+        @inside_trendline_lbl = false
         @inside_err_bars = false
         @current_err_bars = nil
         @inside_err_bars_sp_pr = false
@@ -5748,6 +5749,8 @@ module Xlsxrb
           @current_trendline[:disp_r_sqr] = attributes["val"] == "1" if @inside_trendline && @current_trendline && attributes["val"]
         when "dispEq"
           @current_trendline[:disp_eq] = attributes["val"] == "1" if @inside_trendline && @current_trendline && attributes["val"]
+        when "trendlineLbl"
+          @inside_trendline_lbl = true if @inside_trendline
         when "errBars"
           if @inside_ser
             @inside_err_bars = true
@@ -6383,7 +6386,11 @@ module Xlsxrb
             end
           end
         when "numFmt"
-          if (@inside_cat_ax || @inside_val_ax) && attributes["formatCode"]
+          if @inside_trendline_lbl && @current_trendline && attributes["formatCode"]
+            nf = { format_code: attributes["formatCode"] }
+            nf[:source_linked] = attributes["sourceLinked"] == "1" if attributes["sourceLinked"]
+            (@current_trendline[:label] ||= {})[:num_fmt] = nf
+          elsif (@inside_cat_ax || @inside_val_ax) && attributes["formatCode"]
             nf = { format_code: attributes["formatCode"] }
             nf[:source_linked] = attributes["sourceLinked"] == "1" if attributes["sourceLinked"]
             if @inside_cat_ax
@@ -6648,6 +6655,9 @@ module Xlsxrb
           @inside_trendline_sp_pr = false
           @inside_trendline_ln = false
           @inside_trendline_solid_fill = false
+          @inside_trendline_lbl = false
+        when "trendlineLbl"
+          @inside_trendline_lbl = false
         when "errBars"
           @current_ser[:error_bars] = @current_err_bars if @inside_err_bars && @current_err_bars && @current_ser
           @current_err_bars = nil
