@@ -3682,6 +3682,31 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer generates valid axis title styling from flat params" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.add_chart(type: :bar,
+                     cat_axis_title: "Category",
+                     cat_axis_title_font: { bold: true, size: 1200, color: "0000FF" },
+                     cat_axis_title_fill: "EEEEFF",
+                     cat_axis_title_line_color: "0000CC",
+                     cat_axis_title_line_width: 0.5,
+                     cat_axis_title_line_dash: "dot",
+                     val_axis_title: "Value",
+                     val_axis_title_font: { italic: true, size: 1000 },
+                     val_axis_title_no_fill: true,
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_axis_title_styling_flat_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

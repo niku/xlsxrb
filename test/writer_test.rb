@@ -7456,6 +7456,34 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits axis title styling from flat parameters" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     cat_axis_title: "Category",
+                     cat_axis_title_font: { bold: true, size: 1200, color: "0000FF", name: "Calibri" },
+                     cat_axis_title_fill: "EEEEFF",
+                     cat_axis_title_line_color: "0000CC",
+                     cat_axis_title_line_width: 0.5,
+                     cat_axis_title_line_dash: "dot",
+                     val_axis_title: "Value",
+                     val_axis_title_font: { italic: true, size: 1000 },
+                     val_axis_title_no_fill: true,
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-axtitleflat", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:title>.*<a:rPr b="1" sz="1200"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill><a:latin typeface="Calibri"/></a:rPr>.*<a:t>Category</a:t>}m, chart_xml)
+    assert_match(%r{<c:catAx>.*<c:title>.*<c:spPr><a:solidFill><a:srgbClr val="EEEEFF"/></a:solidFill><a:ln w="6350"><a:solidFill><a:srgbClr val="0000CC"/></a:solidFill><a:prstDash val="dot"/></a:ln></c:spPr></c:title>}m, chart_xml)
+    assert_match(%r{<c:valAx>.*<c:title>.*<a:rPr i="1" sz="1000"/>.*<a:t>Value</a:t>}m, chart_xml)
+    assert_match(%r{<c:valAx>.*<c:title>.*<c:spPr><a:noFill/></c:spPr></c:title>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits axis fill in spPr" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
