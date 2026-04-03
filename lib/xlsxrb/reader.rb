@@ -6177,7 +6177,9 @@ module Xlsxrb
             @current_legend_entry[:idx] = attributes["val"].to_i
           end
         when "delete"
-          if @inside_legend_entry && @current_legend_entry && attributes["val"]
+          if @inside_dlbl && @current_dlbl && attributes["val"]
+            @current_dlbl[:delete] = attributes["val"] == "1"
+          elsif @inside_legend_entry && @current_legend_entry && attributes["val"]
             @current_legend_entry[:delete] = attributes["val"] == "1"
           elsif attributes["val"]
             if @inside_cat_ax

@@ -5347,6 +5347,22 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dLbl with delete flag" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 10)
+    writer.set_cell("A2", 20)
+    writer.add_chart(type: :pie,
+                     data_labels: { show_val: true,
+                                    labels: [{ idx: 1, delete: true }] },
+                     series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
+    xlsx_path = File.join(Dir.tmpdir, "dlbl_delete_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:dLbl><c:idx val="1"/><c:delete val="1"/></c:dLbl>}, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits trendline element in series" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
