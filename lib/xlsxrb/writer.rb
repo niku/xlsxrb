@@ -3846,6 +3846,17 @@ module Xlsxrb
                           end
               parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
             end
+            tll_sp = +""
+            tll_sp << %(<a:solidFill>#{color_xml(lbl[:fill_color])}</a:solidFill>) if lbl[:fill_color]
+            tll_sp << "<a:noFill/>" if lbl[:no_fill]
+            if lbl[:line_color] || lbl[:line_width] || lbl[:line_dash]
+              tll_lw = lbl[:line_width] ? %( w="#{(lbl[:line_width] * 12_700).to_i}") : ""
+              tll_lf = lbl[:line_color] ? %(<a:solidFill>#{color_xml(lbl[:line_color])}</a:solidFill>) : ""
+              tll_ld = lbl[:line_dash] ? %(<a:prstDash val="#{xml_escape(lbl[:line_dash])}"/>) : ""
+              tll_sp << "<a:ln#{tll_lw}>#{tll_lf}#{tll_ld}</a:ln>"
+            end
+            parts << "<c:spPr>#{tll_sp}</c:spPr>" unless tll_sp.empty?
+            parts << build_axis_txpr(nil, lbl[:font]) if lbl[:font]
             parts << "</c:trendlineLbl>"
           end
           parts << "</c:trendline>"

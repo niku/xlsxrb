@@ -7464,6 +7464,39 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips trendlineLbl spPr and txPr" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :line,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                trendline: { type: "linear", disp_eq: true,
+                                             label: { num_fmt: "0.00%",
+                                                      fill_color: "FFFF00",
+                                                      line_color: "0000FF",
+                                                      line_width: 1.5,
+                                                      line_dash: "dash",
+                                                      font: { size: 10, bold: true, color: "FF0000" } } } }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    tl = chart[:series][0][:trendline]
+    lbl = tl[:label]
+    assert_not_nil(lbl)
+    assert_equal("FFFF00", lbl[:fill_color])
+    assert_equal("0000FF", lbl[:line_color])
+    assert_equal("dash", lbl[:line_dash])
+    assert_equal(10, lbl[:font][:size])
+    assert_equal(true, lbl[:font][:bold])
+    assert_equal("FF0000", lbl[:font][:color])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips multiple trendlines via trendlines array" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
