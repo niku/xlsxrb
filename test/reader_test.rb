@@ -9709,6 +9709,38 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "round-trips chart title styling from flat parameters" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     title: "Flat Title",
+                     title_font: { bold: true, size: 1400, color: "FF0000", name: "Arial" },
+                     title_fill_color: "FFFF00",
+                     title_line_color: "000000",
+                     title_line_width: 1.0,
+                     title_line_dash: "dash",
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal("Flat Title", chart[:title])
+    assert_equal(true, chart[:title_font][:bold])
+    assert_equal(1400, chart[:title_font][:size])
+    assert_equal("FF0000", chart[:title_font][:color])
+    assert_equal("Arial", chart[:title_font][:name])
+    assert_equal("FFFF00", chart[:title_fill_color])
+    assert_equal("000000", chart[:title_line_color])
+    assert_in_delta(1.0, chart[:title_line_width], 0.01)
+    assert_equal("dash", chart[:title_line_dash])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "round-trips data point no_fill" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
