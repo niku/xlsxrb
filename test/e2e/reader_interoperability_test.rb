@@ -3525,6 +3525,25 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated multiple trendlines" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-reader-e2e", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    assert_openxml_sdk_scenario_passes("reader_multi_trendlines_generated_by_sdk", xlsx_path)
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ser = chart[:series].first
+    assert_equal(2, ser[:trendlines].size)
+    assert_equal("linear", ser[:trendlines][0][:type])
+    assert_equal("Linear", ser[:trendlines][0][:name])
+    assert_equal("poly", ser[:trendlines][1][:type])
+    assert_equal("Quadratic", ser[:trendlines][1][:name])
+    assert_equal(2, ser[:trendlines][1][:order])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

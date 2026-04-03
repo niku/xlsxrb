@@ -6703,7 +6703,10 @@ module Xlsxrb
           @inside_dpt_solid_fill = false
           @inside_dpt_ln = false
         when "trendline"
-          @current_ser[:trendline] = @current_trendline if @inside_trendline && @current_trendline && @current_ser
+          if @inside_trendline && @current_trendline && @current_ser
+            (@current_ser[:trendlines] ||= []) << @current_trendline
+            @current_ser[:trendline] = @current_ser[:trendlines].first
+          end
           @current_trendline = nil
           @inside_trendline = false
           @inside_trendline_name = false
