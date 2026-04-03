@@ -817,6 +817,10 @@ module Xlsxrb
         chart[:val_axis_pos] = cl.val_axis_pos if cl.val_axis_pos
         chart[:wireframe] = cl.wireframe unless cl.wireframe.nil?
         chart[:band_fmts] = cl.band_fmts if cl.band_fmts
+        chart[:of_pie_type] = cl.of_pie_type if cl.of_pie_type
+        chart[:split_type] = cl.split_type if cl.split_type
+        chart[:split_pos] = cl.split_pos if cl.split_pos
+        chart[:second_pie_size] = cl.second_pie_size if cl.second_pie_size
         chart[:data_table] = cl.data_table if cl.data_table
         chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
         chart[:plot_area_line_color] = cl.plot_area_line_color if cl.plot_area_line_color
@@ -5294,6 +5298,7 @@ module Xlsxrb
                   :cat_axis_pos, :val_axis_pos,
                   :wireframe,
                   :band_fmts,
+                  :of_pie_type, :split_type, :split_pos, :second_pie_size,
                   :data_table,
                   :plot_area_fill, :plot_area_no_fill, :plot_area_line_color, :plot_area_line_width, :plot_area_line_dash,
                   :plot_area_layout,
@@ -5313,7 +5318,8 @@ module Xlsxrb
                   :chart_fill, :chart_no_fill, :chart_line_color, :chart_line_width, :chart_line_dash
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
-                       bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart].freeze
+                       bar3DChart line3DChart pie3DChart area3DChart surfaceChart stockChart bubbleChart
+                       ofPieChart].freeze
 
       def initialize
         @chart_type = nil
@@ -5441,6 +5447,10 @@ module Xlsxrb
         @val_axis_pos = nil
         @wireframe = nil
         @band_fmts = nil
+        @of_pie_type = nil
+        @split_type = nil
+        @split_pos = nil
+        @second_pie_size = nil
         @inside_band_fmts = false
         @inside_band_fmt = false
         @inside_band_fmt_sp_pr = false
@@ -5692,6 +5702,14 @@ module Xlsxrb
           @scatter_style = attributes["val"] if attributes["val"]
         when "radarStyle"
           @radar_style = attributes["val"] if attributes["val"]
+        when "ofPieType"
+          @of_pie_type = attributes["val"] if attributes["val"]
+        when "splitType"
+          @split_type = attributes["val"] if attributes["val"]
+        when "splitPos"
+          @split_pos = attributes["val"].to_f if attributes["val"]
+        when "secondPieSize"
+          @second_pie_size = attributes["val"].to_i if attributes["val"]
         when "dropLines"
           @drop_lines = true
           @inside_drop_lines = true
