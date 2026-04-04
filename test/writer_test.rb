@@ -7847,6 +7847,25 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits trendline label layout and custom text" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                trendline: { type: "linear",
+                                             label: { text: "Trend Label",
+                                                      layout: { x: 0.5, y: 0.3 } } } }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-tllayout", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:trendlineLbl><c:layout><c:manualLayout><c:x val="0.5"/><c:y val="0.3"/></c:manualLayout></c:layout><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Trend Label</a:t></a:r></a:p></c:rich></c:tx>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

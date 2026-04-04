@@ -3784,6 +3784,24 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated trendline label layout and text" do
+    xlsx_path = File.join(Dir.tmpdir, "reader_tl_lbl_layout_#{Process.pid}.xlsx")
+
+    assert_openxml_sdk_scenario_passes("reader_trendline_lbl_layout_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    tl = charts[0][:series].first[:trendline][:label]
+    assert_not_nil(tl)
+    assert_equal("SDK Trend", tl[:text])
+    assert_not_nil(tl[:layout])
+    assert_in_delta(0.35, tl[:layout][:x])
+    assert_in_delta(0.22, tl[:layout][:y])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
