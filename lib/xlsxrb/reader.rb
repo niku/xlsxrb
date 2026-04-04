@@ -6197,6 +6197,8 @@ module Xlsxrb
             @data_labels[:no_fill] = true
           elsif @inside_trendline_lbl_sp_pr && @current_trendline
             (@current_trendline[:label] ||= {})[:no_fill] = true
+          elsif @inside_err_bars_sp_pr && @current_err_bars
+            @current_err_bars[:no_fill] = true
           elsif @inside_disp_units_lbl_sp_pr
             du = @val_axis_disp_units
             du = {} unless du.is_a?(Hash)
@@ -7428,6 +7430,8 @@ module Xlsxrb
           @current_trendline[:line_color] = color_value
         elsif @inside_err_bars_sp_pr && @inside_err_bars_ln && @inside_err_bars_solid_fill && @current_err_bars
           @current_err_bars[:line_color] = color_value
+        elsif @inside_err_bars_sp_pr && @inside_err_bars_solid_fill && @current_err_bars
+          @current_err_bars[:fill_color] = color_value
         elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_ln && @inside_ser_solid_fill && @current_ser
           @current_ser[:line_color] = color_value
         elsif @inside_ser && @inside_ser_sp_pr && @inside_ser_solid_fill && @current_ser
