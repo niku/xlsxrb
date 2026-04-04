@@ -10796,4 +10796,41 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart title rotation" do
+    xlsx_path = File.join(Dir.tmpdir, "reader_title_rot_#{Process.pid}.xlsx")
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     title: "Rotated",
+                     title_rotation: -5_400_000,
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal(-5_400_000, chart[:title_rotation])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips axis title rotation" do
+    xlsx_path = File.join(Dir.tmpdir, "reader_axtitle_rot_#{Process.pid}.xlsx")
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     cat_axis_title: "Category",
+                     cat_axis_title_rotation: -5_400_000,
+                     val_axis_title: "Value",
+                     val_axis_title_rotation: 0,
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    assert_equal(-5_400_000, chart[:cat_axis_title_rotation])
+    assert_equal(0, chart[:val_axis_title_rotation])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

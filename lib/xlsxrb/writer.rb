@@ -1131,7 +1131,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, title_overlay: nil, title_font: nil, title_fill_color: nil, title_no_fill: nil, title_line_color: nil, title_line_width: nil, title_line_dash: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_title_font: nil, cat_axis_title_fill: nil, cat_axis_title_no_fill: nil, cat_axis_title_line_color: nil, cat_axis_title_line_width: nil, cat_axis_title_line_dash: nil, val_axis_title_font: nil, val_axis_title_fill: nil, val_axis_title_no_fill: nil, val_axis_title_line_color: nil, val_axis_title_line_width: nil, val_axis_title_line_dash: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_no_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, plot_area_line_dash: nil, plot_area_layout: nil, floor: nil, side_wall: nil, back_wall: nil, drop_lines: nil, hi_low_lines: nil, ser_lines: nil, up_down_bars: nil, band_fmts: nil, of_pie_type: nil, split_type: nil, split_pos: nil, cust_split: nil, second_pie_size: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, cat_axis_line_color: nil, cat_axis_line_width: nil, cat_axis_line_dash: nil, val_axis_line_color: nil, val_axis_line_width: nil, val_axis_line_dash: nil, cat_axis_fill: nil, cat_axis_no_fill: nil, val_axis_fill: nil, val_axis_no_fill: nil, cat_axis_type: nil, cat_axis_base_time_unit: nil, cat_axis_major_time_unit: nil, cat_axis_minor_time_unit: nil, cat_axis_major_unit: nil, cat_axis_minor_unit: nil, chart_fill: nil, chart_no_fill: nil, chart_line_color: nil, chart_line_width: nil, chart_line_dash: nil, protection: nil, print_settings: nil, chart_font: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, title_overlay: nil, title_font: nil, title_fill_color: nil, title_no_fill: nil, title_line_color: nil, title_line_width: nil, title_line_dash: nil, title_rotation: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_title_font: nil, cat_axis_title_fill: nil, cat_axis_title_no_fill: nil, cat_axis_title_line_color: nil, cat_axis_title_line_width: nil, cat_axis_title_line_dash: nil, cat_axis_title_rotation: nil, val_axis_title_font: nil, val_axis_title_fill: nil, val_axis_title_no_fill: nil, val_axis_title_line_color: nil, val_axis_title_line_width: nil, val_axis_title_line_dash: nil, val_axis_title_rotation: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_no_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, plot_area_line_dash: nil, plot_area_layout: nil, floor: nil, side_wall: nil, back_wall: nil, drop_lines: nil, hi_low_lines: nil, ser_lines: nil, up_down_bars: nil, band_fmts: nil, of_pie_type: nil, split_type: nil, split_pos: nil, cust_split: nil, second_pie_size: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, cat_axis_line_color: nil, cat_axis_line_width: nil, cat_axis_line_dash: nil, val_axis_line_color: nil, val_axis_line_width: nil, val_axis_line_dash: nil, cat_axis_fill: nil, cat_axis_no_fill: nil, val_axis_fill: nil, val_axis_no_fill: nil, cat_axis_type: nil, cat_axis_base_time_unit: nil, cat_axis_major_time_unit: nil, cat_axis_minor_time_unit: nil, cat_axis_major_unit: nil, cat_axis_minor_unit: nil, chart_fill: nil, chart_no_fill: nil, chart_line_color: nil, chart_line_width: nil, chart_line_dash: nil, protection: nil, print_settings: nil, chart_font: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1151,6 +1151,7 @@ module Xlsxrb
       chart[:title_line_color] = title_line_color if title_line_color
       chart[:title_line_width] = title_line_width if title_line_width
       chart[:title_line_dash] = title_line_dash if title_line_dash
+      chart[:title_rotation] = title_rotation if title_rotation
       chart[:legend] = legend if legend
       chart[:data_labels] = data_labels if data_labels
       chart[:cat_axis_title] = cat_axis_title if cat_axis_title
@@ -1161,12 +1162,14 @@ module Xlsxrb
       chart[:cat_axis_title_line_color] = cat_axis_title_line_color if cat_axis_title_line_color
       chart[:cat_axis_title_line_width] = cat_axis_title_line_width if cat_axis_title_line_width
       chart[:cat_axis_title_line_dash] = cat_axis_title_line_dash if cat_axis_title_line_dash
+      chart[:cat_axis_title_rotation] = cat_axis_title_rotation if cat_axis_title_rotation
       chart[:val_axis_title_font] = val_axis_title_font if val_axis_title_font
       chart[:val_axis_title_fill] = val_axis_title_fill if val_axis_title_fill
       chart[:val_axis_title_no_fill] = val_axis_title_no_fill unless val_axis_title_no_fill.nil?
       chart[:val_axis_title_line_color] = val_axis_title_line_color if val_axis_title_line_color
       chart[:val_axis_title_line_width] = val_axis_title_line_width if val_axis_title_line_width
       chart[:val_axis_title_line_dash] = val_axis_title_line_dash if val_axis_title_line_dash
+      chart[:val_axis_title_rotation] = val_axis_title_rotation if val_axis_title_rotation
       chart[:cat_axis_tick_lbl_pos] = cat_axis_tick_lbl_pos if cat_axis_tick_lbl_pos
       chart[:val_axis_tick_lbl_pos] = val_axis_tick_lbl_pos if val_axis_tick_lbl_pos
       chart[:cat_axis_major_gridlines] = cat_axis_major_gridlines unless cat_axis_major_gridlines.nil?
@@ -3370,6 +3373,8 @@ module Xlsxrb
       overlay_val = overlay ? 1 : 0
       if title_spec.is_a?(Hash)
         text = xml_escape(title_spec[:text].to_s)
+        rotation = title_spec[:rotation]
+        body_pr = rotation ? %(<a:bodyPr rot="#{rotation}"/>) : "<a:bodyPr/>"
         font = title_spec[:font] || {}
         rpr_attrs = +""
         rpr_attrs << %( b="1") if font[:bold]
@@ -3385,7 +3390,7 @@ module Xlsxrb
                   end
         layout_xml = build_title_layout_xml(title_spec[:layout])
         sp_xml = build_title_sp_pr(title_spec)
-        "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r>#{rpr_xml}<a:t>#{text}</a:t></a:r></a:p></c:rich></c:tx>#{layout_xml}<c:overlay val=\"#{overlay_val}\"/>#{sp_xml}</c:title>"
+        "<c:title><c:tx><c:rich>#{body_pr}<a:lstStyle/><a:p><a:r>#{rpr_xml}<a:t>#{text}</a:t></a:r></a:p></c:rich></c:tx>#{layout_xml}<c:overlay val=\"#{overlay_val}\"/>#{sp_xml}</c:title>"
       else
         "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(title_spec)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"#{overlay_val}\"/></c:title>"
       end
@@ -3398,8 +3403,9 @@ module Xlsxrb
       lc_key = :"#{prefix}_line_color"
       lw_key = :"#{prefix}_line_width"
       ld_key = :"#{prefix}_line_dash"
+      rot_key = :"#{prefix}_rotation"
       return title_spec unless chart[font_key] || chart[fill_key] || chart[no_fill_key] ||
-                               chart[lc_key] || chart[lw_key] || chart[ld_key]
+                               chart[lc_key] || chart[lw_key] || chart[ld_key] || chart[rot_key]
 
       spec = title_spec.is_a?(Hash) ? title_spec : { text: title_spec }
       spec[:font] ||= chart[font_key] if chart[font_key]
@@ -3408,6 +3414,7 @@ module Xlsxrb
       spec[:line_color] ||= chart[lc_key] if chart[lc_key]
       spec[:line_width] ||= chart[lw_key] if chart[lw_key]
       spec[:line_dash] ||= chart[ld_key] if chart[ld_key]
+      spec[:rotation] ||= chart[rot_key] if chart[rot_key]
       spec
     end
 
@@ -3589,7 +3596,8 @@ module Xlsxrb
       if chart[:title]
         title_spec = chart[:title]
         if chart[:title_font] || chart[:title_fill_color] || chart[:title_no_fill] ||
-           chart[:title_line_color] || chart[:title_line_width] || chart[:title_line_dash]
+           chart[:title_line_color] || chart[:title_line_width] || chart[:title_line_dash] ||
+           chart[:title_rotation]
           title_spec = { text: title_spec } unless title_spec.is_a?(Hash)
           title_spec[:font] ||= chart[:title_font] if chart[:title_font]
           title_spec[:fill_color] ||= chart[:title_fill_color] if chart[:title_fill_color]
@@ -3597,6 +3605,7 @@ module Xlsxrb
           title_spec[:line_color] ||= chart[:title_line_color] if chart[:title_line_color]
           title_spec[:line_width] ||= chart[:title_line_width] if chart[:title_line_width]
           title_spec[:line_dash] ||= chart[:title_line_dash] if chart[:title_line_dash]
+          title_spec[:rotation] ||= chart[:title_rotation] if chart[:title_rotation]
         end
         parts << build_chart_title_xml(title_spec, overlay: chart[:title_overlay])
       end
