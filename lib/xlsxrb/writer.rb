@@ -3383,8 +3383,9 @@ module Xlsxrb
                   else
                     "<a:rPr#{rpr_attrs}>#{rpr_children}</a:rPr>"
                   end
+        layout_xml = build_title_layout_xml(title_spec[:layout])
         sp_xml = build_title_sp_pr(title_spec)
-        "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r>#{rpr_xml}<a:t>#{text}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"#{overlay_val}\"/>#{sp_xml}</c:title>"
+        "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r>#{rpr_xml}<a:t>#{text}</a:t></a:r></a:p></c:rich></c:tx>#{layout_xml}<c:overlay val=\"#{overlay_val}\"/>#{sp_xml}</c:title>"
       else
         "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(title_spec)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"#{overlay_val}\"/></c:title>"
       end
@@ -3421,6 +3422,17 @@ module Xlsxrb
         children << "<a:ln#{lw}>#{lf}#{ld}</a:ln>"
       end
       children.empty? ? "" : "<c:spPr>#{children}</c:spPr>"
+    end
+
+    def build_title_layout_xml(layout)
+      return "" unless layout.is_a?(Hash)
+
+      ml = +""
+      ml << %(<c:x val="#{layout[:x]}"/>) if layout[:x]
+      ml << %(<c:y val="#{layout[:y]}"/>) if layout[:y]
+      ml << %(<c:w val="#{layout[:w]}"/>) if layout[:w]
+      ml << %(<c:h val="#{layout[:h]}"/>) if layout[:h]
+      ml.empty? ? "" : "<c:layout><c:manualLayout>#{ml}</c:manualLayout></c:layout>"
     end
 
     def gridlines_xml(tag, spec)
