@@ -3796,6 +3796,21 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "SDK validates writer dLbl layout" do
+    xlsx_path = File.join(Dir.tmpdir, "writer_dlbl_layout_#{Process.pid}.xlsx")
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                data_labels: { show_val: true,
+                                               labels: [{ idx: 0, layout: { x: 0.05, y: -0.03 }, show_val: true }] } }])
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_dlbl_layout_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

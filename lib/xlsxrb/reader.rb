@@ -5580,6 +5580,7 @@ module Xlsxrb
         @inside_dlbl_sp_pr = false
         @inside_dlbl_solid_fill = false
         @inside_dlbl_ln = false
+        @inside_dlbl_layout = false
         @current_dlbl = nil
         @inside_dlbls_sp_pr = false
         @inside_dlbls_ln = false
@@ -6304,6 +6305,7 @@ module Xlsxrb
         when "manualLayout"
           @inside_legend_layout = true if @inside_legend
           @inside_plot_area_layout = true if @inside_plot_area && !@inside_legend
+          @inside_dlbl_layout = true if @inside_dlbl
         when "layoutTarget"
           (@legend[:layout] ||= {})[:target] = attributes["val"] if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:target] = attributes["val"] if @inside_plot_area_layout && attributes["val"]
@@ -6322,9 +6324,11 @@ module Xlsxrb
         when "x"
           (@legend[:layout] ||= {})[:x] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:x] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
+          (@current_dlbl[:layout] ||= {})[:x] = attributes["val"].to_f if @inside_dlbl_layout && @current_dlbl && attributes["val"]
         when "y"
           (@legend[:layout] ||= {})[:y] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:y] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
+          (@current_dlbl[:layout] ||= {})[:y] = attributes["val"].to_f if @inside_dlbl_layout && @current_dlbl && attributes["val"]
         when "w"
           (@legend[:layout] ||= {})[:w] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:w] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
@@ -7127,6 +7131,7 @@ module Xlsxrb
           @inside_dlbl_sp_pr = false
           @inside_dlbl_solid_fill = false
           @inside_dlbl_ln = false
+          @inside_dlbl_layout = false
         when "tx"
           @inside_dlbl_tx = false if @inside_dlbl
         when "separator"

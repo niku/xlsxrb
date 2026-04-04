@@ -7776,6 +7776,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits dLbl layout with manual x and y offsets" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                data_labels: { show_val: true,
+                                               labels: [{ idx: 0, layout: { x: 0.05, y: -0.03 }, show_val: true }] } }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-dlbllayout", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:dLbl><c:idx val="0"/><c:layout><c:manualLayout><c:x val="0.05"/><c:y val="-0.03"/></c:manualLayout></c:layout>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
