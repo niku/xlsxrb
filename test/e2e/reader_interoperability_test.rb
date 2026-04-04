@@ -3680,6 +3680,49 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated chart protection" do
+    xlsx_path = File.join(Dir.tmpdir, "reader_chart_protection_#{Process.pid}.xlsx")
+
+    assert_openxml_sdk_scenario_passes("reader_chart_protection_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    prot = charts[0][:protection]
+    assert_not_nil(prot)
+    assert_equal(true, prot[:chart_object])
+    assert_equal(true, prot[:data])
+    assert_equal(false, prot[:formatting])
+    assert_equal(true, prot[:selection])
+    assert_equal(true, prot[:user_interface])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "reader parses SDK-generated chart printSettings" do
+    xlsx_path = File.join(Dir.tmpdir, "reader_chart_print_settings_#{Process.pid}.xlsx")
+
+    assert_openxml_sdk_scenario_passes("reader_chart_print_settings_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    ps = charts[0][:print_settings]
+    assert_not_nil(ps)
+    assert_equal("&CHeader Text", ps[:header_footer][:odd_header])
+    assert_equal("&CPage &P", ps[:header_footer][:odd_footer])
+    assert_in_delta(0.75, ps[:page_margins][:b])
+    assert_in_delta(0.7, ps[:page_margins][:l])
+    assert_in_delta(0.7, ps[:page_margins][:r])
+    assert_in_delta(0.75, ps[:page_margins][:t])
+    assert_in_delta(0.3, ps[:page_margins][:header])
+    assert_in_delta(0.3, ps[:page_margins][:footer])
+    assert_equal("landscape", ps[:page_setup][:orientation])
+    assert_equal(9, ps[:page_setup][:paper_size])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

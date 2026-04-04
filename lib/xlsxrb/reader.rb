@@ -857,6 +857,8 @@ module Xlsxrb
         chart[:chart_line_color] = cl.chart_line_color if cl.chart_line_color
         chart[:chart_line_width] = cl.chart_line_width if cl.chart_line_width
         chart[:chart_line_dash] = cl.chart_line_dash if cl.chart_line_dash
+        chart[:protection] = cl.protection if cl.protection
+        chart[:print_settings] = cl.print_settings if cl.print_settings
       end
       listener.charts
     end
@@ -5316,7 +5318,8 @@ module Xlsxrb
                   :cat_axis_title_font, :val_axis_title_font,
                   :cat_axis_title_fill, :cat_axis_title_no_fill, :cat_axis_title_line_color, :cat_axis_title_line_width, :cat_axis_title_line_dash,
                   :val_axis_title_fill, :val_axis_title_no_fill, :val_axis_title_line_color, :val_axis_title_line_width, :val_axis_title_line_dash,
-                  :chart_fill, :chart_no_fill, :chart_line_color, :chart_line_width, :chart_line_dash
+                  :chart_fill, :chart_no_fill, :chart_line_color, :chart_line_width, :chart_line_dash,
+                  :protection, :print_settings
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart surface3DChart stockChart bubbleChart
@@ -5344,6 +5347,17 @@ module Xlsxrb
         @inside_chart_space_sp_pr = false
         @inside_chart_space_ln = false
         @inside_chart_space_solid_fill = false
+        @protection = nil
+        @inside_protection = false
+        @print_settings = nil
+        @inside_print_settings = false
+        @inside_ps_header_footer = false
+        @inside_ps_odd_header = false
+        @inside_ps_odd_footer = false
+        @inside_ps_even_header = false
+        @inside_ps_even_footer = false
+        @inside_ps_first_header = false
+        @inside_ps_first_footer = false
         @series = []
         @legend = {}
         @data_labels = {}
@@ -6651,6 +6665,21 @@ module Xlsxrb
           @style = attributes["val"]&.to_i if attributes["val"]
         when "roundedCorners"
           @rounded_corners = attributes["val"] == "1" if attributes["val"]
+        when "protection"
+          unless @inside_chart
+            @inside_protection = true
+            @protection = {}
+          end
+        when "chartObject"
+          @protection[:chart_object] = attributes["val"] == "1" if @inside_protection && attributes["val"]
+        when "data"
+          @protection[:data] = attributes["val"] == "1" if @inside_protection && attributes["val"]
+        when "formatting"
+          @protection[:formatting] = attributes["val"] == "1" if @inside_protection && attributes["val"]
+        when "selection"
+          @protection[:selection] = attributes["val"] == "1" if @inside_protection && attributes["val"]
+        when "userInterface"
+          @protection[:user_interface] = attributes["val"] == "1" if @inside_protection && attributes["val"]
         when "showDLblsOverMax"
           @show_d_lbls_over_max = attributes["val"] == "1" if attributes["val"]
         when "dTable"
@@ -6664,11 +6693,61 @@ module Xlsxrb
           @data_table[:show_outline] = attributes["val"] == "1" if @inside_d_table && @data_table && attributes["val"]
         when "showKeys"
           @data_table[:show_keys] = attributes["val"] == "1" if @inside_d_table && @data_table && attributes["val"]
+        when "printSettings"
+          unless @inside_chart
+            @inside_print_settings = true
+            @print_settings = {}
+          end
+        when "headerFooter"
+          if @inside_print_settings
+            @inside_ps_header_footer = true
+            @print_settings[:header_footer] = {}
+          end
+        when "oddHeader"
+          @inside_ps_odd_header = true if @inside_ps_header_footer
+          @text_buffer = +""
+        when "oddFooter"
+          @inside_ps_odd_footer = true if @inside_ps_header_footer
+          @text_buffer = +""
+        when "evenHeader"
+          @inside_ps_even_header = true if @inside_ps_header_footer
+          @text_buffer = +""
+        when "evenFooter"
+          @inside_ps_even_footer = true if @inside_ps_header_footer
+          @text_buffer = +""
+        when "firstHeader"
+          @inside_ps_first_header = true if @inside_ps_header_footer
+          @text_buffer = +""
+        when "firstFooter"
+          @inside_ps_first_footer = true if @inside_ps_header_footer
+          @text_buffer = +""
+        when "pageMargins"
+          if @inside_print_settings
+            pm = {}
+            %w[b l r t header footer].each do |a|
+              pm[a.to_sym] = attributes[a].to_f if attributes[a]
+            end
+            @print_settings[:page_margins] = pm unless pm.empty?
+          end
+        when "pageSetup"
+          if @inside_print_settings
+            psu = {}
+            psu[:paper_size] = attributes["paperSize"].to_i if attributes["paperSize"]
+            psu[:first_page_number] = attributes["firstPageNumber"].to_i if attributes["firstPageNumber"]
+            psu[:orientation] = attributes["orientation"] if attributes["orientation"]
+            psu[:horizontal_dpi] = attributes["horizontalDpi"].to_i if attributes["horizontalDpi"]
+            psu[:vertical_dpi] = attributes["verticalDpi"].to_i if attributes["verticalDpi"]
+            psu[:copies] = attributes["copies"].to_i if attributes["copies"]
+            @print_settings[:page_setup] = psu unless psu.empty?
+          end
         end
       end
 
       def characters(text)
-        @text_buffer << text if @inside_t || @inside_f || @inside_separator || @inside_trendline_name || @inside_cache_v
+        @text_buffer << text if @inside_t || @inside_f || @inside_separator || @inside_trendline_name || @inside_cache_v ||
+                                @inside_ps_odd_header || @inside_ps_odd_footer ||
+                                @inside_ps_even_header || @inside_ps_even_footer ||
+                                @inside_ps_first_header || @inside_ps_first_footer
       end
 
       def end_element(_uri, local_name, qname)
@@ -7113,6 +7192,42 @@ module Xlsxrb
           @inside_d_table_solid_fill = false
           @inside_axis_tx_pr = false
           @inside_axis_def_rpr = false
+        when "protection"
+          @inside_protection = false
+        when "printSettings"
+          @inside_print_settings = false
+        when "headerFooter"
+          @inside_ps_header_footer = false if @inside_print_settings
+        when "oddHeader"
+          if @inside_ps_odd_header
+            @print_settings[:header_footer][:odd_header] = @text_buffer.dup unless @text_buffer.empty?
+            @inside_ps_odd_header = false
+          end
+        when "oddFooter"
+          if @inside_ps_odd_footer
+            @print_settings[:header_footer][:odd_footer] = @text_buffer.dup unless @text_buffer.empty?
+            @inside_ps_odd_footer = false
+          end
+        when "evenHeader"
+          if @inside_ps_even_header
+            @print_settings[:header_footer][:even_header] = @text_buffer.dup unless @text_buffer.empty?
+            @inside_ps_even_header = false
+          end
+        when "evenFooter"
+          if @inside_ps_even_footer
+            @print_settings[:header_footer][:even_footer] = @text_buffer.dup unless @text_buffer.empty?
+            @inside_ps_even_footer = false
+          end
+        when "firstHeader"
+          if @inside_ps_first_header
+            @print_settings[:header_footer][:first_header] = @text_buffer.dup unless @text_buffer.empty?
+            @inside_ps_first_header = false
+          end
+        when "firstFooter"
+          if @inside_ps_first_footer
+            @print_settings[:header_footer][:first_footer] = @text_buffer.dup unless @text_buffer.empty?
+            @inside_ps_first_footer = false
+          end
         when "upDownBars"
           @inside_up_down_bars = false
           @inside_up_bars = false

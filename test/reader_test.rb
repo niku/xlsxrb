@@ -10556,4 +10556,88 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart protection" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     protection: { chart_object: true, data: true, formatting: false,
+                                   selection: true, user_interface: true })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    prot = chart[:protection]
+    assert_not_nil(prot)
+    assert_equal(true, prot[:chart_object])
+    assert_equal(true, prot[:data])
+    assert_equal(false, prot[:formatting])
+    assert_equal(true, prot[:selection])
+    assert_equal(true, prot[:user_interface])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips chart printSettings with full options" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     print_settings: {
+                       header_footer: { odd_header: "&CTitle", odd_footer: "&CPage &P" },
+                       page_margins: { b: 0.75, l: 0.7, r: 0.7, t: 0.75, header: 0.3, footer: 0.3 },
+                       page_setup: { orientation: "landscape", paper_size: 9 }
+                     })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ps = chart[:print_settings]
+    assert_not_nil(ps)
+    assert_equal("&CTitle", ps[:header_footer][:odd_header])
+    assert_equal("&CPage &P", ps[:header_footer][:odd_footer])
+    assert_in_delta(0.75, ps[:page_margins][:b])
+    assert_in_delta(0.7, ps[:page_margins][:l])
+    assert_in_delta(0.7, ps[:page_margins][:r])
+    assert_in_delta(0.75, ps[:page_margins][:t])
+    assert_in_delta(0.3, ps[:page_margins][:header])
+    assert_in_delta(0.3, ps[:page_margins][:footer])
+    assert_equal("landscape", ps[:page_setup][:orientation])
+    assert_equal(9, ps[:page_setup][:paper_size])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "round-trips chart printSettings with pageMargins only" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     print_settings: {
+                       page_margins: { b: 1.0, l: 0.5, r: 0.5, t: 1.0, header: 0.5, footer: 0.5 }
+                     })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    ps = chart[:print_settings]
+    assert_not_nil(ps)
+    assert_in_delta(1.0, ps[:page_margins][:b])
+    assert_in_delta(0.5, ps[:page_margins][:l])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end
