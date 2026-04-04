@@ -3763,6 +3763,39 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "SDK validates writer chart protection" do
+    xlsx_path = File.join(Dir.tmpdir, "writer_chart_protection_#{Process.pid}.xlsx")
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     protection: { chart_object: true, data: true, formatting: false,
+                                   selection: true, user_interface: true })
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_chart_protection_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "SDK validates writer chart printSettings" do
+    xlsx_path = File.join(Dir.tmpdir, "writer_chart_print_settings_#{Process.pid}.xlsx")
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     print_settings: {
+                       header_footer: { odd_header: "&CHeader", odd_footer: "&CPage &P" },
+                       page_margins: { b: 0.75, l: 0.7, r: 0.7, t: 0.75, header: 0.3, footer: 0.3 },
+                       page_setup: { orientation: "landscape", paper_size: 1 }
+                     })
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_chart_print_settings_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

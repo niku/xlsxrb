@@ -4244,6 +4244,27 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits chart protection element" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     protection: { chart_object: true, data: true, formatting: false,
+                                   selection: true, user_interface: true })
+    xlsx_path = File.join(Dir.tmpdir, "chart_protection_#{Process.pid}.xlsx")
+    writer.write(xlsx_path)
+    xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(/<c:protection>/, xml)
+    assert_match(%r{<c:chartObject val="1"/>}, xml)
+    assert_match(%r{<c:data val="1"/>}, xml)
+    assert_match(%r{<c:formatting val="0"/>}, xml)
+    assert_match(%r{<c:selection val="1"/>}, xml)
+    assert_match(%r{<c:userInterface val="1"/>}, xml)
+    assert_match(%r{</c:protection>.*<c:chart>}m, xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "emits showBubbleSize in data labels" do
     writer = Xlsxrb::Writer.new
     writer.set_cell("A1", 1)
@@ -7678,6 +7699,79 @@ class WriterTest < Test::Unit::TestCase
 
     chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
     assert_match(%r{<c:title>.*<c:overlay val="0"/><c:spPr><a:solidFill><a:srgbClr val="DDFFDD"/></a:solidFill><a:ln w="12700"><a:solidFill><a:srgbClr val="008800"/></a:solidFill></a:ln></c:spPr></c:title>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits chart printSettings with pageMargins" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     print_settings: { page_margins: { b: 0.75, l: 0.7, r: 0.7, t: 0.75, header: 0.3, footer: 0.3 } })
+    xlsx_tempfile = Tempfile.new(["xlsxrb-printset", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:printSettings>.*<c:pageMargins b="0.75" l="0.7" r="0.7" t="0.75" header="0.3" footer="0.3"/>.*</c:printSettings>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits chart printSettings with pageSetup" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     print_settings: { page_setup: { orientation: "landscape", paper_size: 1 } })
+    xlsx_tempfile = Tempfile.new(["xlsxrb-printset2", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:printSettings>.*<c:pageSetup[^/]*orientation="landscape"[^/]*/>.*</c:printSettings>}m, chart_xml)
+    assert_match(%r{<c:pageSetup[^/]*paperSize="1"}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits chart printSettings with headerFooter" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     print_settings: { header_footer: { odd_header: "&CHeader", odd_footer: "&CPage &P" } })
+    xlsx_tempfile = Tempfile.new(["xlsxrb-printset3", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:printSettings><c:headerFooter>.*<c:oddHeader>&amp;CHeader</c:oddHeader>.*<c:oddFooter>&amp;CPage &amp;P</c:oddFooter>.*</c:headerFooter>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits full chart printSettings with all sub-elements" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     print_settings: {
+                       header_footer: { odd_header: "&CTitle", odd_footer: "&CPage &P" },
+                       page_margins: { b: 1.0, l: 0.5, r: 0.5, t: 1.0, header: 0.5, footer: 0.5 },
+                       page_setup: { orientation: "portrait", paper_size: 9 }
+                     })
+    xlsx_tempfile = Tempfile.new(["xlsxrb-printsetfull", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:printSettings><c:headerFooter>.*</c:headerFooter><c:pageMargins[^/]*/>.*<c:pageSetup[^/]*/>.*</c:printSettings>}m, chart_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

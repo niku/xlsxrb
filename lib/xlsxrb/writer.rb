@@ -1131,7 +1131,7 @@ module Xlsxrb
     # Adds a chart to the given sheet.
     # type: :bar, :line, :pie. title: chart title string.
     # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
-    def add_chart(type: :bar, title: nil, title_overlay: nil, title_font: nil, title_fill_color: nil, title_no_fill: nil, title_line_color: nil, title_line_width: nil, title_line_dash: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_title_font: nil, cat_axis_title_fill: nil, cat_axis_title_no_fill: nil, cat_axis_title_line_color: nil, cat_axis_title_line_width: nil, cat_axis_title_line_dash: nil, val_axis_title_font: nil, val_axis_title_fill: nil, val_axis_title_no_fill: nil, val_axis_title_line_color: nil, val_axis_title_line_width: nil, val_axis_title_line_dash: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_no_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, plot_area_line_dash: nil, plot_area_layout: nil, floor: nil, side_wall: nil, back_wall: nil, drop_lines: nil, hi_low_lines: nil, ser_lines: nil, up_down_bars: nil, band_fmts: nil, of_pie_type: nil, split_type: nil, split_pos: nil, cust_split: nil, second_pie_size: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, cat_axis_line_color: nil, cat_axis_line_width: nil, cat_axis_line_dash: nil, val_axis_line_color: nil, val_axis_line_width: nil, val_axis_line_dash: nil, cat_axis_fill: nil, cat_axis_no_fill: nil, val_axis_fill: nil, val_axis_no_fill: nil, cat_axis_type: nil, cat_axis_base_time_unit: nil, cat_axis_major_time_unit: nil, cat_axis_minor_time_unit: nil, cat_axis_major_unit: nil, cat_axis_minor_unit: nil, chart_fill: nil, chart_no_fill: nil, chart_line_color: nil, chart_line_width: nil, chart_line_dash: nil, sheet: nil)
+    def add_chart(type: :bar, title: nil, title_overlay: nil, title_font: nil, title_fill_color: nil, title_no_fill: nil, title_line_color: nil, title_line_width: nil, title_line_dash: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_title_font: nil, cat_axis_title_fill: nil, cat_axis_title_no_fill: nil, cat_axis_title_line_color: nil, cat_axis_title_line_width: nil, cat_axis_title_line_dash: nil, val_axis_title_font: nil, val_axis_title_fill: nil, val_axis_title_no_fill: nil, val_axis_title_line_color: nil, val_axis_title_line_width: nil, val_axis_title_line_dash: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_no_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, plot_area_line_dash: nil, plot_area_layout: nil, floor: nil, side_wall: nil, back_wall: nil, drop_lines: nil, hi_low_lines: nil, ser_lines: nil, up_down_bars: nil, band_fmts: nil, of_pie_type: nil, split_type: nil, split_pos: nil, cust_split: nil, second_pie_size: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, cat_axis_line_color: nil, cat_axis_line_width: nil, cat_axis_line_dash: nil, val_axis_line_color: nil, val_axis_line_width: nil, val_axis_line_dash: nil, cat_axis_fill: nil, cat_axis_no_fill: nil, val_axis_fill: nil, val_axis_no_fill: nil, cat_axis_type: nil, cat_axis_base_time_unit: nil, cat_axis_major_time_unit: nil, cat_axis_minor_time_unit: nil, cat_axis_major_unit: nil, cat_axis_minor_unit: nil, chart_fill: nil, chart_no_fill: nil, chart_line_color: nil, chart_line_width: nil, chart_line_dash: nil, protection: nil, print_settings: nil, sheet: nil)
       sheet_name = sheet || @sheet_order.first
       raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
 
@@ -1284,6 +1284,8 @@ module Xlsxrb
       chart[:chart_line_color] = chart_line_color if chart_line_color
       chart[:chart_line_width] = chart_line_width if chart_line_width
       chart[:chart_line_dash] = chart_line_dash if chart_line_dash
+      chart[:protection] = protection if protection
+      chart[:print_settings] = print_settings if print_settings
       @charts_data[sheet_name] << chart
     end
 
@@ -3560,6 +3562,15 @@ module Xlsxrb
       rc = chart[:rounded_corners]
       parts << %(<c:roundedCorners val="#{rc ? 1 : 0}"/>) unless rc.nil?
       parts << %(<c:style val="#{chart[:style]}"/>) if chart[:style]
+      if (prot = chart[:protection])
+        parts << "<c:protection>"
+        parts << %(<c:chartObject val="#{prot[:chart_object] ? 1 : 0}"/>) unless prot[:chart_object].nil?
+        parts << %(<c:data val="#{prot[:data] ? 1 : 0}"/>) unless prot[:data].nil?
+        parts << %(<c:formatting val="#{prot[:formatting] ? 1 : 0}"/>) unless prot[:formatting].nil?
+        parts << %(<c:selection val="#{prot[:selection] ? 1 : 0}"/>) unless prot[:selection].nil?
+        parts << %(<c:userInterface val="#{prot[:user_interface] ? 1 : 0}"/>) unless prot[:user_interface].nil?
+        parts << "</c:protection>"
+      end
       parts << "<c:chart>"
 
       if chart[:title]
@@ -4256,6 +4267,34 @@ module Xlsxrb
           cs_sp << "<a:ln#{cs_lw}>#{cs_ln_f}#{cs_ln_d}</a:ln>"
         end
         parts << "<c:spPr>#{cs_sp}</c:spPr>"
+      end
+      if (ps = chart[:print_settings])
+        parts << "<c:printSettings>"
+        if (hf = ps[:header_footer])
+          parts << "<c:headerFooter>"
+          parts << "<c:oddHeader>#{xml_escape(hf[:odd_header])}</c:oddHeader>" if hf[:odd_header]
+          parts << "<c:oddFooter>#{xml_escape(hf[:odd_footer])}</c:oddFooter>" if hf[:odd_footer]
+          parts << "<c:evenHeader>#{xml_escape(hf[:even_header])}</c:evenHeader>" if hf[:even_header]
+          parts << "<c:evenFooter>#{xml_escape(hf[:even_footer])}</c:evenFooter>" if hf[:even_footer]
+          parts << "<c:firstHeader>#{xml_escape(hf[:first_header])}</c:firstHeader>" if hf[:first_header]
+          parts << "<c:firstFooter>#{xml_escape(hf[:first_footer])}</c:firstFooter>" if hf[:first_footer]
+          parts << "</c:headerFooter>"
+        end
+        if (pm = ps[:page_margins])
+          pm_attrs = %w[b l r t header footer].filter_map { |a| pm[a.to_sym] ? %( #{a}="#{pm[a.to_sym]}") : nil }.join
+          parts << "<c:pageMargins#{pm_attrs}/>"
+        end
+        if (psu = ps[:page_setup])
+          psu_parts = +""
+          psu_parts << %( paperSize="#{psu[:paper_size]}") if psu[:paper_size]
+          psu_parts << %( firstPageNumber="#{psu[:first_page_number]}") if psu[:first_page_number]
+          psu_parts << %( orientation="#{xml_escape(psu[:orientation])}") if psu[:orientation]
+          psu_parts << %( horizontalDpi="#{psu[:horizontal_dpi]}") if psu[:horizontal_dpi]
+          psu_parts << %( verticalDpi="#{psu[:vertical_dpi]}") if psu[:vertical_dpi]
+          psu_parts << %( copies="#{psu[:copies]}") if psu[:copies]
+          parts << "<c:pageSetup#{psu_parts}/>"
+        end
+        parts << "</c:printSettings>"
       end
       parts << "</c:chartSpace>"
       parts.join
