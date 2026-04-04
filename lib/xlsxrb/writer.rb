@@ -3904,6 +3904,8 @@ module Xlsxrb
           parts << "<c:minus><c:numRef><c:f>#{xml_escape(eb[:minus])}</c:f></c:numRef></c:minus>" if eb[:minus]
           parts << %(<c:val val="#{eb[:val]}"/>) if eb[:val]
           eb_sp_children = +""
+          eb_sp_children << %(<a:solidFill>#{color_xml(eb[:fill_color])}</a:solidFill>) if eb[:fill_color]
+          eb_sp_children << "<a:noFill/>" if eb[:no_fill]
           if eb[:line_color] || eb[:line_width] || eb[:line_dash]
             eb_ln_w = eb[:line_width] ? %( w="#{(eb[:line_width] * 12_700).to_i}") : ""
             eb_ln_f = eb[:line_color] ? %(<a:solidFill>#{color_xml(eb[:line_color])}</a:solidFill>) : ""

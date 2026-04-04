@@ -3802,6 +3802,23 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated error bar fill properties" do
+    xlsx_path = File.join(Dir.tmpdir, "reader_eb_fill_#{Process.pid}.xlsx")
+
+    assert_openxml_sdk_scenario_passes("reader_err_bars_fill_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    eb = charts[0][:series].first[:error_bars]
+    assert_not_nil(eb)
+    assert_equal("CC0000", eb[:fill_color])
+    assert_equal("0000CC", eb[:line_color])
+    assert_in_delta(1.5, eb[:line_width])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
