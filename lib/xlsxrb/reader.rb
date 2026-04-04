@@ -752,6 +752,9 @@ module Xlsxrb
         chart[:title_layout] = cl.title_layout if cl.title_layout
         chart[:cat_axis_title_layout] = cl.cat_axis_title_layout if cl.cat_axis_title_layout
         chart[:val_axis_title_layout] = cl.val_axis_title_layout if cl.val_axis_title_layout
+        chart[:title_rotation] = cl.title_rotation if cl.title_rotation
+        chart[:cat_axis_title_rotation] = cl.cat_axis_title_rotation if cl.cat_axis_title_rotation
+        chart[:val_axis_title_rotation] = cl.val_axis_title_rotation if cl.val_axis_title_rotation
         chart[:grouping] = cl.grouping if cl.grouping
         chart[:bar_dir] = cl.bar_dir if cl.bar_dir
         chart[:vary_colors] = cl.vary_colors unless cl.vary_colors.nil?
@@ -5323,6 +5326,7 @@ module Xlsxrb
                   :cat_axis_title_fill, :cat_axis_title_no_fill, :cat_axis_title_line_color, :cat_axis_title_line_width, :cat_axis_title_line_dash,
                   :val_axis_title_fill, :val_axis_title_no_fill, :val_axis_title_line_color, :val_axis_title_line_width, :val_axis_title_line_dash,
                   :title_layout, :cat_axis_title_layout, :val_axis_title_layout,
+                  :title_rotation, :cat_axis_title_rotation, :val_axis_title_rotation,
                   :chart_fill, :chart_no_fill, :chart_line_color, :chart_line_width, :chart_line_dash,
                   :protection, :print_settings, :chart_font
 
@@ -5343,6 +5347,9 @@ module Xlsxrb
         @title_layout = nil
         @cat_axis_title_layout = nil
         @val_axis_title_layout = nil
+        @title_rotation = nil
+        @cat_axis_title_rotation = nil
+        @val_axis_title_rotation = nil
         @inside_title_layout = false
         @inside_title_sp_pr = false
         @inside_title_ln = false
@@ -6632,11 +6639,21 @@ module Xlsxrb
             @inside_axis_tx_pr = true
           end
         when "bodyPr"
-          if @inside_axis_tx_pr && attributes["rot"]
-            if @inside_cat_ax
-              @cat_axis_label_rotation = attributes["rot"].to_i
-            elsif @inside_val_ax
-              @val_axis_label_rotation = attributes["rot"].to_i
+          if attributes["rot"]
+            if @inside_axis_tx_pr
+              if @inside_cat_ax
+                @cat_axis_label_rotation = attributes["rot"].to_i
+              elsif @inside_val_ax
+                @val_axis_label_rotation = attributes["rot"].to_i
+              end
+            elsif @inside_ax_title
+              if @inside_cat_ax
+                @cat_axis_title_rotation = attributes["rot"].to_i
+              elsif @inside_val_ax
+                @val_axis_title_rotation = attributes["rot"].to_i
+              end
+            elsif @inside_title && @title_depth == 1
+              @title_rotation = attributes["rot"].to_i
             end
           end
         when "defRPr"

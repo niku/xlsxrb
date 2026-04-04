@@ -7901,6 +7901,45 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits title rotation on chart title bodyPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     title: "Rotated",
+                     title_rotation: -5_400_000,
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-titlerot", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:title><c:tx><c:rich><a:bodyPr rot="-5400000"/><a:lstStyle/>}, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits axis title rotation on bodyPr" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     cat_axis_title: "Category",
+                     cat_axis_title_rotation: -5_400_000,
+                     val_axis_title: "Value",
+                     val_axis_title_rotation: 0,
+                     series: [{ val_ref: "Sheet1!$A$1" }])
+    xlsx_tempfile = Tempfile.new(["xlsxrb-axtitlerot", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:title><c:tx><c:rich><a:bodyPr rot="-5400000"/><a:lstStyle/>.*<a:t>Category</a:t>}m, chart_xml)
+    assert_match(%r{<c:valAx>.*<c:title><c:tx><c:rich><a:bodyPr rot="0"/><a:lstStyle/>.*<a:t>Value</a:t>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

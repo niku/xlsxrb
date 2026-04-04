@@ -3819,6 +3819,21 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated title rotation" do
+    xlsx_path = File.join(Dir.tmpdir, "reader_title_rot_#{Process.pid}.xlsx")
+
+    assert_openxml_sdk_scenario_passes("reader_title_rotation_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal(-5_400_000, charts[0][:title_rotation])
+    assert_equal(-2_700_000, charts[0][:cat_axis_title_rotation])
+    assert_equal(0, charts[0][:val_axis_title_rotation])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
