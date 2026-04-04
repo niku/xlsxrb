@@ -10689,4 +10689,41 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips chart title layout positioning" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     title: { text: "Positioned", layout: { x: 0.1, y: 0.02, w: 0.8, h: 0.05 } },
+                     cat_axis_title: { text: "Cat", layout: { x: 0.3, y: 0.9 } },
+                     val_axis_title: { text: "Val", layout: { x: 0.01, y: 0.4 } })
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+
+    tl = chart[:title_layout]
+    assert_not_nil(tl)
+    assert_in_delta(0.1, tl[:x])
+    assert_in_delta(0.02, tl[:y])
+    assert_in_delta(0.8, tl[:w])
+    assert_in_delta(0.05, tl[:h])
+
+    ctl = chart[:cat_axis_title_layout]
+    assert_not_nil(ctl)
+    assert_in_delta(0.3, ctl[:x])
+    assert_in_delta(0.9, ctl[:y])
+
+    vtl = chart[:val_axis_title_layout]
+    assert_not_nil(vtl)
+    assert_in_delta(0.01, vtl[:x])
+    assert_in_delta(0.4, vtl[:y])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

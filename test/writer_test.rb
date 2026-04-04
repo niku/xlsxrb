@@ -7811,6 +7811,42 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "emits title layout with manual positioning" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     title: { text: "My Chart", layout: { x: 0.1, y: 0.02, w: 0.8, h: 0.05 } })
+    xlsx_tempfile = Tempfile.new(["xlsxrb-titlelayout", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:title>.*<c:layout><c:manualLayout><c:x val="0.1"/><c:y val="0.02"/><c:w val="0.8"/><c:h val="0.05"/></c:manualLayout></c:layout>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "emits axis title layout with manual positioning" do
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     cat_axis_title: { text: "Categories", layout: { x: 0.3, y: 0.9 } },
+                     val_axis_title: { text: "Values", layout: { x: 0.01, y: 0.4, w: 0.04, h: 0.3 } })
+    xlsx_tempfile = Tempfile.new(["xlsxrb-axtitlelayout", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    chart_xml = read_xml_from_xlsx(xlsx_path, "xl/charts/chart1.xml")
+    assert_match(%r{<c:catAx>.*<c:title>.*<c:layout><c:manualLayout><c:x val="0.3"/><c:y val="0.9"/></c:manualLayout></c:layout>}m, chart_xml)
+    assert_match(%r{<c:valAx>.*<c:title>.*<c:layout><c:manualLayout><c:x val="0.01"/><c:y val="0.4"/><c:w val="0.04"/><c:h val="0.3"/></c:manualLayout></c:layout>}m, chart_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

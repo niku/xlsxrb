@@ -749,6 +749,9 @@ module Xlsxrb
         chart[:val_axis_title_line_color] = cl.val_axis_title_line_color if cl.val_axis_title_line_color
         chart[:val_axis_title_line_width] = cl.val_axis_title_line_width if cl.val_axis_title_line_width
         chart[:val_axis_title_line_dash] = cl.val_axis_title_line_dash if cl.val_axis_title_line_dash
+        chart[:title_layout] = cl.title_layout if cl.title_layout
+        chart[:cat_axis_title_layout] = cl.cat_axis_title_layout if cl.cat_axis_title_layout
+        chart[:val_axis_title_layout] = cl.val_axis_title_layout if cl.val_axis_title_layout
         chart[:grouping] = cl.grouping if cl.grouping
         chart[:bar_dir] = cl.bar_dir if cl.bar_dir
         chart[:vary_colors] = cl.vary_colors unless cl.vary_colors.nil?
@@ -5319,6 +5322,7 @@ module Xlsxrb
                   :cat_axis_title_font, :val_axis_title_font,
                   :cat_axis_title_fill, :cat_axis_title_no_fill, :cat_axis_title_line_color, :cat_axis_title_line_width, :cat_axis_title_line_dash,
                   :val_axis_title_fill, :val_axis_title_no_fill, :val_axis_title_line_color, :val_axis_title_line_width, :val_axis_title_line_dash,
+                  :title_layout, :cat_axis_title_layout, :val_axis_title_layout,
                   :chart_fill, :chart_no_fill, :chart_line_color, :chart_line_width, :chart_line_dash,
                   :protection, :print_settings, :chart_font
 
@@ -5336,6 +5340,10 @@ module Xlsxrb
         @title_line_color = nil
         @title_line_width = nil
         @title_line_dash = nil
+        @title_layout = nil
+        @cat_axis_title_layout = nil
+        @val_axis_title_layout = nil
+        @inside_title_layout = false
         @inside_title_sp_pr = false
         @inside_title_ln = false
         @inside_title_solid_fill = false
@@ -6309,8 +6317,9 @@ module Xlsxrb
           @legend[:position] = attributes["val"] if @inside_legend && attributes["val"]
         when "manualLayout"
           @inside_legend_layout = true if @inside_legend
-          @inside_plot_area_layout = true if @inside_plot_area && !@inside_legend
+          @inside_plot_area_layout = true if @inside_plot_area && !@inside_legend && !@inside_title
           @inside_dlbl_layout = true if @inside_dlbl
+          @inside_title_layout = true if (@inside_title || @inside_ax_title) && !@inside_legend && !@inside_dlbl
         when "layoutTarget"
           (@legend[:layout] ||= {})[:target] = attributes["val"] if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:target] = attributes["val"] if @inside_plot_area_layout && attributes["val"]
@@ -6330,16 +6339,20 @@ module Xlsxrb
           (@legend[:layout] ||= {})[:x] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:x] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
           (@current_dlbl[:layout] ||= {})[:x] = attributes["val"].to_f if @inside_dlbl_layout && @current_dlbl && attributes["val"]
+          assign_title_layout_value(:x, attributes["val"].to_f) if @inside_title_layout && attributes["val"]
         when "y"
           (@legend[:layout] ||= {})[:y] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:y] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
           (@current_dlbl[:layout] ||= {})[:y] = attributes["val"].to_f if @inside_dlbl_layout && @current_dlbl && attributes["val"]
+          assign_title_layout_value(:y, attributes["val"].to_f) if @inside_title_layout && attributes["val"]
         when "w"
           (@legend[:layout] ||= {})[:w] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:w] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
+          assign_title_layout_value(:w, attributes["val"].to_f) if @inside_title_layout && attributes["val"]
         when "h"
           (@legend[:layout] ||= {})[:h] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:h] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
+          assign_title_layout_value(:h, attributes["val"].to_f) if @inside_title_layout && attributes["val"]
         when "legendEntry"
           if @inside_legend
             @inside_legend_entry = true
@@ -7094,6 +7107,7 @@ module Xlsxrb
         when "title"
           @title_depth -= 1
           @inside_title = false if @title_depth.zero?
+          @inside_title_layout = false
           @inside_ax_title = false
           @inside_ax_title_rpr = false
           @inside_ax_title_sp_pr = false
@@ -7303,6 +7317,18 @@ module Xlsxrb
       end
 
       private
+
+      def assign_title_layout_value(key, value)
+        if @inside_ax_title
+          if @inside_cat_ax
+            (@cat_axis_title_layout ||= {})[key] = value
+          elsif @inside_val_ax
+            (@val_axis_title_layout ||= {})[key] = value
+          end
+        elsif @inside_title && @title_depth == 1
+          (@title_layout ||= {})[key] = value
+        end
+      end
 
       def assign_chart_color(color_value)
         if @inside_axis_def_rpr

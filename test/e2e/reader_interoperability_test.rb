@@ -3760,6 +3760,30 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated title layout positioning" do
+    xlsx_path = File.join(Dir.tmpdir, "reader_title_layout_#{Process.pid}.xlsx")
+
+    assert_openxml_sdk_scenario_passes("reader_title_layout_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+
+    tl = charts[0][:title_layout]
+    assert_not_nil(tl)
+    assert_in_delta(0.15, tl[:x])
+    assert_in_delta(0.03, tl[:y])
+    assert_in_delta(0.7, tl[:w])
+    assert_in_delta(0.06, tl[:h])
+
+    ctl = charts[0][:cat_axis_title_layout]
+    assert_not_nil(ctl)
+    assert_in_delta(0.25, ctl[:x])
+    assert_in_delta(0.88, ctl[:y])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)

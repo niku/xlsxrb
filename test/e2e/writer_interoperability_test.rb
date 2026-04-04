@@ -3825,6 +3825,21 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "SDK validates writer title layout positioning" do
+    xlsx_path = File.join(Dir.tmpdir, "writer_title_layout_#{Process.pid}.xlsx")
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1" }],
+                     title: { text: "Custom Position", layout: { x: 0.1, y: 0.02, w: 0.8, h: 0.05 } },
+                     cat_axis_title: { text: "X Axis", layout: { x: 0.3, y: 0.9 } })
+    writer.write(xlsx_path)
+
+    assert_openxml_sdk_scenario_passes("writer_title_layout_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
