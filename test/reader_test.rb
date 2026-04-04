@@ -10640,4 +10640,29 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips dLbl layout with x and y offsets" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                data_labels: { show_val: true,
+                                               labels: [{ idx: 0, layout: { x: 0.05, y: -0.03 }, show_val: true }] } }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    labels = chart[:data_labels][:labels]
+    assert_equal(1, labels.size)
+    lbl = labels.first
+    assert_not_nil(lbl[:layout])
+    assert_in_delta(0.05, lbl[:layout][:x])
+    assert_in_delta(-0.03, lbl[:layout][:y])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

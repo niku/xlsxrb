@@ -3753,6 +3753,12 @@ module Xlsxrb
             if lbl[:delete]
               parts << '<c:delete val="1"/>'
             else
+              if (lbl_layout = lbl[:layout])
+                ml = +""
+                ml << %(<c:x val="#{lbl_layout[:x]}"/>) if lbl_layout[:x]
+                ml << %(<c:y val="#{lbl_layout[:y]}"/>) if lbl_layout[:y]
+                parts << (ml.empty? ? "<c:layout/>" : "<c:layout><c:manualLayout>#{ml}</c:manualLayout></c:layout>")
+              end
               parts << "<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(lbl[:text])}</a:t></a:r></a:p></c:rich></c:tx>" if lbl[:text]
               if lbl[:num_fmt]
                 lnf = lbl[:num_fmt]

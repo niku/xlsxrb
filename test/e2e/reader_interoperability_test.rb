@@ -3723,6 +3723,24 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reader parses SDK-generated dLbl layout" do
+    xlsx_path = File.join(Dir.tmpdir, "reader_dlbl_layout_#{Process.pid}.xlsx")
+
+    assert_openxml_sdk_scenario_passes("reader_dlbl_layout_generated_by_sdk", xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    labels = charts[0][:data_labels][:labels]
+    assert_equal(1, labels.size)
+    lbl = labels.first
+    assert_not_nil(lbl[:layout])
+    assert_in_delta(0.05, lbl[:layout][:x])
+    assert_in_delta(-0.03, lbl[:layout][:y])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   private
 
   def assert_openxml_sdk_scenario_passes(scenario_name, xlsx_path)
