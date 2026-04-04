@@ -3866,6 +3866,8 @@ module Xlsxrb
           if tl[:label]
             lbl = tl[:label]
             parts << "<c:trendlineLbl>"
+            parts << build_title_layout_xml(lbl[:layout])
+            parts << "<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(lbl[:text])}</a:t></a:r></a:p></c:rich></c:tx>" if lbl[:text]
             if lbl[:num_fmt]
               nf = lbl[:num_fmt]
               nf_src = nf.is_a?(Hash) ? nf : { format_code: nf }

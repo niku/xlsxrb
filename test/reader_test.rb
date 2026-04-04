@@ -10726,4 +10726,30 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "round-trips trendline label layout and text" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    writer = Xlsxrb::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_chart(type: :bar,
+                     series: [{ val_ref: "Sheet1!$A$1",
+                                trendline: { type: "linear",
+                                             label: { text: "Custom Trend",
+                                                      layout: { x: 0.45, y: 0.25 } } } }])
+    writer.write(xlsx_path)
+
+    reader = Xlsxrb::Reader.new(xlsx_path)
+    chart = reader.charts.first
+    tl = chart[:series].first[:trendline][:label]
+    assert_not_nil(tl)
+    assert_equal("Custom Trend", tl[:text])
+    assert_not_nil(tl[:layout])
+    assert_in_delta(0.45, tl[:layout][:x])
+    assert_in_delta(0.25, tl[:layout][:y])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
 end

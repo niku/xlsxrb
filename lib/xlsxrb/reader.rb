@@ -5555,6 +5555,8 @@ module Xlsxrb
         @inside_trendline_ln = false
         @inside_trendline_solid_fill = false
         @inside_trendline_lbl = false
+        @inside_trendline_lbl_layout = false
+        @inside_trendline_lbl_tx = false
         @inside_trendline_lbl_sp_pr = false
         @inside_trendline_lbl_ln = false
         @inside_trendline_lbl_solid_fill = false
@@ -6320,6 +6322,7 @@ module Xlsxrb
           @inside_plot_area_layout = true if @inside_plot_area && !@inside_legend && !@inside_title
           @inside_dlbl_layout = true if @inside_dlbl
           @inside_title_layout = true if (@inside_title || @inside_ax_title) && !@inside_legend && !@inside_dlbl
+          @inside_trendline_lbl_layout = true if @inside_trendline_lbl
         when "layoutTarget"
           (@legend[:layout] ||= {})[:target] = attributes["val"] if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:target] = attributes["val"] if @inside_plot_area_layout && attributes["val"]
@@ -6340,11 +6343,13 @@ module Xlsxrb
           (@plot_area_layout ||= {})[:x] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
           (@current_dlbl[:layout] ||= {})[:x] = attributes["val"].to_f if @inside_dlbl_layout && @current_dlbl && attributes["val"]
           assign_title_layout_value(:x, attributes["val"].to_f) if @inside_title_layout && attributes["val"]
+          ((@current_trendline[:label] ||= {})[:layout] ||= {})[:x] = attributes["val"].to_f if @inside_trendline_lbl_layout && @current_trendline && attributes["val"]
         when "y"
           (@legend[:layout] ||= {})[:y] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:y] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
           (@current_dlbl[:layout] ||= {})[:y] = attributes["val"].to_f if @inside_dlbl_layout && @current_dlbl && attributes["val"]
           assign_title_layout_value(:y, attributes["val"].to_f) if @inside_title_layout && attributes["val"]
+          ((@current_trendline[:label] ||= {})[:layout] ||= {})[:y] = attributes["val"].to_f if @inside_trendline_lbl_layout && @current_trendline && attributes["val"]
         when "w"
           (@legend[:layout] ||= {})[:w] = attributes["val"].to_f if @inside_legend_layout && attributes["val"]
           (@plot_area_layout ||= {})[:w] = attributes["val"].to_f if @inside_plot_area_layout && attributes["val"]
@@ -6402,6 +6407,7 @@ module Xlsxrb
           end
         when "tx"
           @inside_dlbl_tx = true if @inside_dlbl
+          @inside_trendline_lbl_tx = true if @inside_trendline_lbl
         when "showVal"
           if @inside_dlbl && @current_dlbl
             @current_dlbl[:show_val] = attributes["val"] == "1"
@@ -6785,6 +6791,8 @@ module Xlsxrb
         when "t"
           if @inside_dlbl_tx && @current_dlbl
             @current_dlbl[:text] = (@current_dlbl[:text] || +"") << @text_buffer
+          elsif @inside_trendline_lbl_tx && @current_trendline
+            (@current_trendline[:label] ||= {})[:text] = (@current_trendline.dig(:label, :text) || +"") << @text_buffer
           elsif @inside_ax_title
             if @inside_cat_ax
               @cat_axis_title = @text_buffer.dup
@@ -6875,6 +6883,8 @@ module Xlsxrb
           @inside_trendline_ln = false
           @inside_trendline_solid_fill = false
           @inside_trendline_lbl = false
+          @inside_trendline_lbl_layout = false
+          @inside_trendline_lbl_tx = false
           @inside_trendline_lbl_sp_pr = false
           @inside_trendline_lbl_ln = false
           @inside_trendline_lbl_solid_fill = false
@@ -6882,6 +6892,8 @@ module Xlsxrb
         when "trendlineLbl"
           (@current_trendline[:label] ||= {})[:font] = @trendline_lbl_font if @trendline_lbl_font && @current_trendline
           @inside_trendline_lbl = false
+          @inside_trendline_lbl_layout = false
+          @inside_trendline_lbl_tx = false
           @inside_trendline_lbl_sp_pr = false
           @inside_trendline_lbl_ln = false
           @inside_trendline_lbl_solid_fill = false
