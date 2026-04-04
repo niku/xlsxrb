@@ -859,6 +859,7 @@ module Xlsxrb
         chart[:chart_line_dash] = cl.chart_line_dash if cl.chart_line_dash
         chart[:protection] = cl.protection if cl.protection
         chart[:print_settings] = cl.print_settings if cl.print_settings
+        chart[:chart_font] = cl.chart_font if cl.chart_font
       end
       listener.charts
     end
@@ -5319,7 +5320,7 @@ module Xlsxrb
                   :cat_axis_title_fill, :cat_axis_title_no_fill, :cat_axis_title_line_color, :cat_axis_title_line_width, :cat_axis_title_line_dash,
                   :val_axis_title_fill, :val_axis_title_no_fill, :val_axis_title_line_color, :val_axis_title_line_width, :val_axis_title_line_dash,
                   :chart_fill, :chart_no_fill, :chart_line_color, :chart_line_width, :chart_line_dash,
-                  :protection, :print_settings
+                  :protection, :print_settings, :chart_font
 
       CHART_TYPES = %w[barChart lineChart pieChart areaChart scatterChart doughnutChart radarChart
                        bar3DChart line3DChart pie3DChart area3DChart surfaceChart surface3DChart stockChart bubbleChart
@@ -5347,6 +5348,8 @@ module Xlsxrb
         @inside_chart_space_sp_pr = false
         @inside_chart_space_ln = false
         @inside_chart_space_solid_fill = false
+        @chart_font = nil
+        @inside_chart_space_tx_pr = false
         @protection = nil
         @inside_protection = false
         @print_settings = nil
@@ -6288,6 +6291,8 @@ module Xlsxrb
               (@dlbls_font ||= {})[:name] = attributes["typeface"]
             elsif @inside_trendline_lbl && @current_trendline
               (@trendline_lbl_font ||= {})[:name] = attributes["typeface"]
+            elsif @inside_chart_space_tx_pr
+              (@chart_font ||= {})[:name] = attributes["typeface"]
             end
           elsif @inside_title_rpr && @title_font && attributes["typeface"]
             @title_font[:name] = attributes["typeface"]
@@ -6599,7 +6604,12 @@ module Xlsxrb
         when "dispUnitsLbl"
           @inside_disp_units_lbl = true if @inside_disp_units
         when "txPr"
-          @inside_axis_tx_pr = true if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_legend_entry || @inside_d_table || @inside_dlbls || @inside_trendline_lbl
+          if @inside_cat_ax || @inside_val_ax || @inside_legend || @inside_legend_entry || @inside_d_table || @inside_dlbls || @inside_trendline_lbl || @inside_disp_units_lbl
+            @inside_axis_tx_pr = true
+          elsif !@inside_chart
+            @inside_chart_space_tx_pr = true
+            @inside_axis_tx_pr = true
+          end
         when "bodyPr"
           if @inside_axis_tx_pr && attributes["rot"]
             if @inside_cat_ax
@@ -6633,6 +6643,8 @@ module Xlsxrb
               @dlbls_font = (@dlbls_font || {}).merge(font)
             elsif @inside_trendline_lbl && @current_trendline
               @trendline_lbl_font = (@trendline_lbl_font || {}).merge(font)
+            elsif @inside_chart_space_tx_pr
+              @chart_font = (@chart_font || {}).merge(font)
             end
           end
         when "tickLblPos"
@@ -7179,6 +7191,10 @@ module Xlsxrb
           @disp_units_lbl_font = nil
         when "txPr"
           @inside_axis_def_rpr = false if @inside_axis_tx_pr
+          if @inside_chart_space_tx_pr
+            @inside_axis_tx_pr = false
+            @inside_chart_space_tx_pr = false
+          end
         when "scaling"
           @inside_scaling = false
         when "view3D"
@@ -7308,6 +7324,8 @@ module Xlsxrb
             (@dlbls_font ||= {})[:color] = color_value
           elsif @inside_trendline_lbl && @current_trendline
             (@trendline_lbl_font ||= {})[:color] = color_value
+          elsif @inside_chart_space_tx_pr
+            (@chart_font ||= {})[:color] = color_value
           end
         elsif @inside_title_rpr && @title_font
           @title_font[:color] = color_value
