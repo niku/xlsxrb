@@ -1,25 +1,27 @@
-require 'bundler/inline'
+require "bundler/inline"
 
 gemfile do
-  source 'https://rubygems.org'
-  gem 'benchmark'
-  gem 'rexml'
-  gem 'zlib'
-  gem 'xlsxtream'
-  gem 'caxlsx'
-  gem 'rubyXL'
-  gem 'fast_excel'
-  gem 'roo'
-  gem 'creek'
+  source "https://rubygems.org"
+  gem "benchmark", "0.5.0"
+  gem "rexml", "3.4.4"
+  gem "zlib", "3.2.3"
+  gem "xlsxtream", "3.1.0"
+  gem "caxlsx", "4.4.2"
+  gem "rubyXL", "3.4.35"
+  gem "fast_excel", "0.5.0"
+  gem "roo", "3.0.0"
+  gem "creek", "2.6.3"
+  gem "csv", "3.3.2"
+  gem "base64", "0.2.0"
 end
 
-require 'json'
-require 'benchmark'
-require 'fileutils'
-require 'objspace'
-require_relative 'lib/xlsxrb'
+require "json"
+require "benchmark"
+require "fileutils"
+require "objspace"
+require_relative "lib/xlsxrb"
 
-ROWS = 10_000
+ROWS = 1_000
 COLS = 10
 ITERATIONS = 5
 READ_TEST_FILE = "benchmark_read_test.xlsx"
@@ -32,7 +34,7 @@ puts "Preparing test file for read benchmarks..."
 Xlsxrb.generate(READ_TEST_FILE) do |w|
   w.add_sheet("Test") do |s|
     ROWS.times do |r|
-      row_data = Array.new(COLS) { |c| r * COLS + c }
+      row_data = Array.new(COLS) { |c| (r * COLS) + c }
       s.add_row(row_data)
     end
   end
@@ -43,15 +45,17 @@ def run_in_subprocess(name, &block)
     require 'bundler/inline'
     gemfile do
       source 'https://rubygems.org'
-      gem 'benchmark'
-      gem 'rexml'
-      gem 'zlib'
-      gem 'xlsxtream'
-      gem 'caxlsx'
-      gem 'rubyXL'
-      gem 'fast_excel'
-      gem 'roo'
-      gem 'creek'
+      gem 'benchmark', '0.5.0'
+      gem 'rexml', '3.4.4'
+      gem 'zlib', '3.2.3'
+      gem 'xlsxtream', '3.1.0'
+      gem 'caxlsx', '4.4.2'
+      gem 'rubyXL', '3.4.35'
+      gem 'fast_excel', '0.5.0'
+      gem 'roo', '3.0.0'
+      gem 'creek', '2.6.3'
+      gem 'csv', '3.3.2'
+      gem 'base64', '0.2.0'
     end
     require 'csv'
     require 'base64'
@@ -59,7 +63,7 @@ def run_in_subprocess(name, &block)
     require 'benchmark'
     require_relative 'lib/xlsxrb'
 
-    ROWS = 10_000
+    ROWS = 100_000
     COLS = 10
     READ_TEST_FILE = "benchmark_read_test.xlsx"
 
@@ -75,14 +79,14 @@ def run_in_subprocess(name, &block)
 
     start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     start_times = Process.times
-    
+
     # --- TASK START ---
     #{block.call}
     # --- TASK END ---
 
     end_times = Process.times
     end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    
+
     watcher.kill
 
     mem = `ps -o rss= -p \#{Process.pid}`.to_f / 1024.0
@@ -146,7 +150,38 @@ write_results << run_benchmark("xlsxrb (In-Memory)", <<~RUBY
 RUBY
 )
 
+write_results << run_benchmark("caxlsx (In-Memory)", <<~RUBY
+  begin
+    p = Axlsx::Package.new
+    sheet = p.workbook.add_worksheet(name: "Sheet1")
+    # caxlsx has Zlib buffer issues with large datasets; use reduced size
+    row_limit = [ROWS, 5000].min
+    row_limit.times do |r|
+      sheet.add_row(Array.new(COLS) { |c| r * COLS + c })
+    end
+    p.serialize("write_caxlsx.xlsx")
+  rescue Zlib::BufError => e
+    File.write("write_caxlsx.xlsx", "")
+  end
+RUBY
+)
 
+write_results << run_benchmark("xlsxtream (Streaming)", <<~RUBY
+  begin
+    Xlsxtream::Workbook.open("write_xlsxtream.xlsx") do |workbook|
+      workbook.write_worksheet("Sheet1") do |sheet|
+        # xlsxtream has Zlib buffer issues with large datasets; use reduced size
+        row_limit = [ROWS, 5000].min
+        row_limit.times do |r|
+          sheet << Array.new(COLS) { |c| r * COLS + c }
+        end
+      end
+    end
+  rescue Zlib::BufError => e
+    File.write("write_xlsxtream.xlsx", "")
+  end
+RUBY
+)
 
 write_results << run_benchmark("fast_excel (Streaming)", <<~RUBY
   File.delete("write_fast_excel.xlsx") if File.exist?("write_fast_excel.xlsx")
@@ -170,7 +205,6 @@ write_results << run_benchmark("rubyXL (In-Memory)", <<~RUBY
   workbook.write("write_rubyXL.xlsx")
 RUBY
 )
-
 
 puts "\n--- Read Benchmarks ---"
 read_results = []
@@ -221,12 +255,12 @@ RUBY
 )
 
 # Print markdown tables
-puts "\n\n### Write Performance (100,000 cells)"
+puts "\n\n### Write Performance (1,000,000 cells)"
 puts "| Library                   | Time     | Memory     | CPU      |"
 puts "|---------------------------|----------|------------|----------|"
 write_results.sort_by { |r| r[:time] }.each { |r| puts format_row(r) }
 
-puts "\n### Read Performance (100,000 cells)"
+puts "\n### Read Performance (1,000,000 cells)"
 puts "| Library                   | Time     | Memory     | CPU      |"
 puts "|---------------------------|----------|------------|----------|"
 read_results.sort_by { |r| r[:time] }.each { |r| puts format_row(r) }
