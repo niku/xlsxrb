@@ -9,11 +9,11 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "hello" }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -24,12 +24,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("B2", "world")
     writer.set_cell("A1", "hello")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "hello", "B2" => "world" }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -40,12 +40,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("B1", "world")
     writer.set_cell("A1", "hello")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "hello", "B1" => "world" }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -56,13 +56,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("AA1", "third")
     writer.set_cell("B1", "second")
     writer.set_cell("A1", "first")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "first", "B1" => "second", "AA1" => "third" }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -73,12 +73,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 42)
     writer.set_cell("B1", 3.14)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => 42, "B1" => 3.14 }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -89,12 +89,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", true)
     writer.set_cell("B1", false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => true, "B1" => false }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -105,12 +105,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "")
     writer.set_cell("B1", "hello")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "", "B1" => "hello" }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -121,17 +121,17 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
-    writer.set_cell("A3", Xlsxrb::Formula.new(expression: "SUM(A1:A2)", cached_value: "30"))
+    writer.set_cell("A3", Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A2)", cached_value: "30"))
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     assert_equal(10, cells["A1"])
     assert_equal(20, cells["A2"])
-    assert_instance_of(Xlsxrb::Formula, cells["A3"])
+    assert_instance_of(Xlsxrb::Elements::Formula, cells["A3"])
     assert_equal("SUM(A1:A2)", cells["A3"].expression)
     assert_equal("30", cells["A3"].cached_value)
   ensure
@@ -143,13 +143,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Data")
     writer.set_cell("A1", "main", sheet: "Sheet1")
     writer.set_cell("A1", "data", sheet: "Data")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal(%w[Sheet1 Data], reader.sheet_names)
     assert_equal({ "A1" => "main" }, reader.cells)
     assert_equal({ "A1" => "main" }, reader.cells(sheet: "Sheet1"))
@@ -165,13 +165,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_column_width("A", 20.0)
     writer.set_column_width("C", 15.5)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A" => 20.0, "C" => 15.5 }, reader.columns)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -182,14 +182,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_row_height(1, 25.0)
     writer.set_row_hidden(3)
     writer.set_row_style(5, 0)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     row_attrs = reader.row_attributes
     assert_in_delta(25.0, row_attrs[1][:height], 0.01)
     assert_equal(true, row_attrs[3][:hidden])
@@ -203,13 +203,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.merge_cells("A1:B2")
     writer.merge_cells("C3:D4")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal(%w[A1:B2 C3:D4], reader.merged_cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -220,12 +220,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Example")
     writer.add_hyperlink("A1", "https://example.com")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => { url: "https://example.com" } }, reader.hyperlinks)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -236,7 +236,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Example")
     writer.add_hyperlink("A1", "https://example.com", display: "Example Site", tooltip: "Click to visit")
     writer.set_cell("B1", "Page")
@@ -245,7 +245,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.add_hyperlink("C1", location: "Sheet1!D1")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     expected = {
       "A1" => { url: "https://example.com", display: "Example Site", tooltip: "Click to visit" },
       "B1" => { url: "https://example.com/page", location: "Sheet2!A1" },
@@ -261,14 +261,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fmt_id = writer.add_number_format("0.00")
     writer.set_cell("A1", 3.14)
     writer.set_cell_format("A1", fmt_id)
     writer.set_cell("B1", 42)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "0.00" }, reader.cell_formats)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -279,7 +279,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     builtin_date_style = writer.add_cell_style(num_fmt_id: 14)
     builtin_text_style = writer.add_cell_style(num_fmt_id: 49)
     writer.set_cell("A1", 45_292)
@@ -288,7 +288,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("B1", builtin_text_style)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal("mm-dd-yy", reader.cell_formats["A1"])
     assert_equal("@", reader.cell_formats["B1"])
     cs = reader.cell_styles
@@ -303,12 +303,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", Date.new(2024, 1, 15))
     writer.set_cell("B1", 42)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     assert_equal(Date.new(2024, 1, 15), cells["A1"])
     assert_equal(42, cells["B1"])
@@ -318,12 +318,12 @@ class ReaderTest < Test::Unit::TestCase
 
   test "serial_to_date and date_to_serial round-trip" do
     date = Date.new(2024, 6, 15)
-    serial = Xlsxrb.date_to_serial(date)
-    assert_equal(date, Xlsxrb.serial_to_date(serial))
+    serial = Xlsxrb::Ooxml::Utils.date_to_serial(date)
+    assert_equal(date, Xlsxrb::Ooxml::Utils.serial_to_date(serial))
 
     # Excel epoch: Jan 1, 1900 = serial 1
-    assert_equal(1, Xlsxrb.date_to_serial(Date.new(1900, 1, 1)))
-    assert_equal(Date.new(1900, 1, 1), Xlsxrb.serial_to_date(1))
+    assert_equal(1, Xlsxrb::Ooxml::Utils.date_to_serial(Date.new(1900, 1, 1)))
+    assert_equal(Date.new(1900, 1, 1), Xlsxrb::Ooxml::Utils.serial_to_date(1))
   end
 
   test "round-trips auto filter" do
@@ -331,13 +331,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
     writer.set_auto_filter("A1:B10")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal("A1:B10", reader.auto_filter)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -348,7 +348,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_core_property(:title, "My Workbook")
     writer.set_core_property(:creator, "Test User")
@@ -356,7 +356,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_core_property(:modified, "2024-01-16T12:00:00Z")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.core_properties
     assert_equal("My Workbook", props[:title])
     assert_equal("Test User", props[:creator])
@@ -371,7 +371,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_app_property(:application, "Xlsxrb")
     writer.set_app_property(:app_version, "1.0.0")
@@ -379,7 +379,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_app_property(:titles_of_parts, ["Sheet1"])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.app_properties
     assert_equal("Xlsxrb", props[:application])
     assert_equal("1.0.0", props[:app_version])
@@ -394,7 +394,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Data")
     writer.set_cell("A1", "hello", sheet: "Sheet1")
     writer.set_workbook_property(:date1904, false)
@@ -405,7 +405,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_calc_property(:full_calc_on_load, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     wp = reader.workbook_properties
     assert_equal(false, wp[:date1904])
     assert_equal(166_925, wp[:default_theme_version])
@@ -426,7 +426,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Hidden")
     writer.add_sheet("VeryHidden")
     writer.set_cell("A1", "main", sheet: "Sheet1")
@@ -434,7 +434,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_sheet_state("VeryHidden", :very_hidden)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     states = reader.sheet_states
     assert_equal(:visible, states["Sheet1"])
     assert_equal(:hidden, states["Hidden"])
@@ -448,7 +448,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Data")
     writer.set_cell("A1", "hello", sheet: "Sheet1")
     writer.add_defined_name("MyRange", "Sheet1!$A$1:$B$10")
@@ -456,7 +456,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.add_defined_name("HiddenName", "42", hidden: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dns = reader.defined_names
     assert_equal(3, dns.size)
 
@@ -480,14 +480,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_property(:tab_color, "FF0000FF")
     writer.set_sheet_property(:summary_below, false)
     writer.set_sheet_property(:summary_right, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal("FF0000FF", props[:tab_color])
     assert_equal(false, props[:summary_below])
@@ -501,12 +501,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("B2", "hello")
     writer.set_cell("D5", "world")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal("B2:D5", reader.dimension)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -517,14 +517,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_format(:default_row_height, 18.0)
     writer.set_sheet_format(:default_col_width, 12.5)
     writer.set_sheet_format(:base_col_width, 10)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fmt = reader.sheet_format
     assert_equal(18.0, fmt[:default_row_height])
     assert_equal(12.5, fmt[:default_col_width])
@@ -538,13 +538,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_row_outline_level(2, 1)
     writer.set_row_collapsed(3)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     attrs = reader.row_attributes
     assert_equal(1, attrs[2][:outline_level])
     assert_equal(true, attrs[3][:collapsed])
@@ -557,14 +557,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_column_attribute("B", :hidden, true)
     writer.set_column_attribute("C", :outline_level, 2)
     writer.set_column_attribute("C", :collapsed, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ca = reader.column_attributes
     assert_equal(true, ca["B"][:hidden])
     assert_equal(2, ca["C"][:outline_level])
@@ -578,14 +578,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_view(:show_grid_lines, false)
     writer.set_sheet_view(:zoom_scale, 150)
     writer.set_sheet_view(:right_to_left, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sv = reader.sheet_view
     assert_equal(false, sv[:show_grid_lines])
     assert_equal(150, sv[:zoom_scale])
@@ -599,12 +599,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_freeze_pane(row: 1, col: 1)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fp = reader.freeze_pane
     assert_equal(1, fp[:row])
     assert_equal(1, fp[:col])
@@ -618,12 +618,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_selection("B2", sqref: "B2:C3")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sel = reader.selection
     assert_equal("B2", sel[:active_cell])
     assert_equal("B2:C3", sel[:sqref])
@@ -636,14 +636,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_print_option(:grid_lines, true)
     writer.set_print_option(:horizontal_centered, true)
     writer.set_page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     po = reader.print_options
     assert_equal(true, po[:grid_lines])
     assert_equal(true, po[:horizontal_centered])
@@ -660,7 +660,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_page_setup(:orientation, "landscape")
     writer.set_page_setup(:paper_size, 9)
@@ -668,7 +668,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_header_footer(:odd_footer, "&CFooter")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ps = reader.page_setup
     assert_equal("landscape", ps[:orientation])
     assert_equal(9, ps[:paper_size])
@@ -685,14 +685,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_row_break(10)
     writer.add_row_break(20)
     writer.add_col_break(5)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal([10, 20], reader.row_breaks.map { |b| b[:id] })
     assert_equal([5], reader.col_breaks.map { |b| b[:id] })
     assert_equal(true, reader.row_breaks.first[:man])
@@ -705,7 +705,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_auto_filter("A1:C10")
     writer.add_filter_column(0, { type: :filters, values: %w[A B] })
@@ -713,7 +713,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.add_filter_column(2, { type: :top10, top: true, percent: false, val: 5 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fc = reader.filter_columns
     assert_equal(:filters, fc[0][:type])
     assert_equal(%w[A B], fc[0][:values])
@@ -730,12 +730,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sort_state("A1:B10", [{ ref: "A1:A10" }, { ref: "B1:B10", descending: true }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ss = reader.sort_state
     assert_equal("A1:B10", ss[:ref])
     assert_equal(2, ss[:sort_conditions].size)
@@ -750,7 +750,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_data_validation("A1:A100", type: "whole", operator: "between",
                                           formula1: "1", formula2: "100",
@@ -759,7 +759,7 @@ class ReaderTest < Test::Unit::TestCase
                                           show_input_message: true, prompt: "Choose one")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dvs = reader.data_validations
     assert_equal(2, dvs.size)
     assert_equal("A1:A100", dvs[0][:sqref])
@@ -782,7 +782,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 50)
     writer.add_data_validation("A1:A100", type: "whole", operator: "between",
                                           formula1: "1", formula2: "100",
@@ -796,7 +796,7 @@ class ReaderTest < Test::Unit::TestCase
                                           show_input_message: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dvs = reader.data_validations
     assert_equal(1, dvs.size)
     dv = dvs[0]
@@ -817,13 +817,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial")
     writer.add_named_cell_style(name: "Heading1", font_id: fid, builtin_id: 1)
     writer.set_cell("A1", "Hello")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     csxfs = reader.cell_style_xfs
     assert_equal(2, csxfs.size)
     assert_equal(fid, csxfs[1][:font_id])
@@ -844,14 +844,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_xf_id = writer.add_named_cell_style(name: "DateBase", num_fmt_id: 14)
     cell_xf_id = writer.add_cell_style(xf_id: style_xf_id)
     writer.set_cell("A1", 45_292)
     writer.set_cell_style("A1", cell_xf_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal("mm-dd-yy", reader.cell_formats["A1"])
     assert_equal("mm-dd-yy", reader.cell_styles["A1"][:num_fmt])
     assert_equal(Date.new(2024, 1, 1), reader.cells["A1"])
@@ -864,7 +864,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_conditional_format("A1:A10", type: :cell_is, operator: "greaterThan",
                                             formula: "100", priority: 1, format_id: 0)
@@ -887,7 +887,7 @@ class ReaderTest < Test::Unit::TestCase
                                             })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(4, cfs.size)
 
@@ -919,7 +919,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 50)
     writer.add_conditional_format("A1:A10", type: :data_bar, priority: 1,
                                             data_bar: {
@@ -929,7 +929,7 @@ class ReaderTest < Test::Unit::TestCase
                                             })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(1, cfs.size)
     db = cfs[0][:data_bar]
@@ -945,7 +945,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 50)
     writer.add_conditional_format("A1:A10", type: :icon_set, priority: 1,
                                             icon_set: {
@@ -957,7 +957,7 @@ class ReaderTest < Test::Unit::TestCase
                                             })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(1, cfs.size)
     is = cfs[0][:icon_set]
@@ -973,7 +973,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")
     fill_id = writer.add_fill(pattern: "solid", fg_color: "FF00FF00")
     brd_id = writer.add_border(left: { style: "thin", color: "FF000000" },
@@ -985,7 +985,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     assert_equal(true, cs["A1"][:font][:bold])
@@ -1003,13 +1003,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_dxf(font: { bold: true, color: "FFFF0000" },
                    fill: { pattern: "solid", fg_color: "FFFFFF00" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dxfs = reader.dxfs
     assert_equal(1, dxfs.size)
     assert_equal(true, dxfs[0][:font][:bold])
@@ -1025,7 +1025,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
     writer.set_cell("A2", "Alice")
@@ -1033,7 +1033,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.add_table("A1:B2", columns: %w[Name Age])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     tbls = reader.tables
     assert_equal(1, tbls.size)
     assert_equal("A1:B2", tbls[0][:ref])
@@ -1047,7 +1047,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Item")
     writer.set_cell("B1", "Price")
     writer.set_cell("C1", "Tax")
@@ -1058,7 +1058,7 @@ class ReaderTest < Test::Unit::TestCase
                      ], totals_row_count: 1, style: { name: "TableStyleLight1", show_row_stripes: false })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     tbls = reader.tables
     assert_equal(1, tbls.size)
     assert_equal(1, tbls[0][:totals_row_count])
@@ -1075,7 +1075,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Item")
     writer.set_cell("B1", "Price")
     writer.add_table("A1:B5", columns: [
@@ -1085,7 +1085,7 @@ class ReaderTest < Test::Unit::TestCase
                      ], totals_row_count: 1)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     tbls = reader.tables
     cols = tbls[0][:columns]
     assert_equal("Total", cols[0][:totals_row_label])
@@ -1102,7 +1102,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Item")
     writer.set_cell("B1", "Price")
     writer.add_table("A1:B5", columns: [
@@ -1112,7 +1112,7 @@ class ReaderTest < Test::Unit::TestCase
                      ], totals_row_count: 1)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     tbls = reader.tables
     cols = tbls[0][:columns]
     assert_equal("custom", cols[1][:totals_row_function])
@@ -1126,7 +1126,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.set_cell("C1", 20)
@@ -1141,7 +1141,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_title: "Value")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("barChart", charts[0][:chart_type])
@@ -1160,14 +1160,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_shape(preset: "ellipse", text: "Hello", name: "Oval 1",
                      from_col: 1, from_row: 2, to_col: 4, to_row: 6)
     writer.add_shape(preset: "roundRect", name: "RR 1",
                      from_col: 5, from_row: 0, to_col: 8, to_row: 3)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(2, shapes.size)
     assert_equal("ellipse", shapes[0][:preset])
@@ -1187,7 +1187,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Region")
     writer.set_cell("C1", "Amount")
@@ -1199,7 +1199,7 @@ class ReaderTest < Test::Unit::TestCase
                            items: { 0 => %w[A B C], 1 => %w[East West] })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     assert_equal(1, pts.size)
     assert_equal([0], pts[0][:row_fields])
@@ -1220,7 +1220,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Region")
     writer.set_cell("C1", "Amount")
@@ -1237,7 +1237,7 @@ class ReaderTest < Test::Unit::TestCase
                            show_headers: false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     assert_equal(1, pts.size)
     assert_equal("Custom Caption", pts[0][:data_caption])
@@ -1252,7 +1252,7 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "reader parses pivotField showAll, compact, outline, subtotalTop, numFmtId, sortType" do
-    require "xlsxrb/reader"
+    require "xlsxrb/ooxml/reader"
     pivot_xml = <<~XML
       <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <pivotTableDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
@@ -1263,7 +1263,7 @@ class ReaderTest < Test::Unit::TestCase
         </pivotFields>
       </pivotTableDefinition>
     XML
-    listener = Xlsxrb::Reader::PivotTableListener.new
+    listener = Xlsxrb::Ooxml::Reader::PivotTableListener.new
     parser = REXML::Parsers::SAX2Parser.new(pivot_xml)
     parser.listen(listener)
     parser.parse
@@ -1285,7 +1285,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Region")
     writer.set_cell("C1", "Amount")
@@ -1306,7 +1306,7 @@ class ReaderTest < Test::Unit::TestCase
                            min_refreshable_version: 3)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     assert_equal(1, pts.size)
     assert_equal("Grand Total", pts[0][:grand_total_caption])
@@ -1329,7 +1329,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_pivot_table("Sheet1!A1:B2",
@@ -1343,7 +1343,7 @@ class ReaderTest < Test::Unit::TestCase
                            apply_width_height_formats: false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     assert_equal(1, pts.size)
     assert_equal(true, pts[0][:apply_number_formats])
@@ -1361,7 +1361,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Region")
     writer.set_cell("C1", "Amount")
@@ -1377,7 +1377,7 @@ class ReaderTest < Test::Unit::TestCase
                                                 show_last_column: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     psi = pts[0][:pivot_table_style]
     assert_not_nil(psi)
@@ -1396,7 +1396,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Region")
     writer.set_cell("C1", "Amount")
@@ -1407,7 +1407,7 @@ class ReaderTest < Test::Unit::TestCase
                            field_names: %w[Category Region Amount])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     assert_equal(1, pts.size)
     df = pts[0][:data_fields][0]
@@ -1424,11 +1424,11 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_external_link(target: "Book2.xlsx", sheet_names: %w[Data Summary])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     els = reader.external_links
     assert_equal(1, els.size)
     assert_equal("Book2.xlsx", els[0][:target])
@@ -1442,11 +1442,11 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal(:transitional, reader.format_variant)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -1458,12 +1458,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     # Create a minimal XLSX with strict namespace using raw entries only.
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.write(xlsx_path)
 
     # Read all entries, patch workbook.xml, then write using add_raw_entry only.
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     entries = {}
     reader.entry_names.each do |name|
       content = reader.raw_entry(name)
@@ -1477,11 +1477,11 @@ class ReaderTest < Test::Unit::TestCase
     end
 
     # Write patched file using ZipGenerator directly.
-    gen = Xlsxrb::ZipGenerator.new(xlsx_path)
+    gen = Xlsxrb::Ooxml::ZipGenerator.new(xlsx_path)
     entries.each { |name, data| gen.add_entry(name, data) }
     gen.generate
 
-    reader2 = Xlsxrb::Reader.new(xlsx_path)
+    reader2 = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal(:strict, reader2.format_variant)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -1492,14 +1492,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.use_shared_strings!
     writer.set_cell("A1", "hello")
     writer.set_cell("B1", "hello")
     writer.set_cell("C1", "world")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     assert_equal("hello", cells["A1"])
     assert_equal("hello", cells["B1"])
@@ -1527,13 +1527,13 @@ class ReaderTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "img test")
     writer.insert_image(png_bytes, ext: "png", from_col: 1, from_row: 2, to_col: 6, to_row: 12,
                                    name: "RoundTrip Pic", description: "Round-trip image description")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal("RoundTrip Pic", imgs[0][:name])
@@ -1568,12 +1568,12 @@ class ReaderTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1", title: "My tooltip", hidden: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal("My tooltip", imgs[0][:title])
     assert_equal(true, imgs[0][:hidden])
@@ -1598,12 +1598,12 @@ class ReaderTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1", macro: "MyMacro")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal("MyMacro", imgs[0][:macro])
   ensure
@@ -1627,12 +1627,12 @@ class ReaderTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1", no_crop: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(true, imgs[0][:no_change_aspect])
     assert_equal(true, imgs[0][:no_crop])
@@ -1657,12 +1657,12 @@ class ReaderTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1", published: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(true, imgs[0][:published])
   ensure
@@ -1674,13 +1674,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", line_color: "FF0000", line_width: 25_400)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal("FF0000", imgs[0][:line_color])
@@ -1694,13 +1694,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", rotation: 5_400_000)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal(5_400_000, imgs[0][:rotation])
@@ -1713,13 +1713,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", src_rect: { top: 10_000, bottom: 20_000, left: 5000, right: 15_000 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     sr = imgs[0][:src_rect]
@@ -1737,13 +1737,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", alpha_mod_fix: 50_000)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal(50_000, imgs[0][:alpha_mod_fix])
@@ -1756,13 +1756,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Value")
     writer.add_chart(type: :bar, title: "My Chart")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("barChart", charts[0][:chart_type])
@@ -1788,12 +1788,12 @@ class ReaderTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1", edit_as: "absolute")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal("absolute", imgs[0][:edit_as])
@@ -1806,12 +1806,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Hello", edit_as: "absolute")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("absolute", shapes[0][:edit_as])
@@ -1824,12 +1824,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Hello", description: "A rectangle shape")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("A rectangle shape", shapes[0][:description])
@@ -1842,12 +1842,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Click me", macro: "ShapeMacro", textlink: "$A$1")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("ShapeMacro", shapes[0][:macro])
@@ -1861,12 +1861,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Locked", f_locks_text: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:f_locks_text])
@@ -1879,12 +1879,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", no_grp: true, no_rot: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:no_grp])
@@ -1898,12 +1898,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", fill_color: "00FF00")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("00FF00", shapes[0][:fill_color])
@@ -1916,13 +1916,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", fill_color: "FF0000", fill_alpha: 50_000,
                      line_color: "0000FF", line_alpha: 75_000)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("FF0000", shapes[0][:fill_color])
@@ -1938,7 +1938,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", fill_color: "FF0000",
                      fill_color_transforms: [{ type: "tint", val: 50_000 }, { type: "shade", val: 80_000 }],
@@ -1946,7 +1946,7 @@ class ReaderTest < Test::Unit::TestCase
                      line_color_transforms: [{ type: "lumMod", val: 60_000 }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     ft = shapes[0][:fill_color_transforms]
     assert_equal(2, ft.size)
@@ -1967,12 +1967,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", line_color: "0000FF", line_width: 12_700)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("0000FF", shapes[0][:line_color])
@@ -1986,12 +1986,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Hello", text_wrap: "square", text_anchor: "ctr", text_vert_overflow: "clip")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("square", shapes[0][:text_wrap])
@@ -2006,12 +2006,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", rotation: 5_400_000)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(5_400_000, shapes[0][:rotation])
@@ -2024,12 +2024,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", no_fill: true, no_line: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:no_fill])
@@ -2043,13 +2043,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "roundRect",
                      adjust_values: [{ name: "adj", fmla: "val 16667" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("roundRect", shapes[0][:preset])
@@ -2065,13 +2065,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Styled",
                      text_font: { bold: true, italic: true, size: 1400, color: "0000FF", name: "Calibri" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -2090,14 +2090,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "None", autofit: "none")
     writer.add_shape(preset: "rect", text: "Shape", autofit: "shape")
     writer.add_shape(preset: "rect", text: "Normal", autofit: "normal")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(3, shapes.size)
     assert_equal("none", shapes[0][:autofit])
@@ -2112,13 +2112,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Scaled",
                      autofit: { type: "normal", font_scale: 90_000, ln_spc_reduction: 20_000 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     af = shapes[0][:autofit]
@@ -2134,13 +2134,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Shadow",
                      outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "FF0000", algn: "tl" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     os = shapes[0][:outer_shadow]
@@ -2159,13 +2159,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Shadow",
                      outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000", alpha: 50_000 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     os = shapes[0][:outer_shadow]
     assert_equal("000000", os[:color])
@@ -2179,13 +2179,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Grad",
                      gradient_fill: { stops: [{ pos: 0, color: "FF0000" }, { pos: 100_000, color: "0000FF" }], angle: 5_400_000 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     gf = shapes[0][:gradient_fill]
@@ -2205,14 +2205,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "RadGrad",
                      gradient_fill: { stops: [{ pos: 0, color: "FFFFFF" }, { pos: 100_000, color: "000000" }],
                                       path: "circle", rot_with_shape: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     gf = shapes[0][:gradient_fill]
@@ -2229,13 +2229,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Patt",
                      pattern_fill: { preset: "ltDnDiag", fg_color: "FF0000", bg_color: "FFFFFF" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     pf = shapes[0][:pattern_fill]
@@ -2252,12 +2252,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Dashed", line_color: "FF0000", line_dash: "lgDash")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("lgDash", shapes[0][:line_dash])
@@ -2270,14 +2270,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "CustDash",
                      line_color: "000000",
                      line_custom_dash: [{ d: 300_000, sp: 100_000 }, { d: 100_000, sp: 100_000 }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     cd = shapes[0][:line_custom_dash]
@@ -2296,14 +2296,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Arrow", line_color: "000000",
                      head_end: { type: "triangle", w: "med", len: "med" },
                      tail_end: { type: "stealth", w: "lg", len: "lg" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("triangle", shapes[0][:head_end][:type])
@@ -2320,12 +2320,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Cap", line_color: "000000", line_cap: "rnd")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("rnd", shapes[0][:line_cap])
@@ -2338,12 +2338,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Align", line_color: "000000", line_align: "in")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("in", shapes[0][:line_align])
@@ -2356,12 +2356,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Cmpd", line_color: "000000", line_compound: "dbl")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("dbl", shapes[0][:line_compound])
@@ -2374,12 +2374,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Join", line_color: "000000", line_join: "bevel")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("bevel", shapes[0][:line_join])
@@ -2392,12 +2392,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "ML", line_color: "000000", line_join: "miter", line_miter_limit: 800_000)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("miter", shapes[0][:line_join])
@@ -2411,12 +2411,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_chart(type: :bar, title: "Chart1", edit_as: "oneCell")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("oneCell", charts[0][:edit_as])
@@ -2429,7 +2429,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_chart(type: :bar, title: "Positioned",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
@@ -2437,7 +2437,7 @@ class ReaderTest < Test::Unit::TestCase
                      from_col_off: 100, from_row_off: 200, to_col_off: 300, to_row_off: 400)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(2, charts[0][:from_col])
@@ -2457,14 +2457,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_chart(type: :bar, title: "Sales",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
                      name: "Chart 1", description: "A sales chart")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("Chart 1", charts[0][:name])
@@ -2478,14 +2478,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_chart(type: :bar, title: "Sales",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
                      frame_macro: "ChartMacro")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("ChartMacro", charts[0][:frame_macro])
@@ -2498,14 +2498,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_chart(type: :bar, title: "Sales",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
                      frame_no_grp: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(true, charts[0][:frame_no_grp])
@@ -2530,12 +2530,12 @@ class ReaderTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1", locks_with_sheet: false, prints_with_sheet: false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal(false, imgs[0][:locks_with_sheet])
@@ -2561,7 +2561,7 @@ class ReaderTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1",
                                    from_col: 1, from_row: 2, to_col: 5, to_row: 8,
@@ -2569,7 +2569,7 @@ class ReaderTest < Test::Unit::TestCase
                                    to_col_off: 300_000, to_row_off: 400_000)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal(100_000, imgs[0][:from_colOff])
@@ -2585,13 +2585,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_comment("A1", "Test note", author: "Me")
     writer.add_comment("B2", "Second note", author: "You")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     comments = reader.comments
     assert_equal(2, comments.size)
     assert_equal("A1", comments[0][:ref])
@@ -2609,22 +2609,22 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
-                                { text: " normal" }
-                              ])
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+                                          { text: " normal" }
+                                        ])
     writer.add_comment("A1", rt, author: "Tester")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     comments = reader.comments
     assert_equal(1, comments.size)
     c = comments[0]
     assert_equal("A1", c[:ref])
     assert_equal("Tester", c[:author])
-    assert_instance_of(Xlsxrb::RichText, c[:text])
+    assert_instance_of(Xlsxrb::Elements::RichText, c[:text])
     assert_equal("Bold normal", c[:text].to_s)
     runs = c[:text].runs
     assert_equal(2, runs.size)
@@ -2643,11 +2643,11 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     names = reader.entry_names
     assert(names.include?("[Content_Types].xml"))
     assert(names.include?("xl/workbook.xml"))
@@ -2661,11 +2661,11 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_false(reader.macros?)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -2690,19 +2690,19 @@ class ReaderTest < Test::Unit::TestCase
                  0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC,
                  0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
                  0x44, 0xAE, 0x42, 0x60, 0x82].pack("C*")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "original")
     writer.insert_image(png_bytes, ext: "png")
     writer.add_comment("A1", "Original comment", author: "Author")
     writer.write(source_path)
 
     # Copy entries through another Writer.
-    writer2 = Xlsxrb::Writer.new
+    writer2 = Xlsxrb::Ooxml::Writer.new
     writer2.copy_entries_from(source_path)
     writer2.write(output_path)
 
     # Verify output has images and comments.
-    reader = Xlsxrb::Reader.new(output_path)
+    reader = Xlsxrb::Ooxml::Reader.new(output_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     comments = reader.comments
@@ -2714,7 +2714,7 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "round-trips sheet protection through writer and reader" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_sheet_protection(password: "CF1A", objects: true, scenarios: true)
     writer.set_cell("A1", "Protected")
 
@@ -2723,7 +2723,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     prot = reader.sheet_protection
     assert_not_nil(prot)
     assert_equal(true, prot[:sheet])
@@ -2735,14 +2735,14 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "round-trips workbook protection through writer and reader" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_workbook_protection(lock_structure: true)
     writer.set_cell("A1", "test")
 
     xlsx_path = Tempfile.new(["xlsxrb-test", ".xlsx"]).path
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     prot = reader.workbook_protection
     assert_not_nil(prot)
     assert_equal(true, prot[:lock_structure])
@@ -2751,7 +2751,7 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "round-trips workbook protection lockRevision and revision algorithm attrs" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_workbook_protection(
       lock_structure: true,
       lock_revision: true,
@@ -2767,7 +2767,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     prot = reader.workbook_protection
     assert_not_nil(prot)
     assert_equal(true, prot[:lock_structure])
@@ -2781,11 +2781,11 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "round-trips rich text inline through writer and reader" do
-    writer = Xlsxrb::Writer.new
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Bold", font: { bold: true, sz: 14.0, color: "FFFF0000" } },
-                                { text: " Normal" }
-                              ])
+    writer = Xlsxrb::Ooxml::Writer.new
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Bold", font: { bold: true, sz: 14.0, color: "FFFF0000" } },
+                                          { text: " Normal" }
+                                        ])
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
@@ -2793,10 +2793,10 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     result = cells["A1"]
-    assert_instance_of(Xlsxrb::RichText, result)
+    assert_instance_of(Xlsxrb::Elements::RichText, result)
     assert_equal(2, result.runs.size)
     assert_equal("Bold", result.runs[0][:text])
     assert_equal(true, result.runs[0][:font][:bold])
@@ -2807,12 +2807,12 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "round-trips rich text through shared strings" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.use_shared_strings!
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Italic", font: { italic: true } },
-                                { text: " plain" }
-                              ])
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Italic", font: { italic: true } },
+                                          { text: " plain" }
+                                        ])
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
@@ -2820,10 +2820,10 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     result = cells["A1"]
-    assert_instance_of(Xlsxrb::RichText, result)
+    assert_instance_of(Xlsxrb::Elements::RichText, result)
     assert_equal(2, result.runs.size)
     assert_equal("Italic", result.runs[0][:text])
     assert_equal(true, result.runs[0][:font][:italic])
@@ -2832,21 +2832,21 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "round-trips shared formulas through writer and reader" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
-    writer.set_cell("B1", Xlsxrb::Formula.new(expression: "A1*2", type: :shared, ref: "B1:B2", shared_index: 0, cached_value: "20"))
-    writer.set_cell("B2", Xlsxrb::Formula.new(expression: "", type: :shared, shared_index: 0, cached_value: "40"))
+    writer.set_cell("B1", Xlsxrb::Elements::Formula.new(expression: "A1*2", type: :shared, ref: "B1:B2", shared_index: 0, cached_value: "20"))
+    writer.set_cell("B2", Xlsxrb::Elements::Formula.new(expression: "", type: :shared, shared_index: 0, cached_value: "40"))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     b1 = cells["B1"]
-    assert_instance_of(Xlsxrb::Formula, b1)
+    assert_instance_of(Xlsxrb::Elements::Formula, b1)
     assert_equal(:shared, b1.type)
     assert_equal("B1:B2", b1.ref)
     assert_equal(0, b1.shared_index)
@@ -2856,22 +2856,22 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "round-trips array formulas through writer and reader" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 2)
     writer.set_cell("B1", 3)
     writer.set_cell("B2", 4)
-    writer.set_cell("C1", Xlsxrb::Formula.new(expression: "SUM(A1:A2*B1:B2)", type: :array, ref: "C1", cached_value: "11"))
+    writer.set_cell("C1", Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A2*B1:B2)", type: :array, ref: "C1", cached_value: "11"))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     c1 = cells["C1"]
-    assert_instance_of(Xlsxrb::Formula, c1)
+    assert_instance_of(Xlsxrb::Elements::Formula, c1)
     assert_equal(:array, c1.type)
     assert_equal("C1", c1.ref)
     assert_equal("SUM(A1:A2*B1:B2)", c1.expression)
@@ -2880,68 +2880,68 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "round-trips formula calculate_always through writer and reader" do
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "NOW()", cached_value: "45000", calculate_always: true))
-    writer.set_cell("B1", Xlsxrb::Formula.new(expression: "A1+1", cached_value: "2"))
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::Formula.new(expression: "NOW()", cached_value: "45000", calculate_always: true))
+    writer.set_cell("B1", Xlsxrb::Elements::Formula.new(expression: "A1+1", cached_value: "2"))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     a1 = cells["A1"]
-    assert_instance_of(Xlsxrb::Formula, a1)
+    assert_instance_of(Xlsxrb::Elements::Formula, a1)
     assert_equal(true, a1.calculate_always)
     assert_equal("NOW()", a1.expression)
 
     b1 = cells["B1"]
-    assert_instance_of(Xlsxrb::Formula, b1)
+    assert_instance_of(Xlsxrb::Elements::Formula, b1)
     assert_nil(b1.calculate_always)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
   test "round-trips formula aca attribute through writer and reader" do
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "SUM(B1:B10)", type: :array, ref: "A1", aca: true))
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::Formula.new(expression: "SUM(B1:B10)", type: :array, ref: "A1", aca: true))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     a1 = cells["A1"]
-    assert_instance_of(Xlsxrb::Formula, a1)
+    assert_instance_of(Xlsxrb::Elements::Formula, a1)
     assert_equal(true, a1.aca)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
   test "round-trips formula bx attribute through writer and reader" do
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "SUM(B1:B10)", bx: true))
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::Formula.new(expression: "SUM(B1:B10)", bx: true))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     a1 = cells["A1"]
-    assert_instance_of(Xlsxrb::Formula, a1)
+    assert_instance_of(Xlsxrb::Elements::Formula, a1)
     assert_equal(true, a1.bx)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
   test "round-trips formula dataTable type with dt2d dtr r1 r2" do
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::Formula.new(
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::Formula.new(
                             expression: "", type: :data_table,
                             dt2d: true, dtr: true, r1: "A$1", r2: "$A1"
                           ))
@@ -2951,10 +2951,10 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     a1 = cells["A1"]
-    assert_instance_of(Xlsxrb::Formula, a1)
+    assert_instance_of(Xlsxrb::Elements::Formula, a1)
     assert_equal(:data_table, a1.type)
     assert_equal(true, a1.dt2d)
     assert_equal(true, a1.dtr)
@@ -2965,16 +2965,16 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "round-trips calcChain through writer and reader" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
-    writer.set_cell("B1", Xlsxrb::Formula.new(expression: "A1*2", cached_value: "20"))
+    writer.set_cell("B1", Xlsxrb::Elements::Formula.new(expression: "A1*2", cached_value: "20"))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chain = reader.calc_chain
     assert_equal(1, chain.size)
     assert_equal("B1", chain[0][:ref])
@@ -2988,12 +2988,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "テスト")
     writer.set_cell_phonetic("A1")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ph = reader.cell_phonetic
     assert_equal(true, ph["A1"])
   ensure
@@ -3005,7 +3005,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_id = writer.add_cell_style(
       alignment: { horizontal: "center", vertical: "top", wrap_text: true,
                    text_rotation: 45, indent: 2, shrink_to_fit: true }
@@ -3014,7 +3014,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     alignment = cs["A1"][:alignment]
@@ -3034,7 +3034,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(
       bold: true, italic: true, strike: true, sz: 12, name: "Calibri",
       color: "FF0000FF", underline: "double", vert_align: "superscript",
@@ -3045,7 +3045,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     font = cs["A1"][:font]
@@ -3066,7 +3066,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(
       gradient: { type: "linear", degree: 90,
                   stops: [{ position: 0, color: "FFFF0000" }, { position: 1, color: "FF0000FF" }] }
@@ -3076,7 +3076,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     fill = cs["A1"][:fill]
@@ -3099,7 +3099,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     brd_id = writer.add_border(
       left: { style: "thin" }, diagonal: { style: "thin", color: "FFFF0000" },
       diagonal_up: true, diagonal_down: true
@@ -3109,7 +3109,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     border = cs["A1"][:border]
@@ -3127,13 +3127,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_id = writer.add_cell_style(protection: { locked: false, hidden: true })
     writer.set_cell("A1", "protected")
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     prot = cs["A1"][:protection]
@@ -3149,7 +3149,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid1 = writer.add_font(sz: 11, name: "Calibri", theme: 1, tint: -0.25)
     fid2 = writer.add_font(sz: 11, name: "Calibri", indexed: 10)
     s1 = writer.add_cell_style(font_id: fid1)
@@ -3160,7 +3160,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("A2", s2)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     assert_equal(1, cs["A1"][:font][:theme])
@@ -3176,14 +3176,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(pattern: "solid", fg_color_theme: 4, fg_color_tint: 0.6)
     style_id = writer.add_cell_style(fill_id: fill_id)
     writer.set_cell("A1", "theme fill")
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     fill = cs["A1"][:fill]
@@ -3199,14 +3199,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(pattern: "solid", fg_color_auto: true, bg_color_auto: true)
     style_id = writer.add_cell_style(fill_id: fill_id)
     writer.set_cell("A1", "auto fill")
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     fill = cs["A1"][:fill]
@@ -3222,7 +3222,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     brd_id = writer.add_border(left: { style: "thin", theme: 1, tint: -0.25 })
     style_id = writer.add_cell_style(border_id: brd_id)
     writer.set_cell("A1", "themed border")
@@ -3231,7 +3231,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_sheet_property(:tab_color_tint, -0.5)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     border = cs["A1"][:border]
     assert_equal(1, border[:left][:theme])
@@ -3249,7 +3249,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_dxf(font: { bold: true, color: "FFFF0000" })
     writer.add_conditional_format("A1:A10", type: :above_average, priority: 1,
@@ -3268,7 +3268,7 @@ class ReaderTest < Test::Unit::TestCase
                                             format_id: 0)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(6, cfs.size)
 
@@ -3307,20 +3307,20 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
-                                { text: "DblUnder", font: { underline: "double", name: "Arial", sz: 11 } },
-                                { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
-                                { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } },
-                                { text: "Indexed", font: { indexed: 10, name: "Calibri", sz: 11 } }
-                              ])
+    writer = Xlsxrb::Ooxml::Writer.new
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+                                          { text: "DblUnder", font: { underline: "double", name: "Arial", sz: 11 } },
+                                          { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
+                                          { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } },
+                                          { text: "Indexed", font: { indexed: 10, name: "Calibri", sz: 11 } }
+                                        ])
     writer.set_cell("A1", rt)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     val = reader.cells["A1"]
-    assert_instance_of(Xlsxrb::RichText, val)
+    assert_instance_of(Xlsxrb::Elements::RichText, val)
     runs = val.runs
 
     assert_equal(5, runs.size)
@@ -3356,7 +3356,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 50)
     writer.add_conditional_format("A1:A10", type: :color_scale, priority: 1,
                                             color_scale: {
@@ -3370,7 +3370,7 @@ class ReaderTest < Test::Unit::TestCase
                                             })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(2, cfs.size)
 
@@ -3391,7 +3391,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(gradient: {
                                 degree: 90,
                                 stops: [{ position: 0, theme: 4, tint: -0.5 }, { position: 1, indexed: 12 }]
@@ -3401,7 +3401,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     gradient = cs["A1"][:fill][:gradient]
     assert_not_nil(gradient, "gradient should be present")
@@ -3419,7 +3419,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_dxf(font: { bold: true, color: "FFFF0000" })
     writer.add_conditional_format("A1:A10", type: :expression, priority: 1,
@@ -3438,7 +3438,7 @@ class ReaderTest < Test::Unit::TestCase
                                             format_id: 0)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(6, cfs.size)
 
@@ -3471,7 +3471,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_dxf(
       font: { bold: true, color: "FFFF0000" },
@@ -3481,7 +3481,7 @@ class ReaderTest < Test::Unit::TestCase
     )
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dxfs = reader.dxfs
     assert_equal(1, dxfs.size)
     dxf = dxfs[0]
@@ -3502,21 +3502,21 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::CellError.new(code: "#N/A"))
-    writer.set_cell("B1", Xlsxrb::CellError.new(code: "#DIV/0!"))
-    writer.set_cell("C1", Xlsxrb::CellError.new(code: "#VALUE!"))
-    writer.set_cell("D1", Xlsxrb::CellError.new(code: "#REF!"))
-    writer.set_cell("E1", Xlsxrb::CellError.new(code: "#NAME?"))
-    writer.set_cell("F1", Xlsxrb::CellError.new(code: "#NUM!"))
-    writer.set_cell("G1", Xlsxrb::CellError.new(code: "#NULL!"))
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::CellError.new(code: "#N/A"))
+    writer.set_cell("B1", Xlsxrb::Elements::CellError.new(code: "#DIV/0!"))
+    writer.set_cell("C1", Xlsxrb::Elements::CellError.new(code: "#VALUE!"))
+    writer.set_cell("D1", Xlsxrb::Elements::CellError.new(code: "#REF!"))
+    writer.set_cell("E1", Xlsxrb::Elements::CellError.new(code: "#NAME?"))
+    writer.set_cell("F1", Xlsxrb::Elements::CellError.new(code: "#NUM!"))
+    writer.set_cell("G1", Xlsxrb::Elements::CellError.new(code: "#NULL!"))
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
 
     %w[A1 B1 C1 D1 E1 F1 G1].each do |ref|
-      assert_instance_of(Xlsxrb::CellError, cells[ref], "Expected CellError for #{ref}")
+      assert_instance_of(Xlsxrb::Elements::CellError, cells[ref], "Expected CellError for #{ref}")
     end
 
     assert_equal("#N/A", cells["A1"].code)
@@ -3535,7 +3535,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_core_property(:title, "My Title")
     writer.set_core_property(:subject, "My Subject")
@@ -3549,7 +3549,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_core_property(:language, "en-US")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.core_properties
 
     assert_equal("My Title", props[:title])
@@ -3571,12 +3571,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_split_pane(x_split: 2400, y_split: 1800, top_left_cell: "C4")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pane = reader.freeze_pane
 
     assert_equal(:split, pane[:state])
@@ -3592,7 +3592,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "H1")
     writer.set_cell("B1", "H2")
     writer.set_auto_filter("A1:B10")
@@ -3600,7 +3600,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.add_filter_column(1, { type: :icon_filter, icon_set: "3Arrows", icon_id: 2 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     filters = reader.filter_columns
 
     cf = filters[0]
@@ -3622,12 +3622,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     t = Time.utc(2024, 3, 15, 14, 30, 0)
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", t)
     writer.set_cell("B1", Date.new(2024, 1, 1))
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
 
     # Time cell should be returned as Time
@@ -3651,13 +3651,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_print_area("A1:D20")
     writer.set_print_titles(rows: "1:3", cols: "A:B")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
 
     pa = reader.print_area
     assert_equal("$A$1:$D$20", pa)
@@ -3675,13 +3675,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "protected")
-    hp = Xlsxrb.hash_password("secret", spin_count: 500)
+    hp = Xlsxrb::Ooxml::Utils.hash_password("secret", spin_count: 500)
     writer.set_sheet_protection(**hp)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sp = reader.sheet_protection
 
     assert_equal("SHA-512", sp[:algorithm_name])
@@ -3697,14 +3697,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_header_footer(:first_header, "&CFirst Page")
     writer.set_header_footer(:first_footer, "&CPage &P")
     writer.set_header_footer(:different_first, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     hf = reader.header_footer
 
     assert_equal(true, hf[:different_first])
@@ -3719,7 +3719,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_page_setup(:page_order, "overThenDown")
     writer.set_page_setup(:black_and_white, true)
@@ -3730,7 +3730,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_page_setup(:vertical_dpi, 600)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ps = reader.page_setup
 
     assert_equal("overThenDown", ps[:page_order])
@@ -3749,7 +3749,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_data_validation("A1:A10", type: "list",
                                          formula1: '"Yes,No"',
@@ -3757,7 +3757,7 @@ class ReaderTest < Test::Unit::TestCase
                                          ime_mode: "hiragana")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dvs = reader.data_validations
 
     assert_equal(1, dvs.size)
@@ -3773,13 +3773,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     sid = writer.add_cell_style(alignment: { horizontal: "distributed", reading_order: 2, justify_last_line: true })
     writer.set_cell("A1", "RTL")
     writer.set_cell_style("A1", sid)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     styles = reader.cell_styles
     xf = styles.values.find { |s| s[:alignment]&.key?(:reading_order) }
     assert_not_nil(xf)
@@ -3794,14 +3794,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(name: "MS Gothic", sz: 11, family: 3, charset: 128)
     sid = writer.add_cell_style(font_id: fid)
     writer.set_cell("A1", "テスト")
     writer.set_cell_style("A1", sid)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     styles = reader.cell_styles
     font = styles["A1"]&.dig(:font)
     assert_not_nil(font)
@@ -3815,7 +3815,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_format(:default_row_height, 15)
     writer.set_sheet_format(:outline_level_row, 3)
@@ -3823,7 +3823,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_sheet_format(:zero_height, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fmt = reader.sheet_format
 
     assert_equal(3, fmt[:outline_level_row])
@@ -3838,13 +3838,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     sid = writer.add_cell_style(quote_prefix: true)
     writer.set_cell("A1", "001234")
     writer.set_cell_style("A1", sid)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     styles = reader.cell_styles
     assert_equal(true, styles["A1"][:quote_prefix])
   ensure
@@ -3856,12 +3856,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_view(:show_formulas, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sv = reader.sheet_view
     assert_equal(true, sv[:show_formulas])
   ensure
@@ -3873,12 +3873,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_property(:code_name, "MySheet")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal("MySheet", props[:code_name])
   ensure
@@ -3890,12 +3890,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_workbook_view(:visibility, "hidden")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     wv = reader.workbook_views
     assert_equal("hidden", wv[:visibility])
   ensure
@@ -3907,12 +3907,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_phonetic_properties({ font_id: 1, type: "Hiragana", alignment: "center" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pp = reader.phonetic_properties
     assert_not_nil(pp)
     assert_equal(1, pp[:font_id])
@@ -3927,14 +3927,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_custom_property("Project", "Alpha", type: :lpwstr)
     writer.add_custom_property("Version", 42, type: :i4)
     writer.add_custom_property("Active", true, type: :bool)
     writer.set_cell("A1", "data")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.custom_properties
     assert_equal(3, props.size)
 
@@ -3958,14 +3958,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(name: "Arial", sz: 12, shadow: true, outline: true, condense: true, extend: true)
     sid = writer.add_cell_style(font_id: fid)
     writer.set_cell("A1", "effects")
     writer.set_cell_style("A1", sid)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     styles = reader.cell_styles
     styled_font = styles.values.map { |s| s[:font] }.compact.find { |f| f[:shadow] }
     assert_not_nil(styled_font)
@@ -3982,7 +3982,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_view(:show_zeros, false)
     writer.set_sheet_view(:view, "pageBreakPreview")
@@ -3990,7 +3990,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_sheet_view(:show_ruler, false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sv = reader.sheet_view
     assert_equal(false, sv[:show_zeros])
     assert_equal("pageBreakPreview", sv[:view])
@@ -4005,7 +4005,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_view(:window_protection, true)
     writer.set_sheet_view(:default_grid_color, false)
@@ -4017,7 +4017,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_sheet_view(:zoom_scale_page_layout_view, 90)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sv = reader.sheet_view
     assert_equal(true, sv[:window_protection])
     assert_equal(false, sv[:default_grid_color])
@@ -4036,13 +4036,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     sid = writer.add_cell_style(alignment: { indent: 2, relative_indent: -1 })
     writer.set_cell("A1", "indented")
     writer.set_cell_style("A1", sid)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     styles = reader.cell_styles
     style = styles.values.find { |s| s[:alignment] && s[:alignment][:relative_indent] }
     assert_not_nil(style)
@@ -4057,13 +4057,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_row_thick_top(1)
     writer.set_row_thick_bot(1)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ra = reader.row_attributes
     assert_equal(true, ra[1][:thick_top])
     assert_equal(true, ra[1][:thick_bot])
@@ -4076,7 +4076,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_workbook_property(:code_name, "ThisWorkbook")
     writer.set_workbook_property(:filter_privacy, true)
@@ -4086,7 +4086,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_workbook_property(:update_links, "never")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     wp = reader.workbook_properties
     assert_equal("ThisWorkbook", wp[:code_name])
     assert_equal(true, wp[:filter_privacy])
@@ -4103,7 +4103,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_workbook_view(:show_horizontal_scroll, false)
     writer.set_workbook_view(:show_vertical_scroll, false)
@@ -4116,7 +4116,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_workbook_view(:tab_ratio, 800)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     wv = reader.workbook_views
     assert_equal(false, wv[:show_horizontal_scroll])
     assert_equal(false, wv[:show_vertical_scroll])
@@ -4136,7 +4136,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_calc_property(:full_precision, false)
     writer.set_calc_property(:concurrent_calc, false)
@@ -4144,7 +4144,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_calc_property(:force_full_calc, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cp = reader.calc_properties
     assert_equal(false, cp[:full_precision])
     assert_equal(false, cp[:concurrent_calc])
@@ -4159,7 +4159,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_property(:filter_mode, true)
     writer.set_sheet_property(:published, false)
@@ -4167,7 +4167,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_sheet_property(:auto_page_breaks, false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sp = reader.sheet_properties
     assert_equal(true, sp[:filter_mode])
     assert_equal(false, sp[:published])
@@ -4182,7 +4182,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     brd_id = writer.add_border(
       left: { style: "thin" },
       outline: false
@@ -4192,7 +4192,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     border = cs["A1"][:border]
@@ -4207,14 +4207,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     font_id = writer.add_font(auto: true, size: 11, name: "Calibri")
     style_id = writer.add_cell_style(font_id: font_id)
     writer.set_cell("A1", "auto-color")
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     font = cs["A1"][:font]
@@ -4229,14 +4229,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_header_footer(:odd_header, "&CHello")
     writer.set_header_footer(:scale_with_doc, false)
     writer.set_header_footer(:align_with_margins, false)
     writer.set_cell("A1", "hf")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     hf = reader.header_footer
     assert_equal(false, hf[:scale_with_doc])
     assert_equal(false, hf[:align_with_margins])
@@ -4249,7 +4249,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_page_setup(:copies, 3)
     writer.set_page_setup(:paper_height, "297mm")
     writer.set_page_setup(:paper_width, "210mm")
@@ -4258,7 +4258,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell("A1", "ps")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ps = reader.page_setup
     assert_equal(3, ps[:copies])
     assert_equal("297mm", ps[:paper_height])
@@ -4274,12 +4274,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_print_option(:grid_lines_set, false)
     writer.set_cell("A1", "po")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     po = reader.print_options
     assert_equal(false, po[:grid_lines_set])
   ensure
@@ -4291,7 +4291,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 100)
     writer.add_conditional_format("A1:A10",
                                   type: :above_average,
@@ -4299,7 +4299,7 @@ class ReaderTest < Test::Unit::TestCase
                                   format_id: writer.add_dxf(font: { bold: true }))
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     rules = reader.conditional_formats
     rule = rules.find { |r| r[:type] == "aboveAverage" }
     assert_not_nil(rule, "should find above_average rule")
@@ -4313,7 +4313,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_conditional_format("A1:A10",
                                   type: :color_scale,
@@ -4323,7 +4323,7 @@ class ReaderTest < Test::Unit::TestCase
                                   })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     rules = reader.conditional_formats
     rule = rules.find { |r| r[:type] == "colorScale" }
     assert_not_nil(rule)
@@ -4338,12 +4338,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_column_attribute("A", :phonetic, true)
     writer.set_cell("A1", "test")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ca = reader.column_attributes
     a_attrs = ca["A"]
     assert_not_nil(a_attrs, "column A should have attributes")
@@ -4357,7 +4357,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_named_cell_style(
       name: "Heading 1",
       builtin_id: 16,
@@ -4368,7 +4368,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell("A1", "test")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ncs = reader.named_cell_styles
     heading = ncs.find { |cs| cs[:name] == "Heading 1" }
     assert_not_nil(heading, "should find Heading 1")
@@ -4384,13 +4384,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_id = writer.add_cell_style(pivot_button: true)
     writer.set_cell("A1", "pivot")
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"))
     assert_equal(true, cs["A1"][:pivot_button])
@@ -4403,14 +4403,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_sheet_format(:default_row_height, 15)
     writer.set_sheet_format(:thick_top, true)
     writer.set_sheet_format(:thick_bottom, true)
     writer.set_cell("A1", "test")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sfp = reader.sheet_format
     assert_equal(true, sfp[:thick_top])
     assert_equal(true, sfp[:thick_bottom])
@@ -4423,7 +4423,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_data_validations_option(:disable_prompts, true)
     writer.set_data_validations_option(:x_window, 100)
     writer.set_data_validations_option(:y_window, 200)
@@ -4431,7 +4431,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell("A1", 50)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dvo = reader.data_validations_options
     assert_equal(true, dvo[:disable_prompts])
     assert_equal(100, dvo[:x_window])
@@ -4445,7 +4445,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     brd_id = writer.add_border(
       vertical: { style: "thin", color: "FF00FF00" },
       horizontal: { style: "dashed", color: "FF0000FF" }
@@ -4455,7 +4455,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     border = cs["A1"][:border]
     assert_not_nil(border)
@@ -4472,12 +4472,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_row_break({ id: 10, min: 2, max: 8, man: true, pt: true })
     writer.set_cell("A1", "brk")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     brks = reader.row_breaks
     assert_equal(1, brks.size)
     brk = brks.first
@@ -4495,12 +4495,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_row_phonetic(1)
     writer.set_cell("A1", "test")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ra = reader.row_attributes
     assert_equal(true, ra[1][:ph])
   ensure
@@ -4512,14 +4512,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_defined_name("MyName", "Sheet1!$A$1",
                             comment: "A comment", description: "A desc",
                             function: true, shortcut_key: "B")
     writer.set_cell("A1", "test")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dns = reader.defined_names
     dn = dns.find { |d| d[:name] == "MyName" }
     assert_not_nil(dn)
@@ -4536,14 +4536,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_file_version(:app_name, "xl")
     writer.set_file_version(:last_edited, "7")
     writer.set_file_version(:rup_build, "27425")
     writer.set_cell("A1", "test")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fv = reader.file_version
     assert_equal("xl", fv[:app_name])
     assert_equal("7", fv[:last_edited])
@@ -4557,13 +4557,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_file_sharing(:read_only_recommended, true)
     writer.set_file_sharing(:user_name, "TestUser")
     writer.set_cell("A1", "test")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fs = reader.file_sharing
     assert_equal(true, fs[:read_only_recommended])
     assert_equal("TestUser", fs[:user_name])
@@ -4576,14 +4576,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_protected_range(name: "EditArea", sqref: "A1:B10")
     writer.add_protected_range(name: "SecureRange", sqref: "C1:D5", algorithm_name: "SHA-512",
                                hash_value: "abc123", salt_value: "salt456", spin_count: 100_000)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ranges = reader.protected_ranges
     assert_equal(2, ranges.size)
 
@@ -4605,13 +4605,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_indexed_colors(%w[FF000000 FFFFFFFF FFFF0000])
     writer.set_mru_colors([{ rgb: "FF00FF00" }, { theme: 3, tint: 0.4 }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ic = reader.indexed_colors
     assert_equal(%w[FF000000 FFFFFFFF FFFF0000], ic)
 
@@ -4629,7 +4629,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     dxf_id = writer.add_dxf(font: { bold: true })
     writer.set_table_styles_option(:default_table_style, "TableStyleMedium2")
@@ -4640,7 +4640,7 @@ class ReaderTest < Test::Unit::TestCase
                            ], pivot: false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ts = reader.table_styles
     assert_equal("TableStyleMedium2", ts[:default_table_style])
     assert_equal("PivotStyleLight16", ts[:default_pivot_style])
@@ -4663,14 +4663,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 100)
     writer.set_cell("B2", 200)
     writer.add_cell_watch("A1")
     writer.add_cell_watch("B2")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     watches = reader.cell_watches
     assert_equal(%w[A1 B2], watches)
   ensure
@@ -4682,7 +4682,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_data_consolidate(
       function: "average", start_labels: true, left_labels: true, link: true,
@@ -4690,7 +4690,7 @@ class ReaderTest < Test::Unit::TestCase
     )
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dc = reader.data_consolidate
     assert_equal("average", dc[:function])
     assert_equal(true, dc[:start_labels])
@@ -4709,7 +4709,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_property(:sync_horizontal, true)
     writer.set_sheet_property(:sync_vertical, true)
@@ -4718,7 +4718,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_sheet_property(:transition_entry, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal(true, props[:sync_horizontal])
     assert_equal(true, props[:sync_vertical])
@@ -4734,7 +4734,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_workbook_property(:prompted_solutions, true)
     writer.set_workbook_property(:show_pivot_chart_filter, true)
@@ -4745,7 +4745,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_workbook_property(:date_compatibility, false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     wp = reader.workbook_properties
     assert_equal(true, wp[:prompted_solutions])
     assert_equal(true, wp[:show_pivot_chart_filter])
@@ -4763,7 +4763,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 100)
     writer.set_scenarios(
       current: 0, show: 0,
@@ -4776,7 +4776,7 @@ class ReaderTest < Test::Unit::TestCase
     )
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sc = reader.scenarios
     assert_equal(0, sc[:current])
     assert_equal(0, sc[:show])
@@ -4800,12 +4800,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_property(:apply_styles, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal(true, props[:apply_styles])
   ensure
@@ -4817,12 +4817,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_property(:show_outline_symbols, false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal(false, props[:show_outline_symbols])
   ensure
@@ -4834,12 +4834,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_property(:tab_color_indexed, 10)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal(10, props[:tab_color_indexed])
   ensure
@@ -4851,12 +4851,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_property(:tab_color_auto, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal(true, props[:tab_color_auto])
   ensure
@@ -4868,13 +4868,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_file_recovery_property(:auto_recover, false)
     writer.set_file_recovery_property(:crash_save, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     frp = reader.file_recovery_properties
     assert_equal(false, frp[:auto_recover])
     assert_equal(true, frp[:crash_save])
@@ -4887,12 +4887,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_property(:full_calc_on_load, true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal(true, props[:full_calc_on_load])
   ensure
@@ -4904,7 +4904,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
     writer.add_table("A1:B5", columns: %w[Name Age],
@@ -4913,7 +4913,7 @@ class ReaderTest < Test::Unit::TestCase
                               header_row_dxf_id: 1, data_dxf_id: 2, totals_row_dxf_id: 3)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     tbls = reader.tables
     assert_equal(1, tbls.size)
     tbl = tbls[0]
@@ -4934,7 +4934,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
     writer.add_table("A1:B5", columns: %w[Name Age],
@@ -4946,7 +4946,7 @@ class ReaderTest < Test::Unit::TestCase
                               table_type: "queryTable")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     tbls = reader.tables
     tbl = tbls[0]
     assert_equal(10, tbl[:header_row_border_dxf_id])
@@ -4964,12 +4964,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "123")
     writer.add_ignored_error(sqref: "A1", number_stored_as_text: true, formula_range: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     errors = reader.ignored_errors
     assert_equal(1, errors.size)
     assert_equal("A1", errors[0][:sqref])
@@ -4985,14 +4985,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_defined_name("Func1", "Sheet1!$A$1",
                             function_group_id: 3, custom_menu: "CM",
                             help: "H", status_bar: "SB")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dns = reader.defined_names
     dn = dns.find { |d| d[:name] == "Func1" }
     assert_not_nil(dn)
@@ -5009,13 +5009,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_conditional_format("A1:A5", type: :cell_is, operator: "greaterThan",
                                            formula: "3", format_id: 0, priority: 1, pivot: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(1, cfs.size)
     assert_equal(true, cfs[0][:pivot])
@@ -5028,12 +5028,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "val")
     writer.add_comment("A1", "Note", guid: "{AABBCCDD-1122-3344-5566-778899AABBCC}", shape_id: 2048)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cmnts = reader.comments
     assert_equal(1, cmnts.size)
     assert_equal("{AABBCCDD-1122-3344-5566-778899AABBCC}", cmnts[0][:guid])
@@ -5047,7 +5047,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_auto_filter("A1:B10")
     writer.add_filter_column(0, { type: :filters, values: %w[X],
@@ -5057,7 +5057,7 @@ class ReaderTest < Test::Unit::TestCase
                                   val: 50.0, max_val: 100.0 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fcs = reader.filter_columns
     assert_equal(true, fcs[0][:hidden_button])
     assert_equal(1, fcs[0][:date_group_items].size)
@@ -5076,12 +5076,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_selection("C3", sqref: "C3", pane: "bottomLeft", active_cell_id: 2)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sel = reader.selection
     assert_equal("C3", sel[:active_cell])
     assert_equal("bottomLeft", sel[:pane])
@@ -5095,12 +5095,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_freeze_pane(row: 2, col: 1)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pane = reader.freeze_pane
     assert_equal(:frozen, pane[:state])
     assert_equal("bottomRight", pane[:active_pane])
@@ -5113,7 +5113,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "X")
     writer.set_auto_filter("A1:B10")
     writer.set_sort_state("A2:B10",
@@ -5121,7 +5121,7 @@ class ReaderTest < Test::Unit::TestCase
                           column_sort: true, sort_method: "stroke")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ss = reader.sort_state
     assert_equal(true, ss[:column_sort])
     assert_equal("stroke", ss[:sort_method])
@@ -5134,7 +5134,7 @@ class ReaderTest < Test::Unit::TestCase
 
   test "reader parses border start and end elements from Strict format" do
     # Simulate reading styles XML with start/end border elements (ISO 29500 Strict)
-    require "xlsxrb/reader"
+    require "xlsxrb/ooxml/reader"
     styles_xml = <<~XML
       <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -5147,7 +5147,7 @@ class ReaderTest < Test::Unit::TestCase
         </borders>
       </styleSheet>
     XML
-    listener = Xlsxrb::Reader::StylesListener.new
+    listener = Xlsxrb::Ooxml::Reader::StylesListener.new
     parser = REXML::Parsers::SAX2Parser.new(styles_xml)
     parser.listen(listener)
     parser.parse
@@ -5157,7 +5157,7 @@ class ReaderTest < Test::Unit::TestCase
   end
 
   test "reader parses xf applyXxx attributes" do
-    require "xlsxrb/reader"
+    require "xlsxrb/ooxml/reader"
     styles_xml = <<~XML
       <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -5168,7 +5168,7 @@ class ReaderTest < Test::Unit::TestCase
         </cellXfs>
       </styleSheet>
     XML
-    listener = Xlsxrb::Reader::StylesListener.new
+    listener = Xlsxrb::Ooxml::Reader::StylesListener.new
     parser = REXML::Parsers::SAX2Parser.new(styles_xml)
     parser.listen(listener)
     parser.parse
@@ -5186,14 +5186,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_conditional_format("A1:A5", type: :icon_set, priority: 1,
                                            icon_set: { icon_set: "3Arrows", percent: false,
                                                        cfvo: [{ type: "min" }, { type: "num", val: "33" }, { type: "num", val: "67" }] })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(1, cfs.size)
     assert_equal(false, cfs[0][:icon_set][:percent])
@@ -5206,12 +5206,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_workbook_property(:conformance, "transitional")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal("transitional", reader.conformance)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -5227,7 +5227,7 @@ class ReaderTest < Test::Unit::TestCase
         <dataFields count="0"/>
       </pivotTableDefinition>
     XML
-    listener = Xlsxrb::Reader::PivotTableListener.new
+    listener = Xlsxrb::Ooxml::Reader::PivotTableListener.new
     parser = REXML::Parsers::SAX2Parser.new(xml)
     parser.listen(listener)
     parser.parse
@@ -5241,14 +5241,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "a")
     writer.add_chart(type: :bar, title: "Stacked",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
                      grouping: "stacked", bar_dir: "bar")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("stacked", charts[0][:grouping])
@@ -5262,7 +5262,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5276,7 +5276,7 @@ class ReaderTest < Test::Unit::TestCase
                            cache_optimize_memory: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     assert_equal(1, pts.size)
     cache = pts[0][:cache]
@@ -5296,7 +5296,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5310,7 +5310,7 @@ class ReaderTest < Test::Unit::TestCase
                            })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     cache = pts[0][:cache]
     assert_equal(2, cache[:fields].size)
@@ -5327,7 +5327,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5338,7 +5338,7 @@ class ReaderTest < Test::Unit::TestCase
                            source_name: "MyNamedRange")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     cache = pts[0][:cache]
     assert_equal("Sheet1", cache[:source_sheet])
@@ -5353,7 +5353,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Region")
     writer.set_cell("C1", "Amount")
@@ -5365,7 +5365,7 @@ class ReaderTest < Test::Unit::TestCase
                            items: { 0 => %w[A B C], 1 => %w[East West] })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     cache = pts[0][:cache]
     assert_equal(3, cache[:fields].size)
@@ -5381,7 +5381,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5391,7 +5391,7 @@ class ReaderTest < Test::Unit::TestCase
                            data_fields: [{ fld: 1, name: "Sum", subtotal: "sum" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     cache = pts[0][:cache]
     assert_equal("worksheet", cache[:source_type])
@@ -5418,7 +5418,7 @@ class ReaderTest < Test::Unit::TestCase
     XML
 
     parser = REXML::Parsers::SAX2Parser.new(xml)
-    listener = Xlsxrb::Reader::PivotCacheDefinitionListener.new
+    listener = Xlsxrb::Ooxml::Reader::PivotCacheDefinitionListener.new
     parser.listen(listener)
     parser.parse
     items = listener.cache_definition[:fields][0][:shared_items]
@@ -5435,7 +5435,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Region")
     writer.set_cell("C1", "Amount")
@@ -5447,7 +5447,7 @@ class ReaderTest < Test::Unit::TestCase
                            items: { 0 => %w[A B C], 1 => %w[East West] })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     cache = pts[0][:cache]
     records = cache[:records]
@@ -5485,7 +5485,7 @@ class ReaderTest < Test::Unit::TestCase
     XML
 
     parser = REXML::Parsers::SAX2Parser.new(xml)
-    listener = Xlsxrb::Reader::PivotCacheRecordsListener.new
+    listener = Xlsxrb::Ooxml::Reader::PivotCacheRecordsListener.new
     parser.listen(listener)
     parser.parse
     records = listener.records
@@ -5507,12 +5507,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_font(sz: 14, name: "Arial", bold: true, color: "FFFF0000")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fonts = reader.fonts
     assert_operator(fonts.size, :>=, 2)
     custom = fonts.find { |f| f[:name] == "Arial" && f[:sz] == 14.0 } # rubocop:disable Lint/FloatComparison
@@ -5528,12 +5528,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_fill(pattern: "solid", fg_color: "FFFFFF00")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fills = reader.fills
     assert_operator(fills.size, :>=, 3)
     custom = fills.find { |f| f[:fg_color] == "FFFFFF00" }
@@ -5548,12 +5548,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_border(left: { style: "thin", color: "FF000000" }, right: { style: "medium" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     borders = reader.borders
     assert_operator(borders.size, :>=, 2)
     custom = borders.find { |b| b[:left] && b[:left][:style] == "thin" }
@@ -5569,12 +5569,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     fmt_id = writer.add_number_format("#,##0.00")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     nf = reader.num_fmts
     assert_equal("#,##0.00", nf[fmt_id])
   ensure
@@ -5586,14 +5586,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     font_id = writer.add_font(sz: 12, name: "Arial", bold: true)
     style_id = writer.add_cell_style(font_id: font_id, num_fmt_id: 0)
     writer.set_cell_style("A1", style_id)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     xfs = reader.cell_xfs
     assert_operator(xfs.size, :>=, 2)
     custom = xfs.find { |xf| xf[:font_id] == font_id }
@@ -5608,7 +5608,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5622,7 +5622,7 @@ class ReaderTest < Test::Unit::TestCase
                            })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pt = reader.pivot_tables.first
     field = pt[:fields].first
     assert_equal(false, field[:default_subtotal])
@@ -5638,7 +5638,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5654,7 +5654,7 @@ class ReaderTest < Test::Unit::TestCase
                            page_over_then_down: true, page_wrap: 3)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pt = reader.pivot_tables.first
     assert_equal(false, pt[:multiple_field_filters])
     assert_equal(false, pt[:show_drill])
@@ -5675,7 +5675,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5686,7 +5686,7 @@ class ReaderTest < Test::Unit::TestCase
                            compact_data: false, outline_data: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pt = reader.pivot_tables.first
     assert_equal(false, pt[:compact_data])
     assert_equal(true, pt[:outline_data])
@@ -5699,7 +5699,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5710,7 +5710,7 @@ class ReaderTest < Test::Unit::TestCase
                            show_multiple_label: false, show_data_drop_down: false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pt = reader.pivot_tables.first
     assert_equal(false, pt[:show_multiple_label])
     assert_equal(false, pt[:show_data_drop_down])
@@ -5723,7 +5723,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5734,7 +5734,7 @@ class ReaderTest < Test::Unit::TestCase
                            edit_data: true, disable_field_list: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pt = reader.pivot_tables.first
     assert_equal(true, pt[:edit_data])
     assert_equal(true, pt[:disable_field_list])
@@ -5747,7 +5747,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -5758,7 +5758,7 @@ class ReaderTest < Test::Unit::TestCase
                            visual_totals: false, print_drill: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pt = reader.pivot_tables.first
     assert_equal(false, pt[:visual_totals])
     assert_equal(true, pt[:print_drill])
@@ -5771,14 +5771,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      plot_vis_only: true, disp_blanks_as: "zero")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:plot_vis_only])
     assert_equal("zero", chart[:disp_blanks_as])
@@ -5791,14 +5791,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :pie,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      vary_colors: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:vary_colors])
   ensure
@@ -5810,14 +5810,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      style: 26)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(26, chart[:style])
   ensure
@@ -5829,14 +5829,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      legend: { position: "b", overlay: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("b", chart[:legend][:position])
     assert_equal(true, chart[:legend][:overlay])
@@ -5849,14 +5849,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      auto_title_deleted: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:auto_title_deleted])
   ensure
@@ -5868,14 +5868,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      rounded_corners: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:rounded_corners])
   ensure
@@ -5887,14 +5887,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      data_labels: { show_bubble_size: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:data_labels][:show_bubble_size])
   ensure
@@ -5906,14 +5906,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      data_labels: { show_val: true, separator: ", " })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(", ", chart[:data_labels][:separator])
   ensure
@@ -5925,14 +5925,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      data_labels: { position: "outEnd", show_val: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("outEnd", chart[:data_labels][:position])
   ensure
@@ -5944,7 +5944,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5952,7 +5952,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_tick_lbl_pos: "none")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("low", chart[:cat_axis_tick_lbl_pos])
     assert_equal("none", chart[:val_axis_tick_lbl_pos])
@@ -5965,14 +5965,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      val_axis_major_gridlines: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:val_axis_major_gridlines])
     assert_nil(chart[:cat_axis_major_gridlines])
@@ -5985,14 +5985,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      cat_axis_minor_gridlines: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:cat_axis_minor_gridlines])
     assert_nil(chart[:val_axis_minor_gridlines])
@@ -6005,14 +6005,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      val_axis_major_gridlines: { line_color: "CCCCCC", line_width: 0.5, line_dash: "dash" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     gl = chart[:val_axis_major_gridlines]
     assert_instance_of(Hash, gl)
@@ -6028,14 +6028,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      show_d_lbls_over_max: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:show_d_lbls_over_max])
   ensure
@@ -6047,14 +6047,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      cat_axis_delete: true, val_axis_delete: false)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:cat_axis_delete])
     assert_equal(false, chart[:val_axis_delete])
@@ -6067,14 +6067,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      val_axis_orientation: "maxMin")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("minMax", chart[:cat_axis_orientation])
     assert_equal("maxMin", chart[:val_axis_orientation])
@@ -6087,14 +6087,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      gap_width: 200, overlap: -25)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(200, chart[:gap_width])
     assert_equal(-25, chart[:overlap])
@@ -6107,7 +6107,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -6115,7 +6115,7 @@ class ReaderTest < Test::Unit::TestCase
                                 h_percent: 150, depth_percent: 200 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     v3d = chart[:view_3d]
     assert_equal(15, v3d[:rot_x])
@@ -6133,7 +6133,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -6141,7 +6141,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_num_fmt: { format_code: "0.00", source_linked: false })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("General", chart[:cat_axis_num_fmt][:format_code])
     assert_equal(true, chart[:cat_axis_num_fmt][:source_linked])
@@ -6156,7 +6156,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -6164,7 +6164,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_major_tick_mark: "cross", val_axis_minor_tick_mark: "none")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("out", chart[:cat_axis_major_tick_mark])
     assert_equal("in", chart[:cat_axis_minor_tick_mark])
@@ -6179,14 +6179,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      cat_axis_crosses: "autoZero", val_axis_crosses: "max")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("autoZero", chart[:cat_axis_crosses])
     assert_equal("max", chart[:val_axis_crosses])
@@ -6199,7 +6199,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -6207,7 +6207,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_major_unit: 10, val_axis_minor_unit: 2)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("between", chart[:val_axis_cross_between])
     assert_equal(10.0, chart[:val_axis_major_unit])
@@ -6221,14 +6221,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      val_axis_scaling_min: 0, val_axis_scaling_max: 100)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(100.0, chart[:val_axis_scaling_max])
     assert_equal(0.0, chart[:val_axis_scaling_min])
@@ -6241,14 +6241,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      val_axis_log_base: 10)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(10.0, chart[:val_axis_log_base])
   ensure
@@ -6260,14 +6260,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :doughnut,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      first_slice_ang: 90, hole_size: 50)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(90, chart[:first_slice_ang])
     assert_equal(50, chart[:hole_size])
@@ -6280,14 +6280,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      smooth: true, marker: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:smooth])
     assert_equal(true, chart[:marker])
@@ -6300,7 +6300,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :scatter,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -6310,7 +6310,7 @@ class ReaderTest < Test::Unit::TestCase
                      radar_style: "filled")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal("smoothMarker", charts[0][:scatter_style])
     assert_equal("filled", charts[1][:radar_style])
@@ -6323,14 +6323,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      cat_axis_pos: "t", val_axis_pos: "r")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("t", chart[:cat_axis_pos])
     assert_equal("r", chart[:val_axis_pos])
@@ -6343,14 +6343,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar3d,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      gap_depth: 150, bar_shape: "cylinder")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(150, chart[:gap_depth])
     assert_equal("cylinder", chart[:bar_shape])
@@ -6363,7 +6363,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bubble,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -6371,7 +6371,7 @@ class ReaderTest < Test::Unit::TestCase
                      show_neg_bubbles: false, size_represents: "w")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:bubble_3d])
     assert_equal(200, chart[:bubble_scale])
@@ -6386,14 +6386,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      cat_axis_crosses_at: 3.5, val_axis_crosses_at: 10.0)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_in_delta(3.5, chart[:cat_axis_crosses_at])
     assert_in_delta(10.0, chart[:val_axis_crosses_at])
@@ -6406,14 +6406,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :surface,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      wireframe: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:wireframe])
   ensure
@@ -6425,14 +6425,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :surface3d,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      wireframe: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("surface3DChart", chart[:chart_type])
     assert_equal(true, chart[:wireframe])
@@ -6445,14 +6445,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      data_table: { show_horz_border: true, show_keys: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_not_nil(chart[:data_table])
     assert_equal(true, chart[:data_table][:show_horz_border])
@@ -6466,13 +6466,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1", fill_color: "00FF00" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(1, chart[:series].size)
     assert_equal("00FF00", chart[:series][0][:fill_color])
@@ -6485,14 +6485,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      plot_area_fill: "CCCCCC")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("CCCCCC", chart[:plot_area_fill])
   ensure
@@ -6504,14 +6504,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }, { val_ref: "Sheet1!$A$2" }],
                      legend: { position: "b", entries: [{ idx: 1, delete: true }] })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("b", chart[:legend][:position])
     assert_equal(1, chart[:legend][:entries].size)
@@ -6526,13 +6526,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", line_color: "0000FF", line_width: 2 }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("0000FF", chart[:series][0][:line_color])
     assert_equal(2.0, chart[:series][0][:line_width])
@@ -6545,13 +6545,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1", fill_color: "FF0000", line_color: "0000FF", line_width: 1.5 }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("FF0000", chart[:series][0][:fill_color])
     assert_equal("0000FF", chart[:series][0][:line_color])
@@ -6565,13 +6565,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "square", marker_size: 6 }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("square", chart[:series][0][:marker_symbol])
     assert_equal(6, chart[:series][0][:marker_size])
@@ -6584,14 +6584,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle", marker_size: 6,
                                 marker_fill: "FF0000", marker_line_color: "000000", marker_line_width: 1 }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal("circle", ser[:marker_symbol])
@@ -6607,14 +6607,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
                                 marker_line_color: "000000", marker_line_dash: "dash" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal("dash", ser[:marker_line_dash])
@@ -6627,14 +6627,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
                                 marker_no_fill: true }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal(true, ser[:marker_no_fill])
@@ -6647,14 +6647,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
                                 marker_fill: "FF0000", marker_no_line: true }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal(true, ser[:marker_no_line])
@@ -6667,13 +6667,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1", invert_if_negative: true }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal(true, ser[:invert_if_negative])
@@ -6686,14 +6686,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :pie,
                      series: [{ val_ref: "Sheet1!$A$1", explosion: 25,
                                 data_points: [{ idx: 0, explosion: 50 }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal(25, ser[:explosion])
@@ -6707,13 +6707,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :scatter,
                      series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal("Sheet1!$A$1", ser[:cat_ref])
@@ -6727,7 +6727,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -6735,7 +6735,7 @@ class ReaderTest < Test::Unit::TestCase
                                               val_type: "fixedVal", no_end_cap: true, val: 5 } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     eb = chart[:series].first[:error_bars]
     assert_equal("y", eb[:direction])
@@ -6752,7 +6752,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -6763,7 +6763,7 @@ class ReaderTest < Test::Unit::TestCase
                                               line_dash: "lgDash" } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     eb = chart[:series].first[:error_bars]
     assert_not_nil(eb)
@@ -6779,7 +6779,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("B1", 0.5)
     writer.set_cell("C1", 0.3)
@@ -6791,7 +6791,7 @@ class ReaderTest < Test::Unit::TestCase
                                               minus: "Sheet1!$C$1" } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     eb = chart[:series].first[:error_bars]
     assert_not_nil(eb)
@@ -6807,7 +6807,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 2)
     writer.add_chart(type: :bar3d,
@@ -6815,7 +6815,7 @@ class ReaderTest < Test::Unit::TestCase
                               { val_ref: "Sheet1!$A$2", shape: "pyramid" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("cone", chart[:series][0][:shape])
     assert_equal("pyramid", chart[:series][1][:shape])
@@ -6828,7 +6828,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("B1", 2)
     writer.add_chart(type: :scatter,
@@ -6839,7 +6839,7 @@ class ReaderTest < Test::Unit::TestCase
                                 ] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
 
@@ -6859,7 +6859,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -6868,7 +6868,7 @@ class ReaderTest < Test::Unit::TestCase
                      data_labels: { show_cat_name: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser0 = chart[:series][0]
     assert_equal(true, ser0[:data_labels][:show_val])
@@ -6884,7 +6884,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -6892,7 +6892,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_font: { size: 10, italic: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     cf = chart[:cat_axis_font]
     assert_equal(12.0, cf[:size])
@@ -6911,13 +6911,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar, title: "Test", title_overlay: true,
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:title_overlay])
   ensure
@@ -6929,13 +6929,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1", order: 5 }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal(5, ser[:order])
@@ -6948,14 +6948,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bubble,
                      series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1",
                                 bubble_size_ref: "Sheet1!$C$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal("Sheet1!$C$1", ser[:bubble_size_ref])
@@ -6968,14 +6968,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      drop_lines: true, hi_low_lines: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:drop_lines])
     assert_equal(true, chart[:hi_low_lines])
@@ -6988,14 +6988,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      hi_low_lines: { line_color: "CC0000", line_width: 0.5, line_dash: "dot" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     hl = chart[:hi_low_lines]
     assert_equal({ line_color: "CC0000", line_width: 0.5, line_dash: "dot" }, hl)
@@ -7008,14 +7008,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      drop_lines: { line_color: "0000FF", line_width: 1.0, line_dash: "sysDot" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     dl = chart[:drop_lines]
     assert_equal({ line_color: "0000FF", line_width: 1.0, line_dash: "sysDot" }, dl)
@@ -7028,7 +7028,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      grouping: "stacked",
@@ -7036,7 +7036,7 @@ class ReaderTest < Test::Unit::TestCase
                      ser_lines: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:ser_lines])
   ensure
@@ -7048,7 +7048,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      grouping: "stacked",
@@ -7056,7 +7056,7 @@ class ReaderTest < Test::Unit::TestCase
                      ser_lines: { line_color: "999999", line_width: 0.75, line_dash: "lgDash" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     sl = chart[:ser_lines]
     assert_equal({ line_color: "999999", line_width: 0.75, line_dash: "lgDash" }, sl)
@@ -7069,7 +7069,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :surface,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7077,7 +7077,7 @@ class ReaderTest < Test::Unit::TestCase
                                  { idx: 1, fill_color: "00FF00" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     bf = chart[:band_fmts]
     assert_not_nil(bf)
@@ -7095,14 +7095,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :surface,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      band_fmts: [{ idx: 0, fill_color: "AABBCC", line_color: "112233", line_width: 2.0, line_dash: "dash" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     bf = chart[:band_fmts]
     assert_not_nil(bf)
@@ -7121,7 +7121,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :of_pie,
@@ -7133,7 +7133,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("ofPieChart", chart[:chart_type])
     assert_equal("bar", chart[:of_pie_type])
@@ -7150,7 +7150,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.set_cell("A3", 30)
@@ -7162,7 +7162,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1:$A$4" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("ofPieChart", chart[:chart_type])
     assert_equal("pie", chart[:of_pie_type])
@@ -7177,14 +7177,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      up_down_bars: { gap_width: 200 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_not_nil(chart[:up_down_bars])
     assert_equal(200, chart[:up_down_bars][:gap_width])
@@ -7197,7 +7197,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7206,7 +7206,7 @@ class ReaderTest < Test::Unit::TestCase
                                      down_bars: { fill_color: "FF0000", line_color: "800000", line_width: 0.5 } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     udb = chart[:up_down_bars]
     assert_equal(100, udb[:gap_width])
@@ -7225,14 +7225,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      cat_axis_tick_lbl_skip: 2, cat_axis_tick_mark_skip: 3)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(2, chart[:cat_axis_tick_lbl_skip])
     assert_equal(3, chart[:cat_axis_tick_mark_skip])
@@ -7245,14 +7245,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      cat_axis_lbl_offset: 50, cat_axis_no_multi_lvl_lbl: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(50, chart[:cat_axis_lbl_offset])
     assert_equal(true, chart[:cat_axis_no_multi_lvl_lbl])
@@ -7265,14 +7265,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      cat_axis_auto: true, cat_axis_lbl_algn: "ctr")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:cat_axis_auto])
     assert_equal("ctr", chart[:cat_axis_lbl_algn])
@@ -7285,14 +7285,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      val_axis_disp_units: "thousands")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("thousands", chart[:val_axis_disp_units])
   ensure
@@ -7304,7 +7304,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7312,7 +7312,7 @@ class ReaderTest < Test::Unit::TestCase
                                             label: { num_fmt: "#,##0" } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     du = chart[:val_axis_disp_units]
     assert_instance_of(Hash, du)
@@ -7328,7 +7328,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7340,7 +7340,7 @@ class ReaderTest < Test::Unit::TestCase
                                                      font: { size: 10, bold: true, color: "FF0000" } } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     du = chart[:val_axis_disp_units]
     lbl = du[:label]
@@ -7360,7 +7360,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.set_cell("A3", 30)
@@ -7371,7 +7371,7 @@ class ReaderTest < Test::Unit::TestCase
                                               { idx: 2, fill_color: "0000FF" }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_not_nil(ser[:data_points])
@@ -7391,7 +7391,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -7399,7 +7399,7 @@ class ReaderTest < Test::Unit::TestCase
                                 data_points: [{ idx: 0, fill_color: "FF0000", line_color: "000000", line_width: 2 }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     dp = ser[:data_points][0]
@@ -7416,7 +7416,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 2)
     writer.add_chart(type: :line,
@@ -7428,7 +7428,7 @@ class ReaderTest < Test::Unit::TestCase
                                              name: "MyTrend" } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     tl = ser[:trendline]
@@ -7450,7 +7450,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 2)
     writer.add_chart(type: :line,
@@ -7461,7 +7461,7 @@ class ReaderTest < Test::Unit::TestCase
                                              line_dash: "dash" } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     tl = ser[:trendline]
@@ -7479,7 +7479,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -7487,7 +7487,7 @@ class ReaderTest < Test::Unit::TestCase
                                              label: { num_fmt: "0.00%" } } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     tl = chart[:series][0][:trendline]
     assert_not_nil(tl[:label])
@@ -7501,7 +7501,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -7514,7 +7514,7 @@ class ReaderTest < Test::Unit::TestCase
                                                       font: { size: 10, bold: true, color: "FF0000" } } } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     tl = chart[:series][0][:trendline]
     lbl = tl[:label]
@@ -7534,7 +7534,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 4)
     writer.set_cell("A3", 9)
@@ -7546,7 +7546,7 @@ class ReaderTest < Test::Unit::TestCase
                                 ] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal(2, ser[:trendlines].size)
@@ -7566,13 +7566,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "InnerShadow",
                      inner_shadow: { blur_rad: 63_500, dist: 25_400, dir: 5_400_000, color: "FF0000" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     is = shapes[0][:inner_shadow]
@@ -7590,14 +7590,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "BothShadows",
                      outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" },
                      inner_shadow: { blur_rad: 63_500, dist: 25_400, dir: 5_400_000, color: "FF0000" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     os = shapes[0][:outer_shadow]
@@ -7616,13 +7616,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Glow",
                      glow: { rad: 101_600, color: "FF0000" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     gl = shapes[0][:glow]
@@ -7638,13 +7638,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "SoftEdge",
                      soft_edge: { rad: 63_500 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     se = shapes[0][:soft_edge]
@@ -7659,14 +7659,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Reflect",
                      reflection: { blur_rad: 6_350, st_a: 52_000, end_a: 300, dist: 0, dir: 5_400_000,
                                    sy: -100_000, algn: "bl", rot_with_shape: false })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     rf = shapes[0][:reflection]
@@ -7688,13 +7688,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Blur",
                      blur: { rad: 50_800, grow: false })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     bl = shapes[0][:blur]
@@ -7710,7 +7710,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :bar,
@@ -7718,7 +7718,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("My Chart", chart[:title])
     tf = chart[:title_font]
@@ -7737,12 +7737,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar, title: "Plain Title", series: [{ val_ref: "Sheet1!$A$1:$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("Plain Title", chart[:title])
     assert_nil(chart[:title_font])
@@ -7755,7 +7755,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -7764,7 +7764,7 @@ class ReaderTest < Test::Unit::TestCase
                                 line_cap: "rnd", line_join: "round" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal("rnd", ser[:line_cap])
@@ -7778,7 +7778,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -7786,7 +7786,7 @@ class ReaderTest < Test::Unit::TestCase
                                 line_color: "FF0000", line_dash: "lgDash" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal("lgDash", ser[:line_dash])
@@ -7799,7 +7799,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :scatter,
@@ -7807,7 +7807,7 @@ class ReaderTest < Test::Unit::TestCase
                                 no_fill: true, no_line: true }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal(true, ser[:no_fill])
@@ -7821,7 +7821,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -7829,7 +7829,7 @@ class ReaderTest < Test::Unit::TestCase
                               { val_ref: "Sheet1!$A$1:$A$2", smooth: false }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:series][0][:smooth])
     assert_equal(false, chart[:series][1][:smooth])
@@ -7842,13 +7842,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Struck",
                      text_font: { strike: "sngStrike" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -7863,13 +7863,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Underlined",
                      text_font: { underline: "sng" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -7884,13 +7884,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Super",
                      text_font: { baseline: 30_000 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -7905,13 +7905,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Spaced",
                      text_font: { spacing: 200 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -7926,13 +7926,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "AllCaps",
                      text_font: { cap: "all" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -7947,13 +7947,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Centered",
                      text_align: "ctr")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("ctr", shapes[0][:text_align])
@@ -7966,13 +7966,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "FontAlign",
                      text_font_align: "b")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("b", shapes[0][:text_font_align])
@@ -7985,13 +7985,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Tabs",
                      text_def_tab_sz: 914_400)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(914_400, shapes[0][:text_def_tab_sz])
@@ -8004,13 +8004,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Hello",
                      text_font: { lang: "en-US" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8025,13 +8025,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Vertical",
                      text_vertical: "vert")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("vert", shapes[0][:text_vertical])
@@ -8044,13 +8044,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Padded",
                      text_insets: { left: 91_440, top: 45_720, right: 91_440, bottom: 45_720 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     ins = shapes[0][:text_insets]
@@ -8068,13 +8068,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "CJK",
                      text_font: { ea_font: "MS Gothic" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8089,13 +8089,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Complex",
                      text_font: { cs_font: "Arabic Typesetting" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8110,13 +8110,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Symbols",
                      text_font: { sym_font: "Wingdings" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8131,13 +8131,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Outline",
                      text_font: { line_color: "FF0000", line_width: 12_700 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8153,13 +8153,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "UFT",
                      text_font: { underline: "sng", u_fill_tx: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8173,13 +8173,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "ULT",
                      text_font: { underline: "sng", u_ln_tx: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8193,13 +8193,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Shadow",
                      text_font: { bold: true, outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8219,13 +8219,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Glow",
                      text_font: { glow: { rad: 101_600, color: "FF0000" } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8242,13 +8242,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Highlighted",
                      text_font: { highlight: "FFFF00" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8263,13 +8263,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Rotated",
                      text_rot: 2_700_000)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(2_700_000, shapes[0][:text_rot])
@@ -8282,13 +8282,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Indented",
                      text_indent: { left: 457_200, right: 228_600, indent: -114_300 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     ti = shapes[0][:text_indent]
@@ -8305,13 +8305,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Kerned",
                      text_font: { kern: 1200 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8326,13 +8326,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Centered",
                      text_anchor_ctr: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_anchor_ctr])
@@ -8345,13 +8345,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Spaced",
                      text_spacing: { before: 600, after: 400 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     ts = shapes[0][:text_spacing]
@@ -8367,13 +8367,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "LineSpaced",
                      text_spacing: { line: 1200 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     ts = shapes[0][:text_spacing]
@@ -8388,13 +8388,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "PctLine",
                      text_spacing: { line_pct: 150_000 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     ts = shapes[0][:text_spacing]
@@ -8409,13 +8409,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "PctSpacing",
                      text_spacing: { before_pct: 50_000, after_pct: 100_000 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     ts = shapes[0][:text_spacing]
@@ -8431,13 +8431,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Overflow",
                      text_horz_overflow: "overflow")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("overflow", shapes[0][:text_horz_overflow])
@@ -8450,13 +8450,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Columns",
                      text_num_col: 2)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(2, shapes[0][:text_num_col])
@@ -8469,13 +8469,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "ColSpacing",
                      text_spc_col: 457_200)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(457_200, shapes[0][:text_spc_col])
@@ -8488,12 +8488,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "RTL", text_rtl_col: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_rtl_col])
@@ -8506,12 +8506,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "WA", text_from_word_art: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_from_word_art])
@@ -8524,12 +8524,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Up", text_upright: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_upright])
@@ -8542,12 +8542,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Compat", text_compat_ln_spc: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_compat_ln_spc])
@@ -8560,13 +8560,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "First",
                      text_spc_first_last_para: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_spc_first_last_para])
@@ -8579,13 +8579,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "RTL",
                      text_rtl: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_rtl])
@@ -8598,12 +8598,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "EA", text_ea_ln_brk: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_ea_ln_brk])
@@ -8616,12 +8616,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Latin", text_latin_ln_brk: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_latin_ln_brk])
@@ -8634,12 +8634,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Hang", text_hanging_punct: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_hanging_punct])
@@ -8652,13 +8652,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Tabs",
                      text_tab_stops: [{ pos: 914_400, align: "l" }, { pos: 1_828_800, align: "r" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tabs = shapes[0][:text_tab_stops]
@@ -8677,13 +8677,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "NoBullet",
                      text_bullet: { type: "none" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     bu = shapes[0][:text_bullet]
@@ -8698,13 +8698,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Bullet",
                      text_bullet: { type: "char", char: "\u2022" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     bu = shapes[0][:text_bullet]
@@ -8720,13 +8720,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Numbered",
                      text_bullet: { type: "auto", auto_type: "arabicPeriod", start_at: 5 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     bu = shapes[0][:text_bullet]
@@ -8743,13 +8743,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Level2",
                      text_level: 2)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(2, shapes[0][:text_level])
@@ -8762,13 +8762,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "FontBullet",
                      text_bullet: { type: "char", char: "\u2022", font: "Wingdings" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     bu = shapes[0][:text_bullet]
@@ -8784,13 +8784,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "BigBullet",
                      text_bullet: { type: "char", char: "-", size_pts: 1400 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     bu = shapes[0][:text_bullet]
@@ -8805,13 +8805,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "PctBullet",
                      text_bullet: { type: "char", char: "-", size_pct: 150_000 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     bu = shapes[0][:text_bullet]
@@ -8826,13 +8826,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "ColorBullet",
                      text_bullet: { type: "char", char: "-", color: "FF0000" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     bu = shapes[0][:text_bullet]
@@ -8847,12 +8847,12 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "AA", text_force_aa: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_force_aa])
@@ -8865,13 +8865,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Warped",
                      text_warp: { preset: "textWave1" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tw = shapes[0][:text_warp]
@@ -8886,13 +8886,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "NP",
                      text_font: { no_proof: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8907,13 +8907,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "NH",
                      text_font: { normalize_h: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8928,13 +8928,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "KM",
                      text_font: { kumimoji: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8949,13 +8949,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "D",
                      text_font: { dirty: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8970,13 +8970,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "SC",
                      text_font: { smt_clean: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -8991,13 +8991,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "BM",
                      text_font: { bmk: "bookmark1" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -9012,13 +9012,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "EPR",
                      text_end_para_rpr: { lang: "en-US", size: 1100, dirty: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     epr = shapes[0][:text_end_para_rpr]
@@ -9035,13 +9035,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "EPR2",
                      text_end_para_rpr: { lang: "en-US", bold: true, name: "Arial" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     epr = shapes[0][:text_end_para_rpr]
@@ -9058,13 +9058,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "DR",
                      text_def_rpr: { lang: "en-US", size: 1100, bold: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     dr = shapes[0][:text_def_rpr]
@@ -9081,7 +9081,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text_paragraphs: [
                        { text: "First", font: { bold: true }, align: "ctr" },
@@ -9089,7 +9089,7 @@ class ReaderTest < Test::Unit::TestCase
                      ])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     shape = shapes[0]
@@ -9117,13 +9117,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Solo",
                      text_font: { bold: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     shape = shapes[0]
@@ -9139,7 +9139,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text_paragraphs: [
                        { runs: [
@@ -9149,7 +9149,7 @@ class ReaderTest < Test::Unit::TestCase
                      ])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     shape = shapes[0]
@@ -9168,7 +9168,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text_paragraphs: [
                        { runs: [
@@ -9179,7 +9179,7 @@ class ReaderTest < Test::Unit::TestCase
                      ])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     shape = shapes[0]
@@ -9211,13 +9211,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Alt",
                      text_font: { lang: "en-US", alt_lang: "ja-JP" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -9233,14 +9233,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
                      cat_axis_label_rotation: -2_700_000, val_axis_label_rotation: -5_400_000)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(-2_700_000, charts[0][:cat_axis_label_rotation])
@@ -9254,14 +9254,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
                      plot_area_line_color: "0000FF", plot_area_line_width: 12_700)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("0000FF", charts[0][:plot_area_line_color])
@@ -9275,14 +9275,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
                      plot_area_line_color: "0000FF", plot_area_line_dash: "dashDot")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("dashDot", charts[0][:plot_area_line_dash])
@@ -9295,14 +9295,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
                      plot_area_no_fill: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(true, charts[0][:plot_area_no_fill])
@@ -9315,7 +9315,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -9323,7 +9323,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_line_color: "00FF00", val_axis_line_width: 12_700)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("FF0000", charts[0][:cat_axis_line_color])
@@ -9339,7 +9339,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -9347,7 +9347,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_line_color: "00FF00", val_axis_line_dash: "dashDot")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("dot", charts[0][:cat_axis_line_dash])
@@ -9361,14 +9361,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
                      cat_axis_fill: "F0F0F0", val_axis_fill: "E0E0E0")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("F0F0F0", charts[0][:cat_axis_fill])
@@ -9382,14 +9382,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
                      cat_axis_no_fill: true, val_axis_no_fill: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(true, charts[0][:cat_axis_no_fill])
@@ -9403,14 +9403,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
                      plot_area_layout: { target: "inner", x: 0.1, y: 0.2, w: 0.7, h: 0.6 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     layout = charts[0][:plot_area_layout]
@@ -9429,7 +9429,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -9437,7 +9437,7 @@ class ReaderTest < Test::Unit::TestCase
                                entries: [{ idx: 0, font: { size: 14, bold: true, name: "Arial" } }] })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     entries = charts[0][:legend][:entries]
@@ -9455,7 +9455,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.set_cell("B2", 20)
@@ -9469,7 +9469,7 @@ class ReaderTest < Test::Unit::TestCase
                      })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     dl = charts[0][:data_labels]
@@ -9489,7 +9489,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -9498,7 +9498,7 @@ class ReaderTest < Test::Unit::TestCase
                      back_wall: { fill_color: "00FF00", line_color: "0000FF", line_width: 12_700 })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("FF0000", charts[0][:floor][:fill_color])
@@ -9515,11 +9515,11 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_shape(fill_color: { scheme: "accent1" }, line_color: { scheme: "dk1" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal({ scheme: "accent1" }, shapes[0][:fill_color])
@@ -9533,14 +9533,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
                      series: [{ val_ref: "Sheet1!B1", fill_color: { scheme: "accent2" } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal({ scheme: "accent2" }, charts[0][:series][0][:fill_color])
@@ -9553,14 +9553,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
                      legend: { position: "b", font: { size: 12, bold: true, color: "FF0000", name: "Calibri" } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     legend = charts[0][:legend]
@@ -9578,7 +9578,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "2024-01-01")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :line, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -9586,7 +9586,7 @@ class ReaderTest < Test::Unit::TestCase
                      cat_axis_major_time_unit: "months", cat_axis_major_unit: 1)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(:date, charts[0][:cat_axis_type])
@@ -9602,7 +9602,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Q1")
     writer.set_cell("A2", "Q2")
     writer.set_cell("B1", 100)
@@ -9613,7 +9613,7 @@ class ReaderTest < Test::Unit::TestCase
                      ])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     ser = charts[0][:series][0]
     assert_equal(%w[Q1 Q2], ser[:cat_cache])
@@ -9628,7 +9628,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1.0)
     writer.set_cell("A2", 2.0)
     writer.set_cell("B1", 10)
@@ -9638,7 +9638,7 @@ class ReaderTest < Test::Unit::TestCase
                      ])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     ser = charts[0][:series][0]
     assert_equal(:num, ser[:cat_ref_type])
@@ -9652,14 +9652,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      legend: { position: "b", fill_color: "FFFF00", line_color: "0000FF", line_width: 1.5 },
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal("b", charts[0][:legend][:position])
     assert_equal("FFFF00", charts[0][:legend][:fill_color])
@@ -9674,7 +9674,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      data_table: { show_keys: true, fill_color: "DDDDDD", line_color: "111111", line_width: 0.5,
@@ -9682,7 +9682,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dt = charts[0][:data_table]
     assert_equal(true, dt[:show_keys])
@@ -9701,7 +9701,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 50)
     writer.add_chart(type: :bar,
                      data_labels: { show_val: true,
@@ -9711,7 +9711,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dl = charts[0][:data_labels]
     assert_equal(true, dl[:show_val])
@@ -9731,7 +9731,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: { text: "Cats", font: { bold: true, size: 1400, name: "Calibri" } },
@@ -9739,7 +9739,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal("Cats", charts[0][:cat_axis_title])
     assert_equal(true, charts[0][:cat_axis_title_font][:bold])
@@ -9757,14 +9757,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: { text: "Revenue", fill_color: "FFEECC", line_color: "CC6600", line_width: 0.5 },
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal("Revenue", charts[0][:title])
     assert_equal("FFEECC", charts[0][:title_fill_color])
@@ -9779,14 +9779,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: { text: "Revenue", no_fill: true },
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal("Revenue", charts[0][:title])
     assert_equal(true, charts[0][:title_no_fill])
@@ -9799,7 +9799,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: "Flat Title",
@@ -9811,7 +9811,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("Flat Title", chart[:title])
     assert_equal(true, chart[:title_font][:bold])
@@ -9831,7 +9831,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :bar,
@@ -9839,7 +9839,7 @@ class ReaderTest < Test::Unit::TestCase
                                 data_points: [{ idx: 0, no_fill: true }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dp = charts[0][:series][0][:data_points]
     assert_equal(1, dp.size)
@@ -9854,7 +9854,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -9862,7 +9862,7 @@ class ReaderTest < Test::Unit::TestCase
                      side_wall: { no_fill: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(true, charts[0][:floor][:no_fill])
     assert_equal(true, charts[0][:side_wall][:no_fill])
@@ -9875,14 +9875,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :stock,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      up_down_bars: { up_bars: { no_fill: true }, down_bars: { no_fill: true } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     udb = charts[0][:up_down_bars]
     assert_equal(true, udb[:up_bars][:no_fill])
@@ -9896,14 +9896,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      data_labels: { show_val: true, no_fill: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(true, charts[0][:data_labels][:no_fill])
   ensure
@@ -9915,14 +9915,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      legend: { position: "r", line_color: "000000", line_dash: "dash" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal("dash", charts[0][:legend][:line_dash])
   ensure
@@ -9934,14 +9934,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      data_table: { show_keys: true, line_color: "999999", line_dash: "dot" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal("dot", charts[0][:data_table][:line_dash])
   ensure
@@ -9953,14 +9953,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      data_labels: { show_val: true, line_color: "333333", line_dash: "lgDash" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal("lgDash", charts[0][:data_labels][:line_dash])
   ensure
@@ -9972,7 +9972,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :bar,
@@ -9980,7 +9980,7 @@ class ReaderTest < Test::Unit::TestCase
                                 data_points: [{ idx: 0, line_color: "FF0000", line_dash: "dashDot" }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dp = charts[0][:series][0][:data_points]
     assert_equal("dashDot", dp[0][:line_dash])
@@ -9993,7 +9993,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -10001,7 +10001,7 @@ class ReaderTest < Test::Unit::TestCase
                                 data_points: [{ idx: 0, fill_color: "FF0000", no_line: true }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dp = charts[0][:series][0][:data_points]
     assert_equal(true, dp[0][:no_line])
@@ -10014,7 +10014,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -10022,7 +10022,7 @@ class ReaderTest < Test::Unit::TestCase
                                 data_points: [{ idx: 0, marker_symbol: "diamond", marker_size: 8 }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dp = charts[0][:series][0][:data_points]
     assert_equal("diamond", dp[0][:marker_symbol])
@@ -10036,7 +10036,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -10046,7 +10046,7 @@ class ReaderTest < Test::Unit::TestCase
                                                 marker_line_width: 1.5 }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dp = charts[0][:series][0][:data_points]
     assert_equal("00FF00", dp[0][:marker_fill])
@@ -10061,7 +10061,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -10070,7 +10070,7 @@ class ReaderTest < Test::Unit::TestCase
                                                 marker_no_fill: true, marker_no_line: true }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dp = charts[0][:series][0][:data_points]
     assert_equal(true, dp[0][:marker_no_fill])
@@ -10084,7 +10084,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -10093,7 +10093,7 @@ class ReaderTest < Test::Unit::TestCase
                                                 marker_line_color: "FF0000", marker_line_dash: "dash" }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dp = charts[0][:series][0][:data_points]
     assert_equal("dash", dp[0][:marker_line_dash])
@@ -10106,7 +10106,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", -5)
     writer.add_chart(type: :bar,
@@ -10114,7 +10114,7 @@ class ReaderTest < Test::Unit::TestCase
                                 data_points: [{ idx: 1, invert_if_negative: true, fill_color: "FF0000" }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dp = charts[0][:series][0][:data_points]
     assert_equal(true, dp[0][:invert_if_negative])
@@ -10127,7 +10127,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("B1", 20)
     writer.set_cell("C1", 5)
@@ -10137,7 +10137,7 @@ class ReaderTest < Test::Unit::TestCase
                                 data_points: [{ idx: 0, bubble_3d: true }] }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dp = charts[0][:series][0][:data_points]
     assert_equal(true, dp[0][:bubble_3d])
@@ -10150,7 +10150,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -10159,7 +10159,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dl = charts[0][:data_labels]
     assert_equal("Custom", dl[:labels][0][:text])
@@ -10172,7 +10172,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -10181,7 +10181,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dl = charts[0][:data_labels]
     assert_equal(true, dl[:labels][0][:delete])
@@ -10195,7 +10195,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -10205,7 +10205,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dl = charts[0][:data_labels]
     lbl = dl[:labels][0]
@@ -10221,7 +10221,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -10230,7 +10230,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dl = charts[0][:data_labels]
     lbl = dl[:labels][0]
@@ -10245,7 +10245,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -10255,7 +10255,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dl = charts[0][:data_labels]
     lbl = dl[:labels][0]
@@ -10272,7 +10272,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -10282,7 +10282,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1:$A$2" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     dl = charts[0][:data_labels]
     lbl = dl[:labels][0]
@@ -10299,7 +10299,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :stock,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -10307,7 +10307,7 @@ class ReaderTest < Test::Unit::TestCase
                                      down_bars: { line_color: "FF0000", line_dash: "dash" } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     udb = charts[0][:up_down_bars]
     assert_equal("dot", udb[:up_bars][:line_dash])
@@ -10321,14 +10321,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      floor: { line_color: "000000", line_dash: "sysDot" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal("sysDot", charts[0][:floor][:line_dash])
   ensure
@@ -10340,7 +10340,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -10349,7 +10349,7 @@ class ReaderTest < Test::Unit::TestCase
                      chart_line_width: 1.0)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("EEEEEE", chart[:chart_fill])
     assert_equal("333333", chart[:chart_line_color])
@@ -10363,7 +10363,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -10371,7 +10371,7 @@ class ReaderTest < Test::Unit::TestCase
                      chart_line_dash: "lgDash")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("lgDash", chart[:chart_line_dash])
   ensure
@@ -10383,14 +10383,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      chart_no_fill: true)
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:chart_no_fill])
   ensure
@@ -10402,7 +10402,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: { text: "Category", fill_color: "FFEECC", line_color: "CC6600", line_width: 0.5 },
@@ -10410,7 +10410,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("Category", chart[:cat_axis_title])
     assert_equal("FFEECC", chart[:cat_axis_title_fill])
@@ -10429,7 +10429,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: { text: "My Chart", line_color: "000000", line_dash: "dot" },
@@ -10438,7 +10438,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("dot", chart[:title_line_dash])
     assert_equal("dash", chart[:cat_axis_title_line_dash])
@@ -10452,7 +10452,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -10460,7 +10460,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_title: { text: "Value", no_fill: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(true, charts[0][:cat_axis_title_no_fill])
@@ -10474,7 +10474,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: "Category",
@@ -10489,7 +10489,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("Category", chart[:cat_axis_title])
     assert_equal(true, chart[:cat_axis_title_font][:bold])
@@ -10512,7 +10512,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :pie,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -10520,7 +10520,7 @@ class ReaderTest < Test::Unit::TestCase
                                     leader_lines: { line_color: "FF0000", line_width: 0.5, line_dash: "dash" } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     dl = chart[:data_labels]
     assert_equal(true, dl[:show_leader_lines])
@@ -10538,14 +10538,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      legend: { position: "b", layout: { x: 0.1, y: 0.8, w: 0.8, h: 0.15 } },
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     layout = chart[:legend][:layout]
     assert_not_nil(layout)
@@ -10562,7 +10562,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -10570,7 +10570,7 @@ class ReaderTest < Test::Unit::TestCase
                                    selection: true, user_interface: true })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     prot = chart[:protection]
     assert_not_nil(prot)
@@ -10588,7 +10588,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -10599,7 +10599,7 @@ class ReaderTest < Test::Unit::TestCase
                      })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ps = chart[:print_settings]
     assert_not_nil(ps)
@@ -10622,7 +10622,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -10631,7 +10631,7 @@ class ReaderTest < Test::Unit::TestCase
                      })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ps = chart[:print_settings]
     assert_not_nil(ps)
@@ -10646,7 +10646,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -10654,7 +10654,7 @@ class ReaderTest < Test::Unit::TestCase
                                                labels: [{ idx: 0, layout: { x: 0.05, y: -0.03 }, show_val: true }] } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     labels = chart[:data_labels][:labels]
     assert_equal(1, labels.size)
@@ -10671,14 +10671,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
                      chart_font: { size: 12, bold: true, name: "Arial", color: "333333" })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     cf = chart[:chart_font]
     assert_not_nil(cf)
@@ -10695,7 +10695,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -10704,7 +10704,7 @@ class ReaderTest < Test::Unit::TestCase
                      val_axis_title: { text: "Val", layout: { x: 0.01, y: 0.4 } })
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
 
     tl = chart[:title_layout]
@@ -10732,7 +10732,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -10741,7 +10741,7 @@ class ReaderTest < Test::Unit::TestCase
                                                       layout: { x: 0.45, y: 0.25 } } } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     tl = chart[:series].first[:trendline][:label]
     assert_not_nil(tl)
@@ -10758,7 +10758,7 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -10766,7 +10766,7 @@ class ReaderTest < Test::Unit::TestCase
                                               fill_color: "FF0000", line_color: "0000FF" } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     eb = chart[:series].first[:error_bars]
     assert_not_nil(eb)
@@ -10781,14 +10781,14 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
                                 error_bars: { val_type: "fixedVal", val: 5, no_fill: true } }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     eb = chart[:series].first[:error_bars]
     assert_not_nil(eb)
@@ -10799,7 +10799,7 @@ class ReaderTest < Test::Unit::TestCase
 
   test "round-trips chart title rotation" do
     xlsx_path = File.join(Dir.tmpdir, "reader_title_rot_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: "Rotated",
@@ -10807,7 +10807,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(-5_400_000, chart[:title_rotation])
   ensure
@@ -10816,7 +10816,7 @@ class ReaderTest < Test::Unit::TestCase
 
   test "round-trips axis title rotation" do
     xlsx_path = File.join(Dir.tmpdir, "reader_axtitle_rot_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: "Category",
@@ -10826,7 +10826,7 @@ class ReaderTest < Test::Unit::TestCase
                      series: [{ val_ref: "Sheet1!$A$1" }])
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(-5_400_000, chart[:cat_axis_title_rotation])
     assert_equal(0, chart[:val_axis_title_rotation])

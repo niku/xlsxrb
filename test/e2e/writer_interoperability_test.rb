@@ -12,7 +12,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.write(xlsx_path)
 
@@ -26,7 +26,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("B1", "world")
     writer.set_cell("A1", "hello")
     writer.write(xlsx_path)
@@ -41,7 +41,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 42)
     writer.set_cell("B1", 3.14)
     writer.write(xlsx_path)
@@ -56,7 +56,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", true)
     writer.set_cell("B1", false)
     writer.write(xlsx_path)
@@ -71,10 +71,10 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
-    writer.set_cell("A3", Xlsxrb::Formula.new(expression: "SUM(A1:A2)", cached_value: "30"))
+    writer.set_cell("A3", Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A2)", cached_value: "30"))
     writer.write(xlsx_path)
 
     assert_openxml_sdk_scenario_passes("writer_formula_test", xlsx_path)
@@ -87,7 +87,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Data")
     writer.set_cell("A1", "main", sheet: "Sheet1")
     writer.set_cell("A1", "data", sheet: "Data")
@@ -103,7 +103,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_column_width("A", 20.0)
     writer.set_column_width("C", 15.5)
@@ -119,7 +119,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_row_height(1, 25.0)
     writer.set_row_hidden(3)
@@ -136,7 +136,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     style_xf_id = writer.add_named_cell_style(name: "Heading1", num_fmt_id: 0)
     cell_xf_id = writer.add_cell_style(xf_id: style_xf_id)
@@ -153,7 +153,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "merged")
     writer.merge_cells("A1:B2")
     writer.merge_cells("C3:D4")
@@ -169,7 +169,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Example")
     writer.add_hyperlink("A1", "https://example.com")
     writer.write(xlsx_path)
@@ -184,7 +184,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Example")
     writer.add_hyperlink("A1", "https://example.com", display: "Example Site", tooltip: "Click to visit")
     writer.set_cell("B1", "Page")
@@ -203,7 +203,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fmt_id = writer.add_number_format("0.00")
     writer.set_cell("A1", 3.14)
     writer.set_cell_format("A1", fmt_id)
@@ -219,7 +219,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", Date.new(2024, 1, 15))
     writer.write(xlsx_path)
 
@@ -233,7 +233,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
     writer.set_auto_filter("A1:B10")
@@ -249,7 +249,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_core_property(:title, "My Workbook")
     writer.set_core_property(:creator, "Test User")
@@ -267,7 +267,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_app_property(:application, "Xlsxrb")
     writer.set_app_property(:app_version, "1.0.0")
@@ -283,7 +283,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Data")
     writer.set_cell("A1", "main", sheet: "Sheet1")
     writer.set_cell("A1", "data", sheet: "Data")
@@ -304,7 +304,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Hidden")
     writer.add_sheet("VeryHidden")
     writer.set_cell("A1", "main", sheet: "Sheet1")
@@ -322,7 +322,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Data")
     writer.set_cell("A1", "main", sheet: "Sheet1")
     writer.add_defined_name("MyRange", "Sheet1!$A$1:$B$10")
@@ -339,7 +339,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_property(:tab_color, "FF0000FF")
     writer.set_sheet_property(:summary_below, false)
@@ -356,7 +356,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("B2", "hello")
     writer.set_cell("D5", "world")
     writer.write(xlsx_path)
@@ -371,7 +371,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_format(:default_row_height, 18.0)
     writer.set_sheet_format(:default_col_width, 12.5)
@@ -388,7 +388,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_row_outline_level(2, 1)
     writer.set_row_collapsed(3)
@@ -407,7 +407,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_view(:show_grid_lines, false)
     writer.set_sheet_view(:zoom_scale, 150)
@@ -425,7 +425,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_print_option(:grid_lines, true)
     writer.set_page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
@@ -446,7 +446,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_auto_filter("A1:C10")
     writer.add_filter_column(0, { type: :filters, values: %w[A B] })
@@ -464,7 +464,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_data_validation("A1:A100", type: "whole", operator: "between",
                                           formula1: "1", formula2: "100",
@@ -483,7 +483,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_conditional_format("A1:A10", type: :cell_is, operator: "greaterThan",
                                             formula: "100", priority: 1, format_id: 0)
@@ -516,7 +516,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")
     fill_id = writer.add_fill(pattern: "solid", fg_color: "FF00FF00")
     brd_id = writer.add_border(left: { style: "thin" }, right: { style: "thin" },
@@ -537,7 +537,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.use_shared_strings!
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
@@ -571,7 +571,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "with image")
     writer.insert_image(png_bytes, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10)
     writer.write(xlsx_path)
@@ -598,7 +598,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "with image")
     writer.insert_image(png_bytes, ext: "png", name: "Logo", description: "Company logo image")
     writer.write(xlsx_path)
@@ -613,7 +613,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Value")
     writer.set_cell("A2", "X")
@@ -631,7 +631,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.add_comment("A1", "Hello comment", author: "Tester")
     writer.write(xlsx_path)
@@ -646,12 +646,12 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
-                                { text: " normal" }
-                              ])
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+                                          { text: " normal" }
+                                        ])
     writer.add_comment("A1", rt, author: "Tester")
     writer.write(xlsx_path)
 
@@ -665,7 +665,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Amount")
     writer.set_cell("A2", "A")
@@ -684,14 +684,14 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer VBA guard raises without preserve_macros" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_false(writer.preserve_macros?)
     writer.preserve_macros!
     assert_true(writer.preserve_macros?)
   end
 
   test "writer generates valid sheet protection" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Protected data")
     writer.set_sheet_protection(password: "CF1A")
 
@@ -706,7 +706,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid workbook protection" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_workbook_protection(lock_structure: true)
 
@@ -721,12 +721,12 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid rich text in shared strings" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.use_shared_strings!
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Bold", font: { bold: true } },
-                                { text: " Normal" }
-                              ])
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Bold", font: { bold: true } },
+                                          { text: " Normal" }
+                                        ])
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
@@ -740,12 +740,12 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid shared and array formulas" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
-    writer.set_cell("B1", Xlsxrb::Formula.new(expression: "A1*2", type: :shared, ref: "B1:B2", shared_index: 0, cached_value: "20"))
-    writer.set_cell("B2", Xlsxrb::Formula.new(expression: "", type: :shared, shared_index: 0, cached_value: "40"))
-    writer.set_cell("C1", Xlsxrb::Formula.new(expression: "SUM(A1:A2)", type: :array, ref: "C1", cached_value: "30"))
+    writer.set_cell("B1", Xlsxrb::Elements::Formula.new(expression: "A1*2", type: :shared, ref: "B1:B2", shared_index: 0, cached_value: "20"))
+    writer.set_cell("B2", Xlsxrb::Elements::Formula.new(expression: "", type: :shared, shared_index: 0, cached_value: "40"))
+    writer.set_cell("C1", Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A2)", type: :array, ref: "C1", cached_value: "30"))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -758,7 +758,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid CF dataBar and iconSet deep attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 50)
     writer.add_conditional_format("A1:A10", type: :data_bar, priority: 1,
                                             data_bar: {
@@ -786,7 +786,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid DV with deep attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 50)
     writer.add_data_validation("A1:A100", type: "whole", operator: "between",
                                           formula1: "1", formula2: "100",
@@ -810,7 +810,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid cellStyleXfs and cellStyles" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial")
     writer.add_named_cell_style(name: "Heading1", font_id: fid, builtin_id: 1)
     writer.set_cell("A1", "Hello")
@@ -826,7 +826,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid chart with multiple series and axis titles" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.set_cell("C1", 20)
@@ -851,7 +851,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid chart with legend entries" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.set_cell("C1", 20)
@@ -873,7 +873,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid chart with series line formatting" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line, title: "SeriesLine",
@@ -890,7 +890,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid chart with series marker" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line, title: "SeriesMarker",
@@ -911,7 +911,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
@@ -928,7 +928,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
@@ -945,7 +945,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
@@ -958,7 +958,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid shapes with preset geometry" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_shape(preset: "ellipse", text: "Hello", name: "Oval 1",
                      from_col: 1, from_row: 2, to_col: 4, to_row: 6)
     writer.add_shape(preset: "roundRect", name: "RR 1",
@@ -975,7 +975,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid shape with adjust values" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "roundRect",
                      adjust_values: [{ name: "adj", fmla: "val 16667" }])
@@ -991,7 +991,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid shape with text font properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Bold",
                      text_font: { bold: true, italic: true, size: 1400, color: "FF0000", name: "Arial" })
@@ -1007,7 +1007,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid pivot table with col_fields and items" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Category")
     writer.set_cell("B1", "Region")
     writer.set_cell("C1", "Amount")
@@ -1029,7 +1029,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid external link" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_external_link(target: "Book2.xlsx", sheet_names: %w[Data Summary])
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
@@ -1043,7 +1043,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid table with totals row and enhanced columns" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Item")
     writer.set_cell("B1", "Price")
     writer.set_cell("C1", "Tax")
@@ -1064,7 +1064,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores cell alignment correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_id = writer.add_cell_style(
       alignment: { horizontal: "center", vertical: "top", wrap_text: true,
                    text_rotation: 45, indent: 2, shrink_to_fit: true }
@@ -1083,7 +1083,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores extended font attributes correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(
       bold: true, italic: true, strike: true, sz: 12, name: "Calibri",
       color: "FF0000FF", underline: "double", vert_align: "superscript",
@@ -1104,7 +1104,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores gradient fill correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(
       gradient: { type: "linear", degree: 90,
                   stops: [{ position: 0, color: "FFFF0000" }, { position: 1, color: "FF0000FF" }] }
@@ -1124,7 +1124,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores diagonal border correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     brd_id = writer.add_border(
       left: { style: "thin" }, right: { style: "thin" },
       top: { style: "thin" }, bottom: { style: "thin" },
@@ -1146,7 +1146,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores cell protection correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_id = writer.add_cell_style(protection: { locked: false, hidden: true })
     writer.set_cell("A1", "protected")
     writer.set_cell_style("A1", style_id)
@@ -1162,7 +1162,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores font theme and indexed colors correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid1 = writer.add_font(sz: 11, name: "Calibri", theme: 1, tint: -0.25)
     fid2 = writer.add_font(sz: 11, name: "Calibri", indexed: 10)
     s1 = writer.add_cell_style(font_id: fid1)
@@ -1183,7 +1183,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores fill theme colors correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(pattern: "solid", fg_color_theme: 4, fg_color_tint: 0.6)
     style_id = writer.add_cell_style(fill_id: fill_id)
     writer.set_cell("A1", "theme fill")
@@ -1200,7 +1200,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid expanded CF rule types" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_dxf(font: { bold: true, color: "FFFF0000" })
     writer.add_conditional_format("A1:A10", type: :above_average, priority: 1,
@@ -1229,13 +1229,13 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid rich text with extended font attributes" do
-    writer = Xlsxrb::Writer.new
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
-                                { text: "Double", font: { underline: "double", name: "Arial", sz: 11 } },
-                                { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
-                                { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } }
-                              ])
+    writer = Xlsxrb::Ooxml::Writer.new
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+                                          { text: "Double", font: { underline: "double", name: "Arial", sz: 11 } },
+                                          { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
+                                          { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } }
+                                        ])
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
@@ -1249,7 +1249,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid CF theme/indexed colors" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 50)
     writer.add_conditional_format("A1:A10", type: :color_scale, priority: 1,
                                             color_scale: {
@@ -1273,7 +1273,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid gradient fill with theme/indexed stop colors" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(gradient: {
                                 degree: 90,
                                 stops: [{ position: 0, theme: 4, tint: -0.5 }, { position: 1, indexed: 12 }]
@@ -1293,7 +1293,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid complete CF rule types" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_dxf(font: { bold: true, color: "FFFF0000" })
     writer.add_conditional_format("A1:A10", type: :expression, priority: 1,
@@ -1322,7 +1322,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer generates valid DXF with alignment, protection, numFmt" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_dxf(
       font: { bold: true, color: "FFFF0000" },
@@ -1342,14 +1342,14 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores error cell values correctly" do
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::CellError.new(code: "#N/A"))
-    writer.set_cell("B1", Xlsxrb::CellError.new(code: "#DIV/0!"))
-    writer.set_cell("C1", Xlsxrb::CellError.new(code: "#VALUE!"))
-    writer.set_cell("D1", Xlsxrb::CellError.new(code: "#REF!"))
-    writer.set_cell("E1", Xlsxrb::CellError.new(code: "#NAME?"))
-    writer.set_cell("F1", Xlsxrb::CellError.new(code: "#NUM!"))
-    writer.set_cell("G1", Xlsxrb::CellError.new(code: "#NULL!"))
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::CellError.new(code: "#N/A"))
+    writer.set_cell("B1", Xlsxrb::Elements::CellError.new(code: "#DIV/0!"))
+    writer.set_cell("C1", Xlsxrb::Elements::CellError.new(code: "#VALUE!"))
+    writer.set_cell("D1", Xlsxrb::Elements::CellError.new(code: "#REF!"))
+    writer.set_cell("E1", Xlsxrb::Elements::CellError.new(code: "#NAME?"))
+    writer.set_cell("F1", Xlsxrb::Elements::CellError.new(code: "#NUM!"))
+    writer.set_cell("G1", Xlsxrb::Elements::CellError.new(code: "#NULL!"))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -1362,7 +1362,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores extended core properties correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_core_property(:title, "My Title")
     writer.set_core_property(:subject, "My Subject")
@@ -1386,7 +1386,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores split pane correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_split_pane(x_split: 2400, y_split: 1800, top_left_cell: "C4")
 
@@ -1401,7 +1401,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores colorFilter and iconFilter correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Header1")
     writer.set_cell("B1", "Header2")
     writer.set_auto_filter("A1:B10")
@@ -1420,7 +1420,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores Time values as fractional serial with datetime format" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", Time.utc(2024, 3, 15, 14, 30, 0))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
@@ -1434,7 +1434,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores print area and print titles correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_print_area("A1:D20")
     writer.set_print_titles(rows: "1:3", cols: "A:B")
@@ -1450,9 +1450,9 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores hashed password sheet protection correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "protected")
-    hp = Xlsxrb.hash_password("mypassword", spin_count: 1000)
+    hp = Xlsxrb::Ooxml::Utils.hash_password("mypassword", spin_count: 1000)
     writer.set_sheet_protection(**hp)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
@@ -1466,7 +1466,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores first page header/footer with differentFirst and differentOddEven" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_header_footer(:odd_header, "&LOdd Header")
     writer.set_header_footer(:even_header, "&LEven Header")
@@ -1486,7 +1486,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores extended page setup attributes correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_page_setup(:page_order, "overThenDown")
     writer.set_page_setup(:black_and_white, true)
@@ -1508,7 +1508,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores data validation showDropDown and imeMode correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_data_validation("A1:A10", type: "list",
                                          formula1: '"Yes,No"',
@@ -1526,7 +1526,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores alignment readingOrder and justifyLastLine correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     sid = writer.add_cell_style(alignment: { horizontal: "distributed", reading_order: 2, justify_last_line: true })
     writer.set_cell("A1", "RTL text")
     writer.set_cell_style("A1", sid)
@@ -1542,7 +1542,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores font charset attribute correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(name: "MS Gothic", sz: 11, family: 3, charset: 128)
     sid = writer.add_cell_style(font_id: fid)
     writer.set_cell("A1", "テスト")
@@ -1559,7 +1559,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   end
 
   test "writer output stores extended sheetFormatPr attributes correctly" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_format(:default_row_height, 15)
     writer.set_sheet_format(:outline_level_row, 3)
@@ -1582,7 +1582,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_view(:show_formulas, true)
     writer.write(xlsx_path)
@@ -1597,7 +1597,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_property(:code_name, "MySheet")
     writer.write(xlsx_path)
@@ -1612,7 +1612,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_workbook_view(:visibility, "hidden")
     writer.write(xlsx_path)
@@ -1627,7 +1627,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_phonetic_properties({ font_id: 1, type: "Hiragana", alignment: "center" })
     writer.write(xlsx_path)
@@ -1642,7 +1642,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_custom_property("Project", "Alpha", type: :lpwstr)
     writer.add_custom_property("Version", 42, type: :i4)
     writer.add_custom_property("Active", true, type: :bool)
@@ -1659,7 +1659,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(name: "Arial", sz: 12, shadow: true, outline: true, condense: true, extend: true)
     sid = writer.add_cell_style(font_id: fid)
     writer.set_cell("A1", "effects")
@@ -1676,7 +1676,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_view(:show_zeros, false)
     writer.set_sheet_view(:view, "pageBreakPreview")
@@ -1694,7 +1694,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_file_version(:app_name, "xl")
     writer.set_file_version(:last_edited, "7")
@@ -1712,7 +1712,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_file_sharing(:read_only_recommended, true)
     writer.set_file_sharing(:user_name, "TestUser")
@@ -1728,7 +1728,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_protected_range(name: "EditArea", sqref: "A1:B10")
     writer.add_protected_range(name: "SecureRange", sqref: "C1:D5",
@@ -1747,7 +1747,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_indexed_colors(%w[FF000000 FFFFFFFF FFFF0000])
     writer.write(xlsx_path)
@@ -1762,7 +1762,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_table_styles_option(:default_table_style, "TableStyleMedium2")
     writer.set_table_styles_option(:default_pivot_style, "PivotStyleLight16")
@@ -1778,7 +1778,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 100)
     writer.set_cell("B2", 200)
     writer.add_cell_watch("A1")
@@ -1795,7 +1795,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_data_consolidate(
       function: "average", start_labels: true, link: true,
@@ -1813,7 +1813,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 100)
     writer.set_scenarios(
       current: 0, show: 0,
@@ -1836,7 +1836,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "123")
     writer.add_ignored_error(sqref: "A1:B2", number_stored_as_text: true, eval_error: true)
     writer.write(xlsx_path)
@@ -1851,7 +1851,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Date")
     writer.set_auto_filter("A1:B10")
@@ -1871,7 +1871,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_workbook_property(:conformance, "transitional")
     writer.write(xlsx_path)
@@ -1886,7 +1886,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     %w[cat1 cat2 cat3].each_with_index { |v, i| writer.set_cell("A#{i + 1}", v) }
     %w[x y z].each_with_index { |v, i| writer.set_cell("B#{i + 1}", v) }
     [10, 20, 30].each_with_index { |v, i| writer.set_cell("C#{i + 1}", v) }
@@ -1913,7 +1913,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "a")
     %i[area scatter doughnut radar].each do |t|
       writer.add_chart(type: t, cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1")
@@ -1930,7 +1930,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Item")
     writer.set_cell("B1", "Price")
     writer.add_table("A1:B3", columns: [
@@ -1950,7 +1950,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar3d,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -1967,7 +1967,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -1985,7 +1985,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2005,7 +2005,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2023,7 +2023,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2042,7 +2042,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2060,7 +2060,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2077,7 +2077,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :doughnut,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2095,7 +2095,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2113,7 +2113,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2130,7 +2130,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2147,7 +2147,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "a")
     writer.add_chart(type: :scatter,
                      series: [{ cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1" }],
@@ -2164,7 +2164,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar3d,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2181,7 +2181,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bubble,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2199,7 +2199,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2216,7 +2216,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :surface,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2233,7 +2233,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2250,7 +2250,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2267,7 +2267,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2284,7 +2284,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_file_recovery_property(:auto_recover, false)
     writer.write(xlsx_path)
@@ -2299,7 +2299,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", fill_color: "FF0000")
     writer.write(xlsx_path)
@@ -2314,7 +2314,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", line_color: "0000FF", line_width: 12_700)
     writer.write(xlsx_path)
@@ -2340,7 +2340,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
       0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "with image")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1",
                                    line_color: "FF0000", line_width: 25_400)
@@ -2367,7 +2367,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
       0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "with image")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1",
                                    src_rect: { top: 10_000, bottom: 20_000, left: 5000, right: 15_000 })
@@ -2394,7 +2394,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
       0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
       0x44, 0xAE, 0x42, 0x60, 0x82
     ].pack("C*")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "with image")
     writer.insert_image(png_bytes, ext: "png", name: "Pic1", alpha_mod_fix: 50_000)
     writer.write(xlsx_path)
@@ -2409,7 +2409,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "No autofit", autofit: "none")
     writer.add_shape(preset: "rect", text: "Shape autofit", autofit: "shape")
@@ -2426,7 +2426,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Shadow",
                      outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" })
@@ -2442,7 +2442,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Grad",
                      gradient_fill: { stops: [{ pos: 0, color: "FF0000" }, { pos: 100_000, color: "0000FF" }], angle: 5_400_000 })
@@ -2458,7 +2458,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Dashed", line_color: "000000", line_dash: "dash")
     writer.write(xlsx_path)
@@ -2473,7 +2473,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Arrow", line_color: "000000",
                      head_end: { type: "triangle", w: "med", len: "med" },
@@ -2490,7 +2490,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", no_fill: true, no_line: true)
     writer.write(xlsx_path)
@@ -2505,7 +2505,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2523,7 +2523,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1", fill_color: "00FF00" }])
@@ -2539,7 +2539,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2556,7 +2556,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2574,7 +2574,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2591,7 +2591,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2610,7 +2610,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2628,7 +2628,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -2645,7 +2645,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.set_cell("A3", 30)
@@ -2666,7 +2666,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -2684,7 +2684,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -2702,7 +2702,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -2722,7 +2722,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -2741,7 +2741,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 2)
     writer.add_chart(type: :line,
@@ -2761,7 +2761,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "InnerShadow",
                      inner_shadow: { blur_rad: 63_500, dist: 25_400, dir: 5_400_000, color: "FF0000" })
@@ -2777,7 +2777,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Glow",
                      glow: { rad: 101_600, color: "FF0000" })
@@ -2793,7 +2793,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "SoftEdge",
                      soft_edge: { rad: 63_500 })
@@ -2809,7 +2809,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Reflect",
                      reflection: { blur_rad: 6_350, st_a: 52_000, end_a: 300, dist: 0, dir: 5_400_000,
@@ -2826,7 +2826,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :bar,
@@ -2844,7 +2844,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -2863,7 +2863,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Struck",
                      text_font: { strike: "sngStrike" })
@@ -2879,7 +2879,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Underlined",
                      text_font: { underline: "sng" })
@@ -2895,7 +2895,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Super",
                      text_font: { baseline: 30_000 })
@@ -2911,7 +2911,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Spaced",
                      text_font: { spacing: 200 })
@@ -2927,7 +2927,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "AllCaps",
                      text_font: { cap: "all" })
@@ -2943,7 +2943,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Centered",
                      text_align: "ctr")
@@ -2959,7 +2959,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Hello",
                      text_font: { lang: "en-US" })
@@ -2975,7 +2975,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Vertical",
                      text_vertical: "vert")
@@ -2991,7 +2991,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Padded",
                      text_insets: { left: 91_440, top: 45_720, right: 91_440, bottom: 45_720 })
@@ -3007,7 +3007,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -3024,7 +3024,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "CJK",
                      text_font: { ea_font: "MS Gothic" })
@@ -3040,7 +3040,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Complex",
                      text_font: { cs_font: "Arabic Typesetting" })
@@ -3056,7 +3056,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Rotated",
                      text_rot: 2_700_000)
@@ -3072,7 +3072,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Indented",
                      text_indent: { left: 457_200, right: 228_600, indent: -114_300 })
@@ -3088,7 +3088,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Kerned",
                      text_font: { kern: 1200 })
@@ -3104,7 +3104,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Centered",
                      text_anchor_ctr: true)
@@ -3120,7 +3120,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_shape(preset: "rect", text: "Spaced",
                      text_spacing: { before: 600, after: 400 })
@@ -3136,7 +3136,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: { text: "Category", fill_color: "FFEECC", line_color: "CC6600", line_width: 0.5 },
@@ -3154,7 +3154,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: { text: "My Chart", line_color: "000000", line_dash: "dot" },
@@ -3173,7 +3173,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: { text: "Category", no_fill: true },
@@ -3191,7 +3191,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :pie,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3209,7 +3209,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      legend: { position: "b", layout: { x: 0.1, y: 0.8, w: 0.8, h: 0.15 } },
@@ -3226,7 +3226,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3244,7 +3244,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3262,7 +3262,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3280,7 +3280,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3297,7 +3297,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3315,7 +3315,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3332,7 +3332,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3349,7 +3349,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -3368,7 +3368,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -3387,7 +3387,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -3407,7 +3407,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -3426,7 +3426,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -3446,7 +3446,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -3466,7 +3466,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :bar,
@@ -3485,7 +3485,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :surface,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3503,7 +3503,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -3521,7 +3521,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3539,7 +3539,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("B1", 20)
     writer.add_chart(type: :of_pie,
@@ -3560,7 +3560,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("B1", 20)
     writer.set_cell("C1", 30)
@@ -3582,7 +3582,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("B1", 1.5)
     writer.set_cell("C1", 0.8)
@@ -3604,7 +3604,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 4)
     writer.set_cell("A3", 9)
@@ -3626,7 +3626,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :bar3d,
@@ -3644,7 +3644,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("B1", 2)
     writer.add_chart(type: :scatter,
@@ -3665,7 +3665,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      title: "Styled",
@@ -3687,7 +3687,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      cat_axis_title: "Category",
@@ -3712,7 +3712,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :surface3d,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3726,7 +3726,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer trendlineLbl styling" do
     xlsx_path = File.join(Dir.tmpdir, "writer_trendline_lbl_styling_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -3746,7 +3746,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer dispUnitsLbl styling" do
     xlsx_path = File.join(Dir.tmpdir, "writer_disp_units_lbl_styling_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3765,7 +3765,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer chart protection" do
     xlsx_path = File.join(Dir.tmpdir, "writer_chart_protection_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3780,7 +3780,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer chart printSettings" do
     xlsx_path = File.join(Dir.tmpdir, "writer_chart_print_settings_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3798,7 +3798,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer dLbl layout" do
     xlsx_path = File.join(Dir.tmpdir, "writer_dlbl_layout_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -3813,7 +3813,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer chart-level font (txPr)" do
     xlsx_path = File.join(Dir.tmpdir, "writer_chart_font_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3827,7 +3827,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer title layout positioning" do
     xlsx_path = File.join(Dir.tmpdir, "writer_title_layout_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -3842,7 +3842,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer trendline label layout and text" do
     xlsx_path = File.join(Dir.tmpdir, "writer_tl_lbl_layout_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -3858,7 +3858,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer error bar fill properties" do
     xlsx_path = File.join(Dir.tmpdir, "writer_eb_fill_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -3873,7 +3873,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "SDK validates writer title rotation" do
     xlsx_path = File.join(Dir.tmpdir, "writer_title_rot_#{Process.pid}.xlsx")
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: "Rotated",

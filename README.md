@@ -42,11 +42,121 @@ On Ruby 4+, some components used by `xlsxrb` and its test suite are shipped as b
 
 ## Usage
 
-TODO: Write usage instructions here
+`xlsxrb` offers two different approaches to reading and writing XLSX files: **Streaming** and **In-Memory**. 
+
+In most cases, the **Streaming** approach is the best choice because it is highly memory efficient, avoiding loading entire files or structures into RAM. You should always try the Streaming approach first. 
+
+However, if your use case requires **Random Access** (e.g., reading a cell at `Z100`, then returning to `A1`) or you need to build or modify an entire document iteratively before writing, the **In-Memory** approach is required.
+
+### 1. Streaming (Recommended)
+
+#### Streaming Read
+
+For large files, use `Xlsxrb.foreach` to read rows one at a time without loading the entire file into memory.
+
+```ruby
+require "xlsxrb"
+
+# Yields Xlsxrb::Elements::Row objects for the first sheet
+Xlsxrb.foreach("large_file.xlsx", sheet: 0) do |row|
+  puts "Row #{row.index}: #{row.cells.map(&:value).join(', ')}"
+end
+```
+
+#### Streaming Write
+
+To generate large files efficiently, use `Xlsxrb.generate`. This yields a stream writer that writes data directly to the archive.
+
+```ruby
+require "xlsxrb"
+
+Xlsxrb.generate("large_output.xlsx") do |writer|
+  writer.add_sheet("Sales Data") do
+    # Write a header row
+    writer.add_row(["Date", "Amount", "Status"])
+
+    # Write data rows
+    10_000.times do |i|
+      writer.add_row([Date.today - i, i * 100, true])
+    end
+
+    # You can also set column widths (0-based index)
+    writer.set_column(0, width: 15.5)
+  end
+end
+```
+
+### 2. In-Memory
+
+#### Reading an entire file into memory
+
+`Xlsxrb.read` parses the entire XLSX file and returns a workbook object containing all sheets, rows, and cells. Because the entire structure is in memory, you can randomly access any cell by its reference.
+
+```ruby
+require "xlsxrb"
+
+workbook = Xlsxrb.read("example.xlsx")
+sheet = workbook.sheets.first
+
+# 1. Sequential access
+sheet.rows.each do |row|
+  puts row.values.join(", ")
+end
+
+# 2. Random access by cell reference (Not possible with streaming)
+puts "Value at C10: #{sheet.cell_value("C10")}"
+
+# 3. Random access by 0-based row index
+row_five = sheet.row_at(4)
+puts row_five.cell_at(2).value if row_five
+```
+
+#### Writing a workbook from memory
+
+You can create or modify a workbook object and write it out using `Xlsxrb.write`. The `Xlsxrb.build` method provides a convenient DSL to construct the in-memory object hierarchy.
+
+```ruby
+require "xlsxrb"
+
+workbook = Xlsxrb.build do |w|
+  w.add_sheet("My Sheet") do |s|
+    s.add_row(["Hello", "World"])
+  end
+end
+
+Xlsxrb.write("output.xlsx", workbook)
+```
 
 ## Specification
 
 This project aims to be compliant with [ECMA-376](https://www.ecma-international.org/publications-and-standards/standards/ecma-376/) (Office Open XML file formats). Specifically, the library targets the **Transitional** version of the specification rather than the **Strict** version. The Transitional version (detailed in Part 4) is the format most commonly produced and consumed by existing spreadsheet applications, making it the practical choice for real-world interoperability.
+
+## Benchmarks
+
+The following benchmarks measure the time and memory required to process a 10,000-row by 10-column (100,000 cells) XLSX file, averaged over 5 iterations on Ruby 3.4+.
+
+### Write Performance (100,000 cells)
+
+| Library | Time | Peak Memory | CPU |
+| :--- | ---: | ---: | ---: |
+| `fast_excel` (Streaming)* | 0.16 s | 62.0 MB | 97.0 % |
+| **`xlsxrb` (Streaming)** | **0.56 s** | **99.7 MB** | **99.5 %** |
+| **`xlsxrb` (In-Memory)** | **0.61 s** | **137.3 MB** | **99.6 %** |
+| `rubyXL` (In-Memory) | 2.58 s | 271.1 MB | 99.7 % |
+
+*\* `fast_excel` is a C-extension binding to libxlsxwriter, whereas `xlsxrb` is pure Ruby.*
+
+### Read Performance (100,000 cells)
+
+| Library | Time | Peak Memory | CPU |
+| :--- | ---: | ---: | ---: |
+| `creek` (Streaming) | 0.70 s | 158.5 MB | 99.5 % |
+| `roo` (Streaming) | 0.87 s | 83.0 MB | 98.5 % |
+| `rubyXL` (In-Memory) | 2.12 s | 284.8 MB | 99.5 % |
+| **`xlsxrb` (Streaming)** | **3.28 s** | **65.7 MB** | **100.3 %** |
+| **`xlsxrb` (In-Memory)** | **6.01 s** | **138.5 MB** | **99.8 %** |
+
+*Note: `xlsxrb` is designed for strict OOXML parsing accuracy and full structural mapping, rather than raw read speed. Still, its streaming implementation provides the lowest memory footprint among pure Ruby parsers.*
 
 For reference, the following specification files from the Ecma International website are located in the `vendor/docs/` directory:
 

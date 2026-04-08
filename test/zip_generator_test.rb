@@ -10,7 +10,7 @@ class ZipGeneratorTest < Test::Unit::TestCase
     zip_path = zip_tempfile.path
     zip_tempfile.close
 
-    generator = Xlsxrb::ZipGenerator.new(zip_path)
+    generator = Xlsxrb::Ooxml::ZipGenerator.new(zip_path)
     generator.add_entry("foo.txt", "hello")
     generator.add_entry("nested/bar.txt", "world")
     generator.generate

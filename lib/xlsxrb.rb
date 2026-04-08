@@ -4,149 +4,355 @@ require "date"
 require "openssl"
 require "securerandom"
 require_relative "xlsxrb/version"
-require_relative "xlsxrb/zip_generator"
-require_relative "xlsxrb/writer"
-require_relative "xlsxrb/reader"
+require_relative "xlsxrb/ooxml/zip_generator"
+require_relative "xlsxrb/ooxml/writer"
+require_relative "xlsxrb/ooxml/reader"
+require_relative "xlsxrb/ooxml"
+require_relative "xlsxrb/elements"
 
 # Ruby XLSX read/write library.
 module Xlsxrb
   class Error < StandardError; end
 
-  # Represents a formula with an optional cached value.
-  # Optional: type (:shared, :array), ref (range), shared_index (si for shared formulas)
-  Formula = Data.define(:expression, :cached_value, :type, :ref, :shared_index, :calculate_always, :aca, :bx, :dt2d, :dtr, :r1, :r2) do
-    def initialize(expression:, cached_value: nil, type: nil, ref: nil, shared_index: nil, calculate_always: nil, aca: nil, bx: nil, dt2d: nil, dtr: nil, r1: nil, r2: nil) # rubocop:disable Naming/MethodParameterName
-      super
+  # --- Facade API ---
+
+  # Reads an XLSX file into an Elements::Workbook.
+  # source: file path (String) or IO object.
+  def self.read(source)
+    entries = Ooxml::ZipReader.open(source, &:read_all)
+    shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
+    styles = Ooxml::StylesParser.parse(entries["xl/styles.xml"])
+    workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
+    rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
+
+    sheets = workbook_sheets.map do |sheet_info|
+      target = rels[sheet_info[:r_id]]
+      next nil unless target
+
+      sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
+      sheet_xml = entries[sheet_path]
+      build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles)
+    end.compact
+
+    Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
+  end
+
+  # Writes an Elements::Workbook to an XLSX file.
+  # target: file path (String) or IO object.
+  def self.write(target, workbook)
+    raise Error, "target is required" if target.nil?
+    raise Error, "workbook must be an Elements::Workbook" unless workbook.is_a?(Elements::Workbook)
+
+    sst = []
+    sst_index = {}
+
+    # Collect shared strings and build index
+    sheet_data = workbook.sheets.map do |ws|
+      rows = ws.rows.map do |row|
+        cells = row.cells.map do |cell|
+          raw = build_raw_cell(cell, sst, sst_index)
+          raw
+        end
+        { index: row.index, cells: cells, attrs: build_row_attrs(row), unmapped: [] }
+      end
+      columns = ws.columns.map do |col|
+        { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width }
+      end
+      { name: ws.name, rows: rows, columns: columns }
+    end
+
+    Ooxml::WorkbookWriter.write(target, sheets: sheet_data, shared_strings: sst, styles: workbook.styles)
+  end
+
+  # Streaming read: yields Elements::Row one at a time.
+  # source: file path (String) or IO object.
+  # Options:
+  #   sheet: sheet index (0-based Integer) or name (String). Defaults to 0.
+  def self.foreach(source, sheet: 0, &block)
+    return enum_for(:foreach, source, sheet: sheet) unless block
+
+    entries = Ooxml::ZipReader.open(source, &:read_all)
+    shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
+    workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
+    rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
+
+    target_sheet = case sheet
+                   when Integer
+                     workbook_sheets[sheet]
+                   when String
+                     workbook_sheets.find { |s| s[:name] == sheet }
+                   end
+    return unless target_sheet
+
+    target = rels[target_sheet[:r_id]]
+    return unless target
+
+    sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
+    sheet_xml = entries[sheet_path]
+    return if sheet_xml.nil? || sheet_xml.empty?
+
+    Ooxml::WorksheetParser.each_row(sheet_xml, shared_strings: shared_strings) do |raw_row|
+      row = build_row_from_raw(raw_row)
+      block.call(row)
     end
   end
 
-  # Represents a cell error value (e.g. #N/A, #REF!, #DIV/0!).
-  VALID_ERROR_CODES = %w[#NULL! #DIV/0! #VALUE! #REF! #NAME? #NUM! #N/A #GETTING_DATA].freeze
-  CellError = Data.define(:code) do
-    def initialize(code:)
-      raise ArgumentError, "invalid error code: #{code.inspect} (must be one of #{Xlsxrb::VALID_ERROR_CODES.join(", ")})" unless Xlsxrb::VALID_ERROR_CODES.include?(code)
+  # Streaming write: yields a StreamWriter context for building XLSX on-the-fly.
+  # target: file path (String) or IO object.
+  def self.generate(target, &block)
+    raise Error, "target is required" if target.nil?
+    raise Error, "block is required" unless block
 
-      super
+    stream_writer = StreamWriter.new(target)
+    block.call(stream_writer)
+    stream_writer.close
+  end
+
+  # Builds an Elements::Workbook in memory using a DSL.
+  def self.build(&block)
+    raise Error, "block is required" unless block
+
+    builder = WorkbookBuilder.new
+    block.call(builder)
+    builder.build
+  end
+
+  # DSL context for Xlsxrb.build.
+  class WorkbookBuilder
+    def initialize
+      @sheets = []
     end
 
-    def to_s
-      code
+    # Add a new sheet.
+    def add_sheet(name = nil, &block)
+      name ||= "Sheet#{@sheets.size + 1}"
+      sheet_builder = WorksheetBuilder.new(name)
+      block.call(sheet_builder) if block_given?
+      @sheets << sheet_builder.build
+    end
+
+    def build
+      Elements::Workbook.new(sheets: @sheets)
     end
   end
 
-  # Represents a rich text string with formatting runs.
-  # runs: array of hashes, each with :text and optional :font (hash of font properties).
-  # Font properties: :bold, :italic, :underline, :sz, :color, :name
-  RichText = Data.define(:runs) do
-    def to_s
-      runs.map { |r| r[:text] }.join
+  # DSL context for a single worksheet in Xlsxrb.build.
+  class WorksheetBuilder
+    def initialize(name)
+      @name = name
+      @rows = []
+      @columns = []
+    end
+
+    # Add a row of values to the sheet.
+    def add_row(values, height: nil, hidden: false, custom_height: false, outline_level: nil)
+      row_index = @rows.size
+      cells = values.each_with_index.map do |val, col_index|
+        Elements::Cell.new(row_index: row_index, column_index: col_index, value: val)
+      end
+
+      @rows << Elements::Row.new(
+        index: row_index,
+        cells: cells,
+        height: height,
+        hidden: hidden,
+        custom_height: custom_height || !height.nil?,
+        outline_level: outline_level
+      )
+    end
+
+    # Set column width for a 0-based column index.
+    def set_column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
+      @columns << Elements::Column.new(
+        index: index,
+        width: width,
+        hidden: hidden,
+        custom_width: custom_width || !width.nil?,
+        outline_level: outline_level
+      )
+    end
+
+    def build
+      Elements::Worksheet.new(name: @name, rows: @rows, columns: @columns)
     end
   end
 
-  # Excel 1900 date system epoch.
-  EPOCH_1900 = Date.new(1899, 12, 31) # serial 1 = Jan 1, 1900
-
-  # Built-in number format codes defined by SpreadsheetML.
-  BUILTIN_NUM_FMT_CODES = {
-    0 => "General",
-    1 => "0",
-    2 => "0.00",
-    3 => "#,##0",
-    4 => "#,##0.00",
-    9 => "0%",
-    10 => "0.00%",
-    11 => "0.00E+00",
-    12 => "# ?/?",
-    13 => "# ??/??",
-    14 => "mm-dd-yy",
-    15 => "d-mmm-yy",
-    16 => "d-mmm",
-    17 => "mmm-yy",
-    18 => "h:mm AM/PM",
-    19 => "h:mm:ss AM/PM",
-    20 => "h:mm",
-    21 => "h:mm:ss",
-    22 => "m/d/yy h:mm",
-    37 => "#,##0 ;(#,##0)",
-    38 => "#,##0 ;[Red](#,##0)",
-    39 => "#,##0.00;(#,##0.00)",
-    40 => "#,##0.00;[Red](#,##0.00)",
-    45 => "mm:ss",
-    46 => "[h]:mm:ss",
-    47 => "mmss.0",
-    48 => "##0.0E+0",
-    49 => "@"
-  }.freeze
-
-  # Built-in numFmtIds that represent date/time formats.
-  BUILTIN_DATE_FMT_IDS = [14, 15, 16, 17, 18, 19, 20, 21, 22].freeze
-
-  # Default date format code used by Writer for Date cells.
-  DEFAULT_DATE_FORMAT = "yyyy\\-mm\\-dd"
-
-  # Default date-time format code used by Writer for Time cells.
-  DEFAULT_DATETIME_FORMAT = "yyyy\\-mm\\-dd\\ hh:mm:ss"
-
-  # Converts a Date to an Excel serial number (1900 system).
-  def self.date_to_serial(date)
-    serial = (date - EPOCH_1900).to_i
-    # Lotus 1-2-3 bug: serial 60 = Feb 29, 1900 (doesn't exist).
-    # Dates on or after Mar 1, 1900 (raw serial >= 60) need +1.
-    serial += 1 if serial >= 60
-    serial
-  end
-
-  # Converts an Excel serial number (1900 system) to a Date.
-  def self.serial_to_date(serial)
-    # Adjust for Lotus 1-2-3 bug.
-    serial -= 1 if serial > 60
-    EPOCH_1900 + serial
-  end
-
-  # Converts a Time to a fractional Excel serial number (1900 system).
-  def self.datetime_to_serial(time)
-    date = time.to_date
-    day_serial = date_to_serial(date)
-    # Fractional part: seconds since midnight / seconds per day
-    seconds_since_midnight = (time.hour * 3600) + (time.min * 60) + time.sec
-    day_serial + (seconds_since_midnight.to_f / 86_400)
-  end
-
-  # Converts a fractional Excel serial number to a Time (1900 system, UTC).
-  def self.serial_to_datetime(serial)
-    int_part = serial.to_i
-    frac = serial - int_part
-    date = serial_to_date(int_part)
-    total_seconds = (frac * 86_400).round
-    hours = total_seconds / 3600
-    minutes = (total_seconds % 3600) / 60
-    seconds = total_seconds % 60
-    Time.utc(date.year, date.month, date.day, hours, minutes, seconds)
-  end
-
-  # Hashes a plain-text password for use with sheet/workbook protection.
-  # Returns { algorithm_name:, hash_value:, salt_value:, spin_count: }.
-  # Algorithm per ECMA-376 Part 4 §2.4.2.24.
-  def self.hash_password(password, algorithm: "SHA-512", salt: nil, spin_count: 100_000)
-    raise ArgumentError, "password must be a String" unless password.is_a?(String)
-    raise ArgumentError, "spin_count must be a positive Integer" unless spin_count.is_a?(Integer) && spin_count.positive?
-
-    salt_bytes = salt || SecureRandom.random_bytes(16)
-    password_bytes = password.encode("UTF-8").bytes.pack("C*")
-
-    digest_name = algorithm.tr("-", "")
-    hash = OpenSSL::Digest.digest(digest_name, salt_bytes + password_bytes)
-
-    spin_count.times do |i|
-      iteration_bytes = [i].pack("V") # little-endian uint32
-      hash = OpenSSL::Digest.digest(digest_name, iteration_bytes + hash)
+  # DSL context for Xlsxrb.generate streaming writes.
+  class StreamWriter
+    def initialize(target)
+      @target = target
+      @sst = []
+      @sst_index = {}
+      @sheets = []
+      @current_sheet = nil
+      @current_rows = []
+      @current_columns = []
     end
 
-    {
-      algorithm_name: algorithm,
-      hash_value: [hash].pack("m0"),
-      salt_value: [salt_bytes].pack("m0"),
-      spin_count: spin_count
-    }
+    # Start or switch to a named sheet.
+    def add_sheet(name = nil)
+      flush_current_sheet
+      name ||= "Sheet#{@sheets.size + 1}"
+      @current_sheet = name
+      @current_rows = []
+      @current_columns = []
+
+      return unless block_given?
+
+      yield self
+      flush_current_sheet
+    end
+
+    # Add a row of values. values is an Array.
+    def add_row(values, height: nil, hidden: false)
+      add_sheet if @current_sheet.nil?
+
+      row_index = @current_rows.size
+      cells = values.each_with_index.map do |val, col_idx|
+        Xlsxrb.build_raw_cell_from_value(row_index, col_idx, val, @sst, @sst_index)
+      end
+      attrs = {}
+      attrs[:height] = height if height
+      attrs[:hidden] = true if hidden
+      @current_rows << { index: row_index, cells: cells, attrs: attrs, unmapped: [] }
+    end
+
+    # Set column width for a 0-based column index.
+    def set_column(index, width: nil, hidden: false)
+      add_sheet if @current_sheet.nil?
+
+      @current_columns << { index: index, width: width, hidden: hidden, custom_width: !width.nil? }
+    end
+
+    def close
+      flush_current_sheet
+      Ooxml::WorkbookWriter.write(@target, sheets: @sheets, shared_strings: @sst)
+    end
+
+    private
+
+    def flush_current_sheet
+      return unless @current_sheet
+
+      @sheets << { name: @current_sheet, rows: @current_rows, columns: @current_columns }
+      @current_sheet = nil
+    end
+  end
+
+  class << self
+    private
+
+    def build_worksheet(name, sheet_xml, shared_strings, _styles)
+      return Elements::Worksheet.new(name: name) if sheet_xml.nil? || sheet_xml.empty?
+
+      raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings)
+      raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
+
+      rows = raw_rows.map { |rr| build_row_from_raw(rr) }
+      columns = raw_columns.map do |rc|
+        # Columns from OOXML are 1-based min/max ranges; convert to 0-based
+        Elements::Column.new(
+          index: (rc[:min] || 1) - 1,
+          width: rc[:width],
+          hidden: rc[:hidden] || false,
+          custom_width: rc[:custom_width] || false,
+          outline_level: rc[:outline_level]
+        )
+      end
+
+      Elements::Worksheet.new(name: name, rows: rows, columns: columns)
+    end
+
+    def build_row_from_raw(raw_row)
+      cells = raw_row[:cells].map do |rc|
+        parsed = Elements::Cell.parse_ref(rc[:ref]) if rc[:ref]
+        row_idx = parsed ? parsed[0] : raw_row[:index]
+        col_idx = parsed ? parsed[1] : 0
+
+        Elements::Cell.new(
+          row_index: row_idx,
+          column_index: col_idx,
+          value: rc[:value],
+          formula: rc[:formula],
+          style_index: rc[:style_index]
+        )
+      end
+      attrs = raw_row[:attrs] || {}
+      Elements::Row.new(
+        index: raw_row[:index],
+        cells: cells,
+        height: attrs[:height],
+        hidden: attrs[:hidden] || false,
+        custom_height: attrs[:custom_height] || false,
+        outline_level: attrs[:outline_level]
+      )
+    end
+
+    def build_raw_cell(cell, sst, sst_index)
+      ref = cell.ref
+      value = cell.value
+      result = { ref: ref, style_index: cell.style_index }
+
+      case value
+      when String
+        idx = sst_index[value] ||= begin
+          sst << value
+          sst.size - 1
+        end
+        result[:value] = idx
+        result[:type] = "s"
+      when true, false
+        result[:value] = value
+        result[:type] = "b"
+      when Integer, Float
+        result[:value] = value
+      when Date
+        result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+      when Time
+        result[:value] = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+      when NilClass
+        # empty cell
+      end
+
+      result[:formula] = cell.formula if cell.formula
+      result
+    end
+
+    def build_row_attrs(row)
+      attrs = {}
+      attrs[:height] = row.height if row.height
+      attrs[:hidden] = true if row.hidden
+      attrs[:custom_height] = true if row.custom_height
+      attrs
+    end
+  end
+
+  # Builds a raw cell hash from a value for streaming writes.
+  def self.build_raw_cell_from_value(row_index, col_index, value, sst, sst_index)
+    ref = "#{Elements::Cell.column_letter(col_index)}#{row_index + 1}"
+    result = { ref: ref }
+
+    case value
+    when String
+      idx = sst_index[value] ||= begin
+        sst << value
+        sst.size - 1
+      end
+      result[:value] = idx
+      result[:type] = "s"
+    when true, false
+      result[:value] = value
+      result[:type] = "b"
+    when Integer, Float
+      result[:value] = value
+    when Date
+      result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+    when Time
+      result[:value] = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+    when NilClass
+      # empty cell
+    end
+
+    result
   end
 end

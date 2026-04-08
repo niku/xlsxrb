@@ -5,18 +5,18 @@ require "tempfile"
 
 class WriterTest < Test::Unit::TestCase
   test "can instantiate Writer" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_not_nil(writer)
   end
 
   test "can set a cell value" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     assert(true)
   end
 
   test "generated workbook contains worksheet with cell" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
 
     # Verify writer keeps cell values in its internal state.
@@ -25,7 +25,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "keeps multiple cells in the same row" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("B1", "world")
     writer.set_cell("A1", "hello")
 
@@ -37,7 +37,7 @@ class WriterTest < Test::Unit::TestCase
     temp_path = temp_file.path
     temp_file.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.write(temp_path)
 
@@ -52,7 +52,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "rejects invalid cell addresses" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.set_cell("", "v") }
     assert_raise(ArgumentError) { writer.set_cell("1A", "v") }
     assert_raise(ArgumentError) { writer.set_cell("A0", "v") }
@@ -62,7 +62,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "accepts valid boundary cell addresses" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_nothing_raised { writer.set_cell("A1", "v") }
     assert_nothing_raised { writer.set_cell("XFD1048576", "v") }
     assert_nothing_raised { writer.set_cell("Z1", "v") }
@@ -70,7 +70,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores numeric values" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 42)
     writer.set_cell("B1", 3.14)
 
@@ -78,7 +78,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores boolean values" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", true)
     writer.set_cell("B1", false)
 
@@ -86,14 +86,14 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores empty string as a cell value" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "")
 
     assert_equal({ "A1" => "" }, writer.cells)
   end
 
   test "orders cells by column index within a row" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("AA1", "third")
     writer.set_cell("B1", "second")
     writer.set_cell("A1", "first")
@@ -102,7 +102,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "adds multiple sheets" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Data")
     writer.set_cell("A1", "main", sheet: "Sheet1")
     writer.set_cell("A1", "data", sheet: "Data")
@@ -113,17 +113,17 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "rejects duplicate sheet names" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.add_sheet("Sheet1") }
   end
 
   test "rejects unknown sheet in set_cell" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.set_cell("A1", "v", sheet: "NoSuchSheet") }
   end
 
   test "stores column widths" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_column_width("A", 20)
     writer.set_column_width("C", 15.5)
 
@@ -131,14 +131,14 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "rejects invalid column letter in set_column_width" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.set_column_width("a", 10) }
     assert_raise(ArgumentError) { writer.set_column_width("1", 10) }
     assert_raise(ArgumentError) { writer.set_column_width("", 10) }
   end
 
   test "stores row height and hidden attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_row_height(1, 25.0)
     writer.set_row_hidden(3)
     writer.set_row_style(5, 0)
@@ -148,7 +148,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores merge cell ranges" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.merge_cells("A1:B2")
     writer.merge_cells("C3:D4")
 
@@ -156,13 +156,13 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "rejects invalid merge cell range" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.merge_cells("A1") }
     assert_raise(ArgumentError) { writer.merge_cells("") }
   end
 
   test "stores hyperlinks" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_hyperlink("A1", "https://example.com")
     writer.add_hyperlink("B1", "https://github.com")
 
@@ -170,7 +170,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores hyperlinks with display tooltip and location" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_hyperlink("A1", "https://example.com", display: "Example Site", tooltip: "Click to visit")
     writer.add_hyperlink("B1", "https://example.com/page", location: "Sheet2!A1")
 
@@ -182,19 +182,19 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores internal hyperlink with location only" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_hyperlink("A1", location: "Sheet2!A1")
 
     assert_equal({ "A1" => { location: "Sheet2!A1" } }, writer.hyperlinks)
   end
 
   test "add_hyperlink requires url or location" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.add_hyperlink("A1") }
   end
 
   test "adds number formats and assigns to cells" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fmt_id = writer.add_number_format("0.00")
     writer.set_cell("A1", 3.14)
     writer.set_cell_format("A1", fmt_id)
@@ -209,14 +209,14 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores Date values" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", Date.new(2024, 1, 15))
 
     assert_equal({ "A1" => Date.new(2024, 1, 15) }, writer.cells)
   end
 
   test "stores auto filter range" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
     writer.set_auto_filter("A1:B10")
@@ -225,13 +225,13 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "rejects invalid auto filter range" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.set_auto_filter("A1") }
     assert_raise(ArgumentError) { writer.set_auto_filter("") }
   end
 
   test "stores core properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_core_property(:title, "My Workbook")
     writer.set_core_property(:creator, "Test User")
     writer.set_core_property(:created, "2024-01-15T00:00:00Z")
@@ -245,7 +245,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores app properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_app_property(:application, "Xlsxrb")
     writer.set_app_property(:app_version, "1.0.0")
     writer.set_app_property(:heading_pairs, [["Worksheets", 2]])
@@ -259,7 +259,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores workbook properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_workbook_property(:date1904, false)
     writer.set_workbook_property(:default_theme_version, 166_925)
 
@@ -269,7 +269,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "workbook properties extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_workbook_property(:code_name, "ThisWorkbook")
     writer.set_workbook_property(:filter_privacy, true)
@@ -299,7 +299,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores workbook view properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_workbook_view(:active_tab, 1)
     writer.set_workbook_view(:first_sheet, 0)
 
@@ -309,7 +309,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "workbook view extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_workbook_view(:show_horizontal_scroll, false)
     writer.set_workbook_view(:show_vertical_scroll, false)
@@ -343,7 +343,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores calc properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_calc_property(:calc_id, 191_029)
     writer.set_calc_property(:full_calc_on_load, true)
 
@@ -353,7 +353,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "calc properties extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_calc_property(:full_precision, false)
     writer.set_calc_property(:concurrent_calc, false)
@@ -375,7 +375,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "sets sheet state" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Hidden")
     writer.add_sheet("VeryHidden")
     writer.set_sheet_state("Hidden", :hidden)
@@ -387,13 +387,13 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "rejects invalid sheet state" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.set_sheet_state("Sheet1", :invalid) }
     assert_raise(ArgumentError) { writer.set_sheet_state("NoSuch", :hidden) }
   end
 
   test "stores defined names" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("Data")
     writer.add_defined_name("MyRange", "Sheet1!$A$1:$B$10")
     writer.add_defined_name("LocalName", "Data!$C$1", sheet: "Data")
@@ -411,7 +411,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores sheet properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_sheet_property(:tab_color, "FF0000FF", sheet: "Sheet1")
     writer.set_sheet_property(:summary_below, false, sheet: "Sheet1")
     writer.set_sheet_property(:summary_right, true, sheet: "Sheet1")
@@ -423,12 +423,12 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "sheet_properties defaults to empty" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_equal({}, writer.sheet_properties)
   end
 
   test "stores sheet format properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_sheet_format(:default_row_height, 15.0)
     writer.set_sheet_format(:default_col_width, 10.5)
     writer.set_sheet_format(:base_col_width, 8)
@@ -440,7 +440,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores row outline level and collapsed" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_row_outline_level(2, 1)
     writer.set_row_collapsed(3)
 
@@ -450,7 +450,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "row emits thickTop and thickBot" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_row_thick_top(1)
     writer.set_row_thick_bot(1)
@@ -468,7 +468,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores column attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_column_attribute("B", :hidden, true)
     writer.set_column_attribute("C", :best_fit, true)
     writer.set_column_attribute("D", :outline_level, 2)
@@ -482,7 +482,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores sheet view properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_sheet_view(:show_grid_lines, false)
     writer.set_sheet_view(:zoom_scale, 150)
 
@@ -492,7 +492,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores freeze pane" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_freeze_pane(row: 1, col: 1)
 
     fp = writer.freeze_pane
@@ -501,7 +501,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores selection" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_selection("B2", sqref: "B2:C3")
 
     sel = writer.selection
@@ -510,7 +510,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores print options" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_print_option(:grid_lines, true)
     writer.set_print_option(:horizontal_centered, true)
 
@@ -520,7 +520,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores page margins" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
 
     pm = writer.page_margins
@@ -529,7 +529,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores page setup" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_page_setup(:orientation, "landscape")
     writer.set_page_setup(:paper_size, 9)
 
@@ -539,7 +539,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores header footer" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_header_footer(:odd_header, "&CPage &P")
     writer.set_header_footer(:odd_footer, "&CFooter")
 
@@ -549,7 +549,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores row and col breaks" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_row_break(10)
     writer.add_row_break(20)
     writer.add_col_break(5)
@@ -559,7 +559,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores filter columns" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_auto_filter("A1:C10")
     writer.add_filter_column(0, { type: :filters, values: %w[A B] })
     writer.add_filter_column(1, { type: :custom, operator: "greaterThan", val: "100" })
@@ -571,7 +571,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores sort state" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_sort_state("A1:B10", [{ ref: "A1:A10" }, { ref: "B1:B10", descending: true }])
 
     ss = writer.sort_state
@@ -581,7 +581,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores data validations" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_data_validation("A1:A100", type: "whole", operator: "between",
                                           formula1: "1", formula2: "100",
                                           show_error_message: true, error: "Must be 1-100")
@@ -598,7 +598,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores conditional formatting rules" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_conditional_format("A1:A10", type: :cell_is, operator: "greaterThan",
                                             formula: "100", priority: 1, format_id: 0)
     writer.add_conditional_format("B1:B10", type: :color_scale, priority: 2,
@@ -629,7 +629,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "dataBar emits minLength maxLength showValue attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_conditional_format("A1:A10", type: :data_bar, priority: 1,
                                             data_bar: {
                                               cfvo: [{ type: "min" }, { type: "max" }],
@@ -643,7 +643,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "iconSet emits reverse and showValue attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_conditional_format("A1:A10", type: :icon_set, priority: 1,
                                             icon_set: {
                                               icon_set: "3Arrows",
@@ -658,7 +658,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_named_cell_style registers cellStyleXfs and cellStyles" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial")
     xf_id = writer.add_named_cell_style(name: "Heading1", font_id: fid, builtin_id: 1)
     assert_equal(1, xf_id)
@@ -669,7 +669,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial")
     base_xf_id = writer.add_named_cell_style(name: "Heading1", font_id: fid, builtin_id: 1)
     cell_xf = writer.add_cell_style(xf_id: base_xf_id)
@@ -685,7 +685,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores chart with multiple series and axis titles" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_chart(type: :bar, title: "Sales",
                      series: [
                        { cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3", name: "Sheet1!$B$1" },
@@ -704,7 +704,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores shapes with preset geometry and text" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_shape(preset: "ellipse", text: "Hello", name: "Oval 1",
                      from_col: 1, from_row: 1, to_col: 4, to_row: 6)
 
@@ -721,7 +721,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores fonts, fills, borders, and cell styles" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(bold: true, sz: 14, name: "Arial", color: "FFFF0000")
     assert_equal(1, fid)
 
@@ -742,7 +742,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_font supports extended attributes (strike, underline val, vertAlign, scheme, family)" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(
       bold: true, italic: true, strike: true, sz: 12, name: "Calibri",
       color: "FF0000FF", underline: "double", vert_align: "superscript",
@@ -770,7 +770,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_border with diagonal emits diagonal element and border attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     brd_id = writer.add_border(
       left: { style: "thin" }, right: { style: "thin" },
       top: { style: "thin" }, bottom: { style: "thin" },
@@ -798,7 +798,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_fill with gradient type emits gradientFill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(
       gradient: { type: "linear", degree: 90,
                   stops: [{ position: 0, color: "FFFF0000" }, { position: 1, color: "FF0000FF" }] }
@@ -824,7 +824,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores dxf entries" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     dxf_id = writer.add_dxf(font: { bold: true, color: "FFFF0000" },
                             fill: { pattern: "solid", fg_color: "FFFFFF00" })
     assert_equal(0, dxf_id)
@@ -834,7 +834,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores tables" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
     writer.add_table("A1:B5", columns: %w[Name Age])
@@ -846,7 +846,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores tables with totals row and enhanced columns" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Item")
     writer.set_cell("B1", "Price")
     writer.set_cell("C1", "Tax")
@@ -863,7 +863,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_table with tableColumn extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Item")
     writer.set_cell("B1", "Price")
     writer.add_table("A1:B5", columns: [
@@ -881,7 +881,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits totalsRowFormula in table column" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Item")
     writer.set_cell("B1", "Price")
     writer.add_table("A1:B5", columns: [
@@ -902,7 +902,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "enables shared string table mode" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.use_shared_strings!
     writer.set_cell("A1", "hello")
     writer.set_cell("B1", "hello")
@@ -913,7 +913,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_tempfile.close
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     assert_equal("hello", cells["A1"])
     assert_equal("hello", cells["B1"])
@@ -925,7 +925,7 @@ class WriterTest < Test::Unit::TestCase
   # --- Phase 2: Writer unit tests ---
 
   test "insert_image stores image definition" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", from_col: 1, from_row: 2, to_col: 5, to_row: 8, name: "Test")
     imgs = writer.images
@@ -937,7 +937,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image stores description" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Logo", description: "Company logo image")
     imgs = writer.images
@@ -947,7 +947,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image stores title and hidden attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", title: "My tooltip", hidden: true)
     imgs = writer.images
@@ -956,7 +956,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits cNvPr title and hidden on image" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", title: "Tooltip", hidden: true)
@@ -974,7 +974,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image emits macro attribute on pic element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", macro: "MyMacro")
@@ -991,7 +991,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with no_change_aspect false omits noChangeAspect" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", no_change_aspect: false)
@@ -1008,7 +1008,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with no_crop emits noCrop on picLocks" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", no_crop: true)
@@ -1026,7 +1026,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with line_color and line_width emits a:ln in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", line_color: "0000FF", line_width: 25_400)
@@ -1043,7 +1043,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with rotation emits a:xfrm rot in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", rotation: 5_400_000)
@@ -1060,7 +1060,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with published emits fPublished on anchor" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", published: true)
@@ -1077,7 +1077,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with src_rect emits a:srcRect in blipFill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", src_rect: { top: 10_000, bottom: 20_000, left: 5000, right: 15_000 })
@@ -1094,7 +1094,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with alpha_mod_fix emits a:alphaModFix on blip" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", alpha_mod_fix: 50_000)
@@ -1111,7 +1111,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart stores chart definition" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_chart(type: :bar, title: "Sales", cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3")
     charts = writer.charts
     assert_equal(1, charts.size)
@@ -1120,7 +1120,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart emits custom grouping and barDir" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "a")
     writer.add_chart(type: :bar, title: "Stacked",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
@@ -1135,7 +1135,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart supports area, scatter, doughnut, radar types" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "a")
     %i[area scatter doughnut radar].each { |t| writer.add_chart(type: t, cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1") }
     xlsx_path = File.join(Dir.tmpdir, "chart_types_#{Process.pid}.xlsx")
@@ -1154,7 +1154,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with edit_as stores editAs attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", edit_as: "absolute")
     imgs = writer.images
@@ -1162,14 +1162,14 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with edit_as stores editAs attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_chart(type: :bar, title: "Sales", cat_ref: "Sheet1!$A$1:$A$3", val_ref: "Sheet1!$B$1:$B$3", edit_as: "oneCell")
     charts = writer.charts
     assert_equal("oneCell", charts[0][:edit_as])
   end
 
   test "add_chart with anchor positions stores from/to col/row" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "x")
     writer.add_chart(type: :bar, title: "Positioned",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
@@ -1191,7 +1191,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with name and description emits cNvPr attrs" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "x")
     writer.add_chart(type: :bar, title: "Sales",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
@@ -1210,7 +1210,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with frame_macro emits macro on graphicFrame" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "x")
     writer.add_chart(type: :bar, title: "Sales",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
@@ -1228,7 +1228,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with frame_no_grp emits graphicFrameLocks" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "x")
     writer.add_chart(type: :bar, title: "Sales",
                      cat_ref: "Sheet1!$A$1:$A$1", val_ref: "Sheet1!$A$1:$A$1",
@@ -1246,14 +1246,14 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with edit_as stores editAs attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_shape(preset: "rect", edit_as: "absolute")
     shapes = writer.shapes
     assert_equal("absolute", shapes[0][:edit_as])
   end
 
   test "add_shape with description stores descr attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_shape(preset: "rect", description: "A rectangle shape")
     shapes = writer.shapes
     assert_equal("A rectangle shape", shapes[0][:description])
@@ -1267,7 +1267,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape emits macro and textlink attributes on sp element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", macro: "ShapeMacro", textlink: "$A$1")
 
@@ -1283,7 +1283,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with f_locks_text emits spLocks element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", f_locks_text: true)
 
@@ -1299,7 +1299,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with no_grp and no_rot emits spLocks attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", no_grp: true, no_rot: true)
 
@@ -1316,7 +1316,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with fill_color emits solidFill in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", fill_color: "FF0000")
 
@@ -1332,7 +1332,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with fill_alpha emits a:alpha inside a:srgbClr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", fill_color: "FF0000", fill_alpha: 50_000)
 
@@ -1348,7 +1348,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with fill_color_transforms emits tint and shade children" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", fill_color: "FF0000",
                      fill_color_transforms: [{ type: "tint", val: 50_000 }, { type: "shade", val: 80_000 }])
@@ -1365,7 +1365,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with line_color and line_width emits a:ln in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", line_color: "0000FF", line_width: 12_700)
 
@@ -1381,7 +1381,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text body properties emits bodyPr attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Hello", text_wrap: "square", text_anchor: "ctr", text_vert_overflow: "clip")
 
@@ -1399,7 +1399,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with rotation emits a:xfrm rot in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", rotation: 5_400_000)
 
@@ -1415,7 +1415,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with no_fill and no_line emits noFill elements" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", no_fill: true, no_line: true)
 
@@ -1432,7 +1432,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with adjust_values emits a:gd in avLst" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "roundRect",
                      adjust_values: [{ name: "adj", fmla: "val 16667" }])
@@ -1449,7 +1449,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font emits a:rPr with font attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Bold",
                      text_font: { bold: true, italic: true, size: 1400, color: "FF0000", name: "Arial" })
@@ -1468,7 +1468,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with autofit none emits a:noAutofit" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "No autofit", autofit: "none")
 
@@ -1484,7 +1484,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with autofit shape emits a:spAutoFit" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Shape autofit", autofit: "shape")
 
@@ -1500,7 +1500,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with autofit normal emits a:normAutofit" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Normal autofit", autofit: "normal")
 
@@ -1516,7 +1516,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with autofit hash normal and fontScale emits attributes on a:normAutofit" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Scaled",
                      autofit: { type: "normal", font_scale: 90_000, ln_spc_reduction: 20_000 })
@@ -1533,7 +1533,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with outer_shadow emits a:effectLst with a:outerShdw" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Shadow",
                      outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" })
@@ -1550,7 +1550,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with outer_shadow alpha emits a:alpha inside shadow color" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Shadow",
                      outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000", alpha: 50_000 })
@@ -1567,7 +1567,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with gradient_fill emits a:gradFill with stops and lin" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Grad",
                      gradient_fill: { stops: [{ pos: 0, color: "FF0000" }, { pos: 100_000, color: "0000FF" }], angle: 5_400_000 })
@@ -1584,7 +1584,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with gradient_fill path emits a:path element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "RadGrad",
                      gradient_fill: { stops: [{ pos: 0, color: "FFFFFF" }, { pos: 100_000, color: "000000" }],
@@ -1603,7 +1603,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with pattern_fill emits a:pattFill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Patt",
                      pattern_fill: { preset: "ltDnDiag", fg_color: "FF0000", bg_color: "FFFFFF" })
@@ -1622,7 +1622,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with line_dash emits a:prstDash in a:ln" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Dashed", line_color: "000000", line_dash: "dash")
 
@@ -1638,7 +1638,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with line_custom_dash emits a:custDash with a:ds elements" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "CustDash",
                      line_color: "000000",
@@ -1656,7 +1656,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with line_cap emits cap attribute on a:ln" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Cap", line_color: "000000", line_cap: "rnd")
 
@@ -1672,7 +1672,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with line_align emits algn attribute on a:ln" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Align", line_color: "000000", line_align: "in")
 
@@ -1688,7 +1688,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with line_compound emits cmpd attribute on a:ln" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Cmpd", line_color: "000000", line_compound: "dbl")
 
@@ -1704,7 +1704,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with line_join round emits a:round inside a:ln" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "RJ", line_color: "000000", line_join: "round")
 
@@ -1720,7 +1720,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with line_miter_limit emits lim attribute on a:miter" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "ML", line_color: "000000", line_join: "miter", line_miter_limit: 800_000)
 
@@ -1736,7 +1736,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with head_end and tail_end emits arrow elements" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Arrow",
                      line_color: "000000",
@@ -1756,7 +1756,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with clientData attrs stores locks_with_sheet and prints_with_sheet" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1", locks_with_sheet: false, prints_with_sheet: false)
     imgs = writer.images
@@ -1765,7 +1765,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image with anchor offsets stores col/row offsets" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     png = "\x89PNG".b
     writer.insert_image(png, ext: "png", name: "Pic1",
                              from_col: 1, from_row: 2, to_col: 5, to_row: 8,
@@ -1779,7 +1779,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_comment stores comment definition" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_comment("A1", "Note text", author: "Tester")
     writer.add_comment("B2", "Second note")
     comments = writer.comments
@@ -1791,20 +1791,20 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_comment stores rich text comment" do
-    writer = Xlsxrb::Writer.new
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
-                                { text: " normal" }
-                              ])
+    writer = Xlsxrb::Ooxml::Writer.new
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+                                          { text: " normal" }
+                                        ])
     writer.add_comment("A1", rt, author: "Tester")
     comments = writer.comments
     assert_equal(1, comments.size)
-    assert_instance_of(Xlsxrb::RichText, comments[0][:text])
+    assert_instance_of(Xlsxrb::Elements::RichText, comments[0][:text])
     assert_equal("Bold normal", comments[0][:text].to_s)
   end
 
   test "add_pivot_table stores pivot table definition" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",
                            row_fields: [0],
                            data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
@@ -1816,7 +1816,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_pivot_table with col_fields, field_names, and items" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",
                            row_fields: [0],
                            col_fields: [1],
@@ -1833,7 +1833,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_pivot_table with extended attributes (dataCaption, dataOnRows, grandTotals, compact, outline, showHeaders)" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",
                            row_fields: [0],
                            data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
@@ -1856,7 +1856,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_pivot_table with grandTotalCaption, errorCaption, missingCaption, tag, version attrs" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",
                            row_fields: [0],
                            data_fields: [{ fld: 2, name: "Sum", subtotal: "sum" }],
@@ -1886,7 +1886,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_pivot_table with applyXxxFormats attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_pivot_table("Sheet1!A1:B2",
@@ -1916,7 +1916,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_pivot_table with source_name stores worksheetSource name" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",
                            row_fields: [0],
                            data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
@@ -1927,7 +1927,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_pivot_table with dataField showDataAs, baseField, baseItem, numFmtId" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",
                            row_fields: [0],
                            data_fields: [{ fld: 2, name: "% of Total", subtotal: "sum",
@@ -1941,7 +1941,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_pivot_table with pivot_table_style emits pivotTableStyleInfo" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_pivot_table("Sheet1!A1:C4",
                            row_fields: [0],
                            data_fields: [{ fld: 2, name: "Sum", subtotal: "sum" }],
@@ -1959,7 +1959,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_external_link stores external link definition" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_external_link(target: "Book2.xlsx", sheet_names: %w[Sheet1 Sheet2])
     els = writer.external_links
     assert_equal(1, els.size)
@@ -1968,7 +1968,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "preserve_macros flag" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_false(writer.preserve_macros?)
     writer.preserve_macros!
     assert_true(writer.preserve_macros?)
@@ -1979,12 +1979,12 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_raw_entry("custom/data.txt", "test content")
     writer.write(xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     data = reader.raw_entry("custom/data.txt")
     assert_equal("test content", data)
   ensure
@@ -1992,17 +1992,17 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "insert_image on unknown sheet raises" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.insert_image("data", sheet: "Nonexistent") }
   end
 
   test "add_comment on unknown address raises" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     assert_raise(ArgumentError) { writer.add_comment("ZZZ", "text") }
   end
 
   test "set_sheet_protection stores protection settings" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_sheet_protection(sheet: "Sheet1", password: "CF1A", objects: true, scenarios: true)
     prot = writer.sheet_protection(sheet: "Sheet1")
     assert_equal("CF1A", prot[:password])
@@ -2015,13 +2015,13 @@ class WriterTest < Test::Unit::TestCase
     source_path = source_tempfile.path
     source_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "original")
     writer.add_raw_entry("customXml/item1.xml", "<root>custom</root>")
     writer.write(source_path)
 
     # Copy entries into a new writer.
-    writer2 = Xlsxrb::Writer.new
+    writer2 = Xlsxrb::Ooxml::Writer.new
     writer2.copy_entries_from(source_path)
     writer2.set_cell("A1", "modified")
 
@@ -2030,7 +2030,7 @@ class WriterTest < Test::Unit::TestCase
     output_tempfile.close
     writer2.write(output_path)
 
-    reader = Xlsxrb::Reader.new(output_path)
+    reader = Xlsxrb::Ooxml::Reader.new(output_path)
     # Generated cell overrides copied cell.
     cells = reader.cells
     assert_equal("modified", cells["A1"])
@@ -2042,7 +2042,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "set_workbook_protection stores protection settings" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_workbook_protection(lock_structure: true, lock_windows: false)
     prot = writer.workbook_protection
     assert_equal(true, prot[:lock_structure])
@@ -2050,7 +2050,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "set_workbook_protection with lockRevision and revision algorithm attrs" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_workbook_protection(
       lock_structure: true,
       lock_revision: true,
@@ -2068,7 +2068,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_cell_style with protection emits protection element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_id = writer.add_cell_style(protection: { locked: false, hidden: true })
     assert_equal(1, style_id)
 
@@ -2089,7 +2089,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_font with theme color and tint emits theme color attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(sz: 11, name: "Calibri", theme: 1, tint: -0.25)
     assert_equal(1, fid)
 
@@ -2110,7 +2110,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_font with indexed color emits indexed color attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(sz: 11, name: "Calibri", indexed: 10)
     assert_equal(1, fid)
 
@@ -2130,7 +2130,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_fill with theme colors emits theme color attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(pattern: "solid", fg_color_theme: 4, fg_color_tint: 0.6)
     assert_operator(fill_id, :>=, 2)
 
@@ -2151,7 +2151,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_fill with auto color emits auto attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(pattern: "solid", fg_color_auto: true, bg_color_auto: true)
     assert_operator(fill_id, :>=, 2)
 
@@ -2172,7 +2172,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_border with theme color emits theme color attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     brd_id = writer.add_border(left: { style: "thin", theme: 1, tint: -0.25 })
     assert_equal(1, brd_id)
 
@@ -2194,19 +2194,19 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "rich text value stored and retrievable" do
-    writer = Xlsxrb::Writer.new
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Bold", font: { bold: true } },
-                                { text: " Normal" }
-                              ])
+    writer = Xlsxrb::Ooxml::Writer.new
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Bold", font: { bold: true } },
+                                          { text: " Normal" }
+                                        ])
     writer.set_cell("A1", rt)
     assert_equal(rt, writer.cells["A1"])
     assert_equal("Bold Normal", rt.to_s)
   end
 
   test "shared formula attributes stored" do
-    writer = Xlsxrb::Writer.new
-    sf = Xlsxrb::Formula.new(expression: "A1+1", type: :shared, ref: "B1:B10", shared_index: 0, cached_value: "2")
+    writer = Xlsxrb::Ooxml::Writer.new
+    sf = Xlsxrb::Elements::Formula.new(expression: "A1+1", type: :shared, ref: "B1:B10", shared_index: 0, cached_value: "2")
     writer.set_cell("B1", sf)
     result = writer.cells["B1"]
     assert_equal(:shared, result.type)
@@ -2215,8 +2215,8 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "array formula attributes stored" do
-    writer = Xlsxrb::Writer.new
-    af = Xlsxrb::Formula.new(expression: "{SUM(A1:A3*B1:B3)}", type: :array, ref: "C1")
+    writer = Xlsxrb::Ooxml::Writer.new
+    af = Xlsxrb::Elements::Formula.new(expression: "{SUM(A1:A3*B1:B3)}", type: :array, ref: "C1")
     writer.set_cell("C1", af)
     result = writer.cells["C1"]
     assert_equal(:array, result.type)
@@ -2224,8 +2224,8 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "formula calculate_always emits ca attribute" do
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "NOW()", cached_value: "45000", calculate_always: true))
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::Formula.new(expression: "NOW()", cached_value: "45000", calculate_always: true))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-ca", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -2240,8 +2240,8 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "formula aca emits aca attribute" do
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "SUM(B1:B10)", type: :array, ref: "A1", aca: true))
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::Formula.new(expression: "SUM(B1:B10)", type: :array, ref: "A1", aca: true))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-aca", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -2255,8 +2255,8 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "formula bx emits bx attribute" do
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::Formula.new(expression: "SUM(B1:B10)", bx: true))
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::Formula.new(expression: "SUM(B1:B10)", bx: true))
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-bx", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -2270,8 +2270,8 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "formula dataTable type emits dt2D dtr r1 r2 attributes" do
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::Formula.new(
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::Formula.new(
                             expression: "", type: :data_table,
                             dt2d: true, dtr: true, r1: "A$1", r2: "$A1"
                           ))
@@ -2292,7 +2292,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "set_cell_phonetic emits ph attribute on cell" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "テスト")
     writer.set_cell_phonetic("A1")
 
@@ -2308,7 +2308,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_cell_style with alignment stores alignment attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_id = writer.add_cell_style(
       alignment: { horizontal: "center", vertical: "top", wrap_text: true, text_rotation: 45,
                    indent: 2, shrink_to_fit: true }
@@ -2337,7 +2337,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_cell_style with partial alignment only emits specified attrs" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_id = writer.add_cell_style(alignment: { horizontal: "left" })
     assert_equal(1, style_id)
 
@@ -2358,7 +2358,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores expanded conditional formatting rule types" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_conditional_format("A1:A10", type: :above_average, priority: 1,
                                             above_average: false, equal_average: true, format_id: 0)
     writer.add_conditional_format("B1:B10", type: :top10, priority: 2,
@@ -2395,13 +2395,13 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
-    rt = Xlsxrb::RichText.new(runs: [
-                                { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
-                                { text: "Double", font: { underline: "double", name: "Arial", sz: 11 } },
-                                { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
-                                { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } }
-                              ])
+    writer = Xlsxrb::Ooxml::Writer.new
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+                                          { text: "Double", font: { underline: "double", name: "Arial", sz: 11 } },
+                                          { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
+                                          { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } }
+                                        ])
     writer.set_cell("A1", rt)
     writer.write(xlsx_path)
 
@@ -2422,7 +2422,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 50)
     writer.add_conditional_format("A1:A10", type: :color_scale, priority: 1,
                                             color_scale: {
@@ -2449,7 +2449,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fill_id = writer.add_fill(gradient: {
                                 degree: 90,
                                 stops: [{ position: 0, theme: 4, tint: -0.5 }, { position: 1, indexed: 12 }]
@@ -2467,7 +2467,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "stores complete set of CF rule types" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_conditional_format("A1:A10", type: :expression, priority: 1,
                                             formula: "MOD(ROW(),2)=0", format_id: 0)
     writer.add_conditional_format("B1:B10", type: :unique_values, priority: 2, format_id: 0)
@@ -2500,7 +2500,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.add_dxf(
       font: { bold: true, color: "FFFF0000" },
@@ -2524,14 +2524,14 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
-    writer.set_cell("A1", Xlsxrb::CellError.new(code: "#N/A"))
-    writer.set_cell("B1", Xlsxrb::CellError.new(code: "#DIV/0!"))
-    writer.set_cell("C1", Xlsxrb::CellError.new(code: "#VALUE!"))
-    writer.set_cell("D1", Xlsxrb::CellError.new(code: "#REF!"))
-    writer.set_cell("E1", Xlsxrb::CellError.new(code: "#NAME?"))
-    writer.set_cell("F1", Xlsxrb::CellError.new(code: "#NUM!"))
-    writer.set_cell("G1", Xlsxrb::CellError.new(code: "#NULL!"))
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", Xlsxrb::Elements::CellError.new(code: "#N/A"))
+    writer.set_cell("B1", Xlsxrb::Elements::CellError.new(code: "#DIV/0!"))
+    writer.set_cell("C1", Xlsxrb::Elements::CellError.new(code: "#VALUE!"))
+    writer.set_cell("D1", Xlsxrb::Elements::CellError.new(code: "#REF!"))
+    writer.set_cell("E1", Xlsxrb::Elements::CellError.new(code: "#NAME?"))
+    writer.set_cell("F1", Xlsxrb::Elements::CellError.new(code: "#NUM!"))
+    writer.set_cell("G1", Xlsxrb::Elements::CellError.new(code: "#NULL!"))
     writer.write(xlsx_path)
 
     xml = read_xml_from_xlsx(xlsx_path, "xl/worksheets/sheet1.xml")
@@ -2551,7 +2551,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_core_property(:title, "My Title")
     writer.set_core_property(:subject, "My Subject")
@@ -2585,7 +2585,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_split_pane(x_split: 2400, y_split: 1800, top_left_cell: "C4")
     writer.write(xlsx_path)
@@ -2602,7 +2602,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Header1")
     writer.set_cell("B1", "Header2")
     writer.set_auto_filter("A1:B10")
@@ -2622,7 +2622,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Header")
     writer.set_auto_filter("A1:A10")
     writer.add_filter_column(0, { type: :color_filter, dxf_id: 1, cell_color: false })
@@ -2639,7 +2639,7 @@ class WriterTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     t = Time.utc(2024, 3, 15, 14, 30, 0)
     writer.set_cell("A1", t)
     writer.write(xlsx_path)
@@ -2655,7 +2655,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "set_print_area creates _xlnm.Print_Area defined name" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_print_area("A1:D20")
 
@@ -2667,7 +2667,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "set_print_titles creates _xlnm.Print_Titles defined name" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_print_titles(rows: "1:3", cols: "A:B")
 
@@ -2679,7 +2679,7 @@ class WriterTest < Test::Unit::TestCase
 
   test "hash_password returns deterministic result with fixed salt" do
     salt = "\x00" * 16
-    result = Xlsxrb.hash_password("secret", salt: salt, spin_count: 1000)
+    result = Xlsxrb::Ooxml::Utils.hash_password("secret", salt: salt, spin_count: 1000)
 
     assert_equal("SHA-512", result[:algorithm_name])
     assert_equal(1000, result[:spin_count])
@@ -2687,14 +2687,14 @@ class WriterTest < Test::Unit::TestCase
     assert_match(%r{\A[A-Za-z0-9+/]+=*\z}, result[:hash_value])
 
     # Same inputs should produce same output
-    result2 = Xlsxrb.hash_password("secret", salt: salt, spin_count: 1000)
+    result2 = Xlsxrb::Ooxml::Utils.hash_password("secret", salt: salt, spin_count: 1000)
     assert_equal(result[:hash_value], result2[:hash_value])
   end
 
   test "hash_password integrates with set_sheet_protection" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "protected")
-    hp = Xlsxrb.hash_password("mypassword", spin_count: 1000)
+    hp = Xlsxrb::Ooxml::Utils.hash_password("mypassword", spin_count: 1000)
     writer.set_sheet_protection(**hp)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-hash-pw", ".xlsx"])
@@ -2712,7 +2712,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "hash_password supports SHA-256 algorithm" do
-    result = Xlsxrb.hash_password("test", algorithm: "SHA-256", spin_count: 100)
+    result = Xlsxrb::Ooxml::Utils.hash_password("test", algorithm: "SHA-256", spin_count: 100)
     assert_equal("SHA-256", result[:algorithm_name])
     assert_equal(100, result[:spin_count])
     # SHA-256 produces 32-byte hash → 44-char base64
@@ -2720,7 +2720,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "set_header_footer emits firstHeader and firstFooter elements" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_header_footer(:first_header, "&CFirst Page Header")
     writer.set_header_footer(:first_footer, "&CFirst Page Footer")
@@ -2740,7 +2740,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "set_header_footer emits differentOddEven attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_header_footer(:odd_header, "&LOdd Header")
     writer.set_header_footer(:even_header, "&LEven Header")
@@ -2759,7 +2759,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "page_setup emits additional attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_page_setup(:page_order, "overThenDown")
     writer.set_page_setup(:black_and_white, true)
@@ -2789,7 +2789,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "data validation emits showDropDown and imeMode attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_data_validation("A1:A10", type: "list",
                                          formula1: '"Yes,No"',
@@ -2809,7 +2809,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "alignment emits readingOrder and justifyLastLine attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     sid = writer.add_cell_style(alignment: { horizontal: "distributed", reading_order: 2, justify_last_line: true })
     writer.set_cell("A1", "RTL text")
     writer.set_cell_style("A1", sid)
@@ -2827,7 +2827,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "alignment emits relativeIndent attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     sid = writer.add_cell_style(alignment: { indent: 2, relative_indent: -1 })
     writer.set_cell("A1", "indented")
     writer.set_cell_style("A1", sid)
@@ -2844,7 +2844,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "font emits charset attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(name: "MS Gothic", sz: 11, family: 3, charset: 128)
     sid = writer.add_cell_style(font_id: fid)
     writer.set_cell("A1", "テスト")
@@ -2862,7 +2862,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "font emits shadow, outline, condense, extend" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     fid = writer.add_font(name: "Arial", sz: 12, bold: true, shadow: true, outline: true, condense: true, extend: true)
     sid = writer.add_cell_style(font_id: fid)
     writer.set_cell("A1", "styled")
@@ -2883,7 +2883,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "sheetFormatPr emits outlineLevelRow, outlineLevelCol, zeroHeight, customHeight" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_format(:default_row_height, 15)
     writer.set_sheet_format(:outline_level_row, 3)
@@ -2906,7 +2906,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "cellXf emits quotePrefix attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     sid = writer.add_cell_style(quote_prefix: true)
     writer.set_cell("A1", "001234")
     writer.set_cell_style("A1", sid)
@@ -2923,7 +2923,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "showFormulas on sheet view" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_view(:show_formulas, true)
 
@@ -2942,7 +2942,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "sheetView showZeros, view, showOutlineSymbols, showRuler" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_view(:show_zeros, false)
     writer.set_sheet_view(:view, "pageBreakPreview")
@@ -2964,7 +2964,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "sheetView remaining attributes: topLeftCell, colorId, zoomScaleNormal, etc." do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_view(:window_protection, true)
     writer.set_sheet_view(:default_grid_color, false)
@@ -2994,7 +2994,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "codeName on sheet properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_sheet_property(:code_name, "MySheet")
 
@@ -3013,7 +3013,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "sheet properties extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_sheet_property(:filter_mode, true)
     writer.set_sheet_property(:published, false)
@@ -3037,7 +3037,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "workbook view visibility" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_workbook_view(:visibility, "hidden")
 
@@ -3056,7 +3056,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "phonetic properties on sheet" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
     writer.set_phonetic_properties({ font_id: 1, type: "Hiragana", alignment: "center" })
 
@@ -3080,7 +3080,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "custom properties are written to docProps/custom.xml" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_custom_property("Project", "Alpha")
     writer.add_custom_property("Version", 42, type: :number)
@@ -3101,7 +3101,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_border with outline false emits outline attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     brd_id = writer.add_border(
       left: { style: "thin" },
       outline: false
@@ -3124,7 +3124,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "font with auto color emits auto attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     font_id = writer.add_font(auto: true, size: 11, name: "Calibri")
     style_id = writer.add_cell_style(font_id: font_id)
     writer.set_cell("A1", "auto-color")
@@ -3142,7 +3142,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "headerFooter emits scaleWithDoc and alignWithMargins" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_header_footer(:odd_header, "&CHello")
     writer.set_header_footer(:scale_with_doc, false)
     writer.set_header_footer(:align_with_margins, false)
@@ -3161,7 +3161,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "pageSetup emits copies, paperHeight, paperWidth, errors" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_page_setup(:copies, 3)
     writer.set_page_setup(:paper_height, "297mm")
     writer.set_page_setup(:paper_width, "210mm")
@@ -3185,7 +3185,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "printOptions emits gridLinesSet" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_print_option(:grid_lines_set, false)
     writer.set_cell("A1", "po")
 
@@ -3201,7 +3201,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "conditional format rule emits stdDev attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 100)
     writer.add_conditional_format("A1:A10",
                                   type: :above_average,
@@ -3220,7 +3220,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "cfvo emits gte attribute when false" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_conditional_format("A1:A10",
                                   type: :color_scale,
@@ -3241,7 +3241,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "column with phonetic attribute emits phonetic" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_column_attribute("A", :phonetic, true)
     writer.set_cell("A1", "test")
 
@@ -3257,7 +3257,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "named cell style emits iLevel, hidden, customBuiltin" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_named_cell_style(
       name: "Heading 1",
       builtin_id: 16,
@@ -3281,7 +3281,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "xf entry emits pivotButton attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     style_id = writer.add_cell_style(pivot_button: true)
     writer.set_cell("A1", "pivot")
     writer.set_cell_style("A1", style_id)
@@ -3298,7 +3298,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "sheetFormatPr emits thickTop and thickBottom" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_sheet_format(:default_row_height, 15)
     writer.set_sheet_format(:thick_top, true)
     writer.set_sheet_format(:thick_bottom, true)
@@ -3317,7 +3317,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "dataValidations container emits disablePrompts, xWindow, yWindow" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_data_validations_option(:disable_prompts, true)
     writer.set_data_validations_option(:x_window, 100)
     writer.set_data_validations_option(:y_window, 200)
@@ -3338,7 +3338,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "border with vertical and horizontal sides" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     brd_id = writer.add_border(
       vertical: { style: "thin", color: "FF00FF00" },
       horizontal: { style: "dashed", color: "FF0000FF" }
@@ -3360,7 +3360,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "row break with extended attributes emits min, max, pt" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_row_break({ id: 10, min: 2, max: 8, man: true, pt: true })
     writer.set_cell("A1", "brk")
 
@@ -3379,7 +3379,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "row with phonetic attribute emits ph" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_row_phonetic(1)
     writer.set_cell("A1", "test")
 
@@ -3395,7 +3395,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "definedName emits extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_defined_name("MyName", "Sheet1!$A$1",
                             comment: "A comment", description: "A desc",
                             function: true, vb_procedure: true, xlm: true,
@@ -3421,7 +3421,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "fileVersion element emits appName and lastEdited" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_file_version(:app_name, "xl")
     writer.set_file_version(:last_edited, "7")
     writer.set_file_version(:lowest_edited, "7")
@@ -3443,7 +3443,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "fileSharing element emits readOnlyRecommended and userName" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_file_sharing(:read_only_recommended, true)
     writer.set_file_sharing(:user_name, "TestUser")
     writer.set_cell("A1", "test")
@@ -3461,7 +3461,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits protectedRanges in worksheet XML" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.add_protected_range(name: "EditArea", sqref: "A1:B10")
     writer.add_protected_range(name: "SecureRange", sqref: "C1:D5", algorithm_name: "SHA-512",
@@ -3485,7 +3485,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits indexedColors and mruColors in stylesheet" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_indexed_colors(%w[FF000000 FFFFFFFF FFFF0000])
     writer.set_mru_colors([{ rgb: "FF00FF00" }, { theme: 3, tint: 0.4 }])
@@ -3510,7 +3510,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits tableStyles in stylesheet" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     dxf_id = writer.add_dxf(font: { bold: true })
     writer.set_table_styles_option(:default_table_style, "TableStyleMedium2")
@@ -3539,7 +3539,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits cellWatches in worksheet XML" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 100)
     writer.set_cell("B2", 200)
     writer.add_cell_watch("A1")
@@ -3559,7 +3559,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dataConsolidate in worksheet XML" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_data_consolidate(
       function: "average", start_labels: true, left_labels: true, link: true,
@@ -3586,7 +3586,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits sheetPr sync and transition attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_sheet_property(:sync_horizontal, true)
     writer.set_sheet_property(:sync_vertical, true)
@@ -3610,7 +3610,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits workbookPr extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_workbook_property(:show_border_unselected_tables, false)
     writer.set_workbook_property(:prompted_solutions, true)
@@ -3640,7 +3640,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits scenarios in worksheet XML" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 100)
     writer.set_scenarios(
       current: 0, show: 0,
@@ -3669,7 +3669,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits outlinePr applyStyles attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_sheet_property(:apply_styles, true)
 
@@ -3685,7 +3685,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits outlinePr showOutlineSymbols attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_sheet_property(:show_outline_symbols, false)
 
@@ -3701,7 +3701,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits tabColor with indexed attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_sheet_property(:tab_color_indexed, 10)
 
@@ -3717,7 +3717,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits tabColor with auto attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_sheet_property(:tab_color_auto, true)
 
@@ -3733,7 +3733,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits fileRecoveryPr element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_file_recovery_property(:auto_recover, false)
     writer.set_file_recovery_property(:crash_save, true)
@@ -3751,7 +3751,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits sheetCalcPr fullCalcOnLoad" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
     writer.set_sheet_property(:full_calc_on_load, true)
 
@@ -3767,7 +3767,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits table extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
     writer.add_table("A1:B5", columns: %w[Name Age],
@@ -3790,7 +3790,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_table with border dxfId, cellStyle, tableType, connectionId" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Age")
     writer.add_table("A1:B5", columns: %w[Name Age],
@@ -3812,7 +3812,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits ignoredErrors element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "123")
     writer.add_ignored_error(sqref: "A1:B2", number_stored_as_text: true, eval_error: true)
     xlsx_path = File.join(Dir.tmpdir, "ignored_errors_#{Process.pid}.xlsx")
@@ -3826,7 +3826,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits definedName extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_defined_name("MyFunc", "Sheet1!$A$1",
                             function_group_id: 4, custom_menu: "My Menu",
@@ -3843,7 +3843,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits conditionalFormatting pivot attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_conditional_format("A1:A10", type: :cell_is, operator: "greaterThan",
                                             formula: "5", format_id: 0, priority: 1, pivot: true)
@@ -3856,7 +3856,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits comment guid and shapeId attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.add_comment("A1", "Note", guid: "{12345678-1234-1234-1234-123456789ABC}", shape_id: 1025)
     xlsx_path = File.join(Dir.tmpdir, "comment_guid_#{Process.pid}.xlsx")
@@ -3869,7 +3869,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits autoFilter extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Date")
     writer.set_auto_filter("A1:B10")
@@ -3891,7 +3891,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits selection pane and activeCellId attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_selection("B2", sqref: "B2:C3", pane: "bottomRight", active_cell_id: 1)
     xlsx_path = File.join(Dir.tmpdir, "sel_pane_#{Process.pid}.xlsx")
@@ -3904,7 +3904,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits sortState extended attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Name")
     writer.set_cell("B1", "Value")
     writer.set_auto_filter("A1:B10")
@@ -3924,7 +3924,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits iconSet percent attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_conditional_format("A1:A5", type: :icon_set, priority: 1,
                                            icon_set: { icon_set: "3Arrows", percent: false,
@@ -3938,7 +3938,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits workbook conformance attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
     writer.set_workbook_property(:conformance, "transitional")
     xlsx_path = File.join(Dir.tmpdir, "conformance_#{Process.pid}.xlsx")
@@ -3950,7 +3950,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits pivotCacheDefinition optional attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -3976,7 +3976,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits location rowPageCount and colPageCount on pivot table" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -3994,7 +3994,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits pivotField per-field attributes via field_attrs" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -4020,7 +4020,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits cacheField caption and formula via field_attrs" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -4042,7 +4042,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits pivotField defaultSubtotal, insertBlankRow, insertPageBreak, includeNewItemsInFilter via field_attrs" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -4066,7 +4066,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits pivotTableDefinition extended display and layout attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -4098,7 +4098,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits pivotTableDefinition compactData and outlineData attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -4117,7 +4117,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits pivotTableDefinition showMultipleLabel and showDataDropDown attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -4136,7 +4136,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits pivotTableDefinition editData and disableFieldList attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -4155,7 +4155,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits pivotTableDefinition visualTotals and printDrill attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", "Val")
     writer.set_cell("A2", "X")
@@ -4174,7 +4174,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart plotVisOnly and dispBlanksAs attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4189,7 +4189,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart varyColors attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :pie,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4203,7 +4203,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart style element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4217,7 +4217,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits autoTitleDeleted element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4231,7 +4231,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits roundedCorners element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4245,7 +4245,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart protection element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4266,7 +4266,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits showBubbleSize in data labels" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4280,7 +4280,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits separator in data labels" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4294,7 +4294,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits showLeaderLines and leaderLines in dLbls" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :pie,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4310,7 +4310,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits plain leaderLines element without spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :pie,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4325,7 +4325,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dLblPos in data labels" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4339,7 +4339,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits tickLblPos on chart axes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4355,7 +4355,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits majorGridlines on chart axes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4370,7 +4370,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits minorGridlines on chart axes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4385,7 +4385,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits gridlines with spPr formatting" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4399,7 +4399,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chartSpace spPr with chart_fill and chart_line_color" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4415,7 +4415,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chartSpace spPr with chart_line_dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4430,7 +4430,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chartSpace spPr with chart_no_fill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4444,7 +4444,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits showDLblsOverMax element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4458,7 +4458,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits configurable axis delete attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4473,7 +4473,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits configurable axis orientation" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4488,7 +4488,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits gapWidth and overlap for bar charts" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4503,7 +4503,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits legend overlay element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4517,7 +4517,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits view3D element with all properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4532,7 +4532,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits numFmt on cat and val axes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4548,7 +4548,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits majorTickMark and minorTickMark on axes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4564,7 +4564,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits crosses on cat and val axes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4579,7 +4579,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits crossBetween, majorUnit, minorUnit on val axis" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4594,7 +4594,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits scaling min and max on axes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4608,7 +4608,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits logBase in scaling on val axis" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4622,7 +4622,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits firstSliceAng and holeSize for doughnut charts" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :doughnut,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4637,7 +4637,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits smooth and marker for line charts" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4652,7 +4652,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits scatterStyle and radarStyle for respective chart types" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :scatter,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4671,7 +4671,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits configurable axPos on cat and val axes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4686,7 +4686,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits gapDepth and shape for 3D bar charts" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar3d,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4701,7 +4701,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits bubble chart properties" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bubble,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4719,7 +4719,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits crossesAt on cat and val axes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4735,7 +4735,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits wireframe for surface chart" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :surface,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4749,7 +4749,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits surface3DChart with three axis IDs and serAx" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :surface3d,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4767,7 +4767,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dTable with all boolean children" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4785,7 +4785,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits series spPr solidFill when fill_color specified" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1", fill_color: "FF0000" }])
@@ -4798,7 +4798,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits plot area spPr solidFill when plot_area_fill specified" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4812,7 +4812,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits legendEntry with idx and delete" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4826,7 +4826,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits legendEntry with font txPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -4842,7 +4842,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits series spPr with line color and width" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", line_color: "0000FF", line_width: 2 }])
@@ -4855,7 +4855,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits series spPr with both fill and line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1", fill_color: "FF0000", line_color: "0000FF", line_width: 1 }])
@@ -4869,7 +4869,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits series marker with symbol and size" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "diamond", marker_size: 8 }])
@@ -4882,7 +4882,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits series marker with fill and line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle", marker_size: 6,
@@ -4896,7 +4896,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits series marker line dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
@@ -4910,7 +4910,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits series marker noFill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
@@ -4924,7 +4924,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits series marker no line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1", marker_symbol: "circle",
@@ -4938,7 +4938,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits invertIfNegative on series" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1", invert_if_negative: true }])
@@ -4951,7 +4951,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits explosion on series and data point" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :pie,
                      series: [{ val_ref: "Sheet1!$A$1", explosion: 25,
@@ -4966,7 +4966,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits xVal and yVal for scatter chart series" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :scatter,
                      series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1" }])
@@ -4982,7 +4982,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits error bars on series" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -5002,7 +5002,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits error bars spPr with line_color, line_width, and line_dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -5021,7 +5021,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits custom error bars with plus and minus references" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("B1", 0.5)
     writer.set_cell("C1", 0.3)
@@ -5043,7 +5043,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits per-series shape on bar chart" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 2)
     writer.add_chart(type: :bar3d,
@@ -5061,7 +5061,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits multiple errBars for x and y directions on scatter chart" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("B1", 2)
     writer.add_chart(type: :scatter,
@@ -5081,7 +5081,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits per-series data labels" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -5098,7 +5098,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits axis font properties in txPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5114,7 +5114,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits title overlay on chart title" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar, title: "Test", title_overlay: true,
                      series: [{ val_ref: "Sheet1!$A$1" }])
@@ -5127,7 +5127,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits custom series order" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1", order: 5 }])
@@ -5140,7 +5140,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits bubbleSize ref on bubble chart series" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bubble,
                      series: [{ cat_ref: "Sheet1!$A$1", val_ref: "Sheet1!$B$1",
@@ -5154,7 +5154,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dropLines and hiLowLines on line chart" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5169,7 +5169,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dropLines spPr with line_color, line_width, and line_dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5183,7 +5183,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits hiLowLines spPr with line_color, line_width, and line_dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5197,7 +5197,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits serLines on stacked bar chart" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      grouping: "stacked",
@@ -5212,7 +5212,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits serLines spPr with line_color, line_width, and line_dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      grouping: "stacked",
@@ -5227,7 +5227,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits bandFmts on surface chart" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :surface,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5242,7 +5242,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits bandFmt with line styling" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :surface,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5256,7 +5256,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits ofPieChart with splitType and secondPieSize" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :of_pie,
@@ -5280,7 +5280,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits custSplit with secondPiePt elements on ofPieChart" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.set_cell("A3", 30)
@@ -5301,7 +5301,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits upDownBars with gapWidth on line chart" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5315,7 +5315,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits upDownBars with up_bars and down_bars spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5332,7 +5332,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits tickLblSkip and tickMarkSkip on cat axis" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5347,7 +5347,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits lblOffset and noMultiLvlLbl on cat axis" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5362,7 +5362,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits auto and lblAlgn on cat axis" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5377,7 +5377,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dispUnits with builtInUnit on val axis" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5391,7 +5391,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dispUnitsLbl with numFmt" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5406,7 +5406,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dispUnitsLbl with spPr and txPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5427,7 +5427,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dispUnitsLbl with no_fill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -5442,7 +5442,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dPt elements for series data_points" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.set_cell("A3", 30)
@@ -5462,7 +5462,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dPt with line_color and line_width" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -5477,7 +5477,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dPt with no_line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -5492,7 +5492,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dPt with marker symbol and size" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -5507,7 +5507,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dPt marker with fill and line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -5523,7 +5523,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dPt marker with noFill and noLine" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -5538,7 +5538,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dPt marker with line_dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -5554,7 +5554,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dPt with invertIfNegative" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", -5)
     writer.add_chart(type: :bar,
@@ -5569,7 +5569,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dPt with bubble3D" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("B1", 20)
     writer.set_cell("C1", 5)
@@ -5586,7 +5586,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dLbl with custom text" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -5602,7 +5602,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dLbl with delete flag" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -5618,7 +5618,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dLbl with numFmt" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -5635,7 +5635,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dLbl with separator" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -5651,7 +5651,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dLbl with spPr fill and line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -5668,7 +5668,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dLbl with font" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :pie,
@@ -5685,7 +5685,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits trendline element in series" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 2)
     writer.add_chart(type: :line,
@@ -5708,7 +5708,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits trendline spPr with line_color, line_width, and line_dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 2)
     writer.add_chart(type: :line,
@@ -5727,7 +5727,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits trendlineLbl with numFmt" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -5742,7 +5742,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits trendlineLbl with spPr and txPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -5765,7 +5765,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits trendlineLbl with no_fill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :line,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -5780,7 +5780,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits multiple trendlines via trendlines array" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.set_cell("A2", 4)
     writer.set_cell("A3", 9)
@@ -5804,7 +5804,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with inner_shadow emits a:effectLst with a:innerShdw" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "InnerShadow",
                      inner_shadow: { blur_rad: 63_500, dist: 25_400, dir: 5_400_000, color: "FF0000" })
@@ -5821,7 +5821,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with both outer_shadow and inner_shadow emits both in a:effectLst" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "BothShadows",
                      outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" },
@@ -5839,7 +5839,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with glow emits a:effectLst with a:glow" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Glow",
                      glow: { rad: 101_600, color: "FF0000" })
@@ -5856,7 +5856,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with soft_edge emits a:effectLst with a:softEdge" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "SoftEdge",
                      soft_edge: { rad: 63_500 })
@@ -5873,7 +5873,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with reflection emits a:effectLst with a:reflection" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Reflect",
                      reflection: { blur_rad: 6_350, st_a: 52_000, end_a: 300, dist: 0, dir: 5_400_000,
@@ -5891,7 +5891,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with blur emits a:effectLst with a:blur" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Blur",
                      blur: { rad: 50_800, grow: false })
@@ -5908,7 +5908,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with title as hash emits formatted chart title" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :bar,
@@ -5927,7 +5927,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with title as plain string still works" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.add_chart(type: :bar, title: "Simple Title", series: [{ val_ref: "Sheet1!$A$1:$A$1" }])
 
@@ -5943,7 +5943,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with series line_cap and line_join emits a:ln attributes" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -5964,7 +5964,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with series line_dash emits a:prstDash in a:ln" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -5983,7 +5983,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with series no_fill and no_line emits a:noFill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :scatter,
@@ -6002,7 +6002,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with per-series smooth emits c:smooth inside c:ser" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 10)
     writer.set_cell("A2", 20)
     writer.add_chart(type: :line,
@@ -6020,7 +6020,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font strike emits strike attribute on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Struck",
                      text_font: { strike: "sngStrike" })
@@ -6037,7 +6037,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font underline emits u attribute on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Underlined",
                      text_font: { underline: "sng" })
@@ -6054,7 +6054,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font baseline emits baseline attribute on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Super",
                      text_font: { baseline: 30_000 })
@@ -6071,7 +6071,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font spacing emits spc attribute on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Spaced",
                      text_font: { spacing: 200 })
@@ -6088,7 +6088,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font cap emits cap attribute on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "AllCaps",
                      text_font: { cap: "all" })
@@ -6105,7 +6105,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_align emits a:pPr algn attribute" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Centered",
                      text_align: "ctr")
@@ -6122,7 +6122,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font_align emits fontAlgn attribute on a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "FontAlign",
                      text_font_align: "ctr")
@@ -6139,7 +6139,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_def_tab_sz emits defTabSz attribute on a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Tabs",
                      text_def_tab_sz: 914_400)
@@ -6156,7 +6156,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font lang emits lang attribute on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Hello",
                      text_font: { lang: "en-US" })
@@ -6173,7 +6173,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_vertical emits vert attribute on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Vertical",
                      text_vertical: "vert")
@@ -6190,7 +6190,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_insets emits lIns tIns rIns bIns on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Padded",
                      text_insets: { left: 91_440, top: 45_720, right: 91_440, bottom: 45_720 })
@@ -6210,7 +6210,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font ea_font emits a:ea element in a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "CJK",
                      text_font: { ea_font: "MS Gothic" })
@@ -6227,7 +6227,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font cs_font emits a:cs element in a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Complex",
                      text_font: { cs_font: "Arabic Typesetting" })
@@ -6244,7 +6244,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font sym_font emits a:sym element in a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Symbols",
                      text_font: { sym_font: "Wingdings" })
@@ -6261,7 +6261,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font line_color emits a:ln inside a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Outline",
                      text_font: { line_color: "FF0000", line_width: 12_700 })
@@ -6278,7 +6278,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font u_fill_tx emits a:uFillTx in a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "UFT",
                      text_font: { underline: "sng", u_fill_tx: true })
@@ -6295,7 +6295,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font u_ln_tx emits a:uLnTx in a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "ULT",
                      text_font: { underline: "sng", u_ln_tx: true })
@@ -6312,7 +6312,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font outer_shadow emits a:effectLst in a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "TextShadow",
                      text_font: { bold: true, outer_shadow: { blur_rad: 50_800, dist: 38_100, dir: 2_700_000, color: "000000" } })
@@ -6329,7 +6329,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font highlight emits a:highlight element in a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Highlighted",
                      text_font: { highlight: "FFFF00" })
@@ -6346,7 +6346,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_rot emits rot attribute on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Rotated",
                      text_rot: 2_700_000)
@@ -6363,7 +6363,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_indent emits marL marR indent attributes on a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Indented",
                      text_indent: { left: 457_200, right: 228_600, indent: -114_300 })
@@ -6380,7 +6380,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font kern emits kern attribute on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Kerned",
                      text_font: { kern: 1200 })
@@ -6397,7 +6397,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_anchor_ctr emits anchorCtr attribute on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Centered",
                      text_anchor_ctr: true)
@@ -6414,7 +6414,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_spacing emits spcBef and spcAft in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Spaced",
                      text_spacing: { before: 600, after: 400 })
@@ -6431,7 +6431,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_spacing line emits lnSpc in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "LineSpaced",
                      text_spacing: { line: 1200 })
@@ -6448,7 +6448,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_spacing line_pct emits spcPct in lnSpc" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "PctLine",
                      text_spacing: { line_pct: 150_000 })
@@ -6465,7 +6465,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_spacing before_pct and after_pct emits spcPct in spcBef and spcAft" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "PctSpacing",
                      text_spacing: { before_pct: 50_000, after_pct: 100_000 })
@@ -6483,7 +6483,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_horz_overflow emits horzOverflow attribute on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Overflow",
                      text_horz_overflow: "overflow")
@@ -6500,7 +6500,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_num_col emits numCol attribute on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Columns",
                      text_num_col: 2)
@@ -6517,7 +6517,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_spc_col emits spcCol attribute on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "ColSpacing",
                      text_spc_col: 457_200)
@@ -6534,7 +6534,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_rtl_col emits rtlCol on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "RTL", text_rtl_col: true)
 
@@ -6550,7 +6550,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_from_word_art emits fromWordArt on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "WA", text_from_word_art: true)
 
@@ -6566,7 +6566,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_upright emits upright on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Up", text_upright: true)
 
@@ -6582,7 +6582,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_compat_ln_spc emits compatLnSpc on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Compat", text_compat_ln_spc: true)
 
@@ -6598,7 +6598,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_spc_first_last_para emits spcFirstLastPara on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "First",
                      text_spc_first_last_para: true)
@@ -6615,7 +6615,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_rtl emits rtl attribute on a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "RTL",
                      text_rtl: true)
@@ -6632,7 +6632,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_ea_ln_brk emits eaLnBrk on a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "EA", text_ea_ln_brk: true)
 
@@ -6648,7 +6648,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_latin_ln_brk emits latinLnBrk on a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Latin", text_latin_ln_brk: true)
 
@@ -6664,7 +6664,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_hanging_punct emits hangingPunct on a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Hang", text_hanging_punct: true)
 
@@ -6680,7 +6680,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_tab_stops emits a:tabLst in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Tabs",
                      text_tab_stops: [{ pos: 914_400, align: "l" }, { pos: 1_828_800, align: "r" }])
@@ -6697,7 +6697,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_bullet none emits a:buNone in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "NoBullet",
                      text_bullet: { type: "none" })
@@ -6714,7 +6714,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_bullet char emits a:buChar in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Bullet",
                      text_bullet: { type: "char", char: "\u2022" })
@@ -6731,7 +6731,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_bullet auto emits a:buAutoNum in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Numbered",
                      text_bullet: { type: "auto", auto_type: "arabicPeriod", start_at: 5 })
@@ -6748,7 +6748,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_level emits lvl attribute on a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Level2",
                      text_level: 2)
@@ -6765,7 +6765,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_bullet font emits a:buFont in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "FontBullet",
                      text_bullet: { type: "char", char: "\u2022", font: "Wingdings" })
@@ -6782,7 +6782,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_bullet size_pts emits a:buSzPts in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "BigBullet",
                      text_bullet: { type: "char", char: "-", size_pts: 1400 })
@@ -6799,7 +6799,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_bullet size_pct emits a:buSzPct in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "PctBullet",
                      text_bullet: { type: "char", char: "-", size_pct: 150_000 })
@@ -6816,7 +6816,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_bullet color emits a:buClr in a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "ColorBullet",
                      text_bullet: { type: "char", char: "-", color: "FF0000" })
@@ -6833,7 +6833,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_force_aa emits forceAA on a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "AA", text_force_aa: true)
 
@@ -6849,7 +6849,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_warp emits a:prstTxWarp in a:bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Warped",
                      text_warp: { preset: "textWave1" })
@@ -6866,7 +6866,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font no_proof emits noProof on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "NP",
                      text_font: { no_proof: true })
@@ -6883,7 +6883,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font normalize_h emits normalizeH on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "NH",
                      text_font: { normalize_h: true })
@@ -6900,7 +6900,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font kumimoji emits kumimoji on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "KM",
                      text_font: { kumimoji: true })
@@ -6917,7 +6917,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font dirty emits dirty on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "D",
                      text_font: { dirty: true })
@@ -6934,7 +6934,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font smt_clean emits smtClean on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "SC",
                      text_font: { smt_clean: true })
@@ -6951,7 +6951,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font bmk emits bmk on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "BM",
                      text_font: { bmk: "bookmark1" })
@@ -6968,7 +6968,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_end_para_rpr emits a:endParaRPr element" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "EPR",
                      text_end_para_rpr: { lang: "en-US", size: 1100 })
@@ -6986,7 +6986,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_end_para_rpr with children emits full a:endParaRPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "EPR2",
                      text_end_para_rpr: { lang: "en-US", name: "Arial", bold: true })
@@ -7004,7 +7004,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_def_rpr emits a:defRPr inside a:pPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "DR",
                      text_def_rpr: { lang: "en-US", size: 1100 })
@@ -7022,7 +7022,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_paragraphs generates multiple a:p elements" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text_paragraphs: [
                        { text: "First", font: { bold: true } },
@@ -7044,7 +7044,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_paragraphs runs generates multiple a:r elements" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text_paragraphs: [
                        { runs: [
@@ -7068,7 +7068,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_shape with text_font alt_lang emits altLang attribute on a:rPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_shape(preset: "rect", text: "Alt",
                      text_font: { lang: "en-US", alt_lang: "ja-JP" })
@@ -7085,7 +7085,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "add_chart with cat_axis_label_rotation emits txPr with rot on catAx" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7103,7 +7103,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes plot area line color and width" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7121,7 +7121,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes plot area line dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7139,7 +7139,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes plot area noFill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7157,7 +7157,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes axis line color and width" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7177,7 +7177,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes axis line dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7197,7 +7197,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes per-point data labels" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.set_cell("B2", 20)
@@ -7224,7 +7224,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes chart wall and floor" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7245,7 +7245,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes schemeClr for shape fill and line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_shape(fill_color: { scheme: "accent1" }, line_color: { scheme: "dk1" })
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-scheme", ".xlsx"])
@@ -7261,7 +7261,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes schemeClr for chart series fill" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7279,7 +7279,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes legend font" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Cat")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :bar, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7297,7 +7297,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "writes dateAx with time units" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "2024-01-01")
     writer.set_cell("B1", 10)
     writer.add_chart(type: :line, cat_ref: "Sheet1!A1", val_ref: "Sheet1!B1",
@@ -7320,7 +7320,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits numCache and strCache for chart refs" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Jan")
     writer.set_cell("A2", "Feb")
     writer.set_cell("A3", "Mar")
@@ -7355,7 +7355,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits numRef for xVal on scatter chart cat_ref" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1.5)
     writer.set_cell("A2", 2.5)
     writer.set_cell("B1", 10)
@@ -7376,7 +7376,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits legend spPr with fill and line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      legend: { position: "b", fill_color: "FFFF00", line_color: "0000FF", line_width: 1.5 },
@@ -7393,7 +7393,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits legend manual layout with position coordinates" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      legend: { position: "b", layout: { x: 0.1, y: 0.8, w: 0.8, h: 0.15 } },
@@ -7410,7 +7410,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dTable spPr and txPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      data_table: { show_keys: true, fill_color: "CCCCCC", line_color: "333333", line_width: 0.5,
@@ -7429,7 +7429,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dLbls numFmt spPr and txPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 100)
     writer.add_chart(type: :bar,
                      data_labels: { show_val: true,
@@ -7451,7 +7451,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits axis title with font formatting" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: { text: "Category", font: { bold: true, size: 1400, name: "Arial" } },
@@ -7470,7 +7470,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits axis title spPr with fill and line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: { text: "Category", fill_color: "FFEECC", line_color: "CC6600", line_width: 0.5 },
@@ -7489,7 +7489,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits title spPr with line dash" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: { text: "My Chart", line_color: "000000", line_dash: "dot" },
@@ -7510,7 +7510,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits axis title noFill in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: { text: "Category", no_fill: true },
@@ -7529,7 +7529,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart title styling from flat parameters" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: "Flat Styled",
@@ -7552,7 +7552,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "flat title_no_fill emits noFill in title spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: "NoFill Title",
@@ -7570,7 +7570,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits axis title styling from flat parameters" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: "Category",
@@ -7598,7 +7598,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits axis fill in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_fill: "F0F0F0",
@@ -7617,7 +7617,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits axis noFill in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_no_fill: true,
@@ -7636,7 +7636,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits plot area manual layout" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      plot_area_layout: { target: "inner", x: 0.1, y: 0.2, w: 0.7, h: 0.6 },
@@ -7653,7 +7653,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits legend line_dash in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      legend: { position: "r", line_color: "000000", line_dash: "dash" },
@@ -7670,7 +7670,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits data table line_dash in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      data_table: { show_keys: true, line_color: "999999", line_dash: "dot" },
@@ -7687,7 +7687,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart title spPr with fill and line" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: { text: "My Chart", font: { bold: true }, fill_color: "DDFFDD", line_color: "008800", line_width: 1.0 },
@@ -7704,7 +7704,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart printSettings with pageMargins" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7721,7 +7721,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart printSettings with pageSetup" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7739,7 +7739,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart printSettings with headerFooter" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7756,7 +7756,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits full chart printSettings with all sub-elements" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7777,7 +7777,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits dLbl layout with manual x and y offsets" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -7795,7 +7795,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits chart-level default font (chartSpace txPr)" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7812,7 +7812,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits title layout with manual positioning" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7829,7 +7829,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits axis title layout with manual positioning" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1" }],
@@ -7848,7 +7848,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits trendline label layout and custom text" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -7867,7 +7867,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits error bar fill and noFill in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -7885,7 +7885,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits error bar noFill in spPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      series: [{ val_ref: "Sheet1!$A$1",
@@ -7902,7 +7902,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits title rotation on chart title bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      title: "Rotated",
@@ -7920,7 +7920,7 @@ class WriterTest < Test::Unit::TestCase
   end
 
   test "emits axis title rotation on bodyPr" do
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
     writer.add_chart(type: :bar,
                      cat_axis_title: "Category",
@@ -7943,8 +7943,8 @@ class WriterTest < Test::Unit::TestCase
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
-    require "xlsxrb/reader"
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    require "xlsxrb/ooxml/reader"
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     reader.raw_entry(entry_name)
   end
 end
