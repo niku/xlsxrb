@@ -14,7 +14,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_inline_string_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "hello" }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -27,7 +27,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_same_row_multiple_inline_strings_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "hello", "B1" => "world" }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -40,7 +40,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_shared_strings_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "hello", "B1" => "world" }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -53,7 +53,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_numeric_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => 42, "B1" => 3.14 }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -66,7 +66,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_boolean_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => true, "B1" => false }, reader.cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -79,11 +79,11 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_error_cells_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
-    assert_instance_of(Xlsxrb::CellError, cells["A1"])
+    assert_instance_of(Xlsxrb::Elements::CellError, cells["A1"])
     assert_equal("#DIV/0!", cells["A1"].code)
-    assert_instance_of(Xlsxrb::CellError, cells["B1"])
+    assert_instance_of(Xlsxrb::Elements::CellError, cells["B1"])
     assert_equal("#VALUE!", cells["B1"].code)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -96,9 +96,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_formula_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
-    assert_instance_of(Xlsxrb::Formula, cells["A3"])
+    assert_instance_of(Xlsxrb::Elements::Formula, cells["A3"])
     assert_equal("SUM(A1:A2)", cells["A3"].expression)
     assert_equal("30", cells["A3"].cached_value)
   ensure
@@ -112,7 +112,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_multi_sheet_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal(%w[Sheet1 Data], reader.sheet_names)
     assert_equal({ "A1" => "main" }, reader.cells(sheet: "Sheet1"))
     assert_equal({ "A1" => "data" }, reader.cells(sheet: "Data"))
@@ -127,7 +127,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_column_width_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cols = reader.columns
     assert_in_delta(20.0, cols["A"], 0.01)
     assert_in_delta(15.5, cols["C"], 0.01)
@@ -142,7 +142,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_row_attributes_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     row_attrs = reader.row_attributes
     assert_in_delta(25.0, row_attrs[1][:height], 0.01)
     assert_equal(true, row_attrs[3][:hidden])
@@ -158,7 +158,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_cell_xf_xfid_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal("mm-dd-yy", reader.cell_formats["A1"])
     assert_equal("mm-dd-yy", reader.cell_styles["A1"][:num_fmt])
     assert_equal(Date.new(2024, 1, 1), reader.cells["A1"])
@@ -173,7 +173,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_merge_cells_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal(%w[A1:B2 C3:D4], reader.merged_cells)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -186,7 +186,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_hyperlink_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => { url: "https://example.com" } }, reader.hyperlinks)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -199,7 +199,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_hyperlink_deep_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     links = reader.hyperlinks
     expected = {
       "A1" => { url: "https://example.com", display: "Example Site", tooltip: "Click to visit" },
@@ -218,7 +218,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_numfmt_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fmts = reader.cell_formats
     assert_equal("#,##0.00", fmts["A1"])
     assert_nil(fmts["B1"])
@@ -233,7 +233,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_builtin_numfmt_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fmts = reader.cell_formats
     assert_equal("mm-dd-yy", fmts["A1"])
     assert_equal("@", fmts["B1"])
@@ -251,7 +251,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_date_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     assert_equal(Date.new(2024, 1, 15), cells["A1"])
     assert_equal(42, cells["B1"])
@@ -266,7 +266,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_auto_filter_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal("A1:B10", reader.auto_filter)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -279,7 +279,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_core_properties_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.core_properties
     assert_equal("SDK Title", props[:title])
     assert_equal("SDK Creator", props[:creator])
@@ -296,7 +296,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_app_properties_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.app_properties
     assert_equal("SDK App", props[:application])
     assert_equal("2.0.0", props[:app_version])
@@ -311,7 +311,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_workbook_properties_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     wp = reader.workbook_properties
     assert_equal(false, wp[:date1904])
     assert_equal(166_925, wp[:default_theme_version])
@@ -334,7 +334,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_sheet_state_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     states = reader.sheet_states
     assert_equal(:visible, states["Sheet1"])
     assert_equal(:hidden, states["Hidden"])
@@ -350,7 +350,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_defined_names_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dns = reader.defined_names
     assert_equal(3, dns.size)
     assert_equal("MyRange", dns[0][:name])
@@ -370,7 +370,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_sheet_properties_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal("FFFF0000", props[:tab_color])
     assert_equal(false, props[:summary_below])
@@ -386,7 +386,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_sheet_format_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fmt = reader.sheet_format
     assert_equal(20.0, fmt[:default_row_height])
     assert_equal(15.5, fmt[:default_col_width])
@@ -402,7 +402,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_row_col_attrs_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ra = reader.row_attributes
     assert_equal(1, ra[2][:outline_level])
     assert_equal(true, ra[3][:collapsed])
@@ -422,7 +422,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_sheet_view_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sv = reader.sheet_view
     assert_equal(false, sv[:show_grid_lines])
     assert_equal(120, sv[:zoom_scale])
@@ -446,7 +446,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_print_page_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     po = reader.print_options
     assert_equal(true, po[:grid_lines])
     assert_equal(true, po[:horizontal_centered])
@@ -476,7 +476,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_filter_sort_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fc = reader.filter_columns
     assert_equal(:filters, fc[0][:type])
     assert_equal(%w[Alice Bob], fc[0][:values])
@@ -498,7 +498,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_data_validation_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dvs = reader.data_validations
     assert_equal(2, dvs.size)
 
@@ -526,7 +526,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_conditional_format_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(3, cfs.size)
 
@@ -556,7 +556,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_expanded_styles_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     assert_equal(true, cs["A1"][:font][:bold])
@@ -581,7 +581,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_table_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     tbls = reader.tables
     assert_equal(1, tbls.size)
     assert_equal("A1:B2", tbls[0][:ref])
@@ -600,7 +600,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_image_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal("TestImage", imgs[0][:name])
@@ -621,7 +621,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_image_descr_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal("DescribedImage", imgs[0][:name])
@@ -638,7 +638,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_chart_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("SalesChart", charts[0][:name])
@@ -655,7 +655,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_comment_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     comments = reader.comments
     assert_equal(2, comments.size)
     assert_equal("A1", comments[0][:ref])
@@ -675,13 +675,13 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_comment_rich_text_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     comments = reader.comments
     assert_equal(1, comments.size)
     c = comments[0]
     assert_equal("A1", c[:ref])
     assert_equal("TestAuthor", c[:author])
-    assert_instance_of(Xlsxrb::RichText, c[:text])
+    assert_instance_of(Xlsxrb::Elements::RichText, c[:text])
     assert_equal("Important note text", c[:text].to_s)
     runs = c[:text].runs
     assert_equal(2, runs.size)
@@ -701,7 +701,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_pivot_table_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pivots = reader.pivot_tables(sheet: 1)
     assert_equal(1, pivots.size)
     assert_equal("TestPivot", pivots[0][:name])
@@ -724,7 +724,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_image_generated_by_sdk", source_path)
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.copy_entries_from(source_path)
     writer.write(output_path)
 
@@ -745,7 +745,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_chart_generated_by_sdk", source_path)
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.copy_entries_from(source_path)
     writer.write(output_path)
 
@@ -766,7 +766,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_comment_generated_by_sdk", source_path)
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.copy_entries_from(source_path)
     writer.write(output_path)
 
@@ -787,7 +787,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_pivot_table_generated_by_sdk", source_path)
 
-    writer = Xlsxrb::Writer.new
+    writer = Xlsxrb::Ooxml::Writer.new
     writer.add_sheet("PivotSheet")
     writer.copy_entries_from(source_path)
     writer.write(output_path)
@@ -805,7 +805,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_sheet_protection_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     prot = reader.sheet_protection
     assert_not_nil(prot)
     assert_equal(true, prot[:sheet])
@@ -821,7 +821,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_workbook_protection_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     prot = reader.workbook_protection
     assert_not_nil(prot)
     assert_equal(true, prot[:lock_structure])
@@ -836,10 +836,10 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_rich_text_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     result = cells["A1"]
-    assert_instance_of(Xlsxrb::RichText, result)
+    assert_instance_of(Xlsxrb::Elements::RichText, result)
     assert_equal(2, result.runs.size)
     assert_equal("Hello", result.runs[0][:text])
     assert_equal(true, result.runs[0][:font][:bold])
@@ -855,17 +855,17 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_formulas_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
     b1 = cells["B1"]
-    assert_instance_of(Xlsxrb::Formula, b1)
+    assert_instance_of(Xlsxrb::Elements::Formula, b1)
     assert_equal(:shared, b1.type)
     assert_equal("B1:B2", b1.ref)
     assert_equal(0, b1.shared_index)
     assert_equal("A1*2", b1.expression)
 
     c3 = cells["C3"]
-    assert_instance_of(Xlsxrb::Formula, c3)
+    assert_instance_of(Xlsxrb::Elements::Formula, c3)
     assert_equal(:array, c3.type)
     assert_equal("SUM(A1:A2*B1:B2)", c3.expression)
   ensure
@@ -878,7 +878,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_cf_deep_attrs_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(2, cfs.size)
 
@@ -902,7 +902,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dv_deep_attrs_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dvs = reader.data_validations
     assert_equal(1, dvs.size)
     dv = dvs[0]
@@ -924,7 +924,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_styles_deep_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
 
     csxfs = reader.cell_style_xfs
     assert_equal(2, csxfs.size)
@@ -947,7 +947,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_chart_deep_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("barChart", charts[0][:chart_type])
@@ -967,7 +967,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_legend_entries_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_not_nil(charts[0][:legend][:entries])
@@ -984,7 +984,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_series_line_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     ser = charts[0][:series][0]
@@ -1000,7 +1000,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_series_marker_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     ser = charts[0][:series][0]
@@ -1016,7 +1016,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_marker_line_dash_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     assert_equal("FF0000", ser[:marker_fill])
@@ -1032,7 +1032,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_marker_no_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     assert_equal(true, ser[:marker_no_fill])
@@ -1046,7 +1046,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_marker_no_line_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     assert_equal(true, ser[:marker_no_line])
@@ -1060,7 +1060,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_src_rect_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     sr = imgs[0][:src_rect]
@@ -1079,7 +1079,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_alpha_mod_fix_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal(75_000, imgs[0][:alpha_mod_fix])
@@ -1093,7 +1093,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_adjust_values_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("roundRect", shapes[0][:preset])
@@ -1113,7 +1113,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_font_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1133,7 +1133,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_strike_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1149,7 +1149,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_underline_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1165,7 +1165,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_baseline_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1181,7 +1181,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_spacing_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1197,7 +1197,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_cap_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1213,7 +1213,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_align_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("ctr", shapes[0][:text_align])
@@ -1227,7 +1227,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_lang_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1243,7 +1243,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_vertical_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("vert", shapes[0][:text_vertical])
@@ -1257,7 +1257,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_insets_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     ins = shapes[0][:text_insets]
@@ -1276,7 +1276,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_label_rotation_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(-2_700_000, charts[0][:cat_axis_label_rotation])
@@ -1290,7 +1290,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_ea_font_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1306,7 +1306,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_cs_font_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1322,7 +1322,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_rot_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(2_700_000, shapes[0][:text_rot])
@@ -1336,7 +1336,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_indent_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     ti = shapes[0][:text_indent]
@@ -1354,7 +1354,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_kern_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     tf = shapes[0][:text_font]
@@ -1370,7 +1370,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_anchor_ctr_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:text_anchor_ctr])
@@ -1384,7 +1384,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_text_spacing_para_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     ts = shapes[0][:text_spacing]
@@ -1401,7 +1401,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_autofit_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(3, shapes.size)
     assert_equal("none", shapes[0][:autofit])
@@ -1417,7 +1417,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_outer_shadow_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     os = shapes[0][:outer_shadow]
@@ -1437,7 +1437,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_shape_gradient_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     gf = shapes[0][:gradient_fill]
@@ -1460,7 +1460,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_line_dash_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("dashDot", shapes[0][:line_dash])
@@ -1476,7 +1476,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_line_end_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("diamond", shapes[0][:head_end][:type])
@@ -1495,7 +1495,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_shape_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(2, shapes.size)
     assert_equal("ellipse", shapes[0][:preset])
@@ -1515,7 +1515,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_pivot_deep_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pts = reader.pivot_tables
     assert_equal(1, pts.size)
     assert_equal("PivotDeep", pts[0][:name])
@@ -1551,7 +1551,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_external_link_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     els = reader.external_links
     assert_equal(1, els.size)
     assert_equal(%w[RemoteSheet1 RemoteSheet2], els[0][:sheet_names])
@@ -1565,7 +1565,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_table_deep_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     tbls = reader.tables
     assert_equal(1, tbls.size)
     assert_equal(1, tbls[0][:totals_row_count])
@@ -1583,7 +1583,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_alignment_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     alignment = cs["A1"][:alignment]
@@ -1604,7 +1604,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_font_extended_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     font = cs["A1"][:font]
@@ -1626,7 +1626,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_gradient_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     fill = cs["A1"][:fill]
@@ -1648,7 +1648,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_diagonal_border_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     border = cs["A1"][:border]
@@ -1667,7 +1667,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_cell_protection_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     assert(cs.key?("A1"), "A1 should have a style")
     prot = cs["A1"][:protection]
@@ -1684,7 +1684,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_cf_expanded_types_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(6, cfs.size)
 
@@ -1723,9 +1723,9 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_rich_text_extended_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     val = reader.cells["A1"]
-    assert_instance_of(Xlsxrb::RichText, val)
+    assert_instance_of(Xlsxrb::Elements::RichText, val)
     runs = val.runs
 
     assert_equal(5, runs.size)
@@ -1757,7 +1757,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_cf_theme_color_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(2, cfs.size)
 
@@ -1779,7 +1779,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_gradient_stop_theme_color_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cs = reader.cell_styles
     gradient = cs["A1"][:fill][:gradient]
     assert_not_nil(gradient, "gradient should be present")
@@ -1798,7 +1798,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_cf_complete_types_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cfs = reader.conditional_formats
     assert_equal(6, cfs.size)
 
@@ -1820,7 +1820,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dxf_deep_attrs_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dxfs = reader.dxfs
     assert_equal(1, dxfs.size)
     dxf = dxfs[0]
@@ -1843,7 +1843,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_core_properties_extended_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.core_properties
 
     assert_equal("SDK Title", props[:title])
@@ -1867,7 +1867,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_split_pane_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pane = reader.freeze_pane
 
     assert_equal(:split, pane[:state])
@@ -1885,7 +1885,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_color_icon_filter_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     filters = reader.filter_columns
 
     cf = filters[0]
@@ -1907,7 +1907,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_datetime_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     cells = reader.cells
 
     val = cells["A1"]
@@ -1929,7 +1929,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_print_area_titles_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
 
     pa = reader.print_area
     assert_equal("$A$1:$E$50", pa)
@@ -1949,7 +1949,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_header_footer_first_page_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     hf = reader.header_footer
 
     assert_equal(true, hf[:different_first])
@@ -1969,7 +1969,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_page_setup_extended_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ps = reader.page_setup
     assert_equal("overThenDown", ps[:page_order])
     assert_equal(true, ps[:black_and_white])
@@ -1992,7 +1992,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_data_validation_extended_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dvs = reader.data_validations
 
     assert_equal(1, dvs.size)
@@ -2011,7 +2011,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_alignment_extended_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     styles = reader.cell_styles
     xf = styles.values.find { |s| s[:alignment]&.key?(:reading_order) }
     assert_not_nil(xf, "Expected a cell style with readingOrder")
@@ -2028,7 +2028,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_show_formulas_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sv = reader.sheet_view
     assert_equal(true, sv[:show_formulas])
   ensure
@@ -2042,7 +2042,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_code_name_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.sheet_properties
     assert_equal("MySheet", props[:code_name])
   ensure
@@ -2056,7 +2056,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_workbook_view_visibility_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     wv = reader.workbook_views
     assert_equal("hidden", wv[:visibility])
   ensure
@@ -2070,7 +2070,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_phonetic_pr_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     pp = reader.phonetic_properties
     assert_not_nil(pp)
     assert_equal(1, pp[:font_id])
@@ -2087,7 +2087,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_custom_properties_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     props = reader.custom_properties
     assert_not_nil(props)
 
@@ -2113,7 +2113,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_font_effects_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     styles = reader.cell_styles
     styled_font = styles.values.map { |s| s[:font] }.compact.find { |f| f[:shadow] }
     assert_not_nil(styled_font)
@@ -2132,7 +2132,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_sheet_view_extended_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sv = reader.sheet_view
     assert_equal(false, sv[:show_zeros])
     assert_equal("pageBreakPreview", sv[:view])
@@ -2149,7 +2149,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_file_version_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fv = reader.file_version
     assert_equal("xl", fv[:app_name])
     assert_equal("7", fv[:last_edited])
@@ -2166,7 +2166,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_file_sharing_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fs = reader.file_sharing
     assert_equal(true, fs[:read_only_recommended])
     assert_equal("TestUser", fs[:user_name])
@@ -2181,7 +2181,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_protected_ranges_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ranges = reader.protected_ranges
     assert_equal(2, ranges.size)
     assert_equal("EditArea", ranges[0][:name])
@@ -2198,7 +2198,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_indexed_colors_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ic = reader.indexed_colors
     assert_equal("FF000000", ic[0])
     assert_equal("FFFFFFFF", ic[1])
@@ -2214,7 +2214,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_table_styles_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     ts = reader.table_styles
     assert_equal("TableStyleMedium2", ts[:default_table_style])
     assert_equal("PivotStyleLight16", ts[:default_pivot_style])
@@ -2229,7 +2229,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_cell_watches_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     watches = reader.cell_watches
     assert_equal(%w[A1 B2], watches)
   ensure
@@ -2243,7 +2243,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_data_consolidate_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     dc = reader.data_consolidate
     assert_equal("average", dc[:function])
     assert_equal(true, dc[:start_labels])
@@ -2263,7 +2263,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_scenarios_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     sc = reader.scenarios
     assert_equal(0, sc[:current])
     assert_equal(0, sc[:show])
@@ -2284,7 +2284,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_ignored_errors_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     errors = reader.ignored_errors
     assert_equal(1, errors.size)
     assert_equal("A1", errors[0][:sqref])
@@ -2301,7 +2301,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_auto_filter_extended_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     fcs = reader.filter_columns
     assert_equal(true, fcs[0][:hidden_button])
     assert_equal(1, fcs[0][:date_group_items].size)
@@ -2318,7 +2318,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_conformance_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal("transitional", reader.conformance)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
@@ -2331,7 +2331,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_totals_row_formula_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     tbls = reader.tables
     assert_equal(1, tbls.size)
     assert_equal("SUBTOTAL(109,[Price])", tbls[0][:columns][1][:totals_row_formula])
@@ -2346,7 +2346,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_view3d_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(30, charts[0][:view_3d][:rot_x])
@@ -2362,7 +2362,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_axis_numfmt_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("General", charts[0][:cat_axis_num_fmt][:format_code])
@@ -2380,7 +2380,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_axis_tickmark_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("cross", charts[0][:cat_axis_major_tick_mark])
@@ -2398,7 +2398,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_axis_crosses_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("autoZero", charts[0][:cat_axis_crosses])
@@ -2414,7 +2414,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_val_axis_units_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("between", charts[0][:val_axis_cross_between])
@@ -2431,7 +2431,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_axis_scaling_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(100.0, charts[0][:val_axis_scaling_max])
@@ -2447,7 +2447,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_axis_logbase_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(10.0, charts[0][:val_axis_log_base])
@@ -2462,7 +2462,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_pie_angles_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(45, charts[0][:first_slice_ang])
@@ -2478,7 +2478,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_line_chart_smooth_marker_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(true, charts[0][:smooth])
@@ -2494,7 +2494,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_drop_lines_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(true, charts[0][:drop_lines])
@@ -2510,7 +2510,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_up_down_bars_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_not_nil(charts[0][:up_down_bars])
@@ -2526,7 +2526,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_scatter_style_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("lineMarker", charts[0][:scatter_style])
@@ -2541,7 +2541,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_bar3d_gap_shape_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(150, charts[0][:gap_depth])
@@ -2557,7 +2557,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_bubble_chart_props_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(80, charts[0][:bubble_scale])
@@ -2574,7 +2574,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_axis_crosses_at_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_in_delta(5.0, charts[0][:val_axis_crosses_at])
@@ -2589,7 +2589,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_surface_wireframe_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(true, charts[0][:wireframe])
@@ -2604,7 +2604,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_axis_tick_skip_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(2, charts[0][:cat_axis_tick_lbl_skip])
@@ -2620,7 +2620,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_axis_lbl_offset_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(50, charts[0][:cat_axis_lbl_offset])
@@ -2636,7 +2636,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_axis_disp_units_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("thousands", charts[0][:val_axis_disp_units])
@@ -2651,7 +2651,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_file_recovery_pr_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     frp = reader.file_recovery_properties
     assert_equal(false, frp[:auto_recover])
     assert_equal(true, frp[:crash_save])
@@ -2666,7 +2666,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_shape_fill_color_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("FF0000", shapes[0][:fill_color])
@@ -2681,7 +2681,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_shape_line_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal("0000FF", shapes[0][:line_color])
@@ -2697,7 +2697,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_image_line_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     imgs = reader.images
     assert_equal(1, imgs.size)
     assert_equal("FF0000", imgs[0][:line_color])
@@ -2713,7 +2713,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_shape_no_fill_no_line_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     assert_equal(true, shapes[0][:no_fill])
@@ -2729,7 +2729,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_chart_data_table_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     dt = charts[0][:data_table]
@@ -2748,7 +2748,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_chart_series_fill_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("00FF00", charts[0][:series][0][:fill_color])
@@ -2763,7 +2763,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_chart_plot_area_fill_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("CCCCCC", charts[0][:plot_area_fill])
@@ -2778,7 +2778,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_plot_area_line_dash_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal("EEEEEE", charts[0][:plot_area_fill])
@@ -2795,7 +2795,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_plot_area_no_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:plot_area_no_fill])
   ensure
@@ -2809,7 +2809,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_data_points_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     ser = charts[0][:series].first
@@ -2831,7 +2831,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dpt_no_line_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dp = ser[:data_points][0]
@@ -2847,7 +2847,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dpt_marker_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dp = ser[:data_points][0]
@@ -2863,7 +2863,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dpt_marker_sp_pr_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dp = ser[:data_points][0]
@@ -2882,7 +2882,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dpt_marker_no_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dp = ser[:data_points][0]
@@ -2900,7 +2900,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_trendline_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     ser = charts[0][:series].first
@@ -2923,7 +2923,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_inner_shadow_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     is = shapes[0][:inner_shadow]
@@ -2942,7 +2942,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_glow_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     gl = shapes[0][:glow]
@@ -2959,7 +2959,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_soft_edge_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     se = shapes[0][:soft_edge]
@@ -2975,7 +2975,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_reflection_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     shapes = reader.shapes
     assert_equal(1, shapes.size)
     rf = shapes[0][:reflection]
@@ -2998,7 +2998,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_chart_title_font_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("SDK Formatted Title", chart[:title])
     tf = chart[:title_font]
@@ -3018,7 +3018,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_series_line_cap_join_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal("sq", ser[:line_cap])
@@ -3033,7 +3033,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_chart_space_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("EEEEEE", chart[:chart_fill])
     assert_equal("333333", chart[:chart_line_color])
@@ -3048,7 +3048,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_chart_space_line_dash_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("333333", chart[:chart_line_color])
     assert_equal("lgDash", chart[:chart_line_dash])
@@ -3062,7 +3062,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_chart_space_no_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:chart_no_fill])
   ensure
@@ -3075,7 +3075,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_title_sp_pr_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("Category", chart[:cat_axis_title])
     assert_equal("FFEECC", chart[:cat_axis_title_fill])
@@ -3095,7 +3095,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_title_line_dash_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("dot", chart[:title_line_dash])
     assert_equal("dash", chart[:cat_axis_title_line_dash])
@@ -3110,7 +3110,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_title_no_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:cat_axis_title_no_fill])
     assert_equal(true, chart[:val_axis_title_no_fill])
@@ -3124,7 +3124,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_leader_lines_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     dl = chart[:data_labels]
     assert_equal(true, dl[:show_leader_lines])
@@ -3143,7 +3143,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_legend_layout_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     layout = chart[:legend][:layout]
     assert_not_nil(layout)
@@ -3164,7 +3164,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("F0F0F0", chart[:cat_axis_fill])
     assert_equal("E0E0E0", chart[:val_axis_fill])
@@ -3178,7 +3178,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_no_fill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:cat_axis_no_fill])
     assert_equal(true, chart[:val_axis_no_fill])
@@ -3192,7 +3192,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_line_dash_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("FF0000", chart[:cat_axis_line_color])
     assert_equal("dot", chart[:cat_axis_line_dash])
@@ -3208,7 +3208,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_plot_area_layout_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     layout = chart[:plot_area_layout]
     assert_not_nil(layout)
@@ -3229,7 +3229,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_legend_entry_font_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     entries = chart[:legend][:entries]
     assert_equal(1, entries.size)
@@ -3251,7 +3251,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_nofill_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal(true, chart[:title_no_fill])
     dp = chart[:series][0][:data_points]
@@ -3267,7 +3267,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_nofill_extended_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     udb = chart[:up_down_bars]
     assert_not_nil(udb)
@@ -3283,7 +3283,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_line_dash_extended_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("dash", chart[:legend][:line_dash])
     assert_equal("dot", chart[:data_table][:line_dash])
@@ -3297,7 +3297,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dlbl_text_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dlbl = ser[:data_labels][:labels][0]
@@ -3313,7 +3313,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dlbl_delete_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dlbl = ser[:data_labels][:labels][0]
@@ -3329,7 +3329,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dlbl_numfmt_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dlbl = ser[:data_labels][:labels][0]
@@ -3346,7 +3346,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dlbl_separator_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dlbl = ser[:data_labels][:labels][0]
@@ -3362,7 +3362,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dlbl_sppr_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dlbl = ser[:data_labels][:labels][0]
@@ -3380,7 +3380,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_dlbl_font_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     dlbl = ser[:data_labels][:labels][0]
@@ -3402,7 +3402,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_ser_lines_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser_lines = chart[:ser_lines]
     assert_not_nil(ser_lines)
@@ -3420,7 +3420,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_band_fmts_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     bf = chart[:band_fmts]
     assert_not_nil(bf)
@@ -3442,7 +3442,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_trendline_lbl_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     tl = chart[:series][0][:trendline]
     assert_not_nil(tl[:label])
@@ -3460,7 +3460,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_disp_units_lbl_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     du = chart[:val_axis_disp_units]
     assert_instance_of(Hash, du)
@@ -3480,7 +3480,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_of_pie_chart_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("ofPieChart", chart[:chart_type])
     assert_equal("bar", chart[:of_pie_type])
@@ -3497,7 +3497,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_cust_split_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("ofPieChart", chart[:chart_type])
     assert_equal("pie", chart[:of_pie_type])
@@ -3514,7 +3514,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_err_bars_cust_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     eb = chart[:series].first[:error_bars]
     assert_not_nil(eb)
@@ -3531,7 +3531,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_multi_trendlines_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series].first
     assert_equal(2, ser[:trendlines].size)
@@ -3550,7 +3550,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_ser_shape_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("cone", chart[:series][0][:shape])
     assert_equal("pyramid", chart[:series][1][:shape])
@@ -3564,7 +3564,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_multi_err_bars_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     ser = chart[:series][0]
     assert_equal(2, ser[:error_bars_list].size)
@@ -3584,7 +3584,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_title_styling_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("SDK Title", chart[:title])
     assert_equal(true, chart[:title_font][:bold])
@@ -3605,7 +3605,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_axis_title_styling_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("Category", chart[:cat_axis_title])
     assert_equal(true, chart[:cat_axis_title_font][:bold])
@@ -3629,7 +3629,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_surface3d_chart_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     assert_equal("surface3DChart", chart[:chart_type])
     assert_equal(true, chart[:wireframe])
@@ -3643,7 +3643,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_trendline_lbl_styling_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     tl = chart[:series][0][:trendline]
     assert_not_nil(tl[:label])
@@ -3664,7 +3664,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     assert_openxml_sdk_scenario_passes("reader_disp_units_lbl_styling_generated_by_sdk", xlsx_path)
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     chart = reader.charts.first
     du = chart[:val_axis_disp_units]
     assert_instance_of(Hash, du)
@@ -3685,7 +3685,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_chart_protection_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     prot = charts[0][:protection]
@@ -3704,7 +3704,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_chart_print_settings_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     ps = charts[0][:print_settings]
@@ -3728,7 +3728,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_dlbl_layout_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     labels = charts[0][:data_labels][:labels]
@@ -3746,7 +3746,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_chart_font_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     cf = charts[0][:chart_font]
@@ -3765,7 +3765,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_title_layout_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
 
@@ -3789,7 +3789,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_trendline_lbl_layout_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     tl = charts[0][:series].first[:trendline][:label]
@@ -3807,7 +3807,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_err_bars_fill_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     eb = charts[0][:series].first[:error_bars]
@@ -3824,7 +3824,7 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     assert_openxml_sdk_scenario_passes("reader_title_rotation_generated_by_sdk", xlsx_path)
 
-    reader = Xlsxrb::Reader.new(xlsx_path)
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     charts = reader.charts
     assert_equal(1, charts.size)
     assert_equal(-5_400_000, charts[0][:title_rotation])
