@@ -140,7 +140,7 @@ module Xlsxrb
           0,                 # general purpose bit flag
           8,                 # compression method (deflate)
           0,                 # last mod file time
-          0,                 # last mod file date
+          33,                # last mod file date
           crc,
           compressed_size,
           uncompressed_size,
@@ -162,7 +162,7 @@ module Xlsxrb
             0,                 # general purpose bit flag
             8,                 # compression method
             0,                 # last mod file time
-            0,                 # last mod file date
+            33,                # last mod file date
             entry[:crc32],
             entry[:compressed_size],
             entry[:uncompressed_size],
