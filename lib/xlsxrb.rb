@@ -58,7 +58,9 @@ module Xlsxrb
       columns = ws.columns.map do |col|
         { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width }
       end
-      { name: ws.name, rows: rows, columns: columns }
+      sd = { name: ws.name, rows: rows, columns: columns }
+      sd[:charts] = ws.charts unless ws.charts.empty?
+      sd
     end
 
     Ooxml::WorkbookWriter.write(target, sheets: sheet_data, shared_strings: sst, styles: workbook.styles)
@@ -142,6 +144,7 @@ module Xlsxrb
       @name = name
       @rows = []
       @columns = []
+      @charts = []
     end
 
     # Add a row of values to the sheet.
@@ -172,8 +175,12 @@ module Xlsxrb
       )
     end
 
+    def add_chart(**options)
+      @charts << options
+    end
+
     def build
-      Elements::Worksheet.new(name: @name, rows: @rows, columns: @columns)
+      Elements::Worksheet.new(name: @name, rows: @rows, columns: @columns, charts: @charts)
     end
   end
 
@@ -187,6 +194,7 @@ module Xlsxrb
       @current_sheet = nil
       @current_rows = []
       @current_columns = []
+      @current_charts = []
     end
 
     # Start or switch to a named sheet.
@@ -196,6 +204,7 @@ module Xlsxrb
       @current_sheet = name
       @current_rows = []
       @current_columns = []
+      @current_charts = []
 
       return unless block_given?
 
@@ -224,6 +233,13 @@ module Xlsxrb
       @current_columns << { index: index, width: width, hidden: hidden, custom_width: !width.nil? }
     end
 
+    # Add a chart to the current sheet.
+    def add_chart(**options)
+      add_sheet if @current_sheet.nil?
+
+      @current_charts << options
+    end
+
     def close
       flush_current_sheet
       Ooxml::WorkbookWriter.write(@target, sheets: @sheets, shared_strings: @sst)
@@ -234,7 +250,9 @@ module Xlsxrb
     def flush_current_sheet
       return unless @current_sheet
 
-      @sheets << { name: @current_sheet, rows: @current_rows, columns: @current_columns }
+      sheet_data = { name: @current_sheet, rows: @current_rows, columns: @current_columns }
+      sheet_data[:charts] = @current_charts unless @current_charts.empty?
+      @sheets << sheet_data
       @current_sheet = nil
     end
   end

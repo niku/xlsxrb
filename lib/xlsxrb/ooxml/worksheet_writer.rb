@@ -52,12 +52,15 @@ module Xlsxrb
       end
 
       # Write the worksheet footer. Call once after all rows.
-      def finish
+      def finish(drawing_rid: nil)
         return if @finished
 
         start unless @started
         @finished = true
         @builder.close_tag("sheetData")
+        if drawing_rid
+          @builder.empty_tag("drawing", { "r:id": drawing_rid })
+        end
         @builder.close_tag("worksheet")
       end
 
