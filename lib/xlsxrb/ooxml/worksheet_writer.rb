@@ -9,6 +9,7 @@ module Xlsxrb
     # Supports streaming: rows can be written one at a time.
     class WorksheetWriter
       SSML_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+      DOC_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
       def initialize(io)
         @io = io
@@ -23,7 +24,7 @@ module Xlsxrb
 
         @started = true
         @builder.declaration
-        @builder.open_tag("worksheet", { xmlns: SSML_NS })
+        @builder.open_tag("worksheet", { xmlns: SSML_NS, "xmlns:r": DOC_REL_NS })
 
         write_columns(columns) unless columns.empty?
 

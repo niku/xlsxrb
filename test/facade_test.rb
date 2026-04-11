@@ -436,4 +436,50 @@ class FacadeTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  test "add_chart works in Streaming generate API" do
+    tmp = Tempfile.new(["facade_chart_stream", ".xlsx"])
+    Xlsxrb.generate(tmp.path) do |w|
+      w.add_sheet("Sales") do |s|
+        s.add_row(["Month", "Value"])
+        s.add_row(["Jan", 100])
+        s.add_row(["Feb", 200])
+        w.add_chart(type: :bar, title: "Sales Data", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
+      end
+    end
+
+    # Use reader to verify the chart was generated
+    reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("barChart", charts[0][:chart_type])
+    assert_equal("Sales Data", charts[0][:title])
+  ensure
+    tmp&.close
+    tmp&.unlink
+  end
+
+  test "add_chart works in In-Memory build API" do
+    workbook = Xlsxrb.build do |w|
+      w.add_sheet("Sales") do |s|
+        s.add_row(["Month", "Value"])
+        s.add_row(["Jan", 100])
+        s.add_row(["Feb", 200])
+        s.add_chart(type: :pie, title: "Sales Pie", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
+      end
+    end
+
+    tmp = Tempfile.new(["facade_chart_mem", ".xlsx"])
+    Xlsxrb.write(tmp.path, workbook)
+
+    # Use reader to verify the chart was generated
+    reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("pieChart", charts[0][:chart_type])
+    assert_equal("Sales Pie", charts[0][:title])
+  ensure
+    tmp&.close
+    tmp&.unlink
+  end
 end

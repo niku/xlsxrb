@@ -87,6 +87,32 @@ Xlsxrb.generate("large_output.xlsx") do |writer|
 end
 ```
 
+#### Adding Charts (Streaming)
+
+You can generate charts iteratively without loading data into memory by adding them during the streaming process.
+
+```ruby
+require "xlsxrb"
+
+Xlsxrb.generate("streaming_chart.xlsx") do |w|
+  w.add_sheet("Sales Data") do |s|
+    s.add_row(["Month", "Value"])
+    s.add_row(["Jan", 100])
+    s.add_row(["Feb", 200])
+
+    w.add_chart(
+      type: :bar,
+      title: "Monthly Sales",
+      from_col: 3,
+      from_row: 0,
+      series: [
+        { cat_ref: "Sales Data!$A$2:$A$3", val_ref: "Sales Data!$B$2:$B$3" }
+      ]
+    )
+  end
+end
+```
+
 ### 2. In-Memory
 
 #### Reading an entire file into memory
@@ -126,6 +152,34 @@ workbook = Xlsxrb.build do |w|
 end
 
 Xlsxrb.write("output.xlsx", workbook)
+```
+
+#### Adding Charts (In-Memory)
+
+You can build charts entirely in-memory using the `Xlsxrb.build` DSL, giving you full control over the spreadsheet hierarchy.
+
+```ruby
+require "xlsxrb"
+
+workbook = Xlsxrb.build do |w|
+  w.add_sheet("Sales Data") do |s|
+    s.add_row(["Month", "Value"])
+    s.add_row(["Jan", 100])
+    s.add_row(["Feb", 200])
+
+    s.add_chart(
+      type: :pie,
+      title: "Sales Distribution",
+      from_col: 3,
+      from_row: 0,
+      series: [
+        { cat_ref: "Sales Data!$A$2:$A$3", val_ref: "Sales Data!$B$2:$B$3" }
+      ]
+    )
+  end
+end
+
+Xlsxrb.write("memory_chart.xlsx", workbook)
 ```
 
 ## Specification
