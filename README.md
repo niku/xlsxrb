@@ -8,14 +8,15 @@ The Ruby ecosystem already has great XLSX libraries. Each is well-designed for i
 
 | Library | Read | Write | Streaming (low memory) |
 |---------|------|-------|------------------------|
-| [roo](https://rubygems.org/gems/roo) | ✅ | ❌ | ❌ |
+| [roo](https://rubygems.org/gems/roo) | ✅ | ❌ | ✅ |
 | [creek](https://rubygems.org/gems/creek) | ✅ | ❌ | ✅ |
+| [xsv](https://rubygems.org/gems/xsv) | ✅ | ❌ | ✅ |
 | [caxlsx / axlsx](https://rubygems.org/gems/caxlsx) | ❌ | ✅ | ❌ |
 | [xlsxtream](https://rubygems.org/gems/xlsxtream) | ❌ | ✅ | ✅ |
 | [rubyXL](https://rubygems.org/gems/rubyXL) | ✅ | ✅ | ❌ |
 | [fast_excel](https://rubygems.org/gems/fast_excel) | ❌ | ✅ | ✅ |
 
-If you need to read large files efficiently, [creek](https://rubygems.org/gems/creek) is a great choice. If you need to write large files, [xlsxtream](https://rubygems.org/gems/xlsxtream) does that well. These libraries make deliberate tradeoffs, and they do so thoughtfully.
+Each of these libraries makes deliberate tradeoffs, and they do so thoughtfully. Some focus exclusively on highly efficient reading or writing by streaming data, while others provide a rich API for complex, in-memory document modifications.
 
 `xlsxrb` is for cases where you need **both** reading and writing in a single library, while also keeping memory usage predictable for large files.
 
@@ -42,9 +43,9 @@ On Ruby 4+, some components used by `xlsxrb` and its test suite are shipped as b
 
 ## Usage
 
-`xlsxrb` offers two different approaches to reading and writing XLSX files: **Streaming** and **In-Memory**. 
+`xlsxrb` offers two different approaches to reading and writing XLSX files: **Streaming** and **In-Memory**.
 
-In most cases, the **Streaming** approach is the best choice because it is highly memory efficient, avoiding loading entire files or structures into RAM. You should always try the Streaming approach first. 
+In most cases, the **Streaming** approach is the best choice because it is highly memory efficient, avoiding loading entire files or structures into RAM. You should always try the Streaming approach first.
 
 However, if your use case requires **Random Access** (e.g., reading a cell at `Z100`, then returning to `A1`) or you need to build or modify an entire document iteratively before writing, the **In-Memory** approach is required.
 
@@ -133,16 +134,18 @@ This project aims to be compliant with [ECMA-376](https://www.ecma-international
 
 ## Benchmarks
 
-The following benchmarks measure the time and memory required to process a 10,000-row by 10-column (100,000 cells) XLSX file, averaged over 5 iterations on Ruby 3.4+.
+The following benchmarks measure the time and memory required to process both 100,000 cells (10,000 rows × 10 columns) and 1,000,000 cells (100,000 rows × 10 columns) XLSX files, averaged over 5 iterations on Ruby 3.4+.
 
 ### Write Performance (100,000 cells)
 
 | Library | Time | Peak Memory | CPU |
 | :--- | ---: | ---: | ---: |
-| `fast_excel` (Streaming)* | 0.16 s | 62.0 MB | 97.0 % |
-| **`xlsxrb` (Streaming)** | **0.56 s** | **99.7 MB** | **99.5 %** |
-| **`xlsxrb` (In-Memory)** | **0.61 s** | **137.3 MB** | **99.6 %** |
-| `rubyXL` (In-Memory) | 2.58 s | 271.1 MB | 99.7 % |
+| `xlsxtream` (Streaming) | 0.08 s | 68.0 MB | 90.5 % |
+| `fast_excel` (Streaming)* | 0.13 s | 67.1 MB | 95.9 % |
+| `caxlsx` (In-Memory) | 0.28 s | 75.6 MB | 84.4 % |
+| **`xlsxrb` (Streaming)** | **0.48 s** | **102.8 MB** | **98.6 %** |
+| **`xlsxrb` (In-Memory)** | **0.52 s** | **143.6 MB** | **99.7 %** |
+| `rubyXL` (In-Memory) | 2.06 s | 273.7 MB | 99.6 % |
 
 *\* `fast_excel` is a C-extension binding to libxlsxwriter, whereas `xlsxrb` is pure Ruby.*
 
@@ -150,11 +153,34 @@ The following benchmarks measure the time and memory required to process a 10,00
 
 | Library | Time | Peak Memory | CPU |
 | :--- | ---: | ---: | ---: |
-| `creek` (Streaming) | 0.70 s | 158.5 MB | 99.5 % |
-| `roo` (Streaming) | 0.87 s | 83.0 MB | 98.5 % |
-| `rubyXL` (In-Memory) | 2.12 s | 284.8 MB | 99.5 % |
-| **`xlsxrb` (Streaming)** | **3.28 s** | **65.7 MB** | **100.3 %** |
-| **`xlsxrb` (In-Memory)** | **6.01 s** | **138.5 MB** | **99.8 %** |
+| `creek` (Streaming) | 0.55 s | 167.8 MB | 99.2 % |
+| `roo` (Streaming) | 0.81 s | 88.2 MB | 97.5 % |
+| `xsv` (Streaming) | 1.37 s | 95.0 MB | 99.0 % |
+| `rubyXL` (In-Memory) | 1.78 s | 282.8 MB | 99.6 % |
+| **`xlsxrb` (Streaming)** | **1.97 s** | **72.1 MB** | **99.9 %** |
+| **`xlsxrb` (In-Memory)** | **5.12 s** | **145.6 MB** | **99.6 %** |
+
+### Write Performance (1,000,000 cells)
+
+| Library | Time | Peak Memory | CPU |
+| :--- | ---: | ---: | ---: |
+| `xlsxtream` (Streaming) | 0.14 s | 68.0 MB | 89.9 % |
+| `fast_excel` (Streaming)* | 1.17 s | 70.9 MB | 99.1 % |
+| `caxlsx` (In-Memory) | 1.62 s | 147.0 MB | 96.9 % |
+| **`xlsxrb` (Streaming)** | **3.48 s** | **500.5 MB** | **99.5 %** |
+| **`xlsxrb` (In-Memory)** | **5.19 s** | **903.4 MB** | **99.2 %** |
+| `rubyXL` (In-Memory) | 39.47 s | 2076.7 MB | 99.1 % |
+
+### Read Performance (1,000,000 cells)
+
+| Library | Time | Peak Memory | CPU |
+| :--- | ---: | ---: | ---: |
+| `creek` (Streaming) | 5.38 s | 716.6 MB | 98.9 % |
+| `roo` (Streaming) | 6.21 s | 132.3 MB | 98.2 % |
+| `xsv` (Streaming) | 15.02 s | 101.0 MB | 99.3 % |
+| **`xlsxrb` (Streaming)** | **20.43 s** | **114.8 MB** | **99.9 %** |
+| `rubyXL` (In-Memory) | 25.05 s | 1849.4 MB | 99.1 % |
+| **`xlsxrb` (In-Memory)** | **50.97 s** | **880.8 MB** | **99.5 %** |
 
 *Note: `xlsxrb` is designed for strict OOXML parsing accuracy and full structural mapping, rather than raw read speed. Still, its streaming implementation provides the lowest memory footprint among pure Ruby parsers.*
 

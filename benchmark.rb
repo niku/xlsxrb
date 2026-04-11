@@ -1,3 +1,6 @@
+ENV["GEM_HOME"] = File.expand_path("tmp/vendor/bundle", __dir__)
+ENV["GEM_PATH"] = ENV.fetch("GEM_HOME", nil)
+
 require "bundler/inline"
 
 gemfile do
@@ -12,6 +15,7 @@ gemfile do
   gem "roo", "3.0.0"
   gem "creek", "2.6.3"
   gem "csv", "3.3.2"
+  gem "xsv", "1.4.0"
   gem "base64", "0.2.0"
 end
 
@@ -21,13 +25,27 @@ require "fileutils"
 require "objspace"
 require_relative "lib/xlsxrb"
 
-ROWS = 1_000
+args = ARGV.dup
+KEEP_FILES = args.delete("--keep-files")
+
+ROWS = (args[0] || 10_000).to_i
 COLS = 10
 ITERATIONS = 5
-READ_TEST_FILE = "benchmark_read_test.xlsx"
+READ_TEST_FILE = "tmp/benchmark_read_test.xlsx"
+
+OUTPUT_FILES = {
+  "xlsxrb (Streaming)" => "tmp/write_xlsxrb_stream.xlsx",
+  "xlsxrb (In-Memory)" => "tmp/write_xlsxrb_mem.xlsx",
+  "caxlsx (In-Memory)" => "tmp/write_caxlsx.xlsx",
+  "xlsxtream (Streaming)" => "tmp/write_xlsxtream.xlsx",
+  "fast_excel (Streaming)" => "tmp/write_fast_excel.xlsx",
+  "rubyXL (In-Memory)" => "tmp/write_rubyXL.xlsx",
+  "Read source file" => READ_TEST_FILE
+}.freeze
 
 puts "Target: #{ROWS} rows x #{COLS} columns (#{ROWS * COLS} cells)"
 puts "Iterations: #{ITERATIONS}"
+puts "Keep generated files: #{KEEP_FILES ? "yes" : "no"}"
 puts "Preparing test file for read benchmarks..."
 
 # Prepare test file for read benchmarks
@@ -41,7 +59,12 @@ Xlsxrb.generate(READ_TEST_FILE) do |w|
 end
 
 def run_in_subprocess(name, &block)
-  File.write("bench_task.rb", <<-RUBY)
+  File.write("tmp/bench_task.rb", <<~RUBY)
+    ENV['BUNDLE_GEMFILE'] = ''
+    ENV['BUNDLE_IGNORE_CONFIG'] = '1'
+    ENV['GEM_HOME'] = File.expand_path('tmp/vendor/bundle', __dir__)
+    ENV['GEM_PATH'] = ENV['GEM_HOME']
+
     require 'bundler/inline'
     gemfile do
       source 'https://rubygems.org'
@@ -55,17 +78,18 @@ def run_in_subprocess(name, &block)
       gem 'roo', '3.0.0'
       gem 'creek', '2.6.3'
       gem 'csv', '3.3.2'
+      gem 'xsv', '1.4.0'
       gem 'base64', '0.2.0'
     end
     require 'csv'
     require 'base64'
     require 'json'
     require 'benchmark'
-    require_relative 'lib/xlsxrb'
+    require_relative '../lib/xlsxrb'
 
-    ROWS = 100_000
+    ROWS = #{ROWS}
     COLS = 10
-    READ_TEST_FILE = "benchmark_read_test.xlsx"
+    READ_TEST_FILE = "tmp/benchmark_read_test.xlsx"
 
     GC.start
     max_mem_mb = 0.0
@@ -99,8 +123,10 @@ def run_in_subprocess(name, &block)
     puts JSON.dump({ time: elapsed, cpu: cpu_percent, memory: max_mem_mb })
   RUBY
 
-  output = `ruby bench_task.rb`
-  JSON.parse(output, symbolize_names: true)
+  output = Bundler.with_unbundled_env do
+    `ruby tmp/bench_task.rb 2>/dev/null`
+  end
+  JSON.parse(output, symbolize_names: true) rescue nil
 end
 
 def run_benchmark(name, snippet)
@@ -111,22 +137,22 @@ def run_benchmark(name, snippet)
   end
   puts
 
-  avg_time = results.map { |r| r[:time] }.sum / ITERATIONS
-  avg_cpu = results.map { |r| r[:cpu] }.sum / ITERATIONS
-  avg_mem = results.map { |r| r[:memory] }.sum / ITERATIONS
+  avg_time = results.compact.map { |r| r[:time] }.compact.sum / results.compact.size.to_f
+  avg_cpu = results.compact.map { |r| r[:cpu] }.compact.sum / results.compact.size.to_f
+  avg_mem = results.compact.map { |r| r[:memory] }.compact.sum / results.compact.size.to_f
 
   { name: name, time: avg_time, cpu: avg_cpu, memory: avg_mem }
 end
 
 def format_row(result)
-  format("| %-25s | %8.2f s | %8.1f MB | %8.1f %% |", result[:name], result[:time], result[:memory], result[:cpu])
+  format("| %-25s | %8.2f s | %9.1f MB | %8.1f %% |", result[:name], result[:time], result[:memory], result[:cpu])
 end
 
 puts "\n--- Write Benchmarks ---"
 write_results = []
 
 write_results << run_benchmark("xlsxrb (Streaming)", <<~RUBY
-  Xlsxrb.generate("write_xlsxrb_stream.xlsx") do |writer|
+  Xlsxrb.generate("tmp/write_xlsxrb_stream.xlsx") do |writer|
     writer.add_sheet("Sheet1") do |sheet|
       ROWS.times do |r|
         row_data = Array.new(COLS) { |c| r * COLS + c }
@@ -146,7 +172,7 @@ write_results << run_benchmark("xlsxrb (In-Memory)", <<~RUBY
       end
     end
   end
-  Xlsxrb.write("write_xlsxrb_mem.xlsx", workbook)
+  Xlsxrb.write("tmp/write_xlsxrb_mem.xlsx", workbook)
 RUBY
 )
 
@@ -154,38 +180,34 @@ write_results << run_benchmark("caxlsx (In-Memory)", <<~RUBY
   begin
     p = Axlsx::Package.new
     sheet = p.workbook.add_worksheet(name: "Sheet1")
-    # caxlsx has Zlib buffer issues with large datasets; use reduced size
-    row_limit = [ROWS, 5000].min
-    row_limit.times do |r|
+    ROWS.times do |r|
       sheet.add_row(Array.new(COLS) { |c| r * COLS + c })
     end
-    p.serialize("write_caxlsx.xlsx")
+    p.serialize("tmp/write_caxlsx.xlsx")
   rescue Zlib::BufError => e
-    File.write("write_caxlsx.xlsx", "")
+    File.write("tmp/write_caxlsx.xlsx", "")
   end
 RUBY
 )
 
 write_results << run_benchmark("xlsxtream (Streaming)", <<~RUBY
   begin
-    Xlsxtream::Workbook.open("write_xlsxtream.xlsx") do |workbook|
+    Xlsxtream::Workbook.open("tmp/write_xlsxtream.xlsx") do |workbook|
       workbook.write_worksheet("Sheet1") do |sheet|
-        # xlsxtream has Zlib buffer issues with large datasets; use reduced size
-        row_limit = [ROWS, 5000].min
-        row_limit.times do |r|
+        ROWS.times do |r|
           sheet << Array.new(COLS) { |c| r * COLS + c }
         end
       end
     end
   rescue Zlib::BufError => e
-    File.write("write_xlsxtream.xlsx", "")
+    File.write("tmp/write_xlsxtream.xlsx", "")
   end
 RUBY
 )
 
 write_results << run_benchmark("fast_excel (Streaming)", <<~RUBY
-  File.delete("write_fast_excel.xlsx") if File.exist?("write_fast_excel.xlsx")
-  workbook = FastExcel.open("write_fast_excel.xlsx", constant_memory: true)
+  File.delete("tmp/write_fast_excel.xlsx") if File.exist?("tmp/write_fast_excel.xlsx")
+  workbook = FastExcel.open("tmp/write_fast_excel.xlsx", constant_memory: true)
   sheet = workbook.add_worksheet("Sheet1")
   ROWS.times do |r|
     sheet.append_row(Array.new(COLS) { |c| r * COLS + c })
@@ -202,7 +224,7 @@ write_results << run_benchmark("rubyXL (In-Memory)", <<~RUBY
       sheet.add_cell(r, c, r * COLS + c)
     end
   end
-  workbook.write("write_rubyXL.xlsx")
+  workbook.write("tmp/write_rubyXL.xlsx")
 RUBY
 )
 
@@ -254,17 +276,39 @@ read_results << run_benchmark("rubyXL (In-Memory)", <<~RUBY
 RUBY
 )
 
+read_results << run_benchmark("xsv (Streaming)", <<~RUBY
+  workbook = Xsv.open(READ_TEST_FILE)
+  count = 0
+  workbook[0].each do |row|
+    count += row.size
+  end
+RUBY
+)
+
 # Print markdown tables
-puts "\n\n### Write Performance (1,000,000 cells)"
-puts "| Library                   | Time     | Memory     | CPU      |"
-puts "|---------------------------|----------|------------|----------|"
+puts "\n\n### Write Performance (#{ROWS * COLS} cells)"
+puts "| Library                   | Time       | Memory       | CPU        |"
+puts "|---------------------------|------------|--------------|------------|"
 write_results.sort_by { |r| r[:time] }.each { |r| puts format_row(r) }
 
-puts "\n### Read Performance (1,000,000 cells)"
-puts "| Library                   | Time     | Memory     | CPU      |"
-puts "|---------------------------|----------|------------|----------|"
+puts "\n### Read Performance (#{ROWS * COLS} cells)"
+puts "| Library                   | Time       | Memory       | CPU        |"
+puts "|---------------------------|------------|--------------|------------|"
 read_results.sort_by { |r| r[:time] }.each { |r| puts format_row(r) }
 
+puts "\n### Generated Files"
+puts "| Producer                  | File path                     | Status   |"
+puts "|---------------------------|-------------------------------|----------|"
+OUTPUT_FILES.each do |name, path|
+  status = File.exist?(path) ? "exists" : "missing"
+  puts format("| %-25s | %-29s | %-8s |", name, path, status)
+end
+
 # Cleanup
-Dir.glob("write_*.xlsx").each { |f| FileUtils.rm(f) }
-FileUtils.rm(READ_TEST_FILE)
+if KEEP_FILES
+  puts "\nKeeping generated files because --keep-files was specified."
+else
+  Dir.glob("tmp/write_*.xlsx").each { |f| FileUtils.rm(f) }
+  FileUtils.rm(READ_TEST_FILE)
+end
+FileUtils.rm_f("tmp/bench_task.rb")
