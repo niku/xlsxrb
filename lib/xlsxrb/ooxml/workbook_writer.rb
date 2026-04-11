@@ -24,6 +24,8 @@ module Xlsxrb
         @sheets = sheets
         @shared_strings = shared_strings
         @styles = styles
+        @drawing_count = 0
+        @chart_count = 0
       end
 
       def write_to(target)
@@ -36,12 +38,71 @@ module Xlsxrb
           zip.add_entry("xl/sharedStrings.xml", build_shared_strings_xml) unless @shared_strings.empty?
 
           @sheets.each_with_index do |sheet, idx|
-            zip.add_entry("xl/worksheets/sheet#{idx + 1}.xml", build_worksheet_xml(sheet))
+            drawing_rid = nil
+            if sheet[:charts] && !sheet[:charts].empty?
+              @drawing_count += 1
+              drawing_idx = @drawing_count
+              drawing_rels_data = []
+              drawing_parts = []
+              
+              chart_writer = Xlsxrb::Ooxml::Writer.new
+              chart_writer.add_sheet(sheet[:name])
+              
+              # Populate sheet data in chart_writer so chart cache can be resolved
+              (sheet[:rows] || []).each do |row|
+                (row[:cells] || []).each do |cell|
+                  chart_writer.set_cell(cell[:ref], cell[:value], sheet: sheet[:name])
+                end
+              end
+
+              sheet[:charts].each do |chart_options|
+                chart_writer.add_chart(**chart_options)
+              end
+
+              processed_charts = chart_writer.charts
+
+              processed_charts.each do |chart|
+                @chart_count += 1
+                chart_path = "xl/charts/chart#{@chart_count}.xml"
+                zip.add_entry(chart_path, chart_writer.send(:generate_chart_xml, chart))
+                drawing_rels_data << { type: :chart, target: "../charts/chart#{@chart_count}.xml" }
+                drawing_parts << { kind: :chart, chart: chart, rid_index: drawing_rels_data.size }
+              end
+
+              drawing_xml = chart_writer.send(:generate_drawing_xml, drawing_parts)
+              zip.add_entry("xl/drawings/drawing#{drawing_idx}.xml", drawing_xml)
+              
+              unless drawing_rels_data.empty?
+                drawing_rels_xml = chart_writer.send(:generate_drawing_rels, drawing_rels_data)
+                zip.add_entry("xl/drawings/_rels/drawing#{drawing_idx}.xml.rels", drawing_rels_xml)
+              end
+              
+              # Assuming drawing is the only relationship for now
+              drawing_rid = "rId1"
+              sheet_rels_xml = build_sheet_rels(drawing_idx)
+              zip.add_entry("xl/worksheets/_rels/sheet#{idx + 1}.xml.rels", sheet_rels_xml)
+            end
+
+            zip.add_entry("xl/worksheets/sheet#{idx + 1}.xml", build_worksheet_xml(sheet, drawing_rid: drawing_rid))
           end
         end
       end
 
       private
+
+      def build_sheet_rels(drawing_idx)
+        io = StringIO.new
+        b = XmlBuilder.new(io)
+        b.declaration
+        b.open_tag("Relationships", { xmlns: REL_NS })
+        b.empty_tag("Relationship", {
+                      Id: "rId1",
+                      Type: "#{DOC_REL}/drawing",
+                      Target: "../drawings/drawing#{drawing_idx}.xml"
+                    })
+        b.close_tag("Relationships")
+        io.string
+      end
 
       def build_content_types
         io = StringIO.new
@@ -53,8 +114,19 @@ module Xlsxrb
         b.empty_tag("Override", { PartName: "/xl/workbook.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml" })
         b.empty_tag("Override", { PartName: "/xl/styles.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml" })
         b.empty_tag("Override", { PartName: "/xl/sharedStrings.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml" }) unless @shared_strings.empty?
-        @sheets.each_with_index do |_sheet, idx|
+        
+        drawing_count = 0
+        chart_count = 0
+        @sheets.each_with_index do |sheet, idx|
           b.empty_tag("Override", { PartName: "/xl/worksheets/sheet#{idx + 1}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml" })
+          if sheet[:charts] && !sheet[:charts].empty?
+            drawing_count += 1
+            b.empty_tag("Override", { PartName: "/xl/drawings/drawing#{drawing_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.drawing+xml" })
+            sheet[:charts].each do |_chart|
+              chart_count += 1
+              b.empty_tag("Override", { PartName: "/xl/charts/chart#{chart_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.drawingml.chart+xml" })
+            end
+          end
         end
         b.close_tag("Types")
         io.string
@@ -198,14 +270,14 @@ module Xlsxrb
         io.string
       end
 
-      def build_worksheet_xml(sheet)
+      def build_worksheet_xml(sheet, drawing_rid: nil)
         io = StringIO.new
         ws = WorksheetWriter.new(io)
         ws.start(columns: sheet[:columns] || [])
         (sheet[:rows] || []).each do |row|
           ws.write_row(row[:index], row[:cells], attrs: row[:attrs] || {}, unmapped: row[:unmapped] || [])
         end
-        ws.finish
+        ws.finish(drawing_rid: drawing_rid)
         io.string
       end
     end

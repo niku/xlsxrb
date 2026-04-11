@@ -2918,7 +2918,7 @@ module Xlsxrb
                         end
             parts << %(<xdr:nvGraphicFramePr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(chart_frame_name)}"#{chart_descr_attr}#{chart_title_attr}#{chart_hidden_attr}/>#{cnv_gf_pr}</xdr:nvGraphicFramePr>)
             parts << '<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="5000000" cy="3000000"/></xdr:xfrm>'
-            parts << %(<a:graphic><a:graphicData uri="#{C_NS}"><c:chart xmlns:c="#{C_NS}" r:id="#{rid}"/></a:graphicData></a:graphic>)
+            parts << %(<a:graphic><a:graphicData uri="#{C_NS}"><c:chart xmlns:c="#{C_NS}" xmlns:r="#{DOC_REL_NS}" r:id="#{rid}"/></a:graphicData></a:graphic>)
             parts << "</xdr:graphicFrame>"
             parts << client_data_xml(chart)
             parts << "</xdr:twoCellAnchor>"
