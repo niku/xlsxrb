@@ -3,10 +3,10 @@
 module Xlsxrb
   module Elements
     # Represents a single worksheet in a workbook.
-    Worksheet = Data.define(:name, :rows, :columns, :unmapped_data, :errors) do
-      def initialize(name:, rows: [], columns: [], unmapped_data: {}, errors: nil)
+    Worksheet = Data.define(:name, :rows, :columns, :charts, :unmapped_data, :errors) do
+      def initialize(name:, rows: [], columns: [], charts: [], unmapped_data: {}, errors: nil)
         computed_errors = errors || self.class.validate(name, rows)
-        super(name: name, rows: rows.freeze, columns: columns.freeze,
+        super(name: name, rows: rows.freeze, columns: columns.freeze, charts: charts.freeze,
               unmapped_data: unmapped_data, errors: computed_errors.freeze)
       end
 
