@@ -210,8 +210,8 @@ module Xlsxrb
           fonts.each do |font_props|
             b.tag("font") do |_|
               b.empty_tag("sz", { val: (font_props[:sz] || 11).to_s }) if font_props[:sz] || fonts == [{}]
-              b.empty_tag("bold") if font_props[:bold]
-              b.empty_tag("italic") if font_props[:italic]
+              b.empty_tag("b") if font_props[:bold]
+              b.empty_tag("i") if font_props[:italic]
               b.empty_tag("strike") if font_props[:strike]
               if font_props[:underline]
                 b.empty_tag("u", font_props[:underline] == "single" ? {} : { val: font_props[:underline] })
