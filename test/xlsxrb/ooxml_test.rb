@@ -320,4 +320,23 @@ class OoxmlTest < Test::Unit::TestCase
     assert_include(xml, "</sheetData>")
     assert_include(xml, "</worksheet>")
   end
+
+  test "worksheet_writer write_row_values serializes styled shared-string cells" do
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    sst = []
+    sst_index = {}
+
+    writer.start
+    writer.write_row_values(0, ["name", 10, nil], styles: { 0 => "header", 2 => "header" }, style_map: { "header" => 3 }, sst: sst, sst_index: sst_index)
+    writer.finish
+
+    xml = io.string
+    assert_include(xml, '<row r="1">')
+    assert_include(xml, '<c r="A1" s="3" t="s"><v>0</v></c>')
+    assert_include(xml, '<c r="B1"><v>10</v></c>')
+    assert_include(xml, '<c r="C1" s="3"/>')
+    assert_equal(["name"], sst)
+    assert_equal(0, sst_index["name"])
+  end
 end
