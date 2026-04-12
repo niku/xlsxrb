@@ -592,6 +592,27 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
+  test "set_sheet_protection plain password is hashed in generate API" do
+    tmp = Tempfile.new(["facade_prot_hash_stream", ".xlsx"])
+    Xlsxrb.generate(tmp.path) do |w|
+      w.add_sheet("Protected") do |s|
+        s.add_row(["Data"])
+        s.set_sheet_protection(sheet: true, password: "secret")
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+    assert_not_nil(sheet_xml)
+    assert_match(/algorithmName="SHA-512"/, sheet_xml)
+    assert_match(%r{hashValue="[A-Za-z0-9+/]+=*"}, sheet_xml)
+    assert_match(%r{saltValue="[A-Za-z0-9+/]+=*"}, sheet_xml)
+    assert_match(/spinCount="100000"/, sheet_xml)
+    assert_not_match(/password="secret"/, sheet_xml)
+  ensure
+    tmp&.close!
+  end
+
   # =====================================================
   # Row / Column Breaks
   # =====================================================

@@ -585,7 +585,17 @@ module Xlsxrb
 
     # Set sheet protection options.
     def set_sheet_protection(**opts)
-      @sheet_protection = opts
+      normalized = opts.dup
+      plain_password = normalized[:password]
+      needs_hash = plain_password.is_a?(String) && !plain_password.empty? &&
+                   normalized[:algorithm_name].nil? && normalized[:hash_value].nil? &&
+                   normalized[:salt_value].nil? && normalized[:spin_count].nil? &&
+                   !plain_password.match?(/\A[0-9A-Fa-f]{4}\z/)
+      if needs_hash
+        normalized.delete(:password)
+        normalized.merge!(Xlsxrb::Ooxml::Utils.hash_password(plain_password))
+      end
+      @sheet_protection = normalized
     end
 
     # --- Images ---
@@ -921,7 +931,17 @@ module Xlsxrb
 
     def set_sheet_protection(**opts)
       add_sheet if @current_sheet.nil?
-      @current_sheet_protection = opts
+      normalized = opts.dup
+      plain_password = normalized[:password]
+      needs_hash = plain_password.is_a?(String) && !plain_password.empty? &&
+                   normalized[:algorithm_name].nil? && normalized[:hash_value].nil? &&
+                   normalized[:salt_value].nil? && normalized[:spin_count].nil? &&
+                   !plain_password.match?(/\A[0-9A-Fa-f]{4}\z/)
+      if needs_hash
+        normalized.delete(:password)
+        normalized.merge!(Xlsxrb::Ooxml::Utils.hash_password(plain_password))
+      end
+      @current_sheet_protection = normalized
     end
 
     # --- Images ---

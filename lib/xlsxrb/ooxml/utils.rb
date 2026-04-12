@@ -97,15 +97,16 @@ module Xlsxrb
           raise ArgumentError, "password must be a String" unless password.is_a?(String)
           raise ArgumentError, "spin_count must be a positive Integer" unless spin_count.is_a?(Integer) && spin_count.positive?
 
-          salt_bytes = salt || SecureRandom.random_bytes(16)
-          password_bytes = password.encode("UTF-8").bytes.pack("C*")
+          salt_bytes = (salt || SecureRandom.random_bytes(16)).b
+          # OOXML sheet/workbook protection hashing uses UTF-16LE password bytes.
+          password_bytes = password.encode("UTF-16LE").b
 
           digest_name = algorithm.tr("-", "")
           hash = OpenSSL::Digest.digest(digest_name, salt_bytes + password_bytes)
 
           spin_count.times do |i|
             iteration_bytes = [i].pack("V") # little-endian uint32
-            hash = OpenSSL::Digest.digest(digest_name, iteration_bytes + hash)
+            hash = OpenSSL::Digest.digest(digest_name, hash + iteration_bytes)
           end
 
           {
