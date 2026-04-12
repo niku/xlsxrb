@@ -384,7 +384,7 @@ Xlsxrb.generate("conditional.xlsx") do |w|
     s.add_conditional_format("A1:D1",
       type: :cell_is, operator: :greaterThan,
       formula: "80", priority: 1,
-      dxf_id: 0)
+      fill_color: "FFFFC7CE")
   end
 end
 ```

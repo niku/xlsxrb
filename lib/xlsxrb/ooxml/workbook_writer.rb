@@ -30,7 +30,7 @@ module Xlsxrb
                      custom_properties: nil, workbook_protection: nil)
         @sheets = sheets
         @shared_strings = shared_strings
-        @styles = styles
+        @styles = styles || {}
         @defined_names = defined_names || []
         @core_properties = core_properties || {}
         @app_properties = app_properties || {}
@@ -43,6 +43,8 @@ module Xlsxrb
       end
 
       def write_to(target)
+        preprocess_conditional_formats!
+
         ZipWriter.open(target) do |zip|
           zip.add_entry("[Content_Types].xml", build_content_types)
           zip.add_entry("_rels/.rels", build_root_rels)
@@ -528,8 +530,96 @@ module Xlsxrb
           b.empty_tag("xf", { numFmtId: "0", fontId: "0", fillId: "0", borderId: "0" }) if xf_entries.empty?
         end
 
+        # Differential formats (for conditional formatting)
+        dxfs = @styles&.dig(:dxfs) || []
+        unless dxfs.empty?
+          b.tag("dxfs", { count: dxfs.size.to_s }) do |_|
+            dxfs.each do |dxf|
+              b.tag("dxf") do |_|
+                write_dxf_font(b, dxf[:font]) if dxf[:font]
+                if dxf[:num_fmt]
+                  nf = dxf[:num_fmt]
+                  b.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id].to_s, formatCode: nf[:format_code].to_s })
+                end
+                write_dxf_fill(b, dxf[:fill]) if dxf[:fill]
+              end
+            end
+          end
+        end
+
         b.close_tag("styleSheet")
         io.string
+      end
+
+      def preprocess_conditional_formats!
+        @styles[:dxfs] ||= []
+
+        @sheets.each do |sheet|
+          rules = sheet[:conditional_formats]
+          next if rules.nil? || rules.empty?
+
+          sheet[:conditional_formats] = rules.map do |rule|
+            next rule if rule[:format_id]
+
+            normalized = rule.dup
+            dxf = normalized.delete(:dxf) || extract_dxf_from_rule!(normalized)
+            next normalized unless dxf
+
+            dxf_id = @styles[:dxfs].index(dxf)
+            unless dxf_id
+              @styles[:dxfs] << dxf
+              dxf_id = @styles[:dxfs].size - 1
+            end
+            normalized[:format_id] = dxf_id
+            normalized
+          end
+        end
+      end
+
+      def extract_dxf_from_rule!(rule)
+        font = {}
+        font[:color] = rule.delete(:font_color) if rule.key?(:font_color)
+        font[:bold] = rule.delete(:bold) if rule.key?(:bold)
+        font[:italic] = rule.delete(:italic) if rule.key?(:italic)
+        font[:underline] = rule.delete(:underline) if rule.key?(:underline)
+
+        fill = {}
+        if rule.key?(:fill_color)
+          fill[:pattern] = "solid"
+          fill[:fg_color] = rule.delete(:fill_color)
+        end
+
+        dxf = {}
+        dxf[:font] = font unless font.empty?
+        dxf[:fill] = fill unless fill.empty?
+        dxf.empty? ? nil : dxf
+      end
+
+      def write_dxf_font(builder, font)
+        builder.tag("font") do |_|
+          builder.empty_tag("b") if font[:bold]
+          builder.empty_tag("i") if font[:italic]
+          if font[:underline]
+            if font[:underline] == true
+              builder.empty_tag("u")
+            else
+              builder.empty_tag("u", { val: font[:underline] })
+            end
+          end
+          builder.empty_tag("color", { rgb: font[:color] }) if font[:color]
+          builder.empty_tag("name", { val: font[:name] }) if font[:name]
+          builder.empty_tag("sz", { val: font[:sz].to_s }) if font[:sz]
+        end
+      end
+
+      def write_dxf_fill(builder, fill)
+        builder.tag("fill") do |_|
+          pattern = fill[:pattern] || "solid"
+          builder.tag("patternFill", { patternType: pattern }) do |_|
+            builder.empty_tag("fgColor", { rgb: fill[:fg_color] }) if fill[:fg_color]
+            builder.empty_tag("bgColor", { rgb: fill[:bg_color] }) if fill[:bg_color]
+          end
+        end
       end
 
       def build_shared_strings_xml

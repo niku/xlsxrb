@@ -191,6 +191,33 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
+  test "add_conditional_format with fill_color emits dxf and dxfId" do
+    tmp = Tempfile.new(["facade_cf_dxf_stream", ".xlsx"])
+    Xlsxrb.generate(tmp.path) do |w|
+      w.add_sheet("CF") do |s|
+        s.add_row([90, 45, 72, 88])
+        s.add_conditional_format("A1:D1",
+                                 type: :cell_is,
+                                 operator: :greaterThan,
+                                 formula: "80",
+                                 priority: 1,
+                                 fill_color: "FFFFC7CE")
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+    styles_xml = entries["xl/styles.xml"]
+
+    assert_not_nil(sheet_xml)
+    assert_not_nil(styles_xml)
+    assert_match(/cfRule[^>]*dxfId="0"/, sheet_xml)
+    assert_match(/<dxfs count="1">/, styles_xml)
+    assert_match(/<fgColor rgb="FFFFC7CE"\/>/, styles_xml)
+  ensure
+    tmp&.close!
+  end
+
   # =====================================================
   # Tables
   # =====================================================
