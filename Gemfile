@@ -13,4 +13,4 @@ gem "test-unit", "~> 3.0"
 gem "rubocop", "~> 1.21"
 gem "rubocop-rake", "~> 0.7"
 
-gem "opentelemetry-sdk", "~> 1.11", groups: [:development, :test]
+gem "opentelemetry-sdk", "~> 1.11", groups: %i[development test]

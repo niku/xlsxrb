@@ -15,6 +15,19 @@ module Xlsxrb
       CT_NS   = "http://schemas.openxmlformats.org/package/2006/content-types"
       DOC_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
+      # Wraps a ZipWriter entry to provide a standard IO-like #write interface.
+      class ZipEntryIO
+        def initialize(zip)
+          @zip = zip
+        end
+
+        def write(data)
+          @zip.write_data(data)
+        end
+
+        alias << write
+      end
+
       def self.write(target, sheets:, shared_strings: [], styles: nil,
                      defined_names: nil, core_properties: nil, app_properties: nil,
                      custom_properties: nil, workbook_protection: nil)
@@ -73,7 +86,6 @@ module Xlsxrb
             # Track relationship IDs for this sheet
             sheet_rels = []
             drawing_rid = nil
-            nil
             vml_rid = nil
             table_start_rid = nil
             hyperlink_rels = []
@@ -190,32 +202,35 @@ module Xlsxrb
             end
 
             # Build the worksheet XML with all metadata
-            zip.add_entry("xl/worksheets/sheet#{idx + 1}.xml", build_worksheet_xml(
-                                                                 sheet,
-                                                                 drawing_rid: drawing_rid,
-                                                                 sheet_protection: sheet[:sheet_protection],
-                                                                 auto_filter: sheet[:auto_filter],
-                                                                 filter_columns: sheet[:filter_columns],
-                                                                 sort_state: sheet[:sort_state],
-                                                                 merge_cells: sheet[:merge_cells],
-                                                                 conditional_formats: sheet[:conditional_formats],
-                                                                 data_validations: sheet[:data_validations],
-                                                                 hyperlinks: enriched_hyperlinks.empty? ? nil : enriched_hyperlinks,
-                                                                 print_options: sheet[:print_options],
-                                                                 page_margins: sheet[:page_margins],
-                                                                 page_setup: sheet[:page_setup],
-                                                                 header_footer: sheet[:header_footer],
-                                                                 row_breaks: sheet[:row_breaks],
-                                                                 col_breaks: sheet[:col_breaks],
-                                                                 freeze_pane: sheet[:freeze_pane],
-                                                                 split_pane: sheet[:split_pane],
-                                                                 selection: sheet[:selection],
-                                                                 sheet_view: sheet[:sheet_view],
-                                                                 sheet_properties: sheet[:sheet_properties],
-                                                                 tables: sheet_tables,
-                                                                 table_start_rid: table_start_rid,
-                                                                 legacy_drawing_rid: vml_rid
-                                                               ))
+            zip.start_entry("xl/worksheets/sheet#{idx + 1}.xml")
+            write_worksheet_xml(
+              ZipEntryIO.new(zip),
+              sheet,
+              drawing_rid: drawing_rid,
+              sheet_protection: sheet[:sheet_protection],
+              auto_filter: sheet[:auto_filter],
+              filter_columns: sheet[:filter_columns],
+              sort_state: sheet[:sort_state],
+              merge_cells: sheet[:merge_cells],
+              conditional_formats: sheet[:conditional_formats],
+              data_validations: sheet[:data_validations],
+              hyperlinks: enriched_hyperlinks.empty? ? nil : enriched_hyperlinks,
+              print_options: sheet[:print_options],
+              page_margins: sheet[:page_margins],
+              page_setup: sheet[:page_setup],
+              header_footer: sheet[:header_footer],
+              row_breaks: sheet[:row_breaks],
+              col_breaks: sheet[:col_breaks],
+              freeze_pane: sheet[:freeze_pane],
+              split_pane: sheet[:split_pane],
+              selection: sheet[:selection],
+              sheet_view: sheet[:sheet_view],
+              sheet_properties: sheet[:sheet_properties],
+              tables: sheet_tables,
+              table_start_rid: table_start_rid,
+              legacy_drawing_rid: vml_rid
+            )
+            zip.finish_entry
           end
         end
       end
@@ -633,7 +648,7 @@ module Xlsxrb
         io.string
       end
 
-      def build_worksheet_xml(sheet, drawing_rid: nil, sheet_protection: nil,
+      def write_worksheet_xml(io, sheet, drawing_rid: nil, sheet_protection: nil,
                               auto_filter: nil, filter_columns: nil, sort_state: nil,
                               merge_cells: nil, conditional_formats: nil,
                               data_validations: nil, hyperlinks: nil,
@@ -643,7 +658,6 @@ module Xlsxrb
                               sheet_view: nil, sheet_properties: nil,
                               tables: nil, table_start_rid: nil,
                               legacy_drawing_rid: nil)
-        io = StringIO.new
         ws = WorksheetWriter.new(io)
         ws.start(
           columns: sheet[:columns] || [],
@@ -653,8 +667,16 @@ module Xlsxrb
           selection: selection,
           sheet_view: sheet_view
         )
-        (sheet[:rows] || []).each do |row|
-          ws.write_row(row[:index], row[:cells], attrs: row[:attrs] || {}, unmapped: row[:unmapped] || [])
+        if sheet[:rows_tmp_path]
+          File.open(sheet[:rows_tmp_path], "rb") do |f|
+            while (chunk = f.read(16_384))
+              io.write(chunk)
+            end
+          end
+        else
+          (sheet[:rows] || []).each do |row|
+            ws.write_row(row[:index], row[:cells], attrs: row[:attrs] || {}, unmapped: row[:unmapped] || [])
+          end
         end
         ws.finish(
           drawing_rid: drawing_rid,
@@ -676,7 +698,6 @@ module Xlsxrb
           table_start_rid: table_start_rid,
           legacy_drawing_rid: legacy_drawing_rid
         )
-        io.string
       end
 
       def build_table_xml(tbl, table_id)
