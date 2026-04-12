@@ -22,7 +22,7 @@ Each of these libraries makes deliberate tradeoffs, and they do so thoughtfully.
 
 ### Design Principles
 
-- **No Third-Party Runtime Dependencies:** This library avoids third-party XLSX/XML/ZIP gems and relies only on the Ruby standard library and Ruby bundled gems such as `zlib` and `rexml`. This keeps the runtime footprint small while remaining compatible with modern Ruby.
+- **Minimal Dependencies (Zero Core Logic Dependencies):** This library avoids heavy third-party XLSX/XML/ZIP gems, building all core parsing and writing features purely on the Ruby standard library and bundled gems (`zlib`, `rexml`, etc.). The only runtime dependency is `opentelemetry-api`, which provides zero-overhead observability. If you do not configure an OpenTelemetry SDK in your application, it acts as a lightweight no-op, keeping the runtime footprint extremely small.
 - **Streaming Support:** Both reading and writing are designed to handle large files efficiently by streaming data, keeping memory usage low and predictable.
 - **Memory-Efficient XML Parsing:** For reading operations, the library uses REXML's SAX parser instead of DOM-based parsing to avoid loading entire XML documents into memory. This enables true streaming capability for large spreadsheets.
 - **Modern Ruby 4.0+:** Built for the future with Ruby 4.0 or higher.
