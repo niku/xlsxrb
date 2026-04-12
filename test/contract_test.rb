@@ -417,6 +417,45 @@ class ContractTest < Test::Unit::TestCase
     tmp&.close!
   end
 
+  data(API_PATHS)
+  test "xml: shape colors are normalized for DrawingML" do |api_path|
+    tmp = case api_path
+          when :streaming
+            generate_streaming do |w|
+              w.add_sheet("S") do |s|
+                s.add_row(["See the shape below"])
+                s.add_shape(preset: "rect", text: "Important!",
+                            from_col: 0, from_row: 2, to_col: 3, to_row: 6,
+                            fill_color: "#FFFFC0", line_color: "#FF0000")
+              end
+            end
+          when :in_memory
+            t = Tempfile.new(["contract_shape_color", ".xlsx"])
+            wb = Xlsxrb.build do |w|
+              w.add_sheet("S") do |s|
+                s.add_row(["See the shape below"])
+                s.add_shape(preset: "rect", text: "Important!",
+                            from_col: 0, from_row: 2, to_col: 3, to_row: 6,
+                            fill_color: "#FFFFC0", line_color: "#FF0000")
+              end
+            end
+            Xlsxrb.write(t.path, wb)
+            t
+          end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    drawing_xml = entries["xl/drawings/drawing1.xml"]
+    assert_not_nil(drawing_xml, "Drawing XML should exist in ZIP")
+    assert_match(/<a:srgbClr val="FFFFC0"\/>/, drawing_xml,
+                 "Shape fill color should be emitted as hex without '#'")
+    assert_match(/<a:srgbClr val="FF0000"\/>/, drawing_xml,
+                 "Shape line color should be emitted as hex without '#'")
+    assert_not_match(/<a:srgbClr val="#/, drawing_xml,
+                     "DrawingML srgbClr must not include leading '#'")
+  ensure
+    tmp&.close!
+  end
+
   # =====================================================
   # Hyperlink CONTRACT tests
   # =====================================================

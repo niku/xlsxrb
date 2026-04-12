@@ -1380,6 +1380,24 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "add_shape normalizes hash-prefixed colors" do
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_shape(preset: "rect", fill_color: "#FFFFC0", line_color: "#FF0000")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-shape-color-hash", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
+    assert_match(%r{<a:srgbClr val="FFFFC0"/>}, drawing_xml)
+    assert_match(%r{<a:srgbClr val="FF0000"/>}, drawing_xml)
+    assert_not_match(%r{<a:srgbClr val="#}, drawing_xml)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "add_shape with text body properties emits bodyPr attributes" do
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", 1)
