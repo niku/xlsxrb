@@ -667,51 +667,47 @@ The following benchmarks measure the time and memory required to process both 10
 
 ### Write Performance (100,000 cells)
 
-| Library                   | Time       | Peak Memory  | IO Read      | IO Written   | CPU        | GC Count | Alloc Objects |
-|---------------------------|------------|--------------|--------------|--------------|------------|----------|---------------|
-| `xlsxtream` (Streaming)     |     0.10 s |      65.6 MB |       0.1 MB |       0.3 MB |     89.2 % |      4.2 |        0.38 M |
-| `fast_excel` (Streaming)*    |     0.16 s |      62.6 MB |       5.9 MB |       6.2 MB |     94.9 % |      0.0 |        0.02 M |
-| `caxlsx` (In-Memory)        |     0.48 s |      72.6 MB |       0.3 MB |       0.2 MB |     89.1 % |      5.0 |        0.54 M |
-| **`xlsxrb` (Streaming)**        |     **0.54 s** |      **64.2 MB** |       **3.5 MB** |       **3.2 MB** |     **98.1 %** |     **42.0** |        **3.62 M** |
-| `rubyXL` (In-Memory)        |     2.50 s |     270.5 MB |       0.3 MB |       0.3 MB |     99.3 % |     33.4 |        7.64 M |
-| **`xlsxrb` (In-Memory)**        |     **2.70 s** |     **191.4 MB** |       **2.2 MB** |       **6.5 MB** |     **95.2 %** |     **24.6** |        **5.98 M** |
-
-*\* `fast_excel` is a C-extension binding to libxlsxwriter, whereas `xlsxrb` is pure Ruby.*
+| Library                   | Time       | Peak Memory  | GC Count |
+|---------------------------|------------|--------------|----------|
+| xlsxtream (Streaming)     |     0.09 s |      65.2 MB |      3.6 |
+| fast_excel (Streaming)    |     0.14 s |      62.6 MB |      0.0 |
+| caxlsx (In-Memory)        |     0.46 s |      71.8 MB |      5.0 |
+| xlsxrb (Streaming)        |     0.53 s |      64.2 MB |     42.0 |
+| rubyXL (In-Memory)        |     2.52 s |     267.7 MB |     33.2 |
+| xlsxrb (In-Memory)        |     2.55 s |     191.8 MB |     24.4 |
 
 ### Read Performance (100,000 cells)
 
-| Library                   | Time       | Peak Memory  | IO Read      | IO Written   | CPU        | GC Count | Alloc Objects |
-|---------------------------|------------|--------------|--------------|--------------|------------|----------|---------------|
-| `creek` (Streaming)         |     0.69 s |     163.4 MB |       0.7 MB |       0.0 MB |     98.7 % |    109.2 |        4.12 M |
-| `roo` (Streaming)           |     0.80 s |      84.7 MB |       4.1 MB |       2.9 MB |     98.2 % |     23.8 |        1.54 M |
-| `xsv` (Streaming)           |     1.55 s |      99.7 MB |       1.3 MB |       0.0 MB |     99.2 % |     65.6 |        5.82 M |
-| `rubyXL` (In-Memory)        |     2.04 s |     283.8 MB |       0.8 MB |       0.0 MB |     99.3 % |     38.0 |        6.87 M |
-| **`xlsxrb` (Streaming)**        |     **2.80 s** |      **66.0 MB** |       **0.6 MB** |       **0.0 MB** |     **99.6 %** |    **381.0** |       **14.81 M** |
-| **`xlsxrb` (In-Memory)**        |     **5.97 s** |     **141.0 MB** |       **0.9 MB** |       **0.0 MB** |     **99.7 %** |    **100.6** |       **27.17 M** |
+| Library                   | Time       | Peak Memory  | GC Count |
+|---------------------------|------------|--------------|----------|
+| creek (Streaming)         |     0.58 s |     162.7 MB |    122.8 |
+| roo (Streaming)           |     0.76 s |      84.7 MB |     24.0 |
+| xsv (Streaming)           |     1.56 s |      99.4 MB |     66.0 |
+| rubyXL (In-Memory)        |     1.95 s |     279.5 MB |     38.4 |
+| xlsxrb (Streaming)        |     2.80 s |      66.0 MB |    381.0 |
+| xlsxrb (In-Memory)        |     5.59 s |     141.5 MB |    102.0 |
 
 ### Write Performance (1,000,000 cells)
 
-| Library                   | Time       | Peak Memory  | IO Read      | IO Written   | CPU        | GC Count | Alloc Objects |
-|---------------------------|------------|--------------|--------------|--------------|------------|----------|---------------|
-| `xlsxtream` (Streaming)     |     0.25 s |      65.3 MB |       0.3 MB |       0.7 MB |     91.7 % |     11.6 |        1.04 M |
-| `fast_excel` (Streaming)*    |     1.35 s |      68.3 MB |      62.8 MB |      65.6 MB |     98.8 % |      2.0 |        0.20 M |
-| `caxlsx` (In-Memory)        |     2.93 s |     152.0 MB |       0.6 MB |       0.4 MB |     97.7 % |     16.0 |        4.15 M |
-| **`xlsxrb` (Streaming)**        |     **5.18 s** |      **95.4 MB** |      **35.8 MB** |      **34.3 MB** |     **98.5 %** |    **427.6** |       **36.21 M** |
-| **`xlsxrb` (In-Memory)**        |    **26.57 s** |     **889.4 MB** |      **15.4 MB** |      **45.0 MB** |     **91.6 %** |     **61.4** |       **45.51 M** |
-| `rubyXL` (In-Memory)        |    65.40 s |    2073.4 MB |       4.0 MB |       3.1 MB |     98.7 % |     91.0 |       76.23 M |
+| Library                   | Time       | Peak Memory  | GC Count |
+|---------------------------|------------|--------------|----------|
+| xlsxtream (Streaming)     |     0.14 s |      66.4 MB |      6.6 |
+| fast_excel (Streaming)    |     1.34 s |      67.3 MB |      3.0 |
+| caxlsx (In-Memory)        |     2.86 s |     151.1 MB |     15.8 |
+| xlsxrb (Streaming)        |     5.38 s |      93.8 MB |    427.2 |
+| xlsxrb (In-Memory)        |    21.46 s |     906.3 MB |     55.4 |
+| rubyXL (In-Memory)        |    43.09 s |    2074.3 MB |     91.0 |
 
 ### Read Performance (1,000,000 cells)
 
-| Library                   | Time       | Peak Memory  | IO Read      | IO Written   | CPU        | GC Count | Alloc Objects |
-|---------------------------|------------|--------------|--------------|--------------|------------|----------|---------------|
-| `creek` (Streaming)         |     6.61 s |     708.3 MB |       4.2 MB |       0.0 MB |     98.6 % |   1103.8 |       41.14 M |
-| `roo` (Streaming)           |     7.51 s |     125.9 MB |      40.5 MB |      31.3 MB |     98.7 % |    217.6 |       15.42 M |
-| `xsv` (Streaming)           |    15.51 s |     106.3 MB |      10.7 MB |       0.0 MB |     99.5 % |    663.0 |       58.18 M |
-| **`xlsxrb` (Streaming)**        |    **27.97 s** |     **108.5 MB** |       **5.5 MB** |       **0.0 MB** |     **99.9 %** |   **3714.2** |      **148.10 M** |
-| `rubyXL` (In-Memory)        |    32.37 s |    1919.9 MB |       5.4 MB |       0.0 MB |     98.7 % |    129.0 |       68.55 M |
-| **`xlsxrb` (In-Memory)**        |    **63.42 s** |     **893.7 MB** |       **8.1 MB** |       **0.0 MB** |     **99.4 %** |    **216.0** |      **271.71 M** |
-
-*Note: `xlsxrb` is designed for strict OOXML parsing accuracy and full structural mapping, rather than raw read speed. Still, its streaming implementation provides the lowest memory footprint among pure Ruby parsers.*
+| Library                   | Time       | Peak Memory  | GC Count |
+|---------------------------|------------|--------------|----------|
+| creek (Streaming)         |     5.79 s |     707.5 MB |   1241.8 |
+| roo (Streaming)           |     7.66 s |     125.9 MB |    214.6 |
+| xsv (Streaming)           |    15.58 s |     106.4 MB |    655.2 |
+| rubyXL (In-Memory)        |    26.80 s |    1921.3 MB |    128.8 |
+| xlsxrb (Streaming)        |    28.12 s |     108.6 MB |   3737.2 |
+| xlsxrb (In-Memory)        |    61.55 s |     881.9 MB |    198.6 |
 
 For reference, the following specification files from the Ecma International website are located in the `vendor/docs/` directory:
 
