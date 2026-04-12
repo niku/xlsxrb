@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["10890+niku@users.noreply.github.com"]
 
   spec.summary = "A streaming-capable, fast, low-memory XLSX reader/writer."
-  spec.description = "A Zero Dependencies XLSX reading and writing library for Ruby, relying solely on standard libraries like zlib and rexml."
+  spec.description = "A minimal dependency XLSX reading and writing library for Ruby, relying on standard libraries for core logic and opentelemetry-api for observability."
   spec.homepage = "https://github.com/niku/xlsxrb"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 4.0.0"
@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
+  spec.add_dependency "opentelemetry-api", "~> 1.4"
   spec.add_dependency "rexml"
 
   # For more information and examples about making a new gem, check out our

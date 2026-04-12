@@ -18,11 +18,13 @@ module Xlsxrb
       def self.write(target, sheets:, shared_strings: [], styles: nil,
                      defined_names: nil, core_properties: nil, app_properties: nil,
                      custom_properties: nil, workbook_protection: nil)
-        writer = new(sheets: sheets, shared_strings: shared_strings, styles: styles,
-                     defined_names: defined_names, core_properties: core_properties,
-                     app_properties: app_properties, custom_properties: custom_properties,
-                     workbook_protection: workbook_protection)
-        writer.write_to(target)
+        Xlsxrb::TRACER.in_span("Ooxml::WorkbookWriter.write") do
+          writer = new(sheets: sheets, shared_strings: shared_strings, styles: styles,
+                       defined_names: defined_names, core_properties: core_properties,
+                       app_properties: app_properties, custom_properties: custom_properties,
+                       workbook_protection: workbook_protection)
+          writer.write_to(target)
+        end
       end
 
       def initialize(sheets:, shared_strings: [], styles: nil,
