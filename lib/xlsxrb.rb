@@ -66,6 +66,8 @@ module Xlsxrb
     end
   end
 
+  # Generic builder for block-style feature definitions.
+  # Supports method_missing for setting arbitrary keys.
   # --- Facade API ---
 
   # Reads an XLSX file into an Elements::Workbook.
@@ -112,10 +114,29 @@ module Xlsxrb
       end
       sd = { name: ws.name, rows: rows, columns: columns }
       sd[:charts] = ws.charts unless ws.charts.empty?
+
+      # Extract facade metadata from unmapped_data
+      facade = ws.unmapped_data[:facade]
+      if facade
+        facade.each { |key, val| sd[key] = val }
+      end
+
       sd
     end
 
-    Ooxml::WorkbookWriter.write(target, sheets: sheet_data, shared_strings: sst, styles: workbook.styles)
+    # Extract workbook-level facade metadata
+    wb_facade = workbook.unmapped_data[:facade] || {}
+    Ooxml::WorkbookWriter.write(
+      target,
+      sheets: sheet_data,
+      shared_strings: sst,
+      styles: workbook.styles,
+      defined_names: wb_facade[:defined_names],
+      core_properties: wb_facade[:core_properties],
+      app_properties: wb_facade[:app_properties],
+      custom_properties: wb_facade[:custom_properties],
+      workbook_protection: wb_facade[:workbook_protection]
+    )
   end
 
   # Streaming read: yields Elements::Row one at a time.
@@ -176,6 +197,11 @@ module Xlsxrb
     def initialize
       @sheets = []
       @sheet_builders = [] # Keep track of sheet builders for style processing
+      @defined_names = []
+      @core_properties = {}
+      @app_properties = {}
+      @custom_properties = []
+      @workbook_protection = nil
     end
 
     # Add a new sheet.
@@ -187,13 +213,91 @@ module Xlsxrb
       @sheets << sheet_builder.build
     end
 
+    # --- Workbook-Level Methods ---
+
+    # Add a defined name.
+    def add_defined_name(name, value, sheet: nil, hidden: false)
+      entry = { name: name, value: value, hidden: hidden }
+      entry[:local_sheet_name] = sheet if sheet
+      @defined_names << entry
+    end
+
+    # Set the print area for a sheet.
+    def set_print_area(range, sheet: nil)
+      sheet_name = sheet || @sheets.last&.name || "Sheet1"
+      value = "'#{sheet_name}'!#{absolute_range(range)}"
+      @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
+      add_defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
+    end
+
+    # Set print titles for a sheet.
+    def set_print_titles(rows: nil, cols: nil, sheet: nil)
+      sheet_name = sheet || @sheets.last&.name || "Sheet1"
+      parts = []
+      parts << "'#{sheet_name}'!$#{cols.sub(':', ':$')}" if cols
+      parts << "'#{sheet_name}'!$#{rows.sub(':', ':$')}" if rows
+      value = parts.join(",")
+      @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
+      add_defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
+    end
+
+    # Set workbook protection.
+    def set_workbook_protection(**opts)
+      @workbook_protection = opts
+    end
+
+    # Set a core document property.
+    def set_core_property(name, value)
+      @core_properties[name] = value
+    end
+
+    # Set an app document property.
+    def set_app_property(name, value)
+      @app_properties[name] = value
+    end
+
+    # Add a custom document property.
+    def add_custom_property(name, value, type: :string)
+      @custom_properties << { name: name, value: value, type: type }
+    end
+
     def build
       # Process styles from all sheets and collect style definitions
       processed_sheets, styles_definition = process_styles(@sheets)
-      Elements::Workbook.new(sheets: processed_sheets, styles: styles_definition)
+
+      # Store workbook-level metadata in unmapped_data
+      wb_meta = {}
+      wb_meta[:defined_names] = resolve_defined_names(@defined_names, processed_sheets) unless @defined_names.empty?
+      wb_meta[:core_properties] = @core_properties unless @core_properties.empty?
+      wb_meta[:app_properties] = @app_properties unless @app_properties.empty?
+      wb_meta[:custom_properties] = @custom_properties unless @custom_properties.empty?
+      wb_meta[:workbook_protection] = @workbook_protection if @workbook_protection
+
+      Elements::Workbook.new(
+        sheets: processed_sheets,
+        styles: styles_definition,
+        unmapped_data: wb_meta.empty? ? {} : { facade: wb_meta }
+      )
     end
 
     private
+
+    def absolute_range(range)
+      range.gsub(/([A-Z]+)(\d+)/, '$\1$\2')
+    end
+
+    def resolve_defined_names(names, sheets)
+      sheet_names = sheets.map(&:name)
+      names.map do |dn|
+        resolved = dn.dup
+        if dn[:local_sheet_name]
+          idx = sheet_names.index(dn[:local_sheet_name])
+          resolved[:local_sheet_id] = idx if idx
+          resolved.delete(:local_sheet_name)
+        end
+        resolved
+      end
+    end
 
     def process_styles(sheets)
       # Collect all unique StyleBuilders from all sheets
@@ -282,6 +386,29 @@ module Xlsxrb
       @charts = []
       @styles = {} # { style_name => StyleBuilder }
       @style_index_map = {} # { style_name => xf_index } (populated at build time)
+      @hyperlinks = []
+      @auto_filter = nil
+      @filter_columns = {}
+      @sort_state = nil
+      @data_validations = []
+      @conditional_formats = []
+      @tables = []
+      @comments = []
+      @merge_cells_ranges = []
+      @freeze_pane = nil
+      @split_pane = nil
+      @selection = nil
+      @page_margins = nil
+      @page_setup = {}
+      @header_footer = {}
+      @print_options = {}
+      @sheet_protection = nil
+      @images = []
+      @shapes = []
+      @sheet_properties = {}
+      @sheet_view = {}
+      @row_breaks = []
+      @col_breaks = []
     end
 
     # Define a named style that can be applied to cells.
@@ -335,6 +462,7 @@ module Xlsxrb
       )
     end
 
+    # Add a chart to the sheet.
     def add_chart(**options, &block)
       if block_given?
         builder = ChartBuilder.new
@@ -344,8 +472,195 @@ module Xlsxrb
       @charts << options
     end
 
+    # --- Hyperlinks ---
+
+    # Add a hyperlink on a cell.
+    def add_hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
+      link = { cell: cell }
+      link[:url] = url if url
+      link[:display] = display if display
+      link[:tooltip] = tooltip if tooltip
+      link[:location] = location if location
+      @hyperlinks << link
+    end
+
+    # --- Auto Filter / Sort ---
+
+    # Set an auto filter range (e.g. "A1:D10").
+    def set_auto_filter(range)
+      @auto_filter = range
+    end
+
+    # Add a filter column to the auto filter.
+    def add_filter_column(col_id, filter)
+      @filter_columns[col_id] = filter
+    end
+
+    # Set sort state.
+    def set_sort_state(ref, sort_conditions, **opts)
+      @sort_state = { ref: ref, sort_conditions: sort_conditions }.merge(opts)
+    end
+
+    # --- Data Validation ---
+
+    # Add a data validation rule.
+    def add_data_validation(sqref, **opts)
+      @data_validations << opts.merge(sqref: sqref)
+    end
+
+    # --- Conditional Formatting ---
+
+    # Add a conditional formatting rule.
+    def add_conditional_format(sqref, **opts)
+      @conditional_formats << opts.merge(sqref: sqref)
+    end
+
+    # --- Tables ---
+
+    # Add a table to the sheet.
+    def add_table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
+      tbl = { ref: ref, columns: columns }
+      tbl[:name] = name if name
+      tbl[:display_name] = display_name if display_name
+      tbl[:style] = style if style
+      tbl.merge!(opts)
+      @tables << tbl
+    end
+
+    # --- Comments ---
+
+    # Add a comment on a cell.
+    def add_comment(cell, text, author: "Author")
+      @comments << { cell: cell, text: text, author: author }
+    end
+
+    # --- Merge Cells ---
+
+    # Merge a range of cells (e.g. "A1:B2").
+    def merge_cells(range)
+      @merge_cells_ranges << range
+    end
+
+    # --- Freeze / Split Panes ---
+
+    # Freeze panes at the given row and column.
+    def set_freeze_pane(row: 0, col: 0)
+      @freeze_pane = { row: row, col: col }
+    end
+
+    # Split panes (non-frozen).
+    def set_split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
+      @split_pane = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell }
+    end
+
+    # Set active cell selection.
+    def set_selection(active_cell, sqref: nil, pane: nil)
+      @selection = { active_cell: active_cell, sqref: sqref || active_cell }
+      @selection[:pane] = pane if pane
+    end
+
+    # --- Page Setup / Margins / Print ---
+
+    # Set page margins (in inches).
+    def set_page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
+      @page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
+    end
+
+    # Set page setup properties.
+    def set_page_setup(**opts)
+      @page_setup.merge!(opts)
+    end
+
+    # Set header/footer text.
+    def set_header_footer(**opts)
+      @header_footer.merge!(opts)
+    end
+
+    # Set a print option.
+    def set_print_option(name, value)
+      @print_options[name] = value
+    end
+
+    # --- Sheet Protection ---
+
+    # Set sheet protection options.
+    def set_sheet_protection(**opts)
+      @sheet_protection = opts
+    end
+
+    # --- Images ---
+
+    # Insert an image from raw file data.
+    def add_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
+      img = { file_data: file_data, ext: ext, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
+      img.merge!(opts)
+      @images << img
+    end
+
+    # --- Shapes ---
+
+    # Add a shape to the sheet.
+    def add_shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
+      shape = { preset: preset, text: text, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
+      shape[:name] = opts.delete(:name) || "Shape #{@shapes.size + 1}"
+      shape.merge!(opts)
+      @shapes << shape
+    end
+
+    # --- Sheet Properties ---
+
+    # Set a sheet-level property (e.g. :tab_color).
+    def set_sheet_property(name, value)
+      @sheet_properties[name] = value
+    end
+
+    # Set a sheet view property (e.g. :show_grid_lines, :zoom_scale).
+    def set_sheet_view(name, value)
+      @sheet_view[name] = value
+    end
+
+    # --- Row / Column Breaks ---
+
+    # Add a page break before a row.
+    def add_row_break(row_num)
+      @row_breaks << row_num
+    end
+
+    # Add a page break before a column.
+    def add_col_break(col_index)
+      @col_breaks << col_index
+    end
+
     def build
-      Elements::Worksheet.new(name: @name, rows: @rows, columns: @columns, charts: @charts)
+      facade_meta = {}
+      facade_meta[:hyperlinks] = @hyperlinks unless @hyperlinks.empty?
+      facade_meta[:auto_filter] = @auto_filter if @auto_filter
+      facade_meta[:filter_columns] = @filter_columns unless @filter_columns.empty?
+      facade_meta[:sort_state] = @sort_state if @sort_state
+      facade_meta[:data_validations] = @data_validations unless @data_validations.empty?
+      facade_meta[:conditional_formats] = @conditional_formats unless @conditional_formats.empty?
+      facade_meta[:tables] = @tables unless @tables.empty?
+      facade_meta[:comments] = @comments unless @comments.empty?
+      facade_meta[:merge_cells] = @merge_cells_ranges unless @merge_cells_ranges.empty?
+      facade_meta[:freeze_pane] = @freeze_pane if @freeze_pane
+      facade_meta[:split_pane] = @split_pane if @split_pane
+      facade_meta[:selection] = @selection if @selection
+      facade_meta[:page_margins] = @page_margins if @page_margins
+      facade_meta[:page_setup] = @page_setup unless @page_setup.empty?
+      facade_meta[:header_footer] = @header_footer unless @header_footer.empty?
+      facade_meta[:print_options] = @print_options unless @print_options.empty?
+      facade_meta[:sheet_protection] = @sheet_protection if @sheet_protection
+      facade_meta[:images] = @images unless @images.empty?
+      facade_meta[:shapes] = @shapes unless @shapes.empty?
+      facade_meta[:sheet_properties] = @sheet_properties unless @sheet_properties.empty?
+      facade_meta[:sheet_view] = @sheet_view unless @sheet_view.empty?
+      facade_meta[:row_breaks] = @row_breaks unless @row_breaks.empty?
+      facade_meta[:col_breaks] = @col_breaks unless @col_breaks.empty?
+
+      Elements::Worksheet.new(
+        name: @name, rows: @rows, columns: @columns, charts: @charts,
+        unmapped_data: facade_meta.empty? ? {} : { facade: facade_meta }
+      )
     end
 
     # Internal: returns styles for later processing by WorkbookBuilder
@@ -363,8 +678,37 @@ module Xlsxrb
       @current_rows = []
       @current_columns = []
       @current_charts = []
+      @current_hyperlinks = []
+      @current_auto_filter = nil
+      @current_filter_columns = {}
+      @current_sort_state = nil
+      @current_data_validations = []
+      @current_conditional_formats = []
+      @current_tables = []
+      @current_comments = []
+      @current_merge_cells = []
+      @current_freeze_pane = nil
+      @current_split_pane = nil
+      @current_selection = nil
+      @current_page_margins = nil
+      @current_page_setup = {}
+      @current_header_footer = {}
+      @current_print_options = {}
+      @current_sheet_protection = nil
+      @current_images = []
+      @current_shapes = []
+      @current_sheet_properties = {}
+      @current_sheet_view = {}
+      @current_row_breaks = []
+      @current_col_breaks = []
       @styles = {} # { style_name => StyleBuilder }
       @cell_styles = {} # { "SheetName!A1" => style_name }
+      # Workbook-level settings
+      @defined_names = []
+      @core_properties = {}
+      @app_properties = {}
+      @custom_properties = []
+      @workbook_protection = nil
     end
 
     # Define a named style that can be applied to cells.
@@ -384,6 +728,29 @@ module Xlsxrb
       @current_rows = []
       @current_columns = []
       @current_charts = []
+      @current_hyperlinks = []
+      @current_auto_filter = nil
+      @current_filter_columns = {}
+      @current_sort_state = nil
+      @current_data_validations = []
+      @current_conditional_formats = []
+      @current_tables = []
+      @current_comments = []
+      @current_merge_cells = []
+      @current_freeze_pane = nil
+      @current_split_pane = nil
+      @current_selection = nil
+      @current_page_margins = nil
+      @current_page_setup = {}
+      @current_header_footer = {}
+      @current_print_options = {}
+      @current_sheet_protection = nil
+      @current_images = []
+      @current_shapes = []
+      @current_sheet_properties = {}
+      @current_sheet_view = {}
+      @current_row_breaks = []
+      @current_col_breaks = []
 
       return unless block_given?
 
@@ -441,6 +808,216 @@ module Xlsxrb
       @current_charts << options
     end
 
+    # --- Hyperlinks ---
+
+    def add_hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
+      add_sheet if @current_sheet.nil?
+      link = { cell: cell }
+      link[:url] = url if url
+      link[:display] = display if display
+      link[:tooltip] = tooltip if tooltip
+      link[:location] = location if location
+      @current_hyperlinks << link
+    end
+
+    # --- Auto Filter / Sort ---
+
+    def set_auto_filter(range)
+      add_sheet if @current_sheet.nil?
+      @current_auto_filter = range
+    end
+
+    def add_filter_column(col_id, filter)
+      add_sheet if @current_sheet.nil?
+      @current_filter_columns[col_id] = filter
+    end
+
+    def set_sort_state(ref, sort_conditions, **opts)
+      add_sheet if @current_sheet.nil?
+      @current_sort_state = { ref: ref, sort_conditions: sort_conditions }.merge(opts)
+    end
+
+    # --- Data Validation ---
+
+    def add_data_validation(sqref, **opts)
+      add_sheet if @current_sheet.nil?
+      @current_data_validations << opts.merge(sqref: sqref)
+    end
+
+    # --- Conditional Formatting ---
+
+    def add_conditional_format(sqref, **opts)
+      add_sheet if @current_sheet.nil?
+      @current_conditional_formats << opts.merge(sqref: sqref)
+    end
+
+    # --- Tables ---
+
+    def add_table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
+      add_sheet if @current_sheet.nil?
+      tbl = { ref: ref, columns: columns }
+      tbl[:name] = name if name
+      tbl[:display_name] = display_name if display_name
+      tbl[:style] = style if style
+      tbl.merge!(opts)
+      @current_tables << tbl
+    end
+
+    # --- Comments ---
+
+    def add_comment(cell, text, author: "Author")
+      add_sheet if @current_sheet.nil?
+      @current_comments << { cell: cell, text: text, author: author }
+    end
+
+    # --- Merge Cells ---
+
+    def merge_cells(range)
+      add_sheet if @current_sheet.nil?
+      @current_merge_cells << range
+    end
+
+    # --- Freeze / Split Panes ---
+
+    def set_freeze_pane(row: 0, col: 0)
+      add_sheet if @current_sheet.nil?
+      @current_freeze_pane = { row: row, col: col }
+    end
+
+    def set_split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
+      add_sheet if @current_sheet.nil?
+      @current_split_pane = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell }
+    end
+
+    def set_selection(active_cell, sqref: nil, pane: nil)
+      add_sheet if @current_sheet.nil?
+      @current_selection = { active_cell: active_cell, sqref: sqref || active_cell }
+      @current_selection[:pane] = pane if pane
+    end
+
+    # --- Page Setup / Margins / Print ---
+
+    def set_page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
+      add_sheet if @current_sheet.nil?
+      @current_page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
+    end
+
+    def set_page_setup(**opts)
+      add_sheet if @current_sheet.nil?
+      @current_page_setup.merge!(opts)
+    end
+
+    def set_header_footer(**opts)
+      add_sheet if @current_sheet.nil?
+      @current_header_footer.merge!(opts)
+    end
+
+    def set_print_option(name, value)
+      add_sheet if @current_sheet.nil?
+      @current_print_options[name] = value
+    end
+
+    # --- Sheet Protection ---
+
+    def set_sheet_protection(**opts)
+      add_sheet if @current_sheet.nil?
+      @current_sheet_protection = opts
+    end
+
+    # --- Images ---
+
+    def add_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
+      add_sheet if @current_sheet.nil?
+      img = { file_data: file_data, ext: ext, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
+      img.merge!(opts)
+      @current_images << img
+    end
+
+    # --- Shapes ---
+
+    def add_shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
+      add_sheet if @current_sheet.nil?
+      shape = { preset: preset, text: text, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
+      shape[:name] = opts.delete(:name) || "Shape #{@current_shapes.size + 1}"
+      shape.merge!(opts)
+      @current_shapes << shape
+    end
+
+    # --- Sheet Properties ---
+
+    def set_sheet_property(name, value)
+      add_sheet if @current_sheet.nil?
+      @current_sheet_properties[name] = value
+    end
+
+    def set_sheet_view(name, value)
+      add_sheet if @current_sheet.nil?
+      @current_sheet_view[name] = value
+    end
+
+    # --- Row / Column Breaks ---
+
+    def add_row_break(row_num)
+      add_sheet if @current_sheet.nil?
+      @current_row_breaks << row_num
+    end
+
+    def add_col_break(col_index)
+      add_sheet if @current_sheet.nil?
+      @current_col_breaks << col_index
+    end
+
+    # --- Workbook-Level Methods ---
+
+    # Add a defined name.
+    def add_defined_name(name, value, sheet: nil, hidden: false)
+      entry = { name: name, value: value, hidden: hidden }
+      if sheet
+        # local_sheet_id will be resolved at close time
+        entry[:local_sheet_name] = sheet
+      end
+      @defined_names << entry
+    end
+
+    # Set the print area for the current or named sheet.
+    def set_print_area(range, sheet: nil)
+      sheet_name = sheet || @current_sheet || "Sheet1"
+      value = "'#{sheet_name}'!#{absolute_range(range)}"
+      @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
+      add_defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
+    end
+
+    # Set print titles for the current or named sheet.
+    def set_print_titles(rows: nil, cols: nil, sheet: nil)
+      sheet_name = sheet || @current_sheet || "Sheet1"
+      parts = []
+      parts << "'#{sheet_name}'!$#{cols.sub(':', ':$')}" if cols
+      parts << "'#{sheet_name}'!$#{rows.sub(':', ':$')}" if rows
+      value = parts.join(",")
+      @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
+      add_defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
+    end
+
+    # Set workbook protection.
+    def set_workbook_protection(**opts)
+      @workbook_protection = opts
+    end
+
+    # Set a core document property.
+    def set_core_property(name, value)
+      @core_properties[name] = value
+    end
+
+    # Set an app document property.
+    def set_app_property(name, value)
+      @app_properties[name] = value
+    end
+
+    # Add a custom document property.
+    def add_custom_property(name, value, type: :string)
+      @custom_properties << { name: name, value: value, type: type }
+    end
+
     def close
       flush_current_sheet
 
@@ -449,16 +1026,69 @@ module Xlsxrb
       sheet_data_with_styles = result[:sheets]
       styles_definition = result[:styles]
 
-      Ooxml::WorkbookWriter.write(@target, sheets: sheet_data_with_styles || @sheets, shared_strings: @sst, styles: styles_definition)
+      # Resolve defined name local_sheet_ids
+      resolved_names = resolve_defined_names(@defined_names, sheet_data_with_styles || @sheets)
+
+      Ooxml::WorkbookWriter.write(
+        @target,
+        sheets: sheet_data_with_styles || @sheets,
+        shared_strings: @sst,
+        styles: styles_definition,
+        defined_names: resolved_names.empty? ? nil : resolved_names,
+        core_properties: @core_properties.empty? ? nil : @core_properties,
+        app_properties: @app_properties.empty? ? nil : @app_properties,
+        custom_properties: @custom_properties.empty? ? nil : @custom_properties,
+        workbook_protection: @workbook_protection
+      )
     end
 
     private
+
+    def absolute_range(range)
+      range.gsub(/([A-Z]+)(\d+)/, '$\1$\2')
+    end
+
+    def resolve_defined_names(names, sheets)
+      sheet_names = sheets.map { |s| s[:name] }
+      names.map do |dn|
+        resolved = dn.dup
+        if dn[:local_sheet_name]
+          idx = sheet_names.index(dn[:local_sheet_name])
+          resolved[:local_sheet_id] = idx if idx
+          resolved.delete(:local_sheet_name)
+        end
+        resolved
+      end
+    end
 
     def flush_current_sheet
       return unless @current_sheet
 
       sheet_data = { name: @current_sheet, rows: @current_rows, columns: @current_columns }
       sheet_data[:charts] = @current_charts unless @current_charts.empty?
+      sheet_data[:hyperlinks] = @current_hyperlinks unless @current_hyperlinks.empty?
+      sheet_data[:auto_filter] = @current_auto_filter if @current_auto_filter
+      sheet_data[:filter_columns] = @current_filter_columns unless @current_filter_columns.empty?
+      sheet_data[:sort_state] = @current_sort_state if @current_sort_state
+      sheet_data[:data_validations] = @current_data_validations unless @current_data_validations.empty?
+      sheet_data[:conditional_formats] = @current_conditional_formats unless @current_conditional_formats.empty?
+      sheet_data[:tables] = @current_tables unless @current_tables.empty?
+      sheet_data[:comments] = @current_comments unless @current_comments.empty?
+      sheet_data[:merge_cells] = @current_merge_cells unless @current_merge_cells.empty?
+      sheet_data[:freeze_pane] = @current_freeze_pane if @current_freeze_pane
+      sheet_data[:split_pane] = @current_split_pane if @current_split_pane
+      sheet_data[:selection] = @current_selection if @current_selection
+      sheet_data[:page_margins] = @current_page_margins if @current_page_margins
+      sheet_data[:page_setup] = @current_page_setup unless @current_page_setup.empty?
+      sheet_data[:header_footer] = @current_header_footer unless @current_header_footer.empty?
+      sheet_data[:print_options] = @current_print_options unless @current_print_options.empty?
+      sheet_data[:sheet_protection] = @current_sheet_protection if @current_sheet_protection
+      sheet_data[:images] = @current_images unless @current_images.empty?
+      sheet_data[:shapes] = @current_shapes unless @current_shapes.empty?
+      sheet_data[:sheet_properties] = @current_sheet_properties unless @current_sheet_properties.empty?
+      sheet_data[:sheet_view] = @current_sheet_view unless @current_sheet_view.empty?
+      sheet_data[:row_breaks] = @current_row_breaks unless @current_row_breaks.empty?
+      sheet_data[:col_breaks] = @current_col_breaks unless @current_col_breaks.empty?
       @sheets << sheet_data
       @current_sheet = nil
     end
