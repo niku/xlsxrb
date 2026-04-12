@@ -517,8 +517,11 @@ Xlsxrb.generate("protected.xlsx") do |w|
 
     s.set_sheet_protection(sheet: true, objects: true, scenarios: true)
 
-    # With a password hash (SHA-512 or legacy XOR hash supported by Excel)
-    # s.set_sheet_protection(sheet: true, password: "secret")
+    # Plain password is auto-hashed (SHA-512 metadata in OOXML)
+    s.set_sheet_protection(sheet: true, password: "secret")
+
+    # If you already have a legacy XOR hash, pass it directly (4 hex chars)
+    # s.set_sheet_protection(sheet: true, password: "CF1A")
   end
 end
 ```

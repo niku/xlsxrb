@@ -669,6 +669,32 @@ class ContractTest < Test::Unit::TestCase
     tmp&.close!
   end
 
+  data(API_PATHS)
+  test "sheet_protection: plain password is hashed" do |api_path|
+    _reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Prot") do |s|
+        s.add_row(["Data"])
+        s.set_sheet_protection(sheet: true, password: "secret")
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+    assert_not_nil(sheet_xml, "sheet1.xml should exist")
+    assert_match(/algorithmName="SHA-512"/, sheet_xml,
+                 "Expected SHA-512 protection hash metadata [sheet_protection hash] ")
+    assert_match(%r{hashValue="[A-Za-z0-9+/]+=*"}, sheet_xml,
+                 "Expected hashValue in sheet protection")
+    assert_match(%r{saltValue="[A-Za-z0-9+/]+=*"}, sheet_xml,
+                 "Expected saltValue in sheet protection")
+    assert_match(/spinCount="100000"/, sheet_xml,
+                 "Expected default spinCount in sheet protection")
+    assert_not_match(/password="secret"/, sheet_xml,
+                     "Plain-text password must not be emitted")
+  ensure
+    tmp&.close!
+  end
+
   # =====================================================
   # Comments CONTRACT tests
   # =====================================================
