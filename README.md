@@ -395,6 +395,8 @@ After checking out the repo, run `bin/setup` to install dependencies. Then, run 
 
 ### Development Workflow
 
+High-level API expansion follows the Facade rules documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). In short: if a low-level writer feature is stable, the default expectation is that it should eventually be exposed through the high-level DSL as well, with consistent naming, both streaming and in-memory coverage, backward-compatible options/block forms where practical, and matching Facade-level tests.
+
 To ensure systematic progress, perfect round-trip compatibility, and strict adherence to the ECMA-376 specification, we follow this iterative development cycle for each new feature:
 
 1.  **Select a Feature:** Choose a specific element or behavior from the specification to implement.
