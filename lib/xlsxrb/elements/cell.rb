@@ -21,7 +21,7 @@ module Xlsxrb
       end
 
       # Cache column letters up to Excel's limit (16,384)
-      COLUMN_LETTERS = (0...16_384).map do |index|
+      @column_letters = (0...16_384).map do |index|
         result = +""
         i = index
         loop do
@@ -34,7 +34,7 @@ module Xlsxrb
 
       # Converts a 0-based column index to a letter (0 -> "A", 25 -> "Z", 26 -> "AA").
       def self.column_letter(index)
-        COLUMN_LETTERS[index] || begin
+        @column_letters[index] || begin
           result = +""
           i = index
           loop do
