@@ -221,7 +221,7 @@ def run_benchmark(name, snippet)
 end
 
 def format_row(result)
-  format("| %-25<name>s | %8.2<time>f s | %9.1<memory>f MB | %9.1<rchar_mb>f MB | %9.1<wchar_mb>f MB | %8.1<cpu>f %% | %8.1<gc_count>f | %11.2<alloc_m>f M |", result)
+  format("| %-25<name>s | %8.2<time>f s | %9.1<memory>f MB | %8.1<gc_count>f |", result)
 end
 
 puts "\n--- Write Benchmarks ---"
@@ -363,13 +363,13 @@ RUBY
 
 # Print markdown tables
 puts "\n\n### Write Performance (#{ROWS * COLS} cells)"
-puts "| Library                   | Time       | Peak Memory  | IO Read      | IO Written   | CPU        | GC Count | Alloc Objects |"
-puts "|---------------------------|------------|--------------|--------------|--------------|------------|----------|---------------|"
+puts "| Library                   | Time       | Peak Memory  | GC Count |"
+puts "|---------------------------|------------|--------------|----------|"
 write_results.sort_by { |r| r[:time] }.each { |r| puts format_row(r) }
 
 puts "\n### Read Performance (#{ROWS * COLS} cells)"
-puts "| Library                   | Time       | Peak Memory  | IO Read      | IO Written   | CPU        | GC Count | Alloc Objects |"
-puts "|---------------------------|------------|--------------|--------------|--------------|------------|----------|---------------|"
+puts "| Library                   | Time       | Peak Memory  | GC Count |"
+puts "|---------------------------|------------|--------------|----------|"
 read_results.sort_by { |r| r[:time] }.each { |r| puts format_row(r) }
 
 puts "\n### Generated Files"
