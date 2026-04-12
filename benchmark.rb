@@ -19,6 +19,7 @@ gemfile do
   gem "csv", "3.3.2"
   gem "xsv", "1.4.0"
   gem "base64", "0.2.0"
+  gem "opentelemetry-sdk", "1.11.0"
 end
 
 require "json"
@@ -82,47 +83,102 @@ def run_in_subprocess(_name, &block)
       gem 'csv', '3.3.2'
       gem 'xsv', '1.4.0'
       gem 'base64', '0.2.0'
+      gem 'opentelemetry-sdk', '1.11.0'
     end
     require 'csv'
     require 'base64'
     require 'json'
     require 'benchmark'
+    require 'opentelemetry/sdk'
     require_relative '../lib/xlsxrb'
 
     ROWS = #{ROWS}
     COLS = 10
     READ_TEST_FILE = "tmp/benchmark_read_test.xlsx"
 
-    GC.start
-    max_mem_mb = 0.0
-    watcher = Thread.new do
-      loop do
+    def get_io_stats
+      return { rchar: 0, wchar: 0, read_bytes: 0, write_bytes: 0 } unless File.exist?('/proc/self/io')
+
+      stats = {}
+      File.readlines('/proc/self/io').each do |line|
+        key, value = line.split(':')
+        stats[key.strip.to_sym] = value.to_i if key && value
+      end
+      stats
+    end
+
+    class BenchmarkSpanProcessor < OpenTelemetry::SDK::Trace::SpanProcessor
+      def on_start(span, _parent_context)
+        return unless span.name == 'benchmark_task'
+    #{"    "}
+        span.set_attribute('bench.gc.count.start', GC.stat[:count])
+        span.set_attribute('bench.alloc.objects.start', GC.stat[:total_allocated_objects])
+        span.set_attribute('bench.time.start', Process.clock_gettime(Process::CLOCK_MONOTONIC))
+        span.set_attribute('bench.cpu.utime.start', Process.times.utime)
+        span.set_attribute('bench.cpu.stime.start', Process.times.stime)
+        @io_start = get_io_stats
+    #{"    "}
+        @max_mem_mb = 0.0
+        @watcher = Thread.new do
+          loop do
+            mem = `ps -o rss= -p \#{Process.pid}`.to_f / 1024.0
+            @max_mem_mb = mem if mem > @max_mem_mb
+            sleep 0.05
+          end
+        end
+      end
+
+      def on_finish(span)
+        return unless span.name == 'benchmark_task'
+    #{"    "}
+        @watcher.kill
         mem = `ps -o rss= -p \#{Process.pid}`.to_f / 1024.0
-        max_mem_mb = mem if mem > max_mem_mb
-        sleep 0.05
+        @max_mem_mb = mem if mem > @max_mem_mb
+
+        gc_start = span.attributes['bench.gc.count.start']
+        alloc_start = span.attributes['bench.alloc.objects.start']
+        time_start = span.attributes['bench.time.start']
+        utime_start = span.attributes['bench.cpu.utime.start']
+        stime_start = span.attributes['bench.cpu.stime.start']
+        io_end = get_io_stats
+    #{"    "}
+        gc_diff = GC.stat[:count] - gc_start
+        alloc_diff = GC.stat[:total_allocated_objects] - alloc_start
+
+        written_bytes = io_end[:wchar] - @io_start[:wchar]
+        read_bytes = io_end[:rchar] - @io_start[:rchar]
+
+        end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        end_times = Process.times
+
+        elapsed = end_time - time_start
+        cpu_time = (end_times.utime - utime_start) + (end_times.stime - stime_start)
+        cpu_percent = elapsed > 0 ? (cpu_time / elapsed) * 100 : 0.0
+
+        puts JSON.dump({
+          time: elapsed,
+          cpu: cpu_percent,
+          memory: @max_mem_mb,
+          gc_count: gc_diff,
+          alloc_objects: alloc_diff,
+          rchar: read_bytes,
+          wchar: written_bytes
+        })
       end
     end
 
-    start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    start_times = Process.times
+    OpenTelemetry::SDK.configure do |c|
+      c.add_span_processor(BenchmarkSpanProcessor.new)
+    end
 
-    # --- TASK START ---
-    #{block.call}
-    # --- TASK END ---
+    tracer = OpenTelemetry.tracer_provider.tracer('benchmark')
+    GC.start
 
-    end_times = Process.times
-    end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-    watcher.kill
-
-    mem = `ps -o rss= -p \#{Process.pid}`.to_f / 1024.0
-    max_mem_mb = mem if mem > max_mem_mb
-
-    elapsed = end_time - start_time
-    cpu_time = (end_times.utime - start_times.utime) + (end_times.stime - start_times.stime)
-    cpu_percent = elapsed > 0 ? (cpu_time / elapsed) * 100 : 0.0
-
-    puts JSON.dump({ time: elapsed, cpu: cpu_percent, memory: max_mem_mb })
+    tracer.in_span('benchmark_task') do
+      # --- TASK START ---
+      #{block.call}
+      # --- TASK END ---
+    end
   RUBY
 
   output = Bundler.with_unbundled_env do
@@ -130,7 +186,8 @@ def run_in_subprocess(_name, &block)
   end
   begin
     JSON.parse(output, symbolize_names: true)
-  rescue StandardError
+  rescue StandardError => e
+    puts "Error: #{e.message} with output: #{output.inspect}"
     nil
   end
 end
@@ -146,12 +203,25 @@ def run_benchmark(name, snippet)
   avg_time = results.compact.map { |r| r[:time] }.compact.sum / results.compact.size.to_f
   avg_cpu = results.compact.map { |r| r[:cpu] }.compact.sum / results.compact.size.to_f
   avg_mem = results.compact.map { |r| r[:memory] }.compact.sum / results.compact.size.to_f
+  avg_gc = results.compact.map { |r| r[:gc_count] }.compact.sum / results.compact.size.to_f
+  avg_alloc = results.compact.map { |r| r[:alloc_objects] }.compact.sum / results.compact.size.to_f
+  avg_wchar = results.compact.map { |r| r[:wchar] }.compact.sum / results.compact.size.to_f
+  avg_rchar = results.compact.map { |r| r[:rchar] }.compact.sum / results.compact.size.to_f
 
-  { name: name, time: avg_time, cpu: avg_cpu, memory: avg_mem }
+  {
+    name: name,
+    time: avg_time,
+    cpu: avg_cpu,
+    memory: avg_mem,
+    gc_count: avg_gc,
+    alloc_m: avg_alloc / 1_000_000.0,
+    wchar_mb: avg_wchar / 1_048_576.0,
+    rchar_mb: avg_rchar / 1_048_576.0
+  }
 end
 
 def format_row(result)
-  format("| %-25<name>s | %8.2<time>f s | %9.1<memory>f MB | %8.1<cpu>f %% |", result)
+  format("| %-25<name>s | %8.2<time>f s | %9.1<memory>f MB | %9.1<rchar_mb>f MB | %9.1<wchar_mb>f MB | %8.1<cpu>f %% | %8.1<gc_count>f | %11.2<alloc_m>f M |", result)
 end
 
 puts "\n--- Write Benchmarks ---"
@@ -293,13 +363,13 @@ RUBY
 
 # Print markdown tables
 puts "\n\n### Write Performance (#{ROWS * COLS} cells)"
-puts "| Library                   | Time       | Memory       | CPU        |"
-puts "|---------------------------|------------|--------------|------------|"
+puts "| Library                   | Time       | Peak Memory  | IO Read      | IO Written   | CPU        | GC Count | Alloc Objects |"
+puts "|---------------------------|------------|--------------|--------------|--------------|------------|----------|---------------|"
 write_results.sort_by { |r| r[:time] }.each { |r| puts format_row(r) }
 
 puts "\n### Read Performance (#{ROWS * COLS} cells)"
-puts "| Library                   | Time       | Memory       | CPU        |"
-puts "|---------------------------|------------|--------------|------------|"
+puts "| Library                   | Time       | Peak Memory  | IO Read      | IO Written   | CPU        | GC Count | Alloc Objects |"
+puts "|---------------------------|------------|--------------|--------------|--------------|------------|----------|---------------|"
 read_results.sort_by { |r| r[:time] }.each { |r| puts format_row(r) }
 
 puts "\n### Generated Files"
