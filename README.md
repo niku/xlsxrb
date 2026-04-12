@@ -182,6 +182,106 @@ end
 Xlsxrb.write("memory_chart.xlsx", workbook)
 ```
 
+## Styling
+
+You can apply styles to cells in both streaming and in-memory modes. Styles support:
+- **Font properties**: bold, italic, size, name, color, underline, strike
+- **Fill properties**: pattern (solid, etc.) with colors, or gradients
+- **Border properties**: left, right, top, bottom, diagonal with style and color
+- **Number format**: custom number formats
+
+### In-Memory Styling
+
+Define styles using the fluent DSL in `Xlsxrb.build`:
+
+```ruby
+require "xlsxrb"
+
+workbook = Xlsxrb.build do |w|
+  w.add_sheet("Sales") do |s|
+    # Define reusable styles
+    s.add_style("header") do |style|
+      style.bold.size(14).font_color("FFFF0000")  # Red bold, size 14
+    end
+
+    s.add_style("total") do |style|
+      style.bold.fill_color("FF00FF00")  # Green background, bold
+    end
+
+    # Apply styles to rows by specifying style names for each column
+    s.add_row(["Date", "Amount", "Status"], styles: ["header", "header", "header"])
+
+    # Add data rows
+    s.add_row([Date.today, 1000, "Pending"])
+    s.add_row([Date.today - 1, 2000, "Complete"])
+
+    # Apply styles to specific columns in a row
+    s.add_row(["Total", 3000, ""], styles: { 0 => "total", 1 => "total" })
+  end
+end
+
+Xlsxrb.write("styled_output.xlsx", workbook)
+```
+
+### Streaming Styling
+
+Define styles in streaming mode with `Xlsxrb.generate`:
+
+```ruby
+require "xlsxrb"
+
+Xlsxrb.generate("streaming_styled.xlsx") do |w|
+  # Define styles
+  w.add_style("header") do |style|
+    style.bold.size(12).font_color("FF0000FF")  # Blue bold, size 12
+  end
+
+  w.add_style("data") do |style|
+    style.fill_color("FFFFC000")  # Orange background
+  end
+
+  w.add_sheet("Data") do
+    # Apply styles to header row
+    w.add_row(["Product", "Qty"],
+              styles: { 0 => "header", 1 => "header" })
+
+    # Add data rows with alternating styles
+    (1..100).each do |i|
+      styles = i % 2 == 0 ? { 0 => "data", 1 => "data" } : nil
+      w.add_row(["Item ##{i}", i * 10], styles: styles)
+    end
+  end
+end
+```
+
+### StyleBuilder API
+
+The `Xlsxrb::StyleBuilder` class provides a fluent interface for defining styles. Common methods:
+
+**Font methods:**
+- `bold(true/false)` — Apply bold formatting
+- `italic(true/false)` — Apply italic formatting
+- `size(num)` — Set font size (e.g., 12, 14)
+- `font_name(name)` — Set font name (e.g., "Arial", "Calibri")
+- `font_color(color)` — Set font color (RGB hex, e.g., "FFFF0000" for red)
+- `underline(val)` — Set underline style (e.g., "single", "double")
+- `strike(true/false)` — Apply strikethrough
+
+**Fill methods:**
+- `fill_color(color)` — Solid fill with RGB hex color
+- `fill_pattern(pattern, fg_color:, bg_color:)` — Pattern fill
+- `fill_gradient(type:, degree:, stops:)` — Gradient fill
+
+**Border methods:**
+- `border_all(style:, color:)` — Apply border to all sides
+- `border_left(style:, color:)` — Left border only
+- `border_right(style:, color:)` — Right border only
+- `border_top(style:, color:)` — Top border only
+- `border_bottom(style:, color:)` — Bottom border only
+
+**Number format:**
+- `number_format(num_fmt_id)` — Apply number format
+
 ## Specification
 
 This project aims to be compliant with [ECMA-376](https://www.ecma-international.org/publications-and-standards/standards/ecma-376/) (Office Open XML file formats). Specifically, the library targets the **Transitional** version of the specification rather than the **Strict** version. The Transitional version (detailed in Part 4) is the format most commonly produced and consumed by existing spreadsheet applications, making it the practical choice for real-world interoperability.

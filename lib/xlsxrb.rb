@@ -9,6 +9,7 @@ require_relative "xlsxrb/ooxml/writer"
 require_relative "xlsxrb/ooxml/reader"
 require_relative "xlsxrb/ooxml"
 require_relative "xlsxrb/elements"
+require_relative "xlsxrb/style_builder"
 
 # Ruby XLSX read/write library.
 module Xlsxrb
@@ -123,6 +124,7 @@ module Xlsxrb
   class WorkbookBuilder
     def initialize
       @sheets = []
+      @sheet_builders = [] # Keep track of sheet builders for style processing
     end
 
     # Add a new sheet.
@@ -130,11 +132,93 @@ module Xlsxrb
       name ||= "Sheet#{@sheets.size + 1}"
       sheet_builder = WorksheetBuilder.new(name)
       block.call(sheet_builder) if block_given?
+      @sheet_builders << sheet_builder
       @sheets << sheet_builder.build
     end
 
     def build
-      Elements::Workbook.new(sheets: @sheets)
+      # Process styles from all sheets and collect style definitions
+      processed_sheets, styles_definition = process_styles(@sheets)
+      Elements::Workbook.new(sheets: processed_sheets, styles: styles_definition)
+    end
+
+    private
+
+    def process_styles(sheets)
+      # Collect all unique StyleBuilders from all sheets
+      all_style_builders = {}
+      @sheet_builders.each do |sheet_builder|
+        sheet_builder.styles.each do |style_name, style_builder|
+          all_style_builders[style_name] = style_builder
+        end
+      end
+
+      return [sheets, {}] if all_style_builders.empty?
+
+      # Create a temporary writer to register styles and get numeric IDs
+      temp_writer = Ooxml::Writer.new
+      style_name_to_id = {}
+      all_style_builders.each do |name, builder|
+        style_id = builder.register_with(temp_writer)
+        style_name_to_id[name] = style_id
+      end
+
+      # Capture the style definitions from the temporary writer
+      styles_definition = extract_styles_from_writer(temp_writer)
+
+      # Update all cells with their resolved style IDs
+      updated_sheets = sheets.map do |sheet|
+        new_rows = sheet.rows.map do |row|
+          new_cells = row.cells.map do |cell|
+            # If style_index is a string (style name), resolve it to a numeric ID
+            if cell.style_index.is_a?(String) && style_name_to_id.key?(cell.style_index)
+              Elements::Cell.new(
+                row_index: cell.row_index,
+                column_index: cell.column_index,
+                value: cell.value,
+                formula: cell.formula,
+                style_index: style_name_to_id[cell.style_index],
+                unmapped_data: cell.unmapped_data,
+                errors: cell.errors
+              )
+            else
+              cell
+            end
+          end
+          Elements::Row.new(
+            index: row.index,
+            cells: new_cells,
+            height: row.height,
+            hidden: row.hidden,
+            custom_height: row.custom_height,
+            outline_level: row.outline_level,
+            unmapped_data: row.unmapped_data,
+            errors: row.errors
+          )
+        end
+        Elements::Worksheet.new(
+          name: sheet.name,
+          rows: new_rows,
+          columns: sheet.columns,
+          charts: sheet.charts,
+          unmapped_data: sheet.unmapped_data,
+          errors: sheet.errors
+        )
+      end
+
+      [updated_sheets, styles_definition]
+    end
+
+    def extract_styles_from_writer(writer)
+      # Extract style definitions from the writer that can be reused
+      # This captures the fonts, fills, borders, and xf entries that were created
+      {
+        fonts: writer.instance_variable_get(:@fonts).dup,
+        fills: writer.instance_variable_get(:@fills).dup,
+        borders: writer.instance_variable_get(:@borders).dup,
+        xf_entries: writer.instance_variable_get(:@xf_entries).dup,
+        num_fmts: writer.instance_variable_get(:@num_fmts).dup
+      }
     end
   end
 
@@ -145,13 +229,37 @@ module Xlsxrb
       @rows = []
       @columns = []
       @charts = []
+      @styles = {} # { style_name => StyleBuilder }
+      @style_index_map = {} # { style_name => xf_index } (populated at build time)
+    end
+
+    # Define a named style that can be applied to cells.
+    def add_style(name, &block)
+      style_builder = StyleBuilder.new(name)
+      block.call(style_builder) if block_given?
+      @styles[name] = style_builder
+      style_builder
     end
 
     # Add a row of values to the sheet.
-    def add_row(values, height: nil, hidden: false, custom_height: false, outline_level: nil)
+    # values:: Array of cell values
+    # styles:: Hash mapping column indices to style names, or Array of style names for each column
+    def add_row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
       cells = values.each_with_index.map do |val, col_index|
-        Elements::Cell.new(row_index: row_index, column_index: col_index, value: val)
+        style_name = case styles
+                     when Hash
+                       styles[col_index]
+                     when Array
+                       styles[col_index]
+                     end
+        # Style index will be resolved at build time
+        Elements::Cell.new(
+          row_index: row_index,
+          column_index: col_index,
+          value: val,
+          style_index: style_name # Will store the style name for now
+        )
       end
 
       @rows << Elements::Row.new(
@@ -182,6 +290,9 @@ module Xlsxrb
     def build
       Elements::Worksheet.new(name: @name, rows: @rows, columns: @columns, charts: @charts)
     end
+
+    # Internal: returns styles for later processing by WorkbookBuilder
+    attr_reader :styles
   end
 
   # DSL context for Xlsxrb.generate streaming writes.
@@ -195,6 +306,16 @@ module Xlsxrb
       @current_rows = []
       @current_columns = []
       @current_charts = []
+      @styles = {} # { style_name => StyleBuilder }
+      @cell_styles = {} # { "SheetName!A1" => style_name }
+    end
+
+    # Define a named style that can be applied to cells.
+    def add_style(name, &block)
+      style_builder = StyleBuilder.new(name)
+      block.call(style_builder) if block_given?
+      @styles[name] = style_builder
+      style_builder
     end
 
     # Start or switch to a named sheet.
@@ -213,12 +334,28 @@ module Xlsxrb
     end
 
     # Add a row of values. values is an Array.
-    def add_row(values, height: nil, hidden: false)
+    # styles:: Hash mapping column indices to style names, or Array of style names for each column
+    def add_row(values, styles: nil, height: nil, hidden: false)
       add_sheet if @current_sheet.nil?
 
       row_index = @current_rows.size
       cells = values.each_with_index.map do |val, col_idx|
-        Xlsxrb.build_raw_cell_from_value(row_index, col_idx, val, @sst, @sst_index)
+        cell = Xlsxrb.build_raw_cell_from_value(row_index, col_idx, val, @sst, @sst_index)
+
+        # Track style assignment if provided
+        style_name = case styles
+                     when Hash
+                       styles[col_idx]
+                     when Array
+                       styles[col_idx]
+                     end
+
+        if style_name && @styles.key?(style_name)
+          cell_ref = cell[:ref]
+          @cell_styles["#{@current_sheet}!#{cell_ref}"] = style_name
+        end
+
+        cell
       end
       attrs = {}
       attrs[:height] = height if height
@@ -242,7 +379,13 @@ module Xlsxrb
 
     def close
       flush_current_sheet
-      Ooxml::WorkbookWriter.write(@target, sheets: @sheets, shared_strings: @sst)
+
+      # Process styles before writing
+      result = apply_styles(@sheets)
+      sheet_data_with_styles = result[:sheets]
+      styles_definition = result[:styles]
+
+      Ooxml::WorkbookWriter.write(@target, sheets: sheet_data_with_styles || @sheets, shared_strings: @sst, styles: styles_definition)
     end
 
     private
@@ -254,6 +397,47 @@ module Xlsxrb
       sheet_data[:charts] = @current_charts unless @current_charts.empty?
       @sheets << sheet_data
       @current_sheet = nil
+    end
+
+    def apply_styles(sheets)
+      return { sheets: sheets, styles: {} } if @styles.empty?
+
+      # Create a temporary writer to register all styles and get numeric IDs
+      temp_writer = Ooxml::Writer.new
+      style_name_to_id = {}
+
+      @styles.each do |name, builder|
+        style_id = builder.register_with(temp_writer)
+        style_name_to_id[name] = style_id
+      end
+
+      # Extract style definitions from the temporary writer
+      styles_definition = {
+        fonts: temp_writer.instance_variable_get(:@fonts).dup,
+        fills: temp_writer.instance_variable_get(:@fills).dup,
+        borders: temp_writer.instance_variable_get(:@borders).dup,
+        xf_entries: temp_writer.instance_variable_get(:@xf_entries).dup,
+        num_fmts: temp_writer.instance_variable_get(:@num_fmts).dup
+      }
+
+      # Apply style IDs to cells based on tracked assignments
+      updated_sheets = sheets.map do |sheet|
+        new_rows = sheet[:rows].map do |row|
+          new_cells = row[:cells].map do |cell|
+            cell_key = "#{sheet[:name]}!#{cell[:ref]}"
+            if @cell_styles.key?(cell_key)
+              style_name = @cell_styles[cell_key]
+              cell.merge(style_index: style_name_to_id[style_name])
+            else
+              cell
+            end
+          end
+          row.merge(cells: new_cells)
+        end
+        sheet.merge(rows: new_rows)
+      end
+
+      { sheets: updated_sheets, styles: styles_definition }
     end
   end
 
