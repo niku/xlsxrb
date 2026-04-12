@@ -24,7 +24,7 @@ Each of these libraries makes deliberate tradeoffs, and they do so thoughtfully.
 
 - **Minimal Dependencies (Zero Core Logic Dependencies):** This library avoids heavy third-party XLSX/XML/ZIP gems, building all core parsing and writing features purely on the Ruby standard library and bundled gems (`zlib`, `rexml`, etc.). The only runtime dependency is `opentelemetry-api`, which provides zero-overhead observability. If you do not configure an OpenTelemetry SDK in your application, it acts as a lightweight no-op, keeping the runtime footprint extremely small.
 - **Streaming Support:** Both reading and writing are designed to handle large files efficiently by streaming data, keeping memory usage low and predictable.
-- **Memory-Efficient XML Parsing:** For reading operations, the library uses REXML's SAX parser instead of DOM-based parsing to avoid loading entire XML documents into memory. This enables true streaming capability for large spreadsheets.
+- **Memory-Efficient XML Parsing:** For reading operations, the library uses a custom byte-level streaming parser for worksheet rows (with targeted SAX parsing where appropriate) instead of DOM-based parsing, so entire XML documents are never loaded into memory. This enables true streaming capability for large spreadsheets.
 - **Modern Ruby 4.0+:** Built for the future with Ruby 4.0 or higher.
 
 ## Installation
@@ -669,45 +669,45 @@ The following benchmarks measure the time and memory required to process both 10
 
 | Library                   | Time       | Peak Memory  | GC Count |
 |---------------------------|------------|--------------|----------|
-| xlsxtream (Streaming)     |     0.09 s |      65.2 MB |      3.6 |
-| fast_excel (Streaming)    |     0.14 s |      62.6 MB |      0.0 |
-| caxlsx (In-Memory)        |     0.46 s |      71.8 MB |      5.0 |
-| xlsxrb (Streaming)        |     0.53 s |      64.2 MB |     42.0 |
-| rubyXL (In-Memory)        |     2.52 s |     267.7 MB |     33.2 |
-| xlsxrb (In-Memory)        |     2.55 s |     191.8 MB |     24.4 |
+| xlsxtream (Streaming)     |     0.11 s |      66.2 MB |     18.0 |
+| fast_excel (Streaming)    |     0.14 s |      64.6 MB |      1.0 |
+| xlsxrb (Streaming)        |     0.22 s |      65.3 MB |     11.0 |
+| caxlsx (In-Memory)        |     0.45 s |      73.4 MB |      5.0 |
+| rubyXL (In-Memory)        |     2.37 s |     260.6 MB |     35.0 |
+| xlsxrb (In-Memory)        |     3.46 s |     166.8 MB |     45.0 |
 
 ### Read Performance (100,000 cells)
 
 | Library                   | Time       | Peak Memory  | GC Count |
 |---------------------------|------------|--------------|----------|
-| creek (Streaming)         |     0.58 s |     162.7 MB |    122.8 |
-| roo (Streaming)           |     0.76 s |      84.7 MB |     24.0 |
-| xsv (Streaming)           |     1.56 s |      99.4 MB |     66.0 |
-| rubyXL (In-Memory)        |     1.95 s |     279.5 MB |     38.4 |
-| xlsxrb (Streaming)        |     2.80 s |      66.0 MB |    381.0 |
-| xlsxrb (In-Memory)        |     5.59 s |     141.5 MB |    102.0 |
+| xlsxrb (Streaming)        |     0.37 s |      69.3 MB |     26.6 |
+| creek (Streaming)         |     0.58 s |     164.4 MB |    169.2 |
+| roo (Streaming)           |     0.76 s |      88.0 MB |     19.2 |
+| xsv (Streaming)           |     1.59 s |     105.2 MB |     64.4 |
+| rubyXL (In-Memory)        |     1.89 s |     271.8 MB |     40.0 |
+| xlsxrb (In-Memory)        |     2.89 s |     135.7 MB |     42.2 |
 
 ### Write Performance (1,000,000 cells)
 
 | Library                   | Time       | Peak Memory  | GC Count |
 |---------------------------|------------|--------------|----------|
-| xlsxtream (Streaming)     |     0.14 s |      66.4 MB |      6.6 |
-| fast_excel (Streaming)    |     1.34 s |      67.3 MB |      3.0 |
-| caxlsx (In-Memory)        |     2.86 s |     151.1 MB |     15.8 |
-| xlsxrb (Streaming)        |     5.38 s |      93.8 MB |    427.2 |
-| xlsxrb (In-Memory)        |    21.46 s |     906.3 MB |     55.4 |
-| rubyXL (In-Memory)        |    43.09 s |    2074.3 MB |     91.0 |
+| xlsxtream (Streaming)     |     0.71 s |      66.2 MB |    141.8 |
+| fast_excel (Streaming)    |     1.38 s |      64.6 MB |     13.0 |
+| xlsxrb (Streaming)        |     2.03 s |      98.2 MB |    119.0 |
+| caxlsx (In-Memory)        |     2.82 s |     147.5 MB |     15.0 |
+| xlsxrb (In-Memory)        |    25.48 s |     798.1 MB |     98.8 |
+| rubyXL (In-Memory)        |    48.51 s |    2068.8 MB |     91.0 |
 
 ### Read Performance (1,000,000 cells)
 
 | Library                   | Time       | Peak Memory  | GC Count |
 |---------------------------|------------|--------------|----------|
-| creek (Streaming)         |     5.79 s |     707.5 MB |   1241.8 |
-| roo (Streaming)           |     7.66 s |     125.9 MB |    214.6 |
-| xsv (Streaming)           |    15.58 s |     106.4 MB |    655.2 |
-| rubyXL (In-Memory)        |    26.80 s |    1921.3 MB |    128.8 |
-| xlsxrb (Streaming)        |    28.12 s |     108.6 MB |   3737.2 |
-| xlsxrb (In-Memory)        |    61.55 s |     881.9 MB |    198.6 |
+| xlsxrb (Streaming)        |     3.82 s |     100.4 MB |    264.6 |
+| creek (Streaming)         |     6.11 s |     709.3 MB |   1974.6 |
+| roo (Streaming)           |     7.71 s |     127.6 MB |    196.2 |
+| xsv (Streaming)           |    15.58 s |     112.1 MB |    619.8 |
+| rubyXL (In-Memory)        |    26.27 s |    1954.2 MB |    127.0 |
+| xlsxrb (In-Memory)        |    31.02 s |     770.7 MB |     67.8 |
 
 For reference, the following specification files from the Ecma International website are located in the `vendor/docs/` directory:
 
