@@ -20,8 +20,8 @@ module Xlsxrb
         "#{self.class.column_letter(column_index)}#{row_index + 1}"
       end
 
-      # Converts a 0-based column index to a letter (0 -> "A", 25 -> "Z", 26 -> "AA").
-      def self.column_letter(index)
+      # Cache column letters up to Excel's limit (16,384)
+      COLUMN_LETTERS = (0...16_384).map do |index|
         result = +""
         i = index
         loop do
@@ -29,7 +29,21 @@ module Xlsxrb
           i = (i / 26) - 1
           break if i.negative?
         end
-        result
+        result.freeze
+      end.freeze
+
+      # Converts a 0-based column index to a letter (0 -> "A", 25 -> "Z", 26 -> "AA").
+      def self.column_letter(index)
+        COLUMN_LETTERS[index] || begin
+          result = +""
+          i = index
+          loop do
+            result.prepend(("A".ord + (i % 26)).chr)
+            i = (i / 26) - 1
+            break if i.negative?
+          end
+          result
+        end
       end
 
       # Parses an Excel-style reference to [row_index, col_index] (both 0-based).

@@ -96,12 +96,17 @@ module Xlsxrb
         attrs.each do |k, v|
           next if v.nil?
 
-          @io << %( #{k}="#{escape(v.to_s)}")
+          @io.write(" ")
+          @io.write(k.to_s)
+          @io.write('="')
+          @io.write(escape(v))
+          @io.write('"')
         end
       end
 
-      def escape(str)
-        str.gsub(ESCAPE_RE, ESCAPE_MAP)
+      def escape(value)
+        str = value.to_s
+        str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end
     end
   end
