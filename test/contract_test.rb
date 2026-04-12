@@ -586,6 +586,32 @@ class ContractTest < Test::Unit::TestCase
     tmp&.close!
   end
 
+  data(API_PATHS)
+  test "table: style string emits table part and valid style info" do |api_path|
+    _reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Tables") do |s|
+        s.add_row(["Name", "Score"])
+        s.add_row(["Alice", 95])
+        s.add_table("A1:B2",
+                    columns: ["Name", "Score"],
+                    name: "StyledTable",
+                    style: "TableStyleMedium9",
+                    show_first_column: true,
+                    show_row_stripes: false)
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    assert_not_nil(entries["xl/worksheets/sheet1.xml"], "Worksheet part should exist")
+    tbl_xml = entries["xl/tables/table1.xml"]
+    assert_not_nil(tbl_xml, "Table part should exist")
+    assert_match(/tableStyleInfo[^>]*name="TableStyleMedium9"/, tbl_xml)
+    assert_match(/showFirstColumn="1"/, tbl_xml)
+    assert_match(/showRowStripes="0"/, tbl_xml)
+  ensure
+    tmp&.close!
+  end
+
   # =====================================================
   # Merge Cells CONTRACT tests
   # =====================================================
