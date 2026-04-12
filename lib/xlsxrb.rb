@@ -15,6 +15,57 @@ require_relative "xlsxrb/style_builder"
 module Xlsxrb
   class Error < StandardError; end
 
+  # Builder for block-style chart definitions.
+  class ChartBuilder
+    def initialize
+      @options = {}
+    end
+
+    attr_reader :options
+
+    def type(value) = @options[:type] = value
+    def title(value) = @options[:title] = value
+
+    def series(value = nil, &block)
+      @options[:series] ||= []
+      if block_given?
+        sb = SeriesBuilder.new
+        block.call(sb)
+        @options[:series] << sb.options
+      elsif value
+        @options[:series] << value
+      end
+      @options[:series]
+    end
+
+    def method_missing(name, *args, **kwargs, &)
+      key = name.to_sym
+      @options[key] = kwargs.empty? ? args.first : kwargs
+    end
+
+    def respond_to_missing?(_name, _include_private = false)
+      true
+    end
+
+    # Builder for a single series entry in block-style chart definitions.
+    class SeriesBuilder
+      def initialize
+        @options = {}
+      end
+
+      attr_reader :options
+
+      def method_missing(name, *args, **kwargs, &)
+        key = name.to_sym
+        @options[key] = kwargs.empty? ? args.first : kwargs
+      end
+
+      def respond_to_missing?(_name, _include_private = false)
+        true
+      end
+    end
+  end
+
   # --- Facade API ---
 
   # Reads an XLSX file into an Elements::Workbook.
@@ -234,8 +285,9 @@ module Xlsxrb
     end
 
     # Define a named style that can be applied to cells.
-    def add_style(name, &block)
+    def add_style(name, **opts, &block)
       style_builder = StyleBuilder.new(name)
+      style_builder.apply_options!(**opts) unless opts.empty?
       block.call(style_builder) if block_given?
       @styles[name] = style_builder
       style_builder
@@ -283,7 +335,12 @@ module Xlsxrb
       )
     end
 
-    def add_chart(**options)
+    def add_chart(**options, &block)
+      if block_given?
+        builder = ChartBuilder.new
+        block.call(builder)
+        options = builder.options.merge(options)
+      end
       @charts << options
     end
 
@@ -311,8 +368,9 @@ module Xlsxrb
     end
 
     # Define a named style that can be applied to cells.
-    def add_style(name, &block)
+    def add_style(name, **opts, &block)
       style_builder = StyleBuilder.new(name)
+      style_builder.apply_options!(**opts) unless opts.empty?
       block.call(style_builder) if block_given?
       @styles[name] = style_builder
       style_builder
@@ -371,8 +429,14 @@ module Xlsxrb
     end
 
     # Add a chart to the current sheet.
-    def add_chart(**options)
+    def add_chart(**options, &block)
       add_sheet if @current_sheet.nil?
+
+      if block_given?
+        builder = ChartBuilder.new
+        block.call(builder)
+        options = builder.options.merge(options)
+      end
 
       @current_charts << options
     end
