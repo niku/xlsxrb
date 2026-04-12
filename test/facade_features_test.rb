@@ -235,6 +235,31 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
+  test "add_table accepts style string in generate API" do
+    tmp = Tempfile.new(["facade_table_style_stream", ".xlsx"])
+    Xlsxrb.generate(tmp.path) do |w|
+      w.add_sheet("Tables") do |s|
+        s.add_row(["Name", "Score"])
+        s.add_row(["Alice", 95])
+        s.add_table("A1:B2",
+                    columns: ["Name", "Score"],
+                    name: "StyledTable",
+                    style: "TableStyleMedium9",
+                    show_first_column: true,
+                    show_row_stripes: false)
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    tbl_xml = entries["xl/tables/table1.xml"]
+    assert_not_nil(tbl_xml)
+    assert_match(/tableStyleInfo[^>]*name="TableStyleMedium9"/, tbl_xml)
+    assert_match(/showFirstColumn="1"/, tbl_xml)
+    assert_match(/showRowStripes="0"/, tbl_xml)
+  ensure
+    tmp&.close!
+  end
+
   # =====================================================
   # Comments
   # =====================================================

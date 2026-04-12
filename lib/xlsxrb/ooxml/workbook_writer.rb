@@ -620,13 +620,36 @@ module Xlsxrb
         end
         b.close_tag("tableColumns")
 
-        # Table style
-        style = tbl[:style] || {}
+        # Table style. Accepts either:
+        # - style: "TableStyleMedium9"
+        # - style: { name:, show_* }
+        # and also show_* values at the table root for Facade compatibility.
+        raw_style = tbl[:style]
+        style = if raw_style.is_a?(Hash)
+                  raw_style
+                elsif raw_style
+                  { name: raw_style.to_s }
+                else
+                  {}
+                end
+
         style_attrs = { name: style[:name] || "TableStyleMedium2" }
-        style_attrs[:showFirstColumn] = style[:show_first_column] ? "1" : "0" unless style[:show_first_column].nil?
-        style_attrs[:showLastColumn] = style[:show_last_column] ? "1" : "0" unless style[:show_last_column].nil?
-        style_attrs[:showRowStripes] = style[:show_row_stripes] ? "1" : "0" unless style[:show_row_stripes].nil?
-        style_attrs[:showColumnStripes] = style[:show_column_stripes] ? "1" : "0" unless style[:show_column_stripes].nil?
+
+        show_first_column = style.key?(:show_first_column) ? style[:show_first_column] : tbl[:show_first_column]
+        show_last_column = style.key?(:show_last_column) ? style[:show_last_column] : tbl[:show_last_column]
+        show_row_stripes = if style.key?(:show_row_stripes)
+                             style[:show_row_stripes]
+                           elsif tbl.key?(:show_row_stripes)
+                             tbl[:show_row_stripes]
+                           else
+                             true
+                           end
+        show_column_stripes = style.key?(:show_column_stripes) ? style[:show_column_stripes] : tbl[:show_column_stripes]
+
+        style_attrs[:showFirstColumn] = show_first_column ? "1" : "0" unless show_first_column.nil?
+        style_attrs[:showLastColumn] = show_last_column ? "1" : "0" unless show_last_column.nil?
+        style_attrs[:showRowStripes] = show_row_stripes ? "1" : "0"
+        style_attrs[:showColumnStripes] = show_column_stripes ? "1" : "0" unless show_column_stripes.nil?
         b.empty_tag("tableStyleInfo", style_attrs)
 
         b.close_tag("table")
