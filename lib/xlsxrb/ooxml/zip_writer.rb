@@ -33,6 +33,18 @@ module Xlsxrb
         raise "ZipWriter is closed" if @closed
 
         content_bytes = content.encode("UTF-8").b
+        write_raw_entry(path, content_bytes)
+      end
+
+      # Add a file entry with binary content (no encoding conversion).
+      def add_binary_entry(path, content)
+        raise "ZipWriter is closed" if @closed
+
+        content_bytes = content.b
+        write_raw_entry(path, content_bytes)
+      end
+
+      private def write_raw_entry(path, content_bytes)
         crc = Zlib.crc32(content_bytes) & 0xFFFFFFFF
         compressed = deflate(content_bytes)
 
