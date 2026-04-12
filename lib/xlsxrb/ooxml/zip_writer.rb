@@ -44,24 +44,6 @@ module Xlsxrb
         write_raw_entry(path, content_bytes)
       end
 
-      private def write_raw_entry(path, content_bytes)
-        crc = Zlib.crc32(content_bytes) & 0xFFFFFFFF
-        compressed = deflate(content_bytes)
-
-        offset = @io.is_a?(StringIO) ? @io.pos : @io.tell
-
-        write_local_header(path, crc, compressed.bytesize, content_bytes.bytesize)
-        @io.write(compressed)
-
-        @entries << {
-          path: path,
-          crc32: crc,
-          compressed_size: compressed.bytesize,
-          uncompressed_size: content_bytes.bytesize,
-          offset: offset
-        }
-      end
-
       # Write a string directly into the current ZIP entry stream.
       # Use start_entry / write_data / finish_entry for true streaming.
       def start_entry(path)
@@ -134,6 +116,24 @@ module Xlsxrb
       end
 
       private
+
+      def write_raw_entry(path, content_bytes)
+        crc = Zlib.crc32(content_bytes) & 0xFFFFFFFF
+        compressed = deflate(content_bytes)
+
+        offset = @io.is_a?(StringIO) ? @io.pos : @io.tell
+
+        write_local_header(path, crc, compressed.bytesize, content_bytes.bytesize)
+        @io.write(compressed)
+
+        @entries << {
+          path: path,
+          crc32: crc,
+          compressed_size: compressed.bytesize,
+          uncompressed_size: content_bytes.bytesize,
+          offset: offset
+        }
+      end
 
       def deflate(content)
         deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)

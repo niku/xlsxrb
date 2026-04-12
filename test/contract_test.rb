@@ -18,25 +18,25 @@ class ContractTest < Test::Unit::TestCase
   # ---- Helpers ----
 
   # Generate an XLSX via streaming (Xlsxrb.generate) and return the tmpfile.
-  def generate_streaming(&block)
+  def generate_streaming(&)
     tmp = Tempfile.new(["contract_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path, &block)
+    Xlsxrb.generate(tmp.path, &)
     tmp
   end
 
   # Generate an XLSX via in-memory (Xlsxrb.build + Xlsxrb.write) and return the tmpfile.
-  def generate_in_memory(&block)
+  def generate_in_memory(&)
     tmp = Tempfile.new(["contract_mem", ".xlsx"])
-    workbook = Xlsxrb.build(&block)
+    workbook = Xlsxrb.build(&)
     Xlsxrb.write(tmp.path, workbook)
     tmp
   end
 
   # Generate via both APIs, return reader for the specified path.
-  def generate_and_read(api_path, &block)
+  def generate_and_read(api_path, &)
     tmp = case api_path
-          when :streaming then generate_streaming(&block)
-          when :in_memory then generate_in_memory(&block)
+          when :streaming then generate_streaming(&)
+          when :in_memory then generate_in_memory(&)
           end
     [Xlsxrb::Ooxml::Reader.new(tmp.path), tmp]
   end
@@ -62,7 +62,7 @@ class ContractTest < Test::Unit::TestCase
   test "chart: bar chart with title and series data" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Sales") do |s|
-        s.add_row(["Month", "Revenue"])
+        s.add_row(%w[Month Revenue])
         s.add_row(["Jan", 100])
         s.add_row(["Feb", 200])
         s.add_row(["Mar", 300])
@@ -87,7 +87,7 @@ class ContractTest < Test::Unit::TestCase
   test "chart: pie chart preserves type and title" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Data") do |s|
-        s.add_row(["Category", "Value"])
+        s.add_row(%w[Category Value])
         s.add_row(["A", 40])
         s.add_row(["B", 60])
         s.add_chart(type: :pie, title: "Distribution",
@@ -108,7 +108,7 @@ class ContractTest < Test::Unit::TestCase
   test "chart: line chart with multiple series" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Trends") do |s|
-        s.add_row(["Month", "Series1", "Series2"])
+        s.add_row(%w[Month Series1 Series2])
         s.add_row(["Jan", 10, 20])
         s.add_row(["Feb", 15, 25])
         s.add_chart(type: :line, title: "Trend Lines",
@@ -133,7 +133,7 @@ class ContractTest < Test::Unit::TestCase
   test "chart: chart with legend and axis titles" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("S1") do |s|
-        s.add_row(["X", "Y"])
+        s.add_row(%w[X Y])
         s.add_row([1, 10])
         s.add_chart(type: :bar, title: "Axes Test",
                     series: [{ cat_ref: "S1!$A$2:$A$2", val_ref: "S1!$B$2:$B$2" }],
@@ -161,7 +161,7 @@ class ContractTest < Test::Unit::TestCase
   test "chart: chart with data labels" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("DL") do |s|
-        s.add_row(["Cat", "Val"])
+        s.add_row(%w[Cat Val])
         s.add_row(["A", 50])
         s.add_chart(type: :bar, title: "DL Test",
                     series: [{ cat_ref: "DL!$A$2:$A$2", val_ref: "DL!$B$2:$B$2" }],
@@ -182,7 +182,7 @@ class ContractTest < Test::Unit::TestCase
   test "chart: multiple charts on same sheet" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Multi") do |s|
-        s.add_row(["X", "Y", "Z"])
+        s.add_row(%w[X Y Z])
         s.add_row([1, 10, 20])
         s.add_chart(type: :bar, title: "Chart1",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$B$2:$B$2" }])
@@ -205,7 +205,7 @@ class ContractTest < Test::Unit::TestCase
   test "chart: chart data cache is populated" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Cache") do |s|
-        s.add_row(["Label", "Amount"])
+        s.add_row(%w[Label Amount])
         s.add_row(["Alpha", 100])
         s.add_row(["Beta", 200])
         s.add_chart(type: :bar, title: "Cache Test",
@@ -229,11 +229,11 @@ class ContractTest < Test::Unit::TestCase
   # =====================================================
 
   CHART_TYPE_MAP = {
-    "area"     => { input: :area,     expected: "areaChart" },
-    "scatter"  => { input: :scatter,  expected: "scatterChart" },
-    "radar"    => { input: :radar,    expected: "radarChart" },
+    "area" => { input: :area, expected: "areaChart" },
+    "scatter" => { input: :scatter, expected: "scatterChart" },
+    "radar" => { input: :radar, expected: "radarChart" },
     "doughnut" => { input: :doughnut, expected: "doughnutChart" },
-    "bar3d"    => { input: :bar3d,    expected: "bar3DChart" }
+    "bar3d" => { input: :bar3d, expected: "bar3DChart" }
   }.freeze
 
   data(CHART_TYPE_MAP)
@@ -241,7 +241,7 @@ class ContractTest < Test::Unit::TestCase
     tmp = Tempfile.new(["contract_charttype", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.add_sheet("S") do |s|
-        s.add_row(["X", "Y"])
+        s.add_row(%w[X Y])
         s.add_row([1, 10])
         s.add_chart(type: spec[:input], title: "Type Test",
                     series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
@@ -264,7 +264,7 @@ class ContractTest < Test::Unit::TestCase
 
   data(API_PATHS)
   test "cell: basic data types round-trip" do |api_path|
-    reader, tmp = generate_and_read(api_path) do |w|
+    _, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Types") do |s|
         s.add_row(["hello", 42, 3.14, true, false, nil])
       end
@@ -284,7 +284,7 @@ class ContractTest < Test::Unit::TestCase
 
   data(API_PATHS)
   test "cell: multiple sheets" do |api_path|
-    reader, tmp = generate_and_read(api_path) do |w|
+    _, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("A") { |s| s.add_row(["sheet_a"]) }
       w.add_sheet("B") { |s| s.add_row(["sheet_b"]) }
     end
@@ -299,7 +299,7 @@ class ContractTest < Test::Unit::TestCase
 
   data(API_PATHS)
   test "cell: many rows preserve data" do |api_path|
-    reader, tmp = generate_and_read(api_path) do |w|
+    _, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Bulk") do |s|
         100.times { |i| s.add_row([i, "row#{i}"]) }
       end
@@ -325,7 +325,7 @@ class ContractTest < Test::Unit::TestCase
           when :streaming
             generate_streaming do |w|
               w.add_sheet("S") do |s|
-                s.add_row(["X", "Y"])
+                s.add_row(%w[X Y])
                 s.add_row([1, 10])
                 s.add_chart(type: :bar, title: "NS",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
@@ -335,7 +335,7 @@ class ContractTest < Test::Unit::TestCase
             t = Tempfile.new(["contract_ns", ".xlsx"])
             wb = Xlsxrb.build do |w|
               w.add_sheet("S") do |s|
-                s.add_row(["X", "Y"])
+                s.add_row(%w[X Y])
                 s.add_row([1, 10])
                 s.add_chart(type: :bar, title: "NS",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
@@ -371,7 +371,7 @@ class ContractTest < Test::Unit::TestCase
           when :streaming
             generate_streaming do |w|
               w.add_sheet("S") do |s|
-                s.add_row(["X", "Y"])
+                s.add_row(%w[X Y])
                 s.add_row([1, 10])
                 s.add_chart(type: :bar, title: "NS Check",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
@@ -381,7 +381,7 @@ class ContractTest < Test::Unit::TestCase
             t = Tempfile.new(["contract_cns", ".xlsx"])
             wb = Xlsxrb.build do |w|
               w.add_sheet("S") do |s|
-                s.add_row(["X", "Y"])
+                s.add_row(%w[X Y])
                 s.add_row([1, 10])
                 s.add_chart(type: :bar, title: "NS Check",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
@@ -446,9 +446,9 @@ class ContractTest < Test::Unit::TestCase
     entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
     drawing_xml = entries["xl/drawings/drawing1.xml"]
     assert_not_nil(drawing_xml, "Drawing XML should exist in ZIP")
-    assert_match(/<a:srgbClr val="FFFFC0"\/>/, drawing_xml,
+    assert_match(%r{<a:srgbClr val="FFFFC0"/>}, drawing_xml,
                  "Shape fill color should be emitted as hex without '#'")
-    assert_match(/<a:srgbClr val="FF0000"\/>/, drawing_xml,
+    assert_match(%r{<a:srgbClr val="FF0000"/>}, drawing_xml,
                  "Shape line color should be emitted as hex without '#'")
     assert_not_match(/<a:srgbClr val="#/, drawing_xml,
                      "DrawingML srgbClr must not include leading '#'")
@@ -483,7 +483,7 @@ class ContractTest < Test::Unit::TestCase
   test "autofilter: range is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Data") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
         s.add_row(["Bob", 87])
         s.set_auto_filter("A1:B3")
@@ -572,9 +572,9 @@ class ContractTest < Test::Unit::TestCase
   test "table: definition is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Tables") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
-        s.add_table("A1:B2", columns: ["Name", "Score"], name: "TestTable")
+        s.add_table("A1:B2", columns: %w[Name Score], name: "TestTable")
       end
     end
 
@@ -590,10 +590,10 @@ class ContractTest < Test::Unit::TestCase
   test "table: style string emits table part and valid style info" do |api_path|
     _reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("Tables") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
         s.add_table("A1:B2",
-                    columns: ["Name", "Score"],
+                    columns: %w[Name Score],
                     name: "StyledTable",
                     style: "TableStyleMedium9",
                     show_first_column: true,
@@ -788,7 +788,7 @@ class ContractTest < Test::Unit::TestCase
   test "combined: multiple features on same sheet" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.add_sheet("All") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
         s.set_auto_filter("A1:B2")
         s.merge_cells("A1:A1")

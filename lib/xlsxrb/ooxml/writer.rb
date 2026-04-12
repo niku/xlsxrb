@@ -3555,14 +3555,10 @@ module Xlsxrb
         hex = str.delete_prefix("#")
 
         # Common shorthand (e.g. #f00 -> FF0000)
-        if hex.match?(/\A[0-9A-Fa-f]{3}\z/)
-          return hex.chars.map { |c| c * 2 }.join.upcase
-        end
+        return hex.chars.map { |c| c * 2 }.join.upcase if hex.match?(/\A[0-9A-Fa-f]{3}\z/)
 
         # ARGB -> RGB for DrawingML srgbClr (expects RRGGBB)
-        if hex.match?(/\A[0-9A-Fa-f]{8}\z/)
-          return hex[-6, 6].upcase
-        end
+        return hex[-6, 6].upcase if hex.match?(/\A[0-9A-Fa-f]{8}\z/)
 
         return hex.upcase if hex.match?(/\A[0-9A-Fa-f]{6}\z/)
 

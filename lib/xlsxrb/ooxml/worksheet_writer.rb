@@ -87,12 +87,8 @@ module Xlsxrb
         write_header_footer(header_footer) if header_footer && !header_footer.empty?
         write_row_breaks(row_breaks) if row_breaks && !row_breaks.empty?
         write_col_breaks(col_breaks) if col_breaks && !col_breaks.empty?
-        if drawing_rid
-          @builder.empty_tag("drawing", { "r:id": drawing_rid })
-        end
-        if legacy_drawing_rid
-          @builder.empty_tag("legacyDrawing", { "r:id": legacy_drawing_rid })
-        end
+        @builder.empty_tag("drawing", { "r:id": drawing_rid }) if drawing_rid
+        @builder.empty_tag("legacyDrawing", { "r:id": legacy_drawing_rid }) if legacy_drawing_rid
         write_table_parts(tables, table_start_rid) if tables && !tables.empty?
         @builder.close_tag("worksheet")
       end
@@ -106,9 +102,7 @@ module Xlsxrb
         has_children = props[:tab_color]
         if has_children
           @builder.open_tag("sheetPr", attrs)
-          if props[:tab_color]
-            @builder.empty_tag("tabColor", { rgb: props[:tab_color] })
-          end
+          @builder.empty_tag("tabColor", { rgb: props[:tab_color] }) if props[:tab_color]
           @builder.close_tag("sheetPr")
         else
           @builder.empty_tag("sheetPr", attrs) unless attrs.empty?
@@ -127,25 +121,25 @@ module Xlsxrb
         @builder.open_tag("sheetView", sv_attrs)
         if freeze_pane
           pane_attrs = {}
-          pane_attrs[:xSplit] = freeze_pane[:col].to_s if freeze_pane[:col] && freeze_pane[:col] > 0
-          pane_attrs[:ySplit] = freeze_pane[:row].to_s if freeze_pane[:row] && freeze_pane[:row] > 0
+          pane_attrs[:xSplit] = freeze_pane[:col].to_s if freeze_pane[:col]&.positive?
+          pane_attrs[:ySplit] = freeze_pane[:row].to_s if freeze_pane[:row]&.positive?
           top_left_col = column_letter(freeze_pane[:col] || 0)
           top_left_row = (freeze_pane[:row] || 0) + 1
           pane_attrs[:topLeftCell] = "#{top_left_col}#{top_left_row}"
           pane_attrs[:state] = "frozen"
           # Determine active pane
-          if (freeze_pane[:col] || 0) > 0 && (freeze_pane[:row] || 0) > 0
-            pane_attrs[:activePane] = "bottomRight"
-          elsif (freeze_pane[:col] || 0) > 0
-            pane_attrs[:activePane] = "topRight"
-          else
-            pane_attrs[:activePane] = "bottomLeft"
-          end
+          pane_attrs[:activePane] = if (freeze_pane[:col] || 0).positive? && (freeze_pane[:row] || 0).positive?
+                                      "bottomRight"
+                                    elsif (freeze_pane[:col] || 0).positive?
+                                      "topRight"
+                                    else
+                                      "bottomLeft"
+                                    end
           @builder.empty_tag("pane", pane_attrs)
         elsif split_pane
           pane_attrs = {}
-          pane_attrs[:xSplit] = split_pane[:x_split].to_s if split_pane[:x_split] && split_pane[:x_split] > 0
-          pane_attrs[:ySplit] = split_pane[:y_split].to_s if split_pane[:y_split] && split_pane[:y_split] > 0
+          pane_attrs[:xSplit] = split_pane[:x_split].to_s if split_pane[:x_split]&.positive?
+          pane_attrs[:ySplit] = split_pane[:y_split].to_s if split_pane[:y_split]&.positive?
           pane_attrs[:topLeftCell] = split_pane[:top_left_cell] if split_pane[:top_left_cell]
           @builder.empty_tag("pane", pane_attrs)
         end
@@ -191,10 +185,8 @@ module Xlsxrb
       def write_auto_filter(range, filter_columns, sort_state)
         if (filter_columns && !filter_columns.empty?) || sort_state
           @builder.open_tag("autoFilter", { ref: range })
-          if filter_columns
-            filter_columns.each do |col_id, filter|
-              write_filter_column(col_id, filter)
-            end
+          filter_columns&.each do |col_id, filter|
+            write_filter_column(col_id, filter)
           end
           if sort_state
             ss_attrs = { ref: sort_state[:ref] }
@@ -233,12 +225,11 @@ module Xlsxrb
             filter[:filters].each do |cf|
               @builder.empty_tag("customFilter", { operator: cf[:operator], val: cf[:val].to_s })
             end
-            @builder.close_tag("customFilters")
           else
             @builder.open_tag("customFilters")
             @builder.empty_tag("customFilter", { operator: filter[:operator], val: filter[:val].to_s })
-            @builder.close_tag("customFilters")
           end
+          @builder.close_tag("customFilters")
         when :dynamic
           @builder.empty_tag("dynamicFilter", { type: filter[:dynamic_type] })
         when :top10
@@ -279,13 +270,11 @@ module Xlsxrb
                       when :icon_set then "iconSet"
                       else type.to_s
                       end
-            r_attrs = { type: cf_type, priority: (rule[:priority] || idx + 1).to_s }
+            r_attrs = { type: cf_type, priority: (rule[:priority] || (idx + 1)).to_s }
             r_attrs[:operator] = rule[:operator].to_s if rule[:operator]
             r_attrs[:dxfId] = rule[:format_id].to_s if rule[:format_id]
             @builder.open_tag("cfRule", r_attrs)
-            if rule[:formula]
-              @builder.tag("formula") { |b| b.text(rule[:formula]) }
-            end
+            @builder.tag("formula") { |b| b.text(rule[:formula]) } if rule[:formula]
             (rule[:formulas] || []).each do |f|
               @builder.tag("formula") { |b| b.text(f) }
             end
@@ -314,12 +303,8 @@ module Xlsxrb
           has_formulas = dv[:formula1] || dv[:formula2]
           if has_formulas
             @builder.open_tag("dataValidation", dv_attrs)
-            if dv[:formula1]
-              @builder.tag("formula1") { |b| b.text(dv[:formula1].to_s) }
-            end
-            if dv[:formula2]
-              @builder.tag("formula2") { |b| b.text(dv[:formula2].to_s) }
-            end
+            @builder.tag("formula1") { |b| b.text(dv[:formula1].to_s) } if dv[:formula1]
+            @builder.tag("formula2") { |b| b.text(dv[:formula2].to_s) } if dv[:formula2]
             @builder.close_tag("dataValidation")
           else
             @builder.empty_tag("dataValidation", dv_attrs)
@@ -332,9 +317,7 @@ module Xlsxrb
         @builder.open_tag("hyperlinks")
         links.each_with_index do |link, idx|
           h_attrs = { ref: link[:cell] }
-          if link[:url]
-            h_attrs[:"r:id"] = "rId#{link[:_rid] || (idx + 1)}"
-          end
+          h_attrs[:"r:id"] = "rId#{link[:_rid] || (idx + 1)}" if link[:url]
           h_attrs[:location] = link[:location] if link[:location]
           h_attrs[:display] = link[:display] if link[:display]
           h_attrs[:tooltip] = link[:tooltip] if link[:tooltip]

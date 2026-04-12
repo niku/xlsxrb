@@ -76,7 +76,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   test "set_auto_filter in build API" do
     workbook = Xlsxrb.build do |w|
       w.add_sheet("Data") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
         s.add_row(["Bob", 87])
         s.set_auto_filter("A1:B3")
@@ -97,7 +97,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_autofilter_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.add_sheet("Data") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
         s.set_auto_filter("A1:B2")
       end
@@ -119,8 +119,8 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.add_sheet("DV") do |s|
         s.add_row(["Value"])
         s.add_data_validation("A2:A100", type: :whole, operator: :between,
-                              formula1: "1", formula2: "100",
-                              show_error_message: true, error: "Enter 1-100")
+                                         formula1: "1", formula2: "100",
+                                         show_error_message: true, error: "Enter 1-100")
       end
     end
 
@@ -213,7 +213,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     assert_not_nil(styles_xml)
     assert_match(/cfRule[^>]*dxfId="0"/, sheet_xml)
     assert_match(/<dxfs count="1">/, styles_xml)
-    assert_match(/<fgColor rgb="FFFFC7CE"\/>/, styles_xml)
+    assert_match(%r{<fgColor rgb="FFFFC7CE"/>}, styles_xml)
   ensure
     tmp&.close!
   end
@@ -225,10 +225,10 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   test "add_table in build API" do
     workbook = Xlsxrb.build do |w|
       w.add_sheet("Tables") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
         s.add_row(["Bob", 87])
-        s.add_table("A1:B3", columns: ["Name", "Score"], name: "ScoreTable")
+        s.add_table("A1:B3", columns: %w[Name Score], name: "ScoreTable")
       end
     end
 
@@ -248,9 +248,9 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_table_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.add_sheet("Tables") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
-        s.add_table("A1:B2", columns: ["Name", "Score"], name: "MyTable")
+        s.add_table("A1:B2", columns: %w[Name Score], name: "MyTable")
       end
     end
 
@@ -266,10 +266,10 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_table_style_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.add_sheet("Tables") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
         s.add_table("A1:B2",
-                    columns: ["Name", "Score"],
+                    columns: %w[Name Score],
                     name: "StyledTable",
                     style: "TableStyleMedium9",
                     show_first_column: true,
@@ -703,7 +703,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_printtitles_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.add_sheet("Data") do |s|
-        s.add_row(["Header1", "Header2"])
+        s.add_row(%w[Header1 Header2])
         s.add_row([1, 2])
       end
       w.set_print_titles(rows: "1:1", sheet: "Data")
@@ -828,7 +828,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   test "set_selection in build API" do
     workbook = Xlsxrb.build do |w|
       w.add_sheet("Sel") do |s|
-        s.add_row(["A", "B"])
+        s.add_row(%w[A B])
         s.set_selection("B1")
       end
     end
@@ -964,7 +964,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   test "set_sort_state in build API" do
     workbook = Xlsxrb.build do |w|
       w.add_sheet("Sort") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
         s.add_row(["Bob", 87])
         s.set_auto_filter("A1:B3")
@@ -990,7 +990,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   test "multiple features on same sheet in build API" do
     workbook = Xlsxrb.build do |w|
       w.add_sheet("Combined") do |s|
-        s.add_row(["Name", "Score", "Grade"])
+        s.add_row(%w[Name Score Grade])
         s.add_row(["Alice", 95, "A"])
         s.add_row(["Bob", 87, "B"])
         s.set_auto_filter("A1:C3")
@@ -1025,7 +1025,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_combined_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.add_sheet("Combined") do |s|
-        s.add_row(["Name", "Score"])
+        s.add_row(%w[Name Score])
         s.add_row(["Alice", 95])
         s.set_auto_filter("A1:B2")
         s.merge_cells("A1:B1")
