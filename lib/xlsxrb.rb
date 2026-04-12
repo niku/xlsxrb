@@ -3,6 +3,7 @@
 require "date"
 require "openssl"
 require "securerandom"
+require "opentelemetry"
 require_relative "xlsxrb/version"
 require_relative "xlsxrb/ooxml/zip_generator"
 require_relative "xlsxrb/ooxml/writer"
@@ -14,6 +15,8 @@ require_relative "xlsxrb/style_builder"
 # Ruby XLSX read/write library.
 module Xlsxrb
   class Error < StandardError; end
+
+  TRACER = OpenTelemetry.tracer_provider.tracer("xlsxrb", Xlsxrb::VERSION)
 
   # Builder for block-style chart definitions.
   class ChartBuilder
@@ -73,22 +76,25 @@ module Xlsxrb
   # Reads an XLSX file into an Elements::Workbook.
   # source: file path (String) or IO object.
   def self.read(source)
-    entries = Ooxml::ZipReader.open(source, &:read_all)
-    shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
-    styles = Ooxml::StylesParser.parse(entries["xl/styles.xml"])
-    workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
-    rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
+    attributes = source.is_a?(String) ? { "filepath" => source } : {}
+    TRACER.in_span("Xlsxrb.read", attributes: attributes) do
+      entries = Ooxml::ZipReader.open(source, &:read_all)
+      shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
+      styles = Ooxml::StylesParser.parse(entries["xl/styles.xml"])
+      workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
+      rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
 
-    sheets = workbook_sheets.map do |sheet_info|
-      target = rels[sheet_info[:r_id]]
-      next nil unless target
+      sheets = workbook_sheets.map do |sheet_info|
+        target = rels[sheet_info[:r_id]]
+        next nil unless target
 
-      sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
-      sheet_xml = entries[sheet_path]
-      build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles)
-    end.compact
+        sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
+        sheet_xml = entries[sheet_path]
+        build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles)
+      end.compact
 
-    Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
+      Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
+    end
   end
 
   # Writes an Elements::Workbook to an XLSX file.
@@ -97,44 +103,47 @@ module Xlsxrb
     raise Error, "target is required" if target.nil?
     raise Error, "workbook must be an Elements::Workbook" unless workbook.is_a?(Elements::Workbook)
 
-    sst = []
-    sst_index = {}
+    attributes = target.is_a?(String) ? { "filepath" => target } : {}
+    TRACER.in_span("Xlsxrb.write", attributes: attributes) do
+      sst = []
+      sst_index = {}
 
-    # Collect shared strings and build index
-    sheet_data = workbook.sheets.map do |ws|
-      rows = ws.rows.map do |row|
-        cells = row.cells.map do |cell|
-          raw = build_raw_cell(cell, sst, sst_index)
-          raw
+      # Collect shared strings and build index
+      sheet_data = workbook.sheets.map do |ws|
+        rows = ws.rows.map do |row|
+          cells = row.cells.map do |cell|
+            raw = build_raw_cell(cell, sst, sst_index)
+            raw
+          end
+          { index: row.index, cells: cells, attrs: build_row_attrs(row), unmapped: [] }
         end
-        { index: row.index, cells: cells, attrs: build_row_attrs(row), unmapped: [] }
-      end
-      columns = ws.columns.map do |col|
-        { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width }
-      end
-      sd = { name: ws.name, rows: rows, columns: columns }
-      sd[:charts] = ws.charts unless ws.charts.empty?
+        columns = ws.columns.map do |col|
+          { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width }
+        end
+        sd = { name: ws.name, rows: rows, columns: columns }
+        sd[:charts] = ws.charts unless ws.charts.empty?
 
-      # Extract facade metadata from unmapped_data
-      facade = ws.unmapped_data[:facade]
-      facade&.each { |key, val| sd[key] = val }
+        # Extract facade metadata from unmapped_data
+        facade = ws.unmapped_data[:facade]
+        facade&.each { |key, val| sd[key] = val }
 
-      sd
+        sd
+      end
+
+      # Extract workbook-level facade metadata
+      wb_facade = workbook.unmapped_data[:facade] || {}
+      Ooxml::WorkbookWriter.write(
+        target,
+        sheets: sheet_data,
+        shared_strings: sst,
+        styles: workbook.styles,
+        defined_names: wb_facade[:defined_names],
+        core_properties: wb_facade[:core_properties],
+        app_properties: wb_facade[:app_properties],
+        custom_properties: wb_facade[:custom_properties],
+        workbook_protection: wb_facade[:workbook_protection]
+      )
     end
-
-    # Extract workbook-level facade metadata
-    wb_facade = workbook.unmapped_data[:facade] || {}
-    Ooxml::WorkbookWriter.write(
-      target,
-      sheets: sheet_data,
-      shared_strings: sst,
-      styles: workbook.styles,
-      defined_names: wb_facade[:defined_names],
-      core_properties: wb_facade[:core_properties],
-      app_properties: wb_facade[:app_properties],
-      custom_properties: wb_facade[:custom_properties],
-      workbook_protection: wb_facade[:workbook_protection]
-    )
   end
 
   # Streaming read: yields Elements::Row one at a time.
@@ -144,29 +153,32 @@ module Xlsxrb
   def self.foreach(source, sheet: 0, &block)
     return enum_for(:foreach, source, sheet: sheet) unless block
 
-    entries = Ooxml::ZipReader.open(source, &:read_all)
-    shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
-    workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
-    rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
+    attributes = source.is_a?(String) ? { "filepath" => source } : {}
+    TRACER.in_span("Xlsxrb.foreach", attributes: attributes) do
+      entries = Ooxml::ZipReader.open(source, &:read_all)
+      shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
+      workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
+      rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
 
-    target_sheet = case sheet
-                   when Integer
-                     workbook_sheets[sheet]
-                   when String
-                     workbook_sheets.find { |s| s[:name] == sheet }
-                   end
-    return unless target_sheet
+      target_sheet = case sheet
+                     when Integer
+                       workbook_sheets[sheet]
+                     when String
+                       workbook_sheets.find { |s| s[:name] == sheet }
+                     end
+      next unless target_sheet
 
-    target = rels[target_sheet[:r_id]]
-    return unless target
+      target = rels[target_sheet[:r_id]]
+      next unless target
 
-    sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
-    sheet_xml = entries[sheet_path]
-    return if sheet_xml.nil? || sheet_xml.empty?
+      sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
+      sheet_xml = entries[sheet_path]
+      next if sheet_xml.nil? || sheet_xml.empty?
 
-    Ooxml::WorksheetParser.each_row(sheet_xml, shared_strings: shared_strings) do |raw_row|
-      row = build_row_from_raw(raw_row)
-      block.call(row)
+      Ooxml::WorksheetParser.each_row(sheet_xml, shared_strings: shared_strings) do |raw_row|
+        row = build_row_from_raw(raw_row)
+        block.call(row)
+      end
     end
   end
 
@@ -176,18 +188,23 @@ module Xlsxrb
     raise Error, "target is required" if target.nil?
     raise Error, "block is required" unless block
 
-    stream_writer = StreamWriter.new(target)
-    block.call(stream_writer)
-    stream_writer.close
+    attributes = target.is_a?(String) ? { "filepath" => target } : {}
+    TRACER.in_span("Xlsxrb.generate", attributes: attributes) do
+      stream_writer = StreamWriter.new(target)
+      block.call(stream_writer)
+      stream_writer.close
+    end
   end
 
   # Builds an Elements::Workbook in memory using a DSL.
   def self.build(&block)
     raise Error, "block is required" unless block
 
-    builder = WorkbookBuilder.new
-    block.call(builder)
-    builder.build
+    TRACER.in_span("Xlsxrb.build") do
+      builder = WorkbookBuilder.new
+      block.call(builder)
+      builder.build
+    end
   end
 
   # DSL context for Xlsxrb.build.
@@ -1031,27 +1048,29 @@ module Xlsxrb
     end
 
     def close
-      flush_current_sheet
+      TRACER.in_span("StreamWriter#close") do
+        flush_current_sheet
 
-      # Process styles before writing
-      result = apply_styles(@sheets)
-      sheet_data_with_styles = result[:sheets]
-      styles_definition = result[:styles]
+        # Process styles before writing
+        result = apply_styles(@sheets)
+        sheet_data_with_styles = result[:sheets]
+        styles_definition = result[:styles]
 
-      # Resolve defined name local_sheet_ids
-      resolved_names = resolve_defined_names(@defined_names, sheet_data_with_styles || @sheets)
+        # Resolve defined name local_sheet_ids
+        resolved_names = resolve_defined_names(@defined_names, sheet_data_with_styles || @sheets)
 
-      Ooxml::WorkbookWriter.write(
-        @target,
-        sheets: sheet_data_with_styles || @sheets,
-        shared_strings: @sst,
-        styles: styles_definition,
-        defined_names: resolved_names.empty? ? nil : resolved_names,
-        core_properties: @core_properties.empty? ? nil : @core_properties,
-        app_properties: @app_properties.empty? ? nil : @app_properties,
-        custom_properties: @custom_properties.empty? ? nil : @custom_properties,
-        workbook_protection: @workbook_protection
-      )
+        Ooxml::WorkbookWriter.write(
+          @target,
+          sheets: sheet_data_with_styles || @sheets,
+          shared_strings: @sst,
+          styles: styles_definition,
+          defined_names: resolved_names.empty? ? nil : resolved_names,
+          core_properties: @core_properties.empty? ? nil : @core_properties,
+          app_properties: @app_properties.empty? ? nil : @app_properties,
+          custom_properties: @custom_properties.empty? ? nil : @custom_properties,
+          workbook_protection: @workbook_protection
+        )
+      end
     end
 
     private
