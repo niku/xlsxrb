@@ -497,6 +497,34 @@ class ContractTest < Test::Unit::TestCase
     tmp&.close!
   end
 
+  data(API_PATHS)
+  test "conditional_format: visual style emits dxf linkage" do |api_path|
+    _reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("CF") do |s|
+        s.add_row([90, 45, 72, 88])
+        s.add_conditional_format("A1:D1",
+                                 type: :cell_is,
+                                 operator: :greaterThan,
+                                 formula: "80",
+                                 priority: 1,
+                                 fill_color: "FFFFC7CE")
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+    styles_xml = entries["xl/styles.xml"]
+
+    assert_not_nil(sheet_xml, "sheet1.xml should exist")
+    assert_not_nil(styles_xml, "styles.xml should exist")
+    assert_match(/cfRule[^>]*dxfId="0"/, sheet_xml,
+                 "Expected cfRule to reference dxfId [conditional_format dxf linkage]")
+    assert_match(/<dxfs count="1">/, styles_xml,
+                 "Expected styles.xml to include one dxf [styles dxfs]")
+  ensure
+    tmp&.close!
+  end
+
   # =====================================================
   # Table CONTRACT tests
   # =====================================================
