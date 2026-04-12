@@ -117,9 +117,7 @@ module Xlsxrb
 
       # Extract facade metadata from unmapped_data
       facade = ws.unmapped_data[:facade]
-      if facade
-        facade.each { |key, val| sd[key] = val }
-      end
+      facade&.each { |key, val| sd[key] = val }
 
       sd
     end
@@ -234,8 +232,8 @@ module Xlsxrb
     def set_print_titles(rows: nil, cols: nil, sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
       parts = []
-      parts << "'#{sheet_name}'!$#{cols.sub(':', ':$')}" if cols
-      parts << "'#{sheet_name}'!$#{rows.sub(':', ':$')}" if rows
+      parts << "'#{sheet_name}'!$#{cols.sub(":", ":$")}" if cols
+      parts << "'#{sheet_name}'!$#{rows.sub(":", ":$")}" if rows
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
       add_defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
@@ -426,12 +424,7 @@ module Xlsxrb
     def add_row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
       cells = values.each_with_index.map do |val, col_index|
-        style_name = case styles
-                     when Hash
-                       styles[col_index]
-                     when Array
-                       styles[col_index]
-                     end
+        style_name = styles[col_index] if styles.is_a?(Hash) || styles.is_a?(Array)
         # Style index will be resolved at build time
         Elements::Cell.new(
           row_index: row_index,
@@ -487,9 +480,11 @@ module Xlsxrb
     # --- Auto Filter / Sort ---
 
     # Set an auto filter range (e.g. "A1:D10").
+    # rubocop:disable Naming/AccessorMethodName
     def set_auto_filter(range)
       @auto_filter = range
     end
+    # rubocop:enable Naming/AccessorMethodName
 
     # Add a filter column to the auto filter.
     def add_filter_column(col_id, filter)
@@ -778,12 +773,7 @@ module Xlsxrb
         cell = Xlsxrb.build_raw_cell_from_value(row_index, col_idx, val, @sst, @sst_index)
 
         # Track style assignment if provided
-        style_name = case styles
-                     when Hash
-                       styles[col_idx]
-                     when Array
-                       styles[col_idx]
-                     end
+        style_name = styles[col_idx] if styles.is_a?(Hash) || styles.is_a?(Array)
 
         if style_name && @styles.key?(style_name)
           cell_ref = cell[:ref]
@@ -832,10 +822,12 @@ module Xlsxrb
 
     # --- Auto Filter / Sort ---
 
+    # rubocop:disable Naming/AccessorMethodName
     def set_auto_filter(range)
       add_sheet if @current_sheet.nil?
       @current_auto_filter = range
     end
+    # rubocop:enable Naming/AccessorMethodName
 
     def add_filter_column(col_id, filter)
       add_sheet if @current_sheet.nil?
@@ -1011,8 +1003,8 @@ module Xlsxrb
     def set_print_titles(rows: nil, cols: nil, sheet: nil)
       sheet_name = sheet || @current_sheet || "Sheet1"
       parts = []
-      parts << "'#{sheet_name}'!$#{cols.sub(':', ':$')}" if cols
-      parts << "'#{sheet_name}'!$#{rows.sub(':', ':$')}" if rows
+      parts << "'#{sheet_name}'!$#{cols.sub(":", ":$")}" if cols
+      parts << "'#{sheet_name}'!$#{rows.sub(":", ":$")}" if rows
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
       add_defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)

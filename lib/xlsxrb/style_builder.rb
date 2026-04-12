@@ -48,6 +48,7 @@ module Xlsxrb
 
     # --- Font Properties ---
 
+    # rubocop:disable Style/OptionalBooleanParameter
     def bold(value = true)
       @font_props[:bold] = value
       self
@@ -58,8 +59,8 @@ module Xlsxrb
       self
     end
 
-    def size(sz)
-      @font_props[:sz] = sz.to_i
+    def size(size_value)
+      @font_props[:sz] = size_value.to_i
       self
     end
 
@@ -82,6 +83,7 @@ module Xlsxrb
       @font_props[:strike] = value
       self
     end
+    # rubocop:enable Style/OptionalBooleanParameter
 
     # --- Fill Properties ---
 

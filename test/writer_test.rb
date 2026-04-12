@@ -1393,7 +1393,7 @@ class WriterTest < Test::Unit::TestCase
     drawing_xml = read_xml_from_xlsx(xlsx_path, "xl/drawings/drawing1.xml")
     assert_match(%r{<a:srgbClr val="FFFFC0"/>}, drawing_xml)
     assert_match(%r{<a:srgbClr val="FF0000"/>}, drawing_xml)
-    assert_not_match(%r{<a:srgbClr val="#}, drawing_xml)
+    assert_not_match(/<a:srgbClr val="#/, drawing_xml)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

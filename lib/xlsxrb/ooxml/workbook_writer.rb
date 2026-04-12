@@ -71,7 +71,7 @@ module Xlsxrb
             # Track relationship IDs for this sheet
             sheet_rels = []
             drawing_rid = nil
-            comment_rid = nil
+            nil
             vml_rid = nil
             table_start_rid = nil
             hyperlink_rels = []
@@ -98,9 +98,9 @@ module Xlsxrb
 
               sheet_images.each do |img|
                 media_idx = @drawing_count # simplified
-                media_path = "xl/media/image#{media_idx}.#{img[:ext] || 'png'}"
+                media_path = "xl/media/image#{media_idx}.#{img[:ext] || "png"}"
                 zip.add_binary_entry(media_path, img[:file_data])
-                drawing_rels_data << { type: :image, target: "../media/image#{media_idx}.#{img[:ext] || 'png'}" }
+                drawing_rels_data << { type: :image, target: "../media/image#{media_idx}.#{img[:ext] || "png"}" }
                 drawing_parts << { kind: :pic, img: img, rid_index: drawing_rels_data.size }
               end
 
@@ -134,7 +134,6 @@ module Xlsxrb
               @comment_count += 1
               comment_rid_num = sheet_rels.size + 1
               sheet_rels << { id: "rId#{comment_rid_num}", type: "#{DOC_REL}/comments", target: "../comments#{@comment_count}.xml" }
-              comment_rid = "rId#{comment_rid_num}"
               vml_rid_num = sheet_rels.size + 1
               sheet_rels << { id: "rId#{vml_rid_num}", type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing", target: "../drawings/vmlDrawing#{@comment_count}.vml" }
               vml_rid = "rId#{vml_rid_num}"
@@ -149,7 +148,7 @@ module Xlsxrb
             end
 
             # Hyperlink relationships (external URLs need rels)
-            sheet_hyperlinks.each_with_index do |link, hi|
+            sheet_hyperlinks.each_with_index do |link, _hi|
               next unless link[:url]
 
               h_rid_num = sheet_rels.size + 1
@@ -171,7 +170,7 @@ module Xlsxrb
             # Table relationships
             unless sheet_tables.empty?
               table_start_rid = sheet_rels.size + 1
-              sheet_tables.each_with_index do |_tbl, ti|
+              sheet_tables.each_with_index do |_tbl, _ti|
                 @table_count += 1
                 t_rid_num = sheet_rels.size + 1
                 sheet_rels << { id: "rId#{t_rid_num}", type: "#{DOC_REL}/table", target: "../tables/table#{@table_count}.xml" }
@@ -179,9 +178,7 @@ module Xlsxrb
             end
 
             # Build worksheet rels if any
-            unless sheet_rels.empty?
-              zip.add_entry("xl/worksheets/_rels/sheet#{idx + 1}.xml.rels", build_sheet_rels_from_list(sheet_rels))
-            end
+            zip.add_entry("xl/worksheets/_rels/sheet#{idx + 1}.xml.rels", build_sheet_rels_from_list(sheet_rels)) unless sheet_rels.empty?
 
             # Generate table XML files
             table_id_base = @table_count - sheet_tables.size
@@ -192,31 +189,31 @@ module Xlsxrb
 
             # Build the worksheet XML with all metadata
             zip.add_entry("xl/worksheets/sheet#{idx + 1}.xml", build_worksheet_xml(
-              sheet,
-              drawing_rid: drawing_rid,
-              sheet_protection: sheet[:sheet_protection],
-              auto_filter: sheet[:auto_filter],
-              filter_columns: sheet[:filter_columns],
-              sort_state: sheet[:sort_state],
-              merge_cells: sheet[:merge_cells],
-              conditional_formats: sheet[:conditional_formats],
-              data_validations: sheet[:data_validations],
-              hyperlinks: enriched_hyperlinks.empty? ? nil : enriched_hyperlinks,
-              print_options: sheet[:print_options],
-              page_margins: sheet[:page_margins],
-              page_setup: sheet[:page_setup],
-              header_footer: sheet[:header_footer],
-              row_breaks: sheet[:row_breaks],
-              col_breaks: sheet[:col_breaks],
-              freeze_pane: sheet[:freeze_pane],
-              split_pane: sheet[:split_pane],
-              selection: sheet[:selection],
-              sheet_view: sheet[:sheet_view],
-              sheet_properties: sheet[:sheet_properties],
-              tables: sheet_tables,
-              table_start_rid: table_start_rid,
-              legacy_drawing_rid: vml_rid
-            ))
+                                                                 sheet,
+                                                                 drawing_rid: drawing_rid,
+                                                                 sheet_protection: sheet[:sheet_protection],
+                                                                 auto_filter: sheet[:auto_filter],
+                                                                 filter_columns: sheet[:filter_columns],
+                                                                 sort_state: sheet[:sort_state],
+                                                                 merge_cells: sheet[:merge_cells],
+                                                                 conditional_formats: sheet[:conditional_formats],
+                                                                 data_validations: sheet[:data_validations],
+                                                                 hyperlinks: enriched_hyperlinks.empty? ? nil : enriched_hyperlinks,
+                                                                 print_options: sheet[:print_options],
+                                                                 page_margins: sheet[:page_margins],
+                                                                 page_setup: sheet[:page_setup],
+                                                                 header_footer: sheet[:header_footer],
+                                                                 row_breaks: sheet[:row_breaks],
+                                                                 col_breaks: sheet[:col_breaks],
+                                                                 freeze_pane: sheet[:freeze_pane],
+                                                                 split_pane: sheet[:split_pane],
+                                                                 selection: sheet[:selection],
+                                                                 sheet_view: sheet[:sheet_view],
+                                                                 sheet_properties: sheet[:sheet_properties],
+                                                                 tables: sheet_tables,
+                                                                 table_start_rid: table_start_rid,
+                                                                 legacy_drawing_rid: vml_rid
+                                                               ))
           end
         end
       end
@@ -278,19 +275,19 @@ module Xlsxrb
             end
             sheet_images.each do |img|
               ext = img[:ext] || "png"
-              unless image_exts[ext]
-                mime = case ext
-                       when "png" then "image/png"
-                       when "jpg", "jpeg" then "image/jpeg"
-                       when "gif" then "image/gif"
-                       when "bmp" then "image/bmp"
-                       when "emf" then "image/x-emf"
-                       when "wmf" then "image/x-wmf"
-                       else "application/octet-stream"
-                       end
-                b.empty_tag("Default", { Extension: ext, ContentType: mime })
-                image_exts[ext] = true
-              end
+              next if image_exts[ext]
+
+              mime = case ext
+                     when "png" then "image/png"
+                     when "jpg", "jpeg" then "image/jpeg"
+                     when "gif" then "image/gif"
+                     when "bmp" then "image/bmp"
+                     when "emf" then "image/x-emf"
+                     when "wmf" then "image/x-wmf"
+                     else "application/octet-stream"
+                     end
+              b.empty_tag("Default", { Extension: ext, ContentType: mime })
+              image_exts[ext] = true
             end
           end
 
@@ -503,11 +500,7 @@ module Xlsxrb
         unless num_fmts.empty?
           b.tag("numFmts", { count: num_fmts.size.to_s }) do |_|
             num_fmts.each do |nf|
-              if nf.is_a?(Hash)
-                b.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id].to_s, formatCode: nf[:format_code] })
-              else
-                # Legacy format handling
-              end
+              b.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id].to_s, formatCode: nf[:format_code] }) if nf.is_a?(Hash)
             end
           end
         end
@@ -696,7 +689,7 @@ module Xlsxrb
           displayName: tbl[:display_name] || tbl_name,
           ref: tbl[:ref]
         }
-        t_attrs[:totalsRowCount] = tbl[:totals_row_count].to_s if tbl[:totals_row_count] && tbl[:totals_row_count] > 0
+        t_attrs[:totalsRowCount] = tbl[:totals_row_count].to_s if tbl[:totals_row_count]&.positive?
         b.open_tag("table", t_attrs)
 
         # Auto filter for the table range
