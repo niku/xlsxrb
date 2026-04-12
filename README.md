@@ -113,6 +113,24 @@ Xlsxrb.generate("streaming_chart.xlsx") do |w|
 end
 ```
 
+`add_chart` also supports a block form:
+
+```ruby
+Xlsxrb.generate("streaming_chart_block.xlsx") do |w|
+  w.add_sheet("Sales") do
+    w.add_row(["Month", "Value"])
+    w.add_row(["Jan", 100])
+    w.add_row(["Feb", 200])
+
+    w.add_chart do |c|
+      c.type :bar
+      c.title "Monthly Sales"
+      c.series(cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3")
+    end
+  end
+end
+```
+
 ### 2. In-Memory
 
 #### Reading an entire file into memory
@@ -221,6 +239,12 @@ workbook = Xlsxrb.build do |w|
 end
 
 Xlsxrb.write("styled_output.xlsx", workbook)
+```
+
+`add_style` also supports an options form:
+
+```ruby
+s.add_style("header", bold: true, size: 14, font_color: "FFFF0000")
 ```
 
 ### Streaming Styling

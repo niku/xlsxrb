@@ -482,4 +482,49 @@ class FacadeTest < Test::Unit::TestCase
     tmp&.close
     tmp&.unlink
   end
+
+  test "add_style supports options form in build API" do
+    workbook = Xlsxrb.build do |w|
+      w.add_sheet("Styled") do |s|
+        s.add_style("header", bold: true, size: 12, font_color: "FF0000FF")
+        s.add_row(["Name", "Score"], styles: ["header", "header"])
+      end
+    end
+
+    tmp = Tempfile.new(["facade_style_opts", ".xlsx"])
+    Xlsxrb.write(tmp.path, workbook)
+
+    reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+    styles = reader.cell_styles
+    assert(styles.key?("A1"))
+    assert_equal(true, styles["A1"].dig(:font, :bold))
+  ensure
+    tmp&.close
+    tmp&.unlink
+  end
+
+  test "add_chart supports block form in generate API" do
+    tmp = Tempfile.new(["facade_chart_block_stream", ".xlsx"])
+    Xlsxrb.generate(tmp.path) do |w|
+      w.add_sheet("Sales") do
+        w.add_row(["Month", "Value"])
+        w.add_row(["Jan", 100])
+        w.add_row(["Feb", 200])
+        w.add_chart do |c|
+          c.type :bar
+          c.title "Sales Data"
+          c.series(cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3")
+        end
+      end
+    end
+
+    reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+    charts = reader.charts
+    assert_equal(1, charts.size)
+    assert_equal("barChart", charts[0][:chart_type])
+    assert_equal("Sales Data", charts[0][:title])
+  ensure
+    tmp&.close
+    tmp&.unlink
+  end
 end

@@ -14,6 +14,38 @@ module Xlsxrb
 
     attr_reader :name, :font_props, :fill_props, :border_props, :num_fmt_id
 
+    # Applies option-style definitions so callers can use add_style(name, **opts)
+    # as an alternative to block-based fluent chaining.
+    def apply_options!(**opts)
+      bold(opts[:bold]) if opts.key?(:bold)
+      italic(opts[:italic]) if opts.key?(:italic)
+      size(opts[:size]) if opts.key?(:size)
+      font_name(opts[:font_name]) if opts.key?(:font_name)
+      font_color(opts[:font_color]) if opts.key?(:font_color)
+      underline(opts[:underline]) if opts.key?(:underline)
+      strike(opts[:strike]) if opts.key?(:strike)
+
+      fill_color(opts[:fill_color]) if opts.key?(:fill_color)
+      if opts.key?(:fill_pattern)
+        pattern = opts[:fill_pattern] || {}
+        fill_pattern(
+          pattern[:pattern] || "solid",
+          fg_color: pattern[:fg_color],
+          bg_color: pattern[:bg_color]
+        )
+      end
+      fill_gradient(**opts[:fill_gradient]) if opts.key?(:fill_gradient) && opts[:fill_gradient]
+
+      border_all(**opts[:border_all]) if opts.key?(:border_all) && opts[:border_all]
+      border_left(**opts[:border_left]) if opts.key?(:border_left) && opts[:border_left]
+      border_right(**opts[:border_right]) if opts.key?(:border_right) && opts[:border_right]
+      border_top(**opts[:border_top]) if opts.key?(:border_top) && opts[:border_top]
+      border_bottom(**opts[:border_bottom]) if opts.key?(:border_bottom) && opts[:border_bottom]
+
+      number_format(opts[:number_format]) if opts.key?(:number_format)
+      self
+    end
+
     # --- Font Properties ---
 
     def bold(value = true)
