@@ -59,6 +59,100 @@ module Xlsxrb
         @builder.close_tag("row")
       end
 
+      # Highly optimized row writing for StreamWriter that avoids allocating intermediate Hashes.
+      def write_row_values(row_index, values, styles: nil, style_map: nil, sst: nil, sst_index: nil, attrs: nil)
+        start unless @started
+
+        row_num = row_index + 1
+        row_num_str = row_num.to_s
+        style_lookup_enabled = styles && style_map && (styles.is_a?(Array) || styles.is_a?(Hash))
+        io = @io
+        io.write("<row r=\"")
+        io.write(row_num_str)
+        io.write('"')
+        if attrs
+          if attrs[:height]
+            io.write(' ht="')
+            io.write(attrs[:height].to_s)
+            io.write('" customHeight="1"')
+          end
+          io.write(' hidden="1"') if attrs[:hidden]
+        end
+        io.write(">")
+
+        col_index = 0
+        while col_index < values.length
+          value = values[col_index]
+          style_id = nil
+          if style_lookup_enabled
+            style_name = styles[col_index]
+            style_id = style_map[style_name] if style_name
+          end
+
+          col_ref = column_letter(col_index)
+
+          if value.nil?
+            if style_id
+              io.write('<c r="')
+              io.write(col_ref)
+              io.write(row_num_str)
+              io.write('" s="')
+              io.write(style_id.to_s)
+              io.write('"/>')
+            end
+            col_index += 1
+            next
+          end
+
+          xml_val = value
+          type = nil
+
+          case value
+          when String
+            idx = sst_index[value]
+            unless idx
+              sst << value
+              idx = sst.size - 1
+              sst_index[value] = idx
+            end
+            xml_val = idx
+            type = "s"
+          when true
+            xml_val = "1"
+            type = "b"
+          when false
+            xml_val = "0"
+            type = "b"
+          when Date
+            xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+          when Time
+            xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+          end
+
+          io.write('<c r="')
+          io.write(col_ref)
+          io.write(row_num_str)
+          io.write('"')
+          if style_id
+            io.write(' s="')
+            io.write(style_id.to_s)
+            io.write('"')
+          end
+          if type
+            io.write(' t="')
+            io.write(type)
+            io.write('"')
+          end
+          io.write("><v>")
+          io.write(xml_val.to_s)
+          io.write("</v></c>")
+
+          col_index += 1
+        end
+
+        io.write("</row>")
+      end
+
       # Write the worksheet footer. Call once after all rows.
       # Options for post-sheetData elements (in OOXML order):
       def finish(drawing_rid: nil, sheet_protection: nil, auto_filter: nil,
@@ -455,14 +549,7 @@ module Xlsxrb
       end
 
       def column_letter(index)
-        result = +""
-        i = index
-        loop do
-          result.prepend(("A".ord + (i % 26)).chr)
-          i = (i / 26) - 1
-          break if i.negative?
-        end
-        result
+        Xlsxrb::Elements::Cell.column_letter(index)
       end
     end
   end

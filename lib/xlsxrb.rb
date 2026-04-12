@@ -802,21 +802,14 @@ module Xlsxrb
       row_index = @current_row_index
       @current_row_index += 1
 
-      cells = values.each_with_index.map do |val, col_idx|
-        cell = Xlsxrb.build_raw_cell_from_value(row_index, col_idx, val, @sst, @sst_index)
-
-        # Track style assignment if provided
-        style_name = styles[col_idx] if styles.is_a?(Hash) || styles.is_a?(Array)
-
-        cell[:style_index] = @style_name_to_id[style_name] if style_name && @style_name_to_id.key?(style_name)
-
-        cell
+      attrs = nil
+      if height || hidden
+        attrs = {}
+        attrs[:height] = height if height
+        attrs[:hidden] = true if hidden
       end
-      attrs = {}
-      attrs[:height] = height if height
-      attrs[:hidden] = true if hidden
 
-      @current_row_writer.write_row(row_index, cells, attrs: attrs, unmapped: [])
+      @current_row_writer.write_row_values(row_index, values, styles: styles, style_map: @style_name_to_id, sst: @sst, sst_index: @sst_index, attrs: attrs)
     end
 
     # Set column width for a 0-based column index.
