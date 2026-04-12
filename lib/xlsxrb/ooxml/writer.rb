@@ -3536,7 +3536,7 @@ module Xlsxrb
           transforms = color[:transforms] || transforms
         else
           tag = "srgbClr"
-          val = xml_escape(color)
+          val = xml_escape(normalize_drawing_rgb(color))
         end
         children = +""
         children << %(<a:alpha val="#{alpha}"/>) if alpha
@@ -3548,6 +3548,25 @@ module Xlsxrb
         else
           %(<a:#{tag} val="#{val}">#{children}</a:#{tag}>)
         end
+      end
+
+      def normalize_drawing_rgb(color)
+        str = color.to_s
+        hex = str.delete_prefix("#")
+
+        # Common shorthand (e.g. #f00 -> FF0000)
+        if hex.match?(/\A[0-9A-Fa-f]{3}\z/)
+          return hex.chars.map { |c| c * 2 }.join.upcase
+        end
+
+        # ARGB -> RGB for DrawingML srgbClr (expects RRGGBB)
+        if hex.match?(/\A[0-9A-Fa-f]{8}\z/)
+          return hex[-6, 6].upcase
+        end
+
+        return hex.upcase if hex.match?(/\A[0-9A-Fa-f]{6}\z/)
+
+        str
       end
 
       alias srgb_clr_xml color_xml
