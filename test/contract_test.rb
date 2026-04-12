@@ -416,4 +416,275 @@ class ContractTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  # =====================================================
+  # Hyperlink CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "hyperlink: external URL is preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Links") do |s|
+        s.add_row(["Click me"])
+        s.add_hyperlink("A1", "https://example.com", display: "Example")
+      end
+    end
+
+    links = reader.hyperlinks
+    assert(links.key?("A1"), "Hyperlink on A1 should exist [hyperlinks]")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Auto Filter CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "autofilter: range is preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Data") do |s|
+        s.add_row(["Name", "Score"])
+        s.add_row(["Alice", 95])
+        s.add_row(["Bob", 87])
+        s.set_auto_filter("A1:B3")
+      end
+    end
+
+    af = reader.auto_filter
+    assert_equal("A1:B3", af, "Auto filter range mismatch [auto_filter]")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Data Validation CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "data_validation: rule is preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("DV") do |s|
+        s.add_row(["Value"])
+        s.add_data_validation("A2:A100", type: :whole, formula1: "1", formula2: "100")
+      end
+    end
+
+    dvs = reader.data_validations
+    assert_equal(1, dvs.size, "Expected 1 data validation [data_validation count]")
+    assert_equal("A2:A100", dvs[0][:sqref], "Data validation sqref mismatch")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Conditional Formatting CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "conditional_format: rule is preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("CF") do |s|
+        s.add_row([10, 20, 30])
+        s.add_conditional_format("A1:C1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1)
+      end
+    end
+
+    cfs = reader.conditional_formats
+    assert_equal(1, cfs.size, "Expected 1 conditional format [conditional_format count]")
+    assert_equal("A1:C1", cfs[0][:sqref])
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Table CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "table: definition is preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Tables") do |s|
+        s.add_row(["Name", "Score"])
+        s.add_row(["Alice", 95])
+        s.add_table("A1:B2", columns: ["Name", "Score"], name: "TestTable")
+      end
+    end
+
+    tables = reader.tables
+    assert_equal(1, tables.size, "Expected 1 table [table count]")
+    assert_equal("TestTable", tables[0][:name], "Table name mismatch")
+    assert_equal("A1:B2", tables[0][:ref], "Table ref mismatch")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Merge Cells CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "merge_cells: range is preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Merge") do |s|
+        s.add_row(["Merged", nil, nil])
+        s.merge_cells("A1:C1")
+      end
+    end
+
+    merged = reader.merged_cells
+    assert_equal(["A1:C1"], merged, "Merged cells mismatch [merged_cells]")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Freeze Pane CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "freeze_pane: settings are preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Frozen") do |s|
+        s.add_row(["Header"])
+        s.add_row([1])
+        s.set_freeze_pane(row: 1, col: 0)
+      end
+    end
+
+    pane = reader.freeze_pane
+    assert_not_nil(pane, "Freeze pane should exist [freeze_pane]")
+    assert_equal(:frozen, pane[:state], "Freeze pane state should be frozen")
+    assert_equal(1, pane[:row], "Freeze pane row mismatch")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Page Margins CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "page_margins: values are preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Margins") do |s|
+        s.add_row(["Data"])
+        s.set_page_margins(left: 1.0, right: 1.0, top: 1.5, bottom: 1.5)
+      end
+    end
+
+    margins = reader.page_margins
+    assert_not_nil(margins, "Page margins should exist [page_margins]")
+    assert_in_delta(1.0, margins[:left], 0.01, "Left margin mismatch")
+    assert_in_delta(1.5, margins[:top], 0.01, "Top margin mismatch")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Page Setup CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "page_setup: orientation is preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Setup") do |s|
+        s.add_row(["Data"])
+        s.set_page_setup(orientation: :landscape)
+      end
+    end
+
+    ps = reader.page_setup
+    assert_not_nil(ps, "Page setup should exist [page_setup]")
+    assert_equal("landscape", ps[:orientation], "Orientation mismatch")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Header/Footer CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "header_footer: text is preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("HF") do |s|
+        s.add_row(["Data"])
+        s.set_header_footer(odd_header: "&CReport", odd_footer: "&CPage &P")
+      end
+    end
+
+    hf = reader.header_footer
+    assert_not_nil(hf, "Header/footer should exist [header_footer]")
+    assert_equal("&CReport", hf[:odd_header], "Header mismatch")
+    assert_equal("&CPage &P", hf[:odd_footer], "Footer mismatch")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Sheet Protection CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "sheet_protection: settings are preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Prot") do |s|
+        s.add_row(["Data"])
+        s.set_sheet_protection(sheet: true, objects: true)
+      end
+    end
+
+    prot = reader.sheet_protection
+    assert_not_nil(prot, "Sheet protection should exist [sheet_protection]")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Comments CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "comment: text is preserved" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("Comments") do |s|
+        s.add_row(["Value"])
+        s.add_comment("A1", "Test comment", author: "Author")
+      end
+    end
+
+    comments = reader.comments
+    assert_equal(1, comments.size, "Expected 1 comment [comment count]")
+    assert_equal("A1", comments[0][:ref], "Comment ref mismatch")
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Combined features CONTRACT test
+  # =====================================================
+
+  data(API_PATHS)
+  test "combined: multiple features on same sheet" do |api_path|
+    reader, tmp = generate_and_read(api_path) do |w|
+      w.add_sheet("All") do |s|
+        s.add_row(["Name", "Score"])
+        s.add_row(["Alice", 95])
+        s.set_auto_filter("A1:B2")
+        s.merge_cells("A1:A1")
+        s.set_freeze_pane(row: 1)
+        s.set_page_margins(left: 1.0, right: 1.0)
+        s.add_data_validation("B2", type: :whole, formula1: "0", formula2: "100")
+      end
+    end
+
+    assert_equal("A1:B2", reader.auto_filter)
+    assert_equal(["A1:A1"], reader.merged_cells)
+    assert_not_nil(reader.freeze_pane)
+    assert_not_nil(reader.page_margins)
+    assert_equal(1, reader.data_validations.size)
+  ensure
+    tmp&.close!
+  end
 end
