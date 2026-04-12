@@ -441,7 +441,7 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_chart_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.add_sheet("Sales") do |s|
-        s.add_row(["Month", "Value"])
+        s.add_row(%w[Month Value])
         s.add_row(["Jan", 100])
         s.add_row(["Feb", 200])
         w.add_chart(type: :bar, title: "Sales Data", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
@@ -462,7 +462,7 @@ class FacadeTest < Test::Unit::TestCase
   test "add_chart works in In-Memory build API" do
     workbook = Xlsxrb.build do |w|
       w.add_sheet("Sales") do |s|
-        s.add_row(["Month", "Value"])
+        s.add_row(%w[Month Value])
         s.add_row(["Jan", 100])
         s.add_row(["Feb", 200])
         s.add_chart(type: :pie, title: "Sales Pie", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
@@ -487,7 +487,7 @@ class FacadeTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.add_sheet("Styled") do |s|
         s.add_style("header", bold: true, size: 12, font_color: "FF0000FF")
-        s.add_row(["Name", "Score"], styles: ["header", "header"])
+        s.add_row(%w[Name Score], styles: %w[header header])
       end
     end
 
@@ -507,7 +507,7 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_chart_block_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.add_sheet("Sales") do
-        w.add_row(["Month", "Value"])
+        w.add_row(%w[Month Value])
         w.add_row(["Jan", 100])
         w.add_row(["Feb", 200])
         w.add_chart do |c|

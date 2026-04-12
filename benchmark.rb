@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ENV["GEM_HOME"] = File.expand_path("tmp/vendor/bundle", __dir__)
 ENV["GEM_PATH"] = ENV.fetch("GEM_HOME", nil)
 
@@ -58,7 +60,7 @@ Xlsxrb.generate(READ_TEST_FILE) do |w|
   end
 end
 
-def run_in_subprocess(name, &block)
+def run_in_subprocess(_name, &block)
   File.write("tmp/bench_task.rb", <<~RUBY)
     ENV['BUNDLE_GEMFILE'] = ''
     ENV['BUNDLE_IGNORE_CONFIG'] = '1'
@@ -126,7 +128,11 @@ def run_in_subprocess(name, &block)
   output = Bundler.with_unbundled_env do
     `ruby tmp/bench_task.rb 2>/dev/null`
   end
-  JSON.parse(output, symbolize_names: true) rescue nil
+  begin
+    JSON.parse(output, symbolize_names: true)
+  rescue StandardError
+    nil
+  end
 end
 
 def run_benchmark(name, snippet)
@@ -145,7 +151,7 @@ def run_benchmark(name, snippet)
 end
 
 def format_row(result)
-  format("| %-25s | %8.2f s | %9.1f MB | %8.1f %% |", result[:name], result[:time], result[:memory], result[:cpu])
+  format("| %-25<name>s | %8.2<time>f s | %9.1<memory>f MB | %8.1<cpu>f %% |", result)
 end
 
 puts "\n--- Write Benchmarks ---"
@@ -301,7 +307,7 @@ puts "| Producer                  | File path                     | Status   |"
 puts "|---------------------------|-------------------------------|----------|"
 OUTPUT_FILES.each do |name, path|
   status = File.exist?(path) ? "exists" : "missing"
-  puts format("| %-25s | %-29s | %-8s |", name, path, status)
+  puts format("| %-25<name>s | %-29<path>s | %-8<status>s |", name: name, path: path, status: status)
 end
 
 # Cleanup
