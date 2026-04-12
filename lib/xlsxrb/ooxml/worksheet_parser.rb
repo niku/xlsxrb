@@ -4,26 +4,29 @@ require_relative "xml_parser"
 
 module Xlsxrb
   module Ooxml
-    # SAX-based streaming parser for xl/worksheets/sheetN.xml.
-    # Yields raw row data one row at a time for memory-efficient processing.
+    # Streaming parser for xl/worksheets/sheetN.xml.
+    # Uses a fast string-scanning approach for row/cell extraction,
+    # falling back to REXML SAX only for column definitions and unmapped data.
     class WorksheetParser
+      EMPTY_ARRAY = [].freeze
+      EMPTY_HASH = {}.freeze
+
       # Parses all rows from a worksheet XML string.
       # Returns an Array of raw row hashes:
       #   { index:, cells: [{ ref:, type:, style_index:, value:, formula: }], attrs:, unmapped: }
       def self.parse(xml_string, shared_strings: [])
         return [] if xml_string.nil? || xml_string.empty?
 
-        listener = Listener.new(shared_strings)
-        XmlParser.parse(xml_string, listener)
-        listener.rows
+        rows = []
+        fast_scan_rows(xml_string, shared_strings) { |row| rows << row }
+        rows
       end
 
       # Streaming parse: yields one raw row hash at a time.
       def self.each_row(xml_string, shared_strings: [], &block)
         return enum_for(:each_row, xml_string, shared_strings: shared_strings) unless block
 
-        listener = StreamingListener.new(shared_strings, &block)
-        XmlParser.parse(xml_string, listener)
+        fast_scan_rows(xml_string, shared_strings, &block)
       end
 
       # Parses column definitions (<cols>) from a worksheet.
@@ -35,229 +38,274 @@ module Xlsxrb
         listener.columns
       end
 
-      # Shared row-parsing logic.
-      module RowParsing
-        RECOGNIZED_TAGS = %w[worksheet sheetData row c v f is t cols col sheetViews sheetView
-                             dimension sheetFormatPr mergeCell mergeCells].freeze
+      # ---- Fast string-scanning parser (byte-level for O(1) offset) ----
+      # All positions are byte offsets. We use byteindex/byteslice to avoid
+      # O(n) character-offset conversion on UTF-8 strings.
 
-        def init_row_state(shared_strings)
-          @shared_strings = shared_strings
-          @in_row = false
-          @in_cell = false
-          @in_value = false
-          @in_formula = false
-          @in_inline_string = false
-          @in_t = false
-          @current_row_index = nil
-          @current_row_attrs = {}
-          @current_row_cells = []
-          @current_cell = nil
-          @current_text = +""
-          @current_formula = +""
-          @current_inline = +""
-          @unmapped_stack = []
-          @capturing_unmapped = false
-          @current_row_unmapped = []
+      def self.fast_scan_rows(xml_src, shared_strings, &block)
+        xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
+
+        sd_start = xml.index("<sheetData")
+        return unless sd_start
+
+        sd_open_end = xml.index(">", sd_start)
+        return unless sd_open_end
+
+        return if xml.getbyte(sd_open_end - 1) == 47 # self-closing <sheetData/>
+
+        sd_end = xml.index("</sheetData>", sd_open_end)
+        return unless sd_end
+
+        pos = sd_open_end + 1
+
+        while pos < sd_end
+          row_start = xml.index("<row", pos)
+          break unless row_start && row_start < sd_end
+
+          nb = xml.getbyte(row_start + 4)
+          unless [32, 62, 9, 10, 13, 47].include?(nb)
+            pos = row_start + 4
+            next
+          end
+
+          tag_end = xml.index(">", row_start + 4)
+          break unless tag_end
+
+          if xml.getbyte(tag_end - 1) == 47
+            pos = tag_end + 1
+            next
+          end
+
+          # Row index and attrs from tag substring (bounded search)
+          row_tag = xml.byteslice(row_start, tag_end - row_start)
+          row_index = 0
+          r_val = tag_attr(row_tag, ' r="')
+          row_index = r_val.to_i - 1 if r_val
+
+          attrs = extract_row_attrs(row_tag)
+
+          row_end = xml.index("</row>", tag_end + 1)
+          break unless row_end
+
+          cells = fast_parse_cells(xml, tag_end + 1, row_end, shared_strings)
+
+          block.call({ index: row_index, cells: cells, attrs: attrs, unmapped: EMPTY_ARRAY })
+
+          pos = row_end + 6
+        end
+      end
+
+      private_class_method :fast_scan_rows
+
+      def self.extract_row_attrs(row_tag)
+        attrs = EMPTY_HASH
+
+        ht_val = tag_attr(row_tag, ' ht="')
+        if ht_val
+          attrs = {}
+          attrs[:height] = ht_val.to_f
         end
 
-        def handle_start(localname, attrs)
-          if @capturing_unmapped
-            child = { tag: localname, attrs: attrs.dup, children: [], text: nil }
-            @unmapped_stack.last[:children] << child
-            @unmapped_stack.push(child)
-            return
-          end
-
-          case localname
-          when "row"
-            @in_row = true
-            @current_row_index = (attrs["r"]&.to_i || 1) - 1 # convert to 0-based
-            @current_row_attrs = {}
-            @current_row_attrs[:height] = attrs["ht"]&.to_f if attrs["ht"]
-            @current_row_attrs[:hidden] = true if attrs["hidden"] == "1"
-            @current_row_attrs[:custom_height] = true if attrs["customHeight"] == "1"
-            @current_row_attrs[:outline_level] = attrs["outlineLevel"]&.to_i if attrs["outlineLevel"]
-            @current_row_cells = []
-            @current_row_unmapped = []
-          when "c"
-            @in_cell = true
-            @current_cell = {
-              ref: attrs["r"],
-              type: attrs["t"],
-              style_index: attrs["s"]&.to_i
-            }
-            @current_text = +""
-            @current_formula = +""
-            @current_inline = +""
-          when "v"
-            @in_value = true
-            @current_text = +""
-          when "f"
-            @in_formula = true
-            @current_formula = +""
-          when "is"
-            @in_inline_string = true
-            @current_inline = +""
-          when "t"
-            @in_t = true
-          else
-            return unless @in_row
-
-            # Unknown tag inside row → capture as unmapped
-            @capturing_unmapped = true
-            node = { tag: localname, attrs: attrs.dup, children: [], text: nil }
-            @unmapped_stack.push(node)
-          end
+        if row_tag.include?('hidden="1"')
+          attrs = {} if attrs.equal?(EMPTY_HASH)
+          attrs[:hidden] = true
         end
 
-        def handle_end(localname)
-          if @capturing_unmapped
-            @unmapped_stack.pop
-            @capturing_unmapped = false if @unmapped_stack.empty?
-            return
-          end
-
-          case localname
-          when "v"
-            @in_value = false
-          when "f"
-            @in_formula = false
-          when "t"
-            @in_t = false
-          when "is"
-            @in_inline_string = false
-          when "c"
-            finalize_cell
-            @in_cell = false
-          when "row"
-            finalize_row
-            @in_row = false
-          end
+        if row_tag.include?('customHeight="1"')
+          attrs = {} if attrs.equal?(EMPTY_HASH)
+          attrs[:custom_height] = true
         end
 
-        def handle_characters(text)
-          if @capturing_unmapped && !@unmapped_stack.empty?
-            current = @unmapped_stack.last
-            current[:text] = (current[:text] || "") + text
-            return
-          end
-
-          if @in_value
-            @current_text << text
-          elsif @in_formula
-            @current_formula << text
-          elsif @in_inline_string && @in_t
-            @current_inline << text
-          end
+        ol_val = tag_attr(row_tag, ' outlineLevel="')
+        if ol_val
+          attrs = {} if attrs.equal?(EMPTY_HASH)
+          attrs[:outline_level] = ol_val.to_i
         end
 
-        private
+        attrs
+      end
 
-        def finalize_cell
-          return unless @current_cell
+      private_class_method :extract_row_attrs
 
-          cell = @current_cell
-          raw_value = @current_text
-          cell[:value] = resolve_cell_value(raw_value, cell[:type])
-          cell[:formula] = @current_formula unless @current_formula.empty?
-          cell[:inline_string] = @current_inline unless @current_inline.empty?
-          @current_row_cells << cell
-          @current_cell = nil
-        end
+      # Extract an attribute value from a small tag substring (bounded search).
+      def self.tag_attr(tag, prefix)
+        a_pos = tag.index(prefix)
+        return nil unless a_pos
 
-        def resolve_cell_value(raw, type)
-          case type
-          when "s" # shared string
-            idx = raw.to_i
-            @shared_strings[idx] || ""
-          when "b" # boolean
-            raw == "1"
-          when "e", "str", "inlineStr" # error / formula string / inline
-            raw
-          else
-            # Numeric or general
-            return nil if raw.empty?
+        val_start = a_pos + prefix.bytesize
+        val_end = tag.index('"', val_start)
+        return nil unless val_end
 
-            if raw.include?(".")
-              raw.to_f
+        tag.byteslice(val_start, val_end - val_start).force_encoding("UTF-8")
+      end
+
+      private_class_method :tag_attr
+
+      def self.fast_parse_cells(xml, from, to, shared_strings)
+        cells = []
+        pos = from
+
+        while pos < to
+          c_start = xml.index("<c", pos)
+          break unless c_start && c_start < to
+
+          nb = xml.getbyte(c_start + 2)
+          unless [32, 62, 9, 10, 13, 47].include?(nb)
+            pos = c_start + 2
+            next
+          end
+
+          c_tag_end = xml.index(">", c_start + 2)
+          break unless c_tag_end
+
+          # Extract tag substring for bounded attribute search
+          c_tag = xml.byteslice(c_start, c_tag_end - c_start)
+          ref = tag_attr(c_tag, ' r="')
+          type = tag_attr(c_tag, ' t="')
+          style_str = tag_attr(c_tag, ' s="')
+          style_index = style_str&.to_i
+
+          # Self-closing <c ... />
+          if xml.getbyte(c_tag_end - 1) == 47
+            cells << { ref: ref, type: type, style_index: style_index, value: nil }
+            pos = c_tag_end + 1
+            next
+          end
+
+          c_end = xml.index("</c>", c_tag_end + 1)
+          break unless c_end
+
+          # Parse cell content sequentially (bounded to c_end - avoid unbounded scans)
+          value = nil
+          formula = nil
+          inline_str = nil
+          cpos = c_tag_end + 1
+          while cpos < c_end
+            tag_pos = xml.index("<", cpos)
+            break unless tag_pos && tag_pos < c_end
+
+            tag_char = xml.getbyte(tag_pos + 1)
+            case tag_char
+            when 118 # 'v'
+              if xml.getbyte(tag_pos + 2) == 62 # <v>
+                v_val_start = tag_pos + 3
+                v_end = xml.index("</v>", v_val_start)
+                if v_end
+                  raw_value = xml.byteslice(v_val_start, v_end - v_val_start)
+                  value = resolve_fast_value(raw_value, type, shared_strings)
+                  cpos = v_end + 4
+                else
+                  cpos = tag_pos + 3
+                end
+              elsif xml.getbyte(tag_pos + 2) == 47 && xml.getbyte(tag_pos + 3) == 62 # <v/>
+                cpos = tag_pos + 4
+              else
+                cpos = tag_pos + 2
+              end
+            when 102 # 'f'
+              f_tag_end = xml.index(">", tag_pos + 2)
+              if f_tag_end && f_tag_end < c_end
+                if xml.getbyte(f_tag_end - 1) == 47 # self-closing <f ... />
+                  cpos = f_tag_end + 1
+                else
+                  f_end = xml.index("</f>", f_tag_end + 1)
+                  if f_end && f_end <= c_end
+                    formula = xml.byteslice(f_tag_end + 1, f_end - f_tag_end - 1).force_encoding("UTF-8")
+                    formula = decode_xml_entities(formula) if formula.include?("&")
+                    cpos = f_end + 4
+                  else
+                    cpos = f_tag_end + 1
+                  end
+                end
+              else
+                cpos = tag_pos + 2
+              end
+            when 105 # 'i' - <is>
+              if xml.byteslice(tag_pos, 4) == "<is>"
+                is_end = xml.index("</is>", tag_pos + 4)
+                if is_end && is_end <= c_end
+                  inline_str = extract_inline_text(xml, tag_pos + 4, is_end)
+                  cpos = is_end + 5
+                else
+                  cpos = tag_pos + 4
+                end
+              else
+                cpos = tag_pos + 2
+              end
             else
-              int_val = raw.to_i
-              int_val.to_s == raw ? int_val : raw.to_f
+              # Skip unknown tag
+              close = xml.index(">", tag_pos + 1)
+              cpos = close ? close + 1 : c_end
             end
           end
+
+          cell = { ref: ref, type: type, style_index: style_index, value: value }
+          cell[:formula] = formula if formula
+          cell[:inline_string] = inline_str if inline_str
+          cells << cell
+
+          pos = c_end + 4
+        end
+
+        cells
+      end
+
+      private_class_method :fast_parse_cells
+
+      def self.extract_inline_text(xml, from, to)
+        result = +""
+        pos = from
+        while pos < to
+          t_start = xml.index("<t", pos)
+          break unless t_start && t_start < to
+
+          t_tag_end = xml.index(">", t_start)
+          break unless t_tag_end
+          next (pos = t_start + 2) if xml.getbyte(t_tag_end - 1) == 47
+
+          t_end = xml.index("</t>", t_tag_end + 1)
+          break unless t_end && t_end <= to
+
+          result << xml.byteslice(t_tag_end + 1, t_end - t_tag_end - 1)
+          pos = t_end + 4
+        end
+        result.force_encoding("UTF-8")
+        result = decode_xml_entities(result) if result.include?("&")
+        result
+      end
+
+      private_class_method :extract_inline_text
+
+      def self.resolve_fast_value(raw, type, shared_strings)
+        case type
+        when "s"
+          shared_strings[raw.to_i] || ""
+        when "b"
+          raw == "1"
+        when "e", "str", "inlineStr"
+          val = raw.force_encoding("UTF-8")
+          val.include?("&") ? decode_xml_entities(val) : val
+        else
+          return nil if raw.empty?
+
+          if raw.include?(".")
+            raw.to_f
+          else
+            int_val = raw.to_i
+            int_val.to_s == raw ? int_val : raw.to_f
+          end
         end
       end
 
-      # Collects all rows in memory.
-      class Listener
-        include REXML::SAX2Listener
-        include RowParsing
+      private_class_method :resolve_fast_value
 
-        attr_reader :rows
+      XML_ENTITIES = { "&amp;" => "&", "&lt;" => "<", "&gt;" => ">", "&quot;" => '"', "&apos;" => "'" }.freeze
 
-        def initialize(shared_strings)
-          init_row_state(shared_strings)
-          @rows = []
-        end
-
-        def start_element(_uri, localname, _qname, attrs)
-          handle_start(localname, attrs)
-        end
-
-        def end_element(_uri, localname, _qname)
-          handle_end(localname)
-        end
-
-        def characters(text)
-          handle_characters(text)
-        end
-
-        private
-
-        def finalize_row
-          @rows << {
-            index: @current_row_index,
-            cells: @current_row_cells.dup,
-            attrs: @current_row_attrs.dup,
-            unmapped: @current_row_unmapped.dup
-          }
-        end
+      def self.decode_xml_entities(str)
+        str.gsub(/&(?:amp|lt|gt|quot|apos);/, XML_ENTITIES)
       end
 
-      # Yields each row to a block (streaming).
-      class StreamingListener
-        include REXML::SAX2Listener
-        include RowParsing
-
-        def initialize(shared_strings, &block)
-          init_row_state(shared_strings)
-          @block = block
-        end
-
-        def start_element(_uri, localname, _qname, attrs)
-          handle_start(localname, attrs)
-        end
-
-        def end_element(_uri, localname, _qname)
-          handle_end(localname)
-        end
-
-        def characters(text)
-          handle_characters(text)
-        end
-
-        private
-
-        def finalize_row
-          row_data = {
-            index: @current_row_index,
-            cells: @current_row_cells.dup,
-            attrs: @current_row_attrs.dup,
-            unmapped: @current_row_unmapped.dup
-          }
-          @block.call(row_data)
-        end
-      end
+      private_class_method :decode_xml_entities
 
       # Parses <cols> section for column definitions.
       class ColumnsListener
