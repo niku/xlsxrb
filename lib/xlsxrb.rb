@@ -119,7 +119,7 @@ module Xlsxrb
           { index: row.index, cells: cells, attrs: build_row_attrs(row), unmapped: [] }
         end
         columns = ws.columns.map do |col|
-          { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width }
+          { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width, outline_level: col.outline_level }
         end
         sd = { name: ws.name, rows: rows, columns: columns }
         sd[:charts] = ws.charts unless ws.charts.empty?
@@ -796,27 +796,29 @@ module Xlsxrb
 
     # Add a row of values. values is an Array.
     # styles:: Hash mapping column indices to style names, or Array of style names for each column
-    def add_row(values, styles: nil, height: nil, hidden: false)
+    def add_row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       add_sheet if @current_sheet.nil?
 
       row_index = @current_row_index
       @current_row_index += 1
 
       attrs = nil
-      if height || hidden
+      if height || hidden || outline_level
         attrs = {}
         attrs[:height] = height if height
         attrs[:hidden] = true if hidden
+        attrs[:custom_height] = custom_height || !height.nil?
+        attrs[:outline_level] = outline_level if outline_level
       end
 
       @current_row_writer.write_row_values(row_index, values, styles: styles, style_map: @style_name_to_id, sst: @sst, sst_index: @sst_index, attrs: attrs)
     end
 
     # Set column width for a 0-based column index.
-    def set_column(index, width: nil, hidden: false)
+    def set_column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       add_sheet if @current_sheet.nil?
 
-      @current_columns << { index: index, width: width, hidden: hidden, custom_width: !width.nil? }
+      @current_columns << { index: index, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
     end
 
     # Add a chart to the current sheet.
@@ -1229,6 +1231,7 @@ module Xlsxrb
       attrs[:height] = row.height if row.height
       attrs[:hidden] = true if row.hidden
       attrs[:custom_height] = true if row.custom_height
+      attrs[:outline_level] = row.outline_level if row.outline_level
       attrs
     end
   end
