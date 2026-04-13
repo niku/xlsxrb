@@ -47,6 +47,7 @@ module Xlsxrb
         row_attrs[:ht] = attrs[:height].to_s if attrs[:height]
         row_attrs[:hidden] = "1" if attrs[:hidden]
         row_attrs[:customHeight] = "1" if attrs[:custom_height]
+        row_attrs[:outlineLevel] = attrs[:outline_level].to_s if attrs[:outline_level]
 
         @builder.open_tag("row", row_attrs)
 
@@ -77,6 +78,11 @@ module Xlsxrb
             io.write('" customHeight="1"')
           end
           io.write(' hidden="1"') if attrs[:hidden]
+          if attrs[:outline_level]
+            io.write(' outlineLevel="')
+            io.write(attrs[:outline_level].to_s)
+            io.write('"')
+          end
         end
         io.write(">")
 
@@ -501,6 +507,7 @@ module Xlsxrb
           attrs[:width] = col[:width].to_s if col[:width]
           attrs[:hidden] = "1" if col[:hidden]
           attrs[:customWidth] = "1" if col[:custom_width] || col[:width]
+          attrs[:outlineLevel] = col[:outline_level].to_s if col[:outline_level]
           @builder.empty_tag("col", attrs)
         end
         @builder.close_tag("cols")
