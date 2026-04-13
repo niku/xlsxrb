@@ -101,7 +101,7 @@ module Xlsxrb
               drawing_parts = []
 
               chart_writer = Xlsxrb::Ooxml::Writer.new
-              chart_writer.add_sheet(sheet[:name])
+              chart_writer.add_sheet(sheet[:name]) unless sheet[:name] == "Sheet1"
 
               # Populate sheet data in chart_writer for chart cache resolution
               (sheet[:rows] || []).each do |row|
