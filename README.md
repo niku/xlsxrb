@@ -448,6 +448,30 @@ Xlsxrb.generate("table.xlsx") do |w|
 end
 ```
 
+### Pivot Tables
+
+Create a pivot table to summarize data from a range.
+
+```ruby
+Xlsxrb.generate("pivot.xlsx") do |w|
+  w.add_sheet("Data") do |s|
+    s.add_row(["Region", "Product", "Amount"])
+    s.add_row(["East", "Widget", 100])
+    s.add_row(["West", "Widget", 200])
+    s.add_row(["East", "Gadget", 150])
+
+    s.add_pivot_table(
+      "Data!A1:C4",
+      row_fields: [0], # Group by Region
+      data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+      dest_ref: "E1",
+      name: "SalesPivot",
+      field_names: ["Region", "Product", "Amount"]
+    )
+  end
+end
+```
+
 ### Comments
 
 Attach a text comment (note) to a cell.

@@ -1114,4 +1114,69 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  # =====================================================
+  # Pivot Tables
+  # =====================================================
+
+  test "add_pivot_table in build API" do
+    workbook = Xlsxrb.build do |w|
+      w.add_sheet("Data") do |s|
+        s.add_row(%w[Region Product Amount])
+        s.add_row(["East", "Widget", 100])
+        s.add_row(["West", "Widget", 200])
+        s.add_row(["East", "Gadget", 150])
+        s.add_pivot_table(
+          "Data!A1:C4",
+          row_fields: [0],
+          data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
+          dest_ref: "E1",
+          name: "SalesPivot",
+          field_names: %w[Region Product Amount]
+        )
+      end
+    end
+
+    tmp = Tempfile.new(["facade_pivot_build", ".xlsx"])
+    Xlsxrb.write(tmp.path, workbook)
+
+    # Verify the ZIP contains pivot table entries
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    assert(entries.key?("xl/pivotTables/pivotTable1.xml"), "pivotTable1.xml should exist")
+    assert(entries.key?("xl/pivotCache/pivotCacheDefinition1.xml"), "pivotCacheDefinition1.xml should exist")
+    assert(entries.key?("xl/pivotCache/pivotCacheRecords1.xml"), "pivotCacheRecords1.xml should exist")
+
+    # Verify workbook.xml references pivot cache
+    wb_xml = entries["xl/workbook.xml"]
+    assert_match(/pivotCache/, wb_xml, "workbook.xml should contain pivotCache element")
+
+    # Verify pivot table XML contains name
+    pt_xml = entries["xl/pivotTables/pivotTable1.xml"]
+    assert_match(/SalesPivot/, pt_xml, "pivotTable XML should contain the name")
+  ensure
+    tmp&.close!
+  end
+
+  test "add_pivot_table in generate API" do
+    tmp = Tempfile.new(["facade_pivot_stream", ".xlsx"])
+    Xlsxrb.generate(tmp.path) do |w|
+      w.add_sheet("Data") do |s|
+        s.add_row(%w[Region Product Amount])
+        s.add_row(["East", "Widget", 100])
+        s.add_row(["West", "Widget", 200])
+        s.add_pivot_table(
+          "Data!A1:C3",
+          row_fields: [0],
+          data_fields: [{ fld: 2, name: "Total", subtotal: "sum" }],
+          field_names: %w[Region Product Amount]
+        )
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    assert(entries.key?("xl/pivotTables/pivotTable1.xml"), "pivotTable1.xml should exist")
+    assert(entries.key?("xl/pivotCache/pivotCacheDefinition1.xml"), "pivotCacheDefinition1.xml should exist")
+  ensure
+    tmp&.close!
+  end
 end
