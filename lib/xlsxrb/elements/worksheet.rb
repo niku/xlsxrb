@@ -34,11 +34,14 @@ module Xlsxrb
 
       def self.validate(name, rows)
         errs = []
-        errs << "name must be present" if name.nil? || (name.is_a?(String) && name.empty?)
-        errs << "rows must be an Array" unless rows.is_a?(Array)
+        errs << "worksheet name must be a non-empty String (got #{name.inspect})" if name.nil? || (name.is_a?(String) && name.empty?)
+        errs << "rows must be an Array (got #{rows.class})" unless rows.is_a?(Array)
         if rows.is_a?(Array)
           indices = rows.map(&:index)
-          errs << "duplicate row indices" if indices.uniq.size != indices.size
+          if indices.uniq.size != indices.size
+            dups = indices.select { |i| indices.count(i) > 1 }.uniq
+            errs << "duplicate row index: #{dups.join(", ")} — row indices within a sheet must be unique"
+          end
         end
         errs
       end

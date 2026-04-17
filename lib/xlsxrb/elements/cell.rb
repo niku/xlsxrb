@@ -58,11 +58,11 @@ module Xlsxrb
 
       def self.validate(row_index, column_index, value)
         errs = []
-        errs << "row_index must be >= 0" if !row_index.is_a?(Integer) || row_index.negative?
-        errs << "column_index must be >= 0" if !column_index.is_a?(Integer) || column_index.negative?
-        errs << "row_index must be < 1048576" if row_index.is_a?(Integer) && row_index >= 1_048_576
-        errs << "column_index must be < 16384" if column_index.is_a?(Integer) && column_index >= 16_384
-        errs << "unsupported value type: #{value.class}" unless value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass) || value.is_a?(Date) || value.is_a?(Time)
+        errs << "row_index must be a non-negative Integer (got #{row_index.inspect})" if !row_index.is_a?(Integer) || row_index.negative?
+        errs << "column_index must be a non-negative Integer (got #{column_index.inspect})" if !column_index.is_a?(Integer) || column_index.negative?
+        errs << "row_index must be < 1048576 (got #{row_index}, max row is 1048575)" if row_index.is_a?(Integer) && row_index >= 1_048_576
+        errs << "column_index must be < 16384 (got #{column_index}, max column is XFD=16383)" if column_index.is_a?(Integer) && column_index >= 16_384
+        errs << "unsupported value type: #{value.class} (#{value.inspect}) — supported types: String, Numeric, true/false, Date, Time, or nil" unless value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass) || value.is_a?(Date) || value.is_a?(Time)
         errs
       end
     end

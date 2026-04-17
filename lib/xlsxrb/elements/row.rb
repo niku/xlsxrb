@@ -34,8 +34,8 @@ module Xlsxrb
 
       def self.validate(index, cells)
         errs = []
-        errs << "index must be >= 0" if !index.is_a?(Integer) || index.negative?
-        errs << "cells must be an Array" unless cells.is_a?(Array)
+        errs << "index must be a non-negative Integer (got #{index.inspect})" if !index.is_a?(Integer) || index.negative?
+        errs << "cells must be an Array (got #{cells.class})" unless cells.is_a?(Array)
         errs
       end
     end
