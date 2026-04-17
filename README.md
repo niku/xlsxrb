@@ -313,6 +313,22 @@ The `Xlsxrb::StyleBuilder` class provides a fluent interface for defining styles
 All sheet-level features work identically in both the streaming (`Xlsxrb.generate`) and in-memory (`Xlsxrb.build`) APIs.
 The examples below use `Xlsxrb.generate`; replace it with `Xlsxrb.build` + `Xlsxrb.write` for in-memory use.
 
+### Formulas
+
+Write formulas by wrapping the expression in `Xlsxrb.formula`. When the file is opened, Excel will automatically calculate the result.
+
+```ruby
+Xlsxrb.generate("formulas.xlsx") do |w|
+  w.add_sheet("Calc") do |s|
+    # Write a formula that calculates automatically
+    s.add_row([10, 20, Xlsxrb.formula("SUM(A1:B1)")])
+    
+    # Optionally, provide a cached value (useful for third-party readers)
+    s.add_row([10, 20, Xlsxrb.formula("SUM(A2:B2)", cached_value: 30)])
+  end
+end
+```
+
 ### Hyperlinks
 
 Attach a URL or an internal cell reference to a cell.

@@ -1048,4 +1048,70 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  # =====================================================
+  # Formula writing (without cached value)
+  # =====================================================
+
+  test "formula without cached value in build API" do
+    workbook = Xlsxrb.build do |w|
+      w.add_sheet("Calc") do |s|
+        s.add_row([10, 20, Xlsxrb.formula("SUM(A1:B1)")])
+      end
+    end
+
+    tmp = Tempfile.new(["facade_formula_build", ".xlsx"])
+    Xlsxrb.write(tmp.path, workbook)
+
+    result = Xlsxrb.read(tmp.path)
+    sheet = result.sheet(0)
+    cell = sheet.row_at(0).cell_at(2)
+    assert_not_nil(cell, "Cell at column 2 (C1) should exist")
+    assert_not_nil(cell.formula, "Formula should be present")
+    formula_text = cell.formula.is_a?(Xlsxrb::Elements::Formula) ? cell.formula.expression : cell.formula
+    assert_equal("SUM(A1:B1)", formula_text)
+  ensure
+    tmp&.close!
+  end
+
+  test "formula without cached value in generate API" do
+    tmp = Tempfile.new(["facade_formula_stream", ".xlsx"])
+    Xlsxrb.generate(tmp.path) do |w|
+      w.add_sheet("Calc") do |s|
+        s.add_row([10, 20, Xlsxrb.formula("SUM(A1:B1)")])
+      end
+    end
+
+    result = Xlsxrb.read(tmp.path)
+    sheet = result.sheet(0)
+    cell = sheet.row_at(0).cell_at(2)
+    assert_not_nil(cell, "Cell at column 2 (C1) should exist")
+    assert_not_nil(cell.formula, "Formula should be present")
+    formula_text = cell.formula.is_a?(Xlsxrb::Elements::Formula) ? cell.formula.expression : cell.formula
+    assert_equal("SUM(A1:B1)", formula_text)
+  ensure
+    tmp&.close!
+  end
+
+  test "formula with cached value in build API" do
+    workbook = Xlsxrb.build do |w|
+      w.add_sheet("Calc") do |s|
+        s.add_row([10, 20, Xlsxrb.formula("SUM(A1:B1)", cached_value: "30")])
+      end
+    end
+
+    tmp = Tempfile.new(["facade_formula_cached", ".xlsx"])
+    Xlsxrb.write(tmp.path, workbook)
+
+    result = Xlsxrb.read(tmp.path)
+    sheet = result.sheet(0)
+    cell = sheet.row_at(0).cell_at(2)
+    assert_not_nil(cell, "Cell at column 2 (C1) should exist")
+    formula_text = cell.formula.is_a?(Xlsxrb::Elements::Formula) ? cell.formula.expression : cell.formula
+    assert_equal("SUM(A1:B1)", formula_text)
+    # Cached value should be readable
+    assert_equal(30, cell.value)
+  ensure
+    tmp&.close!
+  end
 end
