@@ -587,6 +587,24 @@ module Xlsxrb
       @tables << tbl
     end
 
+    # --- Pivot Tables ---
+
+    # Add a pivot table to the sheet.
+    # source_ref: data source range (e.g. "Sheet1!A1:C10")
+    # row_fields: array of 0-based field indices for row axis
+    # data_fields: array of { fld:, name:, subtotal: } hashes
+    # col_fields: array of 0-based field indices for column axis
+    # dest_ref: top-left cell for the pivot table (default "E1")
+    def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
+      @pivot_tables ||= []
+      @pivot_tables << {
+        source_ref: source_ref, row_fields: row_fields,
+        data_fields: data_fields, col_fields: col_fields,
+        dest_ref: dest_ref, name: name,
+        field_names: field_names, items: items
+      }
+    end
+
     # --- Comments ---
 
     # Add a comment on a cell.
@@ -710,6 +728,7 @@ module Xlsxrb
       facade_meta[:data_validations] = @data_validations unless @data_validations.empty?
       facade_meta[:conditional_formats] = @conditional_formats unless @conditional_formats.empty?
       facade_meta[:tables] = @tables unless @tables.empty?
+      facade_meta[:pivot_tables] = @pivot_tables unless (@pivot_tables || []).empty?
       facade_meta[:comments] = @comments unless @comments.empty?
       facade_meta[:merge_cells] = @merge_cells_ranges unless @merge_cells_ranges.empty?
       facade_meta[:freeze_pane] = @freeze_pane if @freeze_pane
@@ -818,6 +837,7 @@ module Xlsxrb
       @current_data_validations = []
       @current_conditional_formats = []
       @current_tables = []
+      @current_pivot_tables = []
       @current_comments = []
       @current_merge_cells = []
       @current_freeze_pane = nil
@@ -936,6 +956,19 @@ module Xlsxrb
       tbl[:style] = style if style
       tbl.merge!(opts)
       @current_tables << tbl
+    end
+
+    # --- Pivot Tables ---
+
+    def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
+      add_sheet if @current_sheet.nil?
+      @current_pivot_tables ||= []
+      @current_pivot_tables << {
+        source_ref: source_ref, row_fields: row_fields,
+        data_fields: data_fields, col_fields: col_fields,
+        dest_ref: dest_ref, name: name,
+        field_names: field_names, items: items
+      }
     end
 
     # --- Comments ---
@@ -1169,6 +1202,7 @@ module Xlsxrb
       sheet_data[:data_validations] = @current_data_validations unless @current_data_validations.empty?
       sheet_data[:conditional_formats] = @current_conditional_formats unless @current_conditional_formats.empty?
       sheet_data[:tables] = @current_tables unless @current_tables.empty?
+      sheet_data[:pivot_tables] = @current_pivot_tables unless @current_pivot_tables.empty?
       sheet_data[:comments] = @current_comments unless @current_comments.empty?
       sheet_data[:merge_cells] = @current_merge_cells unless @current_merge_cells.empty?
       sheet_data[:freeze_pane] = @current_freeze_pane if @current_freeze_pane

@@ -55,6 +55,8 @@ module Xlsxrb
         @chart_count = 0
         @comment_count = 0
         @table_count = 0
+        @pivot_cache_count = 0
+        @pivot_table_count = 0
       end
 
       def write_to(target)
@@ -191,6 +193,50 @@ module Xlsxrb
               end
             end
 
+            # Pivot table relationships
+            sheet_pivot_tables = sheet[:pivot_tables] || []
+            pivot_table_start_cache = @pivot_cache_count
+            unless sheet_pivot_tables.empty?
+              pivot_writer = Xlsxrb::Ooxml::Writer.new
+              pivot_writer.add_sheet(sheet[:name])
+              sheet_pivot_tables.each do |pt|
+                pivot_writer.add_pivot_table(
+                  pt[:source_ref],
+                  row_fields: pt[:row_fields],
+                  data_fields: pt[:data_fields],
+                  col_fields: pt[:col_fields] || [],
+                  dest_ref: pt[:dest_ref] || "E1",
+                  name: pt[:name],
+                  field_names: pt[:field_names],
+                  items: pt[:items],
+                  sheet: sheet[:name]
+                )
+
+                @pivot_cache_count += 1
+                @pivot_table_count += 1
+
+                pt_rid_num = sheet_rels.size + 1
+                sheet_rels << { id: "rId#{pt_rid_num}", type: "#{DOC_REL}/pivotTable", target: "../pivotTables/pivotTable#{@pivot_table_count}.xml" }
+              end
+
+              # Generate pivot table XML files
+              pivot_data = pivot_writer.pivot_tables(sheet: sheet[:name])
+              pivot_data.each_with_index do |pt_data, pi|
+                cache_idx = pivot_table_start_cache + pi + 1
+                pt_idx = pivot_table_start_cache + pi + 1
+                zip.add_entry("xl/pivotCache/pivotCacheDefinition#{cache_idx}.xml",
+                              pivot_writer.send(:generate_pivot_cache_definition_xml, pt_data, cache_idx))
+                zip.add_entry("xl/pivotCache/pivotCacheRecords#{cache_idx}.xml",
+                              pivot_writer.send(:generate_pivot_cache_records_xml, pt_data))
+                zip.add_entry("xl/pivotTables/pivotTable#{pt_idx}.xml",
+                              pivot_writer.send(:generate_pivot_table_xml, pt_data, cache_idx))
+                zip.add_entry("xl/pivotCache/_rels/pivotCacheDefinition#{cache_idx}.xml.rels",
+                              pivot_writer.send(:generate_pivot_cache_rels, cache_idx))
+                zip.add_entry("xl/pivotTables/_rels/pivotTable#{pt_idx}.xml.rels",
+                              pivot_writer.send(:generate_pivot_table_rels, cache_idx))
+              end
+            end
+
             # Build worksheet rels if any
             zip.add_entry("xl/worksheets/_rels/sheet#{idx + 1}.xml.rels", build_sheet_rels_from_list(sheet_rels)) unless sheet_rels.empty?
 
@@ -272,6 +318,8 @@ module Xlsxrb
         chart_count = 0
         comment_count = 0
         table_count = 0
+        pivot_cache_count = 0
+        pivot_table_count = 0
         image_exts = {}
         @sheets.each_with_index do |sheet, idx|
           b.empty_tag("Override", { PartName: "/xl/worksheets/sheet#{idx + 1}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml" })
@@ -316,6 +364,15 @@ module Xlsxrb
           sheet_tables.each do |_tbl|
             table_count += 1
             b.empty_tag("Override", { PartName: "/xl/tables/table#{table_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml" })
+          end
+
+          sheet_pivots = sheet[:pivot_tables] || []
+          sheet_pivots.each do |_pt|
+            pivot_cache_count += 1
+            pivot_table_count += 1
+            b.empty_tag("Override", { PartName: "/xl/pivotCache/pivotCacheDefinition#{pivot_cache_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml" })
+            b.empty_tag("Override", { PartName: "/xl/pivotCache/pivotCacheRecords#{pivot_cache_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheRecords+xml" })
+            b.empty_tag("Override", { PartName: "/xl/pivotTables/pivotTable#{pivot_table_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml" })
           end
         end
 
@@ -402,6 +459,19 @@ module Xlsxrb
           b.close_tag("definedNames")
         end
 
+        # Pivot caches
+        total_pivots = @sheets.sum { |s| (s[:pivot_tables] || []).size }
+        if total_pivots.positive?
+          # rId for pivot caches starts after sheets + styles + sharedStrings
+          # In build_workbook_rels: sheets(1..N), styles(N+1), sharedStrings(N+2 if present)
+          pivot_rid_base = @sheets.size + 1 + (@shared_strings.empty? ? 0 : 1)
+          b.open_tag("pivotCaches")
+          total_pivots.times do |i|
+            b.empty_tag("pivotCache", { cacheId: (i + 1).to_s, "r:id": "rId#{pivot_rid_base + i + 1}" })
+          end
+          b.close_tag("pivotCaches")
+        end
+
         b.close_tag("workbook")
         io.string
       end
@@ -432,6 +502,18 @@ module Xlsxrb
                         Target: "sharedStrings.xml"
                       })
         end
+
+        # Pivot cache relationships
+        total_pivots = @sheets.sum { |s| (s[:pivot_tables] || []).size }
+        total_pivots.times do |i|
+          rid += 1
+          b.empty_tag("Relationship", {
+                        Id: "rId#{rid}",
+                        Type: "#{DOC_REL}/pivotCacheDefinition",
+                        Target: "pivotCache/pivotCacheDefinition#{i + 1}.xml"
+                      })
+        end
+
         b.close_tag("Relationships")
         io.string
       end
