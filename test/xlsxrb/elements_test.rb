@@ -212,6 +212,23 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(%w[A B], wb.sheet_names)
   end
 
+  # --- Formula helper ---
+
+  test "Xlsxrb.formula creates a Formula without cached value" do
+    f = Xlsxrb.formula("SUM(A1:A10)")
+    assert_instance_of(Xlsxrb::Elements::Formula, f)
+    assert_equal("SUM(A1:A10)", f.expression)
+    assert_nil(f.cached_value)
+    assert_equal(true, f.calculate_always)
+  end
+
+  test "Xlsxrb.formula creates a Formula with cached value" do
+    f = Xlsxrb.formula("SUM(A1:A10)", cached_value: "55")
+    assert_equal("SUM(A1:A10)", f.expression)
+    assert_equal("55", f.cached_value)
+    assert_nil(f.calculate_always)
+  end
+
   # --- Error message quality ---
 
   test "cell error message includes actual value for unsupported type" do
