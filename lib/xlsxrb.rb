@@ -74,6 +74,17 @@ module Xlsxrb
   # Supports method_missing for setting arbitrary keys.
   # --- Facade API ---
 
+  # Creates a Formula object for use in add_row values.
+  # expression: the formula text (e.g. "SUM(A1:A10)")
+  # cached_value: optional cached result. If nil, Excel will calculate on open.
+  def self.formula(expression, cached_value: nil)
+    Elements::Formula.new(
+      expression: expression,
+      cached_value: cached_value,
+      calculate_always: cached_value.nil? || nil
+    )
+  end
+
   # Reads an XLSX file into an Elements::Workbook.
   # source: file path (String) or IO object.
   def self.read(source)
@@ -443,13 +454,23 @@ module Xlsxrb
       row_index = @rows.size
       cells = values.each_with_index.map do |val, col_index|
         style_name = styles[col_index] if styles.is_a?(Hash) || styles.is_a?(Array)
-        # Style index will be resolved at build time
-        Elements::Cell.new(
-          row_index: row_index,
-          column_index: col_index,
-          value: val,
-          style_index: style_name # Will store the style name for now
-        )
+        # If value is a Formula object, store it as the cell's formula
+        if val.is_a?(Elements::Formula)
+          Elements::Cell.new(
+            row_index: row_index,
+            column_index: col_index,
+            value: nil,
+            formula: val,
+            style_index: style_name
+          )
+        else
+          Elements::Cell.new(
+            row_index: row_index,
+            column_index: col_index,
+            value: val,
+            style_index: style_name
+          )
+        end
       end
 
       @rows << Elements::Row.new(
@@ -1222,7 +1243,20 @@ module Xlsxrb
         # empty cell
       end
 
-      result[:formula] = cell.formula if cell.formula
+      if cell.formula
+        f = cell.formula
+        if f.is_a?(Elements::Formula)
+          result[:formula] = f.expression
+          result[:formula_ca] = true if f.calculate_always
+          if f.cached_value
+            # Cached value is written as-is (not through SST)
+            result[:value] = f.cached_value
+            result.delete(:type) # Ensure no type is set; cached values are plain text in <v>
+          end
+        else
+          result[:formula] = f
+        end
+      end
       result
     end
 
@@ -1242,6 +1276,10 @@ module Xlsxrb
     result = { ref: ref }
 
     case value
+    when Elements::Formula
+      result[:formula] = value.expression
+      result[:formula_ca] = true if value.calculate_always
+      result[:value] = value.cached_value if value.cached_value
     when String
       idx = sst_index[value] ||= begin
         sst << value

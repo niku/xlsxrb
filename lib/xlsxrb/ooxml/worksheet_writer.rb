@@ -112,8 +112,14 @@ module Xlsxrb
 
           xml_val = value
           type = nil
+          formula_expr = nil
+          formula_ca = false
 
           case value
+          when Xlsxrb::Elements::Formula
+            formula_expr = value.expression
+            formula_ca = value.calculate_always
+            xml_val = value.cached_value || nil
           when String
             idx = sst_index[value]
             unless idx
@@ -149,9 +155,26 @@ module Xlsxrb
             io.write(type)
             io.write('"')
           end
-          io.write("><v>")
-          io.write(xml_val.to_s)
-          io.write("</v></c>")
+          if formula_expr
+            if formula_ca
+              io.write('><f ca="1">')
+            else
+              io.write("><f>")
+            end
+            io.write(escape_xml(formula_expr))
+            io.write("</f>")
+            if xml_val
+              io.write("<v>")
+              io.write(xml_val.to_s)
+              io.write("</v></c>")
+            else
+              io.write("</c>")
+            end
+          else
+            io.write("><v>")
+            io.write(xml_val.to_s)
+            io.write("</v></c>")
+          end
 
           col_index += 1
         end
@@ -518,11 +541,11 @@ module Xlsxrb
         attrs = { r: ref }
 
         value = cell[:value]
-        type = cell[:type] || cell_type(value)
+        formula = cell[:formula]
+        # For formula cells with cached values, don't infer type from value
+        type = formula ? cell[:type] : (cell[:type] || cell_type(value))
         attrs[:t] = type if type
         attrs[:s] = cell[:style_index].to_s if cell[:style_index]
-
-        formula = cell[:formula]
 
         if value.nil? && formula.nil?
           @builder.empty_tag("c", attrs)
@@ -530,7 +553,15 @@ module Xlsxrb
         end
 
         @builder.open_tag("c", attrs)
-        @builder.tag("f") { |b| b.text(formula) } if formula
+        if formula
+          f_attrs = {}
+          f_attrs[:ca] = "1" if cell[:formula_ca]
+          if f_attrs.empty?
+            @builder.tag("f") { |b| b.text(formula) }
+          else
+            @builder.tag("f", f_attrs) { |b| b.text(formula) }
+          end
+        end
         @builder.tag("v") { |b| b.text(xml_cell_value(value, type)) } unless value.nil?
         @builder.close_tag("c")
       end
@@ -557,6 +588,15 @@ module Xlsxrb
 
       def column_letter(index)
         Xlsxrb::Elements::Cell.column_letter(index)
+      end
+
+      ESCAPE_RE = /[&<>"']/
+      ESCAPE_MAP = { "&" => "&amp;", "<" => "&lt;", ">" => "&gt;", '"' => "&quot;", "'" => "&apos;" }.freeze
+      private_constant :ESCAPE_RE, :ESCAPE_MAP
+
+      def escape_xml(value)
+        str = value.to_s
+        str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end
     end
   end
