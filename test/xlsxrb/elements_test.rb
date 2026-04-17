@@ -16,22 +16,22 @@ class ElementsTest < Test::Unit::TestCase
 
   test "cell with negative row_index is invalid" do
     cell = Xlsxrb::Elements::Cell.new(row_index: -1, column_index: 0, value: "x")
-    assert_include(cell.errors, "row_index must be >= 0")
+    assert(cell.errors.any? { |e| e.include?("row_index must be a non-negative Integer") && e.include?("-1") })
   end
 
   test "cell with negative column_index is invalid" do
     cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: -1, value: "x")
-    assert_include(cell.errors, "column_index must be >= 0")
+    assert(cell.errors.any? { |e| e.include?("column_index must be a non-negative Integer") && e.include?("-1") })
   end
 
   test "cell with too large row_index is invalid" do
     cell = Xlsxrb::Elements::Cell.new(row_index: 1_048_576, column_index: 0)
-    assert_include(cell.errors, "row_index must be < 1048576")
+    assert(cell.errors.any? { |e| e.include?("row_index must be < 1048576") && e.include?("1048576") })
   end
 
   test "cell with too large column_index is invalid" do
     cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 16_384)
-    assert_include(cell.errors, "column_index must be < 16384")
+    assert(cell.errors.any? { |e| e.include?("column_index must be < 16384") && e.include?("16384") })
   end
 
   test "cell column_letter converts index to Excel column" do
@@ -150,7 +150,7 @@ class ElementsTest < Test::Unit::TestCase
     r1 = Xlsxrb::Elements::Row.new(index: 0)
     r2 = Xlsxrb::Elements::Row.new(index: 0)
     ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", rows: [r1, r2])
-    assert_include(ws.errors, "duplicate row indices")
+    assert(ws.errors.any? { |e| e.include?("duplicate row index") && e.include?("0") })
   end
 
   test "worksheet row_at returns row by index" do
@@ -189,7 +189,7 @@ class ElementsTest < Test::Unit::TestCase
     ws1 = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
     ws2 = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
     wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2])
-    assert_include(wb.errors, "duplicate sheet names")
+    assert(wb.errors.any? { |e| e.include?("duplicate sheet name") && e.include?("Sheet1") })
   end
 
   test "workbook sheet by index" do
@@ -210,5 +210,71 @@ class ElementsTest < Test::Unit::TestCase
     ws2 = Xlsxrb::Elements::Worksheet.new(name: "B")
     wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2])
     assert_equal(%w[A B], wb.sheet_names)
+  end
+
+  # --- Error message quality ---
+
+  test "cell error message includes actual value for unsupported type" do
+    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: [1, 2, 3])
+    err = cell.errors.find { |e| e.include?("unsupported value type") }
+    assert_not_nil(err, "Expected error about unsupported value type")
+    assert_match(/Array/, err)
+    assert_match(/supported types/, err)
+  end
+
+  test "cell error message includes actual row_index value" do
+    cell = Xlsxrb::Elements::Cell.new(row_index: "bad", column_index: 0)
+    err = cell.errors.find { |e| e.include?("row_index") }
+    assert_not_nil(err)
+    assert_match(/"bad"/, err)
+  end
+
+  test "cell error message includes actual column_index value for out of range" do
+    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 20_000)
+    err = cell.errors.find { |e| e.include?("column_index must be < 16384") }
+    assert_not_nil(err)
+    assert_match(/20000/, err)
+    assert_match(/XFD/, err)
+  end
+
+  test "row error message includes actual index value" do
+    row = Xlsxrb::Elements::Row.new(index: -5)
+    err = row.errors.find { |e| e.include?("index must be a non-negative Integer") }
+    assert_not_nil(err)
+    assert_match(/-5/, err)
+  end
+
+  test "column error message includes actual index for out of range" do
+    col = Xlsxrb::Elements::Column.new(index: 99_999)
+    err = col.errors.find { |e| e.include?("index must be < 16384") }
+    assert_not_nil(err)
+    assert_match(/99999/, err)
+  end
+
+  test "worksheet error message includes actual name value" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: nil)
+    err = ws.errors.find { |e| e.include?("worksheet name") }
+    assert_not_nil(err)
+    assert_match(/nil/, err)
+  end
+
+  test "worksheet error message shows which row indices are duplicated" do
+    r1 = Xlsxrb::Elements::Row.new(index: 3)
+    r2 = Xlsxrb::Elements::Row.new(index: 3)
+    ws = Xlsxrb::Elements::Worksheet.new(name: "S", rows: [r1, r2])
+    err = ws.errors.find { |e| e.include?("duplicate row index") }
+    assert_not_nil(err)
+    assert_match(/3/, err)
+    assert_match(/unique/, err)
+  end
+
+  test "workbook error message shows which sheet names are duplicated" do
+    ws1 = Xlsxrb::Elements::Worksheet.new(name: "Sales")
+    ws2 = Xlsxrb::Elements::Worksheet.new(name: "Sales")
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2])
+    err = wb.errors.find { |e| e.include?("duplicate sheet name") }
+    assert_not_nil(err)
+    assert_match(/Sales/, err)
+    assert_match(/unique/, err)
   end
 end

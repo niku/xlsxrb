@@ -31,11 +31,14 @@ module Xlsxrb
 
       def self.validate(sheets)
         errs = []
-        errs << "sheets must be an Array" unless sheets.is_a?(Array)
+        errs << "sheets must be an Array (got #{sheets.class})" unless sheets.is_a?(Array)
         if sheets.is_a?(Array)
           errs << "workbook must have at least one sheet" if sheets.empty?
           names = sheets.map(&:name)
-          errs << "duplicate sheet names" if names.uniq.size != names.size
+          if names.uniq.size != names.size
+            dups = names.select { |n| names.count(n) > 1 }.uniq
+            errs << "duplicate sheet name: #{dups.map(&:inspect).join(", ")} — sheet names must be unique"
+          end
         end
         errs
       end
