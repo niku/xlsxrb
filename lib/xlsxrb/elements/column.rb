@@ -19,8 +19,8 @@ module Xlsxrb
 
       def self.validate(index)
         errs = []
-        errs << "index must be >= 0" if !index.is_a?(Integer) || index.negative?
-        errs << "index must be < 16384" if index.is_a?(Integer) && index >= 16_384
+        errs << "index must be a non-negative Integer (got #{index.inspect})" if !index.is_a?(Integer) || index.negative?
+        errs << "index must be < 16384 (got #{index}, max column is XFD=16383)" if index.is_a?(Integer) && index >= 16_384
         errs
       end
     end
