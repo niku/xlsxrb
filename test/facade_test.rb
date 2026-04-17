@@ -527,4 +527,95 @@ class FacadeTest < Test::Unit::TestCase
     tmp&.close
     tmp&.unlink
   end
+
+  # --- Xlsxrb.modify ---
+
+  test "Xlsxrb.modify reads and writes back a workbook with value changes" do
+    source = Tempfile.new(["modify_source", ".xlsx"])
+    target = Tempfile.new(["modify_target", ".xlsx"])
+    begin
+      # Create source file
+      workbook = Xlsxrb.build do |w|
+        w.add_sheet("Data") do |s|
+          s.add_row(%w[Name Score])
+          s.add_row(["Alice", 95])
+          s.add_row(["Bob", 87])
+        end
+      end
+      Xlsxrb.write(source.path, workbook)
+
+      # Modify: change Bob's score
+      Xlsxrb.modify(source.path, target.path) do |wb|
+        sheet = wb.sheet(0)
+        row2 = sheet.row_at(2)
+        new_cell = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 1, value: 99)
+        new_row = row2.with(cells: row2.cells.map { |c| c.column_index == 1 ? new_cell : c })
+        new_sheet = sheet.with(rows: sheet.rows.map { |r| r.index == 2 ? new_row : r })
+        wb.with(sheets: wb.sheets.map.with_index { |s, i| i.zero? ? new_sheet : s })
+      end
+
+      # Read back and verify
+      result = Xlsxrb.read(target.path)
+      assert_equal("Data", result.sheet(0).name)
+      assert_equal("Alice", result.sheet(0).cell_value("A2"))
+      assert_equal(99, result.sheet(0).cell_value("B3"))
+    ensure
+      source.close!
+      target.close!
+    end
+  end
+
+  test "Xlsxrb.modify overwrites source when no target given" do
+    tmp = Tempfile.new(["modify_inplace", ".xlsx"])
+    begin
+      workbook = Xlsxrb.build do |w|
+        w.add_sheet("S") do |s|
+          s.add_row(["original"])
+        end
+      end
+      Xlsxrb.write(tmp.path, workbook)
+
+      Xlsxrb.modify(tmp.path) do |wb|
+        sheet = wb.sheet(0)
+        row = sheet.row_at(0)
+        new_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "modified")
+        new_row = row.with(cells: [new_cell])
+        new_sheet = sheet.with(rows: [new_row])
+        wb.with(sheets: [new_sheet])
+      end
+
+      result = Xlsxrb.read(tmp.path)
+      assert_equal("modified", result.sheet(0).cell_value("A1"))
+    ensure
+      tmp.close!
+    end
+  end
+
+  test "Xlsxrb.modify raises on nil source" do
+    assert_raise(Xlsxrb::Error) { Xlsxrb.modify(nil) { |wb| wb } }
+  end
+
+  test "Xlsxrb.modify raises when no block given" do
+    assert_raise(Xlsxrb::Error) { Xlsxrb.modify("/tmp/nonexistent.xlsx") }
+  end
+
+  test "Xlsxrb.modify preserves workbook when block returns non-Workbook" do
+    tmp = Tempfile.new(["modify_noop", ".xlsx"])
+    begin
+      workbook = Xlsxrb.build do |w|
+        w.add_sheet("Sheet1") do |s|
+          s.add_row(["keep"])
+        end
+      end
+      Xlsxrb.write(tmp.path, workbook)
+
+      # Block returns nil — workbook should be preserved
+      Xlsxrb.modify(tmp.path) { |_wb| nil }
+
+      result = Xlsxrb.read(tmp.path)
+      assert_equal("keep", result.sheet(0).cell_value("A1"))
+    ensure
+      tmp.close!
+    end
+  end
 end

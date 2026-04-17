@@ -172,6 +172,27 @@ end
 Xlsxrb.write("output.xlsx", workbook)
 ```
 
+#### Modifying an existing workbook
+
+You can read an existing XLSX file, make modifications, and write the result back using `Xlsxrb.modify`. The block receives a parsed `Workbook` and should return the modified version. If you do not provide a second argument, the source file is overwritten.
+
+```ruby
+require "xlsxrb"
+
+Xlsxrb.modify("template.xlsx", "output.xlsx") do |wb|
+  sheet = wb.sheet(0)
+  row0 = sheet.row_at(0)
+  
+  # Update cell B1
+  new_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "Updated")
+  new_row = row0.with(cells: row0.cells.map { |c| c.column_index == 1 ? new_cell : c })
+  new_sheet = sheet.with(rows: sheet.rows.map { |r| r.index == 0 ? new_row : r })
+  
+  # Return the modified workbook
+  wb.with(sheets: wb.sheets.map.with_index { |s, i| i == 0 ? new_sheet : s })
+end
+```
+
 #### Adding Charts (In-Memory)
 
 You can build charts entirely in-memory using the `Xlsxrb.build` DSL, giving you full control over the spreadsheet hierarchy.
