@@ -158,6 +158,32 @@ module Xlsxrb
     end
   end
 
+  # Modifies an existing XLSX file.
+  # Reads the workbook, passes it to the block, and writes the result.
+  # The block receives an Elements::Workbook and must return a modified one (e.g. via `with`).
+  # If no target is given, the source is overwritten.
+  #
+  # Example:
+  #   Xlsxrb.modify("template.xlsx", "output.xlsx") do |wb|
+  #     sheet = wb.sheet(0)
+  #     row0 = sheet.row_at(0)
+  #     new_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "Updated")
+  #     new_row = row0.with(cells: row0.cells.map { |c| c.column_index == 1 ? new_cell : c })
+  #     new_sheet = sheet.with(rows: sheet.rows.map { |r| r.index == 0 ? new_row : r })
+  #     wb.with(sheets: wb.sheets.map.with_index { |s, i| i == 0 ? new_sheet : s })
+  #   end
+  def self.modify(source, target = nil, &block)
+    raise Error, "source is required" if source.nil?
+    raise Error, "block is required" unless block
+
+    workbook = read(source)
+    result_workbook = block.call(workbook)
+    result_workbook = workbook unless result_workbook.is_a?(Elements::Workbook)
+
+    write_target = target || source
+    write(write_target, result_workbook)
+  end
+
   # Streaming read: yields Elements::Row one at a time.
   # source: file path (String) or IO object.
   # Options:
