@@ -7,8 +7,9 @@ module Xlsxrb
     Cell = Data.define(:row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors) do
       def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: {}, errors: nil)
         computed_errors = errors || self.class.validate(row_index, column_index, value)
+        computed_errors = computed_errors.freeze unless computed_errors.frozen?
         super(row_index: row_index, column_index: column_index, value: value, formula: formula,
-              style_index: style_index, unmapped_data: unmapped_data, errors: computed_errors.freeze)
+              style_index: style_index, unmapped_data: unmapped_data, errors: computed_errors)
       end
 
       def valid?
@@ -57,12 +58,18 @@ module Xlsxrb
       end
 
       def self.validate(row_index, column_index, value)
+        if row_index.is_a?(Integer) && row_index >= 0 && row_index < 1_048_576 &&
+           column_index.is_a?(Integer) && column_index >= 0 && column_index < 16_384 &&
+           (value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value == true || value == false || value.is_a?(Date) || value.is_a?(Time))
+          return [].freeze
+        end
+
         errs = []
         errs << "row_index must be a non-negative Integer (got #{row_index.inspect})" if !row_index.is_a?(Integer) || row_index.negative?
         errs << "column_index must be a non-negative Integer (got #{column_index.inspect})" if !column_index.is_a?(Integer) || column_index.negative?
         errs << "row_index must be < 1048576 (got #{row_index}, max row is 1048575)" if row_index.is_a?(Integer) && row_index >= 1_048_576
         errs << "column_index must be < 16384 (got #{column_index}, max column is XFD=16383)" if column_index.is_a?(Integer) && column_index >= 16_384
-        errs << "unsupported value type: #{value.class} (#{value.inspect}) — supported types: String, Numeric, true/false, Date, Time, or nil" unless value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass) || value.is_a?(Date) || value.is_a?(Time)
+        errs << "unsupported value type: #{value.class} (#{value.inspect}) — supported types: String, Numeric, true/false, Date, Time, or nil" unless value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value == true || value == false || value.is_a?(Date) || value.is_a?(Time)
         errs
       end
     end

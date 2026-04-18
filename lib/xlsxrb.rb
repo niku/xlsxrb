@@ -120,19 +120,21 @@ module Xlsxrb
       sst = []
       sst_index = {}
 
-      # Collect shared strings and build index
+      # Collect shared strings and build index without allocating new Hashes
       sheet_data = workbook.sheets.map do |ws|
-        rows = ws.rows.map do |row|
-          cells = row.cells.map do |cell|
-            raw = build_raw_cell(cell, sst, sst_index)
-            raw
+        ws.rows.each do |row|
+          row.cells.each do |cell|
+            val = cell.value
+            if val.is_a?(String) && !sst_index.key?(val)
+              sst << val
+              sst_index[val] = sst.size - 1
+            end
           end
-          { index: row.index, cells: cells, attrs: build_row_attrs(row), unmapped: [] }
         end
         columns = ws.columns.map do |col|
           { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width, outline_level: col.outline_level }
         end
-        sd = { name: ws.name, rows: rows, columns: columns }
+        sd = { name: ws.name, rows: ws.rows, columns: columns }
         sd[:charts] = ws.charts unless ws.charts.empty?
 
         # Extract facade metadata from unmapped_data
@@ -148,6 +150,7 @@ module Xlsxrb
         target,
         sheets: sheet_data,
         shared_strings: sst,
+        shared_strings_index: sst_index,
         styles: workbook.styles,
         defined_names: wb_facade[:defined_names],
         core_properties: wb_facade[:core_properties],
@@ -479,25 +482,31 @@ module Xlsxrb
     # styles:: Hash mapping column indices to style names, or Array of style names for each column
     def add_row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
-      cells = values.each_with_index.map do |val, col_index|
-        style_name = styles[col_index] if styles.is_a?(Hash) || styles.is_a?(Array)
+      cells = Array.new(values.size)
+      style_lookup = styles.is_a?(Hash) || styles.is_a?(Array)
+
+      col_index = 0
+      while col_index < values.size
+        val = values[col_index]
+        style_name = style_lookup ? styles[col_index] : nil
         # If value is a Formula object, store it as the cell's formula
-        if val.is_a?(Elements::Formula)
-          Elements::Cell.new(
-            row_index: row_index,
-            column_index: col_index,
-            value: nil,
-            formula: val,
-            style_index: style_name
-          )
-        else
-          Elements::Cell.new(
-            row_index: row_index,
-            column_index: col_index,
-            value: val,
-            style_index: style_name
-          )
-        end
+        cells[col_index] = if val.is_a?(Elements::Formula)
+                             Elements::Cell.new(
+                               row_index: row_index,
+                               column_index: col_index,
+                               value: nil,
+                               formula: val,
+                               style_index: style_name
+                             )
+                           else
+                             Elements::Cell.new(
+                               row_index: row_index,
+                               column_index: col_index,
+                               value: val,
+                               style_index: style_name
+                             )
+                           end
+        col_index += 1
       end
 
       @rows << Elements::Row.new(

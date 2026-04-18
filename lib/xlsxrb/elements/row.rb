@@ -8,9 +8,11 @@ module Xlsxrb
       def initialize(index:, cells: [], height: nil, hidden: false, custom_height: false, outline_level: nil,
                      unmapped_data: {}, errors: nil)
         computed_errors = errors || self.class.validate(index, cells)
-        super(index: index, cells: cells.freeze, height: height, hidden: hidden,
+        computed_errors = computed_errors.freeze unless computed_errors.frozen?
+        cells = cells.freeze unless cells.frozen?
+        super(index: index, cells: cells, height: height, hidden: hidden,
               custom_height: custom_height, outline_level: outline_level,
-              unmapped_data: unmapped_data, errors: computed_errors.freeze)
+              unmapped_data: unmapped_data, errors: computed_errors)
       end
 
       def valid?
@@ -33,6 +35,8 @@ module Xlsxrb
       end
 
       def self.validate(index, cells)
+        return [].freeze if index.is_a?(Integer) && index >= 0 && cells.is_a?(Array)
+
         errs = []
         errs << "index must be a non-negative Integer (got #{index.inspect})" if !index.is_a?(Integer) || index.negative?
         errs << "cells must be an Array (got #{cells.class})" unless cells.is_a?(Array)

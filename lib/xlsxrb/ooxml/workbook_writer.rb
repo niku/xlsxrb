@@ -28,11 +28,11 @@ module Xlsxrb
         alias << write
       end
 
-      def self.write(target, sheets:, shared_strings: [], styles: nil,
+      def self.write(target, sheets:, shared_strings: [], shared_strings_index: nil, styles: nil,
                      defined_names: nil, core_properties: nil, app_properties: nil,
                      custom_properties: nil, workbook_protection: nil)
         Xlsxrb::TRACER.in_span("Ooxml::WorkbookWriter.write") do
-          writer = new(sheets: sheets, shared_strings: shared_strings, styles: styles,
+          writer = new(sheets: sheets, shared_strings: shared_strings, shared_strings_index: shared_strings_index, styles: styles,
                        defined_names: defined_names, core_properties: core_properties,
                        app_properties: app_properties, custom_properties: custom_properties,
                        workbook_protection: workbook_protection)
@@ -40,11 +40,12 @@ module Xlsxrb
         end
       end
 
-      def initialize(sheets:, shared_strings: [], styles: nil,
+      def initialize(sheets:, shared_strings: [], shared_strings_index: nil, styles: nil,
                      defined_names: nil, core_properties: nil, app_properties: nil,
                      custom_properties: nil, workbook_protection: nil)
         @sheets = sheets
         @shared_strings = shared_strings
+        @shared_strings_index = shared_strings_index
         @styles = styles || {}
         @defined_names = defined_names || []
         @core_properties = core_properties || {}
@@ -107,8 +108,11 @@ module Xlsxrb
 
               # Populate sheet data in chart_writer for chart cache resolution
               (sheet[:rows] || []).each do |row|
-                (row[:cells] || []).each do |cell|
-                  chart_writer.set_cell(cell[:ref], cell[:value], sheet: sheet[:name])
+                cells = row.is_a?(Hash) ? row[:cells] : row.cells
+                (cells || []).each do |cell|
+                  ref = cell.is_a?(Hash) ? cell[:ref] : cell.ref
+                  value = cell.is_a?(Hash) ? cell[:value] : cell.value
+                  chart_writer.set_cell(ref, value, sheet: sheet[:name])
                 end
               end
 
@@ -758,7 +762,16 @@ module Xlsxrb
           end
         else
           (sheet[:rows] || []).each do |row|
-            ws.write_row(row[:index], row[:cells], attrs: row[:attrs] || {}, unmapped: row[:unmapped] || [])
+            if row.is_a?(Hash)
+              ws.write_row(row[:index], row[:cells], attrs: row[:attrs] || {}, unmapped: row[:unmapped] || [], sst_index: @shared_strings_index)
+            else
+              attrs = {}
+              attrs[:height] = row.height if row.height
+              attrs[:hidden] = true if row.hidden
+              attrs[:custom_height] = true if row.custom_height
+              attrs[:outline_level] = row.outline_level if row.outline_level
+              ws.write_row(row.index, row.cells, attrs: attrs, unmapped: row.unmapped_data || [], sst_index: @shared_strings_index)
+            end
           end
         end
         ws.finish(
