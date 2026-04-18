@@ -274,7 +274,8 @@ module Xlsxrb
               sheet_properties: sheet[:sheet_properties],
               tables: sheet_tables,
               table_start_rid: table_start_rid,
-              legacy_drawing_rid: vml_rid
+              legacy_drawing_rid: vml_rid,
+              sparkline_groups: sheet[:sparkline_groups]
             )
             zip.finish_entry
           end
@@ -739,7 +740,7 @@ module Xlsxrb
                               freeze_pane: nil, split_pane: nil, selection: nil,
                               sheet_view: nil, sheet_properties: nil,
                               tables: nil, table_start_rid: nil,
-                              legacy_drawing_rid: nil)
+                              legacy_drawing_rid: nil, sparkline_groups: nil)
         ws = WorksheetWriter.new(io)
         ws.start(
           columns: sheet[:columns] || [],
@@ -778,7 +779,8 @@ module Xlsxrb
           col_breaks: col_breaks,
           tables: tables,
           table_start_rid: table_start_rid,
-          legacy_drawing_rid: legacy_drawing_rid
+          legacy_drawing_rid: legacy_drawing_rid,
+          sparkline_groups: sparkline_groups
         )
       end
 

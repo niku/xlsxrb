@@ -447,6 +447,7 @@ module Xlsxrb
       @conditional_formats = []
       @tables = []
       @comments = []
+      @sparkline_groups = []
       @merge_cells_ranges = []
       @freeze_pane = nil
       @split_pane = nil
@@ -612,6 +613,18 @@ module Xlsxrb
       @comments << { cell: cell, text: text, author: author }
     end
 
+    # --- Sparklines ---
+
+    # Add a sparkline group to the sheet.
+    # sparklines: Array of { data_ref:, location_ref: } hashes
+    # type: "line" (default), "column", or "stacked"
+    def add_sparkline_group(sparklines:, type: nil, **opts)
+      group = { sparklines: sparklines }
+      group[:type] = type if type
+      group.merge!(opts)
+      @sparkline_groups << group
+    end
+
     # --- Merge Cells ---
 
     # Merge a range of cells (e.g. "A1:B2").
@@ -730,6 +743,7 @@ module Xlsxrb
       facade_meta[:tables] = @tables unless @tables.empty?
       facade_meta[:pivot_tables] = @pivot_tables unless (@pivot_tables || []).empty?
       facade_meta[:comments] = @comments unless @comments.empty?
+      facade_meta[:sparkline_groups] = @sparkline_groups unless @sparkline_groups.empty?
       facade_meta[:merge_cells] = @merge_cells_ranges unless @merge_cells_ranges.empty?
       facade_meta[:freeze_pane] = @freeze_pane if @freeze_pane
       facade_meta[:split_pane] = @split_pane if @split_pane
@@ -838,6 +852,7 @@ module Xlsxrb
       @current_conditional_formats = []
       @current_tables = []
       @current_pivot_tables = []
+      @current_sparkline_groups = []
       @current_comments = []
       @current_merge_cells = []
       @current_freeze_pane = nil
@@ -976,6 +991,16 @@ module Xlsxrb
     def add_comment(cell, text, author: "Author")
       add_sheet if @current_sheet.nil?
       @current_comments << { cell: cell, text: text, author: author }
+    end
+
+    # --- Sparklines ---
+
+    def add_sparkline_group(sparklines:, type: nil, **opts)
+      add_sheet if @current_sheet.nil?
+      group = { sparklines: sparklines }
+      group[:type] = type if type
+      group.merge!(opts)
+      @current_sparkline_groups << group
     end
 
     # --- Merge Cells ---
@@ -1203,6 +1228,7 @@ module Xlsxrb
       sheet_data[:conditional_formats] = @current_conditional_formats unless @current_conditional_formats.empty?
       sheet_data[:tables] = @current_tables unless @current_tables.empty?
       sheet_data[:pivot_tables] = @current_pivot_tables unless @current_pivot_tables.empty?
+      sheet_data[:sparkline_groups] = @current_sparkline_groups unless @current_sparkline_groups.empty?
       sheet_data[:comments] = @current_comments unless @current_comments.empty?
       sheet_data[:merge_cells] = @current_merge_cells unless @current_merge_cells.empty?
       sheet_data[:freeze_pane] = @current_freeze_pane if @current_freeze_pane
