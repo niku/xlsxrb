@@ -190,7 +190,7 @@ module Xlsxrb
                  hyperlinks: nil, print_options: nil, page_margins: nil,
                  page_setup: nil, header_footer: nil, row_breaks: nil,
                  col_breaks: nil, tables: nil, table_start_rid: nil,
-                 legacy_drawing_rid: nil)
+                 legacy_drawing_rid: nil, sparkline_groups: nil)
         return if @finished
 
         start unless @started
@@ -213,6 +213,7 @@ module Xlsxrb
         @builder.empty_tag("drawing", { "r:id": drawing_rid }) if drawing_rid
         @builder.empty_tag("legacyDrawing", { "r:id": legacy_drawing_rid }) if legacy_drawing_rid
         write_table_parts(tables, table_start_rid) if tables && !tables.empty?
+        write_sparklines(sparkline_groups) if sparkline_groups && !sparkline_groups.empty?
         @builder.close_tag("worksheet")
       end
 
@@ -516,6 +517,74 @@ module Xlsxrb
           @builder.empty_tag("tablePart", { "r:id": rid })
         end
         @builder.close_tag("tableParts")
+      end
+
+      # --- Sparklines (extLst) ---
+
+      def write_sparklines(groups)
+        @builder.open_tag("extLst")
+        @builder.open_tag("ext", {
+                            uri: "{05C60535-1F16-4fd2-B633-F4F36F0B64E0}",
+                            "xmlns:x14": "http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"
+                          })
+        @builder.open_tag("x14:sparklineGroups", {
+                            "xmlns:xm": "http://schemas.microsoft.com/office/excel/2006/main"
+                          })
+        groups.each do |group|
+          sg_attrs = {}
+          sg_attrs[:type] = group[:type] if group[:type] && group[:type] != "line"
+          sg_attrs[:displayEmptyCellsAs] = group[:display_empty] if group[:display_empty]
+          sg_attrs[:markers] = "1" if group[:markers]
+          sg_attrs[:high] = "1" if group[:high]
+          sg_attrs[:low] = "1" if group[:low]
+          sg_attrs[:first] = "1" if group[:first]
+          sg_attrs[:last] = "1" if group[:last]
+          sg_attrs[:negative] = "1" if group[:negative]
+          sg_attrs[:manualMax] = group[:max].to_s if group[:max]
+          sg_attrs[:manualMin] = group[:min].to_s if group[:min]
+          sg_attrs[:lineWeight] = group[:line_weight].to_s if group[:line_weight]
+
+          @builder.open_tag("x14:sparklineGroup", sg_attrs)
+
+          write_sparkline_color("x14:colorSeries", group[:color_series]) if group[:color_series]
+          write_sparkline_color("x14:colorNegative", group[:color_negative]) if group[:color_negative]
+          write_sparkline_color("x14:colorAxis", group[:color_axis]) if group[:color_axis]
+          write_sparkline_color("x14:colorMarkers", group[:color_markers]) if group[:color_markers]
+          write_sparkline_color("x14:colorFirst", group[:color_first]) if group[:color_first]
+          write_sparkline_color("x14:colorLast", group[:color_last]) if group[:color_last]
+          write_sparkline_color("x14:colorHigh", group[:color_high]) if group[:color_high]
+          write_sparkline_color("x14:colorLow", group[:color_low]) if group[:color_low]
+
+          @builder.open_tag("x14:sparklines")
+          sparklines = group[:sparklines] || []
+          sparklines.each do |sp|
+            @builder.open_tag("x14:sparkline")
+            @builder.open_tag("xm:f")
+            @builder.text(sp[:data_ref])
+            @builder.close_tag("xm:f")
+            @builder.open_tag("xm:sqref")
+            @builder.text(sp[:location_ref])
+            @builder.close_tag("xm:sqref")
+            @builder.close_tag("x14:sparkline")
+          end
+          @builder.close_tag("x14:sparklines")
+          @builder.close_tag("x14:sparklineGroup")
+        end
+        @builder.close_tag("x14:sparklineGroups")
+        @builder.close_tag("ext")
+        @builder.close_tag("extLst")
+      end
+
+      def write_sparkline_color(tag, color)
+        attrs = {}
+        if color.is_a?(String)
+          attrs[:rgb] = color
+        else
+          attrs[:rgb] = color[:rgb] if color[:rgb]
+          attrs[:theme] = color[:theme].to_s if color[:theme]
+          attrs[:tint] = color[:tint].to_s if color[:tint]
+        end
+        @builder.empty_tag(tag, attrs)
       end
 
       # --- Columns ---

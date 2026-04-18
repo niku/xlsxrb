@@ -1179,4 +1179,96 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  # =====================================================
+  # Sparklines
+  # =====================================================
+
+  test "add_sparkline_group in build API produces extLst XML" do
+    workbook = Xlsxrb.build do |w|
+      w.add_sheet("Sales") do |s|
+        s.add_row([10, 20, 30])
+        s.add_row([15, 25, 35])
+        s.add_row([5, 10, 20])
+        s.add_sparkline_group(
+          sparklines: [
+            { data_ref: "Sales!A1:C1", location_ref: "D1" },
+            { data_ref: "Sales!A2:C2", location_ref: "D2" },
+            { data_ref: "Sales!A3:C3", location_ref: "D3" }
+          ],
+          type: "column",
+          markers: true,
+          color_series: "FF376092"
+        )
+      end
+    end
+
+    tmp = Tempfile.new(["facade_sparkline_build", ".xlsx"])
+    Xlsxrb.write(tmp.path, workbook)
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    assert_match(/extLst/, sheet_xml, "sheet should contain extLst")
+    assert_match(/x14:sparklineGroups/, sheet_xml, "sheet should contain sparklineGroups")
+    assert_match(/x14:sparklineGroup/, sheet_xml, "sheet should contain sparklineGroup")
+    assert_match(/type="column"/, sheet_xml, "sparkline type should be column")
+    assert_match(/markers="1"/, sheet_xml, "markers attribute should be set")
+    assert_match(%r{<xm:f>Sales!A1:C1</xm:f>}, sheet_xml, "data ref should be present")
+    assert_match(%r{<xm:sqref>D1</xm:sqref>}, sheet_xml, "location ref should be present")
+    assert_match(/colorSeries.*rgb="FF376092"/, sheet_xml, "color series should be set")
+  ensure
+    tmp&.close!
+  end
+
+  test "add_sparkline_group in generate API produces extLst XML" do
+    tmp = Tempfile.new(["facade_sparkline_stream", ".xlsx"])
+    Xlsxrb.generate(tmp.path) do |w|
+      w.add_sheet("Data") do |s|
+        s.add_row([1, 2, 3])
+        s.add_row([4, 5, 6])
+        s.add_sparkline_group(
+          sparklines: [
+            { data_ref: "Data!A1:C1", location_ref: "D1" },
+            { data_ref: "Data!A2:C2", location_ref: "D2" }
+          ],
+          high: true,
+          low: true
+        )
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    assert_match(/x14:sparklineGroups/, sheet_xml, "sheet should contain sparklineGroups")
+    assert_match(/high="1"/, sheet_xml, "high attribute should be set")
+    assert_match(/low="1"/, sheet_xml, "low attribute should be set")
+    assert_match(%r{<xm:f>Data!A1:C1</xm:f>}, sheet_xml, "data ref should be present")
+  ensure
+    tmp&.close!
+  end
+
+  test "sparkline line type (default) omits type attribute" do
+    workbook = Xlsxrb.build do |w|
+      w.add_sheet("Sheet1") do |s|
+        s.add_row([1, 2, 3])
+        s.add_sparkline_group(
+          sparklines: [{ data_ref: "Sheet1!A1:C1", location_ref: "D1" }]
+        )
+      end
+    end
+
+    tmp = Tempfile.new(["facade_sparkline_default", ".xlsx"])
+    Xlsxrb.write(tmp.path, workbook)
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    assert_match(/x14:sparklineGroup/, sheet_xml)
+    # Default line type should not emit type attribute
+    refute_match(/type="line"/, sheet_xml, "line type should not be explicitly set")
+  ensure
+    tmp&.close!
+  end
 end

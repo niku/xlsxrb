@@ -620,6 +620,30 @@ Xlsxrb.generate("with_image.xlsx") do |w|
 end
 ```
 
+### Sparklines
+
+Embed miniature charts (sparklines) into single cells to show trends.
+
+```ruby
+Xlsxrb.generate("sparklines.xlsx") do |w|
+  w.add_sheet("Trends") do |s|
+    s.add_row(["Data", nil, nil, "Trend"])
+    s.add_row([10, 20, 30])
+    s.add_row([15, -5, 25])
+
+    s.add_sparkline_group(
+      sparklines: [
+        { data_ref: "Trends!A2:C2", location_ref: "D2" },
+        { data_ref: "Trends!A3:C3", location_ref: "D3" }
+      ],
+      type: "column",   # "line" (default), "column", or "stacked"
+      negative: true,   # Highlight negative values
+      high: true        # Highlight highest value
+    )
+  end
+end
+```
+
 ### Shapes (VML Drawing)
 
 Add a basic shape (rectangle, ellipse, etc.) to a sheet.
