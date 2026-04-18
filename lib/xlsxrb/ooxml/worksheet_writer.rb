@@ -40,24 +40,139 @@ module Xlsxrb
       end
 
       # Write a single row. Automatically calls start if needed.
-      def write_row(row_index, cells, attrs: {}, unmapped: [])
+      def write_row(row_index, cells, attrs: {}, unmapped: [], sst_index: nil)
         start unless @started
 
-        row_attrs = { r: (row_index + 1).to_s } # convert 0-based to 1-based
-        row_attrs[:ht] = attrs[:height].to_s if attrs[:height]
-        row_attrs[:hidden] = "1" if attrs[:hidden]
-        row_attrs[:customHeight] = "1" if attrs[:custom_height]
-        row_attrs[:outlineLevel] = attrs[:outline_level].to_s if attrs[:outline_level]
-
-        @builder.open_tag("row", row_attrs)
+        row_num = row_index + 1
+        row_num_str = row_num.to_s
+        io = @io
+        io.write("<row r=\"")
+        io.write(row_num_str)
+        io.write('"')
+        if attrs[:height]
+          io.write(' ht="')
+          io.write(attrs[:height].to_s)
+          io.write('" customHeight="1"')
+        elsif attrs[:custom_height]
+          io.write(' customHeight="1"')
+        end
+        io.write(' hidden="1"') if attrs[:hidden]
+        if attrs[:outline_level]
+          io.write(' outlineLevel="')
+          io.write(attrs[:outline_level].to_s)
+          io.write('"')
+        end
+        io.write(">")
 
         cells.each do |cell|
-          write_cell(cell)
+          if cell.is_a?(Hash)
+            value = cell[:value]
+            style_id = cell[:style_index]
+            col_ref = cell[:ref] || "#{column_letter(cell[:column_index])}#{row_num_str}"
+            formula = cell[:formula]
+            formula_ca = cell[:formula_ca]
+            cell_type_val = cell[:type]
+          else
+            value = cell.value
+            style_id = cell.style_index
+            col_ref = cell.ref || "#{column_letter(cell.column_index)}#{row_num_str}"
+            formula = cell.formula
+            formula_ca = false
+            cell_type_val = nil
+          end
+
+          if value.nil? && formula.nil?
+            io.write('<c r="')
+            io.write(col_ref)
+            io.write('"')
+            if style_id
+              io.write(' s="')
+              io.write(style_id.to_s)
+              io.write('"')
+            end
+            io.write("/>")
+            next
+          end
+
+          xml_val = value
+          type = cell_type_val
+          formula_expr = nil
+
+          if formula
+            if formula.is_a?(Xlsxrb::Elements::Formula)
+              formula_expr = formula.expression
+              formula_ca = formula.calculate_always
+              xml_val = formula.cached_value || nil
+            else
+              formula_expr = formula
+            end
+          else
+            unless type
+              case value
+              when String
+                if sst_index && (idx = sst_index[value])
+                  xml_val = idx
+                  type = "s"
+                else
+                  type = "inlineStr"
+                end
+              when true
+                xml_val = "1"
+                type = "b"
+              when false
+                xml_val = "0"
+                type = "b"
+              when Date
+                xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+              when Time
+                xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+              end
+            end
+          end
+
+          io.write('<c r="')
+          io.write(col_ref)
+          io.write('"')
+          if style_id
+            io.write(' s="')
+            io.write(style_id.to_s)
+            io.write('"')
+          end
+          if type
+            io.write(' t="')
+            io.write(type)
+            io.write('"')
+          end
+
+          if type == "inlineStr"
+            io.write("><is><t>")
+            io.write(escape_xml(xml_val.to_s))
+            io.write("</t></is></c>")
+          elsif formula_expr
+            if formula_ca
+              io.write('><f ca="1">')
+            else
+              io.write("><f>")
+            end
+            io.write(escape_xml(formula_expr))
+            io.write("</f>")
+            if xml_val
+              io.write("<v>")
+              io.write(xml_val.to_s)
+              io.write("</v></c>")
+            else
+              io.write("</c>")
+            end
+          else
+            io.write("><v>")
+            io.write(xml_val.to_s)
+            io.write("</v></c>")
+          end
         end
 
         unmapped.each { |node| @builder.write_unmapped(node) }
 
-        @builder.close_tag("row")
+        io.write("</row>")
       end
 
       # Highly optimized row writing for StreamWriter that avoids allocating intermediate Hashes.
