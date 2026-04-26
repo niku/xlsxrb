@@ -4,6 +4,7 @@
         "dockerfile": "Dockerfile",
         "context": ".."
     },
+    "workspaceFolder": "/workspaces/xlsxrb",
     "customizations": {
         "vscode": {
             "extensions": [
