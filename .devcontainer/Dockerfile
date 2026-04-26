@@ -16,7 +16,8 @@ RUN mkdir /tmp/nuget_warmup && cd /tmp/nuget_warmup && \
     cd / && rm -rf /tmp/nuget_warmup
 
 # Set up the workspace
-WORKDIR /workspace
+RUN mkdir -p /workspaces/xlsxrb
+WORKDIR /workspaces/xlsxrb
 
 # Install gems (Gemfile.lock will be respected)
 COPY Gemfile xlsxrb.gemspec ./
