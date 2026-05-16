@@ -12,6 +12,6 @@
             ]
         }
     },
-    "remoteUser": "root",
+    "remoteUser": "vscode",
     "postCreateCommand": "bundle install && bin/setup"
 }
