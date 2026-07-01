@@ -1293,22 +1293,37 @@ module Xlsxrb
         row_idx = parsed ? parsed[0] : raw_row[:index]
         col_idx = parsed ? parsed[1] : 0
 
+        cell_errors = Elements::Cell.validate(row_idx, col_idx, rc[:value])
+        if !cell_errors.empty? && rc[:source]
+          cell_errors = cell_errors.map do |err|
+            "#{err} (at #{rc[:source][:part]} row #{rc[:source][:row] + 1} cell #{rc[:ref] || 'unknown'})"
+          end
+        end
+
         Elements::Cell.new(
           row_index: row_idx,
           column_index: col_idx,
           value: rc[:value],
           formula: rc[:formula],
-          style_index: rc[:style_index]
+          style_index: rc[:style_index],
+          errors: cell_errors.empty? ? nil : cell_errors
         )
       end
       attrs = raw_row[:attrs] || {}
+      row_errors = Elements::Row.validate(raw_row[:index], cells)
+      if !row_errors.empty? && raw_row[:source]
+        row_errors = row_errors.map do |err|
+          "#{err} (at #{raw_row[:source][:part]} row #{raw_row[:source][:row] + 1})"
+        end
+      end
       Elements::Row.new(
         index: raw_row[:index],
         cells: cells,
         height: attrs[:height],
         hidden: attrs[:hidden] || false,
         custom_height: attrs[:custom_height] || false,
-        outline_level: attrs[:outline_level]
+        outline_level: attrs[:outline_level],
+        errors: row_errors.empty? ? nil : row_errors
       )
     end
 

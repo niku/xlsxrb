@@ -294,4 +294,26 @@ class ElementsTest < Test::Unit::TestCase
     assert_match(/Sales/, err)
     assert_match(/unique/, err)
   end
+
+  test "build_row_from_raw includes source location in error context" do
+    raw_cell = {
+      ref: "A1",
+      type: "n",
+      style_index: 0,
+      value: [1, 2, 3],
+      source: { part: "xl/worksheets/sheet1.xml", row: 0, cell: "A1" }
+    }
+    raw_row = {
+      index: 0,
+      cells: [raw_cell],
+      attrs: {},
+      source: { part: "xl/worksheets/sheet1.xml", row: 0 }
+    }
+
+    row = Xlsxrb.send(:build_row_from_raw, raw_row)
+    assert_equal(1, row.cells.size)
+    cell = row.cells.first
+    assert_false(cell.valid?)
+    assert_match(/at xl\/worksheets\/sheet1.xml row 1 cell A1/, cell.errors.first)
+  end
 end

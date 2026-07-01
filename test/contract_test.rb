@@ -1624,4 +1624,74 @@ class ContractTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  # =====================================================
+  # Event-based parsing CONTRACT tests
+  # =====================================================
+
+  test "event: WorksheetParser and SharedStringsParser yield consistent events" do
+    worksheet_xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <cols>
+          <col min="1" max="2" width="15" hidden="0" customWidth="1"/>
+        </cols>
+        <sheetData>
+          <row r="1" ht="20" customHeight="1">
+            <c r="A1" t="s"><v>0</v></c>
+            <c r="B1" t="inlineStr"><is><t>hello</t></is></c>
+          </row>
+        </sheetData>
+        <hyperlinks>
+          <hyperlink ref="A1" r:id="rId1" display="Link"/>
+        </hyperlinks>
+      </worksheet>
+    XML
+
+    sst_xml = <<~XML
+      <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1">
+        <si>
+          <t>world</t>
+        </si>
+      </sst>
+    XML
+
+    # Test SharedStringsParser events
+    sst_events = []
+    Xlsxrb::Ooxml::SharedStringsParser.each_event(sst_xml) do |ev|
+      sst_events << ev
+    end
+
+    assert_equal(1, sst_events.size)
+    assert_equal(:sst_item, sst_events[0].type)
+    assert_equal(["world"], sst_events[0].args)
+    assert_equal({ part: "xl/sharedStrings.xml", index: 0 }, sst_events[0].source)
+
+    # Test WorksheetParser events
+    ws_events = []
+    Xlsxrb::Ooxml::WorksheetParser.each_event(worksheet_xml, shared_strings: ["world"]) do |ev|
+      ws_events << ev
+    end
+
+    # Should yield: column, row_start, cell, cell, row_end, hyperlink
+    assert_equal(6, ws_events.size)
+
+    assert_equal(:column, ws_events[0].type)
+    assert_equal([1, 2, 15.0, false, true, nil], ws_events[0].args)
+
+    assert_equal(:row_start, ws_events[1].type)
+    assert_equal([0, { height: 20.0, custom_height: true }], ws_events[1].args)
+
+    # Cell A1
+    assert_equal(:cell, ws_events[2].type)
+    assert_equal(["A1", "s", nil, "world", nil], ws_events[2].args)
+
+    # Cell B1
+    assert_equal(:cell, ws_events[3].type)
+    assert_equal(["B1", "inlineStr", nil, "hello", nil], ws_events[3].args)
+
+    assert_equal(:row_end, ws_events[4].type)
+
+    assert_equal(:hyperlink, ws_events[5].type)
+    assert_equal(["A1", "rId1", "Link", nil, nil], ws_events[5].args)
+  end
 end
