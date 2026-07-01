@@ -1,4 +1,23 @@
 module Xlsxrb
   VERSION: String
-  # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+
+  module Ooxml
+    class Event
+      attr_reader type: Symbol
+      attr_reader args: Array[untyped]
+      attr_reader source: Hash[Symbol, untyped]
+
+      def self.new: (type: Symbol, args: Array[untyped], source: Hash[Symbol, untyped]) -> Event
+    end
+
+    class WorksheetParser
+      def self.each_event: (String, ?shared_strings: Array[String], ?part_name: String) ?{ (Event) -> void } -> void
+                        | (String, ?shared_strings: Array[String], ?part_name: String) -> Enumerator[Event, void]
+    end
+
+    class SharedStringsParser
+      def self.each_event: (String, ?part_name: String) ?{ (Event) -> void } -> void
+                        | (String, ?part_name: String) -> Enumerator[Event, void]
+    end
+  end
 end

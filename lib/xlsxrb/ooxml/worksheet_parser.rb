@@ -18,31 +18,116 @@ module Xlsxrb
         return [] if xml_string.nil? || xml_string.empty?
 
         rows = []
-        fast_scan_rows(xml_string, shared_strings) { |row| rows << row }
+        each_row(xml_string, shared_strings: shared_strings) { |row| rows << row }
         rows
       end
 
       # Streaming parse: yields one raw row hash at a time.
-      def self.each_row(xml_string, shared_strings: [], &block)
-        return enum_for(:each_row, xml_string, shared_strings: shared_strings) unless block
+      def self.each_row(xml_string, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", &block)
+        return enum_for(:each_row, xml_string, shared_strings: shared_strings, part_name: part_name) unless block
 
-        fast_scan_rows(xml_string, shared_strings, &block)
+        current_row = nil
+        each_event(xml_string, shared_strings: shared_strings, part_name: part_name) do |event|
+          case event.type
+          when :row_start
+            index, attrs = event.args
+            current_row = { index: index, cells: [], attrs: attrs, unmapped: EMPTY_ARRAY, source: event.source }
+          when :cell
+            ref, type, style_index, value, formula = event.args
+            if current_row
+              cell = { ref: ref, type: type, style_index: style_index, value: value, source: event.source }
+              cell[:formula] = formula if formula
+              current_row[:cells] << cell
+            end
+          when :row_end
+            if current_row
+              block.call(current_row)
+              current_row = nil
+            end
+          end
+        end
       end
 
       # Parses column definitions (<cols>) from a worksheet.
-      def self.parse_columns(xml_string)
+      def self.parse_columns(xml_string, part_name: "xl/worksheets/sheet1.xml")
         return [] if xml_string.nil? || xml_string.empty?
 
-        listener = ColumnsListener.new
-        XmlParser.parse(xml_string, listener)
-        listener.columns
+        columns = []
+        each_event(xml_string, part_name: part_name) do |event|
+          if event.type == :column
+            min, max, width, hidden, custom_width, outline_level = event.args
+            columns << {
+              min: min,
+              max: max,
+              width: width,
+              hidden: hidden,
+              custom_width: custom_width,
+              outline_level: outline_level
+            }
+          end
+        end
+        columns
       end
 
-      # ---- Fast string-scanning parser (byte-level for O(1) offset) ----
-      # All positions are byte offsets. We use byteindex/byteslice to avoid
-      # O(n) character-offset conversion on UTF-8 strings.
+      # Yields Event objects for columns, rows, cells, and hyperlinks.
+      def self.each_event(xml_string, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", &block)
+        return enum_for(:each_event, xml_string, shared_strings: shared_strings, part_name: part_name) unless block
+        return if xml_string.nil? || xml_string.empty?
 
-      def self.fast_scan_rows(xml_src, shared_strings, &block)
+        # 1. Parse and yield column events
+        if xml_string.include?("<cols")
+          listener = ColumnsListener.new
+          XmlParser.parse(xml_string, listener)
+          listener.columns.each do |col|
+            block.call(Event.new(
+              type: :column,
+              args: [col[:min], col[:max], col[:width], col[:hidden], col[:custom_width], col[:outline_level]],
+              source: { part: part_name }
+            ))
+          end
+        end
+
+        # 2. Parse and yield row/cell events
+        fast_scan_events(xml_string, shared_strings, part_name, &block)
+
+        # 3. Parse and yield hyperlink events
+        if xml_string.include?("<hyperlink")
+          xml = xml_string.b
+          hpos = xml.index("<hyperlinks")
+          if hpos
+            h_end = xml.index("</hyperlinks>", hpos)
+            h_end ||= xml.size
+            pos = hpos
+            while pos < h_end
+              hl_start = xml.index("<hyperlink", pos)
+              break unless hl_start && hl_start < h_end
+
+              hl_tag_end = xml.index(">", hl_start + 10)
+              break unless hl_tag_end
+
+              hl_tag = xml.byteslice(hl_start, hl_tag_end - hl_start)
+              ref = tag_attr(hl_tag, ' ref="')
+              rid = tag_attr(hl_tag, ' r:id="')
+              display = tag_attr(hl_tag, ' display="')
+              tooltip = tag_attr(hl_tag, ' tooltip="')
+              location = tag_attr(hl_tag, ' location="')
+
+              if ref
+                block.call(Event.new(
+                  type: :hyperlink,
+                  args: [ref, rid, display, tooltip, location],
+                  source: { part: part_name, cell: ref }
+                ))
+              end
+              pos = hl_tag_end + 1
+            end
+          end
+        end
+      end
+
+      # ---- Fast string-scanning event parser (byte-level) ----
+
+      def self.fast_scan_events(xml_src, shared_strings, part_name, &block)
         xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
 
         sd_start = xml.index("<sheetData")
@@ -87,15 +172,26 @@ module Xlsxrb
           row_end = xml.index("</row>", tag_end + 1)
           break unless row_end
 
-          cells = fast_parse_cells(xml, tag_end + 1, row_end, shared_strings)
+          row_source = { part: part_name, row: row_index }
+          block.call(Event.new(
+            type: :row_start,
+            args: [row_index, attrs],
+            source: row_source
+          ))
 
-          block.call({ index: row_index, cells: cells, attrs: attrs, unmapped: EMPTY_ARRAY })
+          fast_scan_cells_events(xml, tag_end + 1, row_end, shared_strings, part_name, row_index, &block)
+
+          block.call(Event.new(
+            type: :row_end,
+            args: [],
+            source: row_source
+          ))
 
           pos = row_end + 6
         end
       end
 
-      private_class_method :fast_scan_rows
+      private_class_method :fast_scan_events
 
       def self.extract_row_attrs(row_tag)
         attrs = EMPTY_HASH
@@ -141,8 +237,7 @@ module Xlsxrb
 
       private_class_method :tag_attr
 
-      def self.fast_parse_cells(xml, from, to, shared_strings)
-        cells = []
+      def self.fast_scan_cells_events(xml, from, to, shared_strings, part_name, row_index, &block)
         pos = from
 
         while pos < to
@@ -167,7 +262,11 @@ module Xlsxrb
 
           # Self-closing <c ... />
           if xml.getbyte(c_tag_end - 1) == 47
-            cells << { ref: ref, type: type, style_index: style_index, value: nil }
+            block.call(Event.new(
+              type: :cell,
+              args: [ref, type, style_index, nil, nil],
+              source: { part: part_name, row: row_index, cell: ref }
+            ))
             pos = c_tag_end + 1
             next
           end
@@ -239,18 +338,18 @@ module Xlsxrb
             end
           end
 
-          cell = { ref: ref, type: type, style_index: style_index, value: value }
-          cell[:formula] = formula if formula
-          cell[:inline_string] = inline_str if inline_str
-          cells << cell
+          val_to_use = inline_str || value
+          block.call(Event.new(
+            type: :cell,
+            args: [ref, type, style_index, val_to_use, formula],
+            source: { part: part_name, row: row_index, cell: ref }
+          ))
 
           pos = c_end + 4
         end
-
-        cells
       end
 
-      private_class_method :fast_parse_cells
+      private_class_method :fast_scan_cells_events
 
       def self.extract_inline_text(xml, from, to)
         result = +""

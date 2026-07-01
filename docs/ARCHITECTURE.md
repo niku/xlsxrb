@@ -309,19 +309,26 @@ Key memory invariant: rows are written and flushed immediately; no row Array acc
 
 ## Streaming Internals
 
-### SAX-Based Worksheet Parsing (`Ooxml::WorksheetParser`)
+### Unified Event-Based Streaming (`Ooxml::Event`)
 
-`REXML::Parsers::SAX2Parser` fires events: `start_element`, `end_element`, `characters`.
+To unify parsing across both streaming and in-memory paths, the OOXML layer utilizes a unified event-based parsing model. Individual parsers (such as `WorksheetParser` and `SharedStringsParser`) implement a streaming `each_event` method that emits a sequence of `Xlsxrb::Ooxml::Event` objects.
 
-The parser maintains a minimal state machine:
+An event contains:
+- `type`: a Symbol representing the event type (e.g., `:row_start`, `:cell`, `:row_end`, `:column`, `:hyperlink`, `:sst_item`).
+- `args`: an Array containing the event data arguments.
+- `source`: a Hash providing context for error reporting (e.g., `{ part: "xl/worksheets/sheet1.xml", row: 0, cell: "A1" }`).
 
-1. `start_element("row", attrs)` → record `row_index`, reset cell accumulator
-2. `start_element("c", attrs)` → extract `r` (reference), `t` (type), `s` (style index)
-3. `characters(text)` inside `<v>`, `<f>`, `<is>` → buffer the text
-4. `end_element("c")` → build a raw cell hash, push to current row's accumulator
-5. `end_element("row")` → yield the accumulated row and clear the accumulator
+#### Event Vocabulary:
+1. **Worksheet Events:**
+   - `:row_start` - `args: [row_index, attrs]`
+   - `:cell` - `args: [ref, type, style_index, value, formula]`
+   - `:row_end` - `args: []`
+   - `:column` - `args: [min, max, width, hidden, custom_width, outline_level]`
+   - `:hyperlink` - `args: [ref, rid, display, tooltip, location]`
+2. **Shared Strings (SST) Events:**
+   - `:sst_item` - `args: [string_value]`
 
-Any element **not** in the recognized set (`row`, `c`, `v`, `f`, `is`, `t`, etc.) is captured into `unmapped_children` on the nearest recognized ancestor.
+The streaming parser `each_row` (or `parse`) consumes the event stream and folds it into raw row hashes, maintaining a minimal state machine and constant memory footprint.
 
 ### ZIP Streaming
 

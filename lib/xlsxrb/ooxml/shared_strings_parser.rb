@@ -7,25 +7,37 @@ module Xlsxrb
     # SAX-based parser for xl/sharedStrings.xml.
     # Returns an Array of strings (index = SST index).
     class SharedStringsParser
-      def self.parse(xml_string)
+      # Parses all shared strings and returns an Array of strings.
+      def self.parse(xml_string, part_name: "xl/sharedStrings.xml")
         return [] if xml_string.nil? || xml_string.empty?
 
-        listener = Listener.new
-        XmlParser.parse(xml_string, listener)
-        listener.strings
+        strings = []
+        each_event(xml_string, part_name: part_name) do |event|
+          strings << event.args[0] if event.type == :sst_item
+        end
+        strings
       end
 
-      # SAX listener for shared string table.
-      class Listener
+      # Yields Event objects for each shared string.
+      def self.each_event(xml_string, part_name: "xl/sharedStrings.xml", &block)
+        return enum_for(:each_event, xml_string, part_name: part_name) unless block
+        return if xml_string.nil? || xml_string.empty?
+
+        listener = EventListener.new(part_name, &block)
+        XmlParser.parse(xml_string, listener)
+      end
+
+      # SAX listener for generating events from shared string table.
+      class EventListener
         include REXML::SAX2Listener
 
-        attr_reader :strings
-
-        def initialize
-          @strings = []
+        def initialize(part_name, &block)
+          @part_name = part_name
+          @block = block
           @in_si = false
           @in_t = false
           @current_text = +""
+          @index = 0
         end
 
         def start_element(_uri, localname, _qname, _attrs)
@@ -42,7 +54,13 @@ module Xlsxrb
           case localname
           when "si"
             @in_si = false
-            @strings << @current_text.freeze
+            frozen_str = @current_text.freeze
+            @block.call(Event.new(
+              type: :sst_item,
+              args: [frozen_str],
+              source: { part: @part_name, index: @index }
+            ))
+            @index += 1
           when "t"
             @in_t = false
           end
