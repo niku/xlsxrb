@@ -91,35 +91,42 @@ module Xlsxrb
         fast_scan_events(xml_string, shared_strings, part_name, &block)
 
         # 3. Parse and yield hyperlink events
-        if xml_string.include?("<hyperlink")
+        if xml_string.include?("hyperlink")
           xml = xml_string.b
-          hpos = xml.index("<hyperlinks")
-          if hpos
-            h_end = xml.index("</hyperlinks>", hpos)
-            h_end ||= xml.size
-            pos = hpos
-            while pos < h_end
-              hl_start = xml.index("<hyperlink", pos)
-              break unless hl_start && hl_start < h_end
+          hpos_term = xml.index("hyperlinks")
+          if hpos_term
+            hpos = xml.rindex("<", hpos_term)
+            if hpos
+              h_end_term = xml.index("/hyperlinks", hpos)
+              h_end = h_end_term ? xml.index(">", h_end_term) : xml.size
+              h_end ||= xml.size
 
-              hl_tag_end = xml.index(">", hl_start + 10)
-              break unless hl_tag_end
+              pos = hpos
+              while pos < h_end
+                hl_start_term = xml.index("hyperlink", pos)
+                break unless hl_start_term && hl_start_term < h_end
+                hl_start = xml.rindex("<", hl_start_term)
+                break unless hl_start && hl_start < h_end
 
-              hl_tag = xml.byteslice(hl_start, hl_tag_end - hl_start)
-              ref = tag_attr(hl_tag, ' ref="')
-              rid = tag_attr(hl_tag, ' r:id="')
-              display = tag_attr(hl_tag, ' display="')
-              tooltip = tag_attr(hl_tag, ' tooltip="')
-              location = tag_attr(hl_tag, ' location="')
+                hl_tag_end = xml.index(">", hl_start + 1)
+                break unless hl_tag_end
 
-              if ref
-                block.call(Event.new(
-                  type: :hyperlink,
-                  args: [ref, rid, display, tooltip, location],
-                  source: { part: part_name, cell: ref }
-                ))
+                hl_tag = xml.byteslice(hl_start, hl_tag_end - hl_start)
+                ref = tag_attr(hl_tag, ' ref="')
+                rid = tag_attr(hl_tag, ' r:id="') || tag_attr(hl_tag, ' id="')
+                display = tag_attr(hl_tag, ' display="')
+                tooltip = tag_attr(hl_tag, ' tooltip="')
+                location = tag_attr(hl_tag, ' location="')
+
+                if ref
+                  block.call(Event.new(
+                    type: :hyperlink,
+                    args: [ref, rid, display, tooltip, location],
+                    source: { part: part_name, cell: ref }
+                  ))
+                end
+                pos = hl_tag_end + 1
               end
-              pos = hl_tag_end + 1
             end
           end
         end
