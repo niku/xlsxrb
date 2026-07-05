@@ -56,10 +56,10 @@ module Xlsxrb
             @in_si = false
             frozen_str = @current_text.freeze
             @block.call(Event.new(
-              type: :sst_item,
-              args: [frozen_str],
-              source: { part: @part_name, index: @index }
-            ))
+                          type: :sst_item,
+                          args: [frozen_str],
+                          source: { part: @part_name, index: @index }
+                        ))
             @index += 1
           when "t"
             @in_t = false

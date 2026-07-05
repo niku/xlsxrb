@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+
+require "xlsxrb"
+output_path = ARGV[0] || "row_grouping.xlsx"
+Xlsxrb.generate(output_path) do |w|
+  w.add_style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
+  w.add_style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
+  w.add_sheet("Row Grouping") do |s|
+    s.set_column(0, width: 25)
+    s.set_column(1, width: 25)
+    s.add_row(["Parent Row 1", ""], styles: %w[parent parent])
+    s.add_row(["Child Row 1.1", ""], outline_level: 1, styles: %w[child child])
+    s.add_row(["Child Row 1.2", ""], outline_level: 1, styles: %w[child child])
+  end
+end
+
+# 2. Read the generated sheet and print row attributes
+puts "=== Read Validation ==="
+workbook = Xlsxrb.read(output_path)
+sheet = workbook.sheets.first
+sheet.rows.each do |row|
+  puts "Row #{row.index}: height=#{row.height}, hidden=#{row.hidden}, outline_level=#{row.outline_level}"
+end

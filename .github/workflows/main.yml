@@ -4,18 +4,16 @@ on:
   push:
     branches:
       - main
-
   pull_request:
 
 jobs:
-  build:
+  unit:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    name: Unit & Contract Tests
     strategy:
       matrix:
         ruby:
           - '4.0.2'
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,5 +23,68 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Run the default task
-        run: bundle exec rake
+      - name: Run RuboCop
+        run: bundle exec rake rubocop
+      - name: Run Unit & Contract Tests
+        run: bundle exec rake test:unit test:contract
+
+  e2e:
+    runs-on: ubuntu-latest
+    name: E2E Interoperability Tests
+    strategy:
+      matrix:
+        ruby:
+          - '4.0.2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run E2E Tests
+        run: bundle exec rake test:e2e
+
+  visual:
+    runs-on: ubuntu-latest
+    name: Visual Examples & VRT
+    continue-on-error: true
+    strategy:
+      matrix:
+        ruby:
+          - '4.0.2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - name: Install LibreOffice and pdftoppm dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice-calc poppler-utils imagemagick fonts-liberation fonts-noto-cjk
+      - name: Generate Visual Gallery
+        run: bundle exec rake visual:gallery
+      - name: Run Visual Regression Tests
+        run: bundle exec rake test:visual
+      - name: Upload Visual Output on Mismatch
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diffs
+          path: test/visual/output/
+      - name: Upload Explanation Gallery
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-gallery
+          path: docs/visual/

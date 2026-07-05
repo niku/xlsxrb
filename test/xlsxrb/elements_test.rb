@@ -314,6 +314,6 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(1, row.cells.size)
     cell = row.cells.first
     assert_false(cell.valid?)
-    assert_match(/at xl\/worksheets\/sheet1.xml row 1 cell A1/, cell.errors.first)
+    assert_match(%r{at xl/worksheets/sheet1.xml row 1 cell A1}, cell.errors.first)
   end
 end

@@ -115,10 +115,8 @@ module Xlsxrb
                   chart_writer.set_cell(ref, value, sheet: sheet[:name])
                 end
               end
-              if sheet[:cells]
-                sheet[:cells].each do |ref, value|
-                  chart_writer.set_cell(ref, value, sheet: sheet[:name])
-                end
+              sheet[:cells]&.each do |ref, value|
+                chart_writer.set_cell(ref, value, sheet: sheet[:name])
               end
 
               sheet_images.each do |img|
@@ -627,10 +625,10 @@ module Xlsxrb
               borderId: (xf[:border_id] || 0).to_s
             }
             attrs[:xfId] = xf[:xf_id].to_s if xf[:xf_id]
-            attrs[:applyNumberFormat] = "1" if xf[:num_fmt_id] && xf[:num_fmt_id].to_i > 0
-            attrs[:applyFont] = "1" if xf[:font_id] && xf[:font_id].to_i > 0
-            attrs[:applyFill] = "1" if xf[:fill_id] && xf[:fill_id].to_i > 0
-            attrs[:applyBorder] = "1" if xf[:border_id] && xf[:border_id].to_i > 0
+            attrs[:applyNumberFormat] = "1" if xf[:num_fmt_id]&.to_i&.positive?
+            attrs[:applyFont] = "1" if xf[:font_id]&.to_i&.positive?
+            attrs[:applyFill] = "1" if xf[:fill_id]&.to_i&.positive?
+            attrs[:applyBorder] = "1" if xf[:border_id]&.to_i&.positive?
             attrs[:applyAlignment] = "1" if xf[:alignment]
             attrs[:applyProtection] = "1" if xf[:protection]
 

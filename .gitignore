@@ -13,3 +13,7 @@ Gemfile.lock
 /vendor/sdk_runner/obj/
 # Generated test fixtures (locally generated, not committed)
 /test/fixtures/reader_generated/
+/test/visual/output/
+# Generated gallery assets (built from baselines via `rake visual:gallery`)
+/docs/visual/images/
+/docs/visual/files/

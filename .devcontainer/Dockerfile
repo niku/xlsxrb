@@ -33,6 +33,15 @@ RUN apt-get update && apt-get install -y curl ca-certificates && \
     rm -f /tmp/dotnet-install.sh && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install LibreOffice, poppler-utils, ImageMagick, and fonts for Visual Examples/VRT
+RUN apt-get update && apt-get install -y \
+    libreoffice-calc \
+    poppler-utils \
+    imagemagick \
+    fonts-liberation \
+    fonts-noto-cjk \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Pre-create the workspace folder and assign ownership to the vscode user
 RUN mkdir -p /workspaces/xlsxrb && chown -R ${USERNAME}:${USERNAME} /workspaces
 

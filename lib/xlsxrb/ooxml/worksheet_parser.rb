@@ -54,17 +54,17 @@ module Xlsxrb
 
         columns = []
         each_event(xml_string, part_name: part_name) do |event|
-          if event.type == :column
-            min, max, width, hidden, custom_width, outline_level = event.args
-            columns << {
-              min: min,
-              max: max,
-              width: width,
-              hidden: hidden,
-              custom_width: custom_width,
-              outline_level: outline_level
-            }
-          end
+          next unless event.type == :column
+
+          min, max, width, hidden, custom_width, outline_level = event.args
+          columns << {
+            min: min,
+            max: max,
+            width: width,
+            hidden: hidden,
+            custom_width: custom_width,
+            outline_level: outline_level
+          }
         end
         columns
       end
@@ -80,10 +80,10 @@ module Xlsxrb
           XmlParser.parse(xml_string, listener)
           listener.columns.each do |col|
             block.call(Event.new(
-              type: :column,
-              args: [col[:min], col[:max], col[:width], col[:hidden], col[:custom_width], col[:outline_level]],
-              source: { part: part_name }
-            ))
+                         type: :column,
+                         args: [col[:min], col[:max], col[:width], col[:hidden], col[:custom_width], col[:outline_level]],
+                         source: { part: part_name }
+                       ))
           end
         end
 
@@ -91,44 +91,45 @@ module Xlsxrb
         fast_scan_events(xml_string, shared_strings, part_name, &block)
 
         # 3. Parse and yield hyperlink events
-        if xml_string.include?("hyperlink")
-          xml = xml_string.b
-          hpos_term = xml.index("hyperlinks")
-          if hpos_term
-            hpos = xml.rindex("<", hpos_term)
-            if hpos
-              h_end_term = xml.index("/hyperlinks", hpos)
-              h_end = h_end_term ? xml.index(">", h_end_term) : xml.size
-              h_end ||= xml.size
+        return unless xml_string.include?("hyperlink")
 
-              pos = hpos
-              while pos < h_end
-                hl_start_term = xml.index("hyperlink", pos)
-                break unless hl_start_term && hl_start_term < h_end
-                hl_start = xml.rindex("<", hl_start_term)
-                break unless hl_start && hl_start < h_end
+        xml = xml_string.b
+        hpos_term = xml.index("hyperlinks")
+        return unless hpos_term
 
-                hl_tag_end = xml.index(">", hl_start + 1)
-                break unless hl_tag_end
+        hpos = xml.rindex("<", hpos_term)
+        return unless hpos
 
-                hl_tag = xml.byteslice(hl_start, hl_tag_end - hl_start)
-                ref = tag_attr(hl_tag, ' ref="')
-                rid = tag_attr(hl_tag, ' r:id="') || tag_attr(hl_tag, ' id="')
-                display = tag_attr(hl_tag, ' display="')
-                tooltip = tag_attr(hl_tag, ' tooltip="')
-                location = tag_attr(hl_tag, ' location="')
+        h_end_term = xml.index("/hyperlinks", hpos)
+        h_end = h_end_term ? xml.index(">", h_end_term) : xml.size
+        h_end ||= xml.size
 
-                if ref
-                  block.call(Event.new(
-                    type: :hyperlink,
-                    args: [ref, rid, display, tooltip, location],
-                    source: { part: part_name, cell: ref }
-                  ))
-                end
-                pos = hl_tag_end + 1
-              end
-            end
+        pos = hpos
+        while pos < h_end
+          hl_start_term = xml.index("hyperlink", pos)
+          break unless hl_start_term && hl_start_term < h_end
+
+          hl_start = xml.rindex("<", hl_start_term)
+          break unless hl_start && hl_start < h_end
+
+          hl_tag_end = xml.index(">", hl_start + 1)
+          break unless hl_tag_end
+
+          hl_tag = xml.byteslice(hl_start, hl_tag_end - hl_start)
+          ref = tag_attr(hl_tag, ' ref="')
+          rid = tag_attr(hl_tag, ' r:id="') || tag_attr(hl_tag, ' id="')
+          display = tag_attr(hl_tag, ' display="')
+          tooltip = tag_attr(hl_tag, ' tooltip="')
+          location = tag_attr(hl_tag, ' location="')
+
+          if ref
+            block.call(Event.new(
+                         type: :hyperlink,
+                         args: [ref, rid, display, tooltip, location],
+                         source: { part: part_name, cell: ref }
+                       ))
           end
+          pos = hl_tag_end + 1
         end
       end
 
@@ -181,18 +182,18 @@ module Xlsxrb
 
           row_source = { part: part_name, row: row_index }
           block.call(Event.new(
-            type: :row_start,
-            args: [row_index, attrs],
-            source: row_source
-          ))
+                       type: :row_start,
+                       args: [row_index, attrs],
+                       source: row_source
+                     ))
 
           fast_scan_cells_events(xml, tag_end + 1, row_end, shared_strings, part_name, row_index, &block)
 
           block.call(Event.new(
-            type: :row_end,
-            args: [],
-            source: row_source
-          ))
+                       type: :row_end,
+                       args: [],
+                       source: row_source
+                     ))
 
           pos = row_end + 6
         end
@@ -270,10 +271,10 @@ module Xlsxrb
           # Self-closing <c ... />
           if xml.getbyte(c_tag_end - 1) == 47
             block.call(Event.new(
-              type: :cell,
-              args: [ref, type, style_index, nil, nil],
-              source: { part: part_name, row: row_index, cell: ref }
-            ))
+                         type: :cell,
+                         args: [ref, type, style_index, nil, nil],
+                         source: { part: part_name, row: row_index, cell: ref }
+                       ))
             pos = c_tag_end + 1
             next
           end
@@ -347,10 +348,10 @@ module Xlsxrb
 
           val_to_use = inline_str || value
           block.call(Event.new(
-            type: :cell,
-            args: [ref, type, style_index, val_to_use, formula],
-            source: { part: part_name, row: row_index, cell: ref }
-          ))
+                       type: :cell,
+                       args: [ref, type, style_index, val_to_use, formula],
+                       source: { part: part_name, row: row_index, cell: ref }
+                     ))
 
           pos = c_end + 4
         end

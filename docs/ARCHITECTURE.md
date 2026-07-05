@@ -461,3 +461,28 @@ This keeps the DSL readable while still allowing high feature coverage.
 A feature is not complete if it improves symmetry but breaks older call sites, examples, or tests.
 
 Backward compatibility must be verified before merging any Facade DSL expansion.
+
+---
+
+## Testing Strategy
+
+To ensure library robustness and consistency across execution paths, we organize tests into four distinct layers:
+
+1. **Unit Tests (`test/xlsxrb/`):**
+   - Focus on isolated components (such as parsers and writers) without external system dependencies.
+   - Includes **Round-trip testing** to verify that generated XML can be successfully parsed back by the reader.
+   - Run via: `bundle exec rake test:unit`
+
+2. **Contract Tests (`test/contract/`):**
+   - Ensures semantic parity between the Streaming and In-Memory API paths.
+   - Operates by executing identical data scenarios on both APIs and asserting that they serialize to equivalent structures.
+   - Run via: `bundle exec rake test:contract`
+
+3. **Interop (E2E) Tests (`test/e2e/`):**
+   - Exercises real-world interoperability by validating generated files using the official .NET-based **Open XML SDK** validator, and reading spreadsheets dynamically created by the SDK.
+   - Run via: `bundle exec rake test:e2e`
+
+4. **Visual Examples & VRT (`test/visual/`):**
+   - **Living Documentation:** Compiles visual DSL scripts under `examples/visual/` into the [Visual Examples Gallery](visual/README.md).
+   - **Visual Regression Testing:** Renders the generated spreadsheets into PNG files using headless LibreOffice Calc, and calculates pixel differences against reference baselines using ImageMagick.
+   - Run via: `bundle exec rake test:visual`

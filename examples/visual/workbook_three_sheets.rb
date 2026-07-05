@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+require "xlsxrb"
+output_path = ARGV[0] || "workbook_three_sheets.xlsx"
+Xlsxrb.generate(output_path) do |w|
+  w.add_sheet("First Sheet") { |s| s.add_row(["First Sheet Data"]) }
+  w.add_sheet("Second Sheet") { |s| s.add_row(["Second Sheet Data"]) }
+  w.add_sheet("Third Sheet") { |s| s.add_row(["Third Sheet Data"]) }
+end
+
+# 2. Read the generated sheet and print the sheets structure
+puts "=== Read Validation ==="
+workbook = Xlsxrb.read(output_path)
+puts "Workbook sheets: #{workbook.sheet_names.join(", ")}"
