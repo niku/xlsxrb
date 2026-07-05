@@ -115,6 +115,11 @@ module Xlsxrb
                   chart_writer.set_cell(ref, value, sheet: sheet[:name])
                 end
               end
+              if sheet[:cells]
+                sheet[:cells].each do |ref, value|
+                  chart_writer.set_cell(ref, value, sheet: sheet[:name])
+                end
+              end
 
               sheet_images.each do |img|
                 media_idx = @drawing_count # simplified
