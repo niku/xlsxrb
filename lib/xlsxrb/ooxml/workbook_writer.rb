@@ -621,7 +621,38 @@ module Xlsxrb
               borderId: (xf[:border_id] || 0).to_s
             }
             attrs[:xfId] = xf[:xf_id].to_s if xf[:xf_id]
-            b.empty_tag("xf", attrs)
+            attrs[:applyNumberFormat] = "1" if xf[:num_fmt_id] && xf[:num_fmt_id].to_i > 0
+            attrs[:applyFont] = "1" if xf[:font_id] && xf[:font_id].to_i > 0
+            attrs[:applyFill] = "1" if xf[:fill_id] && xf[:fill_id].to_i > 0
+            attrs[:applyBorder] = "1" if xf[:border_id] && xf[:border_id].to_i > 0
+            attrs[:applyAlignment] = "1" if xf[:alignment]
+            attrs[:applyProtection] = "1" if xf[:protection]
+
+            if xf[:alignment] || xf[:protection]
+              b.tag("xf", attrs) do |_|
+                if xf[:alignment]
+                  align_attrs = {}
+                  align_attrs[:horizontal] = xf[:alignment][:horizontal] if xf[:alignment][:horizontal]
+                  align_attrs[:vertical] = xf[:alignment][:vertical] if xf[:alignment][:vertical]
+                  align_attrs[:wrapText] = "1" if xf[:alignment][:wrap_text]
+                  align_attrs[:textRotation] = xf[:alignment][:text_rotation].to_s if xf[:alignment][:text_rotation]
+                  align_attrs[:indent] = xf[:alignment][:indent].to_s if xf[:alignment][:indent]
+                  align_attrs[:relativeIndent] = xf[:alignment][:relative_indent].to_s if xf[:alignment][:relative_indent]
+                  align_attrs[:shrinkToFit] = "1" if xf[:alignment][:shrink_to_fit]
+                  align_attrs[:readingOrder] = xf[:alignment][:reading_order].to_s if xf[:alignment][:reading_order]
+                  align_attrs[:justifyLastLine] = "1" if xf[:alignment][:justify_last_line]
+                  b.empty_tag("alignment", align_attrs)
+                end
+                if xf[:protection]
+                  prot_attrs = {}
+                  prot_attrs[:locked] = xf[:protection][:locked] ? "1" : "0" unless xf[:protection][:locked].nil?
+                  prot_attrs[:hidden] = xf[:protection][:hidden] ? "1" : "0" unless xf[:protection][:hidden].nil?
+                  b.empty_tag("protection", prot_attrs)
+                end
+              end
+            else
+              b.empty_tag("xf", attrs)
+            end
           end
           # Add default if empty
           b.empty_tag("xf", { numFmtId: "0", fontId: "0", fillId: "0", borderId: "0" }) if xf_entries.empty?
