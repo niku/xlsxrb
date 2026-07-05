@@ -158,8 +158,14 @@ module Xlsxrb
       fill_id = writer.add_fill(**@fill_props) if @fill_props.any?
       border_id = writer.add_border(**@border_props) if @border_props.any?
 
+      resolved_num_fmt_id = if @num_fmt_id.is_a?(String)
+                              writer.add_number_format(@num_fmt_id)
+                            else
+                              @num_fmt_id
+                            end
+
       writer.add_cell_style(
-        num_fmt_id: @num_fmt_id,
+        num_fmt_id: resolved_num_fmt_id,
         font_id: font_id,
         fill_id: fill_id,
         border_id: border_id
