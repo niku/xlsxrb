@@ -6,15 +6,15 @@ A Ruby library for reading and writing XLSX files with streaming support.
 
 The Ruby ecosystem already has great XLSX libraries. Each is well-designed for its purpose:
 
-| Library | Read | Write | Streaming (low memory) |
-|---------|------|-------|------------------------|
-| [roo](https://rubygems.org/gems/roo) | ✅ | ❌ | ✅ |
-| [creek](https://rubygems.org/gems/creek) | ✅ | ❌ | ✅ |
-| [xsv](https://rubygems.org/gems/xsv) | ✅ | ❌ | ✅ |
-| [caxlsx / axlsx](https://rubygems.org/gems/caxlsx) | ❌ | ✅ | ❌ |
-| [xlsxtream](https://rubygems.org/gems/xlsxtream) | ❌ | ✅ | ✅ |
-| [rubyXL](https://rubygems.org/gems/rubyXL) | ✅ | ✅ | ❌ |
-| [fast_excel](https://rubygems.org/gems/fast_excel) | ❌ | ✅ | ✅ |
+| Library                                            | Read | Write | Streaming (low memory) |
+| -------------------------------------------------- | ---- | ----- | ---------------------- |
+| [roo](https://rubygems.org/gems/roo)               | ✅   | ❌    | ✅                     |
+| [creek](https://rubygems.org/gems/creek)           | ✅   | ❌    | ✅                     |
+| [xsv](https://rubygems.org/gems/xsv)               | ✅   | ❌    | ✅                     |
+| [caxlsx / axlsx](https://rubygems.org/gems/caxlsx) | ❌   | ✅    | ❌                     |
+| [xlsxtream](https://rubygems.org/gems/xlsxtream)   | ❌   | ✅    | ✅                     |
+| [rubyXL](https://rubygems.org/gems/rubyXL)         | ✅   | ✅    | ❌                     |
+| [fast_excel](https://rubygems.org/gems/fast_excel) | ❌   | ✅    | ✅                     |
 
 Each of these libraries makes deliberate tradeoffs, and they do so thoughtfully. Some focus exclusively on highly efficient reading or writing by streaming data, while others provide a rich API for complex, in-memory document modifications.
 
@@ -43,6 +43,8 @@ On Ruby 4+, some components used by `xlsxrb` and its test suite are shipped as b
 
 ## Usage
 
+For visual demonstrations of various features and their generated output side-by-side with code examples, check the [Visual Examples Gallery](docs/visual/VisualGallery.md).
+
 `xlsxrb` offers two different approaches to reading and writing XLSX files: **Streaming** and **In-Memory**.
 
 In most cases, the **Streaming** approach is the best choice because it is highly memory efficient, avoiding loading entire files or structures into RAM. You should always try the Streaming approach first.
@@ -53,7 +55,7 @@ However, if your use case requires **Random Access** (e.g., reading a cell at `Z
 
 #### Streaming Read
 
-For large files, use `Xlsxrb.foreach` to read rows one at a time without loading the entire file into memory.
+Read rows one at a time without loading the entire file into memory:
 
 ```ruby
 require "xlsxrb"
@@ -66,76 +68,27 @@ end
 
 #### Streaming Write
 
-To generate large files efficiently, use `Xlsxrb.generate`. This yields a stream writer that writes data directly to the archive.
+Generate large files efficiently by writing data directly to the file stream:
 
 ```ruby
 require "xlsxrb"
 
 Xlsxrb.generate("large_output.xlsx") do |writer|
   writer.add_sheet("Sales Data") do
-    # Write a header row
     writer.add_row(["Date", "Amount", "Status"])
-
-    # Write data rows
-    10_000.times do |i|
-      writer.add_row([Date.today - i, i * 100, true])
-    end
-
-    # You can also set column widths (0-based index)
+    writer.add_row([Date.today, 100, true])
     writer.set_column(0, width: 15.5)
   end
 end
 ```
 
-#### Adding Charts (Streaming)
-
-You can generate charts iteratively without loading data into memory by adding them during the streaming process.
-
-```ruby
-require "xlsxrb"
-
-Xlsxrb.generate("streaming_chart.xlsx") do |w|
-  w.add_sheet("Sales Data") do |s|
-    s.add_row(["Month", "Value"])
-    s.add_row(["Jan", 100])
-    s.add_row(["Feb", 200])
-
-    w.add_chart(
-      type: :bar,
-      title: "Monthly Sales",
-      from_col: 3,
-      from_row: 0,
-      series: [
-        { cat_ref: "Sales Data!$A$2:$A$3", val_ref: "Sales Data!$B$2:$B$3" }
-      ]
-    )
-  end
-end
-```
-
-`add_chart` also supports a block form:
-
-```ruby
-Xlsxrb.generate("streaming_chart_block.xlsx") do |w|
-  w.add_sheet("Sales") do
-    w.add_row(["Month", "Value"])
-    w.add_row(["Jan", 100])
-    w.add_row(["Feb", 200])
-
-    w.add_chart do |c|
-      c.type :bar
-      c.title "Monthly Sales"
-      c.series(cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3")
-    end
-  end
-end
-```
+_For more advanced streaming features (such as adding charts, sparklines, or complex styling during stream generation), see the [Visual Examples Gallery](docs/visual/VisualGallery.md)._
 
 ### 2. In-Memory
 
-#### Reading an entire file into memory
+#### Reading into memory
 
-`Xlsxrb.read` parses the entire XLSX file and returns a workbook object containing all sheets, rows, and cells. Because the entire structure is in memory, you can randomly access any cell by its reference.
+Parse the entire workbook for random access by cell reference:
 
 ```ruby
 require "xlsxrb"
@@ -143,22 +96,13 @@ require "xlsxrb"
 workbook = Xlsxrb.read("example.xlsx")
 sheet = workbook.sheets.first
 
-# 1. Sequential access
-sheet.rows.each do |row|
-  puts row.values.join(", ")
-end
-
-# 2. Random access by cell reference (Not possible with streaming)
+# Random access by cell reference
 puts "Value at C10: #{sheet.cell_value("C10")}"
-
-# 3. Random access by 0-based row index
-row_five = sheet.row_at(4)
-puts row_five.cell_at(2).value if row_five
 ```
 
-#### Writing a workbook from memory
+#### Writing from memory
 
-You can create or modify a workbook object and write it out using `Xlsxrb.write`. The `Xlsxrb.build` method provides a convenient DSL to construct the in-memory object hierarchy.
+Construct a workbook hierarchy in memory using the DSL and write it:
 
 ```ruby
 require "xlsxrb"
@@ -174,7 +118,7 @@ Xlsxrb.write("output.xlsx", workbook)
 
 #### Modifying an existing workbook
 
-You can read an existing XLSX file, make modifications, and write the result back using `Xlsxrb.modify`. The block receives a parsed `Workbook` and should return the modified version. If you do not provide a second argument, the source file is overwritten.
+Read an existing file, make changes, and write it back:
 
 ```ruby
 require "xlsxrb"
@@ -182,505 +126,41 @@ require "xlsxrb"
 Xlsxrb.modify("template.xlsx", "output.xlsx") do |wb|
   sheet = wb.sheet(0)
   row0 = sheet.row_at(0)
-  
-  # Update cell B1
+
   new_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "Updated")
   new_row = row0.with(cells: row0.cells.map { |c| c.column_index == 1 ? new_cell : c })
   new_sheet = sheet.with(rows: sheet.rows.map { |r| r.index == 0 ? new_row : r })
-  
-  # Return the modified workbook
+
   wb.with(sheets: wb.sheets.map.with_index { |s, i| i == 0 ? new_sheet : s })
 end
 ```
 
-#### Adding Charts (In-Memory)
-
-You can build charts entirely in-memory using the `Xlsxrb.build` DSL, giving you full control over the spreadsheet hierarchy.
-
-```ruby
-require "xlsxrb"
-
-workbook = Xlsxrb.build do |w|
-  w.add_sheet("Sales Data") do |s|
-    s.add_row(["Month", "Value"])
-    s.add_row(["Jan", 100])
-    s.add_row(["Feb", 200])
-
-    s.add_chart(
-      type: :pie,
-      title: "Sales Distribution",
-      from_col: 3,
-      from_row: 0,
-      series: [
-        { cat_ref: "Sales Data!$A$2:$A$3", val_ref: "Sales Data!$B$2:$B$3" }
-      ]
-    )
-  end
-end
-
-Xlsxrb.write("memory_chart.xlsx", workbook)
-```
-
-## Styling
-
-You can apply styles to cells in both streaming and in-memory modes. Styles support:
-- **Font properties**: bold, italic, size, name, color, underline, strike
-- **Fill properties**: pattern (solid, etc.) with colors, or gradients
-- **Border properties**: left, right, top, bottom, diagonal with style and color
-- **Number format**: custom number formats
-
-### In-Memory Styling
-
-Define styles using the fluent DSL in `Xlsxrb.build`:
-
-```ruby
-require "xlsxrb"
-
-workbook = Xlsxrb.build do |w|
-  w.add_sheet("Sales") do |s|
-    # Define reusable styles
-    s.add_style("header") do |style|
-      style.bold.size(14).font_color("FFFF0000")  # Red bold, size 14
-    end
-
-    s.add_style("total") do |style|
-      style.bold.fill_color("FF00FF00")  # Green background, bold
-    end
-
-    # Apply styles to rows by specifying style names for each column
-    s.add_row(["Date", "Amount", "Status"], styles: ["header", "header", "header"])
-
-    # Add data rows
-    s.add_row([Date.today, 1000, "Pending"])
-    s.add_row([Date.today - 1, 2000, "Complete"])
-
-    # Apply styles to specific columns in a row
-    s.add_row(["Total", 3000, ""], styles: { 0 => "total", 1 => "total" })
-  end
-end
-
-Xlsxrb.write("styled_output.xlsx", workbook)
-```
-
-`add_style` also supports an options form:
-
-```ruby
-s.add_style("header", bold: true, size: 14, font_color: "FFFF0000")
-```
-
-### Streaming Styling
-
-Define styles in streaming mode with `Xlsxrb.generate`:
-
-```ruby
-require "xlsxrb"
-
-Xlsxrb.generate("streaming_styled.xlsx") do |w|
-  # Define styles
-  w.add_style("header") do |style|
-    style.bold.size(12).font_color("FF0000FF")  # Blue bold, size 12
-  end
-
-  w.add_style("data") do |style|
-    style.fill_color("FFFFC000")  # Orange background
-  end
-
-  w.add_sheet("Data") do
-    # Apply styles to header row
-    w.add_row(["Product", "Qty"],
-              styles: { 0 => "header", 1 => "header" })
-
-    # Add data rows with alternating styles
-    (1..100).each do |i|
-      styles = i % 2 == 0 ? { 0 => "data", 1 => "data" } : nil
-      w.add_row(["Item ##{i}", i * 10], styles: styles)
-    end
-  end
-end
-```
-
-### StyleBuilder API
-
-The `Xlsxrb::StyleBuilder` class provides a fluent interface for defining styles. Common methods:
-
-**Font methods:**
-- `bold(true/false)` — Apply bold formatting
-- `italic(true/false)` — Apply italic formatting
-- `size(num)` — Set font size (e.g., 12, 14)
-- `font_name(name)` — Set font name (e.g., "Arial", "Calibri")
-- `font_color(color)` — Set font color (RGB hex, e.g., "FFFF0000" for red)
-- `underline(val)` — Set underline style (e.g., "single", "double")
-- `strike(true/false)` — Apply strikethrough
-
-**Fill methods:**
-- `fill_color(color)` — Solid fill with RGB hex color
-- `fill_pattern(pattern, fg_color:, bg_color:)` — Pattern fill
-- `fill_gradient(type:, degree:, stops:)` — Gradient fill
-
-**Border methods:**
-- `border_all(style:, color:)` — Apply border to all sides
-- `border_left(style:, color:)` — Left border only
-- `border_right(style:, color:)` — Right border only
-- `border_top(style:, color:)` — Top border only
-- `border_bottom(style:, color:)` — Bottom border only
-
-**Number format:**
-- `number_format(num_fmt_id)` — Apply number format
+_For details on adding charts or shapes in-memory, see the [Visual Examples Gallery](docs/visual/VisualGallery.md)._
 
 ## Specification
 
 ## Sheet Features
 
-All sheet-level features work identically in both the streaming (`Xlsxrb.generate`) and in-memory (`Xlsxrb.build`) APIs.
-The examples below use `Xlsxrb.generate`; replace it with `Xlsxrb.build` + `Xlsxrb.write` for in-memory use.
-
-### Formulas
-
-Write formulas by wrapping the expression in `Xlsxrb.formula`. When the file is opened, Excel will automatically calculate the result.
-
-```ruby
-Xlsxrb.generate("formulas.xlsx") do |w|
-  w.add_sheet("Calc") do |s|
-    # Write a formula that calculates automatically
-    s.add_row([10, 20, Xlsxrb.formula("SUM(A1:B1)")])
-    
-    # Optionally, provide a cached value (useful for third-party readers)
-    s.add_row([10, 20, Xlsxrb.formula("SUM(A2:B2)", cached_value: 30)])
-  end
-end
-```
-
-### Hyperlinks
-
-Attach a URL or an internal cell reference to a cell.
-
-```ruby
-Xlsxrb.generate("links.xlsx") do |w|
-  w.add_sheet("Links") do |s|
-    s.add_row(["Visit Example", "Jump to cell"])
-
-    # External URL
-    s.add_hyperlink("A1", "https://example.com", display: "Example", tooltip: "Open site")
-
-    # Internal location reference (no URL)
-    s.add_hyperlink("B1", location: "Sheet2!A1")
-  end
-end
-```
-
-### Auto Filter
-
-Add a filter drop-down to a range of columns.
-
-```ruby
-Xlsxrb.generate("filtered.xlsx") do |w|
-  w.add_sheet("Data") do |s|
-    s.add_row(["Name", "Score"])
-    s.add_row(["Alice", 95])
-    s.add_row(["Bob", 87])
-
-    s.set_auto_filter("A1:B3")
-  end
-end
-```
-
-### Data Validation
-
-Restrict allowed values in a range of cells.
-
-```ruby
-Xlsxrb.generate("validated.xlsx") do |w|
-  w.add_sheet("Form") do |s|
-    s.add_row(["Rating (1-5)", "Category"])
-
-    # Whole-number range
-    s.add_data_validation("A2:A100",
-      type: :whole, operator: :between,
-      formula1: "1", formula2: "5",
-      show_error_message: true,
-      error_title: "Invalid", error: "Enter a number from 1 to 5")
-
-    # Drop-down list
-    s.add_data_validation("B2:B100",
-      type: :list, formula1: '"Alpha,Beta,Gamma"',
-      show_error_message: true)
-  end
-end
-```
-
-### Conditional Formatting
-
-Highlight cells automatically based on their value.
-
-```ruby
-Xlsxrb.generate("conditional.xlsx") do |w|
-  w.add_sheet("Scores") do |s|
-    s.add_row([90, 45, 72, 88])
-
-    # Highlight cells greater than 80
-    s.add_conditional_format("A1:D1",
-      type: :cell_is, operator: :greaterThan,
-      formula: "80", priority: 1,
-      fill_color: "FFFFC7CE")
-  end
-end
-```
-
-### Tables
-
-Wrap a range in a structured table with column headers and an optional style.
-
-```ruby
-Xlsxrb.generate("table.xlsx") do |w|
-  w.add_sheet("Report") do |s|
-    s.add_row(["Name", "Score"])
-    s.add_row(["Alice", 95])
-    s.add_row(["Bob", 87])
-
-    s.add_table("A1:B3",
-      columns: ["Name", "Score"],
-      name: "ScoreTable",
-      display_name: "ScoreTable",
-      style: "TableStyleMedium9",
-      show_first_column: true,
-      show_last_column: false)
-  end
-end
-```
-
-### Pivot Tables
-
-Create a pivot table to summarize data from a range.
-
-```ruby
-Xlsxrb.generate("pivot.xlsx") do |w|
-  w.add_sheet("Data") do |s|
-    s.add_row(["Region", "Product", "Amount"])
-    s.add_row(["East", "Widget", 100])
-    s.add_row(["West", "Widget", 200])
-    s.add_row(["East", "Gadget", 150])
-
-    s.add_pivot_table(
-      "Data!A1:C4",
-      row_fields: [0], # Group by Region
-      data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
-      dest_ref: "E1",
-      name: "SalesPivot",
-      field_names: ["Region", "Product", "Amount"]
-    )
-  end
-end
-```
-
-### Comments
-
-Attach a text comment (note) to a cell.
-
-```ruby
-Xlsxrb.generate("comments.xlsx") do |w|
-  w.add_sheet("Notes") do |s|
-    s.add_row(["Value"])
-    s.add_row([42])
-
-    s.add_comment("A2", "This is the answer", author: "Alice")
-  end
-end
-```
-
-### Merge Cells
-
-Merge a rectangular range of cells into one.
-
-```ruby
-Xlsxrb.generate("merged.xlsx") do |w|
-  w.add_sheet("Layout") do |s|
-    s.add_row(["Title", nil, nil])
-    s.add_row([1, 2, 3])
-
-    s.merge_cells("A1:C1")
-  end
-end
-```
-
-### Freeze / Split Panes
-
-Lock rows or columns in place while scrolling.
-
-```ruby
-Xlsxrb.generate("frozen.xlsx") do |w|
-  w.add_sheet("Big Table") do |s|
-    s.add_row(["ID", "Name", "Score"])
-    100.times { |i| s.add_row([i + 1, "Row #{i + 1}", i * 10]) }
-
-    # Freeze the first row (row index 1 = keep row 0 visible)
-    s.set_freeze_pane(row: 1, col: 0)
-
-    # Or split at pixel offsets (non-frozen)
-    # s.set_split_pane(x_split: 2000, y_split: 600, top_left_cell: "B5")
-  end
-end
-```
-
-Set the active cell selection (optional, often used together with a freeze pane):
-
-```ruby
-s.set_selection("B2", sqref: "B2", pane: "bottomRight")
-```
-
-### Page Margins, Page Setup, and Header/Footer
-
-Control how the sheet looks when printed.
-
-```ruby
-Xlsxrb.generate("print_ready.xlsx") do |w|
-  w.add_sheet("Report") do |s|
-    s.add_row(["Header", "Data"])
-
-    # Page margins in inches
-    s.set_page_margins(left: 0.75, right: 0.75, top: 1.0, bottom: 1.0, header: 0.5, footer: 0.5)
-
-    # Page setup (orientation, paper size, scaling)
-    s.set_page_setup(orientation: :landscape, paper_size: 9, scale: 90, fit_to_page: true)
-
-    # Header and footer text (uses Excel format codes)
-    s.set_header_footer(
-      odd_header: "&L&\"Arial,Bold\"My Company&C&18Report Title&RPage &P of &N",
-      odd_footer: "&LConfidential&C&D&RGenerated by xlsxrb"
-    )
-  end
-end
-```
-
-### Print Options
-
-Enable or disable specific print settings.
-
-```ruby
-Xlsxrb.generate("print_opts.xlsx") do |w|
-  w.add_sheet("Grid") do |s|
-    s.add_row(["A", "B"])
-
-    s.set_print_option(:grid_lines, true)
-    s.set_print_option(:horizontal_centered, true)
-    s.set_print_option(:vertical_centered, false)
-  end
-end
-```
-
-### Sheet Protection
-
-Protect a sheet to prevent accidental edits (optionally with a password).
-
-```ruby
-Xlsxrb.generate("protected.xlsx") do |w|
-  w.add_sheet("Locked") do |s|
-    s.add_row(["Read-only data"])
-
-    s.set_sheet_protection(sheet: true, objects: true, scenarios: true)
-
-    # Plain password is auto-hashed (SHA-512 metadata in OOXML)
-    s.set_sheet_protection(sheet: true, password: "secret")
-
-    # If you already have a legacy XOR hash, pass it directly (4 hex chars)
-    # s.set_sheet_protection(sheet: true, password: "CF1A")
-  end
-end
-```
-
-### Row and Column Page Breaks
-
-Insert manual page breaks before specific rows or columns.
-
-```ruby
-Xlsxrb.generate("breaks.xlsx") do |w|
-  w.add_sheet("Pages") do |s|
-    20.times { |i| s.add_row(["Row #{i + 1}"]) }
-
-    s.add_row_break(10)  # page break before row 10 (0-based)
-    s.add_col_break(3)   # page break before column 3 (0-based, = column D)
-  end
-end
-```
-
-### Images
-
-Embed an image anchored to a cell range.
-
-```ruby
-png_bytes = File.binread("logo.png")
-
-Xlsxrb.generate("with_image.xlsx") do |w|
-  w.add_sheet("Cover") do |s|
-    s.add_row(["Product Report"])
-
-    s.add_image(png_bytes, ext: "png",
-      from_col: 0, from_row: 1,
-      to_col: 4,  to_row: 10)
-  end
-end
-```
-
-### Sparklines
-
-Embed miniature charts (sparklines) into single cells to show trends.
-
-```ruby
-Xlsxrb.generate("sparklines.xlsx") do |w|
-  w.add_sheet("Trends") do |s|
-    s.add_row(["Data", nil, nil, "Trend"])
-    s.add_row([10, 20, 30])
-    s.add_row([15, -5, 25])
-
-    s.add_sparkline_group(
-      sparklines: [
-        { data_ref: "Trends!A2:C2", location_ref: "D2" },
-        { data_ref: "Trends!A3:C3", location_ref: "D3" }
-      ],
-      type: "column",   # "line" (default), "column", or "stacked"
-      negative: true,   # Highlight negative values
-      high: true        # Highlight highest value
-    )
-  end
-end
-```
-
-### Shapes (VML Drawing)
-
-Add a basic shape (rectangle, ellipse, etc.) to a sheet.
-
-```ruby
-Xlsxrb.generate("shapes.xlsx") do |w|
-  w.add_sheet("Diagram") do |s|
-    s.add_row(["See the shape below"])
-
-    s.add_shape(
-      preset: "rect",
-      text: "Important!",
-      from_col: 0, from_row: 2,
-      to_col: 3,   to_row: 6,
-      name: "Banner",
-      fill_color: "#FFFFC0",
-      line_color: "#FF0000"
-    )
-  end
-end
-```
-
-### Sheet Properties and View Settings
-
-Set per-sheet visual properties (tab colour, grid lines, zoom level, etc.).
-
-```ruby
-Xlsxrb.generate("styled_sheet.xlsx") do |w|
-  w.add_sheet("Summary") do |s|
-    s.add_row(["Data"])
-
-    s.set_sheet_property(:tab_color, "FF4472C4")   # blue tab
-    s.set_sheet_view(:show_grid_lines, false)
-    s.set_sheet_view(:zoom_scale, 120)
-  end
-end
-```
+All sheet-level features work identically in both the streaming (`Xlsxrb.generate`) and in-memory (`Xlsxrb.build`) APIs. Detailed code examples, runnable scripts, and side-by-side visual rendering results (screenshots) for all sheet-level features are available in the [Visual Gallery (docs/visual/VisualGallery.md)](docs/visual/VisualGallery.md).
+
+- **[Formulas](docs/visual/VisualGallery.md#cell-formulas)** - Write standard or Excel formulas with automatic evaluation.
+- **[Hyperlinks](docs/visual/VisualGallery.md#basic-data)** - Attach web URLs or jump to internal worksheet cell locations.
+- **[Auto Filter](docs/visual/VisualGallery.md#interactive-autofilter)** - Add interactive filter drop-down menus to column ranges.
+- **[Data Validation](docs/visual/VisualGallery.md#interactive-validation-list)** - Restrict allowed cell values (lists, range limits, dates, times, custom expressions) with custom warning popups.
+- **[Conditional Formatting](docs/visual/VisualGallery.md#cf-begins-with)** - Highlight cells automatically using rule comparisons, color scales, data bars, icon sets, or formula expressions.
+- **[Tables](docs/visual/VisualGallery.md#borders)** - Wrap cell ranges in structured tables with column headers and preset visual styles.
+- **[Pivot Tables](docs/visual/VisualGallery.md#pivot-tables)** - Summarize data ranges dynamically with row/column grouping and subtotals.
+- **[Comments](docs/visual/VisualGallery.md#interactive-comments)** - Attach hover-activated popup notes to specific cells.
+- **[Merge Cells](docs/visual/VisualGallery.md#merge-freeze)** - Combine rectangular cell ranges into single styled cells.
+- **[Freeze & Split Panes](docs/visual/VisualGallery.md#merge-freeze)** - Freeze top rows or left columns (or split viewport by pixel offsets) to keep headers visible.
+- **[Page margins & Print Setup](docs/visual/VisualGallery.md#page-setup)** - Set portrait/landscape orientation, margins, paper sizes, scaling (fit-to-page), and odd/even headers & footers.
+- **[Print Options](docs/visual/VisualGallery.md#page-grid-lines-print)** - Toggle gridlines, row/column headings visibility when printing, and centering.
+- **[Sheet Protection](docs/visual/VisualGallery.md#sheet-protection)** - Lock sheet structures, formatting, or objects (optionally with SHA-512 hashed passwords).
+- **[Page Breaks](docs/visual/VisualGallery.md#page-setup)** - Insert manual horizontal or vertical page breaks.
+- **[Images](docs/visual/VisualGallery.md#embedded-images)** - Embed and anchor floating images (PNG, JPEG) with custom dimensions.
+- **[Sparklines](docs/visual/VisualGallery.md#sparkline-column)** - Insert inline column or line trend charts into single cells.
+- **[Shapes & Drawings](docs/visual/VisualGallery.md#shapes)** - Draw rectangles, ellipses, and other presets with solid fills, lines, and custom text.
+- **[Sheet Properties and View Settings](docs/visual/VisualGallery.md#sheet-tab-colors)** - Customize per-sheet properties (tab colors, hide gridlines, default zoom levels).
 
 ## Workbook Features
 
@@ -746,53 +226,55 @@ end
 
 This project aims to be compliant with [ECMA-376](https://www.ecma-international.org/publications-and-standards/standards/ecma-376/) (Office Open XML file formats). Specifically, the library targets the **Transitional** version of the specification rather than the **Strict** version. The Transitional version (detailed in Part 4) is the format most commonly produced and consumed by existing spreadsheet applications, making it the practical choice for real-world interoperability.
 
+For detailed specification references and policies, see [SPEC_SOURCES.md](docs/SPEC_SOURCES.md).
+
 ## Benchmarks
 
 The following benchmarks measure the time and memory required to process both 100,000 cells (10,000 rows × 10 columns) and 1,000,000 cells (100,000 rows × 10 columns) XLSX files, averaged over 5 iterations on Ruby 3.4+.
 
 ### Write Performance (100,000 cells)
 
-| Library                   | Time       | Peak Memory  | GC Count |
-|---------------------------|------------|--------------|----------|
-| xlsxtream (Streaming)     |     0.11 s |      66.2 MB |     18.0 |
-| fast_excel (Streaming)    |     0.14 s |      64.6 MB |      1.0 |
-| xlsxrb (Streaming)        |     0.22 s |      65.3 MB |     11.0 |
-| caxlsx (In-Memory)        |     0.45 s |      73.4 MB |      5.0 |
-| rubyXL (In-Memory)        |     2.37 s |     260.6 MB |     35.0 |
-| xlsxrb (In-Memory)        |     3.46 s |     166.8 MB |     45.0 |
+| Library                | Time   | Peak Memory | GC Count |
+| ---------------------- | ------ | ----------- | -------- |
+| xlsxtream (Streaming)  | 0.15 s | 65.0 MB     | 4.4      |
+| fast_excel (Streaming) | 0.28 s | 64.4 MB     | 2.0      |
+| xlsxrb (Streaming)     | 0.34 s | 64.4 MB     | 19.0     |
+| caxlsx (In-Memory)     | 1.19 s | 73.8 MB     | 5.0      |
+| xlsxrb (In-Memory)     | 3.06 s | 132.4 MB    | 34.0     |
+| rubyXL (In-Memory)     | 5.45 s | 274.8 MB    | 33.0     |
 
 ### Read Performance (100,000 cells)
 
-| Library                   | Time       | Peak Memory  | GC Count |
-|---------------------------|------------|--------------|----------|
-| xlsxrb (Streaming)        |     0.37 s |      69.3 MB |     26.6 |
-| creek (Streaming)         |     0.58 s |     164.4 MB |    169.2 |
-| roo (Streaming)           |     0.76 s |      88.0 MB |     19.2 |
-| xsv (Streaming)           |     1.59 s |     105.2 MB |     64.4 |
-| rubyXL (In-Memory)        |     1.89 s |     271.8 MB |     40.0 |
-| xlsxrb (In-Memory)        |     2.89 s |     135.7 MB |     42.2 |
+| Library            | Time   | Peak Memory | GC Count |
+| ------------------ | ------ | ----------- | -------- |
+| xlsxrb (Streaming) | 1.02 s | 67.4 MB     | 192.0    |
+| creek (Streaming)  | 1.32 s | 160.4 MB    | 396.8    |
+| roo (Streaming)    | 1.33 s | 87.4 MB     | 31.0     |
+| xlsxrb (In-Memory) | 1.82 s | 153.9 MB    | 20.0     |
+| xsv (Streaming)    | 3.51 s | 92.1 MB     | 98.0     |
+| rubyXL (In-Memory) | 4.95 s | 265.9 MB    | 38.0     |
 
 ### Write Performance (1,000,000 cells)
 
-| Library                   | Time       | Peak Memory  | GC Count |
-|---------------------------|------------|--------------|----------|
-| xlsxtream (Streaming)     |     0.71 s |      66.2 MB |    141.8 |
-| fast_excel (Streaming)    |     1.38 s |      64.6 MB |     13.0 |
-| xlsxrb (Streaming)        |     2.03 s |      98.2 MB |    119.0 |
-| caxlsx (In-Memory)        |     2.82 s |     147.5 MB |     15.0 |
-| xlsxrb (In-Memory)        |    25.48 s |     798.1 MB |     98.8 |
-| rubyXL (In-Memory)        |    48.51 s |    2068.8 MB |     91.0 |
+| Library                | Time    | Peak Memory | GC Count |
+| ---------------------- | ------- | ----------- | -------- |
+| xlsxtream (Streaming)  | 0.11 s  | 65.1 MB     | 4.2      |
+| fast_excel (Streaming) | 2.26 s  | 64.4 MB     | 28.0     |
+| xlsxrb (Streaming)     | 3.82 s  | 79.0 MB     | 199.0    |
+| caxlsx (In-Memory)     | 4.52 s  | 142.9 MB    | 15.6     |
+| xlsxrb (In-Memory)     | 11.61 s | 454.5 MB    | 61.4     |
+| rubyXL (In-Memory)     | 86.63 s | 2072.0 MB   | 91.4     |
 
 ### Read Performance (1,000,000 cells)
 
-| Library                   | Time       | Peak Memory  | GC Count |
-|---------------------------|------------|--------------|----------|
-| xlsxrb (Streaming)        |     3.82 s |     100.4 MB |    264.6 |
-| creek (Streaming)         |     6.11 s |     709.3 MB |   1974.6 |
-| roo (Streaming)           |     7.71 s |     127.6 MB |    196.2 |
-| xsv (Streaming)           |    15.58 s |     112.1 MB |    619.8 |
-| rubyXL (In-Memory)        |    26.27 s |    1954.2 MB |    127.0 |
-| xlsxrb (In-Memory)        |    31.02 s |     770.7 MB |     67.8 |
+| Library            | Time    | Peak Memory | GC Count |
+| ------------------ | ------- | ----------- | -------- |
+| xlsxrb (Streaming) | 11.05 s | 102.9 MB    | 582.0    |
+| roo (Streaming)    | 13.20 s | 127.9 MB    | 233.4    |
+| xsv (Streaming)    | 15.35 s | 94.3 MB     | 984.4    |
+| creek (Streaming)  | 15.69 s | 706.5 MB    | 3974.6   |
+| xlsxrb (In-Memory) | 25.23 s | 991.7 MB    | 41.4     |
+| rubyXL (In-Memory) | 56.26 s | 1858.3 MB   | 127.0    |
 
 For reference, the following specification files from the Ecma International website are located in the `vendor/docs/` directory:
 
@@ -803,21 +285,33 @@ For reference, the following specification files from the Ecma International web
 
 ## Testing Strategy
 
-To ensure high quality and strict compliance with the ECMA-376 specification while maintaining a fast development loop, we employ a tiered testing strategy:
+To ensure high quality and strict compliance with the ECMA-376 specification while maintaining a fast development loop, we employ a 4-tier testing strategy:
 
-1.  **Unit Tests (Fast & No Dependencies):**
-    - Verify individual components (Writer, Reader, Packaging) using only the Ruby standard library and bundled gems.
-    - Assert internal state and XML generation logic without performing heavy disk I/O or shelling out to external processes.
-    - **Round-Trip Testing:** Ensure that files generated by the `xlsxrb` Writer can be seamlessly and accurately parsed back by the `xlsxrb` Reader. This confirms internal consistency and perfect symmetry between our reading and writing components without external dependencies.
+1. **Unit Tests (Fast & No Dependencies):**
+   - Verify individual components (Writer, Reader, Packaging) using only the Ruby standard library and bundled gems.
+   - **Round-Trip Testing:** Ensure that files generated by the `xlsxrb` Writer can be seamlessly and accurately parsed back by the `xlsxrb` Reader.
+   - Run via: `bundle exec rake test:unit`
 
-2.  **Interoperability Testing (E2E):**
-    - Utilize the official **[Open XML SDK](https://github.com/dotnet/Open-XML-SDK)** for robust, two-way verification:
-        - **Writer Validation:** Files generated by `xlsxrb` are read and validated using a script powered by the Open XML SDK to verify the state, correctness of written values, and structural/schema compliance.
-        - **Reader Validation:** Complex, real-world XLSX files are programmatically generated by the Open XML SDK, which `xlsxrb` then reads and parses.
-    - This approach provides a strong guarantee of structural correctness and compatibility using the standard reference implementation.
+2. **Contract Tests (API Consistency):**
+   - Execute the same data scenario through both the Streaming (`Xlsxrb.generate`) and In-Memory (`Xlsxrb.build` + `Xlsxrb.write`) APIs.
+   - Verify that both APIs produce semantically identical OOXML output.
+   - Run via: `bundle exec rake test:contract`
+
+3. **Interoperability Testing (E2E):**
+   - Utilize the official **[Open XML SDK](https://github.com/dotnet/Open-XML-SDK)** for robust, two-way verification:
+     - **Writer Validation:** Files generated by `xlsxrb` are read and validated using the Open XML SDK validator.
+     - **Reader Validation:** Complex, real-world XLSX files generated by the SDK are parsed and verified by the `xlsxrb` reader.
+   - Requires `.NET SDK`.
+   - Run via: `bundle exec rake test:e2e`
+
+4. **Visual Examples & VRT (Visual Regression Testing):**
+   - **Visual Gallery:** Automatically compiles example DSL scripts under `examples/visual/` into the [Visual Examples Gallery](docs/visual/VisualGallery.md).
+   - **Visual Regression Testing:** Renders generated spreadsheets to PNGs using a headless LibreOffice Calc engine, and compares them against baselines to catch rendering errors or layout regressions.
+   - Requires `libreoffice-calc`, `poppler-utils` (`pdftoppm`), and `imagemagick`.
+   - Run via: `bundle exec rake test:visual`
 
 **Note on Test Environments:**
-While Unit Tests can run anywhere, the Interoperability tests require an external system dependency (`.NET SDK`). All tests are integrated into the provided **Dev Container** environment to ensure a seamless and consistent experience across local machines and CI.
+All necessary dependencies (.NET SDK, LibreOffice, etc.) are pre-configured in the repository's **Dev Container** setup for a consistent local and CI experience.
 
 ## Development
 

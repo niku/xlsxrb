@@ -4759,12 +4759,13 @@ module Xlsxrb
           f_attrs << ' bx="1"' if value.bx
           t_attr = ""
           cached_val_str = value.cached_value.to_s
-          if value.cached_value.is_a?(String)
+          case value.cached_value
+          when String
             t_attr = ' t="str"'
-          elsif value.cached_value == true
+          when true
             t_attr = ' t="b"'
             cached_val_str = "1"
-          elsif value.cached_value == false
+          when false
             t_attr = ' t="b"'
             cached_val_str = "0"
           end
