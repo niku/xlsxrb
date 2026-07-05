@@ -501,23 +501,148 @@ module Xlsxrb
           @builder.open_tag("conditionalFormatting", { sqref: sqref })
           sqref_rules.each_with_index do |rule, idx|
             type = rule[:type]
+            if type.is_a?(String) || type.is_a?(Symbol)
+              t_str = type.to_s
+              snake = t_str.gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+                           .gsub(/([a-z\d])([A-Z])/, '\1_\2')
+                           .downcase.to_sym
+              type = snake if %i[cell_is expression color_scale data_bar icon_set above_average top10 duplicate_values unique_values contains_text not_contains_text begins_with ends_with contains_blanks not_contains_blanks time_period].include?(snake)
+            end
+
             cf_type = case type
                       when :cell_is then "cellIs"
                       when :expression then "expression"
                       when :color_scale then "colorScale"
                       when :data_bar then "dataBar"
                       when :icon_set then "iconSet"
+                      when :above_average then "aboveAverage"
+                      when :top10 then "top10"
+                      when :duplicate_values then "duplicateValues"
+                      when :unique_values then "uniqueValues"
+                      when :contains_text then "containsText"
+                      when :not_contains_text then "notContainsText"
+                      when :begins_with then "beginsWith"
+                      when :ends_with then "endsWith"
+                      when :contains_blanks then "containsBlanks"
+                      when :not_contains_blanks then "notContainsBlanks"
+                      when :time_period then "timePeriod"
                       else type.to_s
                       end
+
             r_attrs = { type: cf_type, priority: (rule[:priority] || (idx + 1)).to_s }
             r_attrs[:operator] = rule[:operator].to_s if rule[:operator]
             r_attrs[:dxfId] = rule[:format_id].to_s if rule[:format_id]
-            @builder.open_tag("cfRule", r_attrs)
-            @builder.tag("formula") { |b| b.text(rule[:formula]) } if rule[:formula]
-            (rule[:formulas] || []).each do |f|
-              @builder.tag("formula") { |b| b.text(f) }
+            r_attrs[:stopIfTrue] = "1" if rule[:stop_if_true]
+            r_attrs[:aboveAverage] = "0" if rule[:above_average] == false
+            r_attrs[:equalAverage] = "1" if rule[:equal_average]
+            r_attrs[:rank] = rule[:rank].to_s if rule[:rank]
+            r_attrs[:percent] = "1" if rule[:percent]
+            r_attrs[:bottom] = "1" if rule[:bottom]
+            r_attrs[:text] = rule[:text].to_s if rule[:text]
+            r_attrs[:timePeriod] = rule[:time_period].to_s if rule[:time_period]
+            r_attrs[:stdDev] = rule[:std_dev].to_s if rule[:std_dev]
+
+            case type
+            when :color_scale
+              @builder.open_tag("cfRule", r_attrs)
+              cs = rule[:color_scale] || {}
+              cfvos = cs[:cfvo] || [
+                { type: "min" },
+                { type: "percent", val: "50" },
+                { type: "max" }
+              ]
+              colors = cs[:colors] || [
+                "FFF8696B", # Red
+                "FFFFEB84", # Yellow
+                "FF63BE7B"  # Green
+              ]
+              @builder.tag("colorScale") do |b|
+                cfvos.each do |cfvo|
+                  cfvo_attrs = { type: cfvo[:type] }
+                  cfvo_attrs[:val] = cfvo[:val].to_s if cfvo[:val]
+                  cfvo_attrs[:gte] = "0" if cfvo[:gte] == false
+                  b.empty_tag("cfvo", cfvo_attrs)
+                end
+                colors.each do |c|
+                  if c.is_a?(Hash)
+                    c_attrs = {}
+                    c_attrs[:auto] = "1" if c[:auto]
+                    c_attrs[:indexed] = c[:indexed].to_s if c[:indexed]
+                    c_attrs[:rgb] = c[:rgb] if c[:rgb]
+                    c_attrs[:theme] = c[:theme].to_s if c[:theme]
+                    c_attrs[:tint] = c[:tint].to_s if c[:tint]
+                    b.empty_tag("color", c_attrs)
+                  else
+                    b.empty_tag("color", { rgb: c.to_s })
+                  end
+                end
+              end
+              @builder.close_tag("cfRule")
+            when :data_bar
+              @builder.open_tag("cfRule", r_attrs)
+              db = rule[:data_bar] || {}
+              db_color = db[:color] || rule[:color] || "FF5A8DD4"
+              cfvos = db[:cfvo] || [
+                { type: "min" },
+                { type: "max" }
+              ]
+              db_attrs = {}
+              db_attrs[:minLength] = db[:min_length].to_s if db[:min_length]
+              db_attrs[:maxLength] = db[:max_length].to_s if db[:max_length]
+              db_attrs[:showValue] = db[:show_value] ? "1" : "0" unless db[:show_value].nil?
+              
+              @builder.tag("dataBar", db_attrs) do |b|
+                cfvos.each do |cfvo|
+                  cfvo_attrs = { type: cfvo[:type] }
+                  cfvo_attrs[:val] = cfvo[:val].to_s if cfvo[:val]
+                  cfvo_attrs[:gte] = "0" if cfvo[:gte] == false
+                  b.empty_tag("cfvo", cfvo_attrs)
+                end
+                if db_color.is_a?(Hash)
+                  c_attrs = {}
+                  c_attrs[:rgb] = db_color[:rgb] if db_color[:rgb]
+                  c_attrs[:theme] = db_color[:theme].to_s if db_color[:theme]
+                  b.empty_tag("color", c_attrs)
+                else
+                  b.empty_tag("color", { rgb: db_color.to_s })
+                end
+              end
+              @builder.close_tag("cfRule")
+            when :icon_set
+              @builder.open_tag("cfRule", r_attrs)
+              is = rule[:icon_set] || {}
+              icon_style = is[:icon_set] || rule[:icon_style] || "3Arrows"
+              cfvos = is[:cfvo] || [
+                { type: "percent", val: "0" },
+                { type: "percent", val: "33" },
+                { type: "percent", val: "67" }
+              ]
+              is_attrs = { iconSet: icon_style }
+              is_attrs[:reverse] = is[:reverse] ? "1" : "0" unless is[:reverse].nil?
+              is_attrs[:percent] = is[:percent] ? "1" : "0" unless is[:percent].nil?
+              is_attrs[:showValue] = is[:show_value] ? "1" : "0" unless is[:show_value].nil?
+              
+              @builder.tag("iconSet", is_attrs) do |b|
+                cfvos.each do |cfvo|
+                  cfvo_attrs = { type: cfvo[:type] }
+                  cfvo_attrs[:val] = cfvo[:val].to_s if cfvo[:val]
+                  cfvo_attrs[:gte] = "0" if cfvo[:gte] == false
+                  b.empty_tag("cfvo", cfvo_attrs)
+                end
+              end
+              @builder.close_tag("cfRule")
+            else
+              formulas = rule[:formulas] || [rule[:formula]].compact
+              if formulas.empty?
+                @builder.empty_tag("cfRule", r_attrs)
+              else
+                @builder.open_tag("cfRule", r_attrs)
+                formulas.each do |f|
+                  @builder.tag("formula") { |b| b.text(f) }
+                end
+                @builder.close_tag("cfRule")
+              end
             end
-            @builder.close_tag("cfRule")
           end
           @builder.close_tag("conditionalFormatting")
         end

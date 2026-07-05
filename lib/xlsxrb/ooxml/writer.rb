@@ -4891,6 +4891,13 @@ module Xlsxrb
 
       def emit_cf_rule(parts, rule)
         type = rule[:type]
+        if type.is_a?(String) || type.is_a?(Symbol)
+          t_str = type.to_s
+          snake = t_str.gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+                       .gsub(/([a-z\d])([A-Z])/, '\1_\2')
+                       .downcase.to_sym
+          type = snake if CF_TYPE_MAP.key?(snake)
+        end
         rule_type = CF_TYPE_MAP[type] || type.to_s
         rule_attrs = %(type="#{rule_type}")
         rule_attrs << %( priority="#{rule[:priority]}") if rule[:priority]
