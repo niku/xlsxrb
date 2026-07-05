@@ -118,7 +118,7 @@ module Xlsxrb
         private
 
         def parent_context?(tag)
-          @context.length >= 1 && @context[-1] == tag
+          @context.length >= 2 && @context[-2] == tag
         end
 
         def handle_color(attrs)
