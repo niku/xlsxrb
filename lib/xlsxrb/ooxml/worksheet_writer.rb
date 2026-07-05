@@ -111,38 +111,36 @@ module Xlsxrb
             else
               formula_expr = formula
             end
-            formula_expr = formula_expr[1..-1] if formula_expr.start_with?("=")
+            formula_expr = formula_expr[1..] if formula_expr.start_with?("=")
           end
 
-          if !formula_expr
-            unless type
-              case value
-              when String
-                if sst_index && (idx = sst_index[value])
-                  xml_val = idx
-                  type = "s"
-                else
-                  type = "inlineStr"
-                end
-              when Xlsxrb::Elements::RichText
-                if sst_index && (idx = sst_index[value])
-                  xml_val = idx
-                  type = "s"
-                else
-                  type = "inlineStr"
-                  xml_val = value
-                end
-              when true
-                xml_val = "1"
-                type = "b"
-              when false
-                xml_val = "0"
-                type = "b"
-              when Date
-                xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value)
-              when Time
-                xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+          if !formula_expr && !type
+            case value
+            when String
+              if sst_index && (idx = sst_index[value])
+                xml_val = idx
+                type = "s"
+              else
+                type = "inlineStr"
               end
+            when Xlsxrb::Elements::RichText
+              if sst_index && (idx = sst_index[value])
+                xml_val = idx
+                type = "s"
+              else
+                type = "inlineStr"
+                xml_val = value
+              end
+            when true
+              xml_val = "1"
+              type = "b"
+            when false
+              xml_val = "0"
+              type = "b"
+            when Date
+              xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+            when Time
+              xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
             end
           end
 
@@ -189,13 +187,11 @@ module Xlsxrb
                   io.write("<family val=\"#{font[:family]}\"/>") if font[:family]
                   io.write("<scheme val=\"#{font[:scheme]}\"/>") if font[:scheme]
                   io.write("</rPr><t>")
-                  io.write(escape_xml(run[:text]))
-                  io.write("</t></r>")
                 else
                   io.write("<r><t>")
-                  io.write(escape_xml(run[:text]))
-                  io.write("</t></r>")
                 end
+                io.write(escape_xml(run[:text]))
+                io.write("</t></r>")
               end
               io.write("</is></c>")
             else
@@ -297,12 +293,13 @@ module Xlsxrb
             formula_expr = value.expression
             formula_ca = value.calculate_always
             xml_val = value.cached_value
-            if value.cached_value.is_a?(String)
+            case value.cached_value
+            when String
               type = "str"
-            elsif value.cached_value == true
+            when true
               type = "b"
               xml_val = "1"
-            elsif value.cached_value == false
+            when false
               type = "b"
               xml_val = "0"
             end
@@ -343,9 +340,7 @@ module Xlsxrb
             type = "e"
           end
 
-          if formula_expr
-            formula_expr = formula_expr[1..-1] if formula_expr.start_with?("=")
-          end
+          formula_expr = formula_expr[1..] if formula_expr&.start_with?("=")
 
           io.write('<c r="')
           io.write(col_ref)
@@ -433,7 +428,7 @@ module Xlsxrb
         if has_children
           @builder.open_tag("sheetPr", attrs)
           @builder.empty_tag("tabColor", { rgb: props[:tab_color] }) if props[:tab_color]
-          
+
           outline_attrs = {}
           outline_attrs[:summaryBelow] = props[:outline_below] ? "1" : "0" unless props[:outline_below].nil?
           outline_attrs[:summaryRight] = props[:outline_right] ? "1" : "0" unless props[:outline_right].nil?
@@ -442,7 +437,7 @@ module Xlsxrb
           unless props[:fit_to_page].nil?
             @builder.empty_tag("pageSetUpPr", { fitToPage: props[:fit_to_page] ? "1" : "0" })
           end
-          
+
           @builder.close_tag("sheetPr")
         else
           @builder.empty_tag("sheetPr", attrs) unless attrs.empty?
@@ -691,7 +686,7 @@ module Xlsxrb
               db_attrs[:minLength] = db[:min_length].to_s if db[:min_length]
               db_attrs[:maxLength] = db[:max_length].to_s if db[:max_length]
               db_attrs[:showValue] = db[:show_value] ? "1" : "0" unless db[:show_value].nil?
-              
+
               @builder.tag("dataBar", db_attrs) do |b|
                 cfvos.each do |cfvo|
                   cfvo_attrs = { type: cfvo[:type] }
@@ -722,7 +717,7 @@ module Xlsxrb
               is_attrs[:reverse] = is[:reverse] ? "1" : "0" unless is[:reverse].nil?
               is_attrs[:percent] = is[:percent] ? "1" : "0" unless is[:percent].nil?
               is_attrs[:showValue] = is[:show_value] ? "1" : "0" unless is[:show_value].nil?
-              
+
               @builder.tag("iconSet", is_attrs) do |b|
                 cfvos.each do |cfvo|
                   cfvo_attrs = { type: cfvo[:type] }

@@ -1,0 +1,28 @@
+# frozen_string_literal: true
+
+require "xlsxrb"
+output_path = ARGV[0] || "cell_rich_text.xlsx"
+Xlsxrb.generate(output_path) do |w|
+  rt = Xlsxrb::Elements::RichText.new(runs: [
+                                        { text: "Normal " },
+                                        { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
+                                        { text: "ITALIC BLUE", font: { italic: true, color: "FF0000FF", sz: 20 } }
+                                      ])
+  w.add_sheet("Rich Text") do |s|
+    s.set_column(0, width: 25)
+    s.set_column(1, width: 25)
+    s.add_row(%w[Format Value])
+    s.add_row(["Rich Text Cell", rt])
+  end
+end
+
+# 2. Read the generated sheet and print parsed cell values and Ruby classes
+puts "=== Read Validation ==="
+workbook = Xlsxrb.read(output_path)
+sheet = workbook.sheets.first
+sheet.rows.each do |row|
+  row_cells = row.cells.map do |c|
+    "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
+  end
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
+end

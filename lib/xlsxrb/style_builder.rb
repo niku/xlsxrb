@@ -159,12 +159,14 @@ module Xlsxrb
       self
     end
 
+    # rubocop:disable Naming/MethodParameterName
     def border_diagonal(style: "thin", color: nil, up: false, down: false)
       @border_props[:diagonal] = { style: style, color: color }.compact
       @border_props[:diagonal_up] = true if up
       @border_props[:diagonal_down] = true if down
       self
     end
+    # rubocop:enable Naming/MethodParameterName
 
     # --- Alignment Properties ---
 

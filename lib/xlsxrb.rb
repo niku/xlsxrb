@@ -898,6 +898,7 @@ module Xlsxrb
       row_num = row_index + 1
       values.each_with_index do |val, col_idx|
         next if val.nil?
+
         addr = "#{Elements::Cell.column_letter(col_idx)}#{row_num}"
         @current_cells[addr] = val
       end
@@ -1307,7 +1308,7 @@ module Xlsxrb
         cell_errors = Elements::Cell.validate(row_idx, col_idx, rc[:value])
         if !cell_errors.empty? && rc[:source]
           cell_errors = cell_errors.map do |err|
-            "#{err} (at #{rc[:source][:part]} row #{rc[:source][:row] + 1} cell #{rc[:ref] || 'unknown'})"
+            "#{err} (at #{rc[:source][:part]} row #{rc[:source][:row] + 1} cell #{rc[:ref] || "unknown"})"
           end
         end
 
