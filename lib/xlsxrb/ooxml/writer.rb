@@ -4757,8 +4757,19 @@ module Xlsxrb
           f_attrs << ' ca="1"' if value.calculate_always
           f_attrs << ' aca="1"' if value.aca
           f_attrs << ' bx="1"' if value.bx
-          parts = %(<c r="#{cell_ref}"#{s_attr}#{ph_attr}><f#{f_attrs}>#{xml_escape(value.expression)}</f>)
-          parts << "<v>#{xml_escape(value.cached_value.to_s)}</v>" unless value.cached_value.nil?
+          t_attr = ""
+          cached_val_str = value.cached_value.to_s
+          if value.cached_value.is_a?(String)
+            t_attr = ' t="str"'
+          elsif value.cached_value == true
+            t_attr = ' t="b"'
+            cached_val_str = "1"
+          elsif value.cached_value == false
+            t_attr = ' t="b"'
+            cached_val_str = "0"
+          end
+          parts = %(<c r="#{cell_ref}"#{t_attr}#{s_attr}#{ph_attr}><f#{f_attrs}>#{xml_escape(value.expression)}</f>)
+          parts << "<v>#{xml_escape(cached_val_str)}</v>" unless value.cached_value.nil?
           parts << "</c>"
           parts
         when Xlsxrb::Elements::RichText
