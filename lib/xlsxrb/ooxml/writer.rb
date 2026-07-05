@@ -4773,13 +4773,11 @@ module Xlsxrb
           %(<c r="#{cell_ref}" t="b"#{s_attr}#{ph_attr}><v>#{value ? 1 : 0}</v></c>)
         when Time
           serial = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
-          dt_style = resolve_style_index(datetime_num_fmt_id)
-          dt_attr = dt_style ? %( s="#{dt_style}") : ""
+          dt_attr = s_attr.empty? && (dt_style = resolve_style_index(datetime_num_fmt_id)) ? %( s="#{dt_style}") : s_attr
           %(<c r="#{cell_ref}"#{dt_attr}#{ph_attr}><v>#{serial}</v></c>)
         when Date
           serial = Xlsxrb::Ooxml::Utils.date_to_serial(value)
-          date_style = resolve_style_index(date_num_fmt_id)
-          ds_attr = date_style ? %( s="#{date_style}") : ""
+          ds_attr = s_attr.empty? && (date_style = resolve_style_index(date_num_fmt_id)) ? %( s="#{date_style}") : s_attr
           %(<c r="#{cell_ref}"#{ds_attr}#{ph_attr}><v>#{serial}</v></c>)
         when Numeric
           %(<c r="#{cell_ref}"#{s_attr}#{ph_attr}><v>#{value}</v></c>)
