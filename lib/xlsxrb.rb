@@ -125,7 +125,7 @@ module Xlsxrb
         ws.rows.each do |row|
           row.cells.each do |cell|
             val = cell.value
-            if val.is_a?(String) && !sst_index.key?(val)
+            if (val.is_a?(String) || val.is_a?(Elements::RichText)) && !sst_index.key?(val)
               sst << val
               sst_index[val] = sst.size - 1
             end

@@ -94,6 +94,11 @@ module Xlsxrb
             next
           end
 
+          if value.is_a?(String) && value.start_with?("=") && !formula
+            formula = value
+            value = nil
+          end
+
           xml_val = value
           type = cell_type_val
           formula_expr = nil
@@ -106,7 +111,10 @@ module Xlsxrb
             else
               formula_expr = formula
             end
-          else
+            formula_expr = formula_expr[1..-1] if formula_expr.start_with?("=")
+          end
+
+          if !formula_expr
             unless type
               case value
               when String
@@ -115,6 +123,14 @@ module Xlsxrb
                   type = "s"
                 else
                   type = "inlineStr"
+                end
+              when Xlsxrb::Elements::RichText
+                if sst_index && (idx = sst_index[value])
+                  xml_val = idx
+                  type = "s"
+                else
+                  type = "inlineStr"
+                  xml_val = value
                 end
               when true
                 xml_val = "1"
@@ -145,9 +161,48 @@ module Xlsxrb
           end
 
           if type == "inlineStr"
-            io.write("><is><t>")
-            io.write(escape_xml(xml_val.to_s))
-            io.write("</t></is></c>")
+            if xml_val.is_a?(Xlsxrb::Elements::RichText)
+              io.write("><is>")
+              xml_val.runs.each do |run|
+                font = run[:font]
+                if font && !font.empty?
+                  io.write("<r><rPr>")
+                  io.write("<b/>") if font[:bold]
+                  io.write("<i/>") if font[:italic]
+                  io.write("<strike/>") if font[:strike]
+                  if font[:underline]
+                    if font[:underline] == true
+                      io.write("<u/>")
+                    else
+                      io.write("<u val=\"#{font[:underline]}\"/>")
+                    end
+                  end
+                  io.write("<vertAlign val=\"#{font[:vert_align]}\"/>") if font[:vert_align]
+                  io.write("<sz val=\"#{font[:sz]}\"/>") if font[:sz]
+                  if font[:color]
+                    io.write("<color rgb=\"#{font[:color]}\"/>")
+                  elsif font[:theme]
+                    tint_attr = font[:tint] ? " tint=\"#{font[:tint]}\"" : ""
+                    io.write("<color theme=\"#{font[:theme]}\"#{tint_attr}/>")
+                  end
+                  io.write("<rFont val=\"#{escape_xml(font[:name])}\"/>") if font[:name]
+                  io.write("<family val=\"#{font[:family]}\"/>") if font[:family]
+                  io.write("<scheme val=\"#{font[:scheme]}\"/>") if font[:scheme]
+                  io.write("</rPr><t>")
+                  io.write(escape_xml(run[:text]))
+                  io.write("</t></r>")
+                else
+                  io.write("<r><t>")
+                  io.write(escape_xml(run[:text]))
+                  io.write("</t></r>")
+                end
+              end
+              io.write("</is></c>")
+            else
+              io.write("><is><t>")
+              io.write(escape_xml(xml_val.to_s))
+              io.write("</t></is></c>")
+            end
           elsif formula_expr
             if formula_ca
               io.write('><f ca="1">')
@@ -225,17 +280,46 @@ module Xlsxrb
             next
           end
 
-          xml_val = value
+          # Auto-convert string starting with '=' to formula
+          if value.is_a?(String) && value.start_with?("=")
+            formula_expr = value
+            xml_val = nil
+          else
+            formula_expr = nil
+            xml_val = value
+          end
+
           type = nil
-          formula_expr = nil
           formula_ca = false
 
           case value
           when Xlsxrb::Elements::Formula
             formula_expr = value.expression
             formula_ca = value.calculate_always
-            xml_val = value.cached_value || nil
+            xml_val = value.cached_value
+            if value.cached_value.is_a?(String)
+              type = "str"
+            elsif value.cached_value == true
+              type = "b"
+              xml_val = "1"
+            elsif value.cached_value == false
+              type = "b"
+              xml_val = "0"
+            end
           when String
+            if value.start_with?("=")
+              # already set formula_expr
+            else
+              idx = sst_index[value]
+              unless idx
+                sst << value
+                idx = sst.size - 1
+                sst_index[value] = idx
+              end
+              xml_val = idx
+              type = "s"
+            end
+          when Xlsxrb::Elements::RichText
             idx = sst_index[value]
             unless idx
               sst << value
@@ -254,6 +338,13 @@ module Xlsxrb
             xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value)
           when Time
             xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+          when Xlsxrb::Elements::CellError
+            xml_val = value.code
+            type = "e"
+          end
+
+          if formula_expr
+            formula_expr = formula_expr[1..-1] if formula_expr.start_with?("=")
           end
 
           io.write('<c r="')
@@ -338,10 +429,20 @@ module Xlsxrb
 
       def write_sheet_properties(props)
         attrs = {}
-        has_children = props[:tab_color]
+        has_children = props[:tab_color] || !props[:fit_to_page].nil? || !props[:outline_below].nil? || !props[:outline_right].nil?
         if has_children
           @builder.open_tag("sheetPr", attrs)
           @builder.empty_tag("tabColor", { rgb: props[:tab_color] }) if props[:tab_color]
+          
+          outline_attrs = {}
+          outline_attrs[:summaryBelow] = props[:outline_below] ? "1" : "0" unless props[:outline_below].nil?
+          outline_attrs[:summaryRight] = props[:outline_right] ? "1" : "0" unless props[:outline_right].nil?
+          @builder.empty_tag("outlinePr", outline_attrs) unless outline_attrs.empty?
+
+          unless props[:fit_to_page].nil?
+            @builder.empty_tag("pageSetUpPr", { fitToPage: props[:fit_to_page] ? "1" : "0" })
+          end
+          
           @builder.close_tag("sheetPr")
         else
           @builder.empty_tag("sheetPr", attrs) unless attrs.empty?
@@ -772,7 +873,7 @@ module Xlsxrb
                           })
         groups.each do |group|
           sg_attrs = {}
-          sg_attrs[:type] = group[:type] if group[:type] && group[:type] != "line"
+          sg_attrs[:type] = group[:type] if group[:type]
           sg_attrs[:displayEmptyCellsAs] = group[:display_empty] if group[:display_empty]
           sg_attrs[:markers] = "1" if group[:markers]
           sg_attrs[:high] = "1" if group[:high]
