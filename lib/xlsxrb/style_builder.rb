@@ -2,7 +2,7 @@
 
 module Xlsxrb
   # Helper class for building cell styles with a fluent DSL.
-  # Encapsulates font, fill, border, and number format properties.
+  # Encapsulates font, fill, border, alignment, and number format properties.
   class StyleBuilder
     def initialize(name = nil)
       @name = name
@@ -10,9 +10,10 @@ module Xlsxrb
       @fill_props = {}
       @border_props = {}
       @num_fmt_id = nil
+      @alignment = {}
     end
 
-    attr_reader :name, :font_props, :fill_props, :border_props, :num_fmt_id
+    attr_reader :name, :font_props, :fill_props, :border_props, :num_fmt_id, :alignment
 
     # Applies option-style definitions so callers can use add_style(name, **opts)
     # as an alternative to block-based fluent chaining.
@@ -24,6 +25,7 @@ module Xlsxrb
       font_color(opts[:font_color]) if opts.key?(:font_color)
       underline(opts[:underline]) if opts.key?(:underline)
       strike(opts[:strike]) if opts.key?(:strike)
+      vert_align(opts[:vert_align]) if opts.key?(:vert_align)
 
       fill_color(opts[:fill_color]) if opts.key?(:fill_color)
       if opts.key?(:fill_pattern)
@@ -43,6 +45,14 @@ module Xlsxrb
       border_bottom(**opts[:border_bottom]) if opts.key?(:border_bottom) && opts[:border_bottom]
 
       number_format(opts[:number_format]) if opts.key?(:number_format)
+
+      align_horizontal(opts[:align_horizontal]) if opts.key?(:align_horizontal)
+      align_vertical(opts[:align_vertical]) if opts.key?(:align_vertical)
+      wrap_text(opts[:wrap_text]) if opts.key?(:wrap_text)
+      text_rotation(opts[:text_rotation]) if opts.key?(:text_rotation)
+      indent(opts[:indent]) if opts.key?(:indent)
+      shrink_to_fit(opts[:shrink_to_fit]) if opts.key?(:shrink_to_fit)
+
       self
     end
 
@@ -83,6 +93,11 @@ module Xlsxrb
       @font_props[:strike] = value
       self
     end
+
+    def vert_align(value)
+      @font_props[:vert_align] = value
+      self
+    end
     # rubocop:enable Style/OptionalBooleanParameter
 
     # --- Fill Properties ---
@@ -98,6 +113,10 @@ module Xlsxrb
       @fill_props[:pattern] = "solid"
       @fill_props[:fg_color] = color
       self
+    end
+
+    def fill(pattern: "solid", fg_color: nil, bg_color: nil)
+      fill_pattern(pattern, fg_color: fg_color, bg_color: bg_color)
     end
 
     def fill_gradient(type:, degree: nil, stops: [])
@@ -140,12 +159,54 @@ module Xlsxrb
       self
     end
 
+    def border_diagonal(style: "thin", color: nil, up: false, down: false)
+      @border_props[:diagonal] = { style: style, color: color }.compact
+      @border_props[:diagonal_up] = true if up
+      @border_props[:diagonal_down] = true if down
+      self
+    end
+
+    # --- Alignment Properties ---
+
+    def align_horizontal(value)
+      @alignment[:horizontal] = value
+      self
+    end
+
+    def align_vertical(value)
+      @alignment[:vertical] = value
+      self
+    end
+
+    # rubocop:disable Style/OptionalBooleanParameter
+    def wrap_text(value = true)
+      @alignment[:wrap_text] = value
+      self
+    end
+
+    def shrink_to_fit(value = true)
+      @alignment[:shrink_to_fit] = value
+      self
+    end
+    # rubocop:enable Style/OptionalBooleanParameter
+
+    def text_rotation(value)
+      @alignment[:text_rotation] = value
+      self
+    end
+
+    def indent(value)
+      @alignment[:indent] = value.to_i
+      self
+    end
+
     # --- Number Format ---
 
     def number_format(num_fmt_id)
       @num_fmt_id = num_fmt_id
       self
     end
+    alias num_fmt number_format
 
     # Register this style with the given Writer, returning the style_id.
     # writer:: Xlsxrb::Ooxml::Writer instance
@@ -164,12 +225,15 @@ module Xlsxrb
                               @num_fmt_id
                             end
 
-      writer.add_cell_style(
+      cell_style_opts = {
         num_fmt_id: resolved_num_fmt_id,
         font_id: font_id,
         fill_id: fill_id,
         border_id: border_id
-      )
+      }
+      cell_style_opts[:alignment] = @alignment if @alignment.any?
+
+      writer.add_cell_style(**cell_style_opts)
     end
   end
 end

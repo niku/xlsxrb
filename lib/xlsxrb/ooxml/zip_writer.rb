@@ -66,6 +66,8 @@ module Xlsxrb
         raise "No entry started" unless @current_entry
 
         bytes = str.b
+        return if bytes.empty?
+
         @current_entry[:crc] = Zlib.crc32(bytes, @current_entry[:crc])
         @current_entry[:uncompressed_size] += bytes.bytesize
         compressed = @current_entry[:deflater].deflate(bytes, Zlib::SYNC_FLUSH)

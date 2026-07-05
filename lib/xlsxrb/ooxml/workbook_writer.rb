@@ -562,8 +562,9 @@ module Xlsxrb
               if fill_props[:gradient]
                 b.open_tag("gradientFill", { type: fill_props[:gradient][:type], degree: fill_props[:gradient][:degree]&.to_s }.compact)
                 fill_props[:gradient][:stops].each do |stop|
-                  b.empty_tag("stop", { position: stop[:position].to_s })
-                  b.empty_tag("color", { rgb: stop[:color] })
+                  b.tag("stop", { position: stop[:position].to_s }) do |_|
+                    b.empty_tag("color", { rgb: stop[:color] })
+                  end
                 end
                 b.close_tag("gradientFill")
               else
@@ -765,7 +766,46 @@ module Xlsxrb
                      uniqueCount: @shared_strings.size.to_s
                    })
         @shared_strings.each do |str|
-          b.tag("si") { |_| b.tag("t") { |_| b.text(str) } }
+          if str.is_a?(Xlsxrb::Elements::RichText)
+            b.open_tag("si")
+            str.runs.each do |run|
+              font = run[:font]
+              if font && !font.empty?
+                b.open_tag("r")
+                b.open_tag("rPr")
+                b.empty_tag("b") if font[:bold]
+                b.empty_tag("i") if font[:italic]
+                b.empty_tag("strike") if font[:strike]
+                if font[:underline]
+                  if font[:underline] == true
+                    b.empty_tag("u")
+                  else
+                    b.empty_tag("u", { val: font[:underline] })
+                  end
+                end
+                b.empty_tag("vertAlign", { val: font[:vert_align] }) if font[:vert_align]
+                b.empty_tag("sz", { val: font[:sz].to_s }) if font[:sz]
+                if font[:color]
+                  b.empty_tag("color", { rgb: font[:color] })
+                elsif font[:theme]
+                  tc_attrs = { theme: font[:theme].to_s }
+                  tc_attrs[:tint] = font[:tint].to_s if font[:tint]
+                  b.empty_tag("color", tc_attrs)
+                end
+                b.empty_tag("rFont", { val: font[:name] }) if font[:name]
+                b.empty_tag("family", { val: font[:family].to_s }) if font[:family]
+                b.empty_tag("scheme", { val: font[:scheme] }) if font[:scheme]
+                b.close_tag("rPr")
+                b.tag("t") { |_| b.text(run[:text]) }
+                b.close_tag("r")
+              else
+                b.tag("r") { |_| b.tag("t") { |_| b.text(run[:text]) } }
+              end
+            end
+            b.close_tag("si")
+          else
+            b.tag("si") { |_| b.tag("t") { |_| b.text(str.to_s) } }
+          end
         end
         b.close_tag("sst")
         io.string
