@@ -878,6 +878,7 @@ module Xlsxrb
       @current_sheet_view = {}
       @current_row_breaks = []
       @current_col_breaks = []
+      @current_cells = {}
 
       return unless block_given?
 
@@ -892,6 +893,14 @@ module Xlsxrb
 
       row_index = @current_row_index
       @current_row_index += 1
+
+      @current_cells ||= {}
+      row_num = row_index + 1
+      values.each_with_index do |val, col_idx|
+        next if val.nil?
+        addr = "#{Elements::Cell.column_letter(col_idx)}#{row_num}"
+        @current_cells[addr] = val
+      end
 
       attrs = nil
       if height || hidden || outline_level
@@ -1228,6 +1237,8 @@ module Xlsxrb
       @current_tempfile.close
 
       sheet_data = { name: @current_sheet, rows_tmp_path: @current_tempfile.path, columns: @current_columns }
+      sheet_data[:cells] = @current_cells if @current_cells && !@current_cells.empty?
+      @current_cells = nil
       sheet_data[:charts] = @current_charts unless @current_charts.empty?
       sheet_data[:hyperlinks] = @current_hyperlinks unless @current_hyperlinks.empty?
       sheet_data[:auto_filter] = @current_auto_filter if @current_auto_filter
