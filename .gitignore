@@ -17,3 +17,5 @@ Gemfile.lock
 # Generated gallery assets (built from baselines via `rake visual:gallery`)
 /docs/visual/images/
 /docs/visual/files/
+# WebAssembly packaged binary
+/docs/wasm/ruby.wasm

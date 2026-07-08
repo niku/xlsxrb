@@ -36,6 +36,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "opentelemetry-api", "~> 1.4"
   spec.add_dependency "rexml"
 
+  spec.add_development_dependency "ruby_wasm"
+  spec.add_development_dependency "webrick"
+
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
 end
