@@ -41,6 +41,23 @@ gem install xlsxrb
 
 On Ruby 4+, some components used by `xlsxrb` and its test suite are shipped as bundled gems rather than built-in default libraries. When using Bundler, those bundled gems are resolved and installed in the usual way.
 
+## Interactive Playground (WebAssembly)
+
+You can try `xlsxrb` directly in your browser without installing anything! 
+
+We have integrated an interactive WebAssembly-powered playground into our RDoc documentation. You can edit the code examples, run them in the browser sandbox, and download the generated `.xlsx` spreadsheets immediately.
+
+To launch the playground locally:
+1. Generate the WebAssembly bundle and interactive RDoc:
+   ```bash
+   bundle exec rake doc
+   ```
+2. Start the local preview server:
+   ```bash
+   bundle exec rake doc:preview
+   ```
+3. Open [http://localhost:8000](http://localhost:8000) in your browser and click the **"Try it in Browser"** button on any code example!
+
 ## Usage
 
 For visual demonstrations of various features and their generated output side-by-side with code examples, check the [Visual Examples Gallery](docs/visual/VisualGallery.md).
