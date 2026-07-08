@@ -1,0 +1,189 @@
+/* wasm_doc_helper.css */
+.wasm-playground-wrapper {
+  margin: 1.5em 0;
+  position: relative;
+}
+
+/* 'Try in Browser' Button */
+.wasm-try-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+  color: white !important;
+  border: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+  outline: none;
+}
+
+.wasm-try-btn:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #2563eb 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+}
+
+.wasm-try-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+}
+
+/* Loader indicator */
+.wasm-loader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.wasm-loader-text {
+  font-weight: 500;
+}
+
+.wasm-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: wasm-spin 0.8s linear infinite;
+}
+
+@keyframes wasm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Playground main container */
+.wasm-playground-container {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+  transition: border-color 0.3s ease;
+}
+
+/* Editor (textarea) */
+.wasm-editor {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #1f2937;
+  background-color: #fafafa;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  resize: vertical;
+  outline: none;
+  tab-size: 2;
+}
+
+.wasm-editor:focus {
+  background-color: #ffffff;
+}
+
+/* Action bar container */
+.wasm-action-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Common action buttons style */
+.wasm-action-bar button {
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.wasm-run-btn {
+  background-color: #10b981;
+  color: white;
+  border: 1px solid #059669;
+}
+
+.wasm-run-btn:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.wasm-run-btn:disabled {
+  background-color: #a7f3d0;
+  border-color: #a7f3d0;
+  cursor: not-allowed;
+}
+
+.wasm-reset-btn {
+  background-color: white;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+}
+
+.wasm-reset-btn:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  border-color: #9ca3af;
+}
+
+.wasm-close-btn {
+  background-color: white;
+  color: #ef4444;
+  border: 1px solid #fca5a5;
+  margin-left: auto; /* Align to the right edge */
+}
+
+.wasm-close-btn:hover {
+  background-color: #fef2f2;
+  border-color: #ef4444;
+}
+
+/* Console output logs area */
+.wasm-console {
+  margin: 0;
+  padding: 14px 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  background-color: #1e293b;
+  color: #e2e8f0;
+  overflow-x: auto;
+  max-height: 200px;
+  border-top: none;
+}
+
+.wasm-console.running {
+  color: #93c5fd;
+}
+
+.wasm-console.success {
+  color: #a7f3d0;
+}
+
+.wasm-console.error {
+  color: #fca5a5;
+}
+
+.wasm-error {
+  color: #ef4444;
+  font-weight: 600;
+}
