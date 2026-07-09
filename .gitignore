@@ -19,3 +19,6 @@ Gemfile.lock
 /docs/visual/files/
 # WebAssembly packaged binary
 /docs/wasm/ruby.wasm
+# Temporary WebAssembly bundle assets directory
+/docs/wasm/bundle_assets/
+/docs/wasm/stubs/
