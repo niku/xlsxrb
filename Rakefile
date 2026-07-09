@@ -184,6 +184,7 @@ task :wasm do
   original_wasm_cache = File.expand_path("tmp/test_env/ruby.wasm", __dir__)
   packed_wasm_path = File.expand_path("docs/wasm/ruby.wasm", __dir__)
   wasm_bundle_dir = File.expand_path("tmp/wasm_bundle", __dir__)
+  bundle_assets_dir = File.expand_path("docs/wasm/bundle_assets", __dir__)
 
   # 1. Download original base Wasm if not cached locally
   unless File.exist?(original_wasm_cache)
@@ -199,11 +200,89 @@ task :wasm do
     puts "Original ruby.wasm cached successfully."
   end
 
-  # 2. Synchronize latest lib/xlsxrb.rb to staging bundle directory before packing
-  FileUtils.mkdir_p(File.dirname(packed_wasm_path))
+  # 2. Recreate and populate the staging bundle directories
+  FileUtils.rm_rf(wasm_bundle_dir)
+  FileUtils.rm_rf(bundle_assets_dir)
+  FileUtils.mkdir_p(wasm_bundle_dir)
+  FileUtils.mkdir_p(bundle_assets_dir)
+
+  # A. Write custom static stubs and gateways dynamically
+  File.write(File.join(bundle_assets_dir, "openssl.rb"), "# frozen_string_literal: true\n")
+
+  File.write(File.join(bundle_assets_dir, "opentelemetry.rb"), <<~RUBY)
+    # frozen_string_literal: true
+    module OpenTelemetry
+      def self.tracer_provider
+        @tracer_provider ||= Class.new {
+          def tracer(*args)
+            Class.new {
+              def in_span(*args)
+                yield Class.new { def record_exception(*args); end; def status=(*args); end }.new
+              end
+            }.new
+          end
+        }.new
+      end
+    end
+  RUBY
+
+  # Gateway for REXML
+  File.write(File.join(bundle_assets_dir, "rexml.rb"), "# frozen_string_literal: true\nrequire \"rexml/rexml\"\n")
+
+  # Resolve and copy host's rexml files
+  rexml_spec_path = $LOAD_PATH.find { |p| File.exist?(File.join(p, "rexml/rexml.rb")) }
+  if rexml_spec_path
+    FileUtils.cp_r(File.join(rexml_spec_path, "rexml"), bundle_assets_dir)
+  end
+
+  # Gateway for strscan
+  File.write(File.join(bundle_assets_dir, "strscan.rb"), <<~RUBY)
+    # frozen_string_literal: true
+    begin
+      require "strscan.so"
+    rescue LoadError
+    end
+    require "strscan/strscan"
+  RUBY
+
+  # Resolve and copy host's strscan files
+  strscan_spec_path = $LOAD_PATH.find { |p| File.exist?(File.join(p, "strscan/strscan.rb")) }
+  if strscan_spec_path
+    FileUtils.mkdir_p(File.join(bundle_assets_dir, "strscan"))
+    FileUtils.cp(File.join(strscan_spec_path, "strscan/strscan.rb"), File.join(bundle_assets_dir, "strscan/strscan.rb"))
+  end
+
+  # B. Copy necessary standard libraries dynamically from host's $LOAD_PATH
+  stdlib_files = [
+    "date.rb", "delegate.rb", "forwardable.rb", "securerandom.rb",
+    "random/formatter.rb", "set.rb", "tempfile.rb", "tmpdir.rb", "fileutils.rb"
+  ]
+  stdlib_files.each do |name|
+    path = $LOAD_PATH.find { |p| File.exist?(File.join(p, name)) }
+    if path
+      dest_path = File.join(bundle_assets_dir, name)
+      FileUtils.mkdir_p(File.dirname(dest_path))
+      FileUtils.cp(File.join(path, name), dest_path)
+    end
+  end
+
+  # C. Patch tmpdir.rb to automatically create /tmp in Wasm virtual filesystem (since Wasm has no writable /tmp by default)
+  tmpdir_path = File.join(bundle_assets_dir, "tmpdir.rb")
+  if File.exist?(tmpdir_path)
+    File.open(tmpdir_path, "a") do |f|
+      f.puts "\nclass Dir\n  def self.tmpdir\n    Dir.mkdir(\"/tmp\") rescue nil unless File.directory?(\"/tmp\")\n    \"/tmp\"\n  end\nend\n"
+    end
+  end
+
+  # D. Copy everything from bundle_assets_dir to wasm_bundle_dir
+  FileUtils.cp_r(File.join(bundle_assets_dir, "."), wasm_bundle_dir)
+
+  # E. Copy latest xlsxrb implementation files from lib/
   FileUtils.cp(File.expand_path("lib/xlsxrb.rb", __dir__), File.join(wasm_bundle_dir, "xlsxrb.rb"))
+  FileUtils.cp_r(File.expand_path("lib/xlsxrb", __dir__), wasm_bundle_dir)
 
   # 3. Compile custom ruby.wasm packaging staging libs
+  FileUtils.mkdir_p(File.dirname(packed_wasm_path))
   puts "Building packed ruby.wasm from staging bundle..."
   cmd = "bundle exec rbwasm pack #{original_wasm_cache} --dir #{wasm_bundle_dir}::/usr/local/lib/ruby/site_ruby -o #{packed_wasm_path}"
   puts "Executing: #{cmd}"
@@ -259,9 +338,9 @@ namespace :doc do
   desc "Build and preview RDoc documentation locally"
   task preview: :doc do
     require "webrick"
-    
+
     port = ENV.fetch("PORT", "8000").to_i
-    
+
     # Configure WEBrick to serve 'doc' directory
     server = WEBrick::HTTPServer.new(
       Port: port,
