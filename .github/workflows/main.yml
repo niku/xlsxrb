@@ -71,7 +71,7 @@ jobs:
       - name: Install LibreOffice and pdftoppm dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libreoffice-calc poppler-utils imagemagick fonts-liberation fonts-noto-cjk
+          sudo apt-get install -y libreoffice-calc poppler-utils imagemagick fonts-liberation fonts-noto-cjk brotli
       - name: Generate Visual Gallery
         run: bundle exec rake visual:gallery
       - name: Run Visual Regression Tests
