@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: MIT -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Enable Cross-Origin Isolation in client-side using service worker -->
+    <script src="coi-serviceworker.js"></script>
+    <title>xlsxrb Wasm LibreOffice Preview</title>
+    <!-- Localized Fonts -->
+    <link href="fonts/fonts.css" rel="stylesheet">
+
+    <style>
+      :root {
+        --bg-color: #0b0f19;
+        --panel-bg: #111827;
+        --accent-green: #10b981;
+        --accent-blue: #3b82f6;
+        --border-color: #1f2937;
+        --text-color: #f3f4f6;
+        --text-muted: #9ca3af;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      header {
+        background-color: var(--panel-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 10;
+      }
+
+      .logo-area {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        background: linear-gradient(135deg, #60a5fa, #34d399);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .badge {
+        background-color: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        font-size: 0.75rem;
+        padding: 3px 8px;
+        border-radius: 9999px;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+      }
+
+      .main-workspace {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* Split Layout */
+      .editor-pane {
+        width: 40%;
+        min-width: 300px;
+        background-color: #0f172a;
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .preview-pane {
+        flex: 1;
+        background-color: var(--bg-color);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .pane-header {
+        background-color: var(--panel-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 10px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+
+      .editor-container {
+        flex: 1;
+        position: relative;
+        padding: 12px;
+      }
+
+      textarea.code-editor {
+        width: 100%;
+        height: 100%;
+        background-color: #090d16;
+        color: #38bdf8;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        resize: none;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      textarea.code-editor:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      }
+
+      .btn-run {
+        background: linear-gradient(135deg, #3b82f6, #10b981);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.1s, opacity 0.2s;
+      }
+
+      .btn-run:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      .btn-run:active {
+        transform: translateY(0);
+      }
+
+      .btn-run:disabled {
+        background: #374151;
+        color: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* Preview Canvas */
+      .canvas-container {
+        flex: 1;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      #qtcanvas {
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        background-color: #ffffff; /* White background for spreadsheets */
+        display: block;
+      }
+
+      /* Console / Output logs */
+      .console-log {
+        height: 160px;
+        background-color: #020617;
+        border-top: 1px solid var(--border-color);
+        padding: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        color: #e2e8f0;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+
+      /* Loading Overlays */
+      .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(11, 15, 25, 0.85);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+        backdrop-filter: blur(4px);
+        transition: opacity 0.3s ease;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(59, 130, 246, 0.1);
+        border-top: 4px solid var(--accent-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 16px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .overlay-text {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 8px;
+      }
+
+      .overlay-subtext {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      /* Drawer / iframe Integration Styles */
+      body.iframe-mode header {
+        display: none !important;
+      }
+      body.iframe-mode .editor-pane {
+        display: none !important;
+      }
+      body.iframe-mode .preview-pane {
+        width: 100% !important;
+        flex: 1 !important;
+      }
+      body.iframe-mode .main-workspace {
+        height: 100vh !important;
+        border: none !important;
+      }
+      body.iframe-mode {
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+      }
+      body.iframe-mode .pane-header {
+        background-color: #f8fafc !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        color: #475569 !important;
+        font-family: inherit;
+        font-size: 0.85rem;
+        padding: 12px 20px;
+      }
+      body.iframe-mode .console-log {
+        background-color: #0f172a !important;
+        border-top: 1px solid #e2e8f0 !important;
+        font-size: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo-area">
+        <h1 class="logo-title">xlsxrb Live Preview</h1>
+        <span class="badge">ZetaOffice WebAssembly Demo</span>
+      </div>
+      <div>
+        <button class="btn-run" id="btnPreview" onclick="generateAndPreview()" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>Run & Preview
+        </button>
+      </div>
+    </header>
+
+    <div class="main-workspace">
+      <!-- Left: Editor & Console -->
+      <div class="editor-pane">
+        <div class="pane-header">Ruby Code Editor</div>
+        <div class="editor-container">
+          <textarea class="code-editor" id="codeEditor" spellcheck="false">require "xlsxrb"
+
+Xlsxrb.generate("preview.xlsx") do |w|
+  # 1. Define professional styles using fluent DSL
+  w.add_style("title") do |s|
+    s.bold
+    s.size 16
+    s.font_color "FFFFFF"
+    s.fill_color "1F497D" # Navy blue header
+    s.align_horizontal "center"
+    s.align_vertical "center"
+  end
+
+  w.add_style("subtitle") do |s|
+    s.italic
+    s.size 10
+    s.font_color "595959"
+    s.align_horizontal "left"
+  end
+
+  w.add_style("header") do |s|
+    s.bold
+    s.size 11
+    s.font_color "FFFFFF"
+    s.fill_color "2F5597" # Slate blue header
+    s.align_horizontal "center"
+    s.border_all style: "thin", color: "D9D9D9"
+  end
+
+  w.add_style("data_left") do |s|
+    s.size 10
+    s.align_horizontal "left"
+    s.border_all style: "thin", color: "D9D9D9"
+  end
+
+  w.add_style("data_center") do |s|
+    s.size 10
+    s.align_horizontal "center"
+    s.border_all style: "thin", color: "D9D9D9"
+  end
+
+  w.add_style("data_right") do |s|
+    s.size 10
+    s.align_horizontal "right"
+    s.border_all style: "thin", color: "D9D9D9"
+  end
+
+  w.add_style("currency") do |s|
+    s.size 10
+    s.number_format "$#,##0.00"
+    s.align_horizontal "right"
+    s.border_all style: "thin", color: "D9D9D9"
+  end
+
+  w.add_style("total") do |s|
+    s.bold
+    s.size 11
+    s.fill_color "D9E1F2" # Soft light blue fill
+    s.number_format "$#,##0.00"
+    s.align_horizontal "right"
+    s.border_bottom style: "double", color: "2F5597" # Double bottom border for accountant total
+    s.border_top style: "thin", color: "D9D9D9"
+    s.border_left style: "thin", color: "D9D9D9"
+    s.border_right style: "thin", color: "D9D9D9"
+  end
+
+  w.add_style("total_label") do |s|
+    s.bold
+    s.size 11
+    s.fill_color "D9E1F2"
+    s.align_horizontal "right"
+    s.border_bottom style: "double", color: "2F5597"
+    s.border_top style: "thin", color: "D9D9D9"
+    s.border_left style: "thin", color: "D9D9D9"
+    s.border_right style: "thin", color: "D9D9D9"
+  end
+
+  # 2. Start worksheet
+  w.add_sheet("Sales Report") do |sheet|
+    # Set column widths
+    sheet.set_column(0, width: 22) # Product Name
+    sheet.set_column(1, width: 12) # Quantity
+    sheet.set_column(2, width: 15) # Unit Price
+    sheet.set_column(3, width: 18) # Total Amount
+
+    # Title Row (A1:D1 merged)
+    sheet.add_row(["Premium Product Sales Report", "", "", ""], styles: "title", height: 35)
+    sheet.merge_cells("A1:D1")
+
+    # Metadata Row
+    sheet.add_row(["Report Generated at: #{Time.now.strftime('%Y-%m-%d %H:%M')}", "", "", ""], styles: "subtitle", height: 20)
+    sheet.merge_cells("A2:D2")
+    sheet.add_row([]) # Blank separator row
+
+    # Table Header Row
+    header_styles = ["header", "header", "header", "header"]
+    sheet.add_row(["Product Item", "Quantity", "Unit Price", "Total Value"], styles: header_styles, height: 24)
+
+    # Data Rows
+    row_styles = ["data_left", "data_center", "currency", "currency"]
+    sheet.add_row(["Wireless Headphones", 120, 89.99, "=B5*C5"], styles: row_styles, height: 20)
+    sheet.add_row(["Smart Watch", 85, 199.50, "=B6*C6"], styles: row_styles, height: 20)
+    sheet.add_row(["Bluetooth Speaker", 150, 45.00, "=B7*C7"], styles: row_styles, height: 20)
+    sheet.add_row(["Mechanical Keyboard", 60, 129.00, "=B8*C8"], styles: row_styles, height: 20)
+    sheet.add_row(["Ergonomic Mouse", 210, 59.90, "=B9*C9"], styles: row_styles, height: 20)
+
+    # Total Row (Using Accountants style double underline bottom border)
+    total_styles = ["total_label", "total_label", "total_label", "total"]
+    sheet.add_row(["Total Portfolio Value", "", "", "=SUM(D5:D9)"], styles: total_styles, height: 24)
+  end
+end
+
+puts "Excel generation completed!"</textarea>
+        </div>
+        <div class="console-log" id="consoleLog">Console ready. Loading engines...</div>
+      </div>
+
+      <!-- Right: LibreOffice Canvas -->
+      <div class="preview-pane">
+        <div class="pane-header">LibreOffice Spreadsheet Preview</div>
+        <div class="canvas-container" onselectstart="event.preventDefault()">
+          <!-- Loading Overlay -->
+          <div id="loadingOverlay" class="overlay">
+            <div class="spinner"></div>
+            <div class="overlay-text" id="loadingText">Initializing Engines...</div>
+            <div class="overlay-subtext" id="loadingSubtext">Downloading Ruby and LibreOffice Wasm binaries...</div>
+          </div>
+
+          <canvas
+            id="qtcanvas" contenteditable="true"
+            oncontextmenu="event.preventDefault()" onkeydown="event.preventDefault()"
+            style="width: 100%; height: 100%; visibility: hidden;">
+            <!-- Canvas target for LibreOffice rendering -->
+          </canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts Integration -->
+    <script type="text/javascript">
+      'use strict';
+
+      // Detect if running inside an iframe (e.g. RDoc Side Drawer preview)
+      if (window.self !== window.top) {
+        document.body.classList.add('iframe-mode');
+      }
+
+      // Resolve the absolute URL dynamically to prevent path resolution failures inside Web Workers (Blob origin)
+      const current_href = window.location.href.split('#')[0].split('?')[0];
+      const base_dir = current_href.substring(0, current_href.lastIndexOf('/') + 1);
+      const soffice_base_url = base_dir + 'zetaoffice/';
+
+      const canvas = document.getElementById('qtcanvas');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const loadingText = document.getElementById('loadingText');
+      const loadingSubtext = document.getElementById('loadingSubtext');
+      const btnPreview = document.getElementById('btnPreview');
+      const consoleLog = document.getElementById('consoleLog');
+
+      let rubyVM = null;
+      let zetaPort = null;
+      let isZetaLoaded = false;
+      let isRubyLoaded = false;
+
+      // Listen for incoming code from parent RDoc playground (Side Drawer integration)
+      let pendingCodeRun = null;
+      window.addEventListener("message", (event) => {
+        if (event.data && event.data.action === "load_code") {
+          const code = event.data.code;
+          const editor = document.getElementById('codeEditor');
+          if (editor) {
+            editor.value = code;
+            if (isZetaLoaded && isRubyLoaded && rubyVM) {
+              // Trigger preview run automatically if engine is already ready
+              generateAndPreview();
+            } else {
+              // Store code to run automatically once loading finishes
+              pendingCodeRun = code;
+            }
+          }
+        }
+      });
+
+      // 1. Setup Module settings for Emscripten / ZetaJS
+      var Module = {
+        canvas,
+        uno_scripts: ['./zeta.js', './office_thread.js'],
+        locateFile: function(path, prefix) { return (prefix || soffice_base_url) + path; },
+        mainScriptUrlOrBlob: new Blob(
+          ["importScripts('" + soffice_base_url + "soffice.js');"], {type: 'text/javascript'}
+        )
+      };
+
+      // Custom logger for textarea console
+      function logToConsole(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const prefix = `[${timestamp}] `;
+        consoleLog.textContent += `\n${prefix}${message}`;
+        consoleLog.scrollTop = consoleLog.scrollHeight;
+        console.log(`${prefix}${message}`);
+      }
+
+      // 2. Initialize Ruby.wasm (with xlsxrb bundled)
+      async function initRubyWasm() {
+        logToConsole("Fetching Ruby WebAssembly binary...");
+        try {
+          // Localized import of browser.umd.js for Ruby Wasm
+          await loadScript("wasm/browser.umd.js");
+
+          const response = await fetch("wasm/ruby.wasm?cb=" + Date.now());
+          const buffer = await response.arrayBuffer();
+          const module = await WebAssembly.compile(buffer);
+
+          const rubyWasm = window.rubyWasm || window["ruby-wasm-wasi"];
+          const DefaultRubyVM = rubyWasm.DefaultRubyVM;
+
+          let consoleBuffer = "";
+          const options = {
+            stdout: (str) => { consoleBuffer += str; if (str.trim()) logToConsole(`[Ruby stdout] ${str}`); },
+            stderr: (str) => { consoleBuffer += str; if (str.trim()) logToConsole(`[Ruby stderr] ${str}`, 'error'); }
+          };
+
+          let vmInit;
+          if (typeof DefaultRubyVM.initialize === "function") {
+            vmInit = DefaultRubyVM.initialize(module, options);
+          } else if (typeof DefaultRubyVM.initializeVM === "function") {
+            vmInit = DefaultRubyVM.initializeVM(module, options);
+          } else if (typeof DefaultRubyVM === "function") {
+            try {
+              vmInit = DefaultRubyVM(module, options);
+            } catch (e) {
+              const instance = new DefaultRubyVM();
+              const initFn = instance.initialize || instance.initializeVM;
+              if (typeof initFn === "function") {
+                vmInit = initFn.call(instance, module, options);
+              } else {
+                throw new Error("No initialization method found on DefaultRubyVM instance");
+              }
+            }
+          } else {
+            throw new Error("DefaultRubyVM is not available");
+          }
+
+          const { vm } = await vmInit;
+          rubyVM = vm;
+          isRubyLoaded = true;
+          logToConsole("Ruby WebAssembly Engine initialized successfully!");
+          checkEnginesReady();
+        } catch (e) {
+          logToConsole(`Error initializing Ruby Wasm: ${e.message}`, 'error');
+          console.error(e);
+        }
+      }
+
+      // Check if both engines are loaded
+      function checkEnginesReady() {
+        if (isRubyLoaded && isZetaLoaded) {
+          loadingOverlay.style.display = 'none';
+          btnPreview.disabled = false;
+          logToConsole("All engines are ready. Click 'Run & Preview' to view your sheet.");
+          if (pendingCodeRun) {
+            logToConsole("Auto-running incoming playground code...");
+            generateAndPreview();
+            pendingCodeRun = null;
+          }
+        } else if (isRubyLoaded) {
+          loadingText.textContent = "Loading LibreOffice Wasm...";
+          loadingSubtext.textContent = "ZetaOffice engine is downloading/compiling (~80MB, please wait)...";
+        }
+      }
+
+      // Helper to dynamically load external scripts
+      function loadScript(src) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = src;
+          script.crossOrigin = "anonymous";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      // 3. Initialize LibreOffice (ZetaOffice) Wasm
+      function initZetaOffice() {
+        logToConsole("Fetching ZetaOffice WebAssembly binaries...");
+        const soffice_js = document.createElement("script");
+        soffice_js.src = soffice_base_url + "soffice.js";
+        soffice_js.crossOrigin = "anonymous";
+
+        soffice_js.onload = function() {
+          Module.uno_main.then(function(pPort) {
+            zetaPort = pPort;
+            zetaPort.onmessage = function(e) {
+              switch (e.data.cmd) {
+                case 'thr_running':
+                  logToConsole("ZetaOffice background engine started.");
+                  isZetaLoaded = true;
+                  checkEnginesReady();
+                  break;
+                case 'ui_ready':
+                  logToConsole("LibreOffice UI successfully rendered!");
+                  // Force resizing window to map canvas area correctly
+                  window.dispatchEvent(new Event('resize'));
+                  setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                    canvas.style.visibility = 'visible';
+                    btnPreview.disabled = false;
+                  }, 1000);
+                  break;
+                default:
+                  logToConsole(`ZetaOffice Worker: ${e.data.cmd}`);
+              }
+            };
+          });
+        };
+        soffice_js.onerror = function(err) {
+          logToConsole("Failed to load soffice.js binary.", 'error');
+        };
+        document.body.appendChild(soffice_js);
+      }
+
+      // 4. Run & Preview Action
+      async function generateAndPreview() {
+        if (!rubyVM || !zetaPort) return;
+
+        btnPreview.disabled = true;
+        loadingOverlay.style.display = 'flex';
+        loadingText.textContent = "Generating spreadsheet...";
+        loadingSubtext.textContent = "Running xlsxrb in Ruby Wasm VM...";
+        canvas.style.visibility = 'hidden';
+
+        logToConsole("Running Ruby script to generate XLSX...");
+        let code = document.getElementById('codeEditor').value;
+        if (!code.includes('require "xlsxrb"') && !code.includes("require 'xlsxrb'")) {
+          code = 'require "xlsxrb"\n' + code;
+        }
+
+        // Clean old files in Ruby VFS to avoid collisions
+        try {
+          rubyVM.eval('Dir.glob("*.xlsx").each { |f| File.delete(f) rescue nil }');
+        } catch(e) {}
+
+        try {
+          rubyVM.eval(code);
+
+          // Dynamically detect the generated output file name in the VFS root
+          const generatedFile = rubyVM.eval('Dir.glob("*.xlsx").first').toString();
+          if (!generatedFile || generatedFile === "nil" || generatedFile.length === 0) {
+            throw new Error("No .xlsx file was generated by the script.");
+          }
+
+          // Read generated binary from Ruby VFS using hex bridge
+          const hexData = rubyVM.eval(`File.binread("${generatedFile}").unpack1("H*")`).toString();
+          const len = hexData.length;
+          const fileData = new Uint8Array(len / 2);
+          for (let i = 0; i < len; i += 2) {
+            fileData[i / 2] = parseInt(hexData.substr(i, 2), 16);
+          }
+          logToConsole(`Generated ${generatedFile} successfully. Size: ${fileData.length} bytes.`);
+
+          loadingText.textContent = "Loading into LibreOffice...";
+          loadingSubtext.textContent = "Writing file to ZetaOffice memory VFS...";
+
+          // Write file into ZetaOffice Emscripten VFS (through main FS scope safely)
+          const fsObject = window.FS || Module.FS;
+          if (!fsObject) {
+            throw new Error("LibreOffice WebAssembly FileSystem (FS) is not initialized yet.");
+          }
+          try { fsObject.mkdir('/tmp/office'); } catch(e) {}
+          fsObject.writeFile('/tmp/office/preview.xlsx', fileData);
+
+          logToConsole("Triggering LibreOffice renderer...");
+          // Instruct ZetaOffice thread worker to load the XLSX file
+          zetaPort.postMessage({ cmd: 'upload', filename: 'preview.xlsx' });
+        } catch (e) {
+          logToConsole(`Error executing Ruby script: ${e.message}`, 'error');
+          loadingOverlay.style.display = 'none';
+          btnPreview.disabled = false;
+        }
+      }
+
+      // Start loading engines on page load safely
+      window.addEventListener("load", () => {
+        if (!window.isSecureContext) {
+          const warnMsg = "Secure Context Required: Please access via 'localhost' or 'HTTPS' to enable preview.";
+          logToConsole(warnMsg, "error");
+          loadingText.textContent = "Secure Context Required";
+          loadingSubtext.textContent = "Service Workers (SharedArrayBuffer) require a secure origin. Please open this page via a local web server (e.g., http://localhost) or an HTTPS origin instead of file:// or a non-secure IP address.";
+          return;
+        }
+
+        if (navigator.serviceWorker && !navigator.serviceWorker.controller) {
+          logToConsole("Waiting for Service Worker activation (SharedArrayBuffer)...");
+          loadingText.textContent = "Preparing Environment...";
+          loadingSubtext.textContent = "Activating Cross-Origin Isolation Service Worker...";
+
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            logToConsole("Service Worker activated! Starting engines...");
+            initRubyWasm();
+            initZetaOffice();
+          });
+        } else {
+          initRubyWasm();
+          initZetaOffice();
+        }
+      });
+
+      // Handle window resize for Qt engine mapping
+      window.addEventListener('resize', () => {
+        if (isZetaLoaded) {
+          setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+          }, 150);
+        }
+      });
+    </script>
+  </body>
+</html>
