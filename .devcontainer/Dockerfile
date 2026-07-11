@@ -40,6 +40,7 @@ RUN apt-get update && apt-get install -y \
     imagemagick \
     fonts-liberation \
     fonts-noto-cjk \
+    brotli \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Pre-create the workspace folder and assign ownership to the vscode user
