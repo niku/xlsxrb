@@ -192,11 +192,13 @@ task :wasm do
     require "open-uri"
     wasm_url = "https://cdn.jsdelivr.net/npm/@ruby/4.0-wasm-wasi@2.9.3-2.9.4/dist/ruby.wasm"
     FileUtils.mkdir_p(File.dirname(original_wasm_cache))
+    # rubocop:disable Security/Open
     URI.open(wasm_url) do |stream|
       File.open(original_wasm_cache, "wb") do |file|
         IO.copy_stream(stream, file)
       end
     end
+    # rubocop:enable Security/Open
     puts "Original ruby.wasm cached successfully."
   end
 
@@ -231,9 +233,7 @@ task :wasm do
 
   # Resolve and copy host's rexml files
   rexml_spec_path = $LOAD_PATH.find { |p| File.exist?(File.join(p, "rexml/rexml.rb")) }
-  if rexml_spec_path
-    FileUtils.cp_r(File.join(rexml_spec_path, "rexml"), bundle_assets_dir)
-  end
+  FileUtils.cp_r(File.join(rexml_spec_path, "rexml"), bundle_assets_dir) if rexml_spec_path
 
   # Gateway for strscan
   File.write(File.join(bundle_assets_dir, "strscan.rb"), <<~RUBY)
@@ -259,11 +259,11 @@ task :wasm do
   ]
   stdlib_files.each do |name|
     path = $LOAD_PATH.find { |p| File.exist?(File.join(p, name)) }
-    if path
-      dest_path = File.join(bundle_assets_dir, name)
-      FileUtils.mkdir_p(File.dirname(dest_path))
-      FileUtils.cp(File.join(path, name), dest_path)
-    end
+    next unless path
+
+    dest_path = File.join(bundle_assets_dir, name)
+    FileUtils.mkdir_p(File.dirname(dest_path))
+    FileUtils.cp(File.join(path, name), dest_path)
   end
 
   # C. Patch tmpdir.rb to automatically create /tmp in Wasm virtual filesystem (since Wasm has no writable /tmp by default)
@@ -286,91 +286,91 @@ task :wasm do
   puts "Building packed ruby.wasm from staging bundle..."
   cmd = "bundle exec rbwasm pack #{original_wasm_cache} --dir #{wasm_bundle_dir}::/usr/local/lib/ruby/site_ruby -o #{packed_wasm_path}"
   puts "Executing: #{cmd}"
-  unless system(cmd)
-    raise "Failed to build packed ruby.wasm using rbwasm pack!"
+  raise "Failed to build packed ruby.wasm using rbwasm pack!" unless system(cmd)
+end
+
+def download_file(url, dest)
+  # Check if the file exists and is not a tiny placeholder/error document
+  return if File.exist?(dest) && File.size(dest) > 1024
+
+  puts "Downloading #{url} to #{dest}..."
+  FileUtils.mkdir_p(File.dirname(dest))
+
+  require "net/http"
+  uri = URI.parse(url)
+  temp_dest = "#{dest}.tmp"
+
+  begin
+    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: 15, read_timeout: 90) do |http|
+      request = Net::HTTP::Get.new(uri)
+      # Specify User-Agent to bypass scraping prevention on CDNs and act as a normal browser
+      request["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      # Force raw (identity) encoding to prevent receiving Brotli-compressed (.br) data,
+      # which Ruby's Net::HTTP cannot decode automatically, leading to corrupted Wasm files.
+      request["Accept-Encoding"] = "identity"
+
+      http.request(request) do |response|
+        raise "HTTP error #{response.code}: #{response.message}" if response.code.to_i != 200
+
+        File.open(temp_dest, "wb") do |output|
+          response.read_body do |chunk|
+            output.write(chunk)
+          end
+        end
+      end
+    end
+    # Atomic rename to prevent leaving incomplete files on failure
+    File.rename(temp_dest, dest)
+    puts "Downloaded successfully."
+
+
+  rescue StandardError => e
+    puts "Failed to download #{url}: #{e.message}"
+    FileUtils.rm_f(temp_dest)
+    FileUtils.rm_f(dest)
+    raise "Required asset download failed. Build aborted."
   end
+end
+
+def fetch_google_fonts
+  css_dest = "docs/fonts/fonts.css"
+  return if File.exist?(css_dest)
+
+  puts "Fetching and localizing Google Fonts..."
+  font_url = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+
+  css_content = nil
+  begin
+    # Specify Chrome User-Agent to ensure Google Fonts returns modern and lightweight .woff2 formats
+    # instead of legacy formats (like .ttf or .eot) designed for older browsers
+    # rubocop:disable Security/Open
+    URI.open(font_url, "User-Agent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36") do |f|
+      css_content = f.read
+    end
+    # rubocop:enable Security/Open
+  rescue StandardError => e
+    puts "Failed to fetch Google Fonts CSS: #{e.message}"
+    return
+  end
+
+  urls = css_content.scan(%r{url\((https://fonts\.gstatic\.com/[^)]+)\)}).flatten
+
+  urls.uniq.each do |url|
+    filename = url.split("/").last
+    local_path = "docs/fonts/#{filename}"
+    download_file(url, local_path)
+    css_content.gsub!(url, filename)
+  end
+
+  FileUtils.mkdir_p("docs/fonts")
+  File.write(css_dest, css_content)
+  puts "Google Fonts localized successfully."
 end
 
 desc "Fetch required external assets for offline usage"
 task :fetch_assets do
-  require 'open-uri'
-  require 'fileutils'
-
-  def download_file(url, dest)
-    # Check if the file exists and is not a tiny placeholder/error document
-    return if File.exist?(dest) && File.size(dest) > 1024
-
-    puts "Downloading #{url} to #{dest}..."
-    FileUtils.mkdir_p(File.dirname(dest))
-
-    require 'net/http'
-    uri = URI.parse(url)
-    temp_dest = dest + ".tmp"
-
-    begin
-      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https', open_timeout: 15, read_timeout: 90) do |http|
-        request = Net::HTTP::Get.new(uri)
-        # Specify User-Agent to bypass scraping prevention on CDNs and act as a normal browser
-        request['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        # Force raw (identity) encoding to prevent receiving Brotli-compressed (.br) data,
-        # which Ruby's Net::HTTP cannot decode automatically, leading to corrupted Wasm files.
-        request['Accept-Encoding'] = 'identity'
-
-        http.request(request) do |response|
-          if response.code.to_i != 200
-            raise "HTTP error #{response.code}: #{response.message}"
-          end
-
-          File.open(temp_dest, "wb") do |output|
-            response.read_body do |chunk|
-              output.write(chunk)
-            end
-          end
-        end
-      end
-      # Atomic rename to prevent leaving incomplete files on failure
-      File.rename(temp_dest, dest)
-      puts "Downloaded successfully."
-    rescue => e
-      puts "Failed to download #{url}: #{e.message}"
-      File.delete(temp_dest) if File.exist?(temp_dest)
-      File.delete(dest) if File.exist?(dest)
-      raise "Required asset download failed. Build aborted."
-    end
-  end
-
-  def fetch_google_fonts
-    css_dest = "docs/fonts/fonts.css"
-    return if File.exist?(css_dest)
-
-    puts "Fetching and localizing Google Fonts..."
-    font_url = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-
-    css_content = nil
-    begin
-      # Specify Chrome User-Agent to ensure Google Fonts returns modern and lightweight .woff2 formats
-      # instead of legacy formats (like .ttf or .eot) designed for older browsers
-      URI.open(font_url, "User-Agent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36") do |f|
-        css_content = f.read
-      end
-    rescue => e
-      puts "Failed to fetch Google Fonts CSS: #{e.message}"
-      return
-    end
-
-    urls = css_content.scan(/url\((https:\/\/fonts\.gstatic\.com\/[^\)]+)\)/).flatten
-
-    urls.uniq.each do |url|
-      filename = url.split("/").last
-      local_path = "docs/fonts/#{filename}"
-      download_file(url, local_path)
-      css_content.gsub!(url, filename)
-    end
-
-    FileUtils.mkdir_p("docs/fonts")
-    File.write(css_dest, css_content)
-    puts "Google Fonts localized successfully."
-  end
+  require "open-uri"
+  require "fileutils"
 
   # Fetch Ruby WASI JS
   download_file(
@@ -389,16 +389,16 @@ task :fetch_assets do
 end
 
 desc "Generate RDoc documentation including Visual Gallery"
-task doc: [:wasm, :fetch_assets] do
+task doc: %i[wasm fetch_assets] do
   FileUtils.rm_rf("doc")
 
   # RDoc コマンドを実行 (--exclude を指定して docs 配下のプレビュー用アセットの誤パースを回避)
-  sh "bundle exec rdoc --op doc" \
-     " --exclude 'docs/coi-serviceworker\\.js'" \
-     " --exclude 'docs/zeta\\.js'" \
-     " --exclude 'docs/office_thread\\.js'" \
-     " --exclude 'docs/preview\\.html'" \
-     " --title 'xlsxrb Documentation' --main README.md README.md \"docs/visual/VisualGallery.md\" lib/"
+  sh "bundle exec rdoc --op doc " \
+     "--exclude 'docs/coi-serviceworker\\.js' " \
+     "--exclude 'docs/zeta\\.js' " \
+     "--exclude 'docs/office_thread\\.js' " \
+     "--exclude 'docs/preview\\.html' " \
+     "--title 'xlsxrb Documentation' --main README.md README.md \"docs/visual/VisualGallery.md\" lib/"
 
   # Copy visual gallery images and files so they are available in RDoc output
   FileUtils.mkdir_p("doc/test/visual/baselines")
@@ -435,13 +435,14 @@ task doc: [:wasm, :fetch_assets] do
   # Inject stylesheet and javascript loading tags to all generated HTML docs
   Dir.glob("doc/**/*.html").each do |html_path|
     next if File.basename(html_path) == "preview.html"
+
     html_content = File.read(html_path)
     depth = html_path.sub(%r{\Adoc/}, "").count("/")
     rel_prefix = "../" * depth
 
-    coi_tag = %Q{<script src="#{rel_prefix}coi-serviceworker.js"></script>}
-    js_tag = %Q{<script src="#{rel_prefix}js/wasm_doc_helper.js" defer></script>}
-    css_tag = %Q{<link href="#{rel_prefix}css/wasm_doc_helper.css" rel="stylesheet">}
+    coi_tag = %(<script src="#{rel_prefix}coi-serviceworker.js"></script>)
+    js_tag = %(<script src="#{rel_prefix}js/wasm_doc_helper.js" defer></script>)
+    css_tag = %(<link href="#{rel_prefix}css/wasm_doc_helper.css" rel="stylesheet">)
 
     if html_content.include?("<body")
       modified = html_content.sub("<body", "#{coi_tag}\n#{js_tag}\n#{css_tag}\n<body")
@@ -467,15 +468,17 @@ namespace :doc do
       AccessLog: [],
       # If the file is a Brotli-compressed Wasm/Data asset (checked via magic bytes),
       # dynamically inject 'Content-Encoding: br' header so the browser decompresses it natively.
-      RequestCallback: ->(req, res) {
+      RequestCallback: lambda { |req, res|
         if req.path.end_with?(".wasm") || req.path.end_with?(".data")
           # Resolve physical file path from req.path manually since res.filename is nil at this stage
           local_path = File.join(File.expand_path("doc", __dir__), req.path)
           if File.exist?(local_path)
-            first_4 = File.binread(local_path, 4) rescue nil
-            if first_4 != "\x00asm"
-              res['Content-Encoding'] = 'br'
+            first_bytes = begin
+              File.binread(local_path, 4)
+            rescue StandardError
+              nil
             end
+            res["Content-Encoding"] = "br" if first_bytes != "\x00asm"
           end
         end
       }

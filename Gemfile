@@ -14,3 +14,6 @@ gem "rubocop", "~> 1.21"
 gem "rubocop-rake", "~> 0.7"
 
 gem "opentelemetry-sdk", "~> 1.11", groups: %i[development test]
+
+gem "ruby_wasm", group: :development
+gem "webrick", group: :development

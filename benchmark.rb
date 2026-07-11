@@ -194,6 +194,7 @@ end
 
 def median(array)
   return 0.0 if array.empty?
+
   sorted = array.sort
   len = sorted.length
   (sorted[(len - 1) / 2] + sorted[len / 2]) / 2.0
