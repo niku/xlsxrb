@@ -323,7 +323,19 @@ def download_file(url, dest)
     File.rename(temp_dest, dest)
     puts "Downloaded successfully."
 
+    # Dynamic Brotli Decompression if the server ignored identity encoding and sent Brotli (.br) data
+    if File.exist?(dest) && File.binread(dest, 4)&.bytes == [0xCF, 0xFF, 0xFF, 0x7F]
+      puts "Detected Brotli compression on #{dest}. Decompressing..."
 
+      unpacked = "#{dest}.unpacked"
+      if system("brotli -d -f -o #{unpacked} #{dest}")
+        File.rename(unpacked, dest)
+        puts "Decompressed #{dest} successfully."
+      else
+        FileUtils.rm_f(unpacked)
+        raise "Failed to decompress Brotli file: #{dest}"
+      end
+    end
   rescue StandardError => e
     puts "Failed to download #{url}: #{e.message}"
     FileUtils.rm_f(temp_dest)
