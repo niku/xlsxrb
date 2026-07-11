@@ -4,34 +4,74 @@
   position: relative;
 }
 
-/* 'Try in Browser' Button */
-.wasm-try-btn {
+/* Quick Actions Button Bar */
+.wasm-quick-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wasm-quick-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
-  color: white !important;
-  border: none;
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 600;
+  font-family: inherit; /* Inherit font-family from RDoc/Aliki theme */
   border-radius: 6px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-  transition: all 0.2s ease;
-  margin-bottom: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
+  border: 1px solid transparent;
 }
 
-.wasm-try-btn:hover {
-  background: linear-gradient(135deg, #4338ca 0%, #2563eb 100%);
+/* 1. Live Preview Button: High-visibility Accent Green */
+.wasm-quick-preview-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.wasm-quick-preview-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
 }
 
-.wasm-try-btn:active {
+/* 2. Edit Code Button: Sleek Indigo */
+.wasm-quick-edit-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.wasm-quick-edit-btn:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+}
+
+/* 3. Download XLSX Button: Clean slate style */
+.wasm-quick-download-btn {
+  background-color: #ffffff;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.wasm-quick-download-btn:hover {
+  background-color: #f8fafc;
+  color: #0f172a !important;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.wasm-quick-btn:active {
   transform: translateY(1px);
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+  box-shadow: none;
 }
 
 /* Loader indicator */
@@ -64,126 +104,248 @@
   to { transform: rotate(360deg); }
 }
 
-/* Playground main container */
-.wasm-playground-container {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #e5e7eb;
+/* Inline Editor Overlay and Wrapper */
+.wasm-playground-wrapper {
+  position: relative;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  background: #ffffff;
-  transition: border-color 0.3s ease;
+  background-color: #f8fafc; /* Matches Aliki/RDoc tones */
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 1.5em 0 8px 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  cursor: text;
 }
 
-/* Editor (textarea) */
-.wasm-editor {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 16px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: #1f2937;
-  background-color: #fafafa;
-  border: none;
-  border-bottom: 1px solid #e5e7eb;
-  resize: vertical;
-  outline: none;
-  tab-size: 2;
+.wasm-playground-wrapper:hover {
+  border-color: #cbd5e1;
 }
 
-.wasm-editor:focus {
+.wasm-playground-wrapper:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
   background-color: #ffffff;
 }
 
-/* Action bar container */
-.wasm-action-bar {
+.wasm-inline-editor {
+  background-color: transparent !important;
+  color: transparent !important;
+  caret-color: #2563eb !important; /* Indigo caret visible over transparent text */
+  border: none !important;
+  resize: none !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  overflow: hidden !important;
+}
+
+/* Reset Button Style */
+.wasm-quick-reset-btn {
+  background-color: white;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0;
+}
+
+.wasm-quick-reset-btn:hover {
+  background-color: #f8fafc;
+  color: #0f172a !important;
+  border-color: #cbd5e1;
+}
+
+/* Ruby highlight custom classes override to align with Aliki theme */
+.wasm-playground-wrapper pre.ruby {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 16px !important;
+  margin: 0 !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Align inline bar styles */
+.wasm-quick-action-bar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 10px 16px;
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 8px 8px;
 }
 
-/* Common action buttons style */
-.wasm-action-bar button {
-  padding: 6px 12px;
-  font-size: 12.5px;
+/* Sliding Drawer Panel */
+.wasm-preview-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 50vw;
+  max-width: 800px;
+  min-width: 480px;
+  background-color: #ffffff; /* Premium white background to match RDoc */
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -8px 0 24px rgba(15, 23, 42, 0.08);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wasm-preview-drawer.open {
+  transform: translateX(0);
+}
+
+/* Drawer Header */
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.drawer-title {
+  color: #1e293b;
+  font-size: 15px;
   font-weight: 600;
-  border-radius: 4px;
+}
+
+.drawer-close-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 24px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  outline: none;
+  line-height: 1;
+  padding: 4px;
+  transition: color 0.15s ease;
 }
 
-.wasm-run-btn {
-  background-color: #10b981;
-  color: white;
-  border: 1px solid #059669;
+.drawer-close-btn:hover {
+  color: #0f172a;
 }
 
-.wasm-run-btn:hover:not(:disabled) {
-  background-color: #059669;
+/* Drawer Body & IFrame */
+.drawer-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background-color: #ffffff;
 }
 
-.wasm-run-btn:disabled {
-  background-color: #a7f3d0;
-  border-color: #a7f3d0;
-  cursor: not-allowed;
+.drawer-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background-color: transparent;
 }
 
-.wasm-reset-btn {
-  background-color: white;
-  color: #4b5563;
-  border: 1px solid #d1d5db;
+/* ==========================================
+   Dark Mode Support (RDoc data-theme="dark")
+   ========================================== */
+[data-theme="dark"] .wasm-playground-wrapper {
+  border-color: #334155;
+  background-color: #0f172a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.wasm-reset-btn:hover {
-  background-color: #f3f4f6;
-  color: #1f2937;
-  border-color: #9ca3af;
+[data-theme="dark"] .wasm-playground-wrapper:hover {
+  border-color: #475569;
 }
 
-.wasm-close-btn {
-  background-color: white;
-  color: #ef4444;
-  border: 1px solid #fca5a5;
-  margin-left: auto; /* Align to the right edge */
+[data-theme="dark"] .wasm-playground-wrapper:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  background-color: #020617;
 }
 
-.wasm-close-btn:hover {
-  background-color: #fef2f2;
-  border-color: #ef4444;
+[data-theme="dark"] .wasm-inline-editor {
+  caret-color: #60a5fa !important;
 }
 
-/* Console output logs area */
-.wasm-console {
-  margin: 0;
-  padding: 14px 16px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12.5px;
-  line-height: 1.5;
+[data-theme="dark"] .wasm-quick-action-bar {
   background-color: #1e293b;
+  border-top: 1px solid #334155;
+}
+
+[data-theme="dark"] .wasm-quick-btn {
+  background-color: #334155;
   color: #e2e8f0;
-  overflow-x: auto;
-  max-height: 200px;
-  border-top: none;
+  border-color: #475569;
 }
 
-.wasm-console.running {
-  color: #93c5fd;
+[data-theme="dark"] .wasm-quick-btn:hover {
+  background-color: #475569;
+  border-color: #64748b;
+  color: #ffffff;
 }
 
-.wasm-console.success {
-  color: #a7f3d0;
+[data-theme="dark"] .wasm-quick-preview-btn {
+  background-color: #064e3b;
+  color: #6ee7b7;
+  border-color: #047857;
 }
 
-.wasm-console.error {
-  color: #fca5a5;
+[data-theme="dark"] .wasm-quick-preview-btn:hover {
+  background-color: #047857;
+  color: #ffffff;
 }
 
-.wasm-error {
-  color: #ef4444;
-  font-weight: 600;
+[data-theme="dark"] .wasm-quick-download-btn {
+  background-color: #334155;
+  color: #cbd5e1 !important;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .wasm-quick-download-btn:hover {
+  background-color: #475569;
+  color: #ffffff !important;
+  border-color: #cbd5e1;
+}
+
+[data-theme="dark"] .wasm-quick-reset-btn {
+  background-color: #334155;
+  color: #94a3b8 !important;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .wasm-quick-reset-btn:hover {
+  background-color: #475569;
+  color: #cbd5e1 !important;
+}
+
+/* Side Drawer Dark Theme */
+[data-theme="dark"] .wasm-preview-drawer {
+  background-color: #0f172a;
+  border-left: 1px solid #334155;
+  box-shadow: -8px 0 25px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .drawer-header {
+  background-color: #1e293b;
+  border-bottom: 1px solid #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .drawer-title {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .drawer-close-btn {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .drawer-close-btn:hover {
+  color: #f1f5f9;
+  background-color: #334155;
+}
+
+[data-theme="dark"] .drawer-body {
+  background-color: #0f172a;
 }
