@@ -4,7 +4,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     const codeBlocks = document.querySelectorAll("pre.ruby");
     codeBlocks.forEach((block, index) => {
-      setupPlayground(block, index);
+      setupLazyPlayground(block, index);
     });
   });
 
@@ -21,11 +21,11 @@
     }
     isInitializing = true;
 
-    // Load browser.umd.js dynamically from CDN
-    await loadScript("https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@2.9.3-2.9.4/dist/browser.umd.js");
+    // Load browser.umd.js locally using the relative path prefix
+    const prefix = window.rdoc_rel_prefix || "./";
+    await loadScript(`${prefix}wasm/browser.umd.js`);
 
     // Fetch and compile the custom prepackaged ruby.wasm module
-    const prefix = window.rdoc_rel_prefix || "./";
     const response = await fetch(`${prefix}wasm/ruby.wasm?cb=${Date.now()}`);
     const buffer = await response.arrayBuffer();
     const module = await WebAssembly.compile(buffer);
@@ -61,7 +61,7 @@
       throw new Error("DefaultRubyVM is not available");
     }
     const { vm } = await vmInit;
-    
+
     rubyVM = vm;
 
     isInitializing = false;
@@ -86,172 +86,268 @@
     });
   }
 
-  // Setup playground UI elements around a code block
-  function setupPlayground(block, index) {
+  // Setup lightweight wrapper and action buttons, deferring full editor instantiation until hover or click
+  function setupLazyPlayground(block, index) {
     const originalCode = block.textContent;
 
-    const btn = document.createElement("button");
-    btn.className = "wasm-try-btn";
-    btn.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;">
-        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-      </svg>Try it in Browser
-    `;
-    
+    // Create wrapper container
     const wrapper = document.createElement("div");
     wrapper.className = "wasm-playground-wrapper";
-    
     block.parentNode.insertBefore(wrapper, block);
     wrapper.appendChild(block);
-    wrapper.insertBefore(btn, block);
 
-    btn.addEventListener("click", async () => {
-      btn.style.display = "none";
-      
-      const loader = document.createElement("div");
-      loader.className = "wasm-loader";
-      loader.innerHTML = `
-        <span class="wasm-loader-text">Loading Ruby Wasm Engine...</span>
-        <div class="wasm-spinner"></div>
-      `;
-      wrapper.insertBefore(loader, block);
+    // Create action button bar (always visible)
+    const btnBar = document.createElement("div");
+    btnBar.className = "wasm-quick-action-bar";
+
+    const previewBtn = document.createElement("button");
+    previewBtn.className = "wasm-quick-btn wasm-quick-preview-btn";
+    previewBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>Live Preview
+    `;
+
+    const downloadBtn = document.createElement("button");
+    downloadBtn.className = "wasm-quick-btn wasm-quick-download-btn";
+    downloadBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>Download XLSX
+    `;
+
+    const resetBtn = document.createElement("button");
+    resetBtn.className = "wasm-quick-btn wasm-quick-reset-btn";
+    resetBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+        <polyline points="3 3 3 8 8 8"></polyline>
+      </svg>Reset
+    `;
+
+    btnBar.appendChild(previewBtn);
+    btnBar.appendChild(downloadBtn);
+    btnBar.appendChild(resetBtn);
+
+    // Insert button bar right below the wrapper in the DOM
+    wrapper.parentNode.insertBefore(btnBar, wrapper.nextSibling);
+
+    let isEditorInitialized = false;
+    let textarea = null;
+
+    // Full initialization of the transparent overlay editor (Deferred)
+    function initializeEditorOnDemand() {
+      if (isEditorInitialized) return;
+      isEditorInitialized = true;
+
+      // Create transparent textarea overlay
+      textarea = document.createElement("textarea");
+      textarea.className = "wasm-inline-editor";
+      textarea.value = originalCode;
+      textarea.spellcheck = false;
+      wrapper.insertBefore(textarea, block);
+
+      // Copy exact layout styles from pre block to align overlay perfectly
+      const preStyle = window.getComputedStyle(block);
+      const stylesToCopy = [
+        "fontFamily", "fontSize", "lineHeight", "fontWeight",
+        "paddingTop", "paddingBottom", "paddingLeft", "paddingRight",
+        "marginTop", "marginBottom", "marginLeft", "marginRight",
+        "textAlign"
+      ];
+      stylesToCopy.forEach(prop => {
+        textarea.style[prop] = preStyle[prop];
+      });
+
+      // Enforce overlapping styles
+      block.style.position = "relative";
+      block.style.pointerEvents = "none"; // Clicks pass to textarea
+      block.style.whiteSpace = "pre-wrap";
+      block.style.wordBreak = "break-all";
+      block.style.zIndex = "1";
+      block.style.margin = "0";
+
+      textarea.style.position = "absolute";
+      textarea.style.top = "0";
+      textarea.style.left = "0";
+      textarea.style.width = "100%";
+      textarea.style.height = "100%";
+      textarea.style.background = "transparent";
+      textarea.style.color = "transparent";
+      textarea.style.caretColor = "#2563eb"; // Sleek blue cursor
+      textarea.style.border = "none";
+      textarea.style.resize = "none";
+      textarea.style.overflow = "hidden";
+      textarea.style.whiteSpace = "pre-wrap";
+      textarea.style.wordBreak = "break-all";
+      textarea.style.zIndex = "2";
+      textarea.style.outline = "none";
+
+      textarea.addEventListener("input", updateHighlight);
+      updateHighlight();
+    }
+
+    function updateHighlight() {
+      if (!textarea) return;
+      let code = textarea.value;
+      if (code.endsWith("\n")) {
+        code += " ";
+      }
+      block.innerHTML = highlightRuby(code);
+
+      // Auto-grow height dynamically to fit text
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+      block.style.height = textarea.scrollHeight + "px";
+      wrapper.style.height = textarea.scrollHeight + "px";
+    }
+
+    // Trigger full initialization on mouse hover or click
+    wrapper.addEventListener("mouseenter", initializeEditorOnDemand, { once: true });
+    wrapper.addEventListener("click", initializeEditorOnDemand);
+
+    // RDoc-compatible Ruby Syntax Highlighter (Safe placeholder method)
+    function highlightRuby(code) {
+      let html = code
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      const placeholders = [];
+      function addPlaceholder(val, className) {
+        const id = `__WASM_HL_${placeholders.length}__`;
+        placeholders.push({ id, val, className });
+        return id;
+      }
+
+      // 1. Strings (double quotes)
+      html = html.replace(/"[^"\\]*(?:\\.[^"\\]*)*"/g, (match) => {
+        return addPlaceholder(match, "ruby-string");
+      });
+      // 2. Strings (single quotes)
+      html = html.replace(/'[^'\\]*(?:\\.[^'\\]*)*'/g, (match) => {
+        return addPlaceholder(match, "ruby-string");
+      });
+
+      // 3. Comments (safe from backtracking, only comments starting after whitespace or at line start)
+      html = html.replace(/(^|\s)(#[^\n]*)$/gm, (match, p1, p2) => {
+        return p1 + addPlaceholder(p2, "ruby-comment");
+      });
+
+      // 4. Keywords
+      const keywords = /\b(require|do|end|if|else|elsif|unless|while|until|for|in|class|module|def|return|true|false|nil)\b/g;
+      html = html.replace(keywords, (match) => {
+        return addPlaceholder(match, "ruby-keyword");
+      });
+
+      // 5. Constants (Capitalized names)
+      const constants = /\b([A-Z][a-zA-Z0-9_]*)\b/g;
+      html = html.replace(constants, (match) => {
+        return addPlaceholder(match, "ruby-constant");
+      });
+
+      // 6. Simple numeric values
+      const numericValues = /\b(\d+)\b/g;
+      html = html.replace(numericValues, (match) => {
+        return addPlaceholder(match, "ruby-value");
+      });
+
+      // 7. Specific xlsxrb APIs
+      const apis = /\b(generate|add_style|add_sheet|add_row|set_column|set_print_option|border_all|border_bottom|border_top|border_left|border_right|align_horizontal|align_vertical|bold|italic|size|fill_color|number_format)\b/g;
+      html = html.replace(apis, (match) => {
+        return addPlaceholder(match, "ruby-identifier");
+      });
+
+      // Rehydrate placeholders in reverse order to avoid nested conflicts
+      for (let i = placeholders.length - 1; i >= 0; i--) {
+        const item = placeholders[i];
+        html = html.replace(item.id, `<span class="${item.className}">${item.val}</span>`);
+      }
+
+      return html;
+    }
+
+
+
+    // Click: Live Preview (1-click auto run)
+    previewBtn.addEventListener("click", () => {
+      const codeToRun = textarea ? textarea.value : originalCode;
+      triggerLivePreview(codeToRun);
+    });
+
+    // Click: Download XLSX directly
+    downloadBtn.addEventListener("click", async () => {
+      downloadBtn.disabled = true;
+      const originalText = downloadBtn.innerHTML;
+      downloadBtn.innerHTML = `Running Wasm...`;
 
       try {
         const vm = await ensureRubyWasm();
-        loader.remove();
-        activatePlayground(wrapper, block, originalCode, vm);
-      } catch (e) {
-        loader.innerHTML = `<span class="wasm-error">Error loading Wasm: ${e.message}</span>`;
-        console.error(e);
-      }
-    });
-
-    // Auto-trigger load under E2E testing mode
-    if (window.location.hash === "#test-mode" && index === 0) {
-      setTimeout(() => {
-        console.log("[Script Mock] Test mode detected. Triggering playground load...");
-        btn.click();
-        
-        const interval = setInterval(() => {
-          const runBtn = wrapper.querySelector(".wasm-run-btn");
-          if (runBtn && !runBtn.disabled) {
-            clearInterval(interval);
-            console.log("[Script Mock] Playground loaded. Triggering run...");
-            setTimeout(() => {
-              runBtn.click();
-            }, 1000);
-          }
-        }, 500);
-      }, 1000);
-    }
-  }
-
-  // Replace block with the interactive editor and console
-  function activatePlayground(wrapper, originalBlock, code, vm) {
-    originalBlock.style.display = "none";
-
-    const playgroundContainer = document.createElement("div");
-    playgroundContainer.className = "wasm-playground-container";
-
-    const textarea = document.createElement("textarea");
-    textarea.className = "wasm-editor";
-    textarea.value = code;
-    textarea.rows = Math.max(8, code.split("\n").length + 2);
-
-    const actionBar = document.createElement("div");
-    actionBar.className = "wasm-action-bar";
-
-    const runBtn = document.createElement("button");
-    runBtn.className = "wasm-run-btn";
-    runBtn.textContent = "Run & Download";
-
-    const resetBtn = document.createElement("button");
-    resetBtn.className = "wasm-reset-btn";
-    resetBtn.textContent = "Reset";
-
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "wasm-close-btn";
-    closeBtn.textContent = "Close";
-
-    actionBar.appendChild(runBtn);
-    actionBar.appendChild(resetBtn);
-    actionBar.appendChild(closeBtn);
-
-    const consoleArea = document.createElement("pre");
-    consoleArea.className = "wasm-console";
-    consoleArea.textContent = "Ready to run. Output and status will be shown here.";
-
-    playgroundContainer.appendChild(textarea);
-    playgroundContainer.appendChild(actionBar);
-    playgroundContainer.appendChild(consoleArea);
-    wrapper.appendChild(playgroundContainer);
-
-    resetBtn.addEventListener("click", () => {
-      textarea.value = code;
-      consoleArea.textContent = "Reset to original code.";
-      consoleArea.className = "wasm-console";
-    });
-
-    closeBtn.addEventListener("click", () => {
-      playgroundContainer.remove();
-      originalBlock.style.display = "block";
-      wrapper.querySelector(".wasm-try-btn").style.display = "inline-flex";
-    });
-
-    runBtn.addEventListener("click", async () => {
-      runBtn.disabled = true;
-      runBtn.textContent = "Running...";
-      consoleArea.textContent = "Executing Ruby code...";
-      consoleArea.className = "wasm-console running";
-      consoleBuffer = "";
-
-      // Clear any preexisting XLSX files in the virtual FS root to avoid collision/leak
-      clearXlsxFiles(vm, "/");
-
-      try {
-        let userCode = textarea.value;
-        if (!userCode.includes('require "xlsxrb"') && !userCode.includes("require 'xlsxrb'")) {
+        clearXlsxFiles(vm, "/");
+        let userCode = textarea ? textarea.value : originalCode;
+        if (!/require\s+['"]xlsxrb['"]/.test(userCode)) {
           userCode = 'require "xlsxrb"\n' + userCode;
         }
-        // Force include the current directory in load path
         userCode = '$LOAD_PATH << Dir.pwd unless $LOAD_PATH.include?(Dir.pwd)\n' + userCode;
 
-        // Evaluate the user code in Wasm VM
         vm.eval(userCode);
-
-        // Scan virtual FS for new XLSX output files
         const generatedFiles = scanXlsxFiles(vm, "/");
-        
-        consoleArea.className = "wasm-console success";
-        let output = consoleBuffer;
-
         if (generatedFiles.length > 0) {
-          const mainFile = generatedFiles[0];
-          output += `\n[Success] Generated file: ${mainFile}\nTriggering download...`;
-          downloadFileFromVfs(vm, mainFile);
+          downloadFileFromVfs(vm, generatedFiles[0]);
         } else {
-          output += `\n[Warning] Execution succeeded, but no .xlsx file was generated in the root directory.`;
+          alert("Error: No XLSX file was generated.");
         }
-
-        consoleArea.textContent = output || "Execution completed successfully (no stdout).";
-
       } catch (err) {
-        consoleArea.className = "wasm-console error";
-        consoleArea.textContent = `Error during execution:\n${err.message}\n\nConsole output:\n${consoleBuffer}`;
+        alert("Error generating XLSX: " + err.message);
         console.error(err);
-
-        // Send runtime errors back to test server under E2E testing
-        if (window.location.hash === "#test-mode") {
-          fetch("http://localhost:9001/error", {
-            method: "POST",
-            body: `Error during execution:\n${err.message}\n\nConsole output:\n${consoleBuffer}`
-          }).catch(e => console.error("Failed to post back error:", e));
-        }
       } finally {
-        runBtn.disabled = false;
-        runBtn.textContent = "Run & Download";
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = originalText;
       }
     });
+
+    // Click: Reset Code
+    resetBtn.addEventListener("click", () => {
+      if (textarea) {
+        textarea.value = originalCode;
+        updateHighlight();
+      }
+    });
+
+
+
+  }
+
+  // Open the sliding drawer panel and automatically execute code preview inside the iframe
+  function triggerLivePreview(code) {
+    const drawer = ensurePreviewDrawer();
+    const iframe = document.getElementById("wasmPreviewIframe");
+    const prefix = window.rdoc_rel_prefix || "./";
+
+    // Show the drawer
+    drawer.classList.add("open");
+
+    // Initialize or load the iframe
+    const targetSrc = `${prefix}preview.html`;
+    if (!iframe.src || !iframe.src.includes("preview.html")) {
+      iframe.src = targetSrc;
+      iframe.onload = () => {
+        sendCodeToIframe();
+      };
+    } else {
+      sendCodeToIframe();
+    }
+
+    function sendCodeToIframe() {
+      if (iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+          action: "load_code",
+          code: code
+        }, "*");
+      }
+    }
   }
 
   // Delete all .xlsx files recursively under the virtual directory
@@ -305,16 +401,39 @@
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 10000);
 
-      // Post binary data back to test server under E2E testing
-      if (window.location.hash === "#test-mode") {
-        console.log("[Script Mock] Test mode detected. Sending generated file back to test server...");
-        fetch("http://localhost:9001/upload", {
-          method: "POST",
-          body: bytes
-        }).catch(err => console.error("Failed to post back test file:", err));
-      }
     } catch (e) {
       console.error("Error downloading file from Vfs:", e);
     }
+  }
+
+  // Create or retrieve the side drawer preview panel
+  function ensurePreviewDrawer() {
+    let drawer = document.getElementById("wasmPreviewDrawer");
+    if (drawer) return drawer;
+
+    drawer = document.createElement("div");
+    drawer.id = "wasmPreviewDrawer";
+    drawer.className = "wasm-preview-drawer";
+    drawer.innerHTML = `
+      <div class="drawer-header">
+        <span class="drawer-title">Live Spreadsheet Preview</span>
+        <button class="drawer-close-btn">&times;</button>
+      </div>
+      <div class="drawer-body">
+        <iframe id="wasmPreviewIframe" class="drawer-iframe" src=""></iframe>
+      </div>
+    `;
+    document.body.appendChild(drawer);
+
+    // Setup close action
+    const closeBtn = drawer.querySelector(".drawer-close-btn");
+    closeBtn.addEventListener("click", () => {
+      drawer.classList.remove("open");
+      // Clear iframe src on close to stop background Wasm threads and free memory
+      const iframe = document.getElementById("wasmPreviewIframe");
+      if (iframe) iframe.src = "";
+    });
+
+    return drawer;
   }
 })();

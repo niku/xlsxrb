@@ -291,15 +291,119 @@ task :wasm do
   end
 end
 
+desc "Fetch required external assets for offline usage"
+task :fetch_assets do
+  require 'open-uri'
+  require 'fileutils'
+
+  def download_file(url, dest)
+    # Check if the file exists and is not a tiny placeholder/error document
+    return if File.exist?(dest) && File.size(dest) > 1024
+
+    puts "Downloading #{url} to #{dest}..."
+    FileUtils.mkdir_p(File.dirname(dest))
+
+    require 'net/http'
+    uri = URI.parse(url)
+    temp_dest = dest + ".tmp"
+
+    begin
+      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https', open_timeout: 15, read_timeout: 90) do |http|
+        request = Net::HTTP::Get.new(uri)
+        # Specify User-Agent to bypass scraping prevention on CDNs and act as a normal browser
+        request['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        # Force raw (identity) encoding to prevent receiving Brotli-compressed (.br) data,
+        # which Ruby's Net::HTTP cannot decode automatically, leading to corrupted Wasm files.
+        request['Accept-Encoding'] = 'identity'
+
+        http.request(request) do |response|
+          if response.code.to_i != 200
+            raise "HTTP error #{response.code}: #{response.message}"
+          end
+
+          File.open(temp_dest, "wb") do |output|
+            response.read_body do |chunk|
+              output.write(chunk)
+            end
+          end
+        end
+      end
+      # Atomic rename to prevent leaving incomplete files on failure
+      File.rename(temp_dest, dest)
+      puts "Downloaded successfully."
+    rescue => e
+      puts "Failed to download #{url}: #{e.message}"
+      File.delete(temp_dest) if File.exist?(temp_dest)
+      File.delete(dest) if File.exist?(dest)
+      raise "Required asset download failed. Build aborted."
+    end
+  end
+
+  def fetch_google_fonts
+    css_dest = "docs/fonts/fonts.css"
+    return if File.exist?(css_dest)
+
+    puts "Fetching and localizing Google Fonts..."
+    font_url = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+
+    css_content = nil
+    begin
+      # Specify Chrome User-Agent to ensure Google Fonts returns modern and lightweight .woff2 formats
+      # instead of legacy formats (like .ttf or .eot) designed for older browsers
+      URI.open(font_url, "User-Agent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36") do |f|
+        css_content = f.read
+      end
+    rescue => e
+      puts "Failed to fetch Google Fonts CSS: #{e.message}"
+      return
+    end
+
+    urls = css_content.scan(/url\((https:\/\/fonts\.gstatic\.com\/[^\)]+)\)/).flatten
+
+    urls.uniq.each do |url|
+      filename = url.split("/").last
+      local_path = "docs/fonts/#{filename}"
+      download_file(url, local_path)
+      css_content.gsub!(url, filename)
+    end
+
+    FileUtils.mkdir_p("docs/fonts")
+    File.write(css_dest, css_content)
+    puts "Google Fonts localized successfully."
+  end
+
+  # Fetch Ruby WASI JS
+  download_file(
+    "https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@2.9.3-2.9.4/dist/browser.umd.js",
+    "docs/wasm/browser.umd.js"
+  )
+
+  # Fetch ZetaOffice Wasm
+  base_zeta_url = "https://cdn.zetaoffice.net/zetaoffice_latest/"
+  %w[soffice.js soffice.wasm soffice.data soffice.data.js.metadata qtloader.js].each do |file|
+    download_file(base_zeta_url + file, "docs/zetaoffice/#{file}")
+  end
+
+  # Fetch and localize Google Fonts
+  fetch_google_fonts
+end
+
 desc "Generate RDoc documentation including Visual Gallery"
-task doc: :wasm do
+task doc: [:wasm, :fetch_assets] do
   FileUtils.rm_rf("doc")
-  sh "bundle exec rdoc --title 'xlsxrb Documentation' --main README.md README.md \"docs/visual/VisualGallery.md\" lib/"
+
+  # RDoc コマンドを実行 (--exclude を指定して docs 配下のプレビュー用アセットの誤パースを回避)
+  sh "bundle exec rdoc --op doc" \
+     " --exclude 'docs/coi-serviceworker\\.js'" \
+     " --exclude 'docs/zeta\\.js'" \
+     " --exclude 'docs/office_thread\\.js'" \
+     " --exclude 'docs/preview\\.html'" \
+     " --title 'xlsxrb Documentation' --main README.md README.md \"docs/visual/VisualGallery.md\" lib/"
 
   # Copy visual gallery images and files so they are available in RDoc output
   FileUtils.mkdir_p("doc/test/visual/baselines")
-  FileUtils.cp_r("test/visual/baselines", "doc/test/visual")
   FileUtils.mkdir_p("doc/test/visual/support/illustrations")
+  FileUtils.cp_r(Dir.glob("test/visual/baselines/*"), "doc/test/visual/baselines")
   FileUtils.cp_r(Dir.glob("test/visual/support/illustrations/*.png"), "doc/test/visual/support/illustrations")
 
   FileUtils.mkdir_p("doc/docs/visual/files")
@@ -312,21 +416,35 @@ task doc: :wasm do
   FileUtils.mkdir_p("doc/css")
   FileUtils.mkdir_p("doc/js")
   FileUtils.mkdir_p("doc/wasm")
+  FileUtils.mkdir_p("doc/zetaoffice")
+  FileUtils.mkdir_p("doc/fonts")
+
   FileUtils.cp("docs/wasm/wasm_doc_helper.js", "doc/js/wasm_doc_helper.js")
   FileUtils.cp("docs/wasm/wasm_doc_helper.css", "doc/css/wasm_doc_helper.css")
   FileUtils.cp("docs/wasm/ruby.wasm", "doc/wasm/ruby.wasm")
+  FileUtils.cp("docs/wasm/browser.umd.js", "doc/wasm/browser.umd.js")
+  FileUtils.cp_r(Dir.glob("docs/zetaoffice/*"), "doc/zetaoffice")
+  FileUtils.cp_r(Dir.glob("docs/fonts/*"), "doc/fonts")
+
+  # Copy LibreOffice Wasm Preview assets to doc directory
+  FileUtils.cp("docs/preview.html", "doc/preview.html")
+  FileUtils.cp("docs/coi-serviceworker.js", "doc/coi-serviceworker.js")
+  FileUtils.cp("docs/zeta.js", "doc/zeta.js")
+  FileUtils.cp("docs/office_thread.js", "doc/office_thread.js")
 
   # Inject stylesheet and javascript loading tags to all generated HTML docs
   Dir.glob("doc/**/*.html").each do |html_path|
+    next if File.basename(html_path) == "preview.html"
     html_content = File.read(html_path)
     depth = html_path.sub(%r{\Adoc/}, "").count("/")
     rel_prefix = "../" * depth
 
+    coi_tag = %Q{<script src="#{rel_prefix}coi-serviceworker.js"></script>}
     js_tag = %Q{<script src="#{rel_prefix}js/wasm_doc_helper.js" defer></script>}
     css_tag = %Q{<link href="#{rel_prefix}css/wasm_doc_helper.css" rel="stylesheet">}
 
     if html_content.include?("<body")
-      modified = html_content.sub("<body", "#{js_tag}\n#{css_tag}\n<body")
+      modified = html_content.sub("<body", "#{coi_tag}\n#{js_tag}\n#{css_tag}\n<body")
       File.write(html_path, modified)
     end
   end
@@ -346,7 +464,21 @@ namespace :doc do
       Port: port,
       DocumentRoot: File.expand_path("doc", __dir__),
       Logger: WEBrick::Log.new(nil, WEBrick::BasicLog::WARN),
-      AccessLog: []
+      AccessLog: [],
+      # If the file is a Brotli-compressed Wasm/Data asset (checked via magic bytes),
+      # dynamically inject 'Content-Encoding: br' header so the browser decompresses it natively.
+      RequestCallback: ->(req, res) {
+        if req.path.end_with?(".wasm") || req.path.end_with?(".data")
+          # Resolve physical file path from req.path manually since res.filename is nil at this stage
+          local_path = File.join(File.expand_path("doc", __dir__), req.path)
+          if File.exist?(local_path)
+            first_4 = File.binread(local_path, 4) rescue nil
+            if first_4 != "\x00asm"
+              res['Content-Encoding'] = 'br'
+            end
+          end
+        end
+      }
     )
 
     puts "=================================================="

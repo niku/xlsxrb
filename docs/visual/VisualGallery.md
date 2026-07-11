@@ -498,8 +498,6 @@ This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering
 
 ## Align Horizontal
 
-[Download .xlsx](files/align_horizontal.xlsx)
-
 Demonstrates horizontal text alignment (left, center, right).
 
 ### Rendered Output (LibreOffice Calc)
@@ -551,8 +549,6 @@ Cell C1 ('Right'): align_horizontal = "right"
 
 ## Align Horizontal Fill
 
-[Download .xlsx](files/align_horizontal_fill.xlsx)
-
 Demonstrates horizontal fill alignment (repeats value to fill cell width).
 
 ### Rendered Output (LibreOffice Calc)
@@ -600,8 +596,6 @@ Cell A1 ('X '): align_h="fill", align_v=nil, wrap=nil, indent=nil, rotation=nil,
 <hr/>
 
 ## Align Horizontal Justify
-
-[Download .xlsx](files/align_horizontal_justify.xlsx)
 
 Demonstrates horizontal justify text alignment.
 
@@ -653,8 +647,6 @@ Cell A1 ('Justified alignment wraps and distributes text evenly.'): align_h="jus
 <hr/>
 
 ## Align Indent
-
-[Download .xlsx](files/align_indent.xlsx)
 
 Demonstrates text indentation inside cells.
 
@@ -709,8 +701,6 @@ Cell A1 ('No Indent'): align_h=nil, align_v=nil, wrap=nil, indent=nil, rotation=
 
 ## Align Text Rotation
 
-[Download .xlsx](files/align_text_rotation.xlsx)
-
 Demonstrates text rotated by specific angles (45, 90 degrees).
 
 ### Rendered Output (LibreOffice Calc)
@@ -763,8 +753,6 @@ Cell B1 ('Rotated 90'): align_h=nil, align_v=nil, wrap=nil, indent=nil, rotation
 
 ## Align Text Wrap
 
-[Download .xlsx](files/align_text_wrap.xlsx)
-
 Demonstrates auto-wrapping multi-line text inside narrow cells.
 
 ### Rendered Output (LibreOffice Calc)
@@ -813,8 +801,6 @@ Cell A1 ('This is a long sentence that wraps inside the cell.'): align_h=nil, al
 <hr/>
 
 ## Align Vertical
-
-[Download .xlsx](files/align_vertical.xlsx)
 
 Demonstrates vertical text alignment (top, center, bottom).
 
@@ -870,8 +856,6 @@ Cell C1 ('Bottom'): align_h=nil, align_v="bottom", wrap=nil, indent=nil, rotatio
 
 ## Basic Data
 
-[Download .xlsx](files/basic_data.xlsx)
-
 Demonstrates simple tabular data writing with basic Ruby types (Strings, Numbers, Dates, Booleans).
 
 ### Rendered Output (LibreOffice Calc)
@@ -926,8 +910,6 @@ Row 2: A3: "Widget B" (String), B3: 5 (Integer), C3: 49.5 (Float), D3: 46073 (In
 <hr/>
 
 ## Borders
-
-[Download .xlsx](files/borders.xlsx)
 
 Demonstrates border styles (thin, medium, thick, hair, dashed, medium dashed, dotted, double, dash-dot, medium dash-dot, dash-dot-dot, slanted, and diagonal cross borders) applied to cell ranges.
 
@@ -1019,8 +1001,6 @@ Row 13: A14: "Diagonal (Cross)" (border_id: 0), B14: "Diagonal Border" (border_i
 
 ## Cell Booleans
 
-[Download .xlsx](files/cell_booleans.xlsx)
-
 Demonstrates boolean values serialized and rendered.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1067,8 +1047,6 @@ Row 2: A3: "Is Pending" (String), B3: false (FalseClass)
 <hr/>
 
 ## Cell Dates
-
-[Download .xlsx](files/cell_dates.xlsx)
 
 Demonstrates dates serialized natively and formatted with standard or custom format strings.
 
@@ -1118,8 +1096,6 @@ Row 2: A3: "Formatted Date" (String), B3: 46381 (Integer)
 <hr/>
 
 ## Cell Formulas
-
-[Download .xlsx](files/cell_formulas.xlsx)
 
 Demonstrates standard spreadsheet calculations and formulas (SUM, AVERAGE).
 
@@ -1172,8 +1148,6 @@ Row 4: A5: "AVERAGE" (String), B5: 15 (Integer)
 
 ## Cell Num Currency Jpy
 
-[Download .xlsx](files/cell_num_currency_jpy.xlsx)
-
 Demonstrates Yen Currency format code formatting.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1224,8 +1198,6 @@ Row 2: A3: "Negative Yen" (Format ID: , Code: nil), B3: -8000 (Format ID: 164, C
 
 ## Cell Num Custom Colors
 
-[Download .xlsx](files/cell_num_custom_colors.xlsx)
-
 Demonstrates custom colored formats for positive and negative numbers.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1275,8 +1247,6 @@ Row 2: A3: "Negative (Red)" (Format ID: , Code: nil), B3: -2500 (Format ID: 164,
 <hr/>
 
 ## Cell Num Fractions
-
-[Download .xlsx](files/cell_num_fractions.xlsx)
 
 Demonstrates fraction number formats (# ?/?).
 
@@ -1330,8 +1300,6 @@ Row 3: A4: "Quarter" (Format ID: , Code: nil), B4: 0.75 (Format ID: 164, Code: "
 
 ## Cell Num Percent Decimals
 
-[Download .xlsx](files/cell_num_percent_decimals.xlsx)
-
 Demonstrates percentages with two decimal places (0.00%).
 
 ### Rendered Output (LibreOffice Calc)
@@ -1379,8 +1347,6 @@ Row 1: A2: "Percent with 2 Decimals" (Format ID: , Code: nil), B2: 0.12345 (Form
 <hr/>
 
 ## Cell Num Scientific
-
-[Download .xlsx](files/cell_num_scientific.xlsx)
 
 Demonstrates scientific number formats (0.00E+00).
 
@@ -1431,8 +1397,6 @@ Row 2: A3: "Small Scientific" (Format ID: , Code: nil), B3: 1.234e-05 (Format ID
 <hr/>
 
 ## Cell Numbers
-
-[Download .xlsx](files/cell_numbers.xlsx)
 
 Demonstrates custom formatting for integers, floating point numbers, currencies, and percentages.
 
@@ -1487,8 +1451,6 @@ Row 4: A5: "Percentage" (String), B5: 0.85 (Float)
 
 ## Cell Rich Text
 
-[Download .xlsx](files/cell_rich_text.xlsx)
-
 Demonstrates Rich Text cells with multiple font weights, styles, and colors in a single cell.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1539,8 +1501,6 @@ Row 1: A2: "Rich Text Cell" (String), B2: "Normal BOLD RED ITALIC BLUE" (String)
 
 ## Cell Times
 
-[Download .xlsx](files/cell_times.xlsx)
-
 Demonstrates timestamp values serialized natively and formatted showing hours, minutes, and seconds.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1590,8 +1550,6 @@ Row 2: A3: "Time Only" (String), B3: 46204.385416666664 (Float)
 
 ## Cf Begins With
 
-[Download .xlsx](files/cf_begins_with.xlsx)
-
 Demonstrates conditional formatting highlighting cells starting with specific text.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1639,8 +1597,6 @@ Row 3: A4: "A-300"
 <hr/>
 
 ## Cf Cell Between
-
-[Download .xlsx](files/cf_cell_between.xlsx)
 
 Demonstrates conditional formatting highlighting cells within a range.
 
@@ -1691,8 +1647,6 @@ Row 3: A4: 5
 
 ## Cf Cell Equal To
 
-[Download .xlsx](files/cf_cell_equal_to.xlsx)
-
 Demonstrates conditional formatting highlighting cells equal to a target value.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1741,8 +1695,6 @@ Row 3: A4: 10
 <hr/>
 
 ## Cf Cell Greater Equal
-
-[Download .xlsx](files/cf_cell_greater_equal.xlsx)
 
 Demonstrates conditional formatting highlighting cells greater than or equal to a threshold.
 
@@ -1793,8 +1745,6 @@ Row 3: A4: 100
 
 ## Cf Cell Greater Than
 
-[Download .xlsx](files/cf_cell_greater_than.xlsx)
-
 Demonstrates conditional formatting highlighting cells greater than a threshold.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1843,8 +1793,6 @@ Row 3: A4: 10
 <hr/>
 
 ## Cf Cell Less Than
-
-[Download .xlsx](files/cf_cell_less_than.xlsx)
 
 Demonstrates conditional formatting highlighting cells less than a threshold.
 
@@ -1895,8 +1843,6 @@ Row 3: A4: 10
 
 ## Cf Color Scale
 
-[Download .xlsx](files/cf_color_scale.xlsx)
-
 Demonstrates color scale/heatmap conditional formatting.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1943,8 +1889,6 @@ Row 2: A3: 90
 <hr/>
 
 ## Cf Contains Text
-
-[Download .xlsx](files/cf_contains_text.xlsx)
 
 Demonstrates conditional formatting highlighting cells containing specific text.
 
@@ -1994,8 +1938,6 @@ Row 3: A4: "Pending"
 
 ## Cf Data Bar
 
-[Download .xlsx](files/cf_data_bar.xlsx)
-
 Demonstrates data bar visual conditional formatting indicators.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2042,8 +1984,6 @@ Row 2: A3: 100
 <hr/>
 
 ## Cf Ends With
-
-[Download .xlsx](files/cf_ends_with.xlsx)
 
 Demonstrates conditional formatting highlighting cells ending with specific text.
 
@@ -2092,8 +2032,6 @@ Row 3: A4: "300-Z"
 <hr/>
 
 ## Cf Expression Formula
-
-[Download .xlsx](files/cf_expression_formula.xlsx)
 
 Demonstrates conditional formatting using a custom formula expression.
 
@@ -2146,8 +2084,6 @@ Row 4: A5: 100
 
 ## Cf Icon Set
 
-[Download .xlsx](files/cf_icon_set.xlsx)
-
 Demonstrates icon set indicators (red/yellow/green arrows).
 
 ### Rendered Output (LibreOffice Calc)
@@ -2194,8 +2130,6 @@ Row 2: A3: 75
 <hr/>
 
 ## Chart Area
-
-[Download .xlsx](files/chart_area.xlsx)
 
 Demonstrates embedding a standard 2D Area Chart.
 
@@ -2244,8 +2178,6 @@ Sheet 'Data' has 0 chart(s)
 <hr/>
 
 ## Chart Area Stacked
-
-[Download .xlsx](files/chart_area_stacked.xlsx)
 
 Demonstrates embedding a stacked 2D Area Chart.
 
@@ -2299,8 +2231,6 @@ Sheet 'Data' has 0 chart(s)
 <hr/>
 
 ## Chart Bar
-
-[Download .xlsx](files/chart_bar.xlsx)
 
 Demonstrates embedding a standard 2D Bar Chart referencing worksheet cell ranges.
 
@@ -2359,8 +2289,6 @@ Sheet 'Sales Data' has 0 chart(s)
 
 ## Chart Bar Percent Stacked
 
-[Download .xlsx](files/chart_bar_percent_stacked.xlsx)
-
 Demonstrates embedding a 100% stacked 2D Bar Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2414,8 +2342,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Bar Stacked
 
-[Download .xlsx](files/chart_bar_stacked.xlsx)
-
 Demonstrates embedding a stacked 2D Bar Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2468,8 +2394,6 @@ Sheet 'Data' has 0 chart(s)
 <hr/>
 
 ## Chart Doughnut
-
-[Download .xlsx](files/chart_doughnut.xlsx)
 
 Demonstrates embedding a standard 2D Doughnut Chart.
 
@@ -2526,8 +2450,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Line
 
-[Download .xlsx](files/chart_line.xlsx)
-
 Demonstrates embedding a standard 2D Line Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2576,8 +2498,6 @@ Sheet 'Data' has 0 chart(s)
 <hr/>
 
 ## Chart Line Stacked
-
-[Download .xlsx](files/chart_line_stacked.xlsx)
 
 Demonstrates embedding a stacked 2D Line Chart.
 
@@ -2631,8 +2551,6 @@ Sheet 'Data' has 0 chart(s)
 <hr/>
 
 ## Chart Pie
-
-[Download .xlsx](files/chart_pie.xlsx)
 
 Demonstrates embedding a standard 2D Pie Chart.
 
@@ -2689,8 +2607,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Radar
 
-[Download .xlsx](files/chart_radar.xlsx)
-
 Demonstrates embedding a standard 2D Radar Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2738,8 +2654,6 @@ Sheet 'Data' has 0 chart(s)
 <hr/>
 
 ## Chart Scatter
-
-[Download .xlsx](files/chart_scatter.xlsx)
 
 Demonstrates embedding a standard 2D Scatter Plot.
 
@@ -2789,8 +2703,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Col Grouping
 
-[Download .xlsx](files/col_grouping.xlsx)
-
 Demonstrates outline grouping for columns.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2837,8 +2749,6 @@ Column 2: width=25.0, hidden=false, outline_level=1
 
 ## Col Width Tall
 
-[Download .xlsx](files/col_width_tall.xlsx)
-
 Demonstrates setting very wide column widths.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2881,8 +2791,6 @@ Column 1: width=10.0, hidden=false, outline_level=
 
 ## Col Widths
 
-[Download .xlsx](files/col_widths.xlsx)
-
 Demonstrates setting custom column widths.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2924,8 +2832,6 @@ Column 1: width=10.0, hidden=false, outline_level=
 <hr/>
 
 ## Conditional Formatting
-
-[Download .xlsx](files/conditional_formatting.xlsx)
 
 Demonstrates adding conditional formatting rules that style cells automatically based on value ranges.
 
@@ -2976,8 +2882,6 @@ Row 0: A1: 90, B1: 45, C1: 72, D1: 88
 <hr/>
 
 ## Embedded Images
-
-[Download .xlsx](files/embedded_images.xlsx)
 
 Demonstrates embedding raster PNG images in cell ranges.
 
@@ -3063,8 +2967,6 @@ Image #1: name='', target='../media/image1.png' -> ZIP path='xl/media/image1.png
 
 ## Fill Gradients
 
-[Download .xlsx](files/fill_gradients.xlsx)
-
 Demonstrates linear gradients inside cell backgrounds.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3115,8 +3017,6 @@ Cell B1 ('Gradient Cell'): fill pattern = nil, fg_color = nil
 
 ## Fill Patterns
 
-[Download .xlsx](files/fill_patterns.xlsx)
-
 Demonstrates standard pattern fills (darkGray, darkGrid) in cell backgrounds.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3165,8 +3065,6 @@ Cell B1 ('Preview'): fill pattern = nil, fg_color = nil
 
 ## Fill Solid Colors
 
-[Download .xlsx](files/fill_solid_colors.xlsx)
-
 Demonstrates solid cell background fill colors.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3214,8 +3112,6 @@ Cell B1 ('Preview'): fill pattern = nil, fg_color = nil
 <hr/>
 
 ## Fonts
-
-[Download .xlsx](files/fonts.xlsx)
 
 Demonstrates cell fonts properties (Arial, Georgia, Courier New, Times New Roman, Tahoma, sizes 10pt/16pt/24pt, red/green/blue colors, bold/italic/underline/double underline/strike-through styles, superscript/subscript).
 
@@ -3335,8 +3231,6 @@ Row 18: A19: "Align: Subscript" (font_id: 0), B19: "H2O (2 is sub)" (font_id: 18
 
 ## Interactive Autofilter
 
-[Download .xlsx](files/interactive_autofilter.xlsx)
-
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_autofilter.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3389,8 +3283,6 @@ Row 2: A3: "Bob", B3: "Eng"
 
 ## Interactive Comments
 
-[Download .xlsx](files/interactive_comments.xlsx)
-
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_comments.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3437,8 +3329,6 @@ Row 0: A1: "Item A", B1: "Item B"
 <hr/>
 
 ## Interactive Validation Custom
-
-[Download .xlsx](files/interactive_validation_custom.xlsx)
 
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_custom.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
@@ -3489,8 +3379,6 @@ Validation range B2: type=custom, formula1=B2>A2, formula2=
 
 ## Interactive Validation Date
 
-[Download .xlsx](files/interactive_validation_date.xlsx)
-
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_date.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3538,8 +3426,6 @@ Validation range B2: type=date, formula1=Date(2026,1,1), formula2=Date(2026,12,3
 <hr/>
 
 ## Interactive Validation List
-
-[Download .xlsx](files/interactive_validation_list.xlsx)
 
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_list.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
@@ -3589,8 +3475,6 @@ Validation range B2: type=list, formula1="HR,Sales,Engineering", formula2=
 
 ## Interactive Validation Range
 
-[Download .xlsx](files/interactive_validation_range.xlsx)
-
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_range.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3638,8 +3522,6 @@ Validation range B2: type=whole, formula1=18, formula2=99
 <hr/>
 
 ## Interactive Validation Text Length
-
-[Download .xlsx](files/interactive_validation_text_length.xlsx)
 
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_text_length.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
@@ -3689,8 +3571,6 @@ Validation range B2: type=textLength, formula1=10, formula2=
 
 ## Interactive Validation Time
 
-[Download .xlsx](files/interactive_validation_time.xlsx)
-
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_time.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3738,8 +3618,6 @@ Validation range B2: type=time, formula1=0.33333, formula2=
 <hr/>
 
 ## Japanese Text
-
-[Download .xlsx](files/japanese_text.xlsx)
 
 Demonstrates writing multi-byte Japanese text and setting appropriate Japanese font names (e.g., Noto Sans CJK JP).
 
@@ -3792,8 +3670,6 @@ Row 1: A2: "売上" (String), B2: 12500 (Integer)
 <hr/>
 
 ## Merge Freeze
-
-[Download .xlsx](files/merge_freeze.xlsx)
 
 Demonstrates merging a cell range into a single cell, and freezing the top rows of a sheet.
 
@@ -3853,8 +3729,6 @@ Row 3: A4: "Row 2 Col A", B4: "Row 2 Col B", C4: "Row 2 Col C"
 
 ## Page Grid Lines Print
 
-[Download .xlsx](files/page_grid_lines_print.xlsx)
-
 Demonstrates enabling printing of grid lines.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3901,8 +3775,6 @@ Print Options: {grid_lines: true}
 <hr/>
 
 ## Page Header Footer
-
-[Download .xlsx](files/page_header_footer.xlsx)
 
 Demonstrates setting odd page headers and footers.
 
@@ -3951,8 +3823,6 @@ Print Options: {}
 
 ## Page Headings Print
 
-[Download .xlsx](files/page_headings_print.xlsx)
-
 Demonstrates enabling printing of row and column headings.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3999,8 +3869,6 @@ Print Options: {headings: true}
 <hr/>
 
 ## Page Margins Narrow
-
-[Download .xlsx](files/page_margins_narrow.xlsx)
 
 Demonstrates setting narrow page margins.
 
@@ -4049,8 +3917,6 @@ Print Options: {}
 
 ## Page Margins Wide
 
-[Download .xlsx](files/page_margins_wide.xlsx)
-
 Demonstrates setting wide page margins.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4097,8 +3963,6 @@ Print Options: {}
 <hr/>
 
 ## Page Orientation Landscape
-
-[Download .xlsx](files/page_orientation_landscape.xlsx)
 
 Demonstrates landscape page setup for printing.
 
@@ -4147,8 +4011,6 @@ Print Options: {}
 
 ## Page Paper Size A3
 
-[Download .xlsx](files/page_paper_size_a3.xlsx)
-
 Demonstrates setting paper size to A3 (paper size 8).
 
 ### Rendered Output (LibreOffice Calc)
@@ -4196,8 +4058,6 @@ Print Options: {}
 
 ## Row Grouping
 
-[Download .xlsx](files/row_grouping.xlsx)
-
 Demonstrates outline grouping for rows.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4244,8 +4104,6 @@ Row 2: height=, hidden=false, outline_level=1
 
 ## Row Height Tall
 
-[Download .xlsx](files/row_height_tall.xlsx)
-
 Demonstrates setting very tall row heights.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4289,8 +4147,6 @@ Row 1: height=, hidden=false, outline_level=
 
 ## Row Heights
 
-[Download .xlsx](files/row_heights.xlsx)
-
 Demonstrates setting custom row heights.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4333,8 +4189,6 @@ Row 1: height=40.0, hidden=false, outline_level=
 <hr/>
 
 ## Sheet Tab Colors
-
-[Download .xlsx](files/sheet_tab_colors.xlsx)
 
 Demonstrates customizing tab colors of individual worksheets.
 
@@ -4387,8 +4241,6 @@ Sheet: Green Tab, tab color: "FF00FF00"
 
 ## Sparkline Column
 
-[Download .xlsx](files/sparkline_column.xlsx)
-
 Demonstrates embedded column sparklines in cell ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4435,8 +4287,6 @@ Row 0: A1: 5, B1: 12, C1: 8, D1: 15
 <hr/>
 
 ## Sparkline Line
-
-[Download .xlsx](files/sparkline_line.xlsx)
 
 Demonstrates embedded line sparklines in cell ranges.
 
@@ -4489,8 +4339,6 @@ Row 0: A1: 10, B1: 20, C1: 15, D1: 30
 <hr/>
 
 ## Styles Fonts Fills
-
-[Download .xlsx](files/styles_fonts_fills.xlsx)
 
 Demonstrates cell formatting, including custom font sizing, bold/italic text, custom text colors, and background fill colors.
 
@@ -4551,8 +4399,6 @@ Row 1: A2: "Normal Text" (font=, fill=), B2: "Highlighted Text" (font=Calibri, f
 
 ## View Show Grid Lines
 
-[Download .xlsx](files/view_show_grid_lines.xlsx)
-
 Demonstrates disabling visible grid lines in spreadsheet view.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4597,8 +4443,6 @@ Sheet 'Hide Grid Lines' views zoom scale: %, show grid lines: false
 
 ## View Zoom Scale
 
-[Download .xlsx](files/view_zoom_scale.xlsx)
-
 Demonstrates setting custom zoom scale in sheet view (e.g. 150%).
 
 ### Rendered Output (LibreOffice Calc)
@@ -4642,8 +4486,6 @@ Sheet 'Zoom 150' views zoom scale: 150%, show grid lines:
 <hr/>
 
 ## Workbook Three Sheets
-
-[Download .xlsx](files/workbook_three_sheets.xlsx)
 
 Demonstrates creating workbooks with multiple worksheets.
 
