@@ -192,6 +192,13 @@ def run_in_subprocess(_name, &block)
   end
 end
 
+def median(array)
+  return 0.0 if array.empty?
+  sorted = array.sort
+  len = sorted.length
+  (sorted[(len - 1) / 2] + sorted[len / 2]) / 2.0
+end
+
 def run_benchmark(name, snippet)
   print format("%-25s", name)
   results = ITERATIONS.times.map do
@@ -200,23 +207,25 @@ def run_benchmark(name, snippet)
   end
   puts
 
-  avg_time = results.compact.map { |r| r[:time] }.compact.sum / results.compact.size.to_f
-  avg_cpu = results.compact.map { |r| r[:cpu] }.compact.sum / results.compact.size.to_f
-  avg_mem = results.compact.map { |r| r[:memory] }.compact.sum / results.compact.size.to_f
-  avg_gc = results.compact.map { |r| r[:gc_count] }.compact.sum / results.compact.size.to_f
-  avg_alloc = results.compact.map { |r| r[:alloc_objects] }.compact.sum / results.compact.size.to_f
-  avg_wchar = results.compact.map { |r| r[:wchar] }.compact.sum / results.compact.size.to_f
-  avg_rchar = results.compact.map { |r| r[:rchar] }.compact.sum / results.compact.size.to_f
+  valid_results = results.compact
+
+  median_time = median(valid_results.map { |r| r[:time] }.compact)
+  median_cpu = median(valid_results.map { |r| r[:cpu] }.compact)
+  median_mem = median(valid_results.map { |r| r[:memory] }.compact)
+  median_gc = median(valid_results.map { |r| r[:gc_count] }.compact)
+  median_alloc = median(valid_results.map { |r| r[:alloc_objects] }.compact)
+  median_wchar = median(valid_results.map { |r| r[:wchar] }.compact)
+  median_rchar = median(valid_results.map { |r| r[:rchar] }.compact)
 
   {
     name: name,
-    time: avg_time,
-    cpu: avg_cpu,
-    memory: avg_mem,
-    gc_count: avg_gc,
-    alloc_m: avg_alloc / 1_000_000.0,
-    wchar_mb: avg_wchar / 1_048_576.0,
-    rchar_mb: avg_rchar / 1_048_576.0
+    time: median_time,
+    cpu: median_cpu,
+    memory: median_mem,
+    gc_count: median_gc,
+    alloc_m: median_alloc / 1_000_000.0,
+    wchar_mb: median_wchar / 1_048_576.0,
+    rchar_mb: median_rchar / 1_048_576.0
   }
 end
 
