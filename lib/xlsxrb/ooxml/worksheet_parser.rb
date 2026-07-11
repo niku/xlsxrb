@@ -25,27 +25,9 @@ module Xlsxrb
       # Streaming parse: yields one raw row hash at a time.
       def self.each_row(xml_string, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", &block)
         return enum_for(:each_row, xml_string, shared_strings: shared_strings, part_name: part_name) unless block
+        return if xml_string.nil? || xml_string.empty?
 
-        current_row = nil
-        each_event(xml_string, shared_strings: shared_strings, part_name: part_name) do |event|
-          case event.type
-          when :row_start
-            index, attrs = event.args
-            current_row = { index: index, cells: [], attrs: attrs, unmapped: EMPTY_ARRAY, source: event.source }
-          when :cell
-            ref, type, style_index, value, formula = event.args
-            if current_row
-              cell = { ref: ref, type: type, style_index: style_index, value: value, source: event.source }
-              cell[:formula] = formula if formula
-              current_row[:cells] << cell
-            end
-          when :row_end
-            if current_row
-              block.call(current_row)
-              current_row = nil
-            end
-          end
-        end
+        fast_scan_rows_direct(xml_string, shared_strings, part_name, &block)
       end
 
       # Parses column definitions (<cols>) from a worksheet.
@@ -187,7 +169,7 @@ module Xlsxrb
                        source: row_source
                      ))
 
-          fast_scan_cells_events(xml, tag_end + 1, row_end, shared_strings, part_name, row_index, &block)
+          fast_scan_cells_events(xml, tag_end + 1, row_end, shared_strings, row_source, &block)
 
           block.call(Event.new(
                        type: :row_end,
@@ -245,7 +227,7 @@ module Xlsxrb
 
       private_class_method :tag_attr
 
-      def self.fast_scan_cells_events(xml, from, to, shared_strings, part_name, row_index, &block)
+      def self.fast_scan_cells_events(xml, from, to, shared_strings, row_source, &block)
         pos = from
 
         while pos < to
@@ -270,10 +252,12 @@ module Xlsxrb
 
           # Self-closing <c ... />
           if xml.getbyte(c_tag_end - 1) == 47
+            cell_source = row_source.dup
+            cell_source[:cell] = ref
             block.call(Event.new(
                          type: :cell,
                          args: [ref, type, style_index, nil, nil],
-                         source: { part: part_name, row: row_index, cell: ref }
+                         source: cell_source
                        ))
             pos = c_tag_end + 1
             next
@@ -347,10 +331,12 @@ module Xlsxrb
           end
 
           val_to_use = inline_str || value
+          cell_source = row_source.dup
+          cell_source[:cell] = ref
           block.call(Event.new(
                        type: :cell,
                        args: [ref, type, style_index, val_to_use, formula],
-                       source: { part: part_name, row: row_index, cell: ref }
+                       source: cell_source
                      ))
 
           pos = c_end + 4
@@ -450,6 +436,174 @@ module Xlsxrb
 
         def characters(_text); end
       end
+
+      def self.fast_scan_rows_direct(xml_src, shared_strings, part_name, &block)
+        xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
+
+        sd_start = xml.index("<sheetData")
+        return unless sd_start
+
+        sd_open_end = xml.index(">", sd_start)
+        return unless sd_open_end
+        return if xml.getbyte(sd_open_end - 1) == 47 # self-closing <sheetData/>
+
+        sd_end = xml.index("</sheetData>", sd_open_end)
+        return unless sd_end
+
+        pos = sd_open_end + 1
+
+        while pos < sd_end
+          row_start = xml.index("<row", pos)
+          break unless row_start && row_start < sd_end
+
+          nb = xml.getbyte(row_start + 4)
+          unless [32, 62, 9, 10, 13, 47].include?(nb)
+            pos = row_start + 4
+            next
+          end
+
+          tag_end = xml.index(">", row_start + 4)
+          break unless tag_end
+
+          if xml.getbyte(tag_end - 1) == 47
+            pos = tag_end + 1
+            next
+          end
+
+          row_tag = xml.byteslice(row_start, tag_end - row_start)
+          row_index = 0
+          r_val = tag_attr(row_tag, ' r="')
+          row_index = r_val.to_i - 1 if r_val
+
+          attrs = extract_row_attrs(row_tag)
+          row_end = xml.index("</row>", tag_end + 1)
+          break unless row_end
+
+          row_source = { part: part_name, row: row_index }
+          cells = fast_parse_cells_direct(xml, tag_end + 1, row_end, shared_strings, row_source)
+
+          block.call({ index: row_index, cells: cells, attrs: attrs, unmapped: EMPTY_ARRAY, source: row_source })
+
+          pos = row_end + 6
+        end
+      end
+
+      private_class_method :fast_scan_rows_direct
+
+      def self.fast_parse_cells_direct(xml, from, to, shared_strings, row_source)
+        cells = []
+        pos = from
+
+        while pos < to
+          c_start = xml.index("<c", pos)
+          break unless c_start && c_start < to
+
+          nb = xml.getbyte(c_start + 2)
+          unless [32, 62, 9, 10, 13, 47].include?(nb)
+            pos = c_start + 2
+            next
+          end
+
+          c_tag_end = xml.index(">", c_start + 2)
+          break unless c_tag_end
+
+          # Extract tag substring for bounded attribute search
+          c_tag = xml.byteslice(c_start, c_tag_end - c_start)
+          ref = tag_attr(c_tag, ' r="')
+          type = tag_attr(c_tag, ' t="')
+          style_str = tag_attr(c_tag, ' s="')
+          style_index = style_str&.to_i
+
+          # Self-closing <c ... />
+          if xml.getbyte(c_tag_end - 1) == 47
+            cell_source = row_source.dup
+            cell_source[:cell] = ref
+            cells << { ref: ref, type: type, style_index: style_index, value: nil, source: cell_source }
+            pos = c_tag_end + 1
+            next
+          end
+
+          c_end = xml.index("</c>", c_tag_end + 1)
+          break unless c_end
+
+          # Parse cell content sequentially (bounded to c_end - avoid unbounded scans)
+          value = nil
+          formula = nil
+          inline_str = nil
+          cpos = c_tag_end + 1
+          while cpos < c_end
+            tag_pos = xml.index("<", cpos)
+            break unless tag_pos && tag_pos < c_end
+
+            tag_char = xml.getbyte(tag_pos + 1)
+            case tag_char
+            when 118 # 'v'
+              if xml.getbyte(tag_pos + 2) == 62 # <v>
+                v_val_start = tag_pos + 3
+                v_end = xml.index("</v>", v_val_start)
+                if v_end
+                  raw_value = xml.byteslice(v_val_start, v_end - v_val_start)
+                  value = resolve_fast_value(raw_value, type, shared_strings)
+                  cpos = v_end + 4
+                else
+                  cpos = tag_pos + 3
+                end
+              elsif xml.getbyte(tag_pos + 2) == 47 && xml.getbyte(tag_pos + 3) == 62 # <v/>
+                cpos = tag_pos + 4
+              else
+                cpos = tag_pos + 2
+              end
+            when 102 # 'f'
+              f_tag_end = xml.index(">", tag_pos + 2)
+              if f_tag_end && f_tag_end < c_end
+                if xml.getbyte(f_tag_end - 1) == 47 # self-closing <f ... />
+                  cpos = f_tag_end + 1
+                else
+                  f_end = xml.index("</f>", f_tag_end + 1)
+                  if f_end && f_end <= c_end
+                    formula = xml.byteslice(f_tag_end + 1, f_end - f_tag_end - 1).force_encoding("UTF-8")
+                    formula = decode_xml_entities(formula) if formula.include?("&")
+                    cpos = f_end + 4
+                  else
+                    cpos = f_tag_end + 1
+                  end
+                end
+              else
+                cpos = tag_pos + 2
+              end
+            when 105 # 'i' - <is>
+              if xml.byteslice(tag_pos, 4) == "<is>"
+                is_end = xml.index("</is>", tag_pos + 4)
+                if is_end && is_end <= c_end
+                  inline_str = extract_inline_text(xml, tag_pos + 4, is_end)
+                  cpos = is_end + 5
+                else
+                  cpos = tag_pos + 4
+                end
+              else
+                cpos = tag_pos + 2
+              end
+            else
+              # Skip unknown tag
+              close = xml.index(">", tag_pos + 1)
+              cpos = close ? close + 1 : c_end
+            end
+          end
+
+          val_to_use = inline_str || value
+          cell_source = row_source.dup
+          cell_source[:cell] = ref
+          cell = { ref: ref, type: type, style_index: style_index, value: val_to_use, source: cell_source }
+          cell[:formula] = formula if formula
+          cells << cell
+
+          pos = c_end + 4
+        end
+
+        cells
+      end
+
+      private_class_method :fast_parse_cells_direct
     end
   end
 end

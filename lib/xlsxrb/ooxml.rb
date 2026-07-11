@@ -17,6 +17,6 @@ module Xlsxrb
   # Handles ZIP extraction, SAX XML parsing, and XML generation
   # in strict accordance with ECMA-376.
   module Ooxml
-    Event = Data.define(:type, :args, :source)
+    Event = Struct.new(:type, :args, :source)
   end
 end
