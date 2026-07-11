@@ -1,5 +1,9 @@
 AllCops:
   TargetRubyVersion: 4.0
+  Exclude:
+    - "docs/wasm/bundle_assets/**/*"
+    - "tmp/**/*"
+    - "vendor/**/*"
 
 plugins:
   - rubocop-rake
