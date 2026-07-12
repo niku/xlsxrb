@@ -1,0 +1,46 @@
+name: Deploy Documentation
+
+on:
+  release:
+    types: [published] # Automatically deploy on new releases
+  workflow_dispatch: # Allows manual trigger from GitHub UI at any time
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0.2'
+          bundler-cache: true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Build RDoc with WebAssembly Playground
+        run: |
+          bundle exec rake doc
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'doc'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
