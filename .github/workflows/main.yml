@@ -55,33 +55,41 @@ jobs:
     runs-on: ubuntu-latest
     name: Visual Examples & VRT
     continue-on-error: true
-    strategy:
-      matrix:
-        ruby:
-          - '4.0.2'
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Test Environment Docker Image
+        uses: docker/build-push-action@v5
         with:
-          ruby-version: ${{ matrix.ruby }}
-          bundler-cache: true
-      - name: Install LibreOffice and pdftoppm dependencies
+          context: .
+          file: .devcontainer/Dockerfile
+          tags: xlsxrb-test-env
+          outputs: type=docker,dest=/tmp/xlsxrb-test-env.tar
+
+      - name: Load Docker Image
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libreoffice-calc poppler-utils imagemagick fonts-liberation fonts-noto-cjk brotli
+          docker load --input /tmp/xlsxrb-test-env.tar
+
       - name: Generate Visual Gallery
-        run: bundle exec rake visual:gallery
+        run: |
+          docker run --rm --user $(id -u):$(id -g) -v ${{ github.workspace }}:/workspaces/xlsxrb xlsxrb-test-env bundle exec rake visual:gallery
+
       - name: Run Visual Regression Tests
-        run: bundle exec rake test:visual
+        run: |
+          docker run --rm --user $(id -u):$(id -g) -v ${{ github.workspace }}:/workspaces/xlsxrb xlsxrb-test-env bundle exec rake test:visual
+
       - name: Upload Visual Output on Mismatch
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: visual-regression-diffs
           path: test/visual/output/
+
       - name: Upload Explanation Gallery
         if: always()
         uses: actions/upload-artifact@v4
