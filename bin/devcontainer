@@ -24,6 +24,25 @@ if [ -d "$HOST_CONFIG_DIR" ]; then
     EXEC_ARGS+=( "--remote-env" "XDG_CONFIG_HOME=/home/vscode/.config" )
 fi
 
+# Explicitly forward SSH agent if available on the host
+if [ -n "$SSH_AUTH_SOCK" ] && [ -S "$SSH_AUTH_SOCK" ]; then
+    if [ "$(uname)" = "Darwin" ]; then
+        # On macOS with Docker Desktop, use the magic host service socket.
+        # Docker Desktop exposes the host's SSH agent via /run/host-services/ssh-auth.sock.
+        echo "Forwarding macOS SSH agent via Docker host-services..."
+        UP_ARGS+=( "--mount" "type=bind,source=/run/host-services/ssh-auth.sock,target=/run/host-services/ssh-auth.sock" )
+        UP_ARGS+=( "--remote-env" "SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock" )
+        EXEC_ARGS+=( "--remote-env" "SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock" )
+    else
+        SSH_DIR="$(cd "$(dirname "$SSH_AUTH_SOCK")" && pwd)"
+        SSH_BASE="$(basename "$SSH_AUTH_SOCK")"
+        echo "Forwarding SSH agent directory ($SSH_DIR) for socket ($SSH_BASE)..."
+        UP_ARGS+=( "--mount" "type=bind,source=$SSH_DIR,target=/tmp/ssh-agent-dir" )
+        UP_ARGS+=( "--remote-env" "SSH_AUTH_SOCK=/tmp/ssh-agent-dir/$SSH_BASE" )
+        EXEC_ARGS+=( "--remote-env" "SSH_AUTH_SOCK=/tmp/ssh-agent-dir/$SSH_BASE" )
+    fi
+fi
+
 # Resolve XDG-compliant default override configuration path on host
 XDG_CONFIG_HOME_HOST="${XDG_CONFIG_HOME:-$HOME/.config}"
 DEFAULT_OVERRIDE_FILE_JSON="$XDG_CONFIG_HOME_HOST/devcontainer/override.json"
@@ -103,6 +122,15 @@ if [ -z "$(docker ps --filter "label=devcontainer.local_folder=$WORKSPACE_ROOT" 
     echo "Checking/Starting devcontainer..."
     echo "Debug: devcontainer up options: ${UP_ARGS[@]}"
     devcontainer up "${UP_ARGS[@]}"
+fi
+
+# Fix SSH agent socket permissions if running on macOS with Docker Desktop
+if [ "$(uname)" = "Darwin" ] && [ -n "$SSH_AUTH_SOCK" ]; then
+    CONTAINER_ID=$(docker ps --filter "label=devcontainer.local_folder=$WORKSPACE_ROOT" --filter "status=running" -q | head -n 1)
+    if [ -n "$CONTAINER_ID" ]; then
+        # Ensure the socket inside the container is readable/writable by the non-root user (vscode)
+        docker exec -u root "$CONTAINER_ID" chmod 666 /run/host-services/ssh-auth.sock 2>/dev/null || true
+    fi
 fi
 
 # Determine execution mode
