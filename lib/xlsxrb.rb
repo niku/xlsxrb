@@ -424,11 +424,11 @@ module Xlsxrb
       # Extract style definitions from the writer that can be reused
       # This captures the fonts, fills, borders, and xf entries that were created
       {
-        fonts: writer.instance_variable_get(:@fonts).dup,
-        fills: writer.instance_variable_get(:@fills).dup,
-        borders: writer.instance_variable_get(:@borders).dup,
-        xf_entries: writer.instance_variable_get(:@xf_entries).dup,
-        num_fmts: writer.instance_variable_get(:@num_fmts).dup
+        fonts: writer.fonts.dup,
+        fills: writer.fills.dup,
+        borders: writer.borders.dup,
+        xf_entries: writer.xf_entries.dup,
+        num_fmts: writer.num_fmts.dup
       }
     end
   end
@@ -1185,11 +1185,11 @@ module Xlsxrb
         flush_current_sheet
 
         styles_definition = {
-          fonts: @style_writer.instance_variable_get(:@fonts).dup,
-          fills: @style_writer.instance_variable_get(:@fills).dup,
-          borders: @style_writer.instance_variable_get(:@borders).dup,
-          xf_entries: @style_writer.instance_variable_get(:@xf_entries).dup,
-          num_fmts: @style_writer.instance_variable_get(:@num_fmts).dup
+          fonts: @style_writer.fonts.dup,
+          fills: @style_writer.fills.dup,
+          borders: @style_writer.borders.dup,
+          xf_entries: @style_writer.xf_entries.dup,
+          num_fmts: @style_writer.num_fmts.dup
         }
 
         resolved_names = resolve_defined_names(@defined_names, @sheets)
