@@ -23,6 +23,8 @@ module Xlsxrb
       MAX_ROW = 1_048_576
       MAX_COLUMN_INDEX = 16_384 # XFD
 
+      attr_reader :fonts, :fills, :borders, :xf_entries, :num_fmts
+
       def initialize
         @sheets = { "Sheet1" => {} }
         @column_widths = { "Sheet1" => {} }
