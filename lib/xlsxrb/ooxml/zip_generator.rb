@@ -142,20 +142,15 @@ module Xlsxrb
       end
 
       def le16(value)
-        [(value & 0xFF), ((value >> 8) & 0xFF)]
+        [value].pack("v").bytes
       end
 
       def le32(value)
-        [(value & 0xFF), ((value >> 8) & 0xFF), ((value >> 16) & 0xFF), ((value >> 24) & 0xFF)]
+        [value].pack("V").bytes
       end
 
       def calculate_central_dir_size
-        size = 0
-        @entries.each do |entry|
-          filename = entry[:path]
-          size += 46 + filename.bytesize
-        end
-        size
+        @entries.sum { |entry| 46 + entry[:path].bytesize }
       end
     end
   end
