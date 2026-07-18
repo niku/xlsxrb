@@ -160,7 +160,7 @@ For details on running the tests locally or within our pre-configured Dev Contai
 
 We welcome contributions! The project is configured with a ready-to-use Dev Container to streamline local environment setup.
 
-For contribution guidelines, E2E testing policies, and the step-by-step development workflow, please refer to [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+For contribution guidelines, E2E testing policies, and the step-by-step development workflow (including how to run the Dev Container from your terminal), please refer to [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 

@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+set -e
+
+# Locate workspace root
+WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Verify devcontainer CLI installation
+if ! command -v devcontainer &> /dev/null; then
+    echo "Error: devcontainer CLI is not installed."
+    echo "Please install it by running: npm install -g @devcontainers/cli"
+    exit 1
+fi
+
+# Prepare arguments for devcontainer up and exec
+UP_ARGS=( "--workspace-folder" "$WORKSPACE_ROOT" )
+EXEC_ARGS=( "--workspace-folder" "$WORKSPACE_ROOT" )
+
+# Automatically detect host XDG config directory and mount it to the container (readonly)
+HOST_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
+if [ -d "$HOST_CONFIG_DIR" ]; then
+    echo "Sharing host config directory ($HOST_CONFIG_DIR) with container..."
+    UP_ARGS+=( "--mount" "type=bind,source=$HOST_CONFIG_DIR,target=/home/vscode/.config" )
+    UP_ARGS+=( "--remote-env" "XDG_CONFIG_HOME=/home/vscode/.config" )
+    EXEC_ARGS+=( "--remote-env" "XDG_CONFIG_HOME=/home/vscode/.config" )
+fi
+
+# Resolve XDG-compliant default override configuration path on host
+XDG_CONFIG_HOME_HOST="${XDG_CONFIG_HOME:-$HOME/.config}"
+DEFAULT_OVERRIDE_FILE_JSON="$XDG_CONFIG_HOME_HOST/devcontainer/override.json"
+DEFAULT_OVERRIDE_FILE_JSONC="$XDG_CONFIG_HOME_HOST/devcontainer/override.jsonc"
+
+# Locate override configuration file (for dotfiles etc.)
+OVERRIDE_FILE=""
+if [ -n "$DEVCONTAINER_OVERRIDE_CONFIG" ] && [ -f "$DEVCONTAINER_OVERRIDE_CONFIG" ]; then
+    OVERRIDE_FILE="$DEVCONTAINER_OVERRIDE_CONFIG"
+elif [ -f "$DEFAULT_OVERRIDE_FILE_JSONC" ]; then
+    OVERRIDE_FILE="$DEFAULT_OVERRIDE_FILE_JSONC"
+elif [ -f "$DEFAULT_OVERRIDE_FILE_JSON" ]; then
+    OVERRIDE_FILE="$DEFAULT_OVERRIDE_FILE_JSON"
+fi
+
+# Apply override config if present.
+# NOTE: We parse the override file dynamically using Ruby instead of using 'devcontainer --override-config'.
+# This is a workaround for a specification limit of 'devcontainer --override-config'.
+# According to 'devcontainer up --help', '--override-config' acts as a complete replacement of the
+# configuration rather than a partial merge. Using it wipes out the base config's 'build' (or 'image')
+# properties, causing:
+#   "Error: Dev container config ... is missing one of 'image', 'dockerFile' or 'dockerComposeFile' properties."
+#
+# Additionally, we strip C-style comments and trailing commas to safely support JSONC files
+# without breaking URLs (like 'https://github.com/...').
+if [ -n "$OVERRIDE_FILE" ]; then
+    echo "Applying override config from: $OVERRIDE_FILE"
+    mkdir -p "$WORKSPACE_ROOT/tmp"
+    
+    # Write parser script with single-quoted heredoc to prevent ANY Bash expansion/escaping issues
+    cat << 'EOF' > "$WORKSPACE_ROOT/tmp/devcontainer_override_parser.rb"
+require 'json'
+require 'shellwords'
+
+begin
+  content = File.readlines(ARGV[0]).map{|l| l.sub(/(?<!:)\/\/.*$/, "")}.join("\n").gsub(/\/\*.*?\*\//m, "").gsub(/,\s*(?=[\]}])/m, "")
+  data = JSON.parse(content)
+  
+  # Output mounts
+  (data["mounts"] || []).each do |m|
+    puts "UP_ARGS+=( --mount #{m.shellescape} )"
+  end
+  
+  # Output containerEnv
+  (data["containerEnv"] || {}).each do |k, v|
+    # Resolve ${localEnv:VAR} to the host's actual environment variable value
+    resolved = v.to_s.gsub(/\$\{localEnv:(.*?)\}/) { ENV[$1] || "" }
+    puts "UP_ARGS+=( --remote-env #{k}=#{resolved.shellescape} )"
+    puts "EXEC_ARGS+=( --remote-env #{k}=#{resolved.shellescape} )"
+  end
+  
+  # Output dotfiles
+  if d = data["dotfiles"]
+    puts "UP_ARGS+=( --dotfiles-repository #{d["repository"].shellescape} )" if d["repository"]
+    puts "UP_ARGS+=( --dotfiles-target-path #{d["targetPath"].shellescape} )" if d["targetPath"]
+    puts "UP_ARGS+=( --dotfiles-install-command #{d["installCommand"].shellescape} )" if d["installCommand"]
+  end
+rescue => e
+  STDERR.puts "Warning: Failed to parse override file: #{e.message}"
+end
+EOF
+
+    # Run parser to generate shell script
+    ruby "$WORKSPACE_ROOT/tmp/devcontainer_override_parser.rb" "$OVERRIDE_FILE" > "$WORKSPACE_ROOT/tmp/devcontainer_override_args.sh"
+    
+    # Source the generated shell commands
+    source "$WORKSPACE_ROOT/tmp/devcontainer_override_args.sh"
+    
+    # Clean up temporary files
+    rm -f "$WORKSPACE_ROOT/tmp/devcontainer_override_parser.rb" "$WORKSPACE_ROOT/tmp/devcontainer_override_args.sh"
+fi
+
+# Check if the container is already running for this workspace folder.
+# devcontainer CLI assigns the host folder path to the 'devcontainer.local_folder' label.
+# This check avoids the ~2s overhead of running 'devcontainer up' on every command execution.
+if [ -z "$(docker ps --filter "label=devcontainer.local_folder=$WORKSPACE_ROOT" --filter "status=running" -q)" ]; then
+    echo "Checking/Starting devcontainer..."
+    echo "Debug: devcontainer up options: ${UP_ARGS[@]}"
+    devcontainer up "${UP_ARGS[@]}"
+fi
+
+# Determine execution mode
+if [ $# -eq 0 ]; then
+    echo "Entering interactive bash shell in devcontainer..."
+    devcontainer exec "${EXEC_ARGS[@]}" bash
+else
+    devcontainer exec "${EXEC_ARGS[@]}" "$@"
+fi

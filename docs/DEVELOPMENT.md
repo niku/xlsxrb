@@ -65,3 +65,61 @@ Omission is only acceptable when **all** of the following hold:
 3. Unit tests and round-trip tests fully cover the new behaviour.
 4. `rake test` passes with Open XML SDK validation included.
 5. The commit message explicitly names the existing E2E scenario that provides coverage and states why a new scenario adds no value.
+
+---
+
+## Development via Dev Container
+
+The project is pre-configured with a Dev Container to simplify local environment setup (installing .NET, LibreOffice, ImageMagick, and Noto fonts).
+
+### VS Code (GUI)
+You can open this repository in VS Code and select **"Dev Containers: Reopen in Container"** from the Command Palette.
+
+### Terminal (Devcontainer CLI)
+If you prefer to use the terminal instead of VS Code, you can run the devcontainer using the official `@devcontainers/cli`:
+
+1. Install the CLI on your host machine (if not already installed):
+   ```bash
+   npm install -g @devcontainers/cli
+   ```
+2. Use the helper script `bin/devcontainer` to start and interact with the container:
+   - **Interactive shell** (Automatically shares your host's Git/AI tool configs as read-only):
+     ```bash
+     bin/devcontainer
+     ```
+   - **Run commands directly**:
+     ```bash
+     bin/devcontainer rake test
+     ```
+
+### Customizing with Personal Overrides (e.g., Dotfiles, API Keys, Shell History)
+
+The `bin/devcontainer` script dynamically parses a personal configuration patch and maps it to devcontainer CLI flags on startup. This is a workaround for a specification limit of devcontainer CLI's `--override-config` flag, which acts as a complete replacement of the configuration rather than a partial merge, wiping out base configurations like build settings.
+
+To configure this, create a JSON (or JSONC) file at `${XDG_CONFIG_HOME:-~/.config}/devcontainer/override.jsonc` (or `override.json`) on your host machine.
+
+**Example: Persisting histories, forwarding API keys, and Auto-installing Dotfiles**
+```json
+{
+  "mounts": [
+    // Volume for general persistent directories (e.g., Claude Code history in ~/.local/share/claude)
+    "type=volume,source=xlsxrb-local-share,target=/home/vscode/.local/share"
+  ],
+  "containerEnv": {
+    // Explicitly forward API keys from your host shell to the container environment
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "GEMINI_API_KEY": "${localEnv:GEMINI_API_KEY}"
+  },
+  "dotfiles": {
+    "repository": "https://github.com/<your-github-username>/dotfiles.git",
+    "targetPath": "~/dotfiles",
+    "installCommand": "install.sh"
+  }
+}
+```
+
+You can also use a custom file path by exporting the `DEVCONTAINER_OVERRIDE_CONFIG` environment variable in your host shell:
+```bash
+export DEVCONTAINER_OVERRIDE_CONFIG="/path/to/your/custom-override.json"
+```
