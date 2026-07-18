@@ -30,11 +30,11 @@ module Xlsxrb
     def type(value) = @options[:type] = value
     def title(value) = @options[:title] = value
 
-    def series(value = nil, &block)
+    def series(value = nil)
       @options[:series] ||= []
       if block_given?
         sb = SeriesBuilder.new
-        block.call(sb)
+        yield sb
         @options[:series] << sb.options
       elsif value
         @options[:series] << value
@@ -175,12 +175,12 @@ module Xlsxrb
   #     new_sheet = sheet.with(rows: sheet.rows.map { |r| r.index == 0 ? new_row : r })
   #     wb.with(sheets: wb.sheets.map.with_index { |s, i| i == 0 ? new_sheet : s })
   #   end
-  def self.modify(source, target = nil, &block)
+  def self.modify(source, target = nil)
     raise Error, "source is required" if source.nil?
-    raise Error, "block is required" unless block
+    raise Error, "block is required" unless block_given?
 
     workbook = read(source)
-    result_workbook = block.call(workbook)
+    result_workbook = yield workbook
     result_workbook = workbook unless result_workbook.is_a?(Elements::Workbook)
 
     write_target = target || source
@@ -191,8 +191,8 @@ module Xlsxrb
   # source: file path (String) or IO object.
   # Options:
   #   sheet: sheet index (0-based Integer) or name (String). Defaults to 0.
-  def self.foreach(source, sheet: 0, &block)
-    return enum_for(:foreach, source, sheet: sheet) unless block
+  def self.foreach(source, sheet: 0)
+    return enum_for(:foreach, source, sheet: sheet) unless block_given?
 
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
     TRACER.in_span("Xlsxrb.foreach", attributes: attributes) do
@@ -218,32 +218,32 @@ module Xlsxrb
 
       Ooxml::WorksheetParser.each_row(sheet_xml, shared_strings: shared_strings) do |raw_row|
         row = build_row_from_raw(raw_row)
-        block.call(row)
+        yield row
       end
     end
   end
 
   # Streaming write: yields a StreamWriter context for building XLSX on-the-fly.
   # target: file path (String) or IO object.
-  def self.generate(target, &block)
+  def self.generate(target)
     raise Error, "target is required" if target.nil?
-    raise Error, "block is required" unless block
+    raise Error, "block is required" unless block_given?
 
     attributes = target.is_a?(String) ? { "filepath" => target } : {}
     TRACER.in_span("Xlsxrb.generate", attributes: attributes) do
       stream_writer = StreamWriter.new(target)
-      block.call(stream_writer)
+      yield stream_writer
       stream_writer.close
     end
   end
 
   # Builds an Elements::Workbook in memory using a DSL.
-  def self.build(&block)
-    raise Error, "block is required" unless block
+  def self.build
+    raise Error, "block is required" unless block_given?
 
     TRACER.in_span("Xlsxrb.build") do
       builder = WorkbookBuilder.new
-      block.call(builder)
+      yield builder
       builder.build
     end
   end
@@ -261,10 +261,10 @@ module Xlsxrb
     end
 
     # Add a new sheet.
-    def add_sheet(name = nil, &block)
+    def add_sheet(name = nil)
       name ||= "Sheet#{@sheets.size + 1}"
       sheet_builder = WorksheetBuilder.new(name)
-      block.call(sheet_builder) if block_given?
+      yield sheet_builder if block_given?
       @sheet_builders << sheet_builder
       @sheets << sheet_builder.build
     end
@@ -469,10 +469,10 @@ module Xlsxrb
     end
 
     # Define a named style that can be applied to cells.
-    def add_style(name, **opts, &block)
+    def add_style(name, **opts)
       style_builder = StyleBuilder.new(name)
       style_builder.apply_options!(**opts) unless opts.empty?
-      block.call(style_builder) if block_given?
+      yield style_builder if block_given?
       @styles[name] = style_builder
       style_builder
     end
@@ -531,10 +531,10 @@ module Xlsxrb
     end
 
     # Add a chart to the sheet.
-    def add_chart(**options, &block)
+    def add_chart(**options)
       if block_given?
         builder = ChartBuilder.new
-        block.call(builder)
+        yield builder
         options = builder.options.merge(options)
       end
       @charts << options
@@ -828,10 +828,10 @@ module Xlsxrb
     end
 
     # Define a named style that can be applied to cells.
-    def add_style(name, **opts, &block)
+    def add_style(name, **opts)
       style_builder = StyleBuilder.new(name)
       style_builder.apply_options!(**opts) unless opts.empty?
-      block.call(style_builder) if block_given?
+      yield style_builder if block_given?
       @styles[name] = style_builder
 
       # Register immediately
@@ -923,12 +923,12 @@ module Xlsxrb
     end
 
     # Add a chart to the current sheet.
-    def add_chart(**options, &block)
+    def add_chart(**options)
       add_sheet if @current_sheet.nil?
 
       if block_given?
         builder = ChartBuilder.new
-        block.call(builder)
+        yield builder
         options = builder.options.merge(options)
       end
 
