@@ -637,7 +637,7 @@ module Xlsxrb
     # --- Merge Cells ---
 
     # Merge a range of cells (e.g. "A1:B2").
-    def merge_cells(range)
+    def merge(range)
       @merge_cells_ranges << range
     end
 
@@ -1024,7 +1024,7 @@ module Xlsxrb
 
     # --- Merge Cells ---
 
-    def merge_cells(range)
+    def merge(range)
       sheet if @current_sheet.nil?
       @current_merge_cells << range
     end
