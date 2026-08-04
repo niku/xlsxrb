@@ -672,7 +672,7 @@ module Xlsxrb
     end
 
     # Set header/footer text.
-    def set_header_footer(**opts)
+    def header_footer(**opts)
       @header_footer.merge!(opts)
     end
 
@@ -1059,7 +1059,7 @@ module Xlsxrb
       @current_page_setup.merge!(opts)
     end
 
-    def set_header_footer(**opts)
+    def header_footer(**opts)
       sheet if @current_sheet.nil?
       @current_header_footer.merge!(opts)
     end

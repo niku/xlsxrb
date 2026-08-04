@@ -703,7 +703,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("HF") do |s|
         s.row(["Data"])
-        s.set_header_footer(odd_header: "&CReport", odd_footer: "&CPage &P")
+        s.header_footer(odd_header: "&CReport", odd_footer: "&CPage &P")
       end
     end
 
