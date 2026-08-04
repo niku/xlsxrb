@@ -710,7 +710,7 @@ module Xlsxrb
     # --- Shapes ---
 
     # Add a shape to the sheet.
-    def add_shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
+    def shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
       shape = { preset: preset, text: text, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
       shape[:name] = opts.delete(:name) || "Shape #{@shapes.size + 1}"
       shape.merge!(opts)
@@ -1097,7 +1097,7 @@ module Xlsxrb
 
     # --- Shapes ---
 
-    def add_shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
+    def shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
       sheet if @current_sheet.nil?
       shape = { preset: preset, text: text, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
       shape[:name] = opts.delete(:name) || "Shape #{@current_shapes.size + 1}"
