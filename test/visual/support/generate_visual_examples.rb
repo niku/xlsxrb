@@ -628,7 +628,7 @@ module Xlsxrb
           Xlsxrb.generate(output_path) do |w|
             w.sheet("List Validation") do |s|
               s.row(["Department", "Select:"])
-              s.validate_data("B2", type: "list", formula1: '"HR,Sales,Engineering"')
+              s.validate_data("B2", in: %w[HR Sales Engineering])
             end
           end
         RUBY

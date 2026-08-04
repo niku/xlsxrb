@@ -1250,7 +1250,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
         s.row(%w[Name Status])
-        s.validate_data("B2:B100", type: :list, formula1: '"Active,Inactive,Pending"')
+        s.validate_data("B2:B100", in: %w[Active Inactive Pending])
       end
     end
 
@@ -1272,7 +1272,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("DV") do |s|
         s.row(%w[Name Score Grade])
         s.validate_data("B2:B100", type: :whole, formula1: "0", formula2: "100")
-        s.validate_data("C2:C100", type: :list, formula1: '"A,B,C,D,F"')
+        s.validate_data("C2:C100", in: %w[A B C D F])
       end
     end
 

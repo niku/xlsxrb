@@ -15,7 +15,15 @@ require_relative "xlsxrb/style_builder"
 
 # Ruby XLSX read/write library.
 module Xlsxrb
-  class Error < StandardError; end
+  class Error < StandardError
+    DIV0  = Elements::CellError.new(code: "#DIV/0!")
+    NA    = Elements::CellError.new(code: "#N/A")
+    NAME  = Elements::CellError.new(code: "#NAME?")
+    NULL  = Elements::CellError.new(code: "#NULL!")
+    NUM   = Elements::CellError.new(code: "#NUM!")
+    REF   = Elements::CellError.new(code: "#REF!")
+    VALUE = Elements::CellError.new(code: "#VALUE!")
+  end
 
   TRACER = OpenTelemetry.tracer_provider.tracer("xlsxrb", Xlsxrb::VERSION)
 
@@ -513,6 +521,7 @@ module Xlsxrb
         col_index += 1
       end
 
+      cells.compact!
       @rows << Elements::Row.new(
         index: row_index,
         cells: cells,

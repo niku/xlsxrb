@@ -751,6 +751,11 @@ module Xlsxrb
       def write_data_validations(validations)
         @builder.open_tag("dataValidations", { count: validations.size.to_s })
         validations.each do |dv|
+          if dv[:in].is_a?(Array)
+            dv = dv.dup
+            dv[:type] = "list"
+            dv[:formula1] = %("#{dv[:in].join(",")}")
+          end
           dv_attrs = { sqref: dv[:sqref] }
           dv_type = dv[:type]
           dv_attrs[:type] = dv_type.to_s if dv_type

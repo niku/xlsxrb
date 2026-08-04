@@ -140,7 +140,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("DV") do |s|
         s.row(["Value"])
-        s.validate_data("A2:A100", type: :list, formula1: '"A,B,C"', show_error_message: true)
+        s.validate_data("A2:A100", in: %w[A B C], show_error_message: true)
       end
     end
 

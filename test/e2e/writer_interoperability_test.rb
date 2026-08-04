@@ -1343,13 +1343,13 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "writer output stores error cell values correctly" do
     writer = Xlsxrb::Ooxml::Writer.new
-    writer.set_cell("A1", Xlsxrb::Elements::CellError.new(code: "#N/A"))
-    writer.set_cell("B1", Xlsxrb::Elements::CellError.new(code: "#DIV/0!"))
-    writer.set_cell("C1", Xlsxrb::Elements::CellError.new(code: "#VALUE!"))
-    writer.set_cell("D1", Xlsxrb::Elements::CellError.new(code: "#REF!"))
-    writer.set_cell("E1", Xlsxrb::Elements::CellError.new(code: "#NAME?"))
-    writer.set_cell("F1", Xlsxrb::Elements::CellError.new(code: "#NUM!"))
-    writer.set_cell("G1", Xlsxrb::Elements::CellError.new(code: "#NULL!"))
+    writer.set_cell("A1", Xlsxrb::Error::NA)
+    writer.set_cell("B1", Xlsxrb::Error::DIV0)
+    writer.set_cell("C1", Xlsxrb::Error::VALUE)
+    writer.set_cell("D1", Xlsxrb::Error::REF)
+    writer.set_cell("E1", Xlsxrb::Error::NAME)
+    writer.set_cell("F1", Xlsxrb::Error::NUM)
+    writer.set_cell("G1", Xlsxrb::Error::NULL)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

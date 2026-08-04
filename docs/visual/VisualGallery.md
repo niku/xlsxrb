@@ -3615,7 +3615,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Department", "Select:"])
-    s.validate_data("B2", type: "list", formula1: '"HR,Sales,Engineering"')
+    s.validate_data("B2", in: %w[HR Sales Engineering])
   end
 end
 
