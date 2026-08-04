@@ -337,7 +337,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("Merge") do |s|
         s.row(["Merged title", nil, nil])
         s.row([1, 2, 3])
-        s.merge_cells("A1:C1")
+        s.merge("A1:C1")
       end
     end
 
@@ -356,7 +356,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Merge") do |s|
         s.row(["Merged"])
-        s.merge_cells("A1:B1")
+        s.merge("A1:B1")
       end
     end
 
@@ -994,7 +994,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(["Alice", 95, "A"])
         s.row(["Bob", 87, "B"])
         s.auto_filter("A1:C3")
-        s.merge_cells("A1:A1")
+        s.merge("A1:A1")
         s.freeze_pane(row: 1)
         s.page_margins(left: 1.0, right: 1.0)
         s.page_setup(orientation: :landscape)
@@ -1028,7 +1028,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.auto_filter("A1:B2")
-        s.merge_cells("A1:B1")
+        s.merge("A1:B1")
         s.freeze_pane(row: 1)
         s.page_margins(left: 0.5, right: 0.5)
         s.header_footer(odd_header: "&CTest")

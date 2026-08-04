@@ -3879,7 +3879,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], styles: %w[border border border])
     s.row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], styles: %w[border border border])
 
-    s.merge_cells("A1:C1")
+    s.merge("A1:C1")
     s.freeze_pane(row: 2, col: 0)
   end
 end
@@ -3892,6 +3892,16 @@ sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
+```
+
+### Console Output
+
+```text
+=== Read Validation ===
+Row 0: A1: "Merged Title Row", B1: nil, C1: nil
+Row 1: A2: "Header A", B2: "Header B", C2: "Header C"
+Row 2: A3: "Row 1 Col A", B3: "Row 1 Col B", C3: "Row 1 Col C"
+Row 3: A4: "Row 2 Col A", B4: "Row 2 Col B", C4: "Row 2 Col C"
 ```
 
 <hr/>
