@@ -701,7 +701,7 @@ module Xlsxrb
     # --- Images ---
 
     # Insert an image from raw file data.
-    def add_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
+    def image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
       img = { file_data: file_data, ext: ext, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
       img.merge!(opts)
       @images << img
@@ -1088,7 +1088,7 @@ module Xlsxrb
 
     # --- Images ---
 
-    def add_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
+    def image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
       sheet if @current_sheet.nil?
       img = { file_data: file_data, ext: ext, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
       img.merge!(opts)

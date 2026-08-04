@@ -679,7 +679,7 @@ module Xlsxrb
           Xlsxrb.generate(output_path) do |w|
             w.sheet("Images") do |s|
               s.row(["Logo Target cell:"])
-              s.add_image(dummy_png, ext: "png", from_col: 1, from_row: 1, to_col: 3, to_row: 5)
+              s.image(dummy_png, ext: "png", from_col: 1, from_row: 1, to_col: 3, to_row: 5)
             end
           end
         RUBY

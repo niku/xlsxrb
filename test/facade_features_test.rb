@@ -861,11 +861,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     0x44, 0xAE, 0x42, 0x60, 0x82
   ].pack("C*").freeze
 
-  test "add_image in build API" do
+  test "image in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Img") do |s|
         s.row(["With image"])
-        s.add_image(MINIMAL_PNG, ext: "png", from_col: 0, from_row: 0)
+        s.image(MINIMAL_PNG, ext: "png", from_col: 0, from_row: 0)
       end
     end
 
@@ -879,12 +879,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_image in generate API" do
+  test "image in generate API" do
     tmp = Tempfile.new(["facade_image_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Img") do |s|
         s.row(["With image"])
-        s.add_image(MINIMAL_PNG, ext: "png")
+        s.image(MINIMAL_PNG, ext: "png")
       end
     end
 
