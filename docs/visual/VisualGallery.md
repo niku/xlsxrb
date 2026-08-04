@@ -4077,7 +4077,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Narrow Margins") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_page_margins(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25, header: 0.1, footer: 0.1)
+    s.page_margins(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25, header: 0.1, footer: 0.1)
     s.row(["Narrow Margins sheet"])
   end
 end
@@ -4127,7 +4127,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Wide Margins") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_page_margins(top: 1.0, bottom: 1.0, left: 1.0, right: 1.0, header: 0.5, footer: 0.5)
+    s.page_margins(top: 1.0, bottom: 1.0, left: 1.0, right: 1.0, header: 0.5, footer: 0.5)
     s.row(["Wide Margins sheet"])
   end
 end

@@ -662,7 +662,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Margins") do |s|
         s.row(["Data"])
-        s.set_page_margins(left: 1.0, right: 1.0, top: 1.5, bottom: 1.5)
+        s.page_margins(left: 1.0, right: 1.0, top: 1.5, bottom: 1.5)
       end
     end
 
@@ -793,7 +793,7 @@ class ContractTest < Test::Unit::TestCase
         s.auto_filter("A1:B2")
         s.merge_cells("A1:A1")
         s.freeze_pane(row: 1)
-        s.set_page_margins(left: 1.0, right: 1.0)
+        s.page_margins(left: 1.0, right: 1.0)
         s.validate_data("B2", type: :whole, formula1: "0", formula2: "100")
       end
     end
