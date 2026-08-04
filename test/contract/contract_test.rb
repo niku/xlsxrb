@@ -574,7 +574,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Tables") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.add_table("A1:B2", columns: %w[Name Score], name: "TestTable")
+        s.table("A1:B2", columns: %w[Name Score], name: "TestTable")
       end
     end
 
@@ -592,7 +592,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Tables") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.add_table("A1:B2",
+        s.table("A1:B2",
                     columns: %w[Name Score],
                     name: "StyledTable",
                     style: "TableStyleMedium9",
@@ -1373,7 +1373,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("People") do |s|
         s.row(%w[Name Age City])
         s.row(["Alice", 30, "NYC"])
-        s.add_table("A1:C2", columns: %w[Name Age City], name: "PeopleTable")
+        s.table("A1:C2", columns: %w[Name Age City], name: "PeopleTable")
       end
     end
 
