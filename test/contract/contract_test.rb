@@ -997,7 +997,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
       end
-      w.set_workbook_protection(lock_structure: true)
+      w.protect_workbook(lock_structure: true)
     end
 
     prot = reader.workbook_protection

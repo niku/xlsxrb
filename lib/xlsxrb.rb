@@ -298,7 +298,7 @@ module Xlsxrb
     end
 
     # Set workbook protection.
-    def set_workbook_protection(**opts)
+    def protect_workbook(**opts)
       @workbook_protection = opts
     end
 
@@ -1161,7 +1161,7 @@ module Xlsxrb
     end
 
     # Set workbook protection.
-    def set_workbook_protection(**opts)
+    def protect_workbook(**opts)
       @workbook_protection = opts
     end
 
