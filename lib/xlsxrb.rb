@@ -581,7 +581,7 @@ module Xlsxrb
     # --- Conditional Formatting ---
 
     # Add a conditional formatting rule.
-    def add_conditional_format(sqref, **opts)
+    def conditional_format(sqref, **opts)
       @conditional_formats << opts.merge(sqref: sqref)
     end
 
@@ -975,7 +975,7 @@ module Xlsxrb
 
     # --- Conditional Formatting ---
 
-    def add_conditional_format(sqref, **opts)
+    def conditional_format(sqref, **opts)
       sheet if @current_sheet.nil?
       @current_conditional_formats << opts.merge(sqref: sqref)
     end

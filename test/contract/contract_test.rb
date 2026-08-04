@@ -525,7 +525,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("CF") do |s|
         s.row([10, 20, 30])
-        s.add_conditional_format("A1:C1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1)
+        s.conditional_format("A1:C1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1)
       end
     end
 
@@ -541,7 +541,7 @@ class ContractTest < Test::Unit::TestCase
     _reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("CF") do |s|
         s.row([90, 45, 72, 88])
-        s.add_conditional_format("A1:D1",
+        s.conditional_format("A1:D1",
                                  type: :cell_is,
                                  operator: :greaterThan,
                                  formula: "80",

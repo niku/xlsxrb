@@ -12,7 +12,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([20], styles: ["center"])
     s.row([30], styles: ["center"])
     s.row([100], styles: ["center"]) # Average is 40. 100 is above average.
-    s.add_conditional_format("A2:A5", type: "expression", formula: "A2>AVERAGE($A$2:$A$5)", fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A5", type: "expression", formula: "A2>AVERAGE($A$2:$A$5)", fill_color: "FFFFC7CE")
   end
 end
 

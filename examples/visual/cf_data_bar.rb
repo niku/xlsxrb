@@ -10,7 +10,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([20], styles: ["center"])
     s.row([60], styles: ["center"])
     s.row([100], styles: ["center"])
-    s.add_conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
+    s.conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
   end
 end
 

@@ -11,7 +11,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([10], styles: ["center"])
     s.row([20], styles: ["center"])
     s.row([10], styles: ["center"])
-    s.add_conditional_format("A2:A4", type: "cellIs", operator: "equal", formula: "10", fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A4", type: "cellIs", operator: "equal", formula: "10", fill_color: "FFFFC7CE")
   end
 end
 

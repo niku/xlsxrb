@@ -10,7 +10,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Error"])
     s.row(["Success"])
     s.row(["Pending"])
-    s.add_conditional_format("A2:A4", type: "containsText", operator: "containsText", text: "Error", formula: 'NOT(ISERROR(SEARCH("Error",A2)))', fill_color: "FFFF0000")
+    s.conditional_format("A2:A4", type: "containsText", operator: "containsText", text: "Error", formula: 'NOT(ISERROR(SEARCH("Error",A2)))', fill_color: "FFFF0000")
   end
 end
 

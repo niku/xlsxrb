@@ -156,11 +156,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Conditional Formatting
   # =====================================================
 
-  test "add_conditional_format in build API" do
+  test "conditional_format in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("CF") do |s|
         s.row([10, 20, 30])
-        s.add_conditional_format("A1:C1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1)
+        s.conditional_format("A1:C1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1)
       end
     end
 
@@ -175,12 +175,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_conditional_format in generate API" do
+  test "conditional_format in generate API" do
     tmp = Tempfile.new(["facade_cf_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("CF") do |s|
         s.row([10, 20, 30])
-        s.add_conditional_format("A1:C1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1)
+        s.conditional_format("A1:C1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1)
       end
     end
 
@@ -191,12 +191,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_conditional_format with fill_color emits dxf and dxfId" do
+  test "conditional_format with fill_color emits dxf and dxfId" do
     tmp = Tempfile.new(["facade_cf_dxf_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("CF") do |s|
         s.row([90, 45, 72, 88])
-        s.add_conditional_format("A1:D1",
+        s.conditional_format("A1:D1",
                                  type: :cell_is,
                                  operator: :greaterThan,
                                  formula: "80",
@@ -1032,7 +1032,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.set_freeze_pane(row: 1)
         s.set_page_margins(left: 0.5, right: 0.5)
         s.set_header_footer(odd_header: "&CTest")
-        s.add_conditional_format("B2", type: :cell_is, operator: :greaterThan, formula: "90")
+        s.conditional_format("B2", type: :cell_is, operator: :greaterThan, formula: "90")
       end
       w.set_core_property(:title, "Combined Stream")
     end
