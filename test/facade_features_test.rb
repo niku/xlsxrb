@@ -617,12 +617,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Row / Column Breaks
   # =====================================================
 
-  test "page_break_row and add_col_break in build API" do
+  test "page_break_row and page_break_col in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Breaks") do |s|
         10.times { |i| s.row(["Row #{i}"]) }
         s.page_break_row(5)
-        s.add_col_break(3)
+        s.page_break_col(3)
       end
     end
 

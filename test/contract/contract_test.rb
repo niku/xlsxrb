@@ -941,7 +941,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
         s.page_break_row(1)
-        s.add_col_break(2)
+        s.page_break_col(2)
       end
     end
 
