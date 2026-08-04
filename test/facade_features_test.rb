@@ -73,13 +73,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Auto Filter
   # =====================================================
 
-  test "set_auto_filter in build API" do
+  test "auto_filter in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Data") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.row(["Bob", 87])
-        s.set_auto_filter("A1:B3")
+        s.auto_filter("A1:B3")
       end
     end
 
@@ -93,13 +93,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_auto_filter in generate API" do
+  test "auto_filter in generate API" do
     tmp = Tempfile.new(["facade_autofilter_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.set_auto_filter("A1:B2")
+        s.auto_filter("A1:B2")
       end
     end
 
@@ -967,7 +967,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.row(["Bob", 87])
-        s.set_auto_filter("A1:B3")
+        s.auto_filter("A1:B3")
         s.set_sort_state("A2:B3", [{ ref: "B2:B3", descending: true }])
       end
     end
@@ -993,7 +993,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(%w[Name Score Grade])
         s.row(["Alice", 95, "A"])
         s.row(["Bob", 87, "B"])
-        s.set_auto_filter("A1:C3")
+        s.auto_filter("A1:C3")
         s.merge_cells("A1:A1")
         s.set_freeze_pane(row: 1)
         s.set_page_margins(left: 1.0, right: 1.0)
@@ -1027,7 +1027,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("Combined") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.set_auto_filter("A1:B2")
+        s.auto_filter("A1:B2")
         s.merge_cells("A1:B1")
         s.set_freeze_pane(row: 1)
         s.set_page_margins(left: 0.5, right: 0.5)
