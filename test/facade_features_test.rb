@@ -494,11 +494,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Header / Footer
   # =====================================================
 
-  test "set_header_footer in build API" do
+  test "header_footer in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("HF") do |s|
         s.row(["Data"])
-        s.set_header_footer(odd_header: "&CReport Title", odd_footer: "&CPage &P")
+        s.header_footer(odd_header: "&CReport Title", odd_footer: "&CPage &P")
       end
     end
 
@@ -514,12 +514,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_header_footer in generate API" do
+  test "header_footer in generate API" do
     tmp = Tempfile.new(["facade_hf_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("HF") do |s|
         s.row(["Data"])
-        s.set_header_footer(odd_header: "&LLeft Header")
+        s.header_footer(odd_header: "&LLeft Header")
       end
     end
 
@@ -1031,7 +1031,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.merge_cells("A1:B1")
         s.freeze_pane(row: 1)
         s.page_margins(left: 0.5, right: 0.5)
-        s.set_header_footer(odd_header: "&CTest")
+        s.header_footer(odd_header: "&CTest")
         s.conditional_format("B2", type: :cell_is, operator: :greaterThan, formula: "90")
       end
       w.set_core_property(:title, "Combined Stream")
