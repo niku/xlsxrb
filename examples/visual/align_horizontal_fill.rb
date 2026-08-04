@@ -6,7 +6,7 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("fill_align") { |s| s.align_horizontal("fill") }
   w.sheet("Alignment") do |s|
     s.set_column(0, width: 30)
-    s.add_row(["X "], styles: { 0 => "fill_align" })
+    s.row(["X "], styles: { 0 => "fill_align" })
   end
 end
 

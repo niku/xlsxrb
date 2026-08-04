@@ -7,9 +7,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Data Bars") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([20], styles: ["center"])
-    s.add_row([60], styles: ["center"])
-    s.add_row([100], styles: ["center"])
+    s.row([20], styles: ["center"])
+    s.row([60], styles: ["center"])
+    s.row([100], styles: ["center"])
     s.add_conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
   end
 end

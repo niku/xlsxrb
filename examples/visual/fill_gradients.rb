@@ -12,7 +12,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Gradients") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })
+    s.row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })
   end
 end
 

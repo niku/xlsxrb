@@ -6,7 +6,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Comments") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Item A", "Item B"])
+    s.row(["Item A", "Item B"])
     s.add_comment("A1", "This is an important comment.", author: "System")
   end
 end

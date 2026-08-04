@@ -9,7 +9,7 @@ Xlsxrb.generate(output_path) do |w|
   end
   w.sheet("Alignment") do |s|
     s.set_column(0, width: 25)
-    s.add_row(["Justified alignment wraps and distributes text evenly."], styles: { 0 => "justify_align" })
+    s.row(["Justified alignment wraps and distributes text evenly."], styles: { 0 => "justify_align" })
   end
 end
 

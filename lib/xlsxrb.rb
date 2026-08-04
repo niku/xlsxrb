@@ -74,7 +74,7 @@ module Xlsxrb
   # Supports method_missing for setting arbitrary keys.
   # --- Facade API ---
 
-  # Creates a Formula object for use in add_row values.
+  # Creates a Formula object for use in row values.
   # expression: the formula text (e.g. "SUM(A1:A10)")
   # cached_value: optional cached result. If nil, Excel will calculate on open.
   def self.formula(expression, cached_value: nil)
@@ -480,7 +480,7 @@ module Xlsxrb
     # Add a row of values to the sheet.
     # values:: Array of cell values
     # styles:: Hash mapping column indices to style names, or Array of style names for each column
-    def add_row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
+    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
       cells = Array.new(values.size)
       style_lookup = styles.is_a?(Hash) || styles.is_a?(Array)
@@ -888,7 +888,7 @@ module Xlsxrb
 
     # Add a row of values. values is an Array.
     # styles:: Hash mapping column indices to style names, or Array of style names for each column
-    def add_row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
+    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       sheet if @current_sheet.nil?
 
       row_index = @current_row_index

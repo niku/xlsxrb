@@ -10,7 +10,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25, outline_level: 0)
     s.set_column(1, width: 25, outline_level: 1)
     s.set_column(2, width: 25, outline_level: 1)
-    s.add_row(["Col A", "Col B (Grouped)", "Col C (Grouped)"], styles: %w[border border border])
+    s.row(["Col A", "Col B (Grouped)", "Col C (Grouped)"], styles: %w[border border border])
   end
 end
 

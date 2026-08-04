@@ -10,7 +10,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
-    s.add_row(%w[Top Center Bottom], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
+    s.row(%w[Top Center Bottom], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
   end
 end
 

@@ -7,9 +7,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("JPY Currency") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Positive Yen", 12_500], styles: { 1 => "jpy" })
-    s.add_row(["Negative Yen", -8000], styles: { 1 => "jpy" })
+    s.row(%w[Format Value])
+    s.row(["Positive Yen", 12_500], styles: { 1 => "jpy" })
+    s.row(["Negative Yen", -8000], styles: { 1 => "jpy" })
   end
 end
 

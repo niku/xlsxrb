@@ -7,8 +7,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Heights") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Normal Row", ""], styles: %w[border border])
-    s.add_row(["Tall Row", ""], height: 40, styles: %w[border border])
+    s.row(["Normal Row", ""], styles: %w[border border])
+    s.row(["Tall Row", ""], height: 40, styles: %w[border border])
   end
 end
 

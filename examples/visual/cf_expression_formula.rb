@@ -7,11 +7,11 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Expression") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Values"])
-    s.add_row([10], styles: ["center"])
-    s.add_row([20], styles: ["center"])
-    s.add_row([30], styles: ["center"])
-    s.add_row([100], styles: ["center"]) # Average is 40. 100 is above average.
+    s.row(["Values"])
+    s.row([10], styles: ["center"])
+    s.row([20], styles: ["center"])
+    s.row([30], styles: ["center"])
+    s.row([100], styles: ["center"]) # Average is 40. 100 is above average.
     s.add_conditional_format("A2:A5", type: "expression", formula: "A2>AVERAGE($A$2:$A$5)", fill_color: "FFFFC7CE")
   end
 end

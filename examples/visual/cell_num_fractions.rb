@@ -7,10 +7,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Fractions") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Half", 0.5], styles: { 1 => "frac" })
-    s.add_row(["Third", 0.3333], styles: { 1 => "frac" })
-    s.add_row(["Quarter", 0.75], styles: { 1 => "frac" })
+    s.row(%w[Format Value])
+    s.row(["Half", 0.5], styles: { 1 => "frac" })
+    s.row(["Third", 0.3333], styles: { 1 => "frac" })
+    s.row(["Quarter", 0.75], styles: { 1 => "frac" })
   end
 end
 

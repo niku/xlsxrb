@@ -7,9 +7,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Scientific") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Scientific", 123_456_789.0], styles: { 1 => "sci" })
-    s.add_row(["Small Scientific", 0.00001234], styles: { 1 => "sci" })
+    s.row(%w[Format Value])
+    s.row(["Scientific", 123_456_789.0], styles: { 1 => "sci" })
+    s.row(["Small Scientific", 0.00001234], styles: { 1 => "sci" })
   end
 end
 

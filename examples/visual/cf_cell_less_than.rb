@@ -7,10 +7,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Less") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Values"])
-    s.add_row([25], styles: ["center"])
-    s.add_row([75], styles: ["center"])
-    s.add_row([10], styles: ["center"])
+    s.row(["Values"])
+    s.row([25], styles: ["center"])
+    s.row([75], styles: ["center"])
+    s.row([10], styles: ["center"])
     s.add_conditional_format("A2:A4", type: "cellIs", operator: "lessThan", formula: "20", fill_color: "FFFFC7CE")
   end
 end

@@ -9,9 +9,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
-    s.add_row(["No Indent"])
-    s.add_row(["Indent 1"], styles: { 0 => "indent_1" })
-    s.add_row(["Indent 3"], styles: { 0 => "indent_3" })
+    s.row(["No Indent"])
+    s.row(["Indent 1"], styles: { 0 => "indent_1" })
+    s.row(["Indent 3"], styles: { 0 => "indent_3" })
   end
 end
 

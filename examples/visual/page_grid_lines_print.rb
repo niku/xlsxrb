@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
-    s.add_row(["Grid Lines Printed sheet"])
+    s.row(["Grid Lines Printed sheet"])
   end
 end
 

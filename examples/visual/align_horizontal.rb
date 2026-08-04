@@ -11,7 +11,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 20)
     s.set_column(1, width: 20)
     s.set_column(2, width: 20)
-    s.add_row(%w[Left Center Right], styles: { 0 => "left", 1 => "center", 2 => "right" })
+    s.row(%w[Left Center Right], styles: { 0 => "left", 1 => "center", 2 => "right" })
   end
 end
 

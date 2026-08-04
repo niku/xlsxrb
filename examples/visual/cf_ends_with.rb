@@ -6,10 +6,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Ends") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Code"])
-    s.add_row(["100-Z"])
-    s.add_row(["200-Y"])
-    s.add_row(["300-Z"])
+    s.row(["Code"])
+    s.row(["100-Z"])
+    s.row(["200-Y"])
+    s.row(["300-Z"])
     s.add_conditional_format("A2:A4", type: "endsWith", operator: "endsWith", text: "Z", formula: 'RIGHT(A2,1)="Z"', fill_color: "FFFFC7CE")
   end
 end

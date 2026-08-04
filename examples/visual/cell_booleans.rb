@@ -6,9 +6,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Booleans") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Label", "Boolean Value"])
-    s.add_row(["Is Active", true])
-    s.add_row(["Is Pending", false])
+    s.row(["Label", "Boolean Value"])
+    s.row(["Is Active", true])
+    s.row(["Is Pending", false])
   end
 end
 

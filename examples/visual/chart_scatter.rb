@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[X Y])
-    s.add_row([1, 10])
-    s.add_row([2, 15])
+    s.row(%w[X Y])
+    s.row([1, 10])
+    s.row([2, 15])
     s.add_chart(
       type: :scatter,
       title: "Scatter Plot",

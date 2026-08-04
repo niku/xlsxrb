@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_sheet_view(:show_grid_lines, false)
-    s.add_row(["No Grid Lines displayed"])
+    s.row(["No Grid Lines displayed"])
   end
 end
 

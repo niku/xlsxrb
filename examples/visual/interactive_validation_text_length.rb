@@ -6,7 +6,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Text Length") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Username", "Enter (< 10 chars):"])
+    s.row(["Username", "Enter (< 10 chars):"])
     s.add_data_validation("B2", type: "textLength", operator: "lessThan", formula1: "10", show_error_message: true, error_title: "Too Long", error: "Username must be under 10 characters")
   end
 end

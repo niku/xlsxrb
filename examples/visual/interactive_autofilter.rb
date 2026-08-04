@@ -6,9 +6,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Filter") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Name Department])
-    s.add_row(%w[Alice HR])
-    s.add_row(%w[Bob Eng])
+    s.row(%w[Name Department])
+    s.row(%w[Alice HR])
+    s.row(%w[Bob Eng])
     s.set_auto_filter("A1:B3")
   end
   w.add_defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)

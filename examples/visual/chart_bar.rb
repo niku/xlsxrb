@@ -10,9 +10,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Month Value])
-    s.add_row(["Jan", 100])
-    s.add_row(["Feb", 200])
+    s.row(%w[Month Value])
+    s.row(["Jan", 100])
+    s.row(["Feb", 200])
 
     s.add_chart(
       type: :bar,

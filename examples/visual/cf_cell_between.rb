@@ -7,10 +7,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Between") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Values"])
-    s.add_row([15], styles: ["center"])
-    s.add_row([25], styles: ["center"])
-    s.add_row([5], styles: ["center"])
+    s.row(["Values"])
+    s.row([15], styles: ["center"])
+    s.row([25], styles: ["center"])
+    s.row([5], styles: ["center"])
     s.add_conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: "FF00FF00")
   end
 end

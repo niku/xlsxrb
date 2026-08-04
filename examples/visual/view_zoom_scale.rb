@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_sheet_view(:zoom_scale, 150)
-    s.add_row(["Zoom scale is set to 150%"])
+    s.row(["Zoom scale is set to 150%"])
   end
 end
 

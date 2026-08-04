@@ -11,8 +11,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Rich Text") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Rich Text Cell", rt])
+    s.row(%w[Format Value])
+    s.row(["Rich Text Cell", rt])
   end
 end
 

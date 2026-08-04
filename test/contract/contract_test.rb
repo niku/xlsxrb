@@ -62,10 +62,10 @@ class ContractTest < Test::Unit::TestCase
   test "chart: bar chart with title and series data" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sales") do |s|
-        s.add_row(%w[Month Revenue])
-        s.add_row(["Jan", 100])
-        s.add_row(["Feb", 200])
-        s.add_row(["Mar", 300])
+        s.row(%w[Month Revenue])
+        s.row(["Jan", 100])
+        s.row(["Feb", 200])
+        s.row(["Mar", 300])
         s.add_chart(type: :bar, title: "Quarterly Revenue",
                     series: [{ cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$B$2:$B$4" }])
       end
@@ -87,9 +87,9 @@ class ContractTest < Test::Unit::TestCase
   test "chart: pie chart preserves type and title" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Data") do |s|
-        s.add_row(%w[Category Value])
-        s.add_row(["A", 40])
-        s.add_row(["B", 60])
+        s.row(%w[Category Value])
+        s.row(["A", 40])
+        s.row(["B", 60])
         s.add_chart(type: :pie, title: "Distribution",
                     series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }])
       end
@@ -108,9 +108,9 @@ class ContractTest < Test::Unit::TestCase
   test "chart: line chart with multiple series" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Trends") do |s|
-        s.add_row(%w[Month Series1 Series2])
-        s.add_row(["Jan", 10, 20])
-        s.add_row(["Feb", 15, 25])
+        s.row(%w[Month Series1 Series2])
+        s.row(["Jan", 10, 20])
+        s.row(["Feb", 15, 25])
         s.add_chart(type: :line, title: "Trend Lines",
                     series: [
                       { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$B$2:$B$3" },
@@ -133,8 +133,8 @@ class ContractTest < Test::Unit::TestCase
   test "chart: chart with legend and axis titles" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("S1") do |s|
-        s.add_row(%w[X Y])
-        s.add_row([1, 10])
+        s.row(%w[X Y])
+        s.row([1, 10])
         s.add_chart(type: :bar, title: "Axes Test",
                     series: [{ cat_ref: "S1!$A$2:$A$2", val_ref: "S1!$B$2:$B$2" }],
                     legend: { position: "b" },
@@ -161,8 +161,8 @@ class ContractTest < Test::Unit::TestCase
   test "chart: chart with data labels" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DL") do |s|
-        s.add_row(%w[Cat Val])
-        s.add_row(["A", 50])
+        s.row(%w[Cat Val])
+        s.row(["A", 50])
         s.add_chart(type: :bar, title: "DL Test",
                     series: [{ cat_ref: "DL!$A$2:$A$2", val_ref: "DL!$B$2:$B$2" }],
                     data_labels: { show_val: true })
@@ -182,8 +182,8 @@ class ContractTest < Test::Unit::TestCase
   test "chart: multiple charts on same sheet" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Multi") do |s|
-        s.add_row(%w[X Y Z])
-        s.add_row([1, 10, 20])
+        s.row(%w[X Y Z])
+        s.row([1, 10, 20])
         s.add_chart(type: :bar, title: "Chart1",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$B$2:$B$2" }])
         s.add_chart(type: :pie, title: "Chart2",
@@ -205,9 +205,9 @@ class ContractTest < Test::Unit::TestCase
   test "chart: chart data cache is populated" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Cache") do |s|
-        s.add_row(%w[Label Amount])
-        s.add_row(["Alpha", 100])
-        s.add_row(["Beta", 200])
+        s.row(%w[Label Amount])
+        s.row(["Alpha", 100])
+        s.row(["Beta", 200])
         s.add_chart(type: :bar, title: "Cache Test",
                     series: [{ cat_ref: "Cache!$A$2:$A$3", val_ref: "Cache!$B$2:$B$3" }])
       end
@@ -241,8 +241,8 @@ class ContractTest < Test::Unit::TestCase
     tmp = Tempfile.new(["contract_charttype", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("S") do |s|
-        s.add_row(%w[X Y])
-        s.add_row([1, 10])
+        s.row(%w[X Y])
+        s.row([1, 10])
         s.add_chart(type: spec[:input], title: "Type Test",
                     series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
       end
@@ -266,7 +266,7 @@ class ContractTest < Test::Unit::TestCase
   test "cell: basic data types round-trip" do |api_path|
     _, tmp = generate_and_read(api_path) do |w|
       w.sheet("Types") do |s|
-        s.add_row(["hello", 42, 3.14, true, false, nil])
+        s.row(["hello", 42, 3.14, true, false, nil])
       end
     end
 
@@ -285,8 +285,8 @@ class ContractTest < Test::Unit::TestCase
   data(API_PATHS)
   test "cell: multiple sheets" do |api_path|
     _, tmp = generate_and_read(api_path) do |w|
-      w.sheet("A") { |s| s.add_row(["sheet_a"]) }
-      w.sheet("B") { |s| s.add_row(["sheet_b"]) }
+      w.sheet("A") { |s| s.row(["sheet_a"]) }
+      w.sheet("B") { |s| s.row(["sheet_b"]) }
     end
 
     wb = Xlsxrb.read(tmp.path)
@@ -301,7 +301,7 @@ class ContractTest < Test::Unit::TestCase
   test "cell: many rows preserve data" do |api_path|
     _, tmp = generate_and_read(api_path) do |w|
       w.sheet("Bulk") do |s|
-        100.times { |i| s.add_row([i, "row#{i}"]) }
+        100.times { |i| s.row([i, "row#{i}"]) }
       end
     end
 
@@ -325,8 +325,8 @@ class ContractTest < Test::Unit::TestCase
           when :streaming
             generate_streaming do |w|
               w.sheet("S") do |s|
-                s.add_row(%w[X Y])
-                s.add_row([1, 10])
+                s.row(%w[X Y])
+                s.row([1, 10])
                 s.add_chart(type: :bar, title: "NS",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
@@ -335,8 +335,8 @@ class ContractTest < Test::Unit::TestCase
             t = Tempfile.new(["contract_ns", ".xlsx"])
             wb = Xlsxrb.build do |w|
               w.sheet("S") do |s|
-                s.add_row(%w[X Y])
-                s.add_row([1, 10])
+                s.row(%w[X Y])
+                s.row([1, 10])
                 s.add_chart(type: :bar, title: "NS",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
@@ -371,8 +371,8 @@ class ContractTest < Test::Unit::TestCase
           when :streaming
             generate_streaming do |w|
               w.sheet("S") do |s|
-                s.add_row(%w[X Y])
-                s.add_row([1, 10])
+                s.row(%w[X Y])
+                s.row([1, 10])
                 s.add_chart(type: :bar, title: "NS Check",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
@@ -381,8 +381,8 @@ class ContractTest < Test::Unit::TestCase
             t = Tempfile.new(["contract_cns", ".xlsx"])
             wb = Xlsxrb.build do |w|
               w.sheet("S") do |s|
-                s.add_row(%w[X Y])
-                s.add_row([1, 10])
+                s.row(%w[X Y])
+                s.row([1, 10])
                 s.add_chart(type: :bar, title: "NS Check",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
@@ -423,7 +423,7 @@ class ContractTest < Test::Unit::TestCase
           when :streaming
             generate_streaming do |w|
               w.sheet("S") do |s|
-                s.add_row(["See the shape below"])
+                s.row(["See the shape below"])
                 s.add_shape(preset: "rect", text: "Important!",
                             from_col: 0, from_row: 2, to_col: 3, to_row: 6,
                             fill_color: "#FFFFC0", line_color: "#FF0000")
@@ -433,7 +433,7 @@ class ContractTest < Test::Unit::TestCase
             t = Tempfile.new(["contract_shape_color", ".xlsx"])
             wb = Xlsxrb.build do |w|
               w.sheet("S") do |s|
-                s.add_row(["See the shape below"])
+                s.row(["See the shape below"])
                 s.add_shape(preset: "rect", text: "Important!",
                             from_col: 0, from_row: 2, to_col: 3, to_row: 6,
                             fill_color: "#FFFFC0", line_color: "#FF0000")
@@ -464,7 +464,7 @@ class ContractTest < Test::Unit::TestCase
   test "hyperlink: external URL is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Links") do |s|
-        s.add_row(["Click me"])
+        s.row(["Click me"])
         s.add_hyperlink("A1", "https://example.com", display: "Example")
       end
     end
@@ -483,9 +483,9 @@ class ContractTest < Test::Unit::TestCase
   test "autofilter: range is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Data") do |s|
-        s.add_row(%w[Name Score])
-        s.add_row(["Alice", 95])
-        s.add_row(["Bob", 87])
+        s.row(%w[Name Score])
+        s.row(["Alice", 95])
+        s.row(["Bob", 87])
         s.set_auto_filter("A1:B3")
       end
     end
@@ -504,7 +504,7 @@ class ContractTest < Test::Unit::TestCase
   test "data_validation: rule is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
-        s.add_row(["Value"])
+        s.row(["Value"])
         s.add_data_validation("A2:A100", type: :whole, formula1: "1", formula2: "100")
       end
     end
@@ -524,7 +524,7 @@ class ContractTest < Test::Unit::TestCase
   test "conditional_format: rule is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("CF") do |s|
-        s.add_row([10, 20, 30])
+        s.row([10, 20, 30])
         s.add_conditional_format("A1:C1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1)
       end
     end
@@ -540,7 +540,7 @@ class ContractTest < Test::Unit::TestCase
   test "conditional_format: visual style emits dxf linkage" do |api_path|
     _reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("CF") do |s|
-        s.add_row([90, 45, 72, 88])
+        s.row([90, 45, 72, 88])
         s.add_conditional_format("A1:D1",
                                  type: :cell_is,
                                  operator: :greaterThan,
@@ -572,8 +572,8 @@ class ContractTest < Test::Unit::TestCase
   test "table: definition is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Tables") do |s|
-        s.add_row(%w[Name Score])
-        s.add_row(["Alice", 95])
+        s.row(%w[Name Score])
+        s.row(["Alice", 95])
         s.add_table("A1:B2", columns: %w[Name Score], name: "TestTable")
       end
     end
@@ -590,8 +590,8 @@ class ContractTest < Test::Unit::TestCase
   test "table: style string emits table part and valid style info" do |api_path|
     _reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Tables") do |s|
-        s.add_row(%w[Name Score])
-        s.add_row(["Alice", 95])
+        s.row(%w[Name Score])
+        s.row(["Alice", 95])
         s.add_table("A1:B2",
                     columns: %w[Name Score],
                     name: "StyledTable",
@@ -620,7 +620,7 @@ class ContractTest < Test::Unit::TestCase
   test "merge_cells: range is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Merge") do |s|
-        s.add_row(["Merged", nil, nil])
+        s.row(["Merged", nil, nil])
         s.merge_cells("A1:C1")
       end
     end
@@ -639,8 +639,8 @@ class ContractTest < Test::Unit::TestCase
   test "freeze_pane: settings are preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Frozen") do |s|
-        s.add_row(["Header"])
-        s.add_row([1])
+        s.row(["Header"])
+        s.row([1])
         s.set_freeze_pane(row: 1, col: 0)
       end
     end
@@ -661,7 +661,7 @@ class ContractTest < Test::Unit::TestCase
   test "page_margins: values are preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Margins") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_page_margins(left: 1.0, right: 1.0, top: 1.5, bottom: 1.5)
       end
     end
@@ -682,7 +682,7 @@ class ContractTest < Test::Unit::TestCase
   test "page_setup: orientation is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Setup") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_page_setup(orientation: :landscape)
       end
     end
@@ -702,7 +702,7 @@ class ContractTest < Test::Unit::TestCase
   test "header_footer: text is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("HF") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_header_footer(odd_header: "&CReport", odd_footer: "&CPage &P")
       end
     end
@@ -723,7 +723,7 @@ class ContractTest < Test::Unit::TestCase
   test "sheet_protection: settings are preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Prot") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_sheet_protection(sheet: true, objects: true)
       end
     end
@@ -738,7 +738,7 @@ class ContractTest < Test::Unit::TestCase
   test "sheet_protection: plain password is hashed" do |api_path|
     _reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Prot") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_sheet_protection(sheet: true, password: "secret")
       end
     end
@@ -768,7 +768,7 @@ class ContractTest < Test::Unit::TestCase
   test "comment: text is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Comments") do |s|
-        s.add_row(["Value"])
+        s.row(["Value"])
         s.add_comment("A1", "Test comment", author: "Author")
       end
     end
@@ -788,8 +788,8 @@ class ContractTest < Test::Unit::TestCase
   test "combined: multiple features on same sheet" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("All") do |s|
-        s.add_row(%w[Name Score])
-        s.add_row(["Alice", 95])
+        s.row(%w[Name Score])
+        s.row(["Alice", 95])
         s.set_auto_filter("A1:B2")
         s.merge_cells("A1:A1")
         s.set_freeze_pane(row: 1)
@@ -816,7 +816,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.set_column(0, width: 20.0, hidden: true, outline_level: 1)
-        s.add_row(["Test"], height: 30.0, hidden: true, outline_level: 2)
+        s.row(["Test"], height: 30.0, hidden: true, outline_level: 2)
       end
     end
 
@@ -839,7 +839,7 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: split pane and selection" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_split_pane(x_split: 1, y_split: 2, top_left_cell: "B3")
         s.set_selection("B3", sqref: "B3:C4", pane: :bottomRight)
       end
@@ -865,7 +865,7 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: sheet properties and views" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_sheet_property(:tab_color, "FF0000")
         s.set_sheet_view(:show_grid_lines, false)
         s.set_sheet_view(:zoom_scale, 150)
@@ -886,7 +886,7 @@ class ContractTest < Test::Unit::TestCase
   test "workbook: defined names" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
       end
       w.add_defined_name("MyConstant", "100")
       w.add_defined_name("LocalName", "Sheet1!$A$1", sheet: "Sheet1")
@@ -904,7 +904,7 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: print area and titles" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
       end
       w.set_print_area("Sheet1!$A$1:$C$10", sheet: "Sheet1")
       w.set_print_titles(rows: "1:2", cols: "A:B", sheet: "Sheet1")
@@ -922,7 +922,7 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: print options" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_print_option(:grid_lines, true)
         s.set_print_option(:horizontal_centered, true)
       end
@@ -939,7 +939,7 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: row and col breaks" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.add_row_break(1)
         s.add_col_break(2)
       end
@@ -957,7 +957,7 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: sort state" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_auto_filter("A1:A10")
         s.set_sort_state("A1:A10", [{ ref: "A1:A10", descending: true }])
       end
@@ -977,7 +977,7 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: filter columns" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_auto_filter("A1:A10")
         s.add_filter_column(0, type: :filters, values: ["Data"])
       end
@@ -995,7 +995,7 @@ class ContractTest < Test::Unit::TestCase
   test "workbook: protection" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
       end
       w.set_workbook_protection(lock_structure: true)
     end
@@ -1010,7 +1010,7 @@ class ContractTest < Test::Unit::TestCase
   test "workbook: core and app properties" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
       end
       w.set_core_property(:creator, "Author")
       w.set_app_property(:application, "Xlsxrb")
@@ -1030,7 +1030,7 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: add image" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.add_image(MINIMAL_PNG, ext: "png", from_col: 1, from_row: 1)
       end
     end
@@ -1054,8 +1054,8 @@ class ContractTest < Test::Unit::TestCase
         s.add_style("bold_green") do |style|
           style.bold.fill_color("00FF00")
         end
-        s.add_row(["Header"], styles: ["bold_green"])
-        s.add_row(["Normal"])
+        s.row(["Header"], styles: ["bold_green"])
+        s.row(["Normal"])
       end
     end
 
@@ -1085,8 +1085,8 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Formats") do |s|
         # numFmtId 4 = "#,##0.00" (built-in)
         s.add_style("currency") { |style| style.number_format(4) }
-        s.add_row([1234.56], styles: ["currency"])
-        s.add_row([7890])
+        s.row([1234.56], styles: ["currency"])
+        s.row([7890])
       end
     end
 
@@ -1107,7 +1107,7 @@ class ContractTest < Test::Unit::TestCase
     _reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Bordered") do |s|
         s.add_style("boxed") { |style| style.border_all(style: "thin") }
-        s.add_row(["Item"], styles: ["boxed"])
+        s.row(["Item"], styles: ["boxed"])
       end
     end
 
@@ -1132,7 +1132,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Dates") do |s|
         # numFmtId 14 = "m/d/yy" (built-in date format); triggers date conversion in Reader
         s.add_style("date_fmt") { |style| style.number_format(14) }
-        s.add_row([today], styles: ["date_fmt"])
+        s.row([today], styles: ["date_fmt"])
       end
     end
 
@@ -1155,7 +1155,7 @@ class ContractTest < Test::Unit::TestCase
   test "shape: reader.shapes returns correct preset, text, and anchor positions" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Shapes") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.add_shape(preset: "roundRect", text: "Call Out",
                     from_col: 1, from_row: 2, to_col: 4, to_row: 6)
       end
@@ -1181,7 +1181,7 @@ class ContractTest < Test::Unit::TestCase
   test "shape: multiple shapes on same sheet are all returned" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Multi") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.add_shape(preset: "rect", text: "Box", from_col: 0, from_row: 1, to_col: 2, to_row: 3)
         s.add_shape(preset: "ellipse", text: "Oval", from_col: 3, from_row: 1, to_col: 5, to_row: 3)
       end
@@ -1205,7 +1205,7 @@ class ContractTest < Test::Unit::TestCase
   test "hyperlink: display text is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Links") do |s|
-        s.add_row(["Click here"])
+        s.row(["Click here"])
         s.add_hyperlink("A1", "https://example.com", display: "Visit Example")
       end
     end
@@ -1224,7 +1224,7 @@ class ContractTest < Test::Unit::TestCase
   test "hyperlink: internal location link is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Nav") do |s|
-        s.add_row(["Jump"])
+        s.row(["Jump"])
         s.add_hyperlink("A1", location: "Nav!B2", display: "Go to B2")
       end
     end
@@ -1249,7 +1249,7 @@ class ContractTest < Test::Unit::TestCase
   test "data_validation: list type is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
-        s.add_row(%w[Name Status])
+        s.row(%w[Name Status])
         s.add_data_validation("B2:B100", type: :list, formula1: '"Active,Inactive,Pending"')
       end
     end
@@ -1270,7 +1270,7 @@ class ContractTest < Test::Unit::TestCase
   test "data_validation: multiple rules on same sheet are all preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
-        s.add_row(%w[Name Score Grade])
+        s.row(%w[Name Score Grade])
         s.add_data_validation("B2:B100", type: :whole, formula1: "0", formula2: "100")
         s.add_data_validation("C2:C100", type: :list, formula1: '"A,B,C,D,F"')
       end
@@ -1298,8 +1298,8 @@ class ContractTest < Test::Unit::TestCase
   test "merge_cells: multiple ranges are all preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Merge") do |s|
-        s.add_row(["Title", nil, nil, "Sub", nil])
-        s.add_row(["Content"])
+        s.row(["Title", nil, nil, "Sub", nil])
+        s.row(["Content"])
         s.merge_cells("A1:C1")
         s.merge_cells("D1:E1")
         s.merge_cells("A2:E2")
@@ -1325,7 +1325,7 @@ class ContractTest < Test::Unit::TestCase
   test "comment: text and author are preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Notes") do |s|
-        s.add_row(["Value"])
+        s.row(["Value"])
         s.add_comment("A1", "This is important!", author: "Alice")
       end
     end
@@ -1346,7 +1346,7 @@ class ContractTest < Test::Unit::TestCase
   test "comment: multiple comments on same sheet are all preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Notes") do |s|
-        s.add_row(%w[A B])
+        s.row(%w[A B])
         s.add_comment("A1", "Note on A1", author: "Alice")
         s.add_comment("B1", "Note on B1", author: "Bob")
       end
@@ -1371,8 +1371,8 @@ class ContractTest < Test::Unit::TestCase
   test "table: columns array is preserved with correct names" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("People") do |s|
-        s.add_row(%w[Name Age City])
-        s.add_row(["Alice", 30, "NYC"])
+        s.row(%w[Name Age City])
+        s.row(["Alice", 30, "NYC"])
         s.add_table("A1:C2", columns: %w[Name Age City], name: "PeopleTable")
       end
     end
@@ -1400,7 +1400,7 @@ class ContractTest < Test::Unit::TestCase
     tmp = Tempfile.new(["contract_io", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("IOTest") do |s|
-        s.add_row(["io_string", 999])
+        s.row(["io_string", 999])
       end
     end
 
@@ -1427,9 +1427,9 @@ class ContractTest < Test::Unit::TestCase
     tmp = Tempfile.new(["contract_foreach", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Seq") do |s|
-        s.add_row([1, "one"])
-        s.add_row([2, "two"])
-        s.add_row([3, "three"])
+        s.row([1, "one"])
+        s.row([2, "two"])
+        s.row([3, "three"])
       end
     end
 
@@ -1454,8 +1454,8 @@ class ContractTest < Test::Unit::TestCase
     tmp = Tempfile.new(["contract_foreach_enum", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("E") do |s|
-        s.add_row(["alpha"])
-        s.add_row(["beta"])
+        s.row(["alpha"])
+        s.row(["beta"])
       end
     end
 
@@ -1472,8 +1472,8 @@ class ContractTest < Test::Unit::TestCase
   test "foreach: sheet keyword argument selects the named sheet" do
     tmp = Tempfile.new(["contract_foreach_sheet", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
-      w.sheet("First") { |s| s.add_row(["from_first"]) }
-      w.sheet("Second") { |s| s.add_row(["from_second"]) }
+      w.sheet("First") { |s| s.row(["from_first"]) }
+      w.sheet("Second") { |s| s.row(["from_second"]) }
     end
 
     collected = []
@@ -1493,7 +1493,7 @@ class ContractTest < Test::Unit::TestCase
   test "cell: empty string is preserved" do |api_path|
     _, tmp = generate_and_read(api_path) do |w|
       w.sheet("Empty") do |s|
-        s.add_row(["", "non-empty"])
+        s.row(["", "non-empty"])
       end
     end
 
@@ -1510,7 +1510,7 @@ class ContractTest < Test::Unit::TestCase
   test "cell: sparse row with nil gaps preserves non-nil values" do |api_path|
     _, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sparse") do |s|
-        s.add_row(["first", nil, nil, "fourth"])
+        s.row(["first", nil, nil, "fourth"])
       end
     end
 
@@ -1531,7 +1531,7 @@ class ContractTest < Test::Unit::TestCase
   data(API_PATHS)
   test "zip: required parts exist in generated file" do |api_path|
     _, tmp = generate_and_read(api_path) do |w|
-      w.sheet("Sheet1") { |s| s.add_row(["data"]) }
+      w.sheet("Sheet1") { |s| s.row(["data"]) }
     end
 
     entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
@@ -1554,7 +1554,7 @@ class ContractTest < Test::Unit::TestCase
   data(API_PATHS)
   test "zip: shared strings part exists when strings are present" do |api_path|
     _, tmp = generate_and_read(api_path) do |w|
-      w.sheet("S") { |s| s.add_row(["hello"]) }
+      w.sheet("S") { |s| s.row(["hello"]) }
     end
 
     entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
@@ -1570,7 +1570,7 @@ class ContractTest < Test::Unit::TestCase
   data(API_PATHS)
   test "content_types: sheet1 content type is declared" do |api_path|
     _, tmp = generate_and_read(api_path) do |w|
-      w.sheet("Sheet1") { |s| s.add_row([1]) }
+      w.sheet("Sheet1") { |s| s.row([1]) }
     end
 
     entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
@@ -1590,7 +1590,7 @@ class ContractTest < Test::Unit::TestCase
   test "page_setup: paper_size is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Setup") do |s|
-        s.add_row(["Data"])
+        s.row(["Data"])
         s.set_page_setup(orientation: :landscape, paper_size: 9)
       end
     end
@@ -1611,9 +1611,9 @@ class ContractTest < Test::Unit::TestCase
   data(API_PATHS)
   test "workbook: reader.sheet_names returns all sheet names in order" do |api_path|
     _, tmp = generate_and_read(api_path) do |w|
-      w.sheet("Alpha") { |s| s.add_row([1]) }
-      w.sheet("Beta") { |s| s.add_row([2]) }
-      w.sheet("Gamma") { |s| s.add_row([3]) }
+      w.sheet("Alpha") { |s| s.row([1]) }
+      w.sheet("Beta") { |s| s.row([2]) }
+      w.sheet("Gamma") { |s| s.row([3]) }
     end
 
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)

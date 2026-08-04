@@ -13,8 +13,8 @@ class StyleTest < Test::Unit::TestCase
         end
 
         # Add rows with styles
-        s.add_row(["Header 1", "Header 2"], styles: %w[heading heading])
-        s.add_row([100, 200])
+        s.row(["Header 1", "Header 2"], styles: %w[heading heading])
+        s.row([100, 200])
       end
     end
 
@@ -47,14 +47,14 @@ class StyleTest < Test::Unit::TestCase
 
         w.sheet("Sales") do
           # Add header row with heading style
-          w.add_row(%w[Date Amount], styles: { 0 => "heading", 1 => "heading" })
+          w.row(%w[Date Amount], styles: { 0 => "heading", 1 => "heading" })
 
           # Add data rows
-          w.add_row([Date.today, 100])
-          w.add_row([Date.today - 1, 200])
+          w.row([Date.today, 100])
+          w.row([Date.today - 1, 200])
 
           # Add total row with total style
-          w.add_row(["Total", 300], styles: { 1 => "total" })
+          w.row(["Total", 300], styles: { 1 => "total" })
         end
       end
 
@@ -89,8 +89,8 @@ class StyleTest < Test::Unit::TestCase
           style.bold.font_color("FFFF0000").size(12)
         end
 
-        s.add_row(%w[Styled Data], styles: ["bold_red", nil])
-        s.add_row(%w[Normal Row])
+        s.row(%w[Styled Data], styles: ["bold_red", nil])
+        s.row(%w[Normal Row])
       end
     end
 

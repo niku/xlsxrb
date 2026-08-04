@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Col Width") do |s|
     s.set_column(0, width: 50)
     s.set_column(1, width: 10)
-    s.add_row(["Very Wide Column (Width 50)", "Normal (10)"], styles: %w[border border])
+    s.row(["Very Wide Column (Width 50)", "Normal (10)"], styles: %w[border border])
   end
 end
 

@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Patterns") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Pattern Preview])
-    s.add_row(["Dark Gray", "Pattern Fill"], styles: { 1 => "dark_gray" })
-    s.add_row(["Dark Grid", "Grid Fill"], styles: { 1 => "grid_fill" })
+    s.row(%w[Pattern Preview])
+    s.row(["Dark Gray", "Pattern Fill"], styles: { 1 => "dark_gray" })
+    s.row(["Dark Grid", "Grid Fill"], styles: { 1 => "grid_fill" })
   end
 end
 

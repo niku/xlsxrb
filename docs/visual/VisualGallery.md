@@ -522,7 +522,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 20)
     s.set_column(1, width: 20)
     s.set_column(2, width: 20)
-    s.add_row(%w[Left Center Right], styles: { 0 => "left", 1 => "center", 2 => "right" })
+    s.row(%w[Left Center Right], styles: { 0 => "left", 1 => "center", 2 => "right" })
   end
 end
 
@@ -571,7 +571,7 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("fill_align") { |s| s.align_horizontal("fill") }
   w.sheet("Alignment") do |s|
     s.set_column(0, width: 30)
-    s.add_row(["X "], styles: { 0 => "fill_align" })
+    s.row(["X "], styles: { 0 => "fill_align" })
   end
 end
 
@@ -625,7 +625,7 @@ Xlsxrb.generate(output_path) do |w|
   end
   w.sheet("Alignment") do |s|
     s.set_column(0, width: 25)
-    s.add_row(["Justified alignment wraps and distributes text evenly."], styles: { 0 => "justify_align" })
+    s.row(["Justified alignment wraps and distributes text evenly."], styles: { 0 => "justify_align" })
   end
 end
 
@@ -679,9 +679,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
-    s.add_row(["No Indent"])
-    s.add_row(["Indent 1"], styles: { 0 => "indent_1" })
-    s.add_row(["Indent 3"], styles: { 0 => "indent_3" })
+    s.row(["No Indent"])
+    s.row(["Indent 1"], styles: { 0 => "indent_1" })
+    s.row(["Indent 3"], styles: { 0 => "indent_3" })
   end
 end
 
@@ -735,7 +735,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
-    s.add_row(["Rotated 45", "Rotated 90"], styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
+    s.row(["Rotated 45", "Rotated 90"], styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
   end
 end
 
@@ -788,7 +788,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Text Wrap") do |s|
     s.set_print_option(:grid_lines, true)
     s.set_column(0, width: 15)
-    s.add_row(["This is a long sentence that wraps inside the cell."], styles: { 0 => "wrap" })
+    s.row(["This is a long sentence that wraps inside the cell."], styles: { 0 => "wrap" })
   end
 end
 
@@ -843,7 +843,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
-    s.add_row(%w[Top Center Bottom], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
+    s.row(%w[Top Center Bottom], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
   end
 end
 
@@ -903,9 +903,9 @@ Xlsxrb.generate(output_path) do |w|
     w.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     w.set_column(0, width: 25)
     w.set_column(1, width: 25)
-    w.add_row(%w[Product Qty Price Date Active])
-    w.add_row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
-    w.add_row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
+    w.row(%w[Product Qty Price Date Active])
+    w.row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
+    w.row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
   end
 end
 
@@ -971,20 +971,20 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
 
-    s.add_row(["Border Style", "Cell Preview"])
-    s.add_row(["Thin", "Thin Border"], styles: { 1 => "thin" })
-    s.add_row(["Medium", "Medium Border"], styles: { 1 => "medium" })
-    s.add_row(["Thick", "Thick Border"], styles: { 1 => "thick" })
-    s.add_row(["Hair", "Hair Border"], styles: { 1 => "hair" })
-    s.add_row(["Dashed", "Dashed Border"], styles: { 1 => "dashed" })
-    s.add_row(["Medium Dashed", "Medium Dashed"], styles: { 1 => "medium_dashed" })
-    s.add_row(["Dotted", "Dotted Border"], styles: { 1 => "dotted" })
-    s.add_row(["Double", "Double Border"], styles: { 1 => "double" })
-    s.add_row(["Dash-Dot", "Dash-Dot Border"], styles: { 1 => "dash_dot" })
-    s.add_row(["Medium Dash-Dot", "Medium Dash-Dot"], styles: { 1 => "medium_dash_dot" })
-    s.add_row(%w[Dash-Dot-Dot Dash-Dot-Dot], styles: { 1 => "dash_dot_dot" })
-    s.add_row(["Slanted Dash-Dot", "Slanted Border"], styles: { 1 => "slanted" })
-    s.add_row(["Diagonal (Cross)", "Diagonal Border"], styles: { 1 => "diagonal" })
+    s.row(["Border Style", "Cell Preview"])
+    s.row(["Thin", "Thin Border"], styles: { 1 => "thin" })
+    s.row(["Medium", "Medium Border"], styles: { 1 => "medium" })
+    s.row(["Thick", "Thick Border"], styles: { 1 => "thick" })
+    s.row(["Hair", "Hair Border"], styles: { 1 => "hair" })
+    s.row(["Dashed", "Dashed Border"], styles: { 1 => "dashed" })
+    s.row(["Medium Dashed", "Medium Dashed"], styles: { 1 => "medium_dashed" })
+    s.row(["Dotted", "Dotted Border"], styles: { 1 => "dotted" })
+    s.row(["Double", "Double Border"], styles: { 1 => "double" })
+    s.row(["Dash-Dot", "Dash-Dot Border"], styles: { 1 => "dash_dot" })
+    s.row(["Medium Dash-Dot", "Medium Dash-Dot"], styles: { 1 => "medium_dash_dot" })
+    s.row(%w[Dash-Dot-Dot Dash-Dot-Dot], styles: { 1 => "dash_dot_dot" })
+    s.row(["Slanted Dash-Dot", "Slanted Border"], styles: { 1 => "slanted" })
+    s.row(["Diagonal (Cross)", "Diagonal Border"], styles: { 1 => "diagonal" })
   end
 end
 
@@ -1045,9 +1045,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Booleans") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Label", "Boolean Value"])
-    s.add_row(["Is Active", true])
-    s.add_row(["Is Pending", false])
+    s.row(["Label", "Boolean Value"])
+    s.row(["Is Active", true])
+    s.row(["Is Pending", false])
   end
 end
 
@@ -1097,9 +1097,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Dates") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Date Value"])
-    s.add_row(["Default Date", Date.new(2026, 7, 1)])
-    s.add_row(["Formatted Date", Date.new(2026, 12, 25)], styles: { 1 => "custom_date" })
+    s.row(["Format", "Date Value"])
+    s.row(["Default Date", Date.new(2026, 7, 1)])
+    s.row(["Formatted Date", Date.new(2026, 12, 25)], styles: { 1 => "custom_date" })
   end
 end
 
@@ -1147,11 +1147,11 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Formulas") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Item Value])
-    s.add_row(["A", 10])
-    s.add_row(["B", 20])
-    s.add_row(["SUM", Xlsxrb::Elements::Formula.new(expression: "SUM(B2:B3)", cached_value: 30)])
-    s.add_row(["AVERAGE", Xlsxrb::Elements::Formula.new(expression: "AVERAGE(B2:B3)", cached_value: 15)])
+    s.row(%w[Item Value])
+    s.row(["A", 10])
+    s.row(["B", 20])
+    s.row(["SUM", Xlsxrb::Elements::Formula.new(expression: "SUM(B2:B3)", cached_value: 30)])
+    s.row(["AVERAGE", Xlsxrb::Elements::Formula.new(expression: "AVERAGE(B2:B3)", cached_value: 15)])
   end
 end
 
@@ -1202,9 +1202,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("JPY Currency") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Positive Yen", 12_500], styles: { 1 => "jpy" })
-    s.add_row(["Negative Yen", -8000], styles: { 1 => "jpy" })
+    s.row(%w[Format Value])
+    s.row(["Positive Yen", 12_500], styles: { 1 => "jpy" })
+    s.row(["Negative Yen", -8000], styles: { 1 => "jpy" })
   end
 end
 
@@ -1255,9 +1255,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Custom Colors") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Positive (Green)", 5000], styles: { 1 => "custom_color" })
-    s.add_row(["Negative (Red)", -2500], styles: { 1 => "custom_color" })
+    s.row(%w[Format Value])
+    s.row(["Positive (Green)", 5000], styles: { 1 => "custom_color" })
+    s.row(["Negative (Red)", -2500], styles: { 1 => "custom_color" })
   end
 end
 
@@ -1308,10 +1308,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Fractions") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Half", 0.5], styles: { 1 => "frac" })
-    s.add_row(["Third", 0.3333], styles: { 1 => "frac" })
-    s.add_row(["Quarter", 0.75], styles: { 1 => "frac" })
+    s.row(%w[Format Value])
+    s.row(["Half", 0.5], styles: { 1 => "frac" })
+    s.row(["Third", 0.3333], styles: { 1 => "frac" })
+    s.row(["Quarter", 0.75], styles: { 1 => "frac" })
   end
 end
 
@@ -1363,8 +1363,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Percents") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Percent with 2 Decimals", 0.12345], styles: { 1 => "pct2" })
+    s.row(%w[Format Value])
+    s.row(["Percent with 2 Decimals", 0.12345], styles: { 1 => "pct2" })
   end
 end
 
@@ -1414,9 +1414,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Scientific") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Scientific", 123_456_789.0], styles: { 1 => "sci" })
-    s.add_row(["Small Scientific", 0.00001234], styles: { 1 => "sci" })
+    s.row(%w[Format Value])
+    s.row(["Scientific", 123_456_789.0], styles: { 1 => "sci" })
+    s.row(["Small Scientific", 0.00001234], styles: { 1 => "sci" })
   end
 end
 
@@ -1468,11 +1468,11 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Numbers") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Integer", 12_345])
-    s.add_row(["Float", 123.456])
-    s.add_row(["Currency", 1234.5], styles: { 1 => "currency" })
-    s.add_row(["Percentage", 0.85], styles: { 1 => "percent" })
+    s.row(%w[Format Value])
+    s.row(["Integer", 12_345])
+    s.row(["Float", 123.456])
+    s.row(["Currency", 1234.5], styles: { 1 => "currency" })
+    s.row(["Percentage", 0.85], styles: { 1 => "percent" })
   end
 end
 
@@ -1527,8 +1527,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Rich Text") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Rich Text Cell", rt])
+    s.row(%w[Format Value])
+    s.row(["Rich Text Cell", rt])
   end
 end
 
@@ -1577,9 +1577,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Times") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Time Value"])
-    s.add_row(["DateTime", Time.new(2026, 7, 1, 12, 34, 56)])
-    s.add_row(["Time Only", Time.new(2026, 7, 1, 9, 15, 0)], styles: { 1 => "time_fmt" })
+    s.row(["Format", "Time Value"])
+    s.row(["DateTime", Time.new(2026, 7, 1, 12, 34, 56)])
+    s.row(["Time Only", Time.new(2026, 7, 1, 9, 15, 0)], styles: { 1 => "time_fmt" })
   end
 end
 
@@ -1627,10 +1627,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Begins") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Code"])
-    s.add_row(["A-100"])
-    s.add_row(["B-200"])
-    s.add_row(["A-300"])
+    s.row(["Code"])
+    s.row(["A-100"])
+    s.row(["B-200"])
+    s.row(["A-300"])
     s.add_conditional_format("A2:A4", type: "beginsWith", operator: "beginsWith", text: "A", formula: 'LEFT(A2,1)="A"', fill_color: "FFFFC7CE")
   end
 end
@@ -1679,10 +1679,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Between") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Values"])
-    s.add_row([15], styles: ["center"])
-    s.add_row([25], styles: ["center"])
-    s.add_row([5], styles: ["center"])
+    s.row(["Values"])
+    s.row([15], styles: ["center"])
+    s.row([25], styles: ["center"])
+    s.row([5], styles: ["center"])
     s.add_conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: "FF00FF00")
   end
 end
@@ -1731,10 +1731,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Equal") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Values"])
-    s.add_row([10], styles: ["center"])
-    s.add_row([20], styles: ["center"])
-    s.add_row([10], styles: ["center"])
+    s.row(["Values"])
+    s.row([10], styles: ["center"])
+    s.row([20], styles: ["center"])
+    s.row([10], styles: ["center"])
     s.add_conditional_format("A2:A4", type: "cellIs", operator: "equal", formula: "10", fill_color: "FFFFC7CE")
   end
 end
@@ -1783,10 +1783,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Greater Equal") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Values"])
-    s.add_row([10], styles: ["center"])
-    s.add_row([50], styles: ["center"])
-    s.add_row([100], styles: ["center"])
+    s.row(["Values"])
+    s.row([10], styles: ["center"])
+    s.row([50], styles: ["center"])
+    s.row([100], styles: ["center"])
     s.add_conditional_format("A2:A4", type: "cellIs", operator: "greaterThanOrEqual", formula: "50", fill_color: "FFFFC7CE")
   end
 end
@@ -1835,10 +1835,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Greater") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Values"])
-    s.add_row([25], styles: ["center"])
-    s.add_row([75], styles: ["center"])
-    s.add_row([10], styles: ["center"])
+    s.row(["Values"])
+    s.row([25], styles: ["center"])
+    s.row([75], styles: ["center"])
+    s.row([10], styles: ["center"])
     s.add_conditional_format("A2:A4", type: "cellIs", operator: "greaterThan", formula: "50", fill_color: "FFFFC7CE")
   end
 end
@@ -1887,10 +1887,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Less") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Values"])
-    s.add_row([25], styles: ["center"])
-    s.add_row([75], styles: ["center"])
-    s.add_row([10], styles: ["center"])
+    s.row(["Values"])
+    s.row([25], styles: ["center"])
+    s.row([75], styles: ["center"])
+    s.row([10], styles: ["center"])
     s.add_conditional_format("A2:A4", type: "cellIs", operator: "lessThan", formula: "20", fill_color: "FFFFC7CE")
   end
 end
@@ -1939,9 +1939,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Colors") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([10], styles: ["center"])
-    s.add_row([50], styles: ["center"])
-    s.add_row([90], styles: ["center"])
+    s.row([10], styles: ["center"])
+    s.row([50], styles: ["center"])
+    s.row([90], styles: ["center"])
     s.add_conditional_format("A1:A3", type: :colorScale, priority: 1)
   end
 end
@@ -1988,10 +1988,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Contains") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Status"])
-    s.add_row(["Error"])
-    s.add_row(["Success"])
-    s.add_row(["Pending"])
+    s.row(["Status"])
+    s.row(["Error"])
+    s.row(["Success"])
+    s.row(["Pending"])
     s.add_conditional_format("A2:A4", type: "containsText", operator: "containsText", text: "Error", formula: 'NOT(ISERROR(SEARCH("Error",A2)))', fill_color: "FFFF0000")
   end
 end
@@ -2040,9 +2040,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Data Bars") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([20], styles: ["center"])
-    s.add_row([60], styles: ["center"])
-    s.add_row([100], styles: ["center"])
+    s.row([20], styles: ["center"])
+    s.row([60], styles: ["center"])
+    s.row([100], styles: ["center"])
     s.add_conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
   end
 end
@@ -2089,10 +2089,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Ends") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Code"])
-    s.add_row(["100-Z"])
-    s.add_row(["200-Y"])
-    s.add_row(["300-Z"])
+    s.row(["Code"])
+    s.row(["100-Z"])
+    s.row(["200-Y"])
+    s.row(["300-Z"])
     s.add_conditional_format("A2:A4", type: "endsWith", operator: "endsWith", text: "Z", formula: 'RIGHT(A2,1)="Z"', fill_color: "FFFFC7CE")
   end
 end
@@ -2141,11 +2141,11 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Expression") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Values"])
-    s.add_row([10], styles: ["center"])
-    s.add_row([20], styles: ["center"])
-    s.add_row([30], styles: ["center"])
-    s.add_row([100], styles: ["center"]) # Average is 40. 100 is above average.
+    s.row(["Values"])
+    s.row([10], styles: ["center"])
+    s.row([20], styles: ["center"])
+    s.row([30], styles: ["center"])
+    s.row([100], styles: ["center"]) # Average is 40. 100 is above average.
     s.add_conditional_format("A2:A5", type: "expression", formula: "A2>AVERAGE($A$2:$A$5)", fill_color: "FFFFC7CE")
   end
 end
@@ -2195,9 +2195,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Icons") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([25], styles: ["center"])
-    s.add_row([50], styles: ["center"])
-    s.add_row([75], styles: ["center"])
+    s.row([25], styles: ["center"])
+    s.row([50], styles: ["center"])
+    s.row([75], styles: ["center"])
     s.add_conditional_format("A1:A3", type: :iconSet, icon_style: "3Arrows", priority: 1)
   end
 end
@@ -2246,9 +2246,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Day Value])
-    s.add_row(["Mon", 10])
-    s.add_row(["Tue", 15])
+    s.row(%w[Day Value])
+    s.row(["Mon", 10])
+    s.row(["Tue", 15])
     s.add_chart(
       type: :area,
       title: "Daily Area",
@@ -2295,10 +2295,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Year", "Sales A", "Sales B"])
-    s.add_row([2024, 100, 150])
-    s.add_row([2025, 120, 180])
-    s.add_row([2026, 140, 210])
+    s.row(["Year", "Sales A", "Sales B"])
+    s.row([2024, 100, 150])
+    s.row([2025, 120, 180])
+    s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.add_chart(
@@ -2355,9 +2355,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Month Value])
-    s.add_row(["Jan", 100])
-    s.add_row(["Feb", 200])
+    s.row(%w[Month Value])
+    s.row(["Jan", 100])
+    s.row(["Feb", 200])
 
     s.add_chart(
       type: :bar,
@@ -2410,10 +2410,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Year", "Sales A", "Sales B"])
-    s.add_row([2024, 100, 150])
-    s.add_row([2025, 120, 180])
-    s.add_row([2026, 140, 210])
+    s.row(["Year", "Sales A", "Sales B"])
+    s.row([2024, 100, 150])
+    s.row([2025, 120, 180])
+    s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.add_chart(
@@ -2466,10 +2466,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Year", "Sales A", "Sales B"])
-    s.add_row([2024, 100, 150])
-    s.add_row([2025, 120, 180])
-    s.add_row([2026, 140, 210])
+    s.row(["Year", "Sales A", "Sales B"])
+    s.row([2024, 100, 150])
+    s.row([2025, 120, 180])
+    s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.add_chart(
@@ -2524,9 +2524,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Label Percent])
-    s.add_row(["A", 40])
-    s.add_row(["B", 60])
+    s.row(%w[Label Percent])
+    s.row(["A", 40])
+    s.row(["B", 60])
     s.add_chart(
       type: :doughnut,
       title: "Ratio",
@@ -2582,10 +2582,10 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Day Value])
-    s.add_row(["Mon", 10])
-    s.add_row(["Tue", 15])
-    s.add_row(["Wed", 12])
+    s.row(%w[Day Value])
+    s.row(["Mon", 10])
+    s.row(["Tue", 15])
+    s.row(["Wed", 12])
     s.add_chart(
       type: :line,
       title: "Daily Value",
@@ -2632,10 +2632,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Year", "Sales A", "Sales B"])
-    s.add_row([2024, 100, 150])
-    s.add_row([2025, 120, 180])
-    s.add_row([2026, 140, 210])
+    s.row(["Year", "Sales A", "Sales B"])
+    s.row([2024, 100, 150])
+    s.row([2025, 120, 180])
+    s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.add_chart(
@@ -2690,9 +2690,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Label Percent])
-    s.add_row(["Yes", 70])
-    s.add_row(["No", 30])
+    s.row(%w[Label Percent])
+    s.row(["Yes", 70])
+    s.row(["No", 30])
     s.add_chart(
       type: :pie,
       title: "Responses",
@@ -2748,9 +2748,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Stat Value])
-    s.add_row(["Atk", 80])
-    s.add_row(["Def", 60])
+    s.row(%w[Stat Value])
+    s.row(["Atk", 80])
+    s.row(["Def", 60])
     s.add_chart(
       type: :radar,
       title: "Stats",
@@ -2799,9 +2799,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[X Y])
-    s.add_row([1, 10])
-    s.add_row([2, 15])
+    s.row(%w[X Y])
+    s.row([1, 10])
+    s.row([2, 15])
     s.add_chart(
       type: :scatter,
       title: "Scatter Plot",
@@ -2852,7 +2852,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25, outline_level: 0)
     s.set_column(1, width: 25, outline_level: 1)
     s.set_column(2, width: 25, outline_level: 1)
-    s.add_row(["Col A", "Col B (Grouped)", "Col C (Grouped)"], styles: %w[border border border])
+    s.row(["Col A", "Col B (Grouped)", "Col C (Grouped)"], styles: %w[border border border])
   end
 end
 
@@ -2898,7 +2898,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Col Width") do |s|
     s.set_column(0, width: 50)
     s.set_column(1, width: 10)
-    s.add_row(["Very Wide Column (Width 50)", "Normal (10)"], styles: %w[border border])
+    s.row(["Very Wide Column (Width 50)", "Normal (10)"], styles: %w[border border])
   end
 end
 
@@ -2943,7 +2943,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Widths") do |s|
     s.set_column(0, width: 30)
     s.set_column(1, width: 10)
-    s.add_row(["Wide Column A", "Narrow B"], styles: %w[border border])
+    s.row(["Wide Column A", "Narrow B"], styles: %w[border border])
   end
 end
 
@@ -2990,7 +2990,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Scores") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([90, 45, 72, 88], styles: %w[center center center center])
+    s.row([90, 45, 72, 88], styles: %w[center center center center])
 
     s.add_conditional_format("A1:D1",
                              type: :cell_is, operator: :greaterThan,
@@ -3060,11 +3060,11 @@ dummy_png = make_png(100, 100, 255, 0, 0)
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |st| st.align_horizontal(:center) }
   w.sheet("Images") do |s|
-    s.add_row(["Logo Target cell:", "", "", "Boundary"], styles: %w[left center center center])
-    s.add_row(["", "", "", ""])
-    s.add_row(["", "", "", ""])
-    s.add_row(["", "", "", ""])
-    s.add_row(["", "", "", "Boundary End"], styles: %w[left center center center])
+    s.row(["Logo Target cell:", "", "", "Boundary"], styles: %w[left center center center])
+    s.row(["", "", "", ""])
+    s.row(["", "", "", ""])
+    s.row(["", "", "", ""])
+    s.row(["", "", "", "Boundary End"], styles: %w[left center center center])
     s.add_image(dummy_png, ext: "png", from_col: 1, from_row: 1, to_col: 3, to_row: 5)
     s.set_column(0, width: 20)
     s.set_column(1, width: 15)
@@ -3132,7 +3132,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Gradients") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })
+    s.row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })
   end
 end
 
@@ -3181,9 +3181,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Patterns") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Pattern Preview])
-    s.add_row(["Dark Gray", "Pattern Fill"], styles: { 1 => "dark_gray" })
-    s.add_row(["Dark Grid", "Grid Fill"], styles: { 1 => "grid_fill" })
+    s.row(%w[Pattern Preview])
+    s.row(["Dark Gray", "Pattern Fill"], styles: { 1 => "dark_gray" })
+    s.row(["Dark Grid", "Grid Fill"], styles: { 1 => "grid_fill" })
   end
 end
 
@@ -3232,9 +3232,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Fills") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Color Preview])
-    s.add_row(["Red", "Red Fill"], styles: { 1 => "red_fill" })
-    s.add_row(["Green", "Green Fill"], styles: { 1 => "green_fill" })
+    s.row(%w[Color Preview])
+    s.row(["Red", "Red Fill"], styles: { 1 => "red_fill" })
+    s.row(["Green", "Green Fill"], styles: { 1 => "green_fill" })
   end
 end
 
@@ -3313,29 +3313,29 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
 
-    s.add_row(["Font Feature", "Text Preview"])
-    s.add_row(["Family: Arial", "Arial Text"], styles: { 1 => "f_arial" })
-    s.add_row(["Family: Times New Roman", "Times New Roman"], styles: { 1 => "f_times" })
-    s.add_row(["Family: Courier New", "Courier New Text"], styles: { 1 => "f_courier" })
-    s.add_row(["Family: Georgia", "Georgia Text"], styles: { 1 => "f_georgia" })
-    s.add_row(["Family: Tahoma", "Tahoma Text"], styles: { 1 => "f_tahoma" })
+    s.row(["Font Feature", "Text Preview"])
+    s.row(["Family: Arial", "Arial Text"], styles: { 1 => "f_arial" })
+    s.row(["Family: Times New Roman", "Times New Roman"], styles: { 1 => "f_times" })
+    s.row(["Family: Courier New", "Courier New Text"], styles: { 1 => "f_courier" })
+    s.row(["Family: Georgia", "Georgia Text"], styles: { 1 => "f_georgia" })
+    s.row(["Family: Tahoma", "Tahoma Text"], styles: { 1 => "f_tahoma" })
 
-    s.add_row(["Size: 10pt", "10pt Font Size"], styles: { 1 => "sz_10" })
-    s.add_row(["Size: 16pt", "16pt Font Size"], styles: { 1 => "sz_16" })
-    s.add_row(["Size: 24pt", "24pt Font Size"], styles: { 1 => "sz_24" })
+    s.row(["Size: 10pt", "10pt Font Size"], styles: { 1 => "sz_10" })
+    s.row(["Size: 16pt", "16pt Font Size"], styles: { 1 => "sz_16" })
+    s.row(["Size: 24pt", "24pt Font Size"], styles: { 1 => "sz_24" })
 
-    s.add_row(["Color: Red", "Red Text"], styles: { 1 => "c_red" })
-    s.add_row(["Color: Green", "Green Text"], styles: { 1 => "c_green" })
-    s.add_row(["Color: Blue", "Blue Text"], styles: { 1 => "c_blue" })
+    s.row(["Color: Red", "Red Text"], styles: { 1 => "c_red" })
+    s.row(["Color: Green", "Green Text"], styles: { 1 => "c_green" })
+    s.row(["Color: Blue", "Blue Text"], styles: { 1 => "c_blue" })
 
-    s.add_row(["Style: Bold", "Bold Text"], styles: { 1 => "st_bold" })
-    s.add_row(["Style: Italic", "Italic Text"], styles: { 1 => "st_italic" })
-    s.add_row(["Style: Underline", "Underline Text"], styles: { 1 => "st_underline" })
-    s.add_row(["Style: Double Underline", "Double Underline"], styles: { 1 => "st_double_u" })
-    s.add_row(["Style: Strike-through", "Strike-through Text"], styles: { 1 => "st_strike" })
+    s.row(["Style: Bold", "Bold Text"], styles: { 1 => "st_bold" })
+    s.row(["Style: Italic", "Italic Text"], styles: { 1 => "st_italic" })
+    s.row(["Style: Underline", "Underline Text"], styles: { 1 => "st_underline" })
+    s.row(["Style: Double Underline", "Double Underline"], styles: { 1 => "st_double_u" })
+    s.row(["Style: Strike-through", "Strike-through Text"], styles: { 1 => "st_strike" })
 
-    s.add_row(["Align: Superscript", "x2 (2 is super)"], styles: { 1 => "v_super" })
-    s.add_row(["Align: Subscript", "H2O (2 is sub)"], styles: { 1 => "v_sub" })
+    s.row(["Align: Superscript", "x2 (2 is super)"], styles: { 1 => "v_super" })
+    s.row(["Align: Subscript", "H2O (2 is sub)"], styles: { 1 => "v_sub" })
   end
 end
 
@@ -3406,9 +3406,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Filter") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Name Department])
-    s.add_row(%w[Alice HR])
-    s.add_row(%w[Bob Eng])
+    s.row(%w[Name Department])
+    s.row(%w[Alice HR])
+    s.row(%w[Bob Eng])
     s.set_auto_filter("A1:B3")
   end
   w.add_defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
@@ -3461,7 +3461,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Comments") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Item A", "Item B"])
+    s.row(["Item A", "Item B"])
     s.add_comment("A1", "This is an important comment.", author: "System")
   end
 end
@@ -3511,8 +3511,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Custom Rule") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Number A", "Number B (Must be larger A)"])
-    s.add_row([10, ""])
+    s.row(["Number A", "Number B (Must be larger A)"])
+    s.row([10, ""])
     s.add_data_validation("B2", type: "custom", formula1: "B2>A2", show_error_message: true, error_title: "Validation Error", error: "Number B must be greater than Number A")
   end
 end
@@ -3563,7 +3563,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Date Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Date Range", "Enter Date (2026):"])
+    s.row(["Date Range", "Enter Date (2026):"])
     s.add_data_validation("B2", type: "date", operator: "between", formula1: "Date(2026,1,1)", formula2: "Date(2026,12,31)", show_error_message: true, error_title: "Invalid Date", error: "Must be a date in 2026")
   end
 end
@@ -3614,7 +3614,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("List Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Department", "Select:"])
+    s.row(["Department", "Select:"])
     s.add_data_validation("B2", type: "list", formula1: '"HR,Sales,Engineering"')
   end
 end
@@ -3665,7 +3665,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Range Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Age", "Enter (18-99):"])
+    s.row(["Age", "Enter (18-99):"])
     s.add_data_validation("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
   end
 end
@@ -3716,7 +3716,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Text Length") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Username", "Enter (< 10 chars):"])
+    s.row(["Username", "Enter (< 10 chars):"])
     s.add_data_validation("B2", type: "textLength", operator: "lessThan", formula1: "10", show_error_message: true, error_title: "Too Long", error: "Username must be under 10 characters")
   end
 end
@@ -3767,7 +3767,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Time Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Schedule", "Enter Time (after 08:00):"])
+    s.row(["Schedule", "Enter Time (after 08:00):"])
     s.add_data_validation("B2", type: "time", operator: "greaterThan", formula1: "0.33333", show_error_message: true, error_title: "Too Early", error: "Time must be after 08:00 AM")
   end
 end
@@ -3819,8 +3819,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Japanese") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[日本語ラベル 値], styles: { 0 => "ja_font", 1 => "ja_font" })
-    s.add_row(["売上", 12_500], styles: { 0 => "ja_font" })
+    s.row(%w[日本語ラベル 値], styles: { 0 => "ja_font", 1 => "ja_font" })
+    s.row(["売上", 12_500], styles: { 0 => "ja_font" })
   end
 end
 
@@ -3874,10 +3874,10 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_column(2, width: 25)
-    s.add_row(["Merged Title Row", nil, nil], styles: %w[title title title])
-    s.add_row(["Header A", "Header B", "Header C"], styles: %w[border border border])
-    s.add_row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], styles: %w[border border border])
-    s.add_row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], styles: %w[border border border])
+    s.row(["Merged Title Row", nil, nil], styles: %w[title title title])
+    s.row(["Header A", "Header B", "Header C"], styles: %w[border border border])
+    s.row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], styles: %w[border border border])
+    s.row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], styles: %w[border border border])
 
     s.merge_cells("A1:C1")
     s.set_freeze_pane(row: 2, col: 0)
@@ -3928,7 +3928,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
-    s.add_row(["Grid Lines Printed sheet"])
+    s.row(["Grid Lines Printed sheet"])
   end
 end
 
@@ -3978,7 +3978,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_header_footer(odd_header: "&LMy Company&RPage &P", odd_footer: "&CConfidential")
-    s.add_row(["Header Footer sheet"])
+    s.row(["Header Footer sheet"])
   end
 end
 
@@ -4028,7 +4028,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:headings, true)
-    s.add_row(["Row/Col Headings Printed sheet"])
+    s.row(["Row/Col Headings Printed sheet"])
   end
 end
 
@@ -4078,7 +4078,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_margins(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25, header: 0.1, footer: 0.1)
-    s.add_row(["Narrow Margins sheet"])
+    s.row(["Narrow Margins sheet"])
   end
 end
 
@@ -4128,7 +4128,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_margins(top: 1.0, bottom: 1.0, left: 1.0, right: 1.0, header: 0.5, footer: 0.5)
-    s.add_row(["Wide Margins sheet"])
+    s.row(["Wide Margins sheet"])
   end
 end
 
@@ -4178,7 +4178,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_setup(orientation: :landscape)
-    s.add_row(["Landscape Orientation sheet"])
+    s.row(["Landscape Orientation sheet"])
   end
 end
 
@@ -4228,7 +4228,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_setup(paper_size: 8) # ISO A3 is paperSize="8"
-    s.add_row(["ISO A3 Paper Size sheet"])
+    s.row(["ISO A3 Paper Size sheet"])
   end
 end
 
@@ -4279,9 +4279,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Row Grouping") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Parent Row 1", ""], styles: %w[parent parent])
-    s.add_row(["Child Row 1.1", ""], outline_level: 1, styles: %w[child child])
-    s.add_row(["Child Row 1.2", ""], outline_level: 1, styles: %w[child child])
+    s.row(["Parent Row 1", ""], styles: %w[parent parent])
+    s.row(["Child Row 1.1", ""], outline_level: 1, styles: %w[child child])
+    s.row(["Child Row 1.2", ""], outline_level: 1, styles: %w[child child])
   end
 end
 
@@ -4327,8 +4327,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Row Height") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Very Tall Row (Height 60)", ""], height: 60, styles: %w[border border])
-    s.add_row(["Normal Row", ""], styles: %w[border border])
+    s.row(["Very Tall Row (Height 60)", ""], height: 60, styles: %w[border border])
+    s.row(["Normal Row", ""], styles: %w[border border])
   end
 end
 
@@ -4373,8 +4373,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Heights") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Normal Row", ""], styles: %w[border border])
-    s.add_row(["Tall Row", ""], height: 40, styles: %w[border border])
+    s.row(["Normal Row", ""], styles: %w[border border])
+    s.row(["Tall Row", ""], height: 40, styles: %w[border border])
   end
 end
 
@@ -4423,11 +4423,11 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_sheet_property(:tab_color, "FFFF0000")
-    s.add_row(["Red tab sheet"])
+    s.row(["Red tab sheet"])
   end
   w.sheet("Green Tab") do |s|
     s.set_sheet_property(:tab_color, "FF00FF00")
-    s.add_row(["Green tab sheet"])
+    s.row(["Green tab sheet"])
   end
 end
 
@@ -4474,7 +4474,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([5, 12, 8, 15, nil])
+    s.row([5, 12, 8, 15, nil])
     s.add_sparkline_group(
       type: :column,
       sparklines: [{ location_ref: "E1", data_ref: "Sparkline!A1:D1" }]
@@ -4526,7 +4526,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([10, 20, 15, 30, nil])
+    s.row([10, 20, 15, 30, nil])
     s.add_sparkline_group(
       type: :line,
       markers: true,
@@ -4587,8 +4587,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Styles") do
     w.set_column(0, width: 25)
     w.set_column(1, width: 25)
-    w.add_row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
-    w.add_row(["Normal Text", "Highlighted Text"], styles: { 1 => "highlight" })
+    w.row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
+    w.row(["Normal Text", "Highlighted Text"], styles: { 1 => "highlight" })
   end
 end
 
@@ -4641,7 +4641,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_sheet_view(:show_grid_lines, false)
-    s.add_row(["No Grid Lines displayed"])
+    s.row(["No Grid Lines displayed"])
   end
 end
 
@@ -4688,7 +4688,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_sheet_view(:zoom_scale, 150)
-    s.add_row(["Zoom scale is set to 150%"])
+    s.row(["Zoom scale is set to 150%"])
   end
 end
 
@@ -4733,9 +4733,9 @@ Demonstrates creating workbooks with multiple worksheets.
 require "xlsxrb"
 output_path = ARGV[0] || "workbook_three_sheets.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.sheet("First Sheet") { |s| s.add_row(["First Sheet Data"]) }
-  w.sheet("Second Sheet") { |s| s.add_row(["Second Sheet Data"]) }
-  w.sheet("Third Sheet") { |s| s.add_row(["Third Sheet Data"]) }
+  w.sheet("First Sheet") { |s| s.row(["First Sheet Data"]) }
+  w.sheet("Second Sheet") { |s| s.row(["Second Sheet Data"]) }
+  w.sheet("Third Sheet") { |s| s.row(["Third Sheet Data"]) }
 end
 
 # 2. Read the generated sheet and print the sheets structure

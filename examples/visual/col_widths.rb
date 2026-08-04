@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Widths") do |s|
     s.set_column(0, width: 30)
     s.set_column(1, width: 10)
-    s.add_row(["Wide Column A", "Narrow B"], styles: %w[border border])
+    s.row(["Wide Column A", "Narrow B"], styles: %w[border border])
   end
 end
 

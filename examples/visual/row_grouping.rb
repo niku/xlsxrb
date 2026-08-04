@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Row Grouping") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Parent Row 1", ""], styles: %w[parent parent])
-    s.add_row(["Child Row 1.1", ""], outline_level: 1, styles: %w[child child])
-    s.add_row(["Child Row 1.2", ""], outline_level: 1, styles: %w[child child])
+    s.row(["Parent Row 1", ""], styles: %w[parent parent])
+    s.row(["Child Row 1.1", ""], outline_level: 1, styles: %w[child child])
+    s.row(["Child Row 1.2", ""], outline_level: 1, styles: %w[child child])
   end
 end
 

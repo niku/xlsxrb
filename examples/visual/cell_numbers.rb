@@ -8,11 +8,11 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Numbers") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Integer", 12_345])
-    s.add_row(["Float", 123.456])
-    s.add_row(["Currency", 1234.5], styles: { 1 => "currency" })
-    s.add_row(["Percentage", 0.85], styles: { 1 => "percent" })
+    s.row(%w[Format Value])
+    s.row(["Integer", 12_345])
+    s.row(["Float", 123.456])
+    s.row(["Currency", 1234.5], styles: { 1 => "currency" })
+    s.row(["Percentage", 0.85], styles: { 1 => "percent" })
   end
 end
 

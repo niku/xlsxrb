@@ -16,8 +16,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Styles") do
     w.set_column(0, width: 25)
     w.set_column(1, width: 25)
-    w.add_row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
-    w.add_row(["Normal Text", "Highlighted Text"], styles: { 1 => "highlight" })
+    w.row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
+    w.row(["Normal Text", "Highlighted Text"], styles: { 1 => "highlight" })
   end
 end
 
