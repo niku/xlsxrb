@@ -20,8 +20,8 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("diagonal") { |s| s.border_diagonal(style: "thin", color: "FF000000", up: true, down: true) }
 
   w.sheet("Borders") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.set_print_option(:grid_lines, true)
 
     s.row(["Border Style", "Cell Preview"])

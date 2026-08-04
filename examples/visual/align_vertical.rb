@@ -7,8 +7,8 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |s| s.align_vertical("center") }
   w.add_style("bottom") { |s| s.align_vertical("bottom") }
   w.sheet("Vertical Alignment") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.set_print_option(:grid_lines, true)
     s.row(%w[Top Center Bottom], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
   end

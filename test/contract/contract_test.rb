@@ -815,7 +815,7 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: column and row formatting" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.set_column(0, width: 20.0, hidden: true, outline_level: 1)
+        s.column(0, width: 20.0, hidden: true, outline_level: 1)
         s.row(["Test"], height: 30.0, hidden: true, outline_level: 2)
       end
     end

@@ -520,7 +520,7 @@ module Xlsxrb
     end
 
     # Set column width for a 0-based column index.
-    def set_column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
+    def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       @columns << Elements::Column.new(
         index: index,
         width: width,
@@ -916,7 +916,7 @@ module Xlsxrb
     end
 
     # Set column width for a 0-based column index.
-    def set_column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
+    def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       sheet if @current_sheet.nil?
 
       @current_columns << { index: index, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }

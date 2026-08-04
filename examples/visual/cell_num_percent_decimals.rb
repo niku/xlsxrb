@@ -5,8 +5,8 @@ output_path = ARGV[0] || "cell_num_percent_decimals.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("pct2") { |s| s.num_fmt("0.00%") }
   w.sheet("Percents") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.row(%w[Format Value])
     s.row(["Percent with 2 Decimals", 0.12345], styles: { 1 => "pct2" })
   end

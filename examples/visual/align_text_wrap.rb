@@ -6,7 +6,7 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("wrap", &:wrap_text)
   w.sheet("Text Wrap") do |s|
     s.set_print_option(:grid_lines, true)
-    s.set_column(0, width: 15)
+    s.column(0, width: 15)
     s.row(["This is a long sentence that wraps inside the cell."], styles: { 0 => "wrap" })
   end
 end

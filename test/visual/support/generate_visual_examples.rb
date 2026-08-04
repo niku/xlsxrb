@@ -300,9 +300,9 @@ module Xlsxrb
             w.add_style("right") { |s| s.align_horizontal("right") }
             w.sheet("Alignment") do |s|
               s.set_print_option(:grid_lines, true)
-              s.set_column(0, width: 20)
-              s.set_column(1, width: 20)
-              s.set_column(2, width: 20)
+              s.column(0, width: 20)
+              s.column(1, width: 20)
+              s.column(2, width: 20)
               s.row(["Left", "Center", "Right"], styles: { 0 => "left", 1 => "center", 2 => "right" })
             end
           end
@@ -345,7 +345,7 @@ module Xlsxrb
             w.add_style("wrap") { |s| s.wrap_text }
             w.sheet("Text Wrap") do |s|
               s.set_print_option(:grid_lines, true)
-              s.set_column(0, width: 15)
+              s.column(0, width: 15)
               s.row(["This is a long sentence that wraps inside the cell."], styles: { 0 => "wrap" })
             end
           end
@@ -373,8 +373,8 @@ module Xlsxrb
           output_path = ARGV[0] || "col_widths.xlsx"
           Xlsxrb.generate(output_path) do |w|
             w.sheet("Widths") do |s|
-              s.set_column(0, width: 30)
-              s.set_column(1, width: 10)
+              s.column(0, width: 30)
+              s.column(1, width: 10)
               s.row(["Wide Column A", "Narrow B"])
             end
           end
@@ -411,9 +411,9 @@ module Xlsxrb
           output_path = ARGV[0] || "col_grouping.xlsx"
           Xlsxrb.generate(output_path) do |w|
             w.sheet("Col Grouping") do |s|
-              s.set_column(0, outline_level: 0)
-              s.set_column(1, outline_level: 1)
-              s.set_column(2, outline_level: 1)
+              s.column(0, outline_level: 0)
+              s.column(1, outline_level: 1)
+              s.column(2, outline_level: 1)
               s.row(["Col A", "Col B (Grouped)", "Col C (Grouped)"])
             end
           end

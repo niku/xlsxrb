@@ -6,8 +6,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.row(%w[Stat Value])
     s.row(["Atk", 80])
     s.row(["Def", 60])

@@ -9,8 +9,8 @@ Xlsxrb.generate(output_path) do |w|
                                         { text: "ITALIC BLUE", font: { italic: true, color: "FF0000FF", sz: 20 } }
                                       ])
   w.sheet("Rich Text") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.row(%w[Format Value])
     s.row(["Rich Text Cell", rt])
   end
