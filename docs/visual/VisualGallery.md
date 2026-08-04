@@ -514,9 +514,9 @@ Demonstrates horizontal text alignment (left, center, right).
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("left") { |s| s.align_horizontal("left") }
-  w.add_style("center") { |s| s.align_horizontal("center") }
-  w.add_style("right") { |s| s.align_horizontal("right") }
+  w.style("left") { |s| s.align_horizontal("left") }
+  w.style("center") { |s| s.align_horizontal("center") }
+  w.style("right") { |s| s.align_horizontal("right") }
   w.sheet("Alignment") do |s|
     s.set_print_option(:grid_lines, true)
     s.column(0, width: 20)
@@ -568,7 +568,7 @@ Demonstrates horizontal fill alignment (repeats value to fill cell width).
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_fill.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("fill_align") { |s| s.align_horizontal("fill") }
+  w.style("fill_align") { |s| s.align_horizontal("fill") }
   w.sheet("Alignment") do |s|
     s.column(0, width: 30)
     s.row(["X "], styles: { 0 => "fill_align" })
@@ -619,7 +619,7 @@ Demonstrates horizontal justify text alignment.
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_justify.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("justify_align") do |s|
+  w.style("justify_align") do |s|
     s.align_horizontal("justify")
     s.wrap_text(true)
   end
@@ -673,8 +673,8 @@ Demonstrates text indentation inside cells.
 require "xlsxrb"
 output_path = ARGV[0] || "align_indent.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("indent_1") { |s| s.align_horizontal("left").indent(1) }
-  w.add_style("indent_3") { |s| s.align_horizontal("left").indent(3) }
+  w.style("indent_1") { |s| s.align_horizontal("left").indent(1) }
+  w.style("indent_3") { |s| s.align_horizontal("left").indent(3) }
   w.sheet("Indent") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -729,8 +729,8 @@ Demonstrates text rotated by specific angles (45, 90 degrees).
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_rotation.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("rot_45") { |s| s.text_rotation(45) }
-  w.add_style("rot_90") { |s| s.text_rotation(90) }
+  w.style("rot_45") { |s| s.text_rotation(45) }
+  w.style("rot_90") { |s| s.text_rotation(90) }
   w.sheet("Rotation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -784,7 +784,7 @@ Demonstrates auto-wrapping multi-line text inside narrow cells.
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_wrap.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("wrap", &:wrap_text)
+  w.style("wrap", &:wrap_text)
   w.sheet("Text Wrap") do |s|
     s.set_print_option(:grid_lines, true)
     s.column(0, width: 15)
@@ -836,9 +836,9 @@ Demonstrates vertical text alignment (top, center, bottom).
 require "xlsxrb"
 output_path = ARGV[0] || "align_vertical.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("top") { |s| s.align_vertical("top") }
-  w.add_style("center") { |s| s.align_vertical("center") }
-  w.add_style("bottom") { |s| s.align_vertical("bottom") }
+  w.style("top") { |s| s.align_vertical("top") }
+  w.style("center") { |s| s.align_vertical("center") }
+  w.style("bottom") { |s| s.align_vertical("bottom") }
   w.sheet("Vertical Alignment") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -896,8 +896,8 @@ require "date"
 output_path = ARGV[0] || "basic_data.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("currency") { |style| style.number_format("$#,##0.00") }
-  w.add_style("date") { |style| style.number_format("yyyy-mm-dd") }
+  w.style("currency") { |style| style.number_format("$#,##0.00") }
+  w.style("date") { |style| style.number_format("yyyy-mm-dd") }
   w.sheet("Basic Data") do
     w.set_sheet_property(:fit_to_page, true)
     w.set_page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -952,19 +952,19 @@ require "xlsxrb"
 output_path = ARGV[0] || "borders.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("thin") { |s| s.border_all(style: "thin", color: "FF000000") }
-  w.add_style("medium") { |s| s.border_all(style: "medium", color: "FF000000") }
-  w.add_style("thick") { |s| s.border_all(style: "thick", color: "FF000000") }
-  w.add_style("hair") { |s| s.border_all(style: "hair", color: "FF000000") }
-  w.add_style("dashed") { |s| s.border_all(style: "dashed", color: "FF000000") }
-  w.add_style("medium_dashed") { |s| s.border_all(style: "mediumDashed", color: "FF000000") }
-  w.add_style("dotted") { |s| s.border_all(style: "dotted", color: "FF000000") }
-  w.add_style("double") { |s| s.border_all(style: "double", color: "FF000000") }
-  w.add_style("dash_dot") { |s| s.border_all(style: "dashDot", color: "FF000000") }
-  w.add_style("medium_dash_dot") { |s| s.border_all(style: "mediumDashDot", color: "FF000000") }
-  w.add_style("dash_dot_dot") { |s| s.border_all(style: "dashDotDot", color: "FF000000") }
-  w.add_style("slanted") { |s| s.border_all(style: "slantedDashDot", color: "FF000000") }
-  w.add_style("diagonal") { |s| s.border_diagonal(style: "thin", color: "FF000000", up: true, down: true) }
+  w.style("thin") { |s| s.border_all(style: "thin", color: "FF000000") }
+  w.style("medium") { |s| s.border_all(style: "medium", color: "FF000000") }
+  w.style("thick") { |s| s.border_all(style: "thick", color: "FF000000") }
+  w.style("hair") { |s| s.border_all(style: "hair", color: "FF000000") }
+  w.style("dashed") { |s| s.border_all(style: "dashed", color: "FF000000") }
+  w.style("medium_dashed") { |s| s.border_all(style: "mediumDashed", color: "FF000000") }
+  w.style("dotted") { |s| s.border_all(style: "dotted", color: "FF000000") }
+  w.style("double") { |s| s.border_all(style: "double", color: "FF000000") }
+  w.style("dash_dot") { |s| s.border_all(style: "dashDot", color: "FF000000") }
+  w.style("medium_dash_dot") { |s| s.border_all(style: "mediumDashDot", color: "FF000000") }
+  w.style("dash_dot_dot") { |s| s.border_all(style: "dashDotDot", color: "FF000000") }
+  w.style("slanted") { |s| s.border_all(style: "slantedDashDot", color: "FF000000") }
+  w.style("diagonal") { |s| s.border_diagonal(style: "thin", color: "FF000000", up: true, down: true) }
 
   w.sheet("Borders") do |s|
     s.column(0, width: 25)
@@ -1093,7 +1093,7 @@ require "xlsxrb"
 require "date"
 output_path = ARGV[0] || "cell_dates.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
+  w.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
   w.sheet("Dates") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1198,7 +1198,7 @@ Demonstrates Yen Currency format code formatting.
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_currency_jpy.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
+  w.style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
   w.sheet("JPY Currency") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1251,7 +1251,7 @@ Demonstrates custom colored formats for positive and negative numbers.
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_custom_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("custom_color") { |s| s.num_fmt("[Green]#,##0;[Red]-#,##0") }
+  w.style("custom_color") { |s| s.num_fmt("[Green]#,##0;[Red]-#,##0") }
   w.sheet("Custom Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1304,7 +1304,7 @@ Demonstrates fraction number formats (# ?/?).
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_fractions.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("frac") { |s| s.num_fmt("# ?/?") }
+  w.style("frac") { |s| s.num_fmt("# ?/?") }
   w.sheet("Fractions") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1359,7 +1359,7 @@ Demonstrates percentages with two decimal places (0.00%).
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_percent_decimals.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("pct2") { |s| s.num_fmt("0.00%") }
+  w.style("pct2") { |s| s.num_fmt("0.00%") }
   w.sheet("Percents") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1410,7 +1410,7 @@ Demonstrates scientific number formats (0.00E+00).
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_scientific.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("sci") { |s| s.num_fmt("0.00E+00") }
+  w.style("sci") { |s| s.num_fmt("0.00E+00") }
   w.sheet("Scientific") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1463,8 +1463,8 @@ Demonstrates custom formatting for integers, floating point numbers, currencies,
 require "xlsxrb"
 output_path = ARGV[0] || "cell_numbers.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("currency") { |s| s.num_fmt("$#,##0.00") }
-  w.add_style("percent") { |s| s.num_fmt("0.0%") }
+  w.style("currency") { |s| s.num_fmt("$#,##0.00") }
+  w.style("percent") { |s| s.num_fmt("0.0%") }
   w.sheet("Numbers") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1573,7 +1573,7 @@ require "xlsxrb"
 require "time"
 output_path = ARGV[0] || "cell_times.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
+  w.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
   w.sheet("Times") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1675,7 +1675,7 @@ Demonstrates conditional formatting highlighting cells within a range.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_between.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("CF Between") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1727,7 +1727,7 @@ Demonstrates conditional formatting highlighting cells equal to a target value.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_equal_to.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("CF Equal") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1779,7 +1779,7 @@ Demonstrates conditional formatting highlighting cells greater than or equal to 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_equal.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("CF Greater Equal") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1831,7 +1831,7 @@ Demonstrates conditional formatting highlighting cells greater than a threshold.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_than.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("CF Greater") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1883,7 +1883,7 @@ Demonstrates conditional formatting highlighting cells less than a threshold.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_less_than.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("CF Less") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1935,7 +1935,7 @@ Demonstrates color scale/heatmap conditional formatting.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_color_scale.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2036,7 +2036,7 @@ Demonstrates data bar visual conditional formatting indicators.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_data_bar.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("Data Bars") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2137,7 +2137,7 @@ Demonstrates conditional formatting using a custom formula expression.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_expression_formula.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("CF Expression") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2191,7 +2191,7 @@ Demonstrates icon set indicators (red/yellow/green arrows).
 require "xlsxrb"
 output_path = ARGV[0] || "cf_icon_set.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("Icons") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2845,7 +2845,7 @@ Demonstrates outline grouping for columns.
 require "xlsxrb"
 output_path = ARGV[0] || "col_grouping.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Col Grouping") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -2894,7 +2894,7 @@ Demonstrates setting very wide column widths.
 require "xlsxrb"
 output_path = ARGV[0] || "col_width_tall.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Col Width") do |s|
     s.column(0, width: 50)
     s.column(1, width: 10)
@@ -2939,7 +2939,7 @@ Demonstrates setting custom column widths.
 require "xlsxrb"
 output_path = ARGV[0] || "col_widths.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Widths") do |s|
     s.column(0, width: 30)
     s.column(1, width: 10)
@@ -2986,7 +2986,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "conditional_formatting.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |style| style.align_horizontal("center") }
+  w.style("center") { |style| style.align_horizontal("center") }
   w.sheet("Scores") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3058,7 +3058,7 @@ end
 dummy_png = make_png(100, 100, 255, 0, 0)
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("center") { |st| st.align_horizontal(:center) }
+  w.style("center") { |st| st.align_horizontal(:center) }
   w.sheet("Images") do |s|
     s.row(["Logo Target cell:", "", "", "Boundary"], styles: %w[left center center center])
     s.row(["", "", "", ""])
@@ -3123,7 +3123,7 @@ Demonstrates linear gradients inside cell backgrounds.
 require "xlsxrb"
 output_path = ARGV[0] || "fill_gradients.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("gradient") do |style|
+  w.style("gradient") do |style|
     style.fill_gradient(type: "linear", degree: 45, stops: [
                           { position: 0, color: "FFFFFFFF" },
                           { position: 1, color: "FF4F81BD" }
@@ -3176,8 +3176,8 @@ Demonstrates standard pattern fills (darkGray, darkGrid) in cell backgrounds.
 require "xlsxrb"
 output_path = ARGV[0] || "fill_patterns.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
-  w.add_style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
+  w.style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
+  w.style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
   w.sheet("Patterns") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3227,8 +3227,8 @@ Demonstrates solid cell background fill colors.
 require "xlsxrb"
 output_path = ARGV[0] || "fill_solid_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("red_fill") { |s| s.fill_color("FFFFC7CE") }
-  w.add_style("green_fill") { |s| s.fill_color("FFC6EFCE") }
+  w.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
+  w.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
   w.sheet("Fills") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3281,32 +3281,32 @@ output_path = ARGV[0] || "fonts.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
   # Font Families
-  w.add_style("f_arial") { |s| s.font_name("Arial") }
-  w.add_style("f_times") { |s| s.font_name("Times New Roman") }
-  w.add_style("f_courier") { |s| s.font_name("Courier New") }
-  w.add_style("f_georgia") { |s| s.font_name("Georgia") }
-  w.add_style("f_tahoma") { |s| s.font_name("Tahoma") }
+  w.style("f_arial") { |s| s.font_name("Arial") }
+  w.style("f_times") { |s| s.font_name("Times New Roman") }
+  w.style("f_courier") { |s| s.font_name("Courier New") }
+  w.style("f_georgia") { |s| s.font_name("Georgia") }
+  w.style("f_tahoma") { |s| s.font_name("Tahoma") }
 
   # Font Sizes
-  w.add_style("sz_10") { |s| s.size(10) }
-  w.add_style("sz_16") { |s| s.size(16) }
-  w.add_style("sz_24") { |s| s.size(24) }
+  w.style("sz_10") { |s| s.size(10) }
+  w.style("sz_16") { |s| s.size(16) }
+  w.style("sz_24") { |s| s.size(24) }
 
   # Font Colors
-  w.add_style("c_red") { |s| s.font_color("FFC00000") }
-  w.add_style("c_green") { |s| s.font_color("FF008000") }
-  w.add_style("c_blue") { |s| s.font_color("FF0000FF") }
+  w.style("c_red") { |s| s.font_color("FFC00000") }
+  w.style("c_green") { |s| s.font_color("FF008000") }
+  w.style("c_blue") { |s| s.font_color("FF0000FF") }
 
   # Font Styles
-  w.add_style("st_bold", &:bold)
-  w.add_style("st_italic", &:italic)
-  w.add_style("st_underline") { |s| s.underline("single") }
-  w.add_style("st_double_u") { |s| s.underline("double") }
-  w.add_style("st_strike", &:strike)
+  w.style("st_bold", &:bold)
+  w.style("st_italic", &:italic)
+  w.style("st_underline") { |s| s.underline("single") }
+  w.style("st_double_u") { |s| s.underline("double") }
+  w.style("st_strike", &:strike)
 
   # Vertical Alignments (Superscript/Subscript)
-  w.add_style("v_super") { |s| s.vert_align("superscript") }
-  w.add_style("v_sub") { |s| s.vert_align("subscript") }
+  w.style("v_super") { |s| s.vert_align("superscript") }
+  w.style("v_sub") { |s| s.vert_align("subscript") }
 
   w.sheet("Fonts") do |s|
     s.column(0, width: 25)
@@ -3812,7 +3812,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "japanese_text.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("ja_font") do |style|
+  w.style("ja_font") do |style|
     style.font_name("Noto Sans CJK JP").size(12)
   end
 
@@ -3866,8 +3866,8 @@ require "xlsxrb"
 output_path = ARGV[0] || "merge_freeze.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
-  w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  w.style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
+  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Merge & Freeze") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -4274,8 +4274,8 @@ Demonstrates outline grouping for rows.
 require "xlsxrb"
 output_path = ARGV[0] || "row_grouping.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
-  w.add_style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
+  w.style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
+  w.style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
   w.sheet("Row Grouping") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -4323,7 +4323,7 @@ Demonstrates setting very tall row heights.
 require "xlsxrb"
 output_path = ARGV[0] || "row_height_tall.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Row Height") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -4369,7 +4369,7 @@ Demonstrates setting custom row heights.
 require "xlsxrb"
 output_path = ARGV[0] || "row_heights.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Heights") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -4576,11 +4576,11 @@ require "xlsxrb"
 output_path = ARGV[0] || "styles_fonts_fills.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("header") do |style|
+  w.style("header") do |style|
     style.bold.size(14).font_color("FFFFFFFF").fill_color("FF4F81BD")
   end
 
-  w.add_style("highlight") do |style|
+  w.style("highlight") do |style|
     style.italic.font_color("FFC00000").fill_color("FFFFFF00")
   end
 

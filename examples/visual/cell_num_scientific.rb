@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_scientific.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("sci") { |s| s.num_fmt("0.00E+00") }
+  w.style("sci") { |s| s.num_fmt("0.00E+00") }
   w.sheet("Scientific") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

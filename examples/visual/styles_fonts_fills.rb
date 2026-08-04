@@ -5,11 +5,11 @@ require "xlsxrb"
 output_path = ARGV[0] || "styles_fonts_fills.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("header") do |style|
+  w.style("header") do |style|
     style.bold.size(14).font_color("FFFFFFFF").fill_color("FF4F81BD")
   end
 
-  w.add_style("highlight") do |style|
+  w.style("highlight") do |style|
     style.italic.font_color("FFC00000").fill_color("FFFFFF00")
   end
 

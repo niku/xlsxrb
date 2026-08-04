@@ -3,8 +3,8 @@
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_rotation.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("rot_45") { |s| s.text_rotation(45) }
-  w.add_style("rot_90") { |s| s.text_rotation(90) }
+  w.style("rot_45") { |s| s.text_rotation(45) }
+  w.style("rot_90") { |s| s.text_rotation(90) }
   w.sheet("Rotation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

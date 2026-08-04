@@ -3,9 +3,9 @@
 require "xlsxrb"
 output_path = ARGV[0] || "align_vertical.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("top") { |s| s.align_vertical("top") }
-  w.add_style("center") { |s| s.align_vertical("center") }
-  w.add_style("bottom") { |s| s.align_vertical("bottom") }
+  w.style("top") { |s| s.align_vertical("top") }
+  w.style("center") { |s| s.align_vertical("center") }
+  w.style("bottom") { |s| s.align_vertical("bottom") }
   w.sheet("Vertical Alignment") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

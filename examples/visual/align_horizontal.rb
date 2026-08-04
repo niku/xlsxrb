@@ -3,9 +3,9 @@
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("left") { |s| s.align_horizontal("left") }
-  w.add_style("center") { |s| s.align_horizontal("center") }
-  w.add_style("right") { |s| s.align_horizontal("right") }
+  w.style("left") { |s| s.align_horizontal("left") }
+  w.style("center") { |s| s.align_horizontal("center") }
+  w.style("right") { |s| s.align_horizontal("right") }
   w.sheet("Alignment") do |s|
     s.set_print_option(:grid_lines, true)
     s.column(0, width: 20)

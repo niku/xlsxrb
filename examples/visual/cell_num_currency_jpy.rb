@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_currency_jpy.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
+  w.style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
   w.sheet("JPY Currency") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

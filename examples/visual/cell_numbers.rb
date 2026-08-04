@@ -3,8 +3,8 @@
 require "xlsxrb"
 output_path = ARGV[0] || "cell_numbers.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("currency") { |s| s.num_fmt("$#,##0.00") }
-  w.add_style("percent") { |s| s.num_fmt("0.0%") }
+  w.style("currency") { |s| s.num_fmt("$#,##0.00") }
+  w.style("percent") { |s| s.num_fmt("0.0%") }
   w.sheet("Numbers") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

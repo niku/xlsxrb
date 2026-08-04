@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_justify.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("justify_align") do |s|
+  w.style("justify_align") do |s|
     s.align_horizontal("justify")
     s.wrap_text(true)
   end
