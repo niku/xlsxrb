@@ -4,6 +4,28 @@ module Xlsxrb
   # Helper class for building cell styles with a fluent DSL.
   # Encapsulates font, fill, border, alignment, and number format properties.
   class StyleBuilder
+    COLORS = {
+      black: "FF000000",
+      white: "FFFFFFFF",
+      red: "FFFF0000",
+      green: "FF00FF00",
+      blue: "FF0000FF",
+      yellow: "FFFFFF00",
+      cyan: "FF00FFFF",
+      magenta: "FFFF00FF",
+      gray: "FF808080",
+      grey: "FF808080"
+    }.freeze
+
+    def resolve_color(color)
+      return nil unless color
+      if color.is_a?(Symbol) || (color.is_a?(String) && color.start_with?(":") && color.length > 1)
+        key = color.to_s.sub(/^:/, "").to_sym
+        return COLORS[key] || color.to_s
+      end
+      color.to_s
+    end
+
     def initialize(name = nil)
       @name = name
       @font_props = {}
@@ -80,7 +102,7 @@ module Xlsxrb
     end
 
     def font_color(color)
-      @font_props[:color] = color
+      @font_props[:color] = resolve_color(color)
       self
     end
 
@@ -111,12 +133,12 @@ module Xlsxrb
 
     def fill_color(color)
       @fill_props[:pattern] = "solid"
-      @fill_props[:fg_color] = color
+      @fill_props[:fg_color] = resolve_color(color)
       self
     end
 
     def fill(pattern: "solid", fg_color: nil, bg_color: nil)
-      fill_pattern(pattern, fg_color: fg_color, bg_color: bg_color)
+      fill_pattern(pattern, fg_color: resolve_color(fg_color), bg_color: resolve_color(bg_color))
     end
 
     def fill_gradient(type:, degree: nil, stops: [])
@@ -131,7 +153,7 @@ module Xlsxrb
     # --- Border Properties ---
 
     def border_all(style: "thin", color: nil)
-      color_opt = color ? { color: color } : {}
+      color_opt = color ? { color: resolve_color(color) } : {}
       @border_props[:left] = { style: style, **color_opt }
       @border_props[:right] = { style: style, **color_opt }
       @border_props[:top] = { style: style, **color_opt }
@@ -140,28 +162,28 @@ module Xlsxrb
     end
 
     def border_left(style: "thin", color: nil)
-      @border_props[:left] = { style: style, color: color }.compact
+      @border_props[:left] = { style: style, color: resolve_color(color) }.compact
       self
     end
 
     def border_right(style: "thin", color: nil)
-      @border_props[:right] = { style: style, color: color }.compact
+      @border_props[:right] = { style: style, color: resolve_color(color) }.compact
       self
     end
 
     def border_top(style: "thin", color: nil)
-      @border_props[:top] = { style: style, color: color }.compact
+      @border_props[:top] = { style: style, color: resolve_color(color) }.compact
       self
     end
 
     def border_bottom(style: "thin", color: nil)
-      @border_props[:bottom] = { style: style, color: color }.compact
+      @border_props[:bottom] = { style: style, color: resolve_color(color) }.compact
       self
     end
 
     # rubocop:disable Naming/MethodParameterName
     def border_diagonal(style: "thin", color: nil, up: false, down: false)
-      @border_props[:diagonal] = { style: style, color: color }.compact
+      @border_props[:diagonal] = { style: style, color: resolve_color(color) }.compact
       @border_props[:diagonal_up] = true if up
       @border_props[:diagonal_down] = true if down
       self
