@@ -721,10 +721,10 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Workbook Protection
   # =====================================================
 
-  test "set_workbook_protection in build API" do
+  test "protect_workbook in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.set_workbook_protection(lock_structure: true)
+      w.protect_workbook(lock_structure: true)
     end
 
     tmp = Tempfile.new(["facade_wbprot_build", ".xlsx"])
@@ -737,11 +737,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_workbook_protection in generate API" do
+  test "protect_workbook in generate API" do
     tmp = Tempfile.new(["facade_wbprot_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.set_workbook_protection(lock_structure: true, lock_windows: true)
+      w.protect_workbook(lock_structure: true, lock_windows: true)
     end
 
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
