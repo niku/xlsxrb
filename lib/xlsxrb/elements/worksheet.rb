@@ -14,6 +14,16 @@ module Xlsxrb
 
       def each(&block)
         return to_enum(:each) unless block_given?
+        cells.each(&block)
+      end
+
+      def each_cell(&block)
+        return to_enum(:each_cell) unless block_given?
+        cells.each(&block)
+      end
+
+      def each_row(&block)
+        return to_enum(:each_row) unless block_given?
         rows.each(&block)
       end
 
