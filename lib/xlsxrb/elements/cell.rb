@@ -21,6 +21,10 @@ module Xlsxrb
         "#{self.class.column_letter(column_index)}#{row_index + 1}"
       end
 
+      def content
+        value
+      end
+
       def to_s
         value.to_s
       end
