@@ -979,7 +979,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
         s.auto_filter("A1:A10")
-        s.add_filter_column(0, type: :filters, values: ["Data"])
+        s.filter_column(0, type: :filters, values: ["Data"])
       end
     end
 
