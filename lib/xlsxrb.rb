@@ -524,6 +524,31 @@ module Xlsxrb
         styles = styles_array
       end
 
+      # Auto-detect Date / Time for built-in styles
+      values.each_with_index do |val, idx|
+        cell_style = styles.is_a?(Array) ? styles[idx] : styles
+        
+        if val.is_a?(Date) && cell_style.nil?
+          unless @styles.key?("__xlsxrb_date")
+            style("__xlsxrb_date", number_format: "yyyy-mm-dd")
+          end
+          styles = [] if styles.nil?
+          if !styles.is_a?(Array)
+            styles = Array.new(values.size, styles)
+          end
+          styles[idx] = "__xlsxrb_date"
+        elsif val.is_a?(Time) && cell_style.nil?
+          unless @styles.key?("__xlsxrb_time")
+            style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss")
+          end
+          styles = [] if styles.nil?
+          if !styles.is_a?(Array)
+            styles = Array.new(values.size, styles)
+          end
+          styles[idx] = "__xlsxrb_time"
+        end
+      end
+
       max_len = values.size
       max_len = [max_len, styles.size].max if styles.is_a?(Array)
       
@@ -981,17 +1006,25 @@ module Xlsxrb
 
       # Auto-detect Date / Time for built-in styles
       values.each_with_index do |val, idx|
-        if val.is_a?(Date) && (styles.nil? || styles[idx].nil?)
+        cell_style = styles.is_a?(Array) ? styles[idx] : styles
+        
+        if val.is_a?(Date) && cell_style.nil?
           unless @styles.key?("__xlsxrb_date")
             style("__xlsxrb_date", number_format: "yyyy-mm-dd")
           end
-          styles ||= []
+          styles = [] if styles.nil?
+          if !styles.is_a?(Array)
+            styles = Array.new(values.size, styles)
+          end
           styles[idx] = "__xlsxrb_date"
-        elsif val.is_a?(Time) && (styles.nil? || styles[idx].nil?)
+        elsif val.is_a?(Time) && cell_style.nil?
           unless @styles.key?("__xlsxrb_time")
             style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss")
           end
-          styles ||= []
+          styles = [] if styles.nil?
+          if !styles.is_a?(Array)
+            styles = Array.new(values.size, styles)
+          end
           styles[idx] = "__xlsxrb_time"
         end
       end
