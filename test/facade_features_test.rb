@@ -961,14 +961,14 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Sort State
   # =====================================================
 
-  test "set_sort_state in build API" do
+  test "sort_state in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Sort") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.row(["Bob", 87])
         s.auto_filter("A1:B3")
-        s.set_sort_state("A2:B3", [{ ref: "B2:B3", descending: true }])
+        s.sort_state("A2:B3", [{ ref: "B2:B3", descending: true }])
       end
     end
 

@@ -567,7 +567,7 @@ module Xlsxrb
     end
 
     # Set sort state.
-    def set_sort_state(ref, sort_conditions, **opts)
+    def sort_state(ref, sort_conditions, **opts)
       @sort_state = { ref: ref, sort_conditions: sort_conditions }.merge(opts)
     end
 
@@ -961,7 +961,7 @@ module Xlsxrb
       @current_filter_columns[col_id] = filter
     end
 
-    def set_sort_state(ref, sort_conditions, **opts)
+    def sort_state(ref, sort_conditions, **opts)
       sheet if @current_sheet.nil?
       @current_sort_state = { ref: ref, sort_conditions: sort_conditions }.merge(opts)
     end
