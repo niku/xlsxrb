@@ -1184,13 +1184,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Sparklines
   # =====================================================
 
-  test "add_sparkline_group in build API produces extLst XML" do
+  test "sparkline_group in build API produces extLst XML" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Sales") do |s|
         s.row([10, 20, 30])
         s.row([15, 25, 35])
         s.row([5, 10, 20])
-        s.add_sparkline_group(
+        s.sparkline_group(
           sparklines: [
             { data_ref: "Sales!A1:C1", location_ref: "D1" },
             { data_ref: "Sales!A2:C2", location_ref: "D2" },
@@ -1221,13 +1221,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_sparkline_group in generate API produces extLst XML" do
+  test "sparkline_group in generate API produces extLst XML" do
     tmp = Tempfile.new(["facade_sparkline_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row([1, 2, 3])
         s.row([4, 5, 6])
-        s.add_sparkline_group(
+        s.sparkline_group(
           sparklines: [
             { data_ref: "Data!A1:C1", location_ref: "D1" },
             { data_ref: "Data!A2:C2", location_ref: "D2" }
@@ -1253,7 +1253,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Sheet1") do |s|
         s.row([1, 2, 3])
-        s.add_sparkline_group(
+        s.sparkline_group(
           sparklines: [{ data_ref: "Sheet1!A1:C1", location_ref: "D1" }]
         )
       end
