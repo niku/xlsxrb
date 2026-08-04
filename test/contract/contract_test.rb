@@ -641,7 +641,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Frozen") do |s|
         s.row(["Header"])
         s.row([1])
-        s.set_freeze_pane(row: 1, col: 0)
+        s.freeze_pane(row: 1, col: 0)
       end
     end
 
@@ -792,7 +792,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(["Alice", 95])
         s.auto_filter("A1:B2")
         s.merge_cells("A1:A1")
-        s.set_freeze_pane(row: 1)
+        s.freeze_pane(row: 1)
         s.set_page_margins(left: 1.0, right: 1.0)
         s.validate_data("B2", type: :whole, formula1: "0", formula2: "100")
       end
