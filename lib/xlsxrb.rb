@@ -562,7 +562,7 @@ module Xlsxrb
     # rubocop:enable Naming/AccessorMethodName
 
     # Add a filter column to the auto filter.
-    def add_filter_column(col_id, filter)
+    def filter_column(col_id, filter)
       @filter_columns[col_id] = filter
     end
 
@@ -956,7 +956,7 @@ module Xlsxrb
     end
     # rubocop:enable Naming/AccessorMethodName
 
-    def add_filter_column(col_id, filter)
+    def filter_column(col_id, filter)
       sheet if @current_sheet.nil?
       @current_filter_columns[col_id] = filter
     end
