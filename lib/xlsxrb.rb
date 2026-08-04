@@ -649,7 +649,7 @@ module Xlsxrb
     end
 
     # Split panes (non-frozen).
-    def set_split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
+    def split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
       @split_pane = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell }
     end
 
@@ -1036,7 +1036,7 @@ module Xlsxrb
       @current_freeze_pane = { row: row, col: col }
     end
 
-    def set_split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
+    def split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
       sheet if @current_sheet.nil?
       @current_split_pane = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell }
     end

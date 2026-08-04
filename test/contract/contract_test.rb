@@ -840,7 +840,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.set_split_pane(x_split: 1, y_split: 2, top_left_cell: "B3")
+        s.split_pane(x_split: 1, y_split: 2, top_left_cell: "B3")
         s.set_selection("B3", sqref: "B3:C4", pane: :bottomRight)
       end
     end
