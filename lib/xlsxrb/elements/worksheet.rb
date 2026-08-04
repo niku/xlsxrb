@@ -46,6 +46,14 @@ module Xlsxrb
         rows.find { |r| r.index == index }
       end
 
+      def first_row
+        rows.min_by(&:index)
+      end
+
+      def last_row
+        rows.max_by(&:index)
+      end
+
       # Returns cell value at Excel-style reference (e.g. "A1").
       def cell_value(ref)
         parsed = Cell.parse_ref(ref)
