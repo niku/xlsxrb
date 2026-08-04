@@ -618,7 +618,7 @@ module Xlsxrb
     # --- Comments ---
 
     # Add a comment on a cell.
-    def add_comment(cell, text, author: "Author")
+    def comment(cell, text, author: "Author")
       @comments << { cell: cell, text: text, author: author }
     end
 
@@ -1007,7 +1007,7 @@ module Xlsxrb
 
     # --- Comments ---
 
-    def add_comment(cell, text, author: "Author")
+    def comment(cell, text, author: "Author")
       sheet if @current_sheet.nil?
       @current_comments << { cell: cell, text: text, author: author }
     end

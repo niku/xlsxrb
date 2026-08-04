@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Item A", "Item B"])
-    s.add_comment("A1", "This is an important comment.", author: "System")
+    s.comment("A1", "This is an important comment.", author: "System")
   end
 end
 

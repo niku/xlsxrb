@@ -291,11 +291,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Comments
   # =====================================================
 
-  test "add_comment in build API" do
+  test "comment in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Comments") do |s|
         s.row(["Value"])
-        s.add_comment("A1", "This is a comment", author: "Test")
+        s.comment("A1", "This is a comment", author: "Test")
       end
     end
 
@@ -311,12 +311,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_comment in generate API" do
+  test "comment in generate API" do
     tmp = Tempfile.new(["facade_comment_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Comments") do |s|
         s.row(["Value"])
-        s.add_comment("A1", "Stream comment", author: "Author")
+        s.comment("A1", "Stream comment", author: "Author")
       end
     end
 

@@ -769,7 +769,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Comments") do |s|
         s.row(["Value"])
-        s.add_comment("A1", "Test comment", author: "Author")
+        s.comment("A1", "Test comment", author: "Author")
       end
     end
 
@@ -1326,7 +1326,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Notes") do |s|
         s.row(["Value"])
-        s.add_comment("A1", "This is important!", author: "Alice")
+        s.comment("A1", "This is important!", author: "Alice")
       end
     end
 
@@ -1347,8 +1347,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Notes") do |s|
         s.row(%w[A B])
-        s.add_comment("A1", "Note on A1", author: "Alice")
-        s.add_comment("B1", "Note on B1", author: "Bob")
+        s.comment("A1", "Note on A1", author: "Alice")
+        s.comment("B1", "Note on B1", author: "Bob")
       end
     end
 
