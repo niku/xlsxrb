@@ -36,12 +36,6 @@ module Xlsxrb
         rows.each(&block)
       end
 
-      def cells
-        return to_enum(:cells) unless block_given?
-        rows.each do |row|
-          row.each { |cell| yield cell }
-        end
-      end
 
       def valid?
         errors.empty?

@@ -35,6 +35,11 @@ module Xlsxrb
         sheets.map(&:name)
       end
 
+      # Save the workbook to a file.
+      def save(filepath)
+        Xlsxrb.write(filepath, self)
+      end
+
       def self.validate(sheets)
         errs = []
         errs << "sheets must be an Array (got #{sheets.class})" unless sheets.is_a?(Array)

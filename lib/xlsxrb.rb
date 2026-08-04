@@ -334,6 +334,12 @@ module Xlsxrb
       @app_properties[name] = value
     end
 
+    # Set multiple core and/or app properties.
+    def properties(core: nil, app: nil)
+      core&.each { |k, v| set_core_property(k, v) }
+      app&.each { |k, v| set_app_property(k, v) }
+    end
+
     # Add a custom document property.
     def add_custom_property(name, value, type: :string)
       @custom_properties << { name: name, value: value, type: type }
@@ -950,13 +956,7 @@ module Xlsxrb
 
     # Add a new sheet.
     def sheet(name = nil, **opts)
-      flush_current_sheet if @current_sheet
-      name ||= "Sheet#{@sheet_names.size + 1}"
-      
-      @current_sheet = name
-      @current_sheet_index = @sheet_names.size
-      @sheet_names << name
-      
+      internal_sheet_setup(name)
       opts.each { |k, v| set_sheet_property(k, v) }
       
       yield self if block_given?
@@ -1368,6 +1368,12 @@ module Xlsxrb
     # Set an app document property.
     def set_app_property(name, value)
       @app_properties[name] = value
+    end
+
+    # Set multiple core and/or app properties.
+    def properties(core: nil, app: nil)
+      core&.each { |k, v| set_core_property(k, v) }
+      app&.each { |k, v| set_app_property(k, v) }
     end
 
     # Add a custom document property.
