@@ -679,13 +679,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_print_area in build API" do
+  test "print_area in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Data") do |s|
         s.row([1, 2, 3])
         s.row([4, 5, 6])
       end
-      w.set_print_area("A1:C2", sheet: "Data")
+      w.print_area("A1:C2", sheet: "Data")
     end
 
     tmp = Tempfile.new(["facade_printarea_build", ".xlsx"])
