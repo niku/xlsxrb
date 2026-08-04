@@ -899,11 +899,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Shapes
   # =====================================================
 
-  test "add_shape in build API" do
+  test "shape in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Shapes") do |s|
         s.row(["Data"])
-        s.add_shape(preset: "rect", text: "Hello", from_col: 1, from_row: 1, to_col: 3, to_row: 4)
+        s.shape(preset: "rect", text: "Hello", from_col: 1, from_row: 1, to_col: 3, to_row: 4)
       end
     end
 
@@ -917,12 +917,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_shape in generate API" do
+  test "shape in generate API" do
     tmp = Tempfile.new(["facade_shape_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Shapes") do |s|
         s.row(["Data"])
-        s.add_shape(preset: "ellipse", text: "Circle")
+        s.shape(preset: "ellipse", text: "Circle")
       end
     end
 

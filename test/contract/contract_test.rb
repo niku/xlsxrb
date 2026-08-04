@@ -424,7 +424,7 @@ class ContractTest < Test::Unit::TestCase
             generate_streaming do |w|
               w.sheet("S") do |s|
                 s.row(["See the shape below"])
-                s.add_shape(preset: "rect", text: "Important!",
+                s.shape(preset: "rect", text: "Important!",
                             from_col: 0, from_row: 2, to_col: 3, to_row: 6,
                             fill_color: "#FFFFC0", line_color: "#FF0000")
               end
@@ -434,7 +434,7 @@ class ContractTest < Test::Unit::TestCase
             wb = Xlsxrb.build do |w|
               w.sheet("S") do |s|
                 s.row(["See the shape below"])
-                s.add_shape(preset: "rect", text: "Important!",
+                s.shape(preset: "rect", text: "Important!",
                             from_col: 0, from_row: 2, to_col: 3, to_row: 6,
                             fill_color: "#FFFFC0", line_color: "#FF0000")
               end
@@ -1156,7 +1156,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Shapes") do |s|
         s.row(["Data"])
-        s.add_shape(preset: "roundRect", text: "Call Out",
+        s.shape(preset: "roundRect", text: "Call Out",
                     from_col: 1, from_row: 2, to_col: 4, to_row: 6)
       end
     end
@@ -1182,8 +1182,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Multi") do |s|
         s.row(["Data"])
-        s.add_shape(preset: "rect", text: "Box", from_col: 0, from_row: 1, to_col: 2, to_row: 3)
-        s.add_shape(preset: "ellipse", text: "Oval", from_col: 3, from_row: 1, to_col: 5, to_row: 3)
+        s.shape(preset: "rect", text: "Box", from_col: 0, from_row: 1, to_col: 2, to_row: 3)
+        s.shape(preset: "ellipse", text: "Oval", from_col: 3, from_row: 1, to_col: 5, to_row: 3)
       end
     end
 
