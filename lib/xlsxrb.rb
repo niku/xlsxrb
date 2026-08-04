@@ -489,6 +489,10 @@ module Xlsxrb
       while col_index < values.size
         val = values[col_index]
         style_name = style_lookup ? styles[col_index] : styles
+        if val.nil? && style_name.nil?
+          col_index += 1
+          next
+        end
         # If value is a Formula object, store it as the cell's formula
         cells[col_index] = if val.is_a?(Elements::Formula)
                              Elements::Cell.new(
