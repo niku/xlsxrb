@@ -469,7 +469,7 @@ module Xlsxrb
     end
 
     # Define a named style that can be applied to cells.
-    def add_style(name, **opts)
+    def style(name, **opts)
       style_builder = StyleBuilder.new(name)
       style_builder.apply_options!(**opts) unless opts.empty?
       yield style_builder if block_given?
@@ -828,7 +828,7 @@ module Xlsxrb
     end
 
     # Define a named style that can be applied to cells.
-    def add_style(name, **opts)
+    def style(name, **opts)
       style_builder = StyleBuilder.new(name)
       style_builder.apply_options!(**opts) unless opts.empty?
       yield style_builder if block_given?

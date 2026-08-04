@@ -3,8 +3,8 @@
 require "xlsxrb"
 output_path = ARGV[0] || "fill_solid_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("red_fill") { |s| s.fill_color("FFFFC7CE") }
-  w.add_style("green_fill") { |s| s.fill_color("FFC6EFCE") }
+  w.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
+  w.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
   w.sheet("Fills") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

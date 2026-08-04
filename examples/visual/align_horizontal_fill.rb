@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_fill.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("fill_align") { |s| s.align_horizontal("fill") }
+  w.style("fill_align") { |s| s.align_horizontal("fill") }
   w.sheet("Alignment") do |s|
     s.column(0, width: 30)
     s.row(["X "], styles: { 0 => "fill_align" })

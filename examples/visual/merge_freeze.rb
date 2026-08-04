@@ -5,8 +5,8 @@ require "xlsxrb"
 output_path = ARGV[0] || "merge_freeze.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
-  w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  w.style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
+  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Merge & Freeze") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)

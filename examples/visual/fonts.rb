@@ -6,32 +6,32 @@ output_path = ARGV[0] || "fonts.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
   # Font Families
-  w.add_style("f_arial") { |s| s.font_name("Arial") }
-  w.add_style("f_times") { |s| s.font_name("Times New Roman") }
-  w.add_style("f_courier") { |s| s.font_name("Courier New") }
-  w.add_style("f_georgia") { |s| s.font_name("Georgia") }
-  w.add_style("f_tahoma") { |s| s.font_name("Tahoma") }
+  w.style("f_arial") { |s| s.font_name("Arial") }
+  w.style("f_times") { |s| s.font_name("Times New Roman") }
+  w.style("f_courier") { |s| s.font_name("Courier New") }
+  w.style("f_georgia") { |s| s.font_name("Georgia") }
+  w.style("f_tahoma") { |s| s.font_name("Tahoma") }
 
   # Font Sizes
-  w.add_style("sz_10") { |s| s.size(10) }
-  w.add_style("sz_16") { |s| s.size(16) }
-  w.add_style("sz_24") { |s| s.size(24) }
+  w.style("sz_10") { |s| s.size(10) }
+  w.style("sz_16") { |s| s.size(16) }
+  w.style("sz_24") { |s| s.size(24) }
 
   # Font Colors
-  w.add_style("c_red") { |s| s.font_color("FFC00000") }
-  w.add_style("c_green") { |s| s.font_color("FF008000") }
-  w.add_style("c_blue") { |s| s.font_color("FF0000FF") }
+  w.style("c_red") { |s| s.font_color("FFC00000") }
+  w.style("c_green") { |s| s.font_color("FF008000") }
+  w.style("c_blue") { |s| s.font_color("FF0000FF") }
 
   # Font Styles
-  w.add_style("st_bold", &:bold)
-  w.add_style("st_italic", &:italic)
-  w.add_style("st_underline") { |s| s.underline("single") }
-  w.add_style("st_double_u") { |s| s.underline("double") }
-  w.add_style("st_strike", &:strike)
+  w.style("st_bold", &:bold)
+  w.style("st_italic", &:italic)
+  w.style("st_underline") { |s| s.underline("single") }
+  w.style("st_double_u") { |s| s.underline("double") }
+  w.style("st_strike", &:strike)
 
   # Vertical Alignments (Superscript/Subscript)
-  w.add_style("v_super") { |s| s.vert_align("superscript") }
-  w.add_style("v_sub") { |s| s.vert_align("subscript") }
+  w.style("v_super") { |s| s.vert_align("superscript") }
+  w.style("v_sub") { |s| s.vert_align("subscript") }
 
   w.sheet("Fonts") do |s|
     s.column(0, width: 25)

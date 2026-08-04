@@ -9,11 +9,11 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Styled") do |s|
         # Define styles
-        s.add_style("header") do |style|
+        s.style("header") do |style|
           style.bold.size(14).font_color("FFFF0000")
         end
 
-        s.add_style("total") do |style|
+        s.style("total") do |style|
           style.bold.fill_color("FF00FF00")
         end
 
@@ -56,11 +56,11 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
     begin
       Xlsxrb.generate(xlsx_tempfile.path) do |w|
         # Define styles
-        w.add_style("header") do |style|
+        w.style("header") do |style|
           style.bold.size(12).font_color("FF0000FF")
         end
 
-        w.add_style("data") do |style|
+        w.style("data") do |style|
           style.fill_color("FFFFC000")
         end
 

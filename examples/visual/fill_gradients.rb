@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "fill_gradients.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("gradient") do |style|
+  w.style("gradient") do |style|
     style.fill_gradient(type: "linear", degree: 45, stops: [
                           { position: 0, color: "FFFFFFFF" },
                           { position: 1, color: "FF4F81BD" }

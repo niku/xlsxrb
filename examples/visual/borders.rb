@@ -5,19 +5,19 @@ require "xlsxrb"
 output_path = ARGV[0] || "borders.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("thin") { |s| s.border_all(style: "thin", color: "FF000000") }
-  w.add_style("medium") { |s| s.border_all(style: "medium", color: "FF000000") }
-  w.add_style("thick") { |s| s.border_all(style: "thick", color: "FF000000") }
-  w.add_style("hair") { |s| s.border_all(style: "hair", color: "FF000000") }
-  w.add_style("dashed") { |s| s.border_all(style: "dashed", color: "FF000000") }
-  w.add_style("medium_dashed") { |s| s.border_all(style: "mediumDashed", color: "FF000000") }
-  w.add_style("dotted") { |s| s.border_all(style: "dotted", color: "FF000000") }
-  w.add_style("double") { |s| s.border_all(style: "double", color: "FF000000") }
-  w.add_style("dash_dot") { |s| s.border_all(style: "dashDot", color: "FF000000") }
-  w.add_style("medium_dash_dot") { |s| s.border_all(style: "mediumDashDot", color: "FF000000") }
-  w.add_style("dash_dot_dot") { |s| s.border_all(style: "dashDotDot", color: "FF000000") }
-  w.add_style("slanted") { |s| s.border_all(style: "slantedDashDot", color: "FF000000") }
-  w.add_style("diagonal") { |s| s.border_diagonal(style: "thin", color: "FF000000", up: true, down: true) }
+  w.style("thin") { |s| s.border_all(style: "thin", color: "FF000000") }
+  w.style("medium") { |s| s.border_all(style: "medium", color: "FF000000") }
+  w.style("thick") { |s| s.border_all(style: "thick", color: "FF000000") }
+  w.style("hair") { |s| s.border_all(style: "hair", color: "FF000000") }
+  w.style("dashed") { |s| s.border_all(style: "dashed", color: "FF000000") }
+  w.style("medium_dashed") { |s| s.border_all(style: "mediumDashed", color: "FF000000") }
+  w.style("dotted") { |s| s.border_all(style: "dotted", color: "FF000000") }
+  w.style("double") { |s| s.border_all(style: "double", color: "FF000000") }
+  w.style("dash_dot") { |s| s.border_all(style: "dashDot", color: "FF000000") }
+  w.style("medium_dash_dot") { |s| s.border_all(style: "mediumDashDot", color: "FF000000") }
+  w.style("dash_dot_dot") { |s| s.border_all(style: "dashDotDot", color: "FF000000") }
+  w.style("slanted") { |s| s.border_all(style: "slantedDashDot", color: "FF000000") }
+  w.style("diagonal") { |s| s.border_diagonal(style: "thin", color: "FF000000", up: true, down: true) }
 
   w.sheet("Borders") do |s|
     s.column(0, width: 25)

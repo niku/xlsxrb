@@ -1051,7 +1051,7 @@ class ContractTest < Test::Unit::TestCase
   test "style: bold font and fill color are reflected in cell_styles" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Styled") do |s|
-        s.add_style("bold_green") do |style|
+        s.style("bold_green") do |style|
           style.bold.fill_color("00FF00")
         end
         s.row(["Header"], styles: ["bold_green"])
@@ -1084,7 +1084,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Formats") do |s|
         # numFmtId 4 = "#,##0.00" (built-in)
-        s.add_style("currency") { |style| style.number_format(4) }
+        s.style("currency") { |style| style.number_format(4) }
         s.row([1234.56], styles: ["currency"])
         s.row([7890])
       end
@@ -1106,7 +1106,7 @@ class ContractTest < Test::Unit::TestCase
   test "style: border is written to styles.xml" do |api_path|
     _reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Bordered") do |s|
-        s.add_style("boxed") { |style| style.border_all(style: "thin") }
+        s.style("boxed") { |style| style.border_all(style: "thin") }
         s.row(["Item"], styles: ["boxed"])
       end
     end
@@ -1131,7 +1131,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Dates") do |s|
         # numFmtId 14 = "m/d/yy" (built-in date format); triggers date conversion in Reader
-        s.add_style("date_fmt") { |style| style.number_format(14) }
+        s.style("date_fmt") { |style| style.number_format(14) }
         s.row([today], styles: ["date_fmt"])
       end
     end

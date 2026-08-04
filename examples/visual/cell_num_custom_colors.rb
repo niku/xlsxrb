@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_custom_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("custom_color") { |s| s.num_fmt("[Green]#,##0;[Red]-#,##0") }
+  w.style("custom_color") { |s| s.num_fmt("[Green]#,##0;[Red]-#,##0") }
   w.sheet("Custom Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

@@ -5,7 +5,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "japanese_text.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("ja_font") do |style|
+  w.style("ja_font") do |style|
     style.font_name("Noto Sans CJK JP").size(12)
   end
 

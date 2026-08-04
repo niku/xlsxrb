@@ -11,8 +11,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "cell_numbers.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("currency") { |s| s.num_fmt("$#,##0.00") }
-            w.add_style("percent") { |s| s.num_fmt("0.0%") }
+            w.style("currency") { |s| s.num_fmt("$#,##0.00") }
+            w.style("percent") { |s| s.num_fmt("0.0%") }
             w.sheet("Numbers") do |s|
               s.row(["Format", "Value"])
               s.row(["Integer", 12345])
@@ -29,7 +29,7 @@ module Xlsxrb
           require "date"
           output_path = ARGV[0] || "cell_dates.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
+            w.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
             w.sheet("Dates") do |s|
               s.row(["Format", "Date Value"])
               s.row(["Default Date", Date.new(2026, 7, 1)])
@@ -44,7 +44,7 @@ module Xlsxrb
           require "time"
           output_path = ARGV[0] || "cell_times.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
+            w.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
             w.sheet("Times") do |s|
               s.row(["Format", "Time Value"])
               s.row(["DateTime", Time.new(2026, 7, 1, 12, 34, 56)])
@@ -103,9 +103,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_families.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("arial") { |s| s.font_name("Arial") }
-            w.add_style("times") { |s| s.font_name("Times New Roman") }
-            w.add_style("courier") { |s| s.font_name("Courier New") }
+            w.style("arial") { |s| s.font_name("Arial") }
+            w.style("times") { |s| s.font_name("Times New Roman") }
+            w.style("courier") { |s| s.font_name("Courier New") }
             w.sheet("Fonts") do |s|
               s.row(["Font Family", "Preview"])
               s.row(["Arial", "Hello Arial"], styles: { 1 => "arial" })
@@ -120,9 +120,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_sizes.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("size_10") { |s| s.size(10) }
-            w.add_style("size_16") { |s| s.size(16) }
-            w.add_style("size_24") { |s| s.size(24) }
+            w.style("size_10") { |s| s.size(10) }
+            w.style("size_16") { |s| s.size(16) }
+            w.style("size_24") { |s| s.size(24) }
             w.sheet("Font Sizes") do |s|
               s.row(["Size", "Text"])
               s.row(["10pt", "Small Text"], styles: { 1 => "size_10" })
@@ -137,9 +137,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_colors.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("red") { |s| s.font_color("FFC00000") }
-            w.add_style("green") { |s| s.font_color("FF00B050") }
-            w.add_style("blue") { |s| s.font_color("FF0070C0") }
+            w.style("red") { |s| s.font_color("FFC00000") }
+            w.style("green") { |s| s.font_color("FF00B050") }
+            w.style("blue") { |s| s.font_color("FF0070C0") }
             w.sheet("Colors") do |s|
               s.row(["Color", "Preview"])
               s.row(["Red", "Red Text"], styles: { 1 => "red" })
@@ -154,10 +154,10 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_styles.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("bold") { |s| s.bold }
-            w.add_style("italic") { |s| s.italic }
-            w.add_style("underline") { |s| s.underline }
-            w.add_style("strike") { |s| s.strike }
+            w.style("bold") { |s| s.bold }
+            w.style("italic") { |s| s.italic }
+            w.style("underline") { |s| s.underline }
+            w.style("strike") { |s| s.strike }
             w.sheet("Styles") do |s|
               s.row(["Style", "Preview"])
               s.row(["Bold", "Bold Text"], styles: { 1 => "bold" })
@@ -173,8 +173,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_vertical_align.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("super") { |s| s.vert_align("superscript") }
-            w.add_style("sub") { |s| s.vert_align("subscript") }
+            w.style("super") { |s| s.vert_align("superscript") }
+            w.style("sub") { |s| s.vert_align("subscript") }
             w.sheet("Vertical Align") do |s|
               s.row(["Format", "Text"])
               s.row(["Superscript", "x2"], styles: { 1 => "super" })
@@ -188,7 +188,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_thin.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("thin") { |s| s.border_left(style: "thin").border_right(style: "thin").border_top(style: "thin").border_bottom(style: "thin") }
+            w.style("thin") { |s| s.border_left(style: "thin").border_right(style: "thin").border_top(style: "thin").border_bottom(style: "thin") }
             w.sheet("Thin Borders") do |s|
               s.row(["Normal Cell", "Thin Border Cell"], styles: { 1 => "thin" })
             end
@@ -200,7 +200,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_medium.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("medium") { |s| s.border_left(style: "medium").border_right(style: "medium").border_top(style: "medium").border_bottom(style: "medium") }
+            w.style("medium") { |s| s.border_left(style: "medium").border_right(style: "medium").border_top(style: "medium").border_bottom(style: "medium") }
             w.sheet("Medium Borders") do |s|
               s.row(["Normal Cell", "Medium Border Cell"], styles: { 1 => "medium" })
             end
@@ -212,7 +212,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_dashed.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("dashed") { |s| s.border_left(style: "dashed").border_right(style: "dashed").border_top(style: "dashed").border_bottom(style: "dashed") }
+            w.style("dashed") { |s| s.border_left(style: "dashed").border_right(style: "dashed").border_top(style: "dashed").border_bottom(style: "dashed") }
             w.sheet("Dashed Borders") do |s|
               s.row(["Normal Cell", "Dashed Border Cell"], styles: { 1 => "dashed" })
             end
@@ -224,7 +224,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_double.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("double") { |s| s.border_left(style: "double").border_right(style: "double").border_top(style: "double").border_bottom(style: "double") }
+            w.style("double") { |s| s.border_left(style: "double").border_right(style: "double").border_top(style: "double").border_bottom(style: "double") }
             w.sheet("Double Borders") do |s|
               s.row(["Normal Cell", "Double Border Cell"], styles: { 1 => "double" })
             end
@@ -236,7 +236,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_slanted.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("slanted") { |s| s.border_left(style: "slantedDashDot").border_right(style: "slantedDashDot").border_top(style: "slantedDashDot").border_bottom(style: "slantedDashDot") }
+            w.style("slanted") { |s| s.border_left(style: "slantedDashDot").border_right(style: "slantedDashDot").border_top(style: "slantedDashDot").border_bottom(style: "slantedDashDot") }
             w.sheet("Slanted Borders") do |s|
               s.row(["Normal Cell", "Slanted Border Cell"], styles: { 1 => "slanted" })
             end
@@ -248,8 +248,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "fill_solid_colors.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("red_fill") { |s| s.fill_color("FFFFC7CE") }
-            w.add_style("green_fill") { |s| s.fill_color("FFC6EFCE") }
+            w.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
+            w.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
             w.sheet("Fills") do |s|
               s.row(["Color", "Preview"])
               s.row(["Red", "Red Fill"], styles: { 1 => "red_fill" })
@@ -263,8 +263,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "fill_patterns.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
-            w.add_style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
+            w.style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
+            w.style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
             w.sheet("Patterns") do |s|
               s.row(["Pattern", "Preview"])
               s.row(["Dark Gray", "Pattern Fill"], styles: { 1 => "dark_gray" })
@@ -278,7 +278,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "fill_gradients.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("gradient") do |style|
+            w.style("gradient") do |style|
               style.fill_gradient(type: "linear", degree: 45, stops: [
                 { position: 0, color: "FFFFFFFF" },
                 { position: 1, color: "FF4F81BD" }
@@ -295,9 +295,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_horizontal.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("left") { |s| s.align_horizontal("left") }
-            w.add_style("center") { |s| s.align_horizontal("center") }
-            w.add_style("right") { |s| s.align_horizontal("right") }
+            w.style("left") { |s| s.align_horizontal("left") }
+            w.style("center") { |s| s.align_horizontal("center") }
+            w.style("right") { |s| s.align_horizontal("right") }
             w.sheet("Alignment") do |s|
               s.set_print_option(:grid_lines, true)
               s.column(0, width: 20)
@@ -313,9 +313,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_vertical.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("top") { |s| s.align_vertical("top") }
-            w.add_style("center") { |s| s.align_vertical("center") }
-            w.add_style("bottom") { |s| s.align_vertical("bottom") }
+            w.style("top") { |s| s.align_vertical("top") }
+            w.style("center") { |s| s.align_vertical("center") }
+            w.style("bottom") { |s| s.align_vertical("bottom") }
             w.sheet("Vertical Alignment") do |s|
               s.set_print_option(:grid_lines, true)
               s.row(["Top", "Center", "Bottom"], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
@@ -328,8 +328,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_text_rotation.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("rot_45") { |s| s.text_rotation(45) }
-            w.add_style("rot_90") { |s| s.text_rotation(90) }
+            w.style("rot_45") { |s| s.text_rotation(45) }
+            w.style("rot_90") { |s| s.text_rotation(90) }
             w.sheet("Rotation") do |s|
               s.set_print_option(:grid_lines, true)
               s.row(["Rotated 45", "Rotated 90"], styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
@@ -342,7 +342,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_text_wrap.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("wrap") { |s| s.wrap_text }
+            w.style("wrap") { |s| s.wrap_text }
             w.sheet("Text Wrap") do |s|
               s.set_print_option(:grid_lines, true)
               s.column(0, width: 15)
@@ -356,8 +356,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_indent.xlsx"
           Xlsxrb.generate(output_path) do |w|
-            w.add_style("indent_1") { |s| s.indent(1) }
-            w.add_style("indent_3") { |s| s.indent(3) }
+            w.style("indent_1") { |s| s.indent(1) }
+            w.style("indent_3") { |s| s.indent(3) }
             w.sheet("Indent") do |s|
               s.set_print_option(:grid_lines, true)
               s.row(["No Indent"])

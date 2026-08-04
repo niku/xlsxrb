@@ -4,11 +4,11 @@ require "test_helper"
 require "tempfile"
 
 class StyleTest < Test::Unit::TestCase
-  test "in-memory mode: add_style to worksheet and apply to cells" do
+  test "in-memory mode: style to worksheet and apply to cells" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Test") do |s|
         # Define a style
-        s.add_style("heading") do |style|
+        s.style("heading") do |style|
           style.bold.size(14).font_color("FFFF0000")
         end
 
@@ -32,16 +32,16 @@ class StyleTest < Test::Unit::TestCase
     assert_nil(second_row.cells[0].style_index)
   end
 
-  test "streaming mode: add_style and apply to rows" do
+  test "streaming mode: style and apply to rows" do
     tmp = Tempfile.new(["style_stream_test", ".xlsx"])
     begin
       Xlsxrb.generate(tmp.path) do |w|
         # Define styles
-        w.add_style("heading") do |style|
+        w.style("heading") do |style|
           style.bold.size(14).font_color("FFFF0000")
         end
 
-        w.add_style("total") do |style|
+        w.style("total") do |style|
           style.bold.fill_color("FF00FF00")
         end
 
@@ -85,7 +85,7 @@ class StyleTest < Test::Unit::TestCase
   test "in-memory mode: round-trip with styled cells" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Styled") do |s|
-        s.add_style("bold_red") do |style|
+        s.style("bold_red") do |style|
           style.bold.font_color("FFFF0000").size(12)
         end
 
