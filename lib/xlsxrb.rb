@@ -501,6 +501,10 @@ module Xlsxrb
     # Add a row of values to the sheet.
     # values:: Array of cell values
     # styles:: Hash mapping column indices to style names, or Array of style names for each column
+    def add_row(values, **opts)
+      row(values, **opts)
+    end
+
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
 
@@ -604,6 +608,10 @@ module Xlsxrb
     end
 
     # Set column width for a 0-based column index.
+    def col(index_or_letter, **opts)
+      column(index_or_letter, **opts)
+    end
+
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       @columns << Elements::Column.new(
         index: index,
@@ -987,6 +995,10 @@ module Xlsxrb
 
     # Add a row of values. values is an Array.
     # styles:: Hash mapping column indices to style names, or Array of style names for each column
+    def add_row(values, **opts)
+      row(values, **opts)
+    end
+
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       sheet if @current_sheet.nil?
 
@@ -1065,6 +1077,10 @@ module Xlsxrb
     end
 
     # Set column width for a 0-based column index.
+    def col(index_or_letter, **opts)
+      column(index_or_letter, **opts)
+    end
+
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       sheet if @current_sheet.nil?
 
