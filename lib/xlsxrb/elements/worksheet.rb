@@ -4,10 +4,24 @@ module Xlsxrb
   module Elements
     # Represents a single worksheet in a workbook.
     Worksheet = Data.define(:name, :rows, :columns, :charts, :unmapped_data, :errors) do
+      include Enumerable
+
       def initialize(name:, rows: [], columns: [], charts: [], unmapped_data: {}, errors: nil)
         computed_errors = errors || self.class.validate(name, rows)
         super(name: name, rows: rows.freeze, columns: columns.freeze, charts: charts.freeze,
               unmapped_data: unmapped_data, errors: computed_errors.freeze)
+      end
+
+      def each(&block)
+        return to_enum(:each) unless block_given?
+        rows.each(&block)
+      end
+
+      def cells
+        return to_enum(:cells) unless block_given?
+        rows.each do |row|
+          row.each { |cell| yield cell }
+        end
       end
 
       def valid?

@@ -5,6 +5,8 @@ module Xlsxrb
     # Represents a single row in a worksheet.
     # index is 0-based.
     Row = Data.define(:index, :cells, :height, :hidden, :custom_height, :outline_level, :unmapped_data, :errors) do
+      include Enumerable
+
       def initialize(index:, cells: [], height: nil, hidden: false, custom_height: false, outline_level: nil,
                      unmapped_data: {}, errors: nil)
         computed_errors = errors || self.class.validate(index, cells)
@@ -13,6 +15,22 @@ module Xlsxrb
         super(index: index, cells: cells, height: height, hidden: hidden,
               custom_height: custom_height, outline_level: outline_level,
               unmapped_data: unmapped_data, errors: computed_errors)
+      end
+
+      def each(&block)
+        return to_enum(:each) unless block_given?
+        cells.each(&block)
+      end
+
+      def to_a
+        return [] if cells.empty?
+        
+        max_col = cells.map(&:column_index).max
+        arr = Array.new(max_col + 1)
+        cells.each do |cell|
+          arr[cell.column_index] = cell.value
+        end
+        arr
       end
 
       def valid?

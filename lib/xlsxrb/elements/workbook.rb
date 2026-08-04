@@ -4,10 +4,16 @@ module Xlsxrb
   module Elements
     # Represents an entire XLSX workbook.
     Workbook = Data.define(:sheets, :shared_strings, :styles, :unmapped_data, :errors) do
+      include Enumerable
+
       def initialize(sheets: [], shared_strings: [], styles: {}, unmapped_data: {}, errors: nil)
         computed_errors = errors || self.class.validate(sheets)
         super(sheets: sheets.freeze, shared_strings: shared_strings.freeze, styles: styles,
               unmapped_data: unmapped_data, errors: computed_errors.freeze)
+      end
+
+      def each(&block)
+        sheets.each(&block)
       end
 
       def valid?

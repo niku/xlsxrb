@@ -21,6 +21,41 @@ module Xlsxrb
         "#{self.class.column_letter(column_index)}#{row_index + 1}"
       end
 
+      def to_s
+        value.to_s
+      end
+
+      def to_i
+        value.to_i
+      end
+
+      def to_f
+        value.to_f
+      end
+
+      def to_date
+        return value if value.is_a?(Date)
+        
+        # Excel epoch is 1899-12-30
+        if value.is_a?(Numeric)
+          Date.new(1899, 12, 30) + value.to_i
+        else
+          Date.parse(value.to_s) rescue nil
+        end
+      end
+
+      def to_time
+        return value if value.is_a?(Time)
+        
+        if value.is_a?(Numeric)
+          days = value.to_f
+          base_time = Time.utc(1899, 12, 30)
+          base_time + (days * 86400)
+        else
+          Time.parse(value.to_s) rescue nil
+        end
+      end
+
       # Cache column letters up to Excel's limit (16,384)
       @column_letters = (0...16_384).map do |index|
         result = +""
