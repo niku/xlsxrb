@@ -1031,7 +1031,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.add_image(MINIMAL_PNG, ext: "png", from_col: 1, from_row: 1)
+        s.image(MINIMAL_PNG, ext: "png", from_col: 1, from_row: 1)
       end
     end
 
