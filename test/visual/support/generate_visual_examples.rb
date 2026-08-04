@@ -429,7 +429,7 @@ module Xlsxrb
               s.row(["Mon", 10])
               s.row(["Tue", 15])
               s.row(["Wed", 12])
-              s.add_chart(
+              s.chart(
                 type: :line,
                 title: "Daily Value",
                 from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -448,7 +448,7 @@ module Xlsxrb
               s.row(["Day", "Value"])
               s.row(["Mon", 10])
               s.row(["Tue", 15])
-              s.add_chart(
+              s.chart(
                 type: :area,
                 title: "Daily Area",
                 from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -467,7 +467,7 @@ module Xlsxrb
               s.row(["Label", "Percent"])
               s.row(["Yes", 70])
               s.row(["No", 30])
-              s.add_chart(
+              s.chart(
                 type: :pie,
                 title: "Responses",
                 from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -486,7 +486,7 @@ module Xlsxrb
               s.row(["Label", "Percent"])
               s.row(["A", 40])
               s.row(["B", 60])
-              s.add_chart(
+              s.chart(
                 type: :doughnut,
                 title: "Ratio",
                 from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -505,7 +505,7 @@ module Xlsxrb
               s.row(["X", "Y"])
               s.row([1, 10])
               s.row([2, 15])
-              s.add_chart(
+              s.chart(
                 type: :scatter,
                 title: "Scatter Plot",
                 from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -524,7 +524,7 @@ module Xlsxrb
               s.row(["Stat", "Value"])
               s.row(["Atk", 80])
               s.row(["Def", 60])
-              s.add_chart(
+              s.chart(
                 type: :radar,
                 title: "Stats",
                 from_col: 3, from_row: 0, to_col: 8, to_row: 12,

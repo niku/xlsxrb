@@ -531,7 +531,7 @@ module Xlsxrb
     end
 
     # Add a chart to the sheet.
-    def add_chart(**options)
+    def chart(**options)
       if block_given?
         builder = ChartBuilder.new
         yield builder
@@ -923,7 +923,7 @@ module Xlsxrb
     end
 
     # Add a chart to the current sheet.
-    def add_chart(**options)
+    def chart(**options)
       sheet if @current_sheet.nil?
 
       if block_given?

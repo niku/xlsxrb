@@ -66,7 +66,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row(["Jan", 100])
         s.row(["Feb", 200])
         s.row(["Mar", 300])
-        s.add_chart(type: :bar, title: "Quarterly Revenue",
+        s.chart(type: :bar, title: "Quarterly Revenue",
                     series: [{ cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$B$2:$B$4" }])
       end
     end
@@ -82,7 +82,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row(%w[Category Value])
         s.row(["A", 40])
         s.row(["B", 60])
-        s.add_chart(type: :pie, title: "Distribution",
+        s.chart(type: :pie, title: "Distribution",
                     series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }])
       end
     end
@@ -98,7 +98,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row(%w[Month Series1 Series2])
         s.row(["Jan", 10, 20])
         s.row(["Feb", 15, 25])
-        s.add_chart(type: :line, title: "Trends",
+        s.chart(type: :line, title: "Trends",
                     series: [
                       { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$B$2:$B$3" },
                       { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$C$2:$C$3" }
@@ -116,9 +116,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
       w.sheet("Multi") do |s|
         s.row(%w[X Y Z])
         s.row([1, 10, 20])
-        s.add_chart(type: :bar, title: "Chart1",
+        s.chart(type: :bar, title: "Chart1",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$B$2:$B$2" }])
-        s.add_chart(type: :pie, title: "Chart2",
+        s.chart(type: :pie, title: "Chart2",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$C$2:$C$2" }])
       end
     end
@@ -134,7 +134,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row(%w[X Y])
         s.row([1, 10])
         s.row([2, 20])
-        s.add_chart(type: :bar, title: "Axes",
+        s.chart(type: :bar, title: "Axes",
                     series: [{ cat_ref: "S1!$A$2:$A$3", val_ref: "S1!$B$2:$B$3" }],
                     legend: { position: "b" },
                     cat_axis_title: "Categories",
@@ -172,7 +172,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row(["Jan", 100])
         s.row(["Feb", 200])
         s.row(["Mar", 300])
-        s.add_chart(type: :bar, title: "Quarterly Revenue",
+        s.chart(type: :bar, title: "Quarterly Revenue",
                     series: [{ cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$B$2:$B$4" }])
       end
     end
@@ -188,7 +188,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row(%w[Category Value])
         s.row(["A", 40])
         s.row(["B", 60])
-        s.add_chart(type: :pie, title: "Distribution",
+        s.chart(type: :pie, title: "Distribution",
                     series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }])
       end
     end
@@ -204,7 +204,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row(%w[Month Series1 Series2])
         s.row(["Jan", 10, 20])
         s.row(["Feb", 15, 25])
-        s.add_chart(type: :line, title: "Trends",
+        s.chart(type: :line, title: "Trends",
                     series: [
                       { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$B$2:$B$3" },
                       { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$C$2:$C$3" }
@@ -222,9 +222,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
       w.sheet("Multi") do |s|
         s.row(%w[X Y Z])
         s.row([1, 10, 20])
-        s.add_chart(type: :bar, title: "Chart1",
+        s.chart(type: :bar, title: "Chart1",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$B$2:$B$2" }])
-        s.add_chart(type: :pie, title: "Chart2",
+        s.chart(type: :pie, title: "Chart2",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$C$2:$C$2" }])
       end
     end
@@ -240,7 +240,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row(%w[X Y])
         s.row([1, 10])
         s.row([2, 20])
-        s.add_chart(type: :bar, title: "Axes",
+        s.chart(type: :bar, title: "Axes",
                     series: [{ cat_ref: "S1!$A$2:$A$3", val_ref: "S1!$B$2:$B$3" }],
                     legend: { position: "b" },
                     cat_axis_title: "Categories",

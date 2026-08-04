@@ -437,14 +437,14 @@ class FacadeTest < Test::Unit::TestCase
     end
   end
 
-  test "add_chart works in Streaming generate API" do
+  test "chart works in Streaming generate API" do
     tmp = Tempfile.new(["facade_chart_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Sales") do |s|
         s.row(%w[Month Value])
         s.row(["Jan", 100])
         s.row(["Feb", 200])
-        w.add_chart(type: :bar, title: "Sales Data", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
+        w.chart(type: :bar, title: "Sales Data", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
       end
     end
 
@@ -459,13 +459,13 @@ class FacadeTest < Test::Unit::TestCase
     tmp&.unlink
   end
 
-  test "add_chart works in In-Memory build API" do
+  test "chart works in In-Memory build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Sales") do |s|
         s.row(%w[Month Value])
         s.row(["Jan", 100])
         s.row(["Feb", 200])
-        s.add_chart(type: :pie, title: "Sales Pie", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
+        s.chart(type: :pie, title: "Sales Pie", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
       end
     end
 
@@ -503,14 +503,14 @@ class FacadeTest < Test::Unit::TestCase
     tmp&.unlink
   end
 
-  test "add_chart supports block form in generate API" do
+  test "chart supports block form in generate API" do
     tmp = Tempfile.new(["facade_chart_block_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Sales") do
         w.row(%w[Month Value])
         w.row(["Jan", 100])
         w.row(["Feb", 200])
-        w.add_chart do |c|
+        w.chart do |c|
           c.type :bar
           c.title "Sales Data"
           c.series(cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3")
