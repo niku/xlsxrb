@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
   w.style("center") { |s| s.align_horizontal("center") }
   w.style("right") { |s| s.align_horizontal("right") }
   w.sheet("Alignment") do |s|
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.column(0, width: 20)
     s.column(1, width: 20)
     s.column(2, width: 20)

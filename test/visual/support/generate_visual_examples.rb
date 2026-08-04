@@ -299,7 +299,7 @@ module Xlsxrb
             w.style("center") { |s| s.align_horizontal("center") }
             w.style("right") { |s| s.align_horizontal("right") }
             w.sheet("Alignment") do |s|
-              s.set_print_option(:grid_lines, true)
+              s.print_options(:grid_lines, true)
               s.column(0, width: 20)
               s.column(1, width: 20)
               s.column(2, width: 20)
@@ -317,7 +317,7 @@ module Xlsxrb
             w.style("center") { |s| s.align_vertical("center") }
             w.style("bottom") { |s| s.align_vertical("bottom") }
             w.sheet("Vertical Alignment") do |s|
-              s.set_print_option(:grid_lines, true)
+              s.print_options(:grid_lines, true)
               s.row(["Top", "Center", "Bottom"], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
             end
           end
@@ -331,7 +331,7 @@ module Xlsxrb
             w.style("rot_45") { |s| s.text_rotation(45) }
             w.style("rot_90") { |s| s.text_rotation(90) }
             w.sheet("Rotation") do |s|
-              s.set_print_option(:grid_lines, true)
+              s.print_options(:grid_lines, true)
               s.row(["Rotated 45", "Rotated 90"], styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
             end
           end
@@ -344,7 +344,7 @@ module Xlsxrb
           Xlsxrb.generate(output_path) do |w|
             w.style("wrap") { |s| s.wrap_text }
             w.sheet("Text Wrap") do |s|
-              s.set_print_option(:grid_lines, true)
+              s.print_options(:grid_lines, true)
               s.column(0, width: 15)
               s.row(["This is a long sentence that wraps inside the cell."], styles: { 0 => "wrap" })
             end
@@ -359,7 +359,7 @@ module Xlsxrb
             w.style("indent_1") { |s| s.indent(1) }
             w.style("indent_3") { |s| s.indent(3) }
             w.sheet("Indent") do |s|
-              s.set_print_option(:grid_lines, true)
+              s.print_options(:grid_lines, true)
               s.row(["No Indent"])
               s.row(["Indent 1"], styles: { 0 => "indent_1" })
               s.row(["Indent 3"], styles: { 0 => "indent_3" })

@@ -8,7 +8,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Rotation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.row(["Rotated 45", "Rotated 90"], styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
   end
 end

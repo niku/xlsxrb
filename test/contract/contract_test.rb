@@ -923,8 +923,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.set_print_option(:grid_lines, true)
-        s.set_print_option(:horizontal_centered, true)
+        s.print_options(:grid_lines, true)
+        s.print_options(:horizontal_centered, true)
       end
     end
 

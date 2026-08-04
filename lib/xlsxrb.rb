@@ -677,7 +677,7 @@ module Xlsxrb
     end
 
     # Set a print option.
-    def set_print_option(name, value)
+    def print_options(name, value)
       @print_options[name] = value
     end
 
@@ -1064,7 +1064,7 @@ module Xlsxrb
       @current_header_footer.merge!(opts)
     end
 
-    def set_print_option(name, value)
+    def print_options(name, value)
       sheet if @current_sheet.nil?
       @current_print_options[name] = value
     end

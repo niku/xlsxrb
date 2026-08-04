@@ -8,7 +8,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Indent") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.row(["No Indent"])
     s.row(["Indent 1"], styles: { 0 => "indent_1" })
     s.row(["Indent 3"], styles: { 0 => "indent_3" })

@@ -36,7 +36,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Fonts") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
 
     s.row(["Font Feature", "Text Preview"])
     s.row(["Family: Arial", "Arial Text"], styles: { 1 => "f_arial" })
