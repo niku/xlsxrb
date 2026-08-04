@@ -2611,10 +2611,10 @@ class ReaderTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
-    rt = Xlsxrb::Elements::RichText.new(runs: [
-                                          { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+    rt = Xlsxrb.rich_text(
+{ text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
                                           { text: " normal" }
-                                        ])
+)
     writer.add_comment("A1", rt, author: "Tester")
     writer.write(xlsx_path)
 
@@ -2782,10 +2782,10 @@ class ReaderTest < Test::Unit::TestCase
 
   test "round-trips rich text inline through writer and reader" do
     writer = Xlsxrb::Ooxml::Writer.new
-    rt = Xlsxrb::Elements::RichText.new(runs: [
-                                          { text: "Bold", font: { bold: true, sz: 14.0, color: "FFFF0000" } },
+    rt = Xlsxrb.rich_text(
+{ text: "Bold", font: { bold: true, sz: 14.0, color: "FFFF0000" } },
                                           { text: " Normal" }
-                                        ])
+)
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
@@ -2809,10 +2809,10 @@ class ReaderTest < Test::Unit::TestCase
   test "round-trips rich text through shared strings" do
     writer = Xlsxrb::Ooxml::Writer.new
     writer.use_shared_strings!
-    rt = Xlsxrb::Elements::RichText.new(runs: [
-                                          { text: "Italic", font: { italic: true } },
+    rt = Xlsxrb.rich_text(
+{ text: "Italic", font: { italic: true } },
                                           { text: " plain" }
-                                        ])
+)
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
@@ -3308,13 +3308,13 @@ class ReaderTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     writer = Xlsxrb::Ooxml::Writer.new
-    rt = Xlsxrb::Elements::RichText.new(runs: [
-                                          { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+    rt = Xlsxrb.rich_text(
+{ text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
                                           { text: "DblUnder", font: { underline: "double", name: "Arial", sz: 11 } },
                                           { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
                                           { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } },
                                           { text: "Indexed", font: { indexed: 10, name: "Calibri", sz: 11 } }
-                                        ])
+)
     writer.set_cell("A1", rt)
     writer.write(xlsx_path)
 

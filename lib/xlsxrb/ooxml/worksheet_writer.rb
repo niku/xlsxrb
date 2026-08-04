@@ -141,6 +141,8 @@ module Xlsxrb
               xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value)
             when Time
               xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+            when BigDecimal
+              xml_val = value.to_s("F")
             end
           end
 
@@ -339,6 +341,8 @@ module Xlsxrb
             xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value)
           when Time
             xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+          when BigDecimal
+            xml_val = value.to_s("F")
           when Xlsxrb::Elements::CellError
             xml_val = value.code
             type = "e"
