@@ -5,74 +5,65 @@ require "xlsxrb"
 output_path = ARGV[0] || "fonts.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  # Font Families
-  w.style("f_arial") { |s| s.font_name("Arial") }
-  w.style("f_times") { |s| s.font_name("Times New Roman") }
-  w.style("f_courier") { |s| s.font_name("Courier New") }
-  w.style("f_georgia") { |s| s.font_name("Georgia") }
-  w.style("f_tahoma") { |s| s.font_name("Tahoma") }
+  # Font Families (using nested hash options)
+  w.style("f_arial", font: { name: "Arial" })
+  w.style("f_times", font: { name: "Times New Roman" })
+  w.style("f_courier", font: { name: "Courier New" })
+  w.style("f_georgia", font: { name: "Georgia" })
+  w.style("f_tahoma", font: { name: "Tahoma" })
 
   # Font Sizes
-  w.style("sz_10") { |s| s.size(10) }
-  w.style("sz_16") { |s| s.size(16) }
-  w.style("sz_24") { |s| s.size(24) }
+  w.style("sz_10", font: { size: 10 })
+  w.style("sz_16", font: { size: 16 })
+  w.style("sz_24", font: { size: 24 })
 
   # Font Colors
-  w.style("c_red") { |s| s.font_color("FFC00000") }
-  w.style("c_green") { |s| s.font_color("FF008000") }
-  w.style("c_blue") { |s| s.font_color(:blue) }
+  w.style("c_red", font: { color: "FFC00000" })
+  w.style("c_green", font: { color: "FF008000" })
+  w.style("c_blue", font: { color: :blue })
 
   # Font Styles
-  w.style("st_bold", &:bold)
-  w.style("st_italic", &:italic)
-  w.style("st_underline") { |s| s.underline("single") }
-  w.style("st_double_u") { |s| s.underline("double") }
-  w.style("st_strike", &:strike)
+  w.style("bold", font: { bold: true })
+  w.style("italic", font: { italic: true })
+  w.style("underline", font: { underline: true })
+  w.style("double_underline", font: { underline: "double" })
+  w.style("strike", font: { strike: true })
 
-  # Vertical Alignments (Superscript/Subscript)
-  w.style("v_super") { |s| s.vert_align("superscript") }
-  w.style("v_sub") { |s| s.vert_align("subscript") }
+  # Vertical Alignment (Subscript / Superscript)
+  w.style("superscript", font: { vert_align: "superscript" })
+  w.style("subscript", font: { vert_align: "subscript" })
+
+  w.style("header", font: { bold: true, color: :white }, fill: { color: "FF4F81BD" })
+  w.style("bg_light", fill: { color: "FFDCE6F1" })
 
   w.sheet("Fonts") do |s|
     s.column(0, width: 25)
-    s.column(1, width: 25)
-    s.print_options(:grid_lines, true)
+    s.column(1, width: 35)
 
-    s.row(["Font Feature", "Text Preview"])
-    s.row(["Family: Arial", "Arial Text"], styles: { 1 => "f_arial" })
-    s.row(["Family: Times New Roman", "Times New Roman"], styles: { 1 => "f_times" })
-    s.row(["Family: Courier New", "Courier New Text"], styles: { 1 => "f_courier" })
-    s.row(["Family: Georgia", "Georgia Text"], styles: { 1 => "f_georgia" })
-    s.row(["Family: Tahoma", "Tahoma Text"], styles: { 1 => "f_tahoma" })
-
-    s.row(["Size: 10pt", "10pt Font Size"], styles: { 1 => "sz_10" })
-    s.row(["Size: 16pt", "16pt Font Size"], styles: { 1 => "sz_16" })
-    s.row(["Size: 24pt", "24pt Font Size"], styles: { 1 => "sz_24" })
-
-    s.row(["Color: Red", "Red Text"], styles: { 1 => "c_red" })
-    s.row(["Color: Green", "Green Text"], styles: { 1 => "c_green" })
-    s.row(["Color: Blue", "Blue Text"], styles: { 1 => "c_blue" })
-
-    s.row(["Style: Bold", "Bold Text"], styles: { 1 => "st_bold" })
-    s.row(["Style: Italic", "Italic Text"], styles: { 1 => "st_italic" })
-    s.row(["Style: Underline", "Underline Text"], styles: { 1 => "st_underline" })
-    s.row(["Style: Double Underline", "Double Underline"], styles: { 1 => "st_double_u" })
-    s.row(["Style: Strike-through", "Strike-through Text"], styles: { 1 => "st_strike" })
-
-    s.row(["Align: Superscript", "x2 (2 is super)"], styles: { 1 => "v_super" })
-    s.row(["Align: Subscript", "H2O (2 is sub)"], styles: { 1 => "v_sub" })
+    s.row(["Font Feature", "Text Preview"], styles: "header")
+    
+    s.row(["Family: Arial", "Arial Text"], styles: ["bg_light", "f_arial"])
+    s.row(["Family: Times New Roman", "Times New Roman"], styles: [nil, "f_times"])
+    s.row(["Family: Courier New", "Courier New Text"], styles: ["bg_light", "f_courier"])
+    s.row(["Family: Georgia", "Georgia Text"], styles: [nil, "f_georgia"])
+    s.row(["Family: Tahoma", "Tahoma Text"], styles: ["bg_light", "f_tahoma"])
+    
+    s.row(["Size: 10pt", "10pt Font Size"], styles: [nil, "sz_10"])
+    s.row(["Size: 16pt", "16pt Font Size"], styles: ["bg_light", "sz_16"])
+    s.row(["Size: 24pt", "24pt Font Size"], styles: [nil, "sz_24"])
+    
+    s.row(["Color: Red", "Red Text"], styles: ["bg_light", "c_red"])
+    s.row(["Color: Green", "Green Text"], styles: [nil, "c_green"])
+    s.row(["Color: Blue", "Blue Text"], styles: ["bg_light", "c_blue"])
+    
+    s.row(["Style: Bold", "Bold Text"], styles: [nil, "bold"])
+    s.row(["Style: Italic", "Italic Text"], styles: ["bg_light", "italic"])
+    s.row(["Style: Underline", "Underline Text"], styles: [nil, "underline"])
+    s.row(["Style: Double Underline", "Double Underline"], styles: ["bg_light", "double_underline"])
+    s.row(["Style: Strike-through", "Strike-through Text"], styles: [nil, "strike"])
+    
+    s.row(["Align: Superscript", "x2 (2 is super)"], styles: ["bg_light", "superscript"])
+    s.row(["Align: Subscript", "H2O (2 is sub)"], styles: [nil, "subscript"])
   end
 end
-
-# Read check
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
-sheet = workbook.sheets.first
-sheet.rows.each do |row|
-  row_cells = row.cells.map do |c|
-    xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-    font_id = xf ? xf[:font_id] : 0
-    "#{c.ref}: #{c.value.inspect} (font_id: #{font_id})"
-  end
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
-end
+puts "Created #{output_path}"
