@@ -279,7 +279,7 @@ module Xlsxrb
     end
 
     # Set the print area for a sheet.
-    def set_print_area(range, sheet: nil)
+    def print_area(range, sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
       value = "'#{sheet_name}'!#{absolute_range(range)}"
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
@@ -1142,7 +1142,7 @@ module Xlsxrb
     end
 
     # Set the print area for the current or named sheet.
-    def set_print_area(range, sheet: nil)
+    def print_area(range, sheet: nil)
       sheet_name = sheet || @current_sheet || "Sheet1"
       value = "'#{sheet_name}'!#{absolute_range(range)}"
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }

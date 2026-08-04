@@ -906,7 +906,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
       end
-      w.set_print_area("Sheet1!$A$1:$C$10", sheet: "Sheet1")
+      w.print_area("Sheet1!$A$1:$C$10", sheet: "Sheet1")
       w.set_print_titles(rows: "1:2", cols: "A:B", sheet: "Sheet1")
     end
 
