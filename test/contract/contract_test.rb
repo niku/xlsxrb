@@ -888,8 +888,8 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
       end
-      w.add_defined_name("MyConstant", "100")
-      w.add_defined_name("LocalName", "Sheet1!$A$1", sheet: "Sheet1")
+      w.defined_name("MyConstant", "100")
+      w.defined_name("LocalName", "Sheet1!$A$1", sheet: "Sheet1")
     end
 
     names = reader.defined_names

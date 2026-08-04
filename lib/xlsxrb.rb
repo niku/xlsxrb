@@ -272,7 +272,7 @@ module Xlsxrb
     # --- Workbook-Level Methods ---
 
     # Add a defined name.
-    def add_defined_name(name, value, sheet: nil, hidden: false)
+    def defined_name(name, value, sheet: nil, hidden: false)
       entry = { name: name, value: value, hidden: hidden }
       entry[:local_sheet_name] = sheet if sheet
       @defined_names << entry
@@ -283,7 +283,7 @@ module Xlsxrb
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
       value = "'#{sheet_name}'!#{absolute_range(range)}"
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
-      add_defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
+      defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
     end
 
     # Set print titles for a sheet.
@@ -294,7 +294,7 @@ module Xlsxrb
       parts << "'#{sheet_name}'!$#{rows.sub(":", ":$")}" if rows
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
-      add_defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
+      defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
     end
 
     # Set workbook protection.
@@ -1132,7 +1132,7 @@ module Xlsxrb
     # --- Workbook-Level Methods ---
 
     # Add a defined name.
-    def add_defined_name(name, value, sheet: nil, hidden: false)
+    def defined_name(name, value, sheet: nil, hidden: false)
       entry = { name: name, value: value, hidden: hidden }
       if sheet
         # local_sheet_id will be resolved at close time
@@ -1146,7 +1146,7 @@ module Xlsxrb
       sheet_name = sheet || @current_sheet || "Sheet1"
       value = "'#{sheet_name}'!#{absolute_range(range)}"
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
-      add_defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
+      defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
     end
 
     # Set print titles for the current or named sheet.
@@ -1157,7 +1157,7 @@ module Xlsxrb
       parts << "'#{sheet_name}'!$#{rows.sub(":", ":$")}" if rows
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
-      add_defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
+      defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
     end
 
     # Set workbook protection.

@@ -645,12 +645,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Defined Names / Print Area / Print Titles
   # =====================================================
 
-  test "add_defined_name in build API" do
+  test "defined_name in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Data") do |s|
         s.row([100])
       end
-      w.add_defined_name("MyRange", "'Data'!$A$1:$A$1", sheet: "Data")
+      w.defined_name("MyRange", "'Data'!$A$1:$A$1", sheet: "Data")
     end
 
     tmp = Tempfile.new(["facade_defname_build", ".xlsx"])
@@ -663,13 +663,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_defined_name in generate API" do
+  test "defined_name in generate API" do
     tmp = Tempfile.new(["facade_defname_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row([100])
       end
-      w.add_defined_name("Total", "'Data'!$A$1", sheet: "Data")
+      w.defined_name("Total", "'Data'!$A$1", sheet: "Data")
     end
 
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)

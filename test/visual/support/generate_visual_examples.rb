@@ -617,7 +617,7 @@ module Xlsxrb
               s.row(["Bob", "Eng"])
               s.auto_filter("A1:B3")
             end
-            w.add_defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
+            w.defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
           end
         RUBY
 
