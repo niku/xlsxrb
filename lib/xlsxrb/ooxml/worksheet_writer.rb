@@ -232,7 +232,11 @@ module Xlsxrb
 
         row_num = row_index + 1
         row_num_str = row_num.to_s
-        style_lookup_enabled = styles && style_map && (styles.is_a?(Array) || styles.is_a?(Hash))
+        is_styles_collection = styles && (styles.is_a?(Array) || styles.is_a?(Hash))
+        single_style_id = nil
+        if styles && style_map && !is_styles_collection
+          single_style_id = style_map[styles]
+        end
         io = @io
         io.write("<row r=\"")
         io.write(row_num_str)
@@ -255,8 +259,8 @@ module Xlsxrb
         col_index = 0
         while col_index < values.length
           value = values[col_index]
-          style_id = nil
-          if style_lookup_enabled
+          style_id = single_style_id
+          if is_styles_collection && style_map
             style_name = styles[col_index]
             style_id = style_map[style_name] if style_name
           end

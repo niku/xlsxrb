@@ -1680,9 +1680,9 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
-    s.row([15], styles: ["center"])
-    s.row([25], styles: ["center"])
-    s.row([5], styles: ["center"])
+    s.row([15], styles: "center")
+    s.row([25], styles: "center")
+    s.row([5], styles: "center")
     s.conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: "FF00FF00")
   end
 end
@@ -1732,9 +1732,9 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
-    s.row([10], styles: ["center"])
-    s.row([20], styles: ["center"])
-    s.row([10], styles: ["center"])
+    s.row([10], styles: "center")
+    s.row([20], styles: "center")
+    s.row([10], styles: "center")
     s.conditional_format("A2:A4", type: "cellIs", operator: "equal", formula: "10", fill_color: "FFFFC7CE")
   end
 end
@@ -1784,9 +1784,9 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
-    s.row([10], styles: ["center"])
-    s.row([50], styles: ["center"])
-    s.row([100], styles: ["center"])
+    s.row([10], styles: "center")
+    s.row([50], styles: "center")
+    s.row([100], styles: "center")
     s.conditional_format("A2:A4", type: "cellIs", operator: "greaterThanOrEqual", formula: "50", fill_color: "FFFFC7CE")
   end
 end
@@ -1836,9 +1836,9 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
-    s.row([25], styles: ["center"])
-    s.row([75], styles: ["center"])
-    s.row([10], styles: ["center"])
+    s.row([25], styles: "center")
+    s.row([75], styles: "center")
+    s.row([10], styles: "center")
     s.conditional_format("A2:A4", type: "cellIs", operator: "greaterThan", formula: "50", fill_color: "FFFFC7CE")
   end
 end
@@ -1888,9 +1888,9 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
-    s.row([25], styles: ["center"])
-    s.row([75], styles: ["center"])
-    s.row([10], styles: ["center"])
+    s.row([25], styles: "center")
+    s.row([75], styles: "center")
+    s.row([10], styles: "center")
     s.conditional_format("A2:A4", type: "cellIs", operator: "lessThan", formula: "20", fill_color: "FFFFC7CE")
   end
 end
@@ -1939,9 +1939,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row([10], styles: ["center"])
-    s.row([50], styles: ["center"])
-    s.row([90], styles: ["center"])
+    s.row([10], styles: "center")
+    s.row([50], styles: "center")
+    s.row([90], styles: "center")
     s.conditional_format("A1:A3", type: :colorScale, priority: 1)
   end
 end
@@ -2040,9 +2040,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Data Bars") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row([20], styles: ["center"])
-    s.row([60], styles: ["center"])
-    s.row([100], styles: ["center"])
+    s.row([20], styles: "center")
+    s.row([60], styles: "center")
+    s.row([100], styles: "center")
     s.conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
   end
 end
@@ -2142,10 +2142,10 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
-    s.row([10], styles: ["center"])
-    s.row([20], styles: ["center"])
-    s.row([30], styles: ["center"])
-    s.row([100], styles: ["center"]) # Average is 40. 100 is above average.
+    s.row([10], styles: "center")
+    s.row([20], styles: "center")
+    s.row([30], styles: "center")
+    s.row([100], styles: "center") # Average is 40. 100 is above average.
     s.conditional_format("A2:A5", type: "expression", formula: "A2>AVERAGE($A$2:$A$5)", fill_color: "FFFFC7CE")
   end
 end
@@ -2195,9 +2195,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Icons") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row([25], styles: ["center"])
-    s.row([50], styles: ["center"])
-    s.row([75], styles: ["center"])
+    s.row([25], styles: "center")
+    s.row([50], styles: "center")
+    s.row([75], styles: "center")
     s.conditional_format("A1:A3", type: :iconSet, icon_style: "3Arrows", priority: 1)
   end
 end
