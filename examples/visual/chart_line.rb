@@ -12,7 +12,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Mon", 10])
     s.row(["Tue", 15])
     s.row(["Wed", 12])
-    s.add_chart(
+    s.chart(
       type: :line,
       title: "Daily Value",
       from_col: 3, from_row: 0, to_col: 8, to_row: 12,

@@ -11,7 +11,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(%w[Day Value])
     s.row(["Mon", 10])
     s.row(["Tue", 15])
-    s.add_chart(
+    s.chart(
       type: :area,
       title: "Daily Area",
       from_col: 3, from_row: 0, to_col: 8, to_row: 12,

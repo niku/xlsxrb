@@ -11,7 +11,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(%w[Label Percent])
     s.row(["A", 40])
     s.row(["B", 60])
-    s.add_chart(
+    s.chart(
       type: :doughnut,
       title: "Ratio",
       from_col: 3, from_row: 0, to_col: 8, to_row: 12,

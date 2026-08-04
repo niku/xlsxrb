@@ -66,7 +66,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(["Jan", 100])
         s.row(["Feb", 200])
         s.row(["Mar", 300])
-        s.add_chart(type: :bar, title: "Quarterly Revenue",
+        s.chart(type: :bar, title: "Quarterly Revenue",
                     series: [{ cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$B$2:$B$4" }])
       end
     end
@@ -74,11 +74,11 @@ class ContractTest < Test::Unit::TestCase
     charts = reader.charts
     assert_equal(1, charts.size, "Expected exactly 1 chart [chart count]")
     assert_equal("barChart", charts[0][:chart_type],
-                 "Expected barChart type [chart_type]. Check Writer#add_chart type mapping.")
+                 "Expected barChart type [chart_type]. Check Writer#chart type mapping.")
     assert_equal("Quarterly Revenue", charts[0][:title],
                  "Chart title mismatch [title]. Check Writer#generate_chart_xml title element.")
     assert_equal(1, charts[0][:series].size,
-                 "Expected 1 series [series count]. Check Writer#add_chart series handling.")
+                 "Expected 1 series [series count]. Check Writer#chart series handling.")
   ensure
     tmp&.close!
   end
@@ -90,7 +90,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[Category Value])
         s.row(["A", 40])
         s.row(["B", 60])
-        s.add_chart(type: :pie, title: "Distribution",
+        s.chart(type: :pie, title: "Distribution",
                     series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }])
       end
     end
@@ -111,7 +111,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[Month Series1 Series2])
         s.row(["Jan", 10, 20])
         s.row(["Feb", 15, 25])
-        s.add_chart(type: :line, title: "Trend Lines",
+        s.chart(type: :line, title: "Trend Lines",
                     series: [
                       { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$B$2:$B$3" },
                       { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$C$2:$C$3" }
@@ -135,7 +135,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("S1") do |s|
         s.row(%w[X Y])
         s.row([1, 10])
-        s.add_chart(type: :bar, title: "Axes Test",
+        s.chart(type: :bar, title: "Axes Test",
                     series: [{ cat_ref: "S1!$A$2:$A$2", val_ref: "S1!$B$2:$B$2" }],
                     legend: { position: "b" },
                     cat_axis_title: "Categories",
@@ -163,7 +163,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("DL") do |s|
         s.row(%w[Cat Val])
         s.row(["A", 50])
-        s.add_chart(type: :bar, title: "DL Test",
+        s.chart(type: :bar, title: "DL Test",
                     series: [{ cat_ref: "DL!$A$2:$A$2", val_ref: "DL!$B$2:$B$2" }],
                     data_labels: { show_val: true })
       end
@@ -184,9 +184,9 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Multi") do |s|
         s.row(%w[X Y Z])
         s.row([1, 10, 20])
-        s.add_chart(type: :bar, title: "Chart1",
+        s.chart(type: :bar, title: "Chart1",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$B$2:$B$2" }])
-        s.add_chart(type: :pie, title: "Chart2",
+        s.chart(type: :pie, title: "Chart2",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$C$2:$C$2" }])
       end
     end
@@ -208,7 +208,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[Label Amount])
         s.row(["Alpha", 100])
         s.row(["Beta", 200])
-        s.add_chart(type: :bar, title: "Cache Test",
+        s.chart(type: :bar, title: "Cache Test",
                     series: [{ cat_ref: "Cache!$A$2:$A$3", val_ref: "Cache!$B$2:$B$3" }])
       end
     end
@@ -243,7 +243,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("S") do |s|
         s.row(%w[X Y])
         s.row([1, 10])
-        s.add_chart(type: spec[:input], title: "Type Test",
+        s.chart(type: spec[:input], title: "Type Test",
                     series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
       end
     end
@@ -327,7 +327,7 @@ class ContractTest < Test::Unit::TestCase
               w.sheet("S") do |s|
                 s.row(%w[X Y])
                 s.row([1, 10])
-                s.add_chart(type: :bar, title: "NS",
+                s.chart(type: :bar, title: "NS",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
             end
@@ -337,7 +337,7 @@ class ContractTest < Test::Unit::TestCase
               w.sheet("S") do |s|
                 s.row(%w[X Y])
                 s.row([1, 10])
-                s.add_chart(type: :bar, title: "NS",
+                s.chart(type: :bar, title: "NS",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
             end
@@ -373,7 +373,7 @@ class ContractTest < Test::Unit::TestCase
               w.sheet("S") do |s|
                 s.row(%w[X Y])
                 s.row([1, 10])
-                s.add_chart(type: :bar, title: "NS Check",
+                s.chart(type: :bar, title: "NS Check",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
             end
@@ -383,7 +383,7 @@ class ContractTest < Test::Unit::TestCase
               w.sheet("S") do |s|
                 s.row(%w[X Y])
                 s.row([1, 10])
-                s.add_chart(type: :bar, title: "NS Check",
+                s.chart(type: :bar, title: "NS Check",
                             series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
             end

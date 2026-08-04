@@ -2249,7 +2249,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(%w[Day Value])
     s.row(["Mon", 10])
     s.row(["Tue", 15])
-    s.add_chart(
+    s.chart(
       type: :area,
       title: "Daily Area",
       from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -2301,7 +2301,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
-    s.add_chart(
+    s.chart(
       type: :area,
       grouping: :stacked,
       title: "Stacked Area Chart",
@@ -2359,7 +2359,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Jan", 100])
     s.row(["Feb", 200])
 
-    s.add_chart(
+    s.chart(
       type: :bar,
       title: "Monthly Sales",
       from_col: 3,
@@ -2416,7 +2416,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
-    s.add_chart(
+    s.chart(
       type: :bar,
       grouping: :percentStacked,
       title: "100% Stacked Bar Chart",
@@ -2472,7 +2472,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
-    s.add_chart(
+    s.chart(
       type: :bar,
       grouping: :stacked,
       title: "Stacked Bar Chart",
@@ -2527,7 +2527,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(%w[Label Percent])
     s.row(["A", 40])
     s.row(["B", 60])
-    s.add_chart(
+    s.chart(
       type: :doughnut,
       title: "Ratio",
       from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -2586,7 +2586,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Mon", 10])
     s.row(["Tue", 15])
     s.row(["Wed", 12])
-    s.add_chart(
+    s.chart(
       type: :line,
       title: "Daily Value",
       from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -2638,7 +2638,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
-    s.add_chart(
+    s.chart(
       type: :line,
       grouping: :stacked,
       title: "Stacked Line Chart",
@@ -2693,7 +2693,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(%w[Label Percent])
     s.row(["Yes", 70])
     s.row(["No", 30])
-    s.add_chart(
+    s.chart(
       type: :pie,
       title: "Responses",
       from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -2751,7 +2751,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(%w[Stat Value])
     s.row(["Atk", 80])
     s.row(["Def", 60])
-    s.add_chart(
+    s.chart(
       type: :radar,
       title: "Stats",
       from_col: 3, from_row: 0, to_col: 8, to_row: 12,
@@ -2802,7 +2802,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(%w[X Y])
     s.row([1, 10])
     s.row([2, 15])
-    s.add_chart(
+    s.chart(
       type: :scatter,
       title: "Scatter Plot",
       from_col: 3, from_row: 0, to_col: 8, to_row: 12,

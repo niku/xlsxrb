@@ -14,7 +14,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Jan", 100])
     s.row(["Feb", 200])
 
-    s.add_chart(
+    s.chart(
       type: :bar,
       title: "Monthly Sales",
       from_col: 3,
