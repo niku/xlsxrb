@@ -605,7 +605,7 @@ module Xlsxrb
     # data_fields: array of { fld:, name:, subtotal: } hashes
     # col_fields: array of 0-based field indices for column axis
     # dest_ref: top-left cell for the pivot table (default "E1")
-    def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
+    def pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
       @pivot_tables ||= []
       @pivot_tables << {
         source_ref: source_ref, row_fields: row_fields,
@@ -994,7 +994,7 @@ module Xlsxrb
 
     # --- Pivot Tables ---
 
-    def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
+    def pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
       sheet if @current_sheet.nil?
       @current_pivot_tables ||= []
       @current_pivot_tables << {

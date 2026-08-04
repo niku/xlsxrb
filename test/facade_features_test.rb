@@ -1119,14 +1119,14 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Pivot Tables
   # =====================================================
 
-  test "add_pivot_table in build API" do
+  test "pivot_table in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Data") do |s|
         s.row(%w[Region Product Amount])
         s.row(["East", "Widget", 100])
         s.row(["West", "Widget", 200])
         s.row(["East", "Gadget", 150])
-        s.add_pivot_table(
+        s.pivot_table(
           "Data!A1:C4",
           row_fields: [0],
           data_fields: [{ fld: 2, name: "Sum of Amount", subtotal: "sum" }],
@@ -1157,14 +1157,14 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_pivot_table in generate API" do
+  test "pivot_table in generate API" do
     tmp = Tempfile.new(["facade_pivot_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row(%w[Region Product Amount])
         s.row(["East", "Widget", 100])
         s.row(["West", "Widget", 200])
-        s.add_pivot_table(
+        s.pivot_table(
           "Data!A1:C3",
           row_fields: [0],
           data_fields: [{ fld: 2, name: "Total", subtotal: "sum" }],
