@@ -486,7 +486,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.row(["Bob", 87])
-        s.set_auto_filter("A1:B3")
+        s.auto_filter("A1:B3")
       end
     end
 
@@ -790,7 +790,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("All") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.set_auto_filter("A1:B2")
+        s.auto_filter("A1:B2")
         s.merge_cells("A1:A1")
         s.set_freeze_pane(row: 1)
         s.set_page_margins(left: 1.0, right: 1.0)
@@ -958,7 +958,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.set_auto_filter("A1:A10")
+        s.auto_filter("A1:A10")
         s.set_sort_state("A1:A10", [{ ref: "A1:A10", descending: true }])
       end
     end
@@ -978,7 +978,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.set_auto_filter("A1:A10")
+        s.auto_filter("A1:A10")
         s.add_filter_column(0, type: :filters, values: ["Data"])
       end
     end

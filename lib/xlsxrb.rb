@@ -556,7 +556,7 @@ module Xlsxrb
 
     # Set an auto filter range (e.g. "A1:D10").
     # rubocop:disable Naming/AccessorMethodName
-    def set_auto_filter(range)
+    def auto_filter(range)
       @auto_filter = range
     end
     # rubocop:enable Naming/AccessorMethodName
@@ -950,7 +950,7 @@ module Xlsxrb
     # --- Auto Filter / Sort ---
 
     # rubocop:disable Naming/AccessorMethodName
-    def set_auto_filter(range)
+    def auto_filter(range)
       sheet if @current_sheet.nil?
       @current_auto_filter = range
     end
