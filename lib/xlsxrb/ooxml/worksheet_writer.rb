@@ -315,6 +315,22 @@ module Xlsxrb
               type = "b"
               xml_val = "0"
             end
+          when Hash
+            if value.key?(:formula)
+              formula_expr = value[:formula]
+              formula_ca = value[:calculate_always] || false
+              xml_val = value[:value]
+              case xml_val
+              when String
+                type = "str"
+              when true
+                type = "b"
+                xml_val = "1"
+              when false
+                type = "b"
+                xml_val = "0"
+              end
+            end
           when String
             if value.start_with?("=")
               # already set formula_expr
@@ -932,8 +948,9 @@ module Xlsxrb
 
       def write_sparkline_color(tag, color)
         attrs = {}
-        if color.is_a?(String)
-          attrs[:rgb] = color
+        if color.is_a?(String) || color.is_a?(Symbol)
+          resolved = Xlsxrb::StyleBuilder.new.resolve_color(color)
+          attrs[:rgb] = resolved
         else
           attrs[:rgb] = color[:rgb] if color[:rgb]
           attrs[:theme] = color[:theme].to_s if color[:theme]
