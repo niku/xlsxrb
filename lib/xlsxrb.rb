@@ -588,7 +588,7 @@ module Xlsxrb
     # --- Tables ---
 
     # Add a table to the sheet.
-    def add_table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
+    def table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
       tbl = { ref: ref, columns: columns }
       tbl[:name] = name if name
       tbl[:display_name] = display_name if display_name
@@ -982,7 +982,7 @@ module Xlsxrb
 
     # --- Tables ---
 
-    def add_table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
+    def table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
       sheet if @current_sheet.nil?
       tbl = { ref: ref, columns: columns }
       tbl[:name] = name if name

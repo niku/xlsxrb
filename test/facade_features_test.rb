@@ -222,13 +222,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Tables
   # =====================================================
 
-  test "add_table in build API" do
+  test "table in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Tables") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.row(["Bob", 87])
-        s.add_table("A1:B3", columns: %w[Name Score], name: "ScoreTable")
+        s.table("A1:B3", columns: %w[Name Score], name: "ScoreTable")
       end
     end
 
@@ -244,13 +244,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_table in generate API" do
+  test "table in generate API" do
     tmp = Tempfile.new(["facade_table_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Tables") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.add_table("A1:B2", columns: %w[Name Score], name: "MyTable")
+        s.table("A1:B2", columns: %w[Name Score], name: "MyTable")
       end
     end
 
@@ -262,13 +262,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_table accepts style string in generate API" do
+  test "table accepts style string in generate API" do
     tmp = Tempfile.new(["facade_table_style_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Tables") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.add_table("A1:B2",
+        s.table("A1:B2",
                     columns: %w[Name Score],
                     name: "StyledTable",
                     style: "TableStyleMedium9",
