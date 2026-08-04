@@ -977,6 +977,23 @@ module Xlsxrb
         styles = styles_array
       end
 
+      # Auto-detect Date / Time for built-in styles
+      values.each_with_index do |val, idx|
+        if val.is_a?(Date) && (styles.nil? || styles[idx].nil?)
+          unless @styles.key?("__xlsxrb_date")
+            style("__xlsxrb_date", number_format: "yyyy-mm-dd")
+          end
+          styles ||= []
+          styles[idx] = "__xlsxrb_date"
+        elsif val.is_a?(Time) && (styles.nil? || styles[idx].nil?)
+          unless @styles.key?("__xlsxrb_time")
+            style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss")
+          end
+          styles ||= []
+          styles[idx] = "__xlsxrb_time"
+        end
+      end
+
       @current_cells ||= {}
       row_num = row_index + 1
       
