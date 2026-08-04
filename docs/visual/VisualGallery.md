@@ -1519,11 +1519,11 @@ Demonstrates Rich Text cells with multiple font weights, styles, and colors in a
 require "xlsxrb"
 output_path = ARGV[0] || "cell_rich_text.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  rt = Xlsxrb::Elements::RichText.new(runs: [
-                                        { text: "Normal " },
-                                        { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
-                                        { text: "ITALIC BLUE", font: { italic: true, color: "FF0000FF", sz: 20 } }
-                                      ])
+  rt = Xlsxrb.rich_text(
+    { text: "Normal " },
+    { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
+    { text: "ITALIC BLUE", font: { italic: true, color: "FF0000FF", sz: 20 } }
+  )
   w.sheet("Rich Text") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

@@ -648,10 +648,10 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "data")
-    rt = Xlsxrb::Elements::RichText.new(runs: [
-                                          { text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
+    rt = Xlsxrb.rich_text(
+{ text: "Bold", font: { bold: true, sz: 9, name: "Calibri" } },
                                           { text: " normal" }
-                                        ])
+)
     writer.add_comment("A1", rt, author: "Tester")
     writer.write(xlsx_path)
 
@@ -723,10 +723,10 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   test "writer generates valid rich text in shared strings" do
     writer = Xlsxrb::Ooxml::Writer.new
     writer.use_shared_strings!
-    rt = Xlsxrb::Elements::RichText.new(runs: [
-                                          { text: "Bold", font: { bold: true } },
+    rt = Xlsxrb.rich_text(
+{ text: "Bold", font: { bold: true } },
                                           { text: " Normal" }
-                                        ])
+)
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
@@ -1230,12 +1230,12 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "writer generates valid rich text with extended font attributes" do
     writer = Xlsxrb::Ooxml::Writer.new
-    rt = Xlsxrb::Elements::RichText.new(runs: [
-                                          { text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
+    rt = Xlsxrb.rich_text(
+{ text: "Strike", font: { strike: true, name: "Arial", sz: 11 } },
                                           { text: "Double", font: { underline: "double", name: "Arial", sz: 11 } },
                                           { text: "Super", font: { vert_align: "superscript", name: "Arial", sz: 11 } },
                                           { text: "Theme", font: { theme: 1, tint: 0.5, name: "Calibri", sz: 11, family: 2, scheme: "minor" } }
-                                        ])
+)
     writer.set_cell("A1", rt)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])

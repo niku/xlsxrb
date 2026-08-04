@@ -4,6 +4,7 @@ require "date"
 require "openssl"
 require "securerandom"
 require "tempfile"
+require "bigdecimal"
 require "opentelemetry"
 require_relative "xlsxrb/version"
 require_relative "xlsxrb/ooxml/zip_generator"
@@ -26,6 +27,16 @@ module Xlsxrb
   end
 
   TRACER = OpenTelemetry.tracer_provider.tracer("xlsxrb", Xlsxrb::VERSION)
+
+  # Helper to easily create RichText objects.
+  # Supports both `Xlsxrb.rich_text({ text: "A" }, { text: "B" })`
+  # and `Xlsxrb.rich_text(text: "Hi", bold: true)`
+  def self.rich_text(*runs, text: nil, **font_props)
+    if text
+      runs = [{ text: text, font: font_props }]
+    end
+    Elements::RichText.new(runs: runs)
+  end
 
   # Builder for block-style chart definitions.
   class ChartBuilder
