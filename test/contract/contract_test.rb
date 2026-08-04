@@ -724,7 +724,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Prot") do |s|
         s.row(["Data"])
-        s.set_sheet_protection(sheet: true, objects: true)
+        s.protect_sheet(sheet: true, objects: true)
       end
     end
 
@@ -739,7 +739,7 @@ class ContractTest < Test::Unit::TestCase
     _reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Prot") do |s|
         s.row(["Data"])
-        s.set_sheet_protection(sheet: true, password: "secret")
+        s.protect_sheet(sheet: true, password: "secret")
       end
     end
 

@@ -684,7 +684,7 @@ module Xlsxrb
     # --- Sheet Protection ---
 
     # Set sheet protection options.
-    def set_sheet_protection(**opts)
+    def protect_sheet(**opts)
       normalized = opts.dup
       plain_password = normalized[:password]
       needs_hash = plain_password.is_a?(String) && !plain_password.empty? &&
@@ -1071,7 +1071,7 @@ module Xlsxrb
 
     # --- Sheet Protection ---
 
-    def set_sheet_protection(**opts)
+    def protect_sheet(**opts)
       sheet if @current_sheet.nil?
       normalized = opts.dup
       plain_password = normalized[:password]
