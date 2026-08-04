@@ -13,7 +13,7 @@ class StyleTest < Test::Unit::TestCase
         end
 
         # Add rows with styles
-        s.row(["Header 1", "Header 2"], styles: %w[heading heading])
+        s.row(["Header 1", "Header 2"], styles: "heading")
         s.row([100, 200])
       end
     end

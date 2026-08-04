@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
-    s.row([15], styles: ["center"])
-    s.row([25], styles: ["center"])
-    s.row([5], styles: ["center"])
+    s.row([15], styles: "center")
+    s.row([25], styles: "center")
+    s.row([5], styles: "center")
     s.conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: "FF00FF00")
   end
 end
