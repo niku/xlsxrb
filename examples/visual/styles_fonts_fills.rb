@@ -13,7 +13,7 @@ Xlsxrb.generate(output_path) do |w|
     style.italic.font_color("FFC00000").fill_color("FFFFFF00")
   end
 
-  w.add_sheet("Styles") do
+  w.sheet("Styles") do
     w.set_column(0, width: 25)
     w.set_column(1, width: 25)
     w.add_row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })

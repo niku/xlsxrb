@@ -5,7 +5,7 @@ output_path = ARGV[0] || "align_text_rotation.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("rot_45") { |s| s.text_rotation(45) }
   w.add_style("rot_90") { |s| s.text_rotation(90) }
-  w.add_sheet("Rotation") do |s|
+  w.sheet("Rotation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)

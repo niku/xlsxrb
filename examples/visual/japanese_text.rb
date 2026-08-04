@@ -9,7 +9,7 @@ Xlsxrb.generate(output_path) do |w|
     style.font_name("Noto Sans CJK JP").size(12)
   end
 
-  w.add_sheet("Japanese") do |s|
+  w.sheet("Japanese") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(%w[日本語ラベル 値], styles: { 0 => "ja_font", 1 => "ja_font" })

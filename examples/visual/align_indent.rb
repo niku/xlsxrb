@@ -5,7 +5,7 @@ output_path = ARGV[0] || "align_indent.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("indent_1") { |s| s.align_horizontal("left").indent(1) }
   w.add_style("indent_3") { |s| s.align_horizontal("left").indent(3) }
-  w.add_sheet("Indent") do |s|
+  w.sheet("Indent") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)

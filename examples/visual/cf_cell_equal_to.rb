@@ -4,7 +4,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_equal_to.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("CF Equal") do |s|
+  w.sheet("CF Equal") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Values"])

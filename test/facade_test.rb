@@ -251,7 +251,7 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["generate_test", ".xlsx"])
     begin
       Xlsxrb.generate(tmp.path) do |w|
-        w.add_sheet("Output")
+        w.sheet("Output")
         w.add_row(%w[Name Score])
         w.add_row(["Alice", 95])
         w.add_row(["Bob", 87])
@@ -272,9 +272,9 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["gen_multi", ".xlsx"])
     begin
       Xlsxrb.generate(tmp.path) do |w|
-        w.add_sheet("Sheet1")
+        w.sheet("Sheet1")
         w.add_row([1, 2, 3])
-        w.add_sheet("Sheet2")
+        w.sheet("Sheet2")
         w.add_row([4, 5, 6])
       end
 
@@ -287,7 +287,7 @@ class FacadeTest < Test::Unit::TestCase
     end
   end
 
-  test "Xlsxrb.generate without explicit add_sheet" do
+  test "Xlsxrb.generate without explicit sheet" do
     tmp = Tempfile.new(["gen_implicit", ".xlsx"])
     begin
       Xlsxrb.generate(tmp.path) do |w|
@@ -335,7 +335,7 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["large_foreach", ".xlsx"])
     begin
       Xlsxrb.generate(tmp.path) do |w|
-        w.add_sheet("Big")
+        w.sheet("Big")
         10_000.times do |i|
           w.add_row([i, "row#{i}", i * 0.5])
         end
@@ -359,7 +359,7 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["large_gen", ".xlsx"])
     begin
       Xlsxrb.generate(tmp.path) do |w|
-        w.add_sheet("Large")
+        w.sheet("Large")
         10_000.times do |i|
           w.add_row([i, "data#{i}"])
         end
@@ -440,7 +440,7 @@ class FacadeTest < Test::Unit::TestCase
   test "add_chart works in Streaming generate API" do
     tmp = Tempfile.new(["facade_chart_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
-      w.add_sheet("Sales") do |s|
+      w.sheet("Sales") do |s|
         s.add_row(%w[Month Value])
         s.add_row(["Jan", 100])
         s.add_row(["Feb", 200])
@@ -461,7 +461,7 @@ class FacadeTest < Test::Unit::TestCase
 
   test "add_chart works in In-Memory build API" do
     workbook = Xlsxrb.build do |w|
-      w.add_sheet("Sales") do |s|
+      w.sheet("Sales") do |s|
         s.add_row(%w[Month Value])
         s.add_row(["Jan", 100])
         s.add_row(["Feb", 200])
@@ -485,7 +485,7 @@ class FacadeTest < Test::Unit::TestCase
 
   test "add_style supports options form in build API" do
     workbook = Xlsxrb.build do |w|
-      w.add_sheet("Styled") do |s|
+      w.sheet("Styled") do |s|
         s.add_style("header", bold: true, size: 12, font_color: "FF0000FF")
         s.add_row(%w[Name Score], styles: %w[header header])
       end
@@ -506,7 +506,7 @@ class FacadeTest < Test::Unit::TestCase
   test "add_chart supports block form in generate API" do
     tmp = Tempfile.new(["facade_chart_block_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
-      w.add_sheet("Sales") do
+      w.sheet("Sales") do
         w.add_row(%w[Month Value])
         w.add_row(["Jan", 100])
         w.add_row(["Feb", 200])
@@ -536,7 +536,7 @@ class FacadeTest < Test::Unit::TestCase
     begin
       # Create source file
       workbook = Xlsxrb.build do |w|
-        w.add_sheet("Data") do |s|
+        w.sheet("Data") do |s|
           s.add_row(%w[Name Score])
           s.add_row(["Alice", 95])
           s.add_row(["Bob", 87])
@@ -569,7 +569,7 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["modify_inplace", ".xlsx"])
     begin
       workbook = Xlsxrb.build do |w|
-        w.add_sheet("S") do |s|
+        w.sheet("S") do |s|
           s.add_row(["original"])
         end
       end
@@ -603,7 +603,7 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["modify_noop", ".xlsx"])
     begin
       workbook = Xlsxrb.build do |w|
-        w.add_sheet("Sheet1") do |s|
+        w.sheet("Sheet1") do |s|
           s.add_row(["keep"])
         end
       end

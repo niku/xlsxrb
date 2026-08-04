@@ -5,7 +5,7 @@ require "time"
 output_path = ARGV[0] || "cell_times.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
-  w.add_sheet("Times") do |s|
+  w.sheet("Times") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Format", "Time Value"])

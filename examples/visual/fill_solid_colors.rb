@@ -5,7 +5,7 @@ output_path = ARGV[0] || "fill_solid_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("red_fill") { |s| s.fill_color("FFFFC7CE") }
   w.add_style("green_fill") { |s| s.fill_color("FFC6EFCE") }
-  w.add_sheet("Fills") do |s|
+  w.sheet("Fills") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(%w[Color Preview])

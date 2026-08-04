@@ -261,7 +261,7 @@ module Xlsxrb
     end
 
     # Add a new sheet.
-    def add_sheet(name = nil)
+    def sheet(name = nil)
       name ||= "Sheet#{@sheets.size + 1}"
       sheet_builder = WorksheetBuilder.new(name)
       yield sheet_builder if block_given?
@@ -841,7 +841,7 @@ module Xlsxrb
     end
 
     # Start or switch to a named sheet.
-    def add_sheet(name = nil)
+    def sheet(name = nil)
       flush_current_sheet
       name ||= "Sheet#{@sheets.size + 1}"
       @current_sheet = name
@@ -889,7 +889,7 @@ module Xlsxrb
     # Add a row of values. values is an Array.
     # styles:: Hash mapping column indices to style names, or Array of style names for each column
     def add_row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
 
       row_index = @current_row_index
       @current_row_index += 1
@@ -917,14 +917,14 @@ module Xlsxrb
 
     # Set column width for a 0-based column index.
     def set_column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
 
       @current_columns << { index: index, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
     end
 
     # Add a chart to the current sheet.
     def add_chart(**options)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
 
       if block_given?
         builder = ChartBuilder.new
@@ -938,7 +938,7 @@ module Xlsxrb
     # --- Hyperlinks ---
 
     def add_hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       link = { cell: cell }
       link[:url] = url if url
       link[:display] = display if display
@@ -951,39 +951,39 @@ module Xlsxrb
 
     # rubocop:disable Naming/AccessorMethodName
     def set_auto_filter(range)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_auto_filter = range
     end
     # rubocop:enable Naming/AccessorMethodName
 
     def add_filter_column(col_id, filter)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_filter_columns[col_id] = filter
     end
 
     def set_sort_state(ref, sort_conditions, **opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_sort_state = { ref: ref, sort_conditions: sort_conditions }.merge(opts)
     end
 
     # --- Data Validation ---
 
     def add_data_validation(sqref, **opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_data_validations << opts.merge(sqref: sqref)
     end
 
     # --- Conditional Formatting ---
 
     def add_conditional_format(sqref, **opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_conditional_formats << opts.merge(sqref: sqref)
     end
 
     # --- Tables ---
 
     def add_table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       tbl = { ref: ref, columns: columns }
       tbl[:name] = name if name
       tbl[:display_name] = display_name if display_name
@@ -995,7 +995,7 @@ module Xlsxrb
     # --- Pivot Tables ---
 
     def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_pivot_tables ||= []
       @current_pivot_tables << {
         source_ref: source_ref, row_fields: row_fields,
@@ -1008,14 +1008,14 @@ module Xlsxrb
     # --- Comments ---
 
     def add_comment(cell, text, author: "Author")
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_comments << { cell: cell, text: text, author: author }
     end
 
     # --- Sparklines ---
 
     def add_sparkline_group(sparklines:, type: nil, **opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       group = { sparklines: sparklines }
       group[:type] = type if type
       group.merge!(opts)
@@ -1025,24 +1025,24 @@ module Xlsxrb
     # --- Merge Cells ---
 
     def merge_cells(range)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_merge_cells << range
     end
 
     # --- Freeze / Split Panes ---
 
     def set_freeze_pane(row: 0, col: 0)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_freeze_pane = { row: row, col: col }
     end
 
     def set_split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_split_pane = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell }
     end
 
     def set_selection(active_cell, sqref: nil, pane: nil)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_selection = { active_cell: active_cell, sqref: sqref || active_cell }
       @current_selection[:pane] = pane if pane
     end
@@ -1050,29 +1050,29 @@ module Xlsxrb
     # --- Page Setup / Margins / Print ---
 
     def set_page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
     end
 
     def set_page_setup(**opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_page_setup.merge!(opts)
     end
 
     def set_header_footer(**opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_header_footer.merge!(opts)
     end
 
     def set_print_option(name, value)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_print_options[name] = value
     end
 
     # --- Sheet Protection ---
 
     def set_sheet_protection(**opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       normalized = opts.dup
       plain_password = normalized[:password]
       needs_hash = plain_password.is_a?(String) && !plain_password.empty? &&
@@ -1089,7 +1089,7 @@ module Xlsxrb
     # --- Images ---
 
     def add_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       img = { file_data: file_data, ext: ext, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
       img.merge!(opts)
       @current_images << img
@@ -1098,7 +1098,7 @@ module Xlsxrb
     # --- Shapes ---
 
     def add_shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       shape = { preset: preset, text: text, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
       shape[:name] = opts.delete(:name) || "Shape #{@current_shapes.size + 1}"
       shape.merge!(opts)
@@ -1108,24 +1108,24 @@ module Xlsxrb
     # --- Sheet Properties ---
 
     def set_sheet_property(name, value)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_sheet_properties[name] = value
     end
 
     def set_sheet_view(name, value)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_sheet_view[name] = value
     end
 
     # --- Row / Column Breaks ---
 
     def add_row_break(row_num)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_row_breaks << row_num
     end
 
     def add_col_break(col_index)
-      add_sheet if @current_sheet.nil?
+      sheet if @current_sheet.nil?
       @current_col_breaks << col_index
     end
 

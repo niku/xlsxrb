@@ -6,7 +6,7 @@ output_path = ARGV[0] || "conditional_formatting.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("Scores") do |s|
+  w.sheet("Scores") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row([90, 45, 72, 88], styles: %w[center center center center])

@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "page_margins_wide.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Wide Margins") do |s|
+  w.sheet("Wide Margins") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_margins(top: 1.0, bottom: 1.0, left: 1.0, right: 1.0, header: 0.5, footer: 0.5)

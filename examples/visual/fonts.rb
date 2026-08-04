@@ -33,7 +33,7 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("v_super") { |s| s.vert_align("superscript") }
   w.add_style("v_sub") { |s| s.vert_align("subscript") }
 
-  w.add_sheet("Fonts") do |s|
+  w.sheet("Fonts") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)

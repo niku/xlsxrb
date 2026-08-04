@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_time.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Time Validation") do |s|
+  w.sheet("Time Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Schedule", "Enter Time (after 08:00):"])

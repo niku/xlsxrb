@@ -5,7 +5,7 @@ output_path = ARGV[0] || "fill_patterns.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
   w.add_style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
-  w.add_sheet("Patterns") do |s|
+  w.sheet("Patterns") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(%w[Pattern Preview])

@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "page_headings_print.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Print Headings") do |s|
+  w.sheet("Print Headings") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:headings, true)

@@ -7,7 +7,7 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
   # E2E test: In-memory styled cells
   test "in-memory mode: write and validate styled cells via Open XML SDK" do
     workbook = Xlsxrb.build do |w|
-      w.add_sheet("Styled") do |s|
+      w.sheet("Styled") do |s|
         # Define styles
         s.add_style("header") do |style|
           style.bold.size(14).font_color("FFFF0000")
@@ -64,7 +64,7 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
           style.fill_color("FFFFC000")
         end
 
-        w.add_sheet("Data") do
+        w.sheet("Data") do
           # Header row with style
           w.add_row(%w[Col1 Col2], styles: { 0 => "header", 1 => "header" })
 
