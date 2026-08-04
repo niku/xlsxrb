@@ -900,7 +900,7 @@ Xlsxrb.generate(output_path) do |w|
   w.style("date") { |style| style.number_format("yyyy-mm-dd") }
   w.sheet("Basic Data") do
     w.set_sheet_property(:fit_to_page, true)
-    w.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    w.page_setup(fit_to_width: 1, fit_to_height: 1)
     w.column(0, width: 25)
     w.column(1, width: 25)
     w.row(%w[Product Qty Price Date Active])
@@ -2243,7 +2243,7 @@ output_path = ARGV[0] || "chart_area.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Day Value])
@@ -2300,7 +2300,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :area,
       grouping: :stacked,
@@ -2352,7 +2352,7 @@ output_path = ARGV[0] || "chart_bar.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Sales Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Month Value])
@@ -2415,7 +2415,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :bar,
       grouping: :percentStacked,
@@ -2471,7 +2471,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :bar,
       grouping: :stacked,
@@ -2521,7 +2521,7 @@ output_path = ARGV[0] || "chart_doughnut.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Label Percent])
@@ -2579,7 +2579,7 @@ output_path = ARGV[0] || "chart_line.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Day Value])
@@ -2637,7 +2637,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :line,
       grouping: :stacked,
@@ -2687,7 +2687,7 @@ output_path = ARGV[0] || "chart_pie.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Label Percent])
@@ -2745,7 +2745,7 @@ output_path = ARGV[0] || "chart_radar.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Stat Value])
@@ -2796,7 +2796,7 @@ output_path = ARGV[0] || "chart_scatter.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[X Y])
@@ -2848,7 +2848,7 @@ Xlsxrb.generate(output_path) do |w|
   w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Col Grouping") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25, outline_level: 0)
     s.column(1, width: 25, outline_level: 1)
     s.column(2, width: 25, outline_level: 1)
@@ -3870,7 +3870,7 @@ Xlsxrb.generate(output_path) do |w|
   w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Merge & Freeze") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.column(2, width: 25)
@@ -4177,7 +4177,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Landscape") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_page_setup(orientation: :landscape)
+    s.page_setup(orientation: :landscape)
     s.row(["Landscape Orientation sheet"])
   end
 end
@@ -4227,7 +4227,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("A3 Sheet") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_page_setup(paper_size: 8) # ISO A3 is paperSize="8"
+    s.page_setup(paper_size: 8) # ISO A3 is paperSize="8"
     s.row(["ISO A3 Paper Size sheet"])
   end
 end
@@ -4471,7 +4471,7 @@ output_path = ARGV[0] || "sparkline_column.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Sparkline") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row([5, 12, 8, 15, nil])
@@ -4523,7 +4523,7 @@ output_path = ARGV[0] || "sparkline_line.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Sparkline") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row([10, 20, 15, 30, nil])

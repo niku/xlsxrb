@@ -11,7 +11,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :area,
       grouping: :stacked,

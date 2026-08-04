@@ -667,7 +667,7 @@ module Xlsxrb
     end
 
     # Set page setup properties.
-    def set_page_setup(**opts)
+    def page_setup(**opts)
       @page_setup.merge!(opts)
     end
 
@@ -1054,7 +1054,7 @@ module Xlsxrb
       @current_page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
     end
 
-    def set_page_setup(**opts)
+    def page_setup(**opts)
       sheet if @current_sheet.nil?
       @current_page_setup.merge!(opts)
     end
