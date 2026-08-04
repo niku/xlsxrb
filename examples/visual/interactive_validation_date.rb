@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Date Range", "Enter Date (2026):"])
-    s.add_data_validation("B2", type: "date", operator: "between", formula1: "Date(2026,1,1)", formula2: "Date(2026,12,31)", show_error_message: true, error_title: "Invalid Date", error: "Must be a date in 2026")
+    s.validate_data("B2", type: "date", operator: "between", formula1: "Date(2026,1,1)", formula2: "Date(2026,12,31)", show_error_message: true, error_title: "Invalid Date", error: "Must be a date in 2026")
   end
 end
 
