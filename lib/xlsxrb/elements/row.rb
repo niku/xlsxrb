@@ -17,6 +17,10 @@ module Xlsxrb
               unmapped_data: unmapped_data, errors: computed_errors)
       end
 
+      def [](col_index)
+        cells[col_index]
+      end
+
       def each(&block)
         return to_enum(:each) unless block_given?
         cells.each(&block)

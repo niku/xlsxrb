@@ -12,6 +12,15 @@ module Xlsxrb
               unmapped_data: unmapped_data, errors: computed_errors.freeze)
       end
 
+      def cells
+        # Ensure ordered traversal
+        @cells ||= cells_hash.values.sort_by { |c| [c.row_index, c.column_index] }
+      end
+
+      def [](ref)
+        cells_hash[ref.to_s.upcase]
+      end
+
       def each(&block)
         return to_enum(:each) unless block_given?
         cells.each(&block)
