@@ -959,7 +959,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
         s.auto_filter("A1:A10")
-        s.set_sort_state("A1:A10", [{ ref: "A1:A10", descending: true }])
+        s.sort_state("A1:A10", [{ ref: "A1:A10", descending: true }])
       end
     end
 
