@@ -6,11 +6,11 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Red Tab") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_sheet_property(:tab_color, "FFFF0000")
+    s.sheet_properties(:tab_color, "FFFF0000")
     s.row(["Red tab sheet"])
   end
   w.sheet("Green Tab") do |s|
-    s.set_sheet_property(:tab_color, "FF00FF00")
+    s.sheet_properties(:tab_color, "FF00FF00")
     s.row(["Green tab sheet"])
   end
 end

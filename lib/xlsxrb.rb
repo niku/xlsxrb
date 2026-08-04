@@ -720,7 +720,7 @@ module Xlsxrb
     # --- Sheet Properties ---
 
     # Set a sheet-level property (e.g. :tab_color).
-    def set_sheet_property(name, value)
+    def sheet_properties(name, value)
       @sheet_properties[name] = value
     end
 
@@ -1107,7 +1107,7 @@ module Xlsxrb
 
     # --- Sheet Properties ---
 
-    def set_sheet_property(name, value)
+    def sheet_properties(name, value)
       sheet if @current_sheet.nil?
       @current_sheet_properties[name] = value
     end
