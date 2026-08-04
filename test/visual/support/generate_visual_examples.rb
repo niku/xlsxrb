@@ -652,7 +652,7 @@ module Xlsxrb
           Xlsxrb.generate(output_path) do |w|
             w.sheet("Comments") do |s|
               s.row(["Item A", "Item B"])
-              s.add_comment("A1", "This is an important comment.", author: "System")
+              s.comment("A1", "This is an important comment.", author: "System")
             end
           end
         RUBY
