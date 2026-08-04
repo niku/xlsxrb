@@ -867,8 +867,8 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
         s.sheet_properties(:tab_color, "FF0000")
-        s.set_sheet_view(:show_grid_lines, false)
-        s.set_sheet_view(:zoom_scale, 150)
+        s.sheet_view(:show_grid_lines, false)
+        s.sheet_view(:zoom_scale, 150)
       end
     end
 

@@ -725,7 +725,7 @@ module Xlsxrb
     end
 
     # Set a sheet view property (e.g. :show_grid_lines, :zoom_scale).
-    def set_sheet_view(name, value)
+    def sheet_view(name, value)
       @sheet_view[name] = value
     end
 
@@ -1112,7 +1112,7 @@ module Xlsxrb
       @current_sheet_properties[name] = value
     end
 
-    def set_sheet_view(name, value)
+    def sheet_view(name, value)
       sheet if @current_sheet.nil?
       @current_sheet_view[name] = value
     end

@@ -937,12 +937,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Sheet View (zoom, gridlines)
   # =====================================================
 
-  test "set_sheet_view in build API" do
+  test "sheet_view in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("View") do |s|
         s.row(["Data"])
-        s.set_sheet_view(:zoom_scale, 150)
-        s.set_sheet_view(:show_grid_lines, false)
+        s.sheet_view(:zoom_scale, 150)
+        s.sheet_view(:show_grid_lines, false)
       end
     end
 
