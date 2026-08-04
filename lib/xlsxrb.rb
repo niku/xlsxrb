@@ -689,6 +689,21 @@ module Xlsxrb
       @merge_cells_ranges << range
     end
 
+    # Helper for index-based merging.
+    def merge_cells(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
+      if range
+        merge(range)
+      else
+        r_start = row || row_start || 0
+        r_end = row || row_end || 0
+        c_start = col_start || 0
+        c_end = col_end || 0
+        start_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_start)}#{r_start + 1}"
+        end_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_end)}#{r_end + 1}"
+        merge("#{start_ref}:#{end_ref}")
+      end
+    end
+
     # --- Freeze / Split Panes ---
 
     # Freeze panes at the given row and column.
@@ -1100,6 +1115,20 @@ module Xlsxrb
     def merge(range)
       sheet if @current_sheet.nil?
       @current_merge_cells << range
+    end
+
+    def merge_cells(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
+      if range
+        merge(range)
+      else
+        r_start = row || row_start || 0
+        r_end = row || row_end || 0
+        c_start = col_start || 0
+        c_end = col_end || 0
+        start_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_start)}#{r_start + 1}"
+        end_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_end)}#{r_end + 1}"
+        merge("#{start_ref}:#{end_ref}")
+      end
     end
 
     # --- Freeze / Split Panes ---
