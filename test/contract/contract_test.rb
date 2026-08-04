@@ -940,7 +940,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.add_row_break(1)
+        s.page_break_row(1)
         s.add_col_break(2)
       end
     end
