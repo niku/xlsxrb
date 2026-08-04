@@ -539,15 +539,6 @@ row.cells.each do |c|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Alignment (Xlsxrb.read) ===
-Cell A1 ('Left'): align_horizontal = "left"
-Cell B1 ('Center'): align_horizontal = "center"
-Cell C1 ('Right'): align_horizontal = "right"
-```
-
 <hr/>
 
 ## Align Horizontal Fill
@@ -590,13 +581,6 @@ row.cells.each do |c|
   shrink = xf&.dig(:alignment, :shrink_to_fit)
   puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Cell A1 ('X '): align_h="fill", align_v=nil, wrap=nil, indent=nil, rotation=nil, shrink=nil
 ```
 
 <hr/>
@@ -644,13 +628,6 @@ row.cells.each do |c|
   shrink = xf&.dig(:alignment, :shrink_to_fit)
   puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Cell A1 ('Justified alignment wraps and distributes text evenly.'): align_h="justify", align_v=nil, wrap=true, indent=nil, rotation=nil, shrink=nil
 ```
 
 <hr/>
@@ -702,13 +679,6 @@ row.cells.each do |c|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Cell A1 ('No Indent'): align_h=nil, align_v=nil, wrap=nil, indent=nil, rotation=nil, shrink=nil
-```
-
 <hr/>
 
 ## Align Text Rotation
@@ -756,14 +726,6 @@ row.cells.each do |c|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Cell A1 ('Rotated 45'): align_h=nil, align_v=nil, wrap=nil, indent=nil, rotation=45, shrink=nil
-Cell B1 ('Rotated 90'): align_h=nil, align_v=nil, wrap=nil, indent=nil, rotation=90, shrink=nil
-```
-
 <hr/>
 
 ## Align Text Wrap
@@ -807,13 +769,6 @@ row.cells.each do |c|
   shrink = xf&.dig(:alignment, :shrink_to_fit)
   puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Cell A1 ('This is a long sentence that wraps inside the cell.'): align_h=nil, align_v=nil, wrap=true, indent=nil, rotation=nil, shrink=nil
 ```
 
 <hr/>
@@ -864,15 +819,6 @@ row.cells.each do |c|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Cell A1 ('Top'): align_h=nil, align_v="top", wrap=nil, indent=nil, rotation=nil, shrink=nil
-Cell B1 ('Center'): align_h=nil, align_v="center", wrap=nil, indent=nil, rotation=nil, shrink=nil
-Cell C1 ('Bottom'): align_h=nil, align_v="bottom", wrap=nil, indent=nil, rotation=nil, shrink=nil
-```
-
 <hr/>
 
 ## Basic Data
@@ -919,15 +865,6 @@ sheet.rows.each do |row|
   end
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Product" (String), B1: "Qty" (String), C1: "Price" (String), D1: "Date" (String), E1: "Active" (String)
-Row 1: A2: "Gadget A" (String), B2: 10 (Integer), C2: 99.99 (Float), D2: 46037 (Integer), E2: true (TrueClass)
-Row 2: A3: "Widget B" (String), B3: 5 (Integer), C3: 49.5 (Float), D3: 46073 (Integer), E3: false (FalseClass)
 ```
 
 <hr/>
@@ -1002,26 +939,6 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Border Style" (border_id: 0), B1: "Cell Preview" (border_id: 0)
-Row 1: A2: "Thin" (border_id: 0), B2: "Thin Border" (border_id: 1)
-Row 2: A3: "Medium" (border_id: 0), B3: "Medium Border" (border_id: 2)
-Row 3: A4: "Thick" (border_id: 0), B4: "Thick Border" (border_id: 3)
-Row 4: A5: "Hair" (border_id: 0), B5: "Hair Border" (border_id: 4)
-Row 5: A6: "Dashed" (border_id: 0), B6: "Dashed Border" (border_id: 5)
-Row 6: A7: "Medium Dashed" (border_id: 0), B7: "Medium Dashed" (border_id: 6)
-Row 7: A8: "Dotted" (border_id: 0), B8: "Dotted Border" (border_id: 7)
-Row 8: A9: "Double" (border_id: 0), B9: "Double Border" (border_id: 8)
-Row 9: A10: "Dash-Dot" (border_id: 0), B10: "Dash-Dot Border" (border_id: 9)
-Row 10: A11: "Medium Dash-Dot" (border_id: 0), B11: "Medium Dash-Dot" (border_id: 10)
-Row 11: A12: "Dash-Dot-Dot" (border_id: 0), B12: "Dash-Dot-Dot" (border_id: 11)
-Row 12: A13: "Slanted Dash-Dot" (border_id: 0), B13: "Slanted Border" (border_id: 12)
-Row 13: A14: "Diagonal (Cross)" (border_id: 0), B14: "Diagonal Border" (border_id: 13)
-```
-
 <hr/>
 
 ## Cell Booleans
@@ -1061,15 +978,6 @@ sheet.rows.each do |row|
   end
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Label" (String), B1: "Boolean Value" (String)
-Row 1: A2: "Is Active" (String), B2: true (TrueClass)
-Row 2: A3: "Is Pending" (String), B3: false (FalseClass)
 ```
 
 <hr/>
@@ -1115,15 +1023,6 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (String), B1: "Date Value" (String)
-Row 1: A2: "Default Date" (String), B2: 46204 (Integer)
-Row 2: A3: "Formatted Date" (String), B3: 46381 (Integer)
-```
-
 <hr/>
 
 ## Cell Formulas
@@ -1165,17 +1064,6 @@ sheet.rows.each do |row|
   end
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Item" (String), B1: "Value" (String)
-Row 1: A2: "A" (String), B2: 10 (Integer)
-Row 2: A3: "B" (String), B3: 20 (Integer)
-Row 3: A4: "SUM" (String), B4: 30 (Integer)
-Row 4: A5: "AVERAGE" (String), B5: 15 (Integer)
 ```
 
 <hr/>
@@ -1222,15 +1110,6 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Positive Yen" (Format ID: , Code: nil), B2: 12500 (Format ID: 164, Code: "¥#,##0;[Red]¥-#,##0")
-Row 2: A3: "Negative Yen" (Format ID: , Code: nil), B3: -8000 (Format ID: 164, Code: "¥#,##0;[Red]¥-#,##0")
-```
-
 <hr/>
 
 ## Cell Num Custom Colors
@@ -1273,15 +1152,6 @@ sheet.rows.each do |row|
   end
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Positive (Green)" (Format ID: , Code: nil), B2: 5000 (Format ID: 164, Code: "[Green]#,##0;[Red]-#,##0")
-Row 2: A3: "Negative (Red)" (Format ID: , Code: nil), B3: -2500 (Format ID: 164, Code: "[Green]#,##0;[Red]-#,##0")
 ```
 
 <hr/>
@@ -1329,16 +1199,6 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Half" (Format ID: , Code: nil), B2: 0.5 (Format ID: 164, Code: "# ?/?")
-Row 2: A3: "Third" (Format ID: , Code: nil), B3: 0.3333 (Format ID: 164, Code: "# ?/?")
-Row 3: A4: "Quarter" (Format ID: , Code: nil), B4: 0.75 (Format ID: 164, Code: "# ?/?")
-```
-
 <hr/>
 
 ## Cell Num Percent Decimals
@@ -1380,14 +1240,6 @@ sheet.rows.each do |row|
   end
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Percent with 2 Decimals" (Format ID: , Code: nil), B2: 0.12345 (Format ID: 164, Code: "0.00%")
 ```
 
 <hr/>
@@ -1432,15 +1284,6 @@ sheet.rows.each do |row|
   end
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Scientific" (Format ID: , Code: nil), B2: 123456789.0 (Format ID: 164, Code: "0.00E+00")
-Row 2: A3: "Small Scientific" (Format ID: , Code: nil), B3: 1.234e-05 (Format ID: 164, Code: "0.00E+00")
 ```
 
 <hr/>
@@ -1488,17 +1331,6 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (String), B1: "Value" (String)
-Row 1: A2: "Integer" (String), B2: 12345 (Integer)
-Row 2: A3: "Float" (String), B3: 123.456 (Float)
-Row 3: A4: "Currency" (String), B4: 1234.5 (Float)
-Row 4: A5: "Percentage" (String), B5: 0.85 (Float)
-```
-
 <hr/>
 
 ## Cell Rich Text
@@ -1544,14 +1376,6 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (String), B1: "Value" (String)
-Row 1: A2: "Rich Text Cell" (String), B2: "Normal BOLD RED ITALIC BLUE" (String)
-```
-
 <hr/>
 
 ## Cell Times
@@ -1595,15 +1419,6 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (String), B1: "Time Value" (String)
-Row 1: A2: "DateTime" (String), B2: 46204.52425925926 (Float)
-Row 2: A3: "Time Only" (String), B3: 46204.385416666664 (Float)
-```
-
 <hr/>
 
 ## Cf Begins With
@@ -1643,16 +1458,6 @@ sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Code"
-Row 1: A2: "A-100"
-Row 2: A3: "B-200"
-Row 3: A4: "A-300"
 ```
 
 <hr/>
@@ -1697,16 +1502,6 @@ sheet.rows.first(5).each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Values"
-Row 1: A2: 15
-Row 2: A3: 25
-Row 3: A4: 5
-```
-
 <hr/>
 
 ## Cf Cell Equal To
@@ -1747,16 +1542,6 @@ sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Values"
-Row 1: A2: 10
-Row 2: A3: 20
-Row 3: A4: 10
 ```
 
 <hr/>
@@ -1801,16 +1586,6 @@ sheet.rows.first(5).each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Values"
-Row 1: A2: 10
-Row 2: A3: 50
-Row 3: A4: 100
-```
-
 <hr/>
 
 ## Cf Cell Greater Than
@@ -1851,16 +1626,6 @@ sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Values"
-Row 1: A2: 25
-Row 2: A3: 75
-Row 3: A4: 10
 ```
 
 <hr/>
@@ -1905,16 +1670,6 @@ sheet.rows.first(5).each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Values"
-Row 1: A2: 25
-Row 2: A3: 75
-Row 3: A4: 10
-```
-
 <hr/>
 
 ## Cf Color Scale
@@ -1954,15 +1709,6 @@ sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: 10
-Row 1: A2: 50
-Row 2: A3: 90
 ```
 
 <hr/>
@@ -2006,16 +1752,6 @@ sheet.rows.first(5).each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Status"
-Row 1: A2: "Error"
-Row 2: A3: "Success"
-Row 3: A4: "Pending"
-```
-
 <hr/>
 
 ## Cf Data Bar
@@ -2057,15 +1793,6 @@ sheet.rows.first(5).each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: 20
-Row 1: A2: 60
-Row 2: A3: 100
-```
-
 <hr/>
 
 ## Cf Ends With
@@ -2105,16 +1832,6 @@ sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Code"
-Row 1: A2: "100-Z"
-Row 2: A3: "200-Y"
-Row 3: A4: "300-Z"
 ```
 
 <hr/>
@@ -2160,17 +1877,6 @@ sheet.rows.first(5).each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Values"
-Row 1: A2: 10
-Row 2: A3: 20
-Row 3: A4: 30
-Row 4: A5: 100
-```
-
 <hr/>
 
 ## Cf Icon Set
@@ -2210,15 +1916,6 @@ sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: 25
-Row 1: A2: 50
-Row 2: A3: 75
 ```
 
 <hr/>
@@ -2263,13 +1960,6 @@ puts "=== Read Validation ==="
 workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
 ```
 
 <hr/>
@@ -2319,13 +2009,6 @@ puts "=== Read Validation ==="
 workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
 ```
 
 <hr/>
@@ -2380,13 +2063,6 @@ sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Sales Data' has 0 chart(s)
-```
-
 <hr/>
 
 ## Chart Bar Percent Stacked
@@ -2436,13 +2112,6 @@ sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
-```
-
 <hr/>
 
 ## Chart Bar Stacked
@@ -2490,13 +2159,6 @@ puts "=== Read Validation ==="
 workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
 ```
 
 <hr/>
@@ -2550,13 +2212,6 @@ sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
-```
-
 <hr/>
 
 ## Chart Line
@@ -2600,13 +2255,6 @@ puts "=== Read Validation ==="
 workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
 ```
 
 <hr/>
@@ -2656,13 +2304,6 @@ puts "=== Read Validation ==="
 workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
 ```
 
 <hr/>
@@ -2716,13 +2357,6 @@ sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
-```
-
 <hr/>
 
 ## Chart Radar
@@ -2765,13 +2399,6 @@ puts "=== Read Validation ==="
 workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
 ```
 
 <hr/>
@@ -2818,13 +2445,6 @@ sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Data' has 0 chart(s)
-```
-
 <hr/>
 
 ## Col Grouping
@@ -2865,15 +2485,6 @@ sheet.columns.each do |col|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Column 0: width=25.0, hidden=false, outline_level=0
-Column 1: width=25.0, hidden=false, outline_level=1
-Column 2: width=25.0, hidden=false, outline_level=1
-```
-
 <hr/>
 
 ## Col Width Tall
@@ -2911,14 +2522,6 @@ sheet.columns.each do |col|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Column 0: width=50.0, hidden=false, outline_level=
-Column 1: width=10.0, hidden=false, outline_level=
-```
-
 <hr/>
 
 ## Col Widths
@@ -2954,14 +2557,6 @@ sheet = workbook.sheets.first
 sheet.columns.each do |col|
   puts "Column #{col.index}: width=#{col.width}, hidden=#{col.hidden}, outline_level=#{col.outline_level}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Column 0: width=30.0, hidden=false, outline_level=
-Column 1: width=10.0, hidden=false, outline_level=
 ```
 
 <hr/>
@@ -3007,13 +2602,6 @@ sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: 90, B1: 45, C1: 72, D1: 88
 ```
 
 <hr/>
@@ -3091,18 +2679,6 @@ images.each_with_index do |img, idx|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Logo Target cell:", B1: "", C1: "", D1: "Boundary"
-Row 1: A2: "", B2: "", C2: "", D2: ""
-Row 2: A3: "", B3: "", C3: "", D3: ""
-Row 3: A4: "", B4: "", C4: "", D4: ""
-Row 4: A5: "", B5: "", C5: "", D5: "Boundary End"
-Image #1: name='', target='../media/image1.png' -> ZIP path='xl/media/image1.png', size=334 bytes, valid_png=true, range=Col 1 Row 1 to Col 3 Row 5
-```
-
 <hr/>
 
 ## Fill Gradients
@@ -3148,14 +2724,6 @@ row.cells.each do |c|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Cell A1 ('Normal Cell'): fill pattern = nil, fg_color = nil
-Cell B1 ('Gradient Cell'): fill pattern = nil, fg_color = nil
-```
-
 <hr/>
 
 ## Fill Patterns
@@ -3199,14 +2767,6 @@ row.cells.each do |c|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Cell A1 ('Pattern'): fill pattern = nil, fg_color = nil
-Cell B1 ('Preview'): fill pattern = nil, fg_color = nil
-```
-
 <hr/>
 
 ## Fill Solid Colors
@@ -3248,14 +2808,6 @@ row.cells.each do |c|
   fill = xf ? workbook.styles[:fills][xf[:fill_id]] : nil
   puts "Cell #{c.ref} ('#{c.value}'): fill pattern = #{fill&.[](:pattern).inspect}, fg_color = #{fill&.[](:fg_color).inspect}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Cell A1 ('Color'): fill pattern = nil, fg_color = nil
-Cell B1 ('Preview'): fill pattern = nil, fg_color = nil
 ```
 
 <hr/>
@@ -3344,12 +2896,6 @@ end
 puts "Created #{output_path}"
 ```
 
-### Console Output
-
-```text
-Created /workspaces/xlsxrb/docs/visual/files/fonts.xlsx
-```
-
 <hr/>
 
 ## Interactive Autofilter
@@ -3396,15 +2942,6 @@ sheet.rows.first(5).each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Name", B1: "Department"
-Row 1: A2: "Alice", B2: "HR"
-Row 2: A3: "Bob", B3: "Eng"
-```
-
 <hr/>
 
 ## Interactive Comments
@@ -3446,13 +2983,6 @@ sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Item A", B1: "Item B"
 ```
 
 <hr/>
@@ -3500,13 +3030,6 @@ validations.each do |v|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Validation range B2: type=custom, formula1=B2>A2, formula2=
-```
-
 <hr/>
 
 ## Interactive Validation Date
@@ -3549,13 +3072,6 @@ validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|
   puts "Validation range #{v[:sqref]}: type=#{v[:type]}, formula1=#{v[:formula1]}, formula2=#{v[:formula2]}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Validation range B2: type=date, formula1=Date(2026,1,1), formula2=Date(2026,12,31)
 ```
 
 <hr/>
@@ -3602,13 +3118,6 @@ validations.each do |v|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Validation range B2: type=list, formula1="HR,Sales,Engineering", formula2=
-```
-
 <hr/>
 
 ## Interactive Validation Range
@@ -3651,13 +3160,6 @@ validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|
   puts "Validation range #{v[:sqref]}: type=#{v[:type]}, formula1=#{v[:formula1]}, formula2=#{v[:formula2]}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Validation range B2: type=whole, formula1=18, formula2=99
 ```
 
 <hr/>
@@ -3704,13 +3206,6 @@ validations.each do |v|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Validation range B2: type=textLength, formula1=10, formula2=
-```
-
 <hr/>
 
 ## Interactive Validation Time
@@ -3753,13 +3248,6 @@ validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|
   puts "Validation range #{v[:sqref]}: type=#{v[:type]}, formula1=#{v[:formula1]}, formula2=#{v[:formula2]}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Validation range B2: type=time, formula1=0.33333, formula2=
 ```
 
 <hr/>
@@ -3806,14 +3294,6 @@ sheet.rows.each do |row|
   end
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "日本語ラベル" (String), B1: "値" (String)
-Row 1: A2: "売上" (String), B2: 12500 (Integer)
 ```
 
 <hr/>
@@ -3866,16 +3346,6 @@ sheet.rows.first(5).each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Merged Title Row", B1: nil, C1: nil
-Row 1: A2: "Header A", B2: "Header B", C2: "Header C"
-Row 2: A3: "Row 1 Col A", B3: "Row 1 Col B", C3: "Row 1 Col C"
-Row 3: A4: "Row 2 Col A", B4: "Row 2 Col B", C4: "Row 2 Col C"
-```
-
 <hr/>
 
 ## Page Grid Lines Print
@@ -3915,15 +3385,6 @@ opts = reader.print_options(sheet: sheet.name)
 puts "Page Margins: #{margins.inspect}"
 puts "Page Setup: #{setup.inspect}"
 puts "Print Options: #{opts.inspect}"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Page Margins: nil
-Page Setup: {}
-Print Options: {grid_lines: true}
 ```
 
 <hr/>
@@ -3967,15 +3428,6 @@ puts "Page Setup: #{setup.inspect}"
 puts "Print Options: #{opts.inspect}"
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Page Margins: nil
-Page Setup: {}
-Print Options: {}
-```
-
 <hr/>
 
 ## Page Headings Print
@@ -4015,15 +3467,6 @@ opts = reader.print_options(sheet: sheet.name)
 puts "Page Margins: #{margins.inspect}"
 puts "Page Setup: #{setup.inspect}"
 puts "Print Options: #{opts.inspect}"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Page Margins: nil
-Page Setup: {}
-Print Options: {headings: true}
 ```
 
 <hr/>
@@ -4067,15 +3510,6 @@ puts "Page Setup: #{setup.inspect}"
 puts "Print Options: #{opts.inspect}"
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Page Margins: {left: 0.25, right: 0.25, top: 0.25, bottom: 0.25, header: 0.1, footer: 0.1}
-Page Setup: {}
-Print Options: {}
-```
-
 <hr/>
 
 ## Page Margins Wide
@@ -4115,15 +3549,6 @@ opts = reader.print_options(sheet: sheet.name)
 puts "Page Margins: #{margins.inspect}"
 puts "Page Setup: #{setup.inspect}"
 puts "Print Options: #{opts.inspect}"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Page Margins: {left: 1.0, right: 1.0, top: 1.0, bottom: 1.0, header: 0.5, footer: 0.5}
-Page Setup: {}
-Print Options: {}
 ```
 
 <hr/>
@@ -4167,15 +3592,6 @@ puts "Page Setup: #{setup.inspect}"
 puts "Print Options: #{opts.inspect}"
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Page Margins: nil
-Page Setup: {orientation: "landscape"}
-Print Options: {}
-```
-
 <hr/>
 
 ## Page Paper Size A3
@@ -4215,15 +3631,6 @@ opts = reader.print_options(sheet: sheet.name)
 puts "Page Margins: #{margins.inspect}"
 puts "Page Setup: #{setup.inspect}"
 puts "Print Options: #{opts.inspect}"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Page Margins: nil
-Page Setup: {paper_size: 8}
-Print Options: {}
 ```
 
 <hr/>
@@ -4266,15 +3673,6 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: height=, hidden=false, outline_level=
-Row 1: height=, hidden=false, outline_level=1
-Row 2: height=, hidden=false, outline_level=1
-```
-
 <hr/>
 
 ## Row Height Tall
@@ -4313,14 +3711,6 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: height=60.0, hidden=false, outline_level=
-Row 1: height=, hidden=false, outline_level=
-```
-
 <hr/>
 
 ## Row Heights
@@ -4357,14 +3747,6 @@ sheet = workbook.sheets.first
 sheet.rows.each do |row|
   puts "Row #{row.index}: height=#{row.height}, hidden=#{row.hidden}, outline_level=#{row.outline_level}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: height=, hidden=false, outline_level=
-Row 1: height=40.0, hidden=false, outline_level=
 ```
 
 <hr/>
@@ -4413,14 +3795,6 @@ workbook.sheet_names.each do |s_name|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet: Red Tab, tab color: "red"
-Sheet: Green Tab, tab color: "green"
-```
-
 <hr/>
 
 ## Sparkline Column
@@ -4462,13 +3836,6 @@ sheet.rows.first(3).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: 5, B1: 12, C1: 8, D1: 15
 ```
 
 <hr/>
@@ -4517,13 +3884,6 @@ sheet.rows.first(3).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: 10, B1: 20, C1: 15, D1: 30
 ```
 
 <hr/>
@@ -4579,14 +3939,6 @@ sheet.rows.first(4).each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Header 1" (font=Calibri, fill=FF4F81BD), B1: "Header 2" (font=Calibri, fill=FF4F81BD)
-Row 1: A2: "Normal Text" (font=, fill=), B2: "Highlighted Text" (font=Calibri, fill=FFFFFF00)
-```
-
 <hr/>
 
 ## View Show Grid Lines
@@ -4625,13 +3977,6 @@ workbook.sheet_names.each do |s_name|
   view = reader.sheet_view(sheet: s_name)
   puts "Sheet '#{s_name}' views zoom scale: #{view[:zoom_scale]}%, show grid lines: #{view[:show_grid_lines]}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Hide Grid Lines' views zoom scale: %, show grid lines: false
 ```
 
 <hr/>
@@ -4674,13 +4019,6 @@ workbook.sheet_names.each do |s_name|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Sheet 'Zoom 150' views zoom scale: 150%, show grid lines:
-```
-
 <hr/>
 
 ## Workbook Three Sheets
@@ -4714,13 +4052,6 @@ end
 puts "=== Read Validation ==="
 workbook = Xlsxrb.read(output_path)
 puts "Workbook sheets: #{workbook.sheet_names.join(", ")}"
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Workbook sheets: First Sheet, Second Sheet, Third Sheet
 ```
 
 <hr/>

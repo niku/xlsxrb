@@ -282,9 +282,10 @@ module Xlsxrb
     end
 
     # Add a new sheet.
-    def sheet(name = nil)
+    def sheet(name = nil, **opts)
       name ||= "Sheet#{@sheets.size + 1}"
       sheet_builder = WorksheetBuilder.new(name)
+      opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
       yield sheet_builder if block_given?
       @sheet_builders << sheet_builder
       @sheets << sheet_builder.build
@@ -947,8 +948,23 @@ module Xlsxrb
       style_builder
     end
 
-    # Start or switch to a named sheet.
-    def sheet(name = nil)
+    # Add a new sheet.
+    def sheet(name = nil, **opts)
+      flush_current_sheet if @current_sheet
+      name ||= "Sheet#{@sheet_names.size + 1}"
+      
+      @current_sheet = name
+      @current_sheet_index = @sheet_names.size
+      @sheet_names << name
+      
+      opts.each { |k, v| set_sheet_property(k, v) }
+      
+      yield self if block_given?
+      @current_sheet
+    end
+
+    # Internal: Start or switch to a named sheet (internal helper).
+    def internal_sheet_setup(name = nil)
       flush_current_sheet
       name ||= "Sheet#{@sheets.size + 1}"
       @current_sheet = name
