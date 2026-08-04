@@ -8,7 +8,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(1, width: 25)
     s.row(["Number A", "Number B (Must be larger A)"])
     s.row([10, ""])
-    s.add_data_validation("B2", type: "custom", formula1: "B2>A2", show_error_message: true, error_title: "Validation Error", error: "Number B must be greater than Number A")
+    s.validate_data("B2", type: "custom", formula1: "B2>A2", show_error_message: true, error_title: "Validation Error", error: "Number B must be greater than Number A")
   end
 end
 

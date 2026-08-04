@@ -114,11 +114,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Data Validation
   # =====================================================
 
-  test "add_data_validation options form in build API" do
+  test "validate_data options form in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("DV") do |s|
         s.row(["Value"])
-        s.add_data_validation("A2:A100", type: :whole, operator: :between,
+        s.validate_data("A2:A100", type: :whole, operator: :between,
                                          formula1: "1", formula2: "100",
                                          show_error_message: true, error: "Enter 1-100")
       end
@@ -135,12 +135,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_data_validation keyword args in generate API" do
+  test "validate_data keyword args in generate API" do
     tmp = Tempfile.new(["facade_dv_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("DV") do |s|
         s.row(["Value"])
-        s.add_data_validation("A2:A100", type: :list, formula1: '"A,B,C"', show_error_message: true)
+        s.validate_data("A2:A100", type: :list, formula1: '"A,B,C"', show_error_message: true)
       end
     end
 
@@ -999,7 +999,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.set_page_margins(left: 1.0, right: 1.0)
         s.set_page_setup(orientation: :landscape)
         s.add_hyperlink("A2", "https://example.com")
-        s.add_data_validation("B2:B3", type: :whole, formula1: "0", formula2: "100")
+        s.validate_data("B2:B3", type: :whole, formula1: "0", formula2: "100")
       end
       w.set_core_property(:creator, "Combined Test")
     end

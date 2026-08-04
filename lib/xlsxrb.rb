@@ -574,7 +574,7 @@ module Xlsxrb
     # --- Data Validation ---
 
     # Add a data validation rule.
-    def add_data_validation(sqref, **opts)
+    def validate_data(sqref, **opts)
       @data_validations << opts.merge(sqref: sqref)
     end
 
@@ -968,7 +968,7 @@ module Xlsxrb
 
     # --- Data Validation ---
 
-    def add_data_validation(sqref, **opts)
+    def validate_data(sqref, **opts)
       sheet if @current_sheet.nil?
       @current_data_validations << opts.merge(sqref: sqref)
     end

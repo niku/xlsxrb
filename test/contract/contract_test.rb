@@ -505,7 +505,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
         s.row(["Value"])
-        s.add_data_validation("A2:A100", type: :whole, formula1: "1", formula2: "100")
+        s.validate_data("A2:A100", type: :whole, formula1: "1", formula2: "100")
       end
     end
 
@@ -794,7 +794,7 @@ class ContractTest < Test::Unit::TestCase
         s.merge_cells("A1:A1")
         s.set_freeze_pane(row: 1)
         s.set_page_margins(left: 1.0, right: 1.0)
-        s.add_data_validation("B2", type: :whole, formula1: "0", formula2: "100")
+        s.validate_data("B2", type: :whole, formula1: "0", formula2: "100")
       end
     end
 
@@ -1250,7 +1250,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
         s.row(%w[Name Status])
-        s.add_data_validation("B2:B100", type: :list, formula1: '"Active,Inactive,Pending"')
+        s.validate_data("B2:B100", type: :list, formula1: '"Active,Inactive,Pending"')
       end
     end
 
@@ -1271,8 +1271,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
         s.row(%w[Name Score Grade])
-        s.add_data_validation("B2:B100", type: :whole, formula1: "0", formula2: "100")
-        s.add_data_validation("C2:C100", type: :list, formula1: '"A,B,C,D,F"')
+        s.validate_data("B2:B100", type: :whole, formula1: "0", formula2: "100")
+        s.validate_data("C2:C100", type: :list, formula1: '"A,B,C,D,F"')
       end
     end
 

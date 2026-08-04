@@ -628,7 +628,7 @@ module Xlsxrb
           Xlsxrb.generate(output_path) do |w|
             w.sheet("List Validation") do |s|
               s.row(["Department", "Select:"])
-              s.add_data_validation("B2", type: "list", formula1: '"HR,Sales,Engineering"')
+              s.validate_data("B2", type: "list", formula1: '"HR,Sales,Engineering"')
             end
           end
         RUBY
@@ -640,7 +640,7 @@ module Xlsxrb
           Xlsxrb.generate(output_path) do |w|
             w.sheet("Range Validation") do |s|
               s.row(["Age", "Enter (18-99):"])
-              s.add_data_validation("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
+              s.validate_data("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
             end
           end
         RUBY

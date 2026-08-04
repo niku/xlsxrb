@@ -3513,7 +3513,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(1, width: 25)
     s.row(["Number A", "Number B (Must be larger A)"])
     s.row([10, ""])
-    s.add_data_validation("B2", type: "custom", formula1: "B2>A2", show_error_message: true, error_title: "Validation Error", error: "Number B must be greater than Number A")
+    s.validate_data("B2", type: "custom", formula1: "B2>A2", show_error_message: true, error_title: "Validation Error", error: "Number B must be greater than Number A")
   end
 end
 
@@ -3564,7 +3564,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Date Range", "Enter Date (2026):"])
-    s.add_data_validation("B2", type: "date", operator: "between", formula1: "Date(2026,1,1)", formula2: "Date(2026,12,31)", show_error_message: true, error_title: "Invalid Date", error: "Must be a date in 2026")
+    s.validate_data("B2", type: "date", operator: "between", formula1: "Date(2026,1,1)", formula2: "Date(2026,12,31)", show_error_message: true, error_title: "Invalid Date", error: "Must be a date in 2026")
   end
 end
 
@@ -3615,7 +3615,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Department", "Select:"])
-    s.add_data_validation("B2", type: "list", formula1: '"HR,Sales,Engineering"')
+    s.validate_data("B2", type: "list", formula1: '"HR,Sales,Engineering"')
   end
 end
 
@@ -3666,7 +3666,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Age", "Enter (18-99):"])
-    s.add_data_validation("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
+    s.validate_data("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
   end
 end
 
@@ -3717,7 +3717,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Username", "Enter (< 10 chars):"])
-    s.add_data_validation("B2", type: "textLength", operator: "lessThan", formula1: "10", show_error_message: true, error_title: "Too Long", error: "Username must be under 10 characters")
+    s.validate_data("B2", type: "textLength", operator: "lessThan", formula1: "10", show_error_message: true, error_title: "Too Long", error: "Username must be under 10 characters")
   end
 end
 
@@ -3768,7 +3768,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Schedule", "Enter Time (after 08:00):"])
-    s.add_data_validation("B2", type: "time", operator: "greaterThan", formula1: "0.33333", show_error_message: true, error_title: "Too Early", error: "Time must be after 08:00 AM")
+    s.validate_data("B2", type: "time", operator: "greaterThan", formula1: "0.33333", show_error_message: true, error_title: "Too Early", error: "Time must be after 08:00 AM")
   end
 end
 
