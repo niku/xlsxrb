@@ -259,14 +259,17 @@ module Xlsxrb
         io.write(">")
 
         max_len = values.length
-        max_len = [max_len, styles.length].max if is_styles_collection
+        if is_styles_collection
+          styles_len = styles.is_a?(Array) ? styles.length : (styles.keys.max || -1) + 1
+          max_len = [max_len, styles_len].max
+        end
         
         col_index = 0
         while col_index < max_len
           value = col_index < values.length ? values[col_index] : nil
           style_id = single_style_id
           if is_styles_collection && style_map
-            style_name = col_index < styles.length ? styles[col_index] : nil
+            style_name = styles.is_a?(Array) ? (col_index < styles.length ? styles[col_index] : nil) : styles[col_index]
             style_id = style_map[style_name] if style_name
           end
 
