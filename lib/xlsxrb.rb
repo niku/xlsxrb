@@ -501,13 +501,37 @@ module Xlsxrb
     # styles:: Hash mapping column indices to style names, or Array of style names for each column
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
-      cells = Array.new(values.size)
-      style_lookup = styles.is_a?(Hash) || styles.is_a?(Array)
+
+      if values.is_a?(Hash)
+        max_col = values.keys.map { |k| k.is_a?(Integer) ? k : Elements::Cell.column_index(k) }.max || -1
+        cells_array = Array.new(max_col + 1)
+        values.each do |k, v|
+          idx = k.is_a?(Integer) ? k : Elements::Cell.column_index(k)
+          cells_array[idx] = v
+        end
+        values = cells_array
+      end
+
+      if styles.is_a?(Hash)
+        max_col_style = styles.keys.map { |k| k.is_a?(Integer) ? k : Elements::Cell.column_index(k) }.max || -1
+        styles_array = Array.new(max_col_style + 1)
+        styles.each do |k, v|
+          idx = k.is_a?(Integer) ? k : Elements::Cell.column_index(k)
+          styles_array[idx] = v
+        end
+        styles = styles_array
+      end
+
+      max_len = values.size
+      max_len = [max_len, styles.size].max if styles.is_a?(Array)
+      
+      cells = Array.new(max_len)
+      style_lookup = styles.is_a?(Array)
 
       col_index = 0
-      while col_index < values.size
-        val = values[col_index]
-        style_name = style_lookup ? styles[col_index] : styles
+      while col_index < max_len
+        val = col_index < values.size ? values[col_index] : nil
+        style_name = style_lookup ? (col_index < styles.size ? styles[col_index] : nil) : styles
         if val.nil? && style_name.nil?
           col_index += 1
           next
@@ -918,9 +942,34 @@ module Xlsxrb
       row_index = @current_row_index
       @current_row_index += 1
 
+      if values.is_a?(Hash)
+        max_col = values.keys.map { |k| k.is_a?(Integer) ? k : Elements::Cell.column_index(k) }.max || -1
+        cells_array = Array.new(max_col + 1)
+        values.each do |k, v|
+          idx = k.is_a?(Integer) ? k : Elements::Cell.column_index(k)
+          cells_array[idx] = v
+        end
+        values = cells_array
+      end
+
+      if styles.is_a?(Hash)
+        max_col_style = styles.keys.map { |k| k.is_a?(Integer) ? k : Elements::Cell.column_index(k) }.max || -1
+        styles_array = Array.new(max_col_style + 1)
+        styles.each do |k, v|
+          idx = k.is_a?(Integer) ? k : Elements::Cell.column_index(k)
+          styles_array[idx] = v
+        end
+        styles = styles_array
+      end
+
       @current_cells ||= {}
       row_num = row_index + 1
-      values.each_with_index do |val, col_idx|
+      
+      max_len = values.size
+      max_len = [max_len, styles.size].max if styles.is_a?(Array)
+      
+      max_len.times do |col_idx|
+        val = col_idx < values.size ? values[col_idx] : nil
         next if val.nil?
 
         addr = "#{Elements::Cell.column_letter(col_idx)}#{row_num}"

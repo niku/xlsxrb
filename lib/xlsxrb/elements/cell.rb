@@ -47,6 +47,11 @@ module Xlsxrb
         end
       end
 
+      # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
+      def self.column_index(letter)
+        letter.to_s.upcase.chars.reduce(0) { |acc, c| (acc * 26) + (c.ord - "A".ord + 1) } - 1
+      end
+
       # Parses an Excel-style reference to [row_index, col_index] (both 0-based).
       def self.parse_ref(ref)
         match = ref.match(/\A([A-Z]+)(\d+)\z/)
