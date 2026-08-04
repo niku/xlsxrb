@@ -26,6 +26,11 @@ module Xlsxrb
         cells.each(&block)
       end
 
+      def each_cell(&block)
+        return to_enum(:each_cell) unless block_given?
+        cells.each(&block)
+      end
+
       def to_a
         return [] if cells.empty?
         
