@@ -6,7 +6,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Landscape") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_page_setup(orientation: :landscape)
+    s.page_setup(orientation: :landscape)
     s.row(["Landscape Orientation sheet"])
   end
 end

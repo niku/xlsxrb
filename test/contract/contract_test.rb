@@ -683,7 +683,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Setup") do |s|
         s.row(["Data"])
-        s.set_page_setup(orientation: :landscape)
+        s.page_setup(orientation: :landscape)
       end
     end
 
@@ -1591,7 +1591,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Setup") do |s|
         s.row(["Data"])
-        s.set_page_setup(orientation: :landscape, paper_size: 9)
+        s.page_setup(orientation: :landscape, paper_size: 9)
       end
     end
 

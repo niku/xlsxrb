@@ -7,7 +7,7 @@ output_path = ARGV[0] || "chart_bar.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Sales Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Month Value])

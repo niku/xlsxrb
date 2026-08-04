@@ -454,11 +454,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Page Setup
   # =====================================================
 
-  test "set_page_setup in build API" do
+  test "page_setup in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Setup") do |s|
         s.row(["Data"])
-        s.set_page_setup(orientation: :landscape, paper_size: 9)
+        s.page_setup(orientation: :landscape, paper_size: 9)
       end
     end
 
@@ -473,12 +473,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_page_setup in generate API" do
+  test "page_setup in generate API" do
     tmp = Tempfile.new(["facade_pagesetup_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Setup") do |s|
         s.row(["Data"])
-        s.set_page_setup(orientation: :portrait, scale: 80)
+        s.page_setup(orientation: :portrait, scale: 80)
       end
     end
 
@@ -997,7 +997,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.merge_cells("A1:A1")
         s.freeze_pane(row: 1)
         s.page_margins(left: 1.0, right: 1.0)
-        s.set_page_setup(orientation: :landscape)
+        s.page_setup(orientation: :landscape)
         s.add_hyperlink("A2", "https://example.com")
         s.validate_data("B2:B3", type: :whole, formula1: "0", formula2: "100")
       end

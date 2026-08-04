@@ -9,7 +9,7 @@ Xlsxrb.generate(output_path) do |w|
   w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Merge & Freeze") do |s|
     s.set_sheet_property(:fit_to_page, true)
-    s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.column(2, width: 25)
