@@ -1631,7 +1631,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["A-100"])
     s.row(["B-200"])
     s.row(["A-300"])
-    s.add_conditional_format("A2:A4", type: "beginsWith", operator: "beginsWith", text: "A", formula: 'LEFT(A2,1)="A"', fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A4", type: "beginsWith", operator: "beginsWith", text: "A", formula: 'LEFT(A2,1)="A"', fill_color: "FFFFC7CE")
   end
 end
 
@@ -1683,7 +1683,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([15], styles: ["center"])
     s.row([25], styles: ["center"])
     s.row([5], styles: ["center"])
-    s.add_conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: "FF00FF00")
+    s.conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: "FF00FF00")
   end
 end
 
@@ -1735,7 +1735,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([10], styles: ["center"])
     s.row([20], styles: ["center"])
     s.row([10], styles: ["center"])
-    s.add_conditional_format("A2:A4", type: "cellIs", operator: "equal", formula: "10", fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A4", type: "cellIs", operator: "equal", formula: "10", fill_color: "FFFFC7CE")
   end
 end
 
@@ -1787,7 +1787,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([10], styles: ["center"])
     s.row([50], styles: ["center"])
     s.row([100], styles: ["center"])
-    s.add_conditional_format("A2:A4", type: "cellIs", operator: "greaterThanOrEqual", formula: "50", fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A4", type: "cellIs", operator: "greaterThanOrEqual", formula: "50", fill_color: "FFFFC7CE")
   end
 end
 
@@ -1839,7 +1839,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([25], styles: ["center"])
     s.row([75], styles: ["center"])
     s.row([10], styles: ["center"])
-    s.add_conditional_format("A2:A4", type: "cellIs", operator: "greaterThan", formula: "50", fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A4", type: "cellIs", operator: "greaterThan", formula: "50", fill_color: "FFFFC7CE")
   end
 end
 
@@ -1891,7 +1891,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([25], styles: ["center"])
     s.row([75], styles: ["center"])
     s.row([10], styles: ["center"])
-    s.add_conditional_format("A2:A4", type: "cellIs", operator: "lessThan", formula: "20", fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A4", type: "cellIs", operator: "lessThan", formula: "20", fill_color: "FFFFC7CE")
   end
 end
 
@@ -1942,7 +1942,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([10], styles: ["center"])
     s.row([50], styles: ["center"])
     s.row([90], styles: ["center"])
-    s.add_conditional_format("A1:A3", type: :colorScale, priority: 1)
+    s.conditional_format("A1:A3", type: :colorScale, priority: 1)
   end
 end
 
@@ -1992,7 +1992,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Error"])
     s.row(["Success"])
     s.row(["Pending"])
-    s.add_conditional_format("A2:A4", type: "containsText", operator: "containsText", text: "Error", formula: 'NOT(ISERROR(SEARCH("Error",A2)))', fill_color: "FFFF0000")
+    s.conditional_format("A2:A4", type: "containsText", operator: "containsText", text: "Error", formula: 'NOT(ISERROR(SEARCH("Error",A2)))', fill_color: "FFFF0000")
   end
 end
 
@@ -2043,7 +2043,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([20], styles: ["center"])
     s.row([60], styles: ["center"])
     s.row([100], styles: ["center"])
-    s.add_conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
+    s.conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
   end
 end
 
@@ -2093,7 +2093,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["100-Z"])
     s.row(["200-Y"])
     s.row(["300-Z"])
-    s.add_conditional_format("A2:A4", type: "endsWith", operator: "endsWith", text: "Z", formula: 'RIGHT(A2,1)="Z"', fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A4", type: "endsWith", operator: "endsWith", text: "Z", formula: 'RIGHT(A2,1)="Z"', fill_color: "FFFFC7CE")
   end
 end
 
@@ -2146,7 +2146,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([20], styles: ["center"])
     s.row([30], styles: ["center"])
     s.row([100], styles: ["center"]) # Average is 40. 100 is above average.
-    s.add_conditional_format("A2:A5", type: "expression", formula: "A2>AVERAGE($A$2:$A$5)", fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A5", type: "expression", formula: "A2>AVERAGE($A$2:$A$5)", fill_color: "FFFFC7CE")
   end
 end
 
@@ -2198,7 +2198,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([25], styles: ["center"])
     s.row([50], styles: ["center"])
     s.row([75], styles: ["center"])
-    s.add_conditional_format("A1:A3", type: :iconSet, icon_style: "3Arrows", priority: 1)
+    s.conditional_format("A1:A3", type: :iconSet, icon_style: "3Arrows", priority: 1)
   end
 end
 
@@ -2992,7 +2992,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(1, width: 25)
     s.row([90, 45, 72, 88], styles: %w[center center center center])
 
-    s.add_conditional_format("A1:D1",
+    s.conditional_format("A1:D1",
                              type: :cell_is, operator: :greaterThan,
                              formula: "80", priority: 1,
                              fill_color: "FFFFC7CE")

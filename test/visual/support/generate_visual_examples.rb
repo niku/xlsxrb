@@ -573,7 +573,7 @@ module Xlsxrb
               s.row([10])
               s.row([50])
               s.row([90])
-              s.add_conditional_format("A1:A3", type: :colorScale, priority: 1)
+              s.conditional_format("A1:A3", type: :colorScale, priority: 1)
             end
           end
         RUBY
@@ -587,7 +587,7 @@ module Xlsxrb
               s.row([20])
               s.row([60])
               s.row([100])
-              s.add_conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
+              s.conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
             end
           end
         RUBY
@@ -601,7 +601,7 @@ module Xlsxrb
               s.row([25])
               s.row([50])
               s.row([75])
-              s.add_conditional_format("A1:A3", type: :iconSet, icon_style: "3Arrows", priority: 1)
+              s.conditional_format("A1:A3", type: :iconSet, icon_style: "3Arrows", priority: 1)
             end
           end
         RUBY

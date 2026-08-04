@@ -10,7 +10,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["A-100"])
     s.row(["B-200"])
     s.row(["A-300"])
-    s.add_conditional_format("A2:A4", type: "beginsWith", operator: "beginsWith", text: "A", formula: 'LEFT(A2,1)="A"', fill_color: "FFFFC7CE")
+    s.conditional_format("A2:A4", type: "beginsWith", operator: "beginsWith", text: "A", formula: 'LEFT(A2,1)="A"', fill_color: "FFFFC7CE")
   end
 end
 

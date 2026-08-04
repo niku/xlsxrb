@@ -11,7 +11,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(1, width: 25)
     s.row([90, 45, 72, 88], styles: %w[center center center center])
 
-    s.add_conditional_format("A1:D1",
+    s.conditional_format("A1:D1",
                              type: :cell_is, operator: :greaterThan,
                              formula: "80", priority: 1,
                              fill_color: "FFFFC7CE")
