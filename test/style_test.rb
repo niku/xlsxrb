@@ -6,7 +6,7 @@ require "tempfile"
 class StyleTest < Test::Unit::TestCase
   test "in-memory mode: add_style to worksheet and apply to cells" do
     workbook = Xlsxrb.build do |w|
-      w.add_sheet("Test") do |s|
+      w.sheet("Test") do |s|
         # Define a style
         s.add_style("heading") do |style|
           style.bold.size(14).font_color("FFFF0000")
@@ -45,7 +45,7 @@ class StyleTest < Test::Unit::TestCase
           style.bold.fill_color("FF00FF00")
         end
 
-        w.add_sheet("Sales") do
+        w.sheet("Sales") do
           # Add header row with heading style
           w.add_row(%w[Date Amount], styles: { 0 => "heading", 1 => "heading" })
 
@@ -84,7 +84,7 @@ class StyleTest < Test::Unit::TestCase
 
   test "in-memory mode: round-trip with styled cells" do
     workbook = Xlsxrb.build do |w|
-      w.add_sheet("Styled") do |s|
+      w.sheet("Styled") do |s|
         s.add_style("bold_red") do |style|
           style.bold.font_color("FFFF0000").size(12)
         end

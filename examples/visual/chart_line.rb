@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "chart_line.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)

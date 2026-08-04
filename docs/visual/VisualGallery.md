@@ -498,6 +498,8 @@ This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering
 
 ## Align Horizontal
 
+[Download .xlsx](files/align_horizontal.xlsx)
+
 Demonstrates horizontal text alignment (left, center, right).
 
 ### Rendered Output (LibreOffice Calc)
@@ -508,18 +510,19 @@ Demonstrates horizontal text alignment (left, center, right).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("left") { |s| s.align_horizontal("left") }
   w.add_style("center") { |s| s.align_horizontal("center") }
   w.add_style("right") { |s| s.align_horizontal("right") }
-  w.add_sheet("Alignment") do |s|
+  w.sheet("Alignment") do |s|
     s.set_print_option(:grid_lines, true)
     s.set_column(0, width: 20)
     s.set_column(1, width: 20)
     s.set_column(2, width: 20)
-    s.add_row(["Left", "Center", "Right"], styles: { 0 => "left", 1 => "center", 2 => "right" })
+    s.add_row(%w[Left Center Right], styles: { 0 => "left", 1 => "center", 2 => "right" })
   end
 end
 
@@ -531,7 +534,7 @@ row = sheet.rows.first
 
 row.cells.each do |c|
   xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  align_h = xf ? xf.dig(:alignment, :horizontal) : nil
+  align_h = xf&.dig(:alignment, :horizontal)
   puts "Cell #{c.ref} ('#{c.value}'): align_horizontal = #{align_h.inspect}"
 end
 ```
@@ -549,6 +552,8 @@ Cell C1 ('Right'): align_horizontal = "right"
 
 ## Align Horizontal Fill
 
+[Download .xlsx](files/align_horizontal_fill.xlsx)
+
 Demonstrates horizontal fill alignment (repeats value to fill cell width).
 
 ### Rendered Output (LibreOffice Calc)
@@ -559,11 +564,12 @@ Demonstrates horizontal fill alignment (repeats value to fill cell width).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_fill.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("fill_align") { |s| s.align_horizontal("fill") }
-  w.add_sheet("Alignment") do |s|
+  w.sheet("Alignment") do |s|
     s.set_column(0, width: 30)
     s.add_row(["X "], styles: { 0 => "fill_align" })
   end
@@ -576,12 +582,12 @@ sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
   xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  align_h = xf ? xf.dig(:alignment, :horizontal) : nil
-  align_v = xf ? xf.dig(:alignment, :vertical) : nil
-  wrap = xf ? xf.dig(:alignment, :wrap_text) : nil
-  indent = xf ? xf.dig(:alignment, :indent) : nil
-  rot = xf ? xf.dig(:alignment, :text_rotation) : nil
-  shrink = xf ? xf.dig(:alignment, :shrink_to_fit) : nil
+  align_h = xf&.dig(:alignment, :horizontal)
+  align_v = xf&.dig(:alignment, :vertical)
+  wrap = xf&.dig(:alignment, :wrap_text)
+  indent = xf&.dig(:alignment, :indent)
+  rot = xf&.dig(:alignment, :text_rotation)
+  shrink = xf&.dig(:alignment, :shrink_to_fit)
   puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
 end
 ```
@@ -597,6 +603,8 @@ Cell A1 ('X '): align_h="fill", align_v=nil, wrap=nil, indent=nil, rotation=nil,
 
 ## Align Horizontal Justify
 
+[Download .xlsx](files/align_horizontal_justify.xlsx)
+
 Demonstrates horizontal justify text alignment.
 
 ### Rendered Output (LibreOffice Calc)
@@ -607,6 +615,7 @@ Demonstrates horizontal justify text alignment.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_justify.xlsx"
 Xlsxrb.generate(output_path) do |w|
@@ -614,7 +623,7 @@ Xlsxrb.generate(output_path) do |w|
     s.align_horizontal("justify")
     s.wrap_text(true)
   end
-  w.add_sheet("Alignment") do |s|
+  w.sheet("Alignment") do |s|
     s.set_column(0, width: 25)
     s.add_row(["Justified alignment wraps and distributes text evenly."], styles: { 0 => "justify_align" })
   end
@@ -627,12 +636,12 @@ sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
   xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  align_h = xf ? xf.dig(:alignment, :horizontal) : nil
-  align_v = xf ? xf.dig(:alignment, :vertical) : nil
-  wrap = xf ? xf.dig(:alignment, :wrap_text) : nil
-  indent = xf ? xf.dig(:alignment, :indent) : nil
-  rot = xf ? xf.dig(:alignment, :text_rotation) : nil
-  shrink = xf ? xf.dig(:alignment, :shrink_to_fit) : nil
+  align_h = xf&.dig(:alignment, :horizontal)
+  align_v = xf&.dig(:alignment, :vertical)
+  wrap = xf&.dig(:alignment, :wrap_text)
+  indent = xf&.dig(:alignment, :indent)
+  rot = xf&.dig(:alignment, :text_rotation)
+  shrink = xf&.dig(:alignment, :shrink_to_fit)
   puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
 end
 ```
@@ -648,6 +657,8 @@ Cell A1 ('Justified alignment wraps and distributes text evenly.'): align_h="jus
 
 ## Align Indent
 
+[Download .xlsx](files/align_indent.xlsx)
+
 Demonstrates text indentation inside cells.
 
 ### Rendered Output (LibreOffice Calc)
@@ -658,12 +669,13 @@ Demonstrates text indentation inside cells.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "align_indent.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("indent_1") { |s| s.align_horizontal("left").indent(1) }
   w.add_style("indent_3") { |s| s.align_horizontal("left").indent(3) }
-  w.add_sheet("Indent") do |s|
+  w.sheet("Indent") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
@@ -680,12 +692,12 @@ sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
   xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  align_h = xf ? xf.dig(:alignment, :horizontal) : nil
-  align_v = xf ? xf.dig(:alignment, :vertical) : nil
-  wrap = xf ? xf.dig(:alignment, :wrap_text) : nil
-  indent = xf ? xf.dig(:alignment, :indent) : nil
-  rot = xf ? xf.dig(:alignment, :text_rotation) : nil
-  shrink = xf ? xf.dig(:alignment, :shrink_to_fit) : nil
+  align_h = xf&.dig(:alignment, :horizontal)
+  align_v = xf&.dig(:alignment, :vertical)
+  wrap = xf&.dig(:alignment, :wrap_text)
+  indent = xf&.dig(:alignment, :indent)
+  rot = xf&.dig(:alignment, :text_rotation)
+  shrink = xf&.dig(:alignment, :shrink_to_fit)
   puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
 end
 ```
@@ -701,6 +713,8 @@ Cell A1 ('No Indent'): align_h=nil, align_v=nil, wrap=nil, indent=nil, rotation=
 
 ## Align Text Rotation
 
+[Download .xlsx](files/align_text_rotation.xlsx)
+
 Demonstrates text rotated by specific angles (45, 90 degrees).
 
 ### Rendered Output (LibreOffice Calc)
@@ -711,12 +725,13 @@ Demonstrates text rotated by specific angles (45, 90 degrees).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_rotation.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("rot_45") { |s| s.text_rotation(45) }
   w.add_style("rot_90") { |s| s.text_rotation(90) }
-  w.add_sheet("Rotation") do |s|
+  w.sheet("Rotation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
@@ -731,12 +746,12 @@ sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
   xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  align_h = xf ? xf.dig(:alignment, :horizontal) : nil
-  align_v = xf ? xf.dig(:alignment, :vertical) : nil
-  wrap = xf ? xf.dig(:alignment, :wrap_text) : nil
-  indent = xf ? xf.dig(:alignment, :indent) : nil
-  rot = xf ? xf.dig(:alignment, :text_rotation) : nil
-  shrink = xf ? xf.dig(:alignment, :shrink_to_fit) : nil
+  align_h = xf&.dig(:alignment, :horizontal)
+  align_v = xf&.dig(:alignment, :vertical)
+  wrap = xf&.dig(:alignment, :wrap_text)
+  indent = xf&.dig(:alignment, :indent)
+  rot = xf&.dig(:alignment, :text_rotation)
+  shrink = xf&.dig(:alignment, :shrink_to_fit)
   puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
 end
 ```
@@ -753,6 +768,8 @@ Cell B1 ('Rotated 90'): align_h=nil, align_v=nil, wrap=nil, indent=nil, rotation
 
 ## Align Text Wrap
 
+[Download .xlsx](files/align_text_wrap.xlsx)
+
 Demonstrates auto-wrapping multi-line text inside narrow cells.
 
 ### Rendered Output (LibreOffice Calc)
@@ -763,11 +780,12 @@ Demonstrates auto-wrapping multi-line text inside narrow cells.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_wrap.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_style("wrap") { |s| s.wrap_text }
-  w.add_sheet("Text Wrap") do |s|
+  w.add_style("wrap", &:wrap_text)
+  w.sheet("Text Wrap") do |s|
     s.set_print_option(:grid_lines, true)
     s.set_column(0, width: 15)
     s.add_row(["This is a long sentence that wraps inside the cell."], styles: { 0 => "wrap" })
@@ -781,12 +799,12 @@ sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
   xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  align_h = xf ? xf.dig(:alignment, :horizontal) : nil
-  align_v = xf ? xf.dig(:alignment, :vertical) : nil
-  wrap = xf ? xf.dig(:alignment, :wrap_text) : nil
-  indent = xf ? xf.dig(:alignment, :indent) : nil
-  rot = xf ? xf.dig(:alignment, :text_rotation) : nil
-  shrink = xf ? xf.dig(:alignment, :shrink_to_fit) : nil
+  align_h = xf&.dig(:alignment, :horizontal)
+  align_v = xf&.dig(:alignment, :vertical)
+  wrap = xf&.dig(:alignment, :wrap_text)
+  indent = xf&.dig(:alignment, :indent)
+  rot = xf&.dig(:alignment, :text_rotation)
+  shrink = xf&.dig(:alignment, :shrink_to_fit)
   puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
 end
 ```
@@ -802,6 +820,8 @@ Cell A1 ('This is a long sentence that wraps inside the cell.'): align_h=nil, al
 
 ## Align Vertical
 
+[Download .xlsx](files/align_vertical.xlsx)
+
 Demonstrates vertical text alignment (top, center, bottom).
 
 ### Rendered Output (LibreOffice Calc)
@@ -812,17 +832,18 @@ Demonstrates vertical text alignment (top, center, bottom).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "align_vertical.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("top") { |s| s.align_vertical("top") }
   w.add_style("center") { |s| s.align_vertical("center") }
   w.add_style("bottom") { |s| s.align_vertical("bottom") }
-  w.add_sheet("Vertical Alignment") do |s|
+  w.sheet("Vertical Alignment") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
-    s.add_row(["Top", "Center", "Bottom"], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
+    s.add_row(%w[Top Center Bottom], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
   end
 end
 
@@ -833,12 +854,12 @@ sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
   xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  align_h = xf ? xf.dig(:alignment, :horizontal) : nil
-  align_v = xf ? xf.dig(:alignment, :vertical) : nil
-  wrap = xf ? xf.dig(:alignment, :wrap_text) : nil
-  indent = xf ? xf.dig(:alignment, :indent) : nil
-  rot = xf ? xf.dig(:alignment, :text_rotation) : nil
-  shrink = xf ? xf.dig(:alignment, :shrink_to_fit) : nil
+  align_h = xf&.dig(:alignment, :horizontal)
+  align_v = xf&.dig(:alignment, :vertical)
+  wrap = xf&.dig(:alignment, :wrap_text)
+  indent = xf&.dig(:alignment, :indent)
+  rot = xf&.dig(:alignment, :text_rotation)
+  shrink = xf&.dig(:alignment, :shrink_to_fit)
   puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
 end
 ```
@@ -855,6 +876,8 @@ Cell C1 ('Bottom'): align_h=nil, align_v="bottom", wrap=nil, indent=nil, rotatio
 <hr/>
 
 ## Basic Data
+
+[Download .xlsx](files/basic_data.xlsx)
 
 Demonstrates simple tabular data writing with basic Ruby types (Strings, Numbers, Dates, Booleans).
 
@@ -875,12 +898,12 @@ output_path = ARGV[0] || "basic_data.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("currency") { |style| style.number_format("$#,##0.00") }
   w.add_style("date") { |style| style.number_format("yyyy-mm-dd") }
-  w.add_sheet("Basic Data") do
+  w.sheet("Basic Data") do
     w.set_sheet_property(:fit_to_page, true)
     w.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     w.set_column(0, width: 25)
     w.set_column(1, width: 25)
-    w.add_row(["Product", "Qty", "Price", "Date", "Active"])
+    w.add_row(%w[Product Qty Price Date Active])
     w.add_row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
     w.add_row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
   end
@@ -894,7 +917,7 @@ sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
     "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -910,6 +933,8 @@ Row 2: A3: "Widget B" (String), B3: 5 (Integer), C3: 49.5 (Float), D3: 46073 (In
 <hr/>
 
 ## Borders
+
+[Download .xlsx](files/borders.xlsx)
 
 Demonstrates border styles (thin, medium, thick, hair, dashed, medium dashed, dotted, double, dash-dot, medium dash-dot, dash-dot-dot, slanted, and diagonal cross borders) applied to cell ranges.
 
@@ -941,7 +966,7 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("slanted") { |s| s.border_all(style: "slantedDashDot", color: "FF000000") }
   w.add_style("diagonal") { |s| s.border_diagonal(style: "thin", color: "FF000000", up: true, down: true) }
 
-  w.add_sheet("Borders") do |s|
+  w.sheet("Borders") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
@@ -957,7 +982,7 @@ Xlsxrb.generate(output_path) do |w|
     s.add_row(["Double", "Double Border"], styles: { 1 => "double" })
     s.add_row(["Dash-Dot", "Dash-Dot Border"], styles: { 1 => "dash_dot" })
     s.add_row(["Medium Dash-Dot", "Medium Dash-Dot"], styles: { 1 => "medium_dash_dot" })
-    s.add_row(["Dash-Dot-Dot", "Dash-Dot-Dot"], styles: { 1 => "dash_dot_dot" })
+    s.add_row(%w[Dash-Dot-Dot Dash-Dot-Dot], styles: { 1 => "dash_dot_dot" })
     s.add_row(["Slanted Dash-Dot", "Slanted Border"], styles: { 1 => "slanted" })
     s.add_row(["Diagonal (Cross)", "Diagonal Border"], styles: { 1 => "diagonal" })
   end
@@ -973,7 +998,7 @@ sheet.rows.each do |row|
     border_id = xf ? xf[:border_id] : 0
     "#{c.ref}: #{c.value.inspect} (border_id: #{border_id})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1001,6 +1026,8 @@ Row 13: A14: "Diagonal (Cross)" (border_id: 0), B14: "Diagonal Border" (border_i
 
 ## Cell Booleans
 
+[Download .xlsx](files/cell_booleans.xlsx)
+
 Demonstrates boolean values serialized and rendered.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1011,10 +1038,11 @@ Demonstrates boolean values serialized and rendered.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cell_booleans.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Booleans") do |s|
+  w.sheet("Booleans") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Label", "Boolean Value"])
@@ -1031,7 +1059,7 @@ sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
     "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1048,6 +1076,8 @@ Row 2: A3: "Is Pending" (String), B3: false (FalseClass)
 
 ## Cell Dates
 
+[Download .xlsx](files/cell_dates.xlsx)
+
 Demonstrates dates serialized natively and formatted with standard or custom format strings.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1058,12 +1088,13 @@ Demonstrates dates serialized natively and formatted with standard or custom for
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 require "date"
 output_path = ARGV[0] || "cell_dates.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
-  w.add_sheet("Dates") do |s|
+  w.sheet("Dates") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Format", "Date Value"])
@@ -1080,7 +1111,7 @@ sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
     "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1097,6 +1128,8 @@ Row 2: A3: "Formatted Date" (String), B3: 46381 (Integer)
 
 ## Cell Formulas
 
+[Download .xlsx](files/cell_formulas.xlsx)
+
 Demonstrates standard spreadsheet calculations and formulas (SUM, AVERAGE).
 
 ### Rendered Output (LibreOffice Calc)
@@ -1107,13 +1140,14 @@ Demonstrates standard spreadsheet calculations and formulas (SUM, AVERAGE).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cell_formulas.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Formulas") do |s|
+  w.sheet("Formulas") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Item", "Value"])
+    s.add_row(%w[Item Value])
     s.add_row(["A", 10])
     s.add_row(["B", 20])
     s.add_row(["SUM", Xlsxrb::Elements::Formula.new(expression: "SUM(B2:B3)", cached_value: 30)])
@@ -1129,7 +1163,7 @@ sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
     "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1148,6 +1182,8 @@ Row 4: A5: "AVERAGE" (String), B5: 15 (Integer)
 
 ## Cell Num Currency Jpy
 
+[Download .xlsx](files/cell_num_currency_jpy.xlsx)
+
 Demonstrates Yen Currency format code formatting.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1158,15 +1194,16 @@ Demonstrates Yen Currency format code formatting.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_currency_jpy.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
-  w.add_sheet("JPY Currency") do |s|
+  w.sheet("JPY Currency") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Value"])
-    s.add_row(["Positive Yen", 12500], styles: { 1 => "jpy" })
+    s.add_row(%w[Format Value])
+    s.add_row(["Positive Yen", 12_500], styles: { 1 => "jpy" })
     s.add_row(["Negative Yen", -8000], styles: { 1 => "jpy" })
   end
 end
@@ -1181,7 +1218,7 @@ sheet.rows.each do |row|
     num_fmt = xf ? workbook.styles[:num_fmts][xf[:num_fmt_id]] : nil
     "#{c.ref}: #{c.value.inspect} (Format ID: #{xf&.[](:num_fmt_id)}, Code: #{num_fmt.inspect})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1198,6 +1235,8 @@ Row 2: A3: "Negative Yen" (Format ID: , Code: nil), B3: -8000 (Format ID: 164, C
 
 ## Cell Num Custom Colors
 
+[Download .xlsx](files/cell_num_custom_colors.xlsx)
+
 Demonstrates custom colored formats for positive and negative numbers.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1208,14 +1247,15 @@ Demonstrates custom colored formats for positive and negative numbers.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_custom_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("custom_color") { |s| s.num_fmt("[Green]#,##0;[Red]-#,##0") }
-  w.add_sheet("Custom Colors") do |s|
+  w.sheet("Custom Colors") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Value"])
+    s.add_row(%w[Format Value])
     s.add_row(["Positive (Green)", 5000], styles: { 1 => "custom_color" })
     s.add_row(["Negative (Red)", -2500], styles: { 1 => "custom_color" })
   end
@@ -1231,7 +1271,7 @@ sheet.rows.each do |row|
     num_fmt = xf ? workbook.styles[:num_fmts][xf[:num_fmt_id]] : nil
     "#{c.ref}: #{c.value.inspect} (Format ID: #{xf&.[](:num_fmt_id)}, Code: #{num_fmt.inspect})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1248,6 +1288,8 @@ Row 2: A3: "Negative (Red)" (Format ID: , Code: nil), B3: -2500 (Format ID: 164,
 
 ## Cell Num Fractions
 
+[Download .xlsx](files/cell_num_fractions.xlsx)
+
 Demonstrates fraction number formats (# ?/?).
 
 ### Rendered Output (LibreOffice Calc)
@@ -1258,14 +1300,15 @@ Demonstrates fraction number formats (# ?/?).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_fractions.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("frac") { |s| s.num_fmt("# ?/?") }
-  w.add_sheet("Fractions") do |s|
+  w.sheet("Fractions") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Value"])
+    s.add_row(%w[Format Value])
     s.add_row(["Half", 0.5], styles: { 1 => "frac" })
     s.add_row(["Third", 0.3333], styles: { 1 => "frac" })
     s.add_row(["Quarter", 0.75], styles: { 1 => "frac" })
@@ -1282,7 +1325,7 @@ sheet.rows.each do |row|
     num_fmt = xf ? workbook.styles[:num_fmts][xf[:num_fmt_id]] : nil
     "#{c.ref}: #{c.value.inspect} (Format ID: #{xf&.[](:num_fmt_id)}, Code: #{num_fmt.inspect})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1300,6 +1343,8 @@ Row 3: A4: "Quarter" (Format ID: , Code: nil), B4: 0.75 (Format ID: 164, Code: "
 
 ## Cell Num Percent Decimals
 
+[Download .xlsx](files/cell_num_percent_decimals.xlsx)
+
 Demonstrates percentages with two decimal places (0.00%).
 
 ### Rendered Output (LibreOffice Calc)
@@ -1310,14 +1355,15 @@ Demonstrates percentages with two decimal places (0.00%).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_percent_decimals.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("pct2") { |s| s.num_fmt("0.00%") }
-  w.add_sheet("Percents") do |s|
+  w.sheet("Percents") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Value"])
+    s.add_row(%w[Format Value])
     s.add_row(["Percent with 2 Decimals", 0.12345], styles: { 1 => "pct2" })
   end
 end
@@ -1332,7 +1378,7 @@ sheet.rows.each do |row|
     num_fmt = xf ? workbook.styles[:num_fmts][xf[:num_fmt_id]] : nil
     "#{c.ref}: #{c.value.inspect} (Format ID: #{xf&.[](:num_fmt_id)}, Code: #{num_fmt.inspect})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1348,6 +1394,8 @@ Row 1: A2: "Percent with 2 Decimals" (Format ID: , Code: nil), B2: 0.12345 (Form
 
 ## Cell Num Scientific
 
+[Download .xlsx](files/cell_num_scientific.xlsx)
+
 Demonstrates scientific number formats (0.00E+00).
 
 ### Rendered Output (LibreOffice Calc)
@@ -1358,15 +1406,16 @@ Demonstrates scientific number formats (0.00E+00).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_scientific.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("sci") { |s| s.num_fmt("0.00E+00") }
-  w.add_sheet("Scientific") do |s|
+  w.sheet("Scientific") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Value"])
-    s.add_row(["Scientific", 123456789.0], styles: { 1 => "sci" })
+    s.add_row(%w[Format Value])
+    s.add_row(["Scientific", 123_456_789.0], styles: { 1 => "sci" })
     s.add_row(["Small Scientific", 0.00001234], styles: { 1 => "sci" })
   end
 end
@@ -1381,7 +1430,7 @@ sheet.rows.each do |row|
     num_fmt = xf ? workbook.styles[:num_fmts][xf[:num_fmt_id]] : nil
     "#{c.ref}: #{c.value.inspect} (Format ID: #{xf&.[](:num_fmt_id)}, Code: #{num_fmt.inspect})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1398,6 +1447,8 @@ Row 2: A3: "Small Scientific" (Format ID: , Code: nil), B3: 1.234e-05 (Format ID
 
 ## Cell Numbers
 
+[Download .xlsx](files/cell_numbers.xlsx)
+
 Demonstrates custom formatting for integers, floating point numbers, currencies, and percentages.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1408,16 +1459,17 @@ Demonstrates custom formatting for integers, floating point numbers, currencies,
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cell_numbers.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("currency") { |s| s.num_fmt("$#,##0.00") }
   w.add_style("percent") { |s| s.num_fmt("0.0%") }
-  w.add_sheet("Numbers") do |s|
+  w.sheet("Numbers") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Value"])
-    s.add_row(["Integer", 12345])
+    s.add_row(%w[Format Value])
+    s.add_row(["Integer", 12_345])
     s.add_row(["Float", 123.456])
     s.add_row(["Currency", 1234.5], styles: { 1 => "currency" })
     s.add_row(["Percentage", 0.85], styles: { 1 => "percent" })
@@ -1432,7 +1484,7 @@ sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
     "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1451,6 +1503,8 @@ Row 4: A5: "Percentage" (String), B5: 0.85 (Float)
 
 ## Cell Rich Text
 
+[Download .xlsx](files/cell_rich_text.xlsx)
+
 Demonstrates Rich Text cells with multiple font weights, styles, and colors in a single cell.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1461,18 +1515,19 @@ Demonstrates Rich Text cells with multiple font weights, styles, and colors in a
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cell_rich_text.xlsx"
 Xlsxrb.generate(output_path) do |w|
   rt = Xlsxrb::Elements::RichText.new(runs: [
-    { text: "Normal " },
-    { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
-    { text: "ITALIC BLUE", font: { italic: true, color: "FF0000FF", sz: 20 } }
-  ])
-  w.add_sheet("Rich Text") do |s|
+                                        { text: "Normal " },
+                                        { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
+                                        { text: "ITALIC BLUE", font: { italic: true, color: "FF0000FF", sz: 20 } }
+                                      ])
+  w.sheet("Rich Text") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Value"])
+    s.add_row(%w[Format Value])
     s.add_row(["Rich Text Cell", rt])
   end
 end
@@ -1485,7 +1540,7 @@ sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
     "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1501,6 +1556,8 @@ Row 1: A2: "Rich Text Cell" (String), B2: "Normal BOLD RED ITALIC BLUE" (String)
 
 ## Cell Times
 
+[Download .xlsx](files/cell_times.xlsx)
+
 Demonstrates timestamp values serialized natively and formatted showing hours, minutes, and seconds.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1511,12 +1568,13 @@ Demonstrates timestamp values serialized natively and formatted showing hours, m
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 require "time"
 output_path = ARGV[0] || "cell_times.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
-  w.add_sheet("Times") do |s|
+  w.sheet("Times") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Format", "Time Value"])
@@ -1533,7 +1591,7 @@ sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
     "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1550,6 +1608,8 @@ Row 2: A3: "Time Only" (String), B3: 46204.385416666664 (Float)
 
 ## Cf Begins With
 
+[Download .xlsx](files/cf_begins_with.xlsx)
+
 Demonstrates conditional formatting highlighting cells starting with specific text.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1560,10 +1620,11 @@ Demonstrates conditional formatting highlighting cells starting with specific te
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_begins_with.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("CF Begins") do |s|
+  w.sheet("CF Begins") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Code"])
@@ -1580,7 +1641,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1598,6 +1659,8 @@ Row 3: A4: "A-300"
 
 ## Cf Cell Between
 
+[Download .xlsx](files/cf_cell_between.xlsx)
+
 Demonstrates conditional formatting highlighting cells within a range.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1608,18 +1671,19 @@ Demonstrates conditional formatting highlighting cells within a range.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_between.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("CF Between") do |s|
+  w.sheet("CF Between") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Values"])
     s.add_row([15], styles: ["center"])
     s.add_row([25], styles: ["center"])
     s.add_row([5], styles: ["center"])
-    s.add_conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: ["10", "20"], fill_color: "FF00FF00")
+    s.add_conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: "FF00FF00")
   end
 end
 
@@ -1629,7 +1693,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1647,6 +1711,8 @@ Row 3: A4: 5
 
 ## Cf Cell Equal To
 
+[Download .xlsx](files/cf_cell_equal_to.xlsx)
+
 Demonstrates conditional formatting highlighting cells equal to a target value.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1657,11 +1723,12 @@ Demonstrates conditional formatting highlighting cells equal to a target value.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_equal_to.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("CF Equal") do |s|
+  w.sheet("CF Equal") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Values"])
@@ -1678,7 +1745,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1696,6 +1763,8 @@ Row 3: A4: 10
 
 ## Cf Cell Greater Equal
 
+[Download .xlsx](files/cf_cell_greater_equal.xlsx)
+
 Demonstrates conditional formatting highlighting cells greater than or equal to a threshold.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1706,11 +1775,12 @@ Demonstrates conditional formatting highlighting cells greater than or equal to 
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_equal.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("CF Greater Equal") do |s|
+  w.sheet("CF Greater Equal") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Values"])
@@ -1727,7 +1797,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1745,6 +1815,8 @@ Row 3: A4: 100
 
 ## Cf Cell Greater Than
 
+[Download .xlsx](files/cf_cell_greater_than.xlsx)
+
 Demonstrates conditional formatting highlighting cells greater than a threshold.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1755,11 +1827,12 @@ Demonstrates conditional formatting highlighting cells greater than a threshold.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_than.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("CF Greater") do |s|
+  w.sheet("CF Greater") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Values"])
@@ -1776,7 +1849,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1794,6 +1867,8 @@ Row 3: A4: 10
 
 ## Cf Cell Less Than
 
+[Download .xlsx](files/cf_cell_less_than.xlsx)
+
 Demonstrates conditional formatting highlighting cells less than a threshold.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1804,11 +1879,12 @@ Demonstrates conditional formatting highlighting cells less than a threshold.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_less_than.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("CF Less") do |s|
+  w.sheet("CF Less") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Values"])
@@ -1825,7 +1901,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1843,6 +1919,8 @@ Row 3: A4: 10
 
 ## Cf Color Scale
 
+[Download .xlsx](files/cf_color_scale.xlsx)
+
 Demonstrates color scale/heatmap conditional formatting.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1853,11 +1931,12 @@ Demonstrates color scale/heatmap conditional formatting.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_color_scale.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("Colors") do |s|
+  w.sheet("Colors") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row([10], styles: ["center"])
@@ -1873,7 +1952,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1890,6 +1969,8 @@ Row 2: A3: 90
 
 ## Cf Contains Text
 
+[Download .xlsx](files/cf_contains_text.xlsx)
+
 Demonstrates conditional formatting highlighting cells containing specific text.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1900,10 +1981,11 @@ Demonstrates conditional formatting highlighting cells containing specific text.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_contains_text.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("CF Contains") do |s|
+  w.sheet("CF Contains") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Status"])
@@ -1920,7 +2002,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1938,6 +2020,8 @@ Row 3: A4: "Pending"
 
 ## Cf Data Bar
 
+[Download .xlsx](files/cf_data_bar.xlsx)
+
 Demonstrates data bar visual conditional formatting indicators.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1948,11 +2032,12 @@ Demonstrates data bar visual conditional formatting indicators.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_data_bar.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("Data Bars") do |s|
+  w.sheet("Data Bars") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row([20], styles: ["center"])
@@ -1968,7 +2053,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -1985,6 +2070,8 @@ Row 2: A3: 100
 
 ## Cf Ends With
 
+[Download .xlsx](files/cf_ends_with.xlsx)
+
 Demonstrates conditional formatting highlighting cells ending with specific text.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1995,10 +2082,11 @@ Demonstrates conditional formatting highlighting cells ending with specific text
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_ends_with.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("CF Ends") do |s|
+  w.sheet("CF Ends") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Code"])
@@ -2015,7 +2103,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -2033,6 +2121,8 @@ Row 3: A4: "300-Z"
 
 ## Cf Expression Formula
 
+[Download .xlsx](files/cf_expression_formula.xlsx)
+
 Demonstrates conditional formatting using a custom formula expression.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2043,11 +2133,12 @@ Demonstrates conditional formatting using a custom formula expression.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_expression_formula.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("CF Expression") do |s|
+  w.sheet("CF Expression") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Values"])
@@ -2065,7 +2156,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -2084,6 +2175,8 @@ Row 4: A5: 100
 
 ## Cf Icon Set
 
+[Download .xlsx](files/cf_icon_set.xlsx)
+
 Demonstrates icon set indicators (red/yellow/green arrows).
 
 ### Rendered Output (LibreOffice Calc)
@@ -2094,11 +2187,12 @@ Demonstrates icon set indicators (red/yellow/green arrows).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "cf_icon_set.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("Icons") do |s|
+  w.sheet("Icons") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row([25], styles: ["center"])
@@ -2114,7 +2208,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -2131,6 +2225,8 @@ Row 2: A3: 75
 
 ## Chart Area
 
+[Download .xlsx](files/chart_area.xlsx)
+
 Demonstrates embedding a standard 2D Area Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2141,15 +2237,16 @@ Demonstrates embedding a standard 2D Area Chart.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_area.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Day", "Value"])
+    s.add_row(%w[Day Value])
     s.add_row(["Mon", 10])
     s.add_row(["Tue", 15])
     s.add_chart(
@@ -2179,6 +2276,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Area Stacked
 
+[Download .xlsx](files/chart_area_stacked.xlsx)
+
 Demonstrates embedding a stacked 2D Area Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2189,10 +2288,11 @@ Demonstrates embedding a stacked 2D Area Chart.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_area_stacked.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Year", "Sales A", "Sales B"])
@@ -2232,6 +2332,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Bar
 
+[Download .xlsx](files/chart_bar.xlsx)
+
 Demonstrates embedding a standard 2D Bar Chart referencing worksheet cell ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2248,12 +2350,12 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_bar.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Sales Data") do |s|
+  w.sheet("Sales Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Month", "Value"])
+    s.add_row(%w[Month Value])
     s.add_row(["Jan", 100])
     s.add_row(["Feb", 200])
 
@@ -2289,6 +2391,8 @@ Sheet 'Sales Data' has 0 chart(s)
 
 ## Chart Bar Percent Stacked
 
+[Download .xlsx](files/chart_bar_percent_stacked.xlsx)
+
 Demonstrates embedding a 100% stacked 2D Bar Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2299,10 +2403,11 @@ Demonstrates embedding a 100% stacked 2D Bar Chart.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_bar_percent_stacked.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Year", "Sales A", "Sales B"])
@@ -2342,6 +2447,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Bar Stacked
 
+[Download .xlsx](files/chart_bar_stacked.xlsx)
+
 Demonstrates embedding a stacked 2D Bar Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2352,10 +2459,11 @@ Demonstrates embedding a stacked 2D Bar Chart.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_bar_stacked.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Year", "Sales A", "Sales B"])
@@ -2395,6 +2503,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Doughnut
 
+[Download .xlsx](files/chart_doughnut.xlsx)
+
 Demonstrates embedding a standard 2D Doughnut Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2405,15 +2515,16 @@ Demonstrates embedding a standard 2D Doughnut Chart.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_doughnut.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Label", "Percent"])
+    s.add_row(%w[Label Percent])
     s.add_row(["A", 40])
     s.add_row(["B", 60])
     s.add_chart(
@@ -2450,6 +2561,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Line
 
+[Download .xlsx](files/chart_line.xlsx)
+
 Demonstrates embedding a standard 2D Line Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2460,15 +2573,16 @@ Demonstrates embedding a standard 2D Line Chart.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_line.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Day", "Value"])
+    s.add_row(%w[Day Value])
     s.add_row(["Mon", 10])
     s.add_row(["Tue", 15])
     s.add_row(["Wed", 12])
@@ -2499,6 +2613,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Line Stacked
 
+[Download .xlsx](files/chart_line_stacked.xlsx)
+
 Demonstrates embedding a stacked 2D Line Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2509,10 +2625,11 @@ Demonstrates embedding a stacked 2D Line Chart.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_line_stacked.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Year", "Sales A", "Sales B"])
@@ -2552,6 +2669,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Pie
 
+[Download .xlsx](files/chart_pie.xlsx)
+
 Demonstrates embedding a standard 2D Pie Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2562,15 +2681,16 @@ Demonstrates embedding a standard 2D Pie Chart.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_pie.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Label", "Percent"])
+    s.add_row(%w[Label Percent])
     s.add_row(["Yes", 70])
     s.add_row(["No", 30])
     s.add_chart(
@@ -2607,6 +2727,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Radar
 
+[Download .xlsx](files/chart_radar.xlsx)
+
 Demonstrates embedding a standard 2D Radar Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2617,15 +2739,16 @@ Demonstrates embedding a standard 2D Radar Chart.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_radar.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Stat", "Value"])
+    s.add_row(%w[Stat Value])
     s.add_row(["Atk", 80])
     s.add_row(["Def", 60])
     s.add_chart(
@@ -2655,6 +2778,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Scatter
 
+[Download .xlsx](files/chart_scatter.xlsx)
+
 Demonstrates embedding a standard 2D Scatter Plot.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2665,15 +2790,16 @@ Demonstrates embedding a standard 2D Scatter Plot.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "chart_scatter.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Data") do |s|
+  w.sheet("Data") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["X", "Y"])
+    s.add_row(%w[X Y])
     s.add_row([1, 10])
     s.add_row([2, 15])
     s.add_chart(
@@ -2703,6 +2829,8 @@ Sheet 'Data' has 0 chart(s)
 
 ## Col Grouping
 
+[Download .xlsx](files/col_grouping.xlsx)
+
 Demonstrates outline grouping for columns.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2713,17 +2841,18 @@ Demonstrates outline grouping for columns.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "col_grouping.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.add_sheet("Col Grouping") do |s|
+  w.sheet("Col Grouping") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25, outline_level: 0)
     s.set_column(1, width: 25, outline_level: 1)
     s.set_column(2, width: 25, outline_level: 1)
-    s.add_row(["Col A", "Col B (Grouped)", "Col C (Grouped)"], styles: ["border", "border", "border"])
+    s.add_row(["Col A", "Col B (Grouped)", "Col C (Grouped)"], styles: %w[border border border])
   end
 end
 
@@ -2749,6 +2878,8 @@ Column 2: width=25.0, hidden=false, outline_level=1
 
 ## Col Width Tall
 
+[Download .xlsx](files/col_width_tall.xlsx)
+
 Demonstrates setting very wide column widths.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2759,14 +2890,15 @@ Demonstrates setting very wide column widths.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "col_width_tall.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.add_sheet("Col Width") do |s|
+  w.sheet("Col Width") do |s|
     s.set_column(0, width: 50)
     s.set_column(1, width: 10)
-    s.add_row(["Very Wide Column (Width 50)", "Normal (10)"], styles: ["border", "border"])
+    s.add_row(["Very Wide Column (Width 50)", "Normal (10)"], styles: %w[border border])
   end
 end
 
@@ -2791,6 +2923,8 @@ Column 1: width=10.0, hidden=false, outline_level=
 
 ## Col Widths
 
+[Download .xlsx](files/col_widths.xlsx)
+
 Demonstrates setting custom column widths.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2801,14 +2935,15 @@ Demonstrates setting custom column widths.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "col_widths.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.add_sheet("Widths") do |s|
+  w.sheet("Widths") do |s|
     s.set_column(0, width: 30)
     s.set_column(1, width: 10)
-    s.add_row(["Wide Column A", "Narrow B"], styles: ["border", "border"])
+    s.add_row(["Wide Column A", "Narrow B"], styles: %w[border border])
   end
 end
 
@@ -2833,6 +2968,8 @@ Column 1: width=10.0, hidden=false, outline_level=
 
 ## Conditional Formatting
 
+[Download .xlsx](files/conditional_formatting.xlsx)
+
 Demonstrates adding conditional formatting rules that style cells automatically based on value ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2850,15 +2987,15 @@ output_path = ARGV[0] || "conditional_formatting.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |style| style.align_horizontal("center") }
-  w.add_sheet("Scores") do |s|
+  w.sheet("Scores") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([90, 45, 72, 88], styles: ["center", "center", "center", "center"])
+    s.add_row([90, 45, 72, 88], styles: %w[center center center center])
 
     s.add_conditional_format("A1:D1",
-      type: :cell_is, operator: :greaterThan,
-      formula: "80", priority: 1,
-      fill_color: "FFFFC7CE")
+                             type: :cell_is, operator: :greaterThan,
+                             formula: "80", priority: 1,
+                             fill_color: "FFFFC7CE")
   end
 end
 
@@ -2868,7 +3005,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -2883,6 +3020,8 @@ Row 0: A1: 90, B1: 45, C1: 72, D1: 88
 
 ## Embedded Images
 
+[Download .xlsx](files/embedded_images.xlsx)
+
 Demonstrates embedding raster PNG images in cell ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2893,6 +3032,7 @@ Demonstrates embedding raster PNG images in cell ranges.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "embedded_images.xlsx"
 
@@ -2904,7 +3044,7 @@ def make_png(width, height, red, green, blue)
   ihdr_chunk = "IHDR".dup.force_encoding("BINARY") + ihdr_data
   ihdr_crc = Zlib.crc32(ihdr_chunk)
   png << [ihdr_data.bytesize].pack("N") << ihdr_chunk << [ihdr_crc].pack("N")
-  raw_data = Array.new(height) { "\x00".dup.force_encoding("BINARY") + [red, green, blue].pack("C3") * width }.join
+  raw_data = Array.new(height) { "\x00".dup.force_encoding("BINARY") + ([red, green, blue].pack("C3") * width) }.join
   compressed = Zlib.deflate(raw_data)
   idat_chunk = "IDAT".dup.force_encoding("BINARY") + compressed
   idat_crc = Zlib.crc32(idat_chunk)
@@ -2919,12 +3059,12 @@ dummy_png = make_png(100, 100, 255, 0, 0)
 
 Xlsxrb.generate(output_path) do |w|
   w.add_style("center") { |st| st.align_horizontal(:center) }
-  w.add_sheet("Images") do |s|
-    s.add_row(["Logo Target cell:", "", "", "Boundary"], styles: ["left", "center", "center", "center"])
+  w.sheet("Images") do |s|
+    s.add_row(["Logo Target cell:", "", "", "Boundary"], styles: %w[left center center center])
     s.add_row(["", "", "", ""])
     s.add_row(["", "", "", ""])
     s.add_row(["", "", "", ""])
-    s.add_row(["", "", "", "Boundary End"], styles: ["left", "center", "center", "center"])
+    s.add_row(["", "", "", "Boundary End"], styles: %w[left center center center])
     s.add_image(dummy_png, ext: "png", from_col: 1, from_row: 1, to_col: 3, to_row: 5)
     s.set_column(0, width: 20)
     s.set_column(1, width: 15)
@@ -2940,7 +3080,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 images = reader.images(sheet: sheet.name)
 images.each_with_index do |img, idx|
@@ -2967,6 +3107,8 @@ Image #1: name='', target='../media/image1.png' -> ZIP path='xl/media/image1.png
 
 ## Fill Gradients
 
+[Download .xlsx](files/fill_gradients.xlsx)
+
 Demonstrates linear gradients inside cell backgrounds.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2977,16 +3119,17 @@ Demonstrates linear gradients inside cell backgrounds.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "fill_gradients.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("gradient") do |style|
     style.fill_gradient(type: "linear", degree: 45, stops: [
-      { position: 0, color: "FFFFFFFF" },
-      { position: 1, color: "FF4F81BD" }
-    ])
+                          { position: 0, color: "FFFFFFFF" },
+                          { position: 1, color: "FF4F81BD" }
+                        ])
   end
-  w.add_sheet("Gradients") do |s|
+  w.sheet("Gradients") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })
@@ -3017,6 +3160,8 @@ Cell B1 ('Gradient Cell'): fill pattern = nil, fg_color = nil
 
 ## Fill Patterns
 
+[Download .xlsx](files/fill_patterns.xlsx)
+
 Demonstrates standard pattern fills (darkGray, darkGrid) in cell backgrounds.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3027,15 +3172,16 @@ Demonstrates standard pattern fills (darkGray, darkGrid) in cell backgrounds.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "fill_patterns.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
   w.add_style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
-  w.add_sheet("Patterns") do |s|
+  w.sheet("Patterns") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Pattern", "Preview"])
+    s.add_row(%w[Pattern Preview])
     s.add_row(["Dark Gray", "Pattern Fill"], styles: { 1 => "dark_gray" })
     s.add_row(["Dark Grid", "Grid Fill"], styles: { 1 => "grid_fill" })
   end
@@ -3065,6 +3211,8 @@ Cell B1 ('Preview'): fill pattern = nil, fg_color = nil
 
 ## Fill Solid Colors
 
+[Download .xlsx](files/fill_solid_colors.xlsx)
+
 Demonstrates solid cell background fill colors.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3075,15 +3223,16 @@ Demonstrates solid cell background fill colors.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "fill_solid_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("red_fill") { |s| s.fill_color("FFFFC7CE") }
   w.add_style("green_fill") { |s| s.fill_color("FFC6EFCE") }
-  w.add_sheet("Fills") do |s|
+  w.sheet("Fills") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Color", "Preview"])
+    s.add_row(%w[Color Preview])
     s.add_row(["Red", "Red Fill"], styles: { 1 => "red_fill" })
     s.add_row(["Green", "Green Fill"], styles: { 1 => "green_fill" })
   end
@@ -3112,6 +3261,8 @@ Cell B1 ('Preview'): fill pattern = nil, fg_color = nil
 <hr/>
 
 ## Fonts
+
+[Download .xlsx](files/fonts.xlsx)
 
 Demonstrates cell fonts properties (Arial, Georgia, Courier New, Times New Roman, Tahoma, sizes 10pt/16pt/24pt, red/green/blue colors, bold/italic/underline/double underline/strike-through styles, superscript/subscript).
 
@@ -3147,17 +3298,17 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("c_blue") { |s| s.font_color("FF0000FF") }
 
   # Font Styles
-  w.add_style("st_bold") { |s| s.bold }
-  w.add_style("st_italic") { |s| s.italic }
+  w.add_style("st_bold", &:bold)
+  w.add_style("st_italic", &:italic)
   w.add_style("st_underline") { |s| s.underline("single") }
   w.add_style("st_double_u") { |s| s.underline("double") }
-  w.add_style("st_strike") { |s| s.strike }
+  w.add_style("st_strike", &:strike)
 
   # Vertical Alignments (Superscript/Subscript)
   w.add_style("v_super") { |s| s.vert_align("superscript") }
   w.add_style("v_sub") { |s| s.vert_align("subscript") }
 
-  w.add_sheet("Fonts") do |s|
+  w.sheet("Fonts") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
@@ -3198,7 +3349,7 @@ sheet.rows.each do |row|
     font_id = xf ? xf[:font_id] : 0
     "#{c.ref}: #{c.value.inspect} (font_id: #{font_id})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -3231,6 +3382,8 @@ Row 18: A19: "Align: Subscript" (font_id: 0), B19: "H2O (2 is sub)" (font_id: 18
 
 ## Interactive Autofilter
 
+[Download .xlsx](files/interactive_autofilter.xlsx)
+
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_autofilter.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3246,15 +3399,16 @@ Demonstrates enabling auto-filter sorting headers on tables. Download the sheet 
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_autofilter.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Filter") do |s|
+  w.sheet("Filter") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Name", "Department"])
-    s.add_row(["Alice", "HR"])
-    s.add_row(["Bob", "Eng"])
+    s.add_row(%w[Name Department])
+    s.add_row(%w[Alice HR])
+    s.add_row(%w[Bob Eng])
     s.set_auto_filter("A1:B3")
   end
   w.add_defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
@@ -3266,7 +3420,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -3283,6 +3437,8 @@ Row 2: A3: "Bob", B3: "Eng"
 
 ## Interactive Comments
 
+[Download .xlsx](files/interactive_comments.xlsx)
+
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_comments.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3298,10 +3454,11 @@ Demonstrates cell pop-up comments. Open the sheet in Excel and hover your mouse 
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_comments.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Comments") do |s|
+  w.sheet("Comments") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Item A", "Item B"])
@@ -3315,7 +3472,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -3329,6 +3486,8 @@ Row 0: A1: "Item A", B1: "Item B"
 <hr/>
 
 ## Interactive Validation Custom
+
+[Download .xlsx](files/interactive_validation_custom.xlsx)
 
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_custom.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
@@ -3345,10 +3504,11 @@ Demonstrates interactive custom formula validation rules.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_custom.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Custom Rule") do |s|
+  w.sheet("Custom Rule") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Number A", "Number B (Must be larger A)"])
@@ -3379,6 +3539,8 @@ Validation range B2: type=custom, formula1=B2>A2, formula2=
 
 ## Interactive Validation Date
 
+[Download .xlsx](files/interactive_validation_date.xlsx)
+
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_date.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3394,10 +3556,11 @@ Demonstrates interactive date range constraints validation rules.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_date.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Date Validation") do |s|
+  w.sheet("Date Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Date Range", "Enter Date (2026):"])
@@ -3427,6 +3590,8 @@ Validation range B2: type=date, formula1=Date(2026,1,1), formula2=Date(2026,12,3
 
 ## Interactive Validation List
 
+[Download .xlsx](files/interactive_validation_list.xlsx)
+
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_list.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3442,10 +3607,11 @@ Demonstrates dropdown list data validations. Open the sheet in Excel and select 
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_list.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("List Validation") do |s|
+  w.sheet("List Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Department", "Select:"])
@@ -3475,6 +3641,8 @@ Validation range B2: type=list, formula1="HR,Sales,Engineering", formula2=
 
 ## Interactive Validation Range
 
+[Download .xlsx](files/interactive_validation_range.xlsx)
+
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_range.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3490,10 +3658,11 @@ Demonstrates range constraints for whole number validations. Open the sheet in E
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_range.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Range Validation") do |s|
+  w.sheet("Range Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Age", "Enter (18-99):"])
@@ -3523,6 +3692,8 @@ Validation range B2: type=whole, formula1=18, formula2=99
 
 ## Interactive Validation Text Length
 
+[Download .xlsx](files/interactive_validation_text_length.xlsx)
+
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_text_length.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3538,10 +3709,11 @@ Demonstrates interactive text length validation rules.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_text_length.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Text Length") do |s|
+  w.sheet("Text Length") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Username", "Enter (< 10 chars):"])
@@ -3571,6 +3743,8 @@ Validation range B2: type=textLength, formula1=10, formula2=
 
 ## Interactive Validation Time
 
+[Download .xlsx](files/interactive_validation_time.xlsx)
+
 > [!TIP]
 > **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_time.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
 
@@ -3586,10 +3760,11 @@ Demonstrates interactive time validation rules.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_time.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Time Validation") do |s|
+  w.sheet("Time Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Schedule", "Enter Time (after 08:00):"])
@@ -3619,6 +3794,8 @@ Validation range B2: type=time, formula1=0.33333, formula2=
 
 ## Japanese Text
 
+[Download .xlsx](files/japanese_text.xlsx)
+
 Demonstrates writing multi-byte Japanese text and setting appropriate Japanese font names (e.g., Noto Sans CJK JP).
 
 ### Rendered Output (LibreOffice Calc)
@@ -3639,11 +3816,11 @@ Xlsxrb.generate(output_path) do |w|
     style.font_name("Noto Sans CJK JP").size(12)
   end
 
-  w.add_sheet("Japanese") do |s|
+  w.sheet("Japanese") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["日本語ラベル", "値"], styles: { 0 => "ja_font", 1 => "ja_font" })
-    s.add_row(["売上", 12500], styles: { 0 => "ja_font" })
+    s.add_row(%w[日本語ラベル 値], styles: { 0 => "ja_font", 1 => "ja_font" })
+    s.add_row(["売上", 12_500], styles: { 0 => "ja_font" })
   end
 end
 
@@ -3655,7 +3832,7 @@ sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
     "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -3670,6 +3847,8 @@ Row 1: A2: "売上" (String), B2: 12500 (Integer)
 <hr/>
 
 ## Merge Freeze
+
+[Download .xlsx](files/merge_freeze.xlsx)
 
 Demonstrates merging a cell range into a single cell, and freezing the top rows of a sheet.
 
@@ -3689,16 +3868,16 @@ output_path = ARGV[0] || "merge_freeze.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
   w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.add_sheet("Merge & Freeze") do |s|
+  w.sheet("Merge & Freeze") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_column(2, width: 25)
-    s.add_row(["Merged Title Row", nil, nil], styles: ["title", "title", "title"])
-    s.add_row(["Header A", "Header B", "Header C"], styles: ["border", "border", "border"])
-    s.add_row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], styles: ["border", "border", "border"])
-    s.add_row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], styles: ["border", "border", "border"])
+    s.add_row(["Merged Title Row", nil, nil], styles: %w[title title title])
+    s.add_row(["Header A", "Header B", "Header C"], styles: %w[border border border])
+    s.add_row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], styles: %w[border border border])
+    s.add_row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], styles: %w[border border border])
 
     s.merge_cells("A1:C1")
     s.set_freeze_pane(row: 2, col: 0)
@@ -3711,7 +3890,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -3729,6 +3908,8 @@ Row 3: A4: "Row 2 Col A", B4: "Row 2 Col B", C4: "Row 2 Col C"
 
 ## Page Grid Lines Print
 
+[Download .xlsx](files/page_grid_lines_print.xlsx)
+
 Demonstrates enabling printing of grid lines.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3739,10 +3920,11 @@ Demonstrates enabling printing of grid lines.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "page_grid_lines_print.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Print Grid Lines") do |s|
+  w.sheet("Print Grid Lines") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
@@ -3776,6 +3958,8 @@ Print Options: {grid_lines: true}
 
 ## Page Header Footer
 
+[Download .xlsx](files/page_header_footer.xlsx)
+
 Demonstrates setting odd page headers and footers.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3786,10 +3970,11 @@ Demonstrates setting odd page headers and footers.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "page_header_footer.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Header Footer") do |s|
+  w.sheet("Header Footer") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_header_footer(odd_header: "&LMy Company&RPage &P", odd_footer: "&CConfidential")
@@ -3823,6 +4008,8 @@ Print Options: {}
 
 ## Page Headings Print
 
+[Download .xlsx](files/page_headings_print.xlsx)
+
 Demonstrates enabling printing of row and column headings.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3833,10 +4020,11 @@ Demonstrates enabling printing of row and column headings.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "page_headings_print.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Print Headings") do |s|
+  w.sheet("Print Headings") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_print_option(:headings, true)
@@ -3870,6 +4058,8 @@ Print Options: {headings: true}
 
 ## Page Margins Narrow
 
+[Download .xlsx](files/page_margins_narrow.xlsx)
+
 Demonstrates setting narrow page margins.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3880,10 +4070,11 @@ Demonstrates setting narrow page margins.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "page_margins_narrow.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Narrow Margins") do |s|
+  w.sheet("Narrow Margins") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_margins(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25, header: 0.1, footer: 0.1)
@@ -3917,6 +4108,8 @@ Print Options: {}
 
 ## Page Margins Wide
 
+[Download .xlsx](files/page_margins_wide.xlsx)
+
 Demonstrates setting wide page margins.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3927,10 +4120,11 @@ Demonstrates setting wide page margins.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "page_margins_wide.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Wide Margins") do |s|
+  w.sheet("Wide Margins") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_margins(top: 1.0, bottom: 1.0, left: 1.0, right: 1.0, header: 0.5, footer: 0.5)
@@ -3964,6 +4158,8 @@ Print Options: {}
 
 ## Page Orientation Landscape
 
+[Download .xlsx](files/page_orientation_landscape.xlsx)
+
 Demonstrates landscape page setup for printing.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3974,10 +4170,11 @@ Demonstrates landscape page setup for printing.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "page_orientation_landscape.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Landscape") do |s|
+  w.sheet("Landscape") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_setup(orientation: :landscape)
@@ -4011,6 +4208,8 @@ Print Options: {}
 
 ## Page Paper Size A3
 
+[Download .xlsx](files/page_paper_size_a3.xlsx)
+
 Demonstrates setting paper size to A3 (paper size 8).
 
 ### Rendered Output (LibreOffice Calc)
@@ -4021,10 +4220,11 @@ Demonstrates setting paper size to A3 (paper size 8).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "page_paper_size_a3.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("A3 Sheet") do |s|
+  w.sheet("A3 Sheet") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_setup(paper_size: 8) # ISO A3 is paperSize="8"
@@ -4058,6 +4258,8 @@ Print Options: {}
 
 ## Row Grouping
 
+[Download .xlsx](files/row_grouping.xlsx)
+
 Demonstrates outline grouping for rows.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4068,17 +4270,18 @@ Demonstrates outline grouping for rows.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "row_grouping.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
   w.add_style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
-  w.add_sheet("Row Grouping") do |s|
+  w.sheet("Row Grouping") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Parent Row 1", ""], styles: ["parent", "parent"])
-    s.add_row(["Child Row 1.1", ""], outline_level: 1, styles: ["child", "child"])
-    s.add_row(["Child Row 1.2", ""], outline_level: 1, styles: ["child", "child"])
+    s.add_row(["Parent Row 1", ""], styles: %w[parent parent])
+    s.add_row(["Child Row 1.1", ""], outline_level: 1, styles: %w[child child])
+    s.add_row(["Child Row 1.2", ""], outline_level: 1, styles: %w[child child])
   end
 end
 
@@ -4104,6 +4307,8 @@ Row 2: height=, hidden=false, outline_level=1
 
 ## Row Height Tall
 
+[Download .xlsx](files/row_height_tall.xlsx)
+
 Demonstrates setting very tall row heights.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4114,15 +4319,16 @@ Demonstrates setting very tall row heights.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "row_height_tall.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.add_sheet("Row Height") do |s|
+  w.sheet("Row Height") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Very Tall Row (Height 60)", ""], height: 60, styles: ["border", "border"])
-    s.add_row(["Normal Row", ""], styles: ["border", "border"])
+    s.add_row(["Very Tall Row (Height 60)", ""], height: 60, styles: %w[border border])
+    s.add_row(["Normal Row", ""], styles: %w[border border])
   end
 end
 
@@ -4147,6 +4353,8 @@ Row 1: height=, hidden=false, outline_level=
 
 ## Row Heights
 
+[Download .xlsx](files/row_heights.xlsx)
+
 Demonstrates setting custom row heights.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4157,15 +4365,16 @@ Demonstrates setting custom row heights.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "row_heights.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.add_sheet("Heights") do |s|
+  w.sheet("Heights") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Normal Row", ""], styles: ["border", "border"])
-    s.add_row(["Tall Row", ""], height: 40, styles: ["border", "border"])
+    s.add_row(["Normal Row", ""], styles: %w[border border])
+    s.add_row(["Tall Row", ""], height: 40, styles: %w[border border])
   end
 end
 
@@ -4190,6 +4399,8 @@ Row 1: height=40.0, hidden=false, outline_level=
 
 ## Sheet Tab Colors
 
+[Download .xlsx](files/sheet_tab_colors.xlsx)
+
 Demonstrates customizing tab colors of individual worksheets.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4204,16 +4415,17 @@ Demonstrates customizing tab colors of individual worksheets.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "sheet_tab_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Red Tab") do |s|
+  w.sheet("Red Tab") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_sheet_property(:tab_color, "FFFF0000")
     s.add_row(["Red tab sheet"])
   end
-  w.add_sheet("Green Tab") do |s|
+  w.sheet("Green Tab") do |s|
     s.set_sheet_property(:tab_color, "FF00FF00")
     s.add_row(["Green tab sheet"])
   end
@@ -4241,6 +4453,8 @@ Sheet: Green Tab, tab color: "FF00FF00"
 
 ## Sparkline Column
 
+[Download .xlsx](files/sparkline_column.xlsx)
+
 Demonstrates embedded column sparklines in cell ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4251,10 +4465,11 @@ Demonstrates embedded column sparklines in cell ranges.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "sparkline_column.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Sparkline") do |s|
+  w.sheet("Sparkline") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
@@ -4273,7 +4488,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(3).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -4288,6 +4503,8 @@ Row 0: A1: 5, B1: 12, C1: 8, D1: 15
 
 ## Sparkline Line
 
+[Download .xlsx](files/sparkline_line.xlsx)
+
 Demonstrates embedded line sparklines in cell ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4300,10 +4517,11 @@ Demonstrates embedded line sparklines in cell ranges.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "sparkline_line.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Sparkline") do |s|
+  w.sheet("Sparkline") do |s|
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
@@ -4325,7 +4543,7 @@ workbook = Xlsxrb.read(output_path)
 sheet = workbook.sheets.first
 sheet.rows.first(3).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -4339,6 +4557,8 @@ Row 0: A1: 10, B1: 20, C1: 15, D1: 30
 <hr/>
 
 ## Styles Fonts Fills
+
+[Download .xlsx](files/styles_fonts_fills.xlsx)
 
 Demonstrates cell formatting, including custom font sizing, bold/italic text, custom text colors, and background fill colors.
 
@@ -4364,7 +4584,7 @@ Xlsxrb.generate(output_path) do |w|
     style.italic.font_color("FFC00000").fill_color("FFFFFF00")
   end
 
-  w.add_sheet("Styles") do
+  w.sheet("Styles") do
     w.set_column(0, width: 25)
     w.set_column(1, width: 25)
     w.add_row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
@@ -4383,7 +4603,7 @@ sheet.rows.first(4).each do |row|
     fill = xf ? workbook.styles[:fills][xf[:fill_id]] : nil
     "#{c.ref}: #{c.value.inspect} (font=#{font&.[](:name)}, fill=#{fill&.[](:fg_color)&.[](:rgb)})"
   end
-  puts "Row #{row.index}: #{row_cells.join(', ')}"
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
 ```
 
@@ -4399,6 +4619,8 @@ Row 1: A2: "Normal Text" (font=, fill=), B2: "Highlighted Text" (font=Calibri, f
 
 ## View Show Grid Lines
 
+[Download .xlsx](files/view_show_grid_lines.xlsx)
+
 Demonstrates disabling visible grid lines in spreadsheet view.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4411,10 +4633,11 @@ Demonstrates disabling visible grid lines in spreadsheet view.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "view_show_grid_lines.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Hide Grid Lines") do |s|
+  w.sheet("Hide Grid Lines") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_sheet_view(:show_grid_lines, false)
@@ -4443,6 +4666,8 @@ Sheet 'Hide Grid Lines' views zoom scale: %, show grid lines: false
 
 ## View Zoom Scale
 
+[Download .xlsx](files/view_zoom_scale.xlsx)
+
 Demonstrates setting custom zoom scale in sheet view (e.g. 150%).
 
 ### Rendered Output (LibreOffice Calc)
@@ -4455,10 +4680,11 @@ Demonstrates setting custom zoom scale in sheet view (e.g. 150%).
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "view_zoom_scale.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Zoom 150") do |s|
+  w.sheet("Zoom 150") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_sheet_view(:zoom_scale, 150)
@@ -4487,6 +4713,8 @@ Sheet 'Zoom 150' views zoom scale: 150%, show grid lines:
 
 ## Workbook Three Sheets
 
+[Download .xlsx](files/workbook_three_sheets.xlsx)
+
 Demonstrates creating workbooks with multiple worksheets.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4501,18 +4729,19 @@ Demonstrates creating workbooks with multiple worksheets.
 
 ```ruby
 # frozen_string_literal: true
+
 require "xlsxrb"
 output_path = ARGV[0] || "workbook_three_sheets.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("First Sheet") { |s| s.add_row(["First Sheet Data"]) }
-  w.add_sheet("Second Sheet") { |s| s.add_row(["Second Sheet Data"]) }
-  w.add_sheet("Third Sheet") { |s| s.add_row(["Third Sheet Data"]) }
+  w.sheet("First Sheet") { |s| s.add_row(["First Sheet Data"]) }
+  w.sheet("Second Sheet") { |s| s.add_row(["Second Sheet Data"]) }
+  w.sheet("Third Sheet") { |s| s.add_row(["Third Sheet Data"]) }
 end
 
 # 2. Read the generated sheet and print the sheets structure
 puts "=== Read Validation ==="
 workbook = Xlsxrb.read(output_path)
-puts "Workbook sheets: #{workbook.sheet_names.join(', ')}"
+puts "Workbook sheets: #{workbook.sheet_names.join(", ")}"
 ```
 
 ### Console Output

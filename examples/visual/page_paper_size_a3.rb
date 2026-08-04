@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "page_paper_size_a3.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("A3 Sheet") do |s|
+  w.sheet("A3 Sheet") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_setup(paper_size: 8) # ISO A3 is paperSize="8"

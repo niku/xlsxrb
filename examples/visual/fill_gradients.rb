@@ -9,7 +9,7 @@ Xlsxrb.generate(output_path) do |w|
                           { position: 1, color: "FF4F81BD" }
                         ])
   end
-  w.add_sheet("Gradients") do |s|
+  w.sheet("Gradients") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })

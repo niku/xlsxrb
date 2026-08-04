@@ -3,13 +3,13 @@
 require "xlsxrb"
 output_path = ARGV[0] || "sheet_tab_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Red Tab") do |s|
+  w.sheet("Red Tab") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_sheet_property(:tab_color, "FFFF0000")
     s.add_row(["Red tab sheet"])
   end
-  w.add_sheet("Green Tab") do |s|
+  w.sheet("Green Tab") do |s|
     s.set_sheet_property(:tab_color, "FF00FF00")
     s.add_row(["Green tab sheet"])
   end

@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_custom.xlsx"
 Xlsxrb.generate(output_path) do |w|
-  w.add_sheet("Custom Rule") do |s|
+  w.sheet("Custom Rule") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(["Number A", "Number B (Must be larger A)"])

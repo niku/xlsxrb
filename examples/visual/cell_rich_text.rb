@@ -8,7 +8,7 @@ Xlsxrb.generate(output_path) do |w|
                                         { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
                                         { text: "ITALIC BLUE", font: { italic: true, color: "FF0000FF", sz: 20 } }
                                       ])
-  w.add_sheet("Rich Text") do |s|
+  w.sheet("Rich Text") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.add_row(%w[Format Value])
