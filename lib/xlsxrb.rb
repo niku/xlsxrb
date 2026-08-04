@@ -563,13 +563,22 @@ module Xlsxrb
           col_index += 1
           next
         end
-        # If value is a Formula object, store it as the cell's formula
+        # If value is a Formula object or Hash with :formula, store it as the cell's formula
         cells[col_index] = if val.is_a?(Elements::Formula)
                              Elements::Cell.new(
                                row_index: row_index,
                                column_index: col_index,
                                value: nil,
                                formula: val,
+                               style_index: style_name
+                             )
+                           elsif val.is_a?(Hash) && val.key?(:formula)
+                             f_obj = Elements::Formula.new(val[:formula])
+                             Elements::Cell.new(
+                               row_index: row_index,
+                               column_index: col_index,
+                               value: val[:value],
+                               formula: f_obj,
                                style_index: style_name
                              )
                            else

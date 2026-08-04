@@ -4519,6 +4519,13 @@ sheet.rows.first(3).each do |row|
 end
 ```
 
+### Console Output
+
+```text
+=== Read Validation ===
+Row 0: A1: 10, B1: 20, C1: 15, D1: 30
+```
+
 <hr/>
 
 ## Styles Fonts Fills
