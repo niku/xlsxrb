@@ -535,12 +535,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Print Options
   # =====================================================
 
-  test "set_print_option in build API" do
+  test "print_options in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("PO") do |s|
         s.row(["Data"])
-        s.set_print_option(:grid_lines, true)
-        s.set_print_option(:horizontal_centered, true)
+        s.print_options(:grid_lines, true)
+        s.print_options(:horizontal_centered, true)
       end
     end
 

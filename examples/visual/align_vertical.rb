@@ -9,7 +9,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Vertical Alignment") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.row(%w[Top Center Bottom], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
   end
 end

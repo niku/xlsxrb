@@ -518,7 +518,7 @@ Xlsxrb.generate(output_path) do |w|
   w.style("center") { |s| s.align_horizontal("center") }
   w.style("right") { |s| s.align_horizontal("right") }
   w.sheet("Alignment") do |s|
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.column(0, width: 20)
     s.column(1, width: 20)
     s.column(2, width: 20)
@@ -678,7 +678,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Indent") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.row(["No Indent"])
     s.row(["Indent 1"], styles: { 0 => "indent_1" })
     s.row(["Indent 3"], styles: { 0 => "indent_3" })
@@ -734,7 +734,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Rotation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.row(["Rotated 45", "Rotated 90"], styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
   end
 end
@@ -786,7 +786,7 @@ output_path = ARGV[0] || "align_text_wrap.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.style("wrap", &:wrap_text)
   w.sheet("Text Wrap") do |s|
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.column(0, width: 15)
     s.row(["This is a long sentence that wraps inside the cell."], styles: { 0 => "wrap" })
   end
@@ -842,7 +842,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Vertical Alignment") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.row(%w[Top Center Bottom], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
   end
 end
@@ -969,7 +969,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Borders") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
 
     s.row(["Border Style", "Cell Preview"])
     s.row(["Thin", "Thin Border"], styles: { 1 => "thin" })
@@ -3311,7 +3311,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Fonts") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
 
     s.row(["Font Feature", "Text Preview"])
     s.row(["Family: Arial", "Arial Text"], styles: { 1 => "f_arial" })
@@ -3927,7 +3927,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Print Grid Lines") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:grid_lines, true)
+    s.print_options(:grid_lines, true)
     s.row(["Grid Lines Printed sheet"])
   end
 end
@@ -4027,7 +4027,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Print Headings") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:headings, true)
+    s.print_options(:headings, true)
     s.row(["Row/Col Headings Printed sheet"])
   end
 end

@@ -6,7 +6,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Print Headings") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_print_option(:headings, true)
+    s.print_options(:headings, true)
     s.row(["Row/Col Headings Printed sheet"])
   end
 end
