@@ -899,7 +899,7 @@ Xlsxrb.generate(output_path) do |w|
   w.style("currency") { |style| style.number_format("$#,##0.00") }
   w.style("date") { |style| style.number_format("yyyy-mm-dd") }
   w.sheet("Basic Data") do
-    w.set_sheet_property(:fit_to_page, true)
+    w.sheet_properties(:fit_to_page, true)
     w.page_setup(fit_to_width: 1, fit_to_height: 1)
     w.column(0, width: 25)
     w.column(1, width: 25)
@@ -2242,7 +2242,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_area.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2299,7 +2299,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :area,
@@ -2351,7 +2351,7 @@ output_path = ARGV[0] || "chart_bar.xlsx"
 
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Sales Data") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2414,7 +2414,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :bar,
@@ -2470,7 +2470,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :bar,
@@ -2520,7 +2520,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_doughnut.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2578,7 +2578,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_line.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2636,7 +2636,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :line,
@@ -2686,7 +2686,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_pie.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2744,7 +2744,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_radar.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2795,7 +2795,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_scatter.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2847,7 +2847,7 @@ output_path = ARGV[0] || "col_grouping.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Col Grouping") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25, outline_level: 0)
     s.column(1, width: 25, outline_level: 1)
@@ -3869,7 +3869,7 @@ Xlsxrb.generate(output_path) do |w|
   w.style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
   w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Merge & Freeze") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -4422,11 +4422,11 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Red Tab") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.set_sheet_property(:tab_color, "FFFF0000")
+    s.sheet_properties(:tab_color, "FFFF0000")
     s.row(["Red tab sheet"])
   end
   w.sheet("Green Tab") do |s|
-    s.set_sheet_property(:tab_color, "FF00FF00")
+    s.sheet_properties(:tab_color, "FF00FF00")
     s.row(["Green tab sheet"])
   end
 end
@@ -4470,7 +4470,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "sparkline_column.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Sparkline") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -4522,7 +4522,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "sparkline_line.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Sparkline") do |s|
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)

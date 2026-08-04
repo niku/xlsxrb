@@ -9,7 +9,7 @@ Xlsxrb.generate(output_path) do |w|
   w.style("currency") { |style| style.number_format("$#,##0.00") }
   w.style("date") { |style| style.number_format("yyyy-mm-dd") }
   w.sheet("Basic Data") do
-    w.set_sheet_property(:fit_to_page, true)
+    w.sheet_properties(:fit_to_page, true)
     w.page_setup(fit_to_width: 1, fit_to_height: 1)
     w.column(0, width: 25)
     w.column(1, width: 25)

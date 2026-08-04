@@ -10,7 +10,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.set_sheet_property(:fit_to_page, true)
+    s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :line,
