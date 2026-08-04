@@ -732,7 +732,7 @@ module Xlsxrb
     # --- Row / Column Breaks ---
 
     # Add a page break before a row.
-    def add_row_break(row_num)
+    def page_break_row(row_num)
       @row_breaks << row_num
     end
 
@@ -1119,7 +1119,7 @@ module Xlsxrb
 
     # --- Row / Column Breaks ---
 
-    def add_row_break(row_num)
+    def page_break_row(row_num)
       sheet if @current_sheet.nil?
       @current_row_breaks << row_num
     end
