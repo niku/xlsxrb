@@ -1522,7 +1522,7 @@ Xlsxrb.generate(output_path) do |w|
   rt = Xlsxrb.rich_text(
     { text: "Normal " },
     { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
-    { text: "ITALIC BLUE", font: { italic: true, color: "FF0000FF", sz: 20 } }
+    { text: "ITALIC BLUE", font: { italic: true, color: :blue, sz: 20 } }
   )
   w.sheet("Rich Text") do |s|
     s.column(0, width: 25)
@@ -1683,7 +1683,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([15], styles: "center")
     s.row([25], styles: "center")
     s.row([5], styles: "center")
-    s.conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: "FF00FF00")
+    s.conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: :green)
   end
 end
 
@@ -1992,7 +1992,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Error"])
     s.row(["Success"])
     s.row(["Pending"])
-    s.conditional_format("A2:A4", type: "containsText", operator: "containsText", text: "Error", formula: 'NOT(ISERROR(SEARCH("Error",A2)))', fill_color: "FFFF0000")
+    s.conditional_format("A2:A4", type: "containsText", operator: "containsText", text: "Error", formula: 'NOT(ISERROR(SEARCH("Error",A2)))', fill_color: :red)
   end
 end
 
@@ -3295,7 +3295,7 @@ Xlsxrb.generate(output_path) do |w|
   # Font Colors
   w.style("c_red") { |s| s.font_color("FFC00000") }
   w.style("c_green") { |s| s.font_color("FF008000") }
-  w.style("c_blue") { |s| s.font_color("FF0000FF") }
+  w.style("c_blue") { |s| s.font_color(:blue) }
 
   # Font Styles
   w.style("st_bold", &:bold)
@@ -4422,11 +4422,11 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Red Tab") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.sheet_properties(:tab_color, "FFFF0000")
+    s.sheet_properties(:tab_color, :red)
     s.row(["Red tab sheet"])
   end
   w.sheet("Green Tab") do |s|
-    s.sheet_properties(:tab_color, "FF00FF00")
+    s.sheet_properties(:tab_color, :green)
     s.row(["Green tab sheet"])
   end
 end
@@ -4445,8 +4445,8 @@ end
 
 ```text
 === Read Validation ===
-Sheet: Red Tab, tab color: "FFFF0000"
-Sheet: Green Tab, tab color: "FF00FF00"
+Sheet: Red Tab, tab color: "red"
+Sheet: Green Tab, tab color: "green"
 ```
 
 <hr/>
@@ -4531,7 +4531,7 @@ Xlsxrb.generate(output_path) do |w|
       type: :line,
       markers: true,
       color_series: "FF000000",
-      color_markers: "FFFF0000",
+      color_markers: :red,
       sparklines: [{ location_ref: "E1", data_ref: "Sparkline!A1:D1" }]
     )
   end
@@ -4545,13 +4545,6 @@ sheet.rows.first(3).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
   puts "Row #{row.index}: #{row_cells.join(", ")}"
 end
-```
-
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: 10, B1: 20, C1: 15, D1: 30
 ```
 
 <hr/>
