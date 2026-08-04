@@ -662,7 +662,7 @@ module Xlsxrb
     # --- Page Setup / Margins / Print ---
 
     # Set page margins (in inches).
-    def set_page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
+    def page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
       @page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
     end
 
@@ -1049,7 +1049,7 @@ module Xlsxrb
 
     # --- Page Setup / Margins / Print ---
 
-    def set_page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
+    def page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
       sheet if @current_sheet.nil?
       @current_page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
     end
