@@ -6,8 +6,8 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
   w.add_style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
   w.sheet("Patterns") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.row(%w[Pattern Preview])
     s.row(["Dark Gray", "Pattern Fill"], styles: { 1 => "dark_gray" })
     s.row(["Dark Grid", "Grid Fill"], styles: { 1 => "grid_fill" })

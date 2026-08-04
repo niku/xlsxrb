@@ -34,8 +34,8 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("v_sub") { |s| s.vert_align("subscript") }
 
   w.sheet("Fonts") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.set_print_option(:grid_lines, true)
 
     s.row(["Font Feature", "Text Preview"])

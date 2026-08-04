@@ -5,8 +5,8 @@ output_path = ARGV[0] || "cell_num_currency_jpy.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
   w.sheet("JPY Currency") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.row(%w[Format Value])
     s.row(["Positive Yen", 12_500], styles: { 1 => "jpy" })
     s.row(["Negative Yen", -8000], styles: { 1 => "jpy" })

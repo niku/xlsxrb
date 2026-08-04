@@ -4,8 +4,8 @@ require "xlsxrb"
 output_path = ARGV[0] || "sheet_tab_colors.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Red Tab") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.set_sheet_property(:tab_color, "FFFF0000")
     s.row(["Red tab sheet"])
   end

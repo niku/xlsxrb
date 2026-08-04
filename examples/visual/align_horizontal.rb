@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
   w.add_style("right") { |s| s.align_horizontal("right") }
   w.sheet("Alignment") do |s|
     s.set_print_option(:grid_lines, true)
-    s.set_column(0, width: 20)
-    s.set_column(1, width: 20)
-    s.set_column(2, width: 20)
+    s.column(0, width: 20)
+    s.column(1, width: 20)
+    s.column(2, width: 20)
     s.row(%w[Left Center Right], styles: { 0 => "left", 1 => "center", 2 => "right" })
   end
 end

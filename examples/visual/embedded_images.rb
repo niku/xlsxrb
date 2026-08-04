@@ -33,10 +33,10 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["", "", "", ""])
     s.row(["", "", "", "Boundary End"], styles: %w[left center center center])
     s.add_image(dummy_png, ext: "png", from_col: 1, from_row: 1, to_col: 3, to_row: 5)
-    s.set_column(0, width: 20)
-    s.set_column(1, width: 15)
-    s.set_column(2, width: 15)
-    s.set_column(3, width: 15)
+    s.column(0, width: 20)
+    s.column(1, width: 15)
+    s.column(2, width: 15)
+    s.column(3, width: 15)
   end
 end
 

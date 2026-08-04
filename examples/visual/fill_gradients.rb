@@ -10,8 +10,8 @@ Xlsxrb.generate(output_path) do |w|
                         ])
   end
   w.sheet("Gradients") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })
   end
 end

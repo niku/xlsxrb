@@ -5,8 +5,8 @@ output_path = ARGV[0] || "row_height_tall.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.add_style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   w.sheet("Row Height") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.row(["Very Tall Row (Height 60)", ""], height: 60, styles: %w[border border])
     s.row(["Normal Row", ""], styles: %w[border border])
   end

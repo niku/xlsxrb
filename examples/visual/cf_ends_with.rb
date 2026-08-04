@@ -4,8 +4,8 @@ require "xlsxrb"
 output_path = ARGV[0] || "cf_ends_with.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Ends") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.row(["Code"])
     s.row(["100-Z"])
     s.row(["200-Y"])

@@ -4,8 +4,8 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_bar_stacked.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
-    s.set_column(0, width: 25)
-    s.set_column(1, width: 25)
+    s.column(0, width: 25)
+    s.column(1, width: 25)
     s.row(["Year", "Sales A", "Sales B"])
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
