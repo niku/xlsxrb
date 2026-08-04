@@ -13,9 +13,9 @@ Xlsxrb.generate(output_path) do |w|
     w.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     w.set_column(0, width: 25)
     w.set_column(1, width: 25)
-    w.add_row(%w[Product Qty Price Date Active])
-    w.add_row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
-    w.add_row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
+    w.row(%w[Product Qty Price Date Active])
+    w.row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
+    w.row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
   end
 end
 

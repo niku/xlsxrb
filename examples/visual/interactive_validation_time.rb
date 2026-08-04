@@ -6,7 +6,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Time Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Schedule", "Enter Time (after 08:00):"])
+    s.row(["Schedule", "Enter Time (after 08:00):"])
     s.add_data_validation("B2", type: "time", operator: "greaterThan", formula1: "0.33333", show_error_message: true, error_title: "Too Early", error: "Time must be after 08:00 AM")
   end
 end

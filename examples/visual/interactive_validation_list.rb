@@ -6,7 +6,7 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("List Validation") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Department", "Select:"])
+    s.row(["Department", "Select:"])
     s.add_data_validation("B2", type: "list", formula1: '"HR,Sales,Engineering"')
   end
 end

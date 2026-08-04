@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Label Percent])
-    s.add_row(["Yes", 70])
-    s.add_row(["No", 30])
+    s.row(%w[Label Percent])
+    s.row(["Yes", 70])
+    s.row(["No", 30])
     s.add_chart(
       type: :pie,
       title: "Responses",

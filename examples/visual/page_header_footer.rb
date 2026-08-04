@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_header_footer(odd_header: "&LMy Company&RPage &P", odd_footer: "&CConfidential")
-    s.add_row(["Header Footer sheet"])
+    s.row(["Header Footer sheet"])
   end
 end
 

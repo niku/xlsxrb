@@ -7,9 +7,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Icons") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([25], styles: ["center"])
-    s.add_row([50], styles: ["center"])
-    s.add_row([75], styles: ["center"])
+    s.row([25], styles: ["center"])
+    s.row([50], styles: ["center"])
+    s.row([75], styles: ["center"])
     s.add_conditional_format("A1:A3", type: :iconSet, icon_style: "3Arrows", priority: 1)
   end
 end

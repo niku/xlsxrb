@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Times") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Time Value"])
-    s.add_row(["DateTime", Time.new(2026, 7, 1, 12, 34, 56)])
-    s.add_row(["Time Only", Time.new(2026, 7, 1, 9, 15, 0)], styles: { 1 => "time_fmt" })
+    s.row(["Format", "Time Value"])
+    s.row(["DateTime", Time.new(2026, 7, 1, 12, 34, 56)])
+    s.row(["Time Only", Time.new(2026, 7, 1, 9, 15, 0)], styles: { 1 => "time_fmt" })
   end
 end
 

@@ -38,29 +38,29 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(1, width: 25)
     s.set_print_option(:grid_lines, true)
 
-    s.add_row(["Font Feature", "Text Preview"])
-    s.add_row(["Family: Arial", "Arial Text"], styles: { 1 => "f_arial" })
-    s.add_row(["Family: Times New Roman", "Times New Roman"], styles: { 1 => "f_times" })
-    s.add_row(["Family: Courier New", "Courier New Text"], styles: { 1 => "f_courier" })
-    s.add_row(["Family: Georgia", "Georgia Text"], styles: { 1 => "f_georgia" })
-    s.add_row(["Family: Tahoma", "Tahoma Text"], styles: { 1 => "f_tahoma" })
+    s.row(["Font Feature", "Text Preview"])
+    s.row(["Family: Arial", "Arial Text"], styles: { 1 => "f_arial" })
+    s.row(["Family: Times New Roman", "Times New Roman"], styles: { 1 => "f_times" })
+    s.row(["Family: Courier New", "Courier New Text"], styles: { 1 => "f_courier" })
+    s.row(["Family: Georgia", "Georgia Text"], styles: { 1 => "f_georgia" })
+    s.row(["Family: Tahoma", "Tahoma Text"], styles: { 1 => "f_tahoma" })
 
-    s.add_row(["Size: 10pt", "10pt Font Size"], styles: { 1 => "sz_10" })
-    s.add_row(["Size: 16pt", "16pt Font Size"], styles: { 1 => "sz_16" })
-    s.add_row(["Size: 24pt", "24pt Font Size"], styles: { 1 => "sz_24" })
+    s.row(["Size: 10pt", "10pt Font Size"], styles: { 1 => "sz_10" })
+    s.row(["Size: 16pt", "16pt Font Size"], styles: { 1 => "sz_16" })
+    s.row(["Size: 24pt", "24pt Font Size"], styles: { 1 => "sz_24" })
 
-    s.add_row(["Color: Red", "Red Text"], styles: { 1 => "c_red" })
-    s.add_row(["Color: Green", "Green Text"], styles: { 1 => "c_green" })
-    s.add_row(["Color: Blue", "Blue Text"], styles: { 1 => "c_blue" })
+    s.row(["Color: Red", "Red Text"], styles: { 1 => "c_red" })
+    s.row(["Color: Green", "Green Text"], styles: { 1 => "c_green" })
+    s.row(["Color: Blue", "Blue Text"], styles: { 1 => "c_blue" })
 
-    s.add_row(["Style: Bold", "Bold Text"], styles: { 1 => "st_bold" })
-    s.add_row(["Style: Italic", "Italic Text"], styles: { 1 => "st_italic" })
-    s.add_row(["Style: Underline", "Underline Text"], styles: { 1 => "st_underline" })
-    s.add_row(["Style: Double Underline", "Double Underline"], styles: { 1 => "st_double_u" })
-    s.add_row(["Style: Strike-through", "Strike-through Text"], styles: { 1 => "st_strike" })
+    s.row(["Style: Bold", "Bold Text"], styles: { 1 => "st_bold" })
+    s.row(["Style: Italic", "Italic Text"], styles: { 1 => "st_italic" })
+    s.row(["Style: Underline", "Underline Text"], styles: { 1 => "st_underline" })
+    s.row(["Style: Double Underline", "Double Underline"], styles: { 1 => "st_double_u" })
+    s.row(["Style: Strike-through", "Strike-through Text"], styles: { 1 => "st_strike" })
 
-    s.add_row(["Align: Superscript", "x2 (2 is super)"], styles: { 1 => "v_super" })
-    s.add_row(["Align: Subscript", "H2O (2 is sub)"], styles: { 1 => "v_sub" })
+    s.row(["Align: Superscript", "x2 (2 is super)"], styles: { 1 => "v_super" })
+    s.row(["Align: Subscript", "H2O (2 is sub)"], styles: { 1 => "v_sub" })
   end
 end
 

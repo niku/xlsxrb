@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Dates") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Format", "Date Value"])
-    s.add_row(["Default Date", Date.new(2026, 7, 1)])
-    s.add_row(["Formatted Date", Date.new(2026, 12, 25)], styles: { 1 => "custom_date" })
+    s.row(["Format", "Date Value"])
+    s.row(["Default Date", Date.new(2026, 7, 1)])
+    s.row(["Formatted Date", Date.new(2026, 12, 25)], styles: { 1 => "custom_date" })
   end
 end
 

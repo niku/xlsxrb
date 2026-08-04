@@ -252,9 +252,9 @@ class FacadeTest < Test::Unit::TestCase
     begin
       Xlsxrb.generate(tmp.path) do |w|
         w.sheet("Output")
-        w.add_row(%w[Name Score])
-        w.add_row(["Alice", 95])
-        w.add_row(["Bob", 87])
+        w.row(%w[Name Score])
+        w.row(["Alice", 95])
+        w.row(["Bob", 87])
       end
 
       result = Xlsxrb.read(tmp.path)
@@ -273,9 +273,9 @@ class FacadeTest < Test::Unit::TestCase
     begin
       Xlsxrb.generate(tmp.path) do |w|
         w.sheet("Sheet1")
-        w.add_row([1, 2, 3])
+        w.row([1, 2, 3])
         w.sheet("Sheet2")
-        w.add_row([4, 5, 6])
+        w.row([4, 5, 6])
       end
 
       result = Xlsxrb.read(tmp.path)
@@ -291,7 +291,7 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["gen_implicit", ".xlsx"])
     begin
       Xlsxrb.generate(tmp.path) do |w|
-        w.add_row(["auto"])
+        w.row(["auto"])
       end
 
       result = Xlsxrb.read(tmp.path)
@@ -314,7 +314,7 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["gen_types", ".xlsx"])
     begin
       Xlsxrb.generate(tmp.path) do |w|
-        w.add_row([true, false, nil, "text", 42])
+        w.row([true, false, nil, "text", 42])
       end
 
       result = Xlsxrb.read(tmp.path)
@@ -337,7 +337,7 @@ class FacadeTest < Test::Unit::TestCase
       Xlsxrb.generate(tmp.path) do |w|
         w.sheet("Big")
         10_000.times do |i|
-          w.add_row([i, "row#{i}", i * 0.5])
+          w.row([i, "row#{i}", i * 0.5])
         end
       end
 
@@ -361,7 +361,7 @@ class FacadeTest < Test::Unit::TestCase
       Xlsxrb.generate(tmp.path) do |w|
         w.sheet("Large")
         10_000.times do |i|
-          w.add_row([i, "data#{i}"])
+          w.row([i, "data#{i}"])
         end
       end
 
@@ -421,9 +421,9 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["gen_foreach_rt", ".xlsx"])
     begin
       Xlsxrb.generate(tmp.path) do |w|
-        w.add_row(["x", 1])
-        w.add_row(["y", 2])
-        w.add_row(["z", 3])
+        w.row(["x", 1])
+        w.row(["y", 2])
+        w.row(["z", 3])
       end
 
       values = []
@@ -441,9 +441,9 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_chart_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Sales") do |s|
-        s.add_row(%w[Month Value])
-        s.add_row(["Jan", 100])
-        s.add_row(["Feb", 200])
+        s.row(%w[Month Value])
+        s.row(["Jan", 100])
+        s.row(["Feb", 200])
         w.add_chart(type: :bar, title: "Sales Data", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
       end
     end
@@ -462,9 +462,9 @@ class FacadeTest < Test::Unit::TestCase
   test "add_chart works in In-Memory build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Sales") do |s|
-        s.add_row(%w[Month Value])
-        s.add_row(["Jan", 100])
-        s.add_row(["Feb", 200])
+        s.row(%w[Month Value])
+        s.row(["Jan", 100])
+        s.row(["Feb", 200])
         s.add_chart(type: :pie, title: "Sales Pie", series: [{ cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3" }])
       end
     end
@@ -487,7 +487,7 @@ class FacadeTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Styled") do |s|
         s.add_style("header", bold: true, size: 12, font_color: "FF0000FF")
-        s.add_row(%w[Name Score], styles: %w[header header])
+        s.row(%w[Name Score], styles: %w[header header])
       end
     end
 
@@ -507,9 +507,9 @@ class FacadeTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_chart_block_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Sales") do
-        w.add_row(%w[Month Value])
-        w.add_row(["Jan", 100])
-        w.add_row(["Feb", 200])
+        w.row(%w[Month Value])
+        w.row(["Jan", 100])
+        w.row(["Feb", 200])
         w.add_chart do |c|
           c.type :bar
           c.title "Sales Data"
@@ -537,9 +537,9 @@ class FacadeTest < Test::Unit::TestCase
       # Create source file
       workbook = Xlsxrb.build do |w|
         w.sheet("Data") do |s|
-          s.add_row(%w[Name Score])
-          s.add_row(["Alice", 95])
-          s.add_row(["Bob", 87])
+          s.row(%w[Name Score])
+          s.row(["Alice", 95])
+          s.row(["Bob", 87])
         end
       end
       Xlsxrb.write(source.path, workbook)
@@ -570,7 +570,7 @@ class FacadeTest < Test::Unit::TestCase
     begin
       workbook = Xlsxrb.build do |w|
         w.sheet("S") do |s|
-          s.add_row(["original"])
+          s.row(["original"])
         end
       end
       Xlsxrb.write(tmp.path, workbook)
@@ -604,7 +604,7 @@ class FacadeTest < Test::Unit::TestCase
     begin
       workbook = Xlsxrb.build do |w|
         w.sheet("Sheet1") do |s|
-          s.add_row(["keep"])
+          s.row(["keep"])
         end
       end
       Xlsxrb.write(tmp.path, workbook)

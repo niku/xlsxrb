@@ -7,7 +7,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
     s.set_page_setup(paper_size: 8) # ISO A3 is paperSize="8"
-    s.add_row(["ISO A3 Paper Size sheet"])
+    s.row(["ISO A3 Paper Size sheet"])
   end
 end
 

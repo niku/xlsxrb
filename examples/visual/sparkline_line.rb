@@ -8,7 +8,7 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row([10, 20, 15, 30, nil])
+    s.row([10, 20, 15, 30, nil])
     s.add_sparkline_group(
       type: :line,
       markers: true,

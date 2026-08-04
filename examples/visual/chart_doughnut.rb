@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Label Percent])
-    s.add_row(["A", 40])
-    s.add_row(["B", 60])
+    s.row(%w[Label Percent])
+    s.row(["A", 40])
+    s.row(["B", 60])
     s.add_chart(
       type: :doughnut,
       title: "Ratio",

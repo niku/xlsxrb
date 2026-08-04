@@ -8,9 +8,9 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Fills") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Color Preview])
-    s.add_row(["Red", "Red Fill"], styles: { 1 => "red_fill" })
-    s.add_row(["Green", "Green Fill"], styles: { 1 => "green_fill" })
+    s.row(%w[Color Preview])
+    s.row(["Red", "Red Fill"], styles: { 1 => "red_fill" })
+    s.row(["Green", "Green Fill"], styles: { 1 => "green_fill" })
   end
 end
 

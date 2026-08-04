@@ -6,10 +6,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("CF Begins") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Code"])
-    s.add_row(["A-100"])
-    s.add_row(["B-200"])
-    s.add_row(["A-300"])
+    s.row(["Code"])
+    s.row(["A-100"])
+    s.row(["B-200"])
+    s.row(["A-300"])
     s.add_conditional_format("A2:A4", type: "beginsWith", operator: "beginsWith", text: "A", formula: 'LEFT(A2,1)="A"', fill_color: "FFFFC7CE")
   end
 end

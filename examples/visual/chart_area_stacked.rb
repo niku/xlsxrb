@@ -6,10 +6,10 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Data") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(["Year", "Sales A", "Sales B"])
-    s.add_row([2024, 100, 150])
-    s.add_row([2025, 120, 180])
-    s.add_row([2026, 140, 210])
+    s.row(["Year", "Sales A", "Sales B"])
+    s.row([2024, 100, 150])
+    s.row([2025, 120, 180])
+    s.row([2026, 140, 210])
     s.set_sheet_property(:fit_to_page, true)
     s.set_page_setup(fit_to_width: 1, fit_to_height: 1)
     s.add_chart(

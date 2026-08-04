@@ -7,8 +7,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Percents") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[Format Value])
-    s.add_row(["Percent with 2 Decimals", 0.12345], styles: { 1 => "pct2" })
+    s.row(%w[Format Value])
+    s.row(["Percent with 2 Decimals", 0.12345], styles: { 1 => "pct2" })
   end
 end
 

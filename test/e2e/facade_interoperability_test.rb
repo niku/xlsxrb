@@ -62,10 +62,10 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "streaming: bar chart passes SDK validation" do
     tmp = generate_streaming_xlsx do |w|
       w.sheet("Sales") do |s|
-        s.add_row(%w[Month Revenue])
-        s.add_row(["Jan", 100])
-        s.add_row(["Feb", 200])
-        s.add_row(["Mar", 300])
+        s.row(%w[Month Revenue])
+        s.row(["Jan", 100])
+        s.row(["Feb", 200])
+        s.row(["Mar", 300])
         s.add_chart(type: :bar, title: "Quarterly Revenue",
                     series: [{ cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$B$2:$B$4" }])
       end
@@ -79,9 +79,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "streaming: pie chart passes SDK validation" do
     tmp = generate_streaming_xlsx do |w|
       w.sheet("Data") do |s|
-        s.add_row(%w[Category Value])
-        s.add_row(["A", 40])
-        s.add_row(["B", 60])
+        s.row(%w[Category Value])
+        s.row(["A", 40])
+        s.row(["B", 60])
         s.add_chart(type: :pie, title: "Distribution",
                     series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }])
       end
@@ -95,9 +95,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "streaming: line chart with multiple series passes SDK validation" do
     tmp = generate_streaming_xlsx do |w|
       w.sheet("Trends") do |s|
-        s.add_row(%w[Month Series1 Series2])
-        s.add_row(["Jan", 10, 20])
-        s.add_row(["Feb", 15, 25])
+        s.row(%w[Month Series1 Series2])
+        s.row(["Jan", 10, 20])
+        s.row(["Feb", 15, 25])
         s.add_chart(type: :line, title: "Trends",
                     series: [
                       { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$B$2:$B$3" },
@@ -114,8 +114,8 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "streaming: multiple charts on same sheet passes SDK validation" do
     tmp = generate_streaming_xlsx do |w|
       w.sheet("Multi") do |s|
-        s.add_row(%w[X Y Z])
-        s.add_row([1, 10, 20])
+        s.row(%w[X Y Z])
+        s.row([1, 10, 20])
         s.add_chart(type: :bar, title: "Chart1",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$B$2:$B$2" }])
         s.add_chart(type: :pie, title: "Chart2",
@@ -131,9 +131,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "streaming: chart with legend and axis titles passes SDK validation" do
     tmp = generate_streaming_xlsx do |w|
       w.sheet("S1") do |s|
-        s.add_row(%w[X Y])
-        s.add_row([1, 10])
-        s.add_row([2, 20])
+        s.row(%w[X Y])
+        s.row([1, 10])
+        s.row([2, 20])
         s.add_chart(type: :bar, title: "Axes",
                     series: [{ cat_ref: "S1!$A$2:$A$3", val_ref: "S1!$B$2:$B$3" }],
                     legend: { position: "b" },
@@ -150,9 +150,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "streaming: basic data passes SDK validation" do
     tmp = generate_streaming_xlsx do |w|
       w.sheet("Data") do |s|
-        s.add_row(%w[Name Score Active])
-        s.add_row(["Alice", 95, true])
-        s.add_row(["Bob", 87, false])
+        s.row(%w[Name Score Active])
+        s.row(["Alice", 95, true])
+        s.row(["Bob", 87, false])
       end
     end
 
@@ -168,10 +168,10 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "in_memory: bar chart passes SDK validation" do
     tmp = generate_in_memory_xlsx do |w|
       w.sheet("Sales") do |s|
-        s.add_row(%w[Month Revenue])
-        s.add_row(["Jan", 100])
-        s.add_row(["Feb", 200])
-        s.add_row(["Mar", 300])
+        s.row(%w[Month Revenue])
+        s.row(["Jan", 100])
+        s.row(["Feb", 200])
+        s.row(["Mar", 300])
         s.add_chart(type: :bar, title: "Quarterly Revenue",
                     series: [{ cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$B$2:$B$4" }])
       end
@@ -185,9 +185,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "in_memory: pie chart passes SDK validation" do
     tmp = generate_in_memory_xlsx do |w|
       w.sheet("Data") do |s|
-        s.add_row(%w[Category Value])
-        s.add_row(["A", 40])
-        s.add_row(["B", 60])
+        s.row(%w[Category Value])
+        s.row(["A", 40])
+        s.row(["B", 60])
         s.add_chart(type: :pie, title: "Distribution",
                     series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }])
       end
@@ -201,9 +201,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "in_memory: line chart with multiple series passes SDK validation" do
     tmp = generate_in_memory_xlsx do |w|
       w.sheet("Trends") do |s|
-        s.add_row(%w[Month Series1 Series2])
-        s.add_row(["Jan", 10, 20])
-        s.add_row(["Feb", 15, 25])
+        s.row(%w[Month Series1 Series2])
+        s.row(["Jan", 10, 20])
+        s.row(["Feb", 15, 25])
         s.add_chart(type: :line, title: "Trends",
                     series: [
                       { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$B$2:$B$3" },
@@ -220,8 +220,8 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "in_memory: multiple charts on same sheet passes SDK validation" do
     tmp = generate_in_memory_xlsx do |w|
       w.sheet("Multi") do |s|
-        s.add_row(%w[X Y Z])
-        s.add_row([1, 10, 20])
+        s.row(%w[X Y Z])
+        s.row([1, 10, 20])
         s.add_chart(type: :bar, title: "Chart1",
                     series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$B$2:$B$2" }])
         s.add_chart(type: :pie, title: "Chart2",
@@ -237,9 +237,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "in_memory: chart with legend and axis titles passes SDK validation" do
     tmp = generate_in_memory_xlsx do |w|
       w.sheet("S1") do |s|
-        s.add_row(%w[X Y])
-        s.add_row([1, 10])
-        s.add_row([2, 20])
+        s.row(%w[X Y])
+        s.row([1, 10])
+        s.row([2, 20])
         s.add_chart(type: :bar, title: "Axes",
                     series: [{ cat_ref: "S1!$A$2:$A$3", val_ref: "S1!$B$2:$B$3" }],
                     legend: { position: "b" },
@@ -256,9 +256,9 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   test "in_memory: basic data passes SDK validation" do
     tmp = generate_in_memory_xlsx do |w|
       w.sheet("Data") do |s|
-        s.add_row(%w[Name Score Active])
-        s.add_row(["Alice", 95, true])
-        s.add_row(["Bob", 87, false])
+        s.row(%w[Name Score Active])
+        s.row(["Alice", 95, true])
+        s.row(["Bob", 87, false])
       end
     end
 

@@ -12,8 +12,8 @@ Xlsxrb.generate(output_path) do |w|
   w.sheet("Japanese") do |s|
     s.set_column(0, width: 25)
     s.set_column(1, width: 25)
-    s.add_row(%w[日本語ラベル 値], styles: { 0 => "ja_font", 1 => "ja_font" })
-    s.add_row(["売上", 12_500], styles: { 0 => "ja_font" })
+    s.row(%w[日本語ラベル 値], styles: { 0 => "ja_font", 1 => "ja_font" })
+    s.row(["売上", 12_500], styles: { 0 => "ja_font" })
   end
 end
 
