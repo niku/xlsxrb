@@ -371,12 +371,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Freeze Panes
   # =====================================================
 
-  test "set_freeze_pane in build API" do
+  test "freeze_pane in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Frozen") do |s|
         s.row(["Header"])
         s.row([1])
-        s.set_freeze_pane(row: 1, col: 0)
+        s.freeze_pane(row: 1, col: 0)
       end
     end
 
@@ -392,13 +392,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_freeze_pane in generate API" do
+  test "freeze_pane in generate API" do
     tmp = Tempfile.new(["facade_freeze_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Frozen") do |s|
         s.row(["Header"])
         s.row([1])
-        s.set_freeze_pane(row: 1, col: 1)
+        s.freeze_pane(row: 1, col: 1)
       end
     end
 
@@ -995,7 +995,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(["Bob", 87, "B"])
         s.auto_filter("A1:C3")
         s.merge_cells("A1:A1")
-        s.set_freeze_pane(row: 1)
+        s.freeze_pane(row: 1)
         s.set_page_margins(left: 1.0, right: 1.0)
         s.set_page_setup(orientation: :landscape)
         s.add_hyperlink("A2", "https://example.com")
@@ -1029,7 +1029,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(["Alice", 95])
         s.auto_filter("A1:B2")
         s.merge_cells("A1:B1")
-        s.set_freeze_pane(row: 1)
+        s.freeze_pane(row: 1)
         s.set_page_margins(left: 0.5, right: 0.5)
         s.set_header_footer(odd_header: "&CTest")
         s.conditional_format("B2", type: :cell_is, operator: :greaterThan, formula: "90")

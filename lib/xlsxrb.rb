@@ -644,7 +644,7 @@ module Xlsxrb
     # --- Freeze / Split Panes ---
 
     # Freeze panes at the given row and column.
-    def set_freeze_pane(row: 0, col: 0)
+    def freeze_pane(row: 0, col: 0)
       @freeze_pane = { row: row, col: col }
     end
 
@@ -1031,7 +1031,7 @@ module Xlsxrb
 
     # --- Freeze / Split Panes ---
 
-    def set_freeze_pane(row: 0, col: 0)
+    def freeze_pane(row: 0, col: 0)
       sheet if @current_sheet.nil?
       @current_freeze_pane = { row: row, col: col }
     end
