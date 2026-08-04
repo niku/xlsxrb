@@ -541,7 +541,7 @@ module Xlsxrb
           Xlsxrb.generate(output_path) do |w|
             w.sheet("Sparkline") do |s|
               s.row([10, 20, 15, 30, nil])
-              s.add_sparkline_group(
+              s.sparkline_group(
                 type: :line,
                 sparklines: [{ location_ref: "E1", data_ref: "Sparkline!A1:D1" }]
               )
@@ -556,7 +556,7 @@ module Xlsxrb
           Xlsxrb.generate(output_path) do |w|
             w.sheet("Sparkline") do |s|
               s.row([5, 12, 8, 15, nil])
-              s.add_sparkline_group(
+              s.sparkline_group(
                 type: :column,
                 sparklines: [{ location_ref: "E1", data_ref: "Sparkline!A1:D1" }]
               )

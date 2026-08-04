@@ -627,7 +627,7 @@ module Xlsxrb
     # Add a sparkline group to the sheet.
     # sparklines: Array of { data_ref:, location_ref: } hashes
     # type: "line" (default), "column", or "stacked"
-    def add_sparkline_group(sparklines:, type: nil, **opts)
+    def sparkline_group(sparklines:, type: nil, **opts)
       group = { sparklines: sparklines }
       group[:type] = type if type
       group.merge!(opts)
@@ -1014,7 +1014,7 @@ module Xlsxrb
 
     # --- Sparklines ---
 
-    def add_sparkline_group(sparklines:, type: nil, **opts)
+    def sparkline_group(sparklines:, type: nil, **opts)
       sheet if @current_sheet.nil?
       group = { sparklines: sparklines }
       group[:type] = type if type

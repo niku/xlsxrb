@@ -9,7 +9,7 @@ Xlsxrb.generate(output_path) do |w|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row([5, 12, 8, 15, nil])
-    s.add_sparkline_group(
+    s.sparkline_group(
       type: :column,
       sparklines: [{ location_ref: "E1", data_ref: "Sparkline!A1:D1" }]
     )
