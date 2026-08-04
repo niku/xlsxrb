@@ -20,7 +20,7 @@ Xlsxrb.generate(output_path) do |w|
   # Font Colors
   w.style("c_red") { |s| s.font_color("FFC00000") }
   w.style("c_green") { |s| s.font_color("FF008000") }
-  w.style("c_blue") { |s| s.font_color("FF0000FF") }
+  w.style("c_blue") { |s| s.font_color(:blue) }
 
   # Font Styles
   w.style("st_bold", &:bold)

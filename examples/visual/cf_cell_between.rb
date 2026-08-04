@@ -11,7 +11,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row([15], styles: "center")
     s.row([25], styles: "center")
     s.row([5], styles: "center")
-    s.conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: "FF00FF00")
+    s.conditional_format("A2:A4", type: "cellIs", operator: "between", formulas: %w[10 20], fill_color: :green)
   end
 end
 

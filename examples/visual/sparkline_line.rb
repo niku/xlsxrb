@@ -13,7 +13,7 @@ Xlsxrb.generate(output_path) do |w|
       type: :line,
       markers: true,
       color_series: "FF000000",
-      color_markers: "FFFF0000",
+      color_markers: :red,
       sparklines: [{ location_ref: "E1", data_ref: "Sparkline!A1:D1" }]
     )
   end
