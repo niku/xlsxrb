@@ -654,7 +654,7 @@ module Xlsxrb
     end
 
     # Set active cell selection.
-    def set_selection(active_cell, sqref: nil, pane: nil)
+    def select_cell(active_cell, sqref: nil, pane: nil)
       @selection = { active_cell: active_cell, sqref: sqref || active_cell }
       @selection[:pane] = pane if pane
     end
@@ -1041,7 +1041,7 @@ module Xlsxrb
       @current_split_pane = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell }
     end
 
-    def set_selection(active_cell, sqref: nil, pane: nil)
+    def select_cell(active_cell, sqref: nil, pane: nil)
       sheet if @current_sheet.nil?
       @current_selection = { active_cell: active_cell, sqref: sqref || active_cell }
       @current_selection[:pane] = pane if pane

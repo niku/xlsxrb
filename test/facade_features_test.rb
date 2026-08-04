@@ -825,11 +825,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Selection
   # =====================================================
 
-  test "set_selection in build API" do
+  test "select_cell in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Sel") do |s|
         s.row(%w[A B])
-        s.set_selection("B1")
+        s.select_cell("B1")
       end
     end
 
