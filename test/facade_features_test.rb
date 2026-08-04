@@ -558,11 +558,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Sheet Protection
   # =====================================================
 
-  test "set_sheet_protection in build API" do
+  test "protect_sheet in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Protected") do |s|
         s.row(["Data"])
-        s.set_sheet_protection(sheet: true, objects: true)
+        s.protect_sheet(sheet: true, objects: true)
       end
     end
 
@@ -576,12 +576,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_sheet_protection keyword args in generate API" do
+  test "protect_sheet keyword args in generate API" do
     tmp = Tempfile.new(["facade_prot_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Protected") do |s|
         s.row(["Data"])
-        s.set_sheet_protection(sheet: true, scenarios: true)
+        s.protect_sheet(sheet: true, scenarios: true)
       end
     end
 
@@ -592,12 +592,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_sheet_protection plain password is hashed in generate API" do
+  test "protect_sheet plain password is hashed in generate API" do
     tmp = Tempfile.new(["facade_prot_hash_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Protected") do |s|
         s.row(["Data"])
-        s.set_sheet_protection(sheet: true, password: "secret")
+        s.protect_sheet(sheet: true, password: "secret")
       end
     end
 
