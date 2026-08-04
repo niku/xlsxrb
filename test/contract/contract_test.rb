@@ -907,7 +907,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(["Data"])
       end
       w.print_area("Sheet1!$A$1:$C$10", sheet: "Sheet1")
-      w.set_print_titles(rows: "1:2", cols: "A:B", sheet: "Sheet1")
+      w.print_titles(rows: "1:2", cols: "A:B", sheet: "Sheet1")
     end
 
     assert_equal("Sheet1!$A$1:$C$10", reader.print_area(sheet: "Sheet1"))

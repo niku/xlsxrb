@@ -699,14 +699,14 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_print_titles in generate API" do
+  test "print_titles in generate API" do
     tmp = Tempfile.new(["facade_printtitles_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row(%w[Header1 Header2])
         s.row([1, 2])
       end
-      w.set_print_titles(rows: "1:1", sheet: "Data")
+      w.print_titles(rows: "1:1", sheet: "Data")
     end
 
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)

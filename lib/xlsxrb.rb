@@ -287,7 +287,7 @@ module Xlsxrb
     end
 
     # Set print titles for a sheet.
-    def set_print_titles(rows: nil, cols: nil, sheet: nil)
+    def print_titles(rows: nil, cols: nil, sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
       parts = []
       parts << "'#{sheet_name}'!$#{cols.sub(":", ":$")}" if cols
@@ -1150,7 +1150,7 @@ module Xlsxrb
     end
 
     # Set print titles for the current or named sheet.
-    def set_print_titles(rows: nil, cols: nil, sheet: nil)
+    def print_titles(rows: nil, cols: nil, sheet: nil)
       sheet_name = sheet || @current_sheet || "Sheet1"
       parts = []
       parts << "'#{sheet_name}'!$#{cols.sub(":", ":$")}" if cols
