@@ -91,8 +91,10 @@ Read rows one at a time without loading the entire file into memory:
 ```ruby
 require "xlsxrb"
 
-Xlsxrb.foreach("large_file.xlsx", sheet: 0) do |row|
-  puts "Row #{row.index}: #{row.cells.map(&:value).join(', ')}"
+Xlsxrb.foreach("large_file.xlsx") do |sheet|
+  sheet.each do |row|
+    puts "Row #{row.index}: #{row.cells.map(&:value).join(', ')}"
+  end
 end
 ```
 

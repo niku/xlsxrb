@@ -1434,10 +1434,12 @@ class ContractTest < Test::Unit::TestCase
     end
 
     collected = []
-    Xlsxrb.foreach(tmp.path) do |row|
-      assert_instance_of(Xlsxrb::Elements::Row, row,
-                         "foreach should yield Elements::Row instances")
-      collected << row.cells.map(&:value)
+    Xlsxrb.foreach(tmp.path) do |sheet|
+      sheet.each do |row|
+        assert_instance_of(Xlsxrb::Elements::Row, row,
+                           "foreach should yield Elements::Row instances inside sheet")
+        collected << row.cells.map(&:value)
+      end
     end
 
     assert_equal(3, collected.size,
@@ -1462,7 +1464,7 @@ class ContractTest < Test::Unit::TestCase
     enum = Xlsxrb.foreach(tmp.path)
     assert_respond_to(enum, :each,
                       "foreach without block should return an Enumerator-like object")
-    values = enum.map { |row| row.cells[0]&.value }
+    values = enum.first.map { |row| row.cells[0]&.value }
     assert_equal(%w[alpha beta], values,
                  "Enumerator should yield correct values [foreach enumerator]")
   ensure
@@ -1477,7 +1479,7 @@ class ContractTest < Test::Unit::TestCase
     end
 
     collected = []
-    Xlsxrb.foreach(tmp.path, sheet: "Second") { |row| collected << row.cells[0]&.value }
+    Xlsxrb.foreach(tmp.path, sheet: "Second") { |sheet| sheet.each { |row| collected << row.cells[0]&.value } }
     assert_equal(["from_second"], collected,
                  "foreach with sheet: keyword should read the named sheet [foreach sheet]. " \
                  "Check Xlsxrb.foreach sheet resolution logic.")
