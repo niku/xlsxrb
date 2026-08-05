@@ -514,3 +514,7 @@ namespace :doc do
     end
   end
 end
+desc "Generate RBS signature files from inline annotations"
+task :sig do
+  sh "bundle exec rbs-inline --output lib/**/*.rb"
+end

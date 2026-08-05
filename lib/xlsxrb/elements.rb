@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 require_relative "elements/types"
 require_relative "elements/cell"
 require_relative "elements/row"

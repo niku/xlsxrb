@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 module Xlsxrb
   module Elements
     # Represents column formatting in a worksheet.

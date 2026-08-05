@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 module Xlsxrb
   module Ooxml
     # Streams well-formed XML to a writable IO without building a DOM.

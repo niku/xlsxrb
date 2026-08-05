@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 require_relative "zip_generator"
 
 module Xlsxrb
@@ -25,6 +27,7 @@ module Xlsxrb
 
       attr_reader :fonts, :fills, :borders, :xf_entries, :num_fmts
 
+      #: () -> void
       def initialize
         @sheets = { "Sheet1" => {} }
         @column_widths = { "Sheet1" => {} }
@@ -97,6 +100,7 @@ module Xlsxrb
       end
 
       # Adds a new sheet. Raises if name is already taken.
+      #: (untyped name) -> untyped
       def add_sheet(name)
         raise ArgumentError, "sheet already exists: #{name}" if @sheets.key?(name)
 
@@ -142,6 +146,7 @@ module Xlsxrb
       end
 
       # Registers a cell value at the given address (e.g. "A1").
+      #: (untyped cell_address, untyped value, ?sheet: untyped?) -> untyped
       def set_cell(cell_address, value, sheet: nil)
         validate_cell_address!(cell_address)
         sheet_name = sheet || @sheet_order.first
@@ -151,12 +156,14 @@ module Xlsxrb
       end
 
       # Returns the registered cells for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def cells(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @sheets[sheet_name] || {}
       end
 
       # Sets the width for a column (e.g. "A", "BC").
+      #: (untyped col_letter, untyped width, ?sheet: untyped?) -> untyped
       def set_column_width(col_letter, width, sheet: nil)
         raise ArgumentError, "column must be a String of uppercase letters" unless col_letter.is_a?(String) && col_letter.match?(/\A[A-Z]+\z/)
 
@@ -170,12 +177,14 @@ module Xlsxrb
       end
 
       # Returns column widths for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def column_widths(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @column_widths[sheet_name] || {}
       end
 
       # Sets a column attribute (e.g. :hidden, :best_fit, :outline_level, :collapsed, :style).
+      #: (untyped col_letter, untyped name, untyped value, ?sheet: untyped?) -> untyped
       def set_column_attribute(col_letter, name, value, sheet: nil)
         raise ArgumentError, "column must be a String of uppercase letters" unless col_letter.is_a?(String) && col_letter.match?(/\A[A-Z]+\z/)
 
@@ -187,12 +196,14 @@ module Xlsxrb
       end
 
       # Returns column attributes for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def column_attributes(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @column_attrs[sheet_name] || {}
       end
 
       # Sets a row height.
+      #: (untyped row_num, untyped height, ?sheet: untyped?) -> untyped
       def set_row_height(row_num, height, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
@@ -203,6 +214,7 @@ module Xlsxrb
       end
 
       # Hides a row.
+      #: (untyped row_num, ?hidden: bool, ?sheet: untyped?) -> untyped
       def set_row_hidden(row_num, hidden: true, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
@@ -213,6 +225,7 @@ module Xlsxrb
       end
 
       # Sets a row outline level.
+      #: (untyped row_num, untyped level, ?sheet: untyped?) -> untyped
       def set_row_outline_level(row_num, level, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
@@ -223,6 +236,7 @@ module Xlsxrb
       end
 
       # Sets a row collapsed state.
+      #: (untyped row_num, ?collapsed: bool, ?sheet: untyped?) -> untyped
       def set_row_collapsed(row_num, collapsed: true, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
@@ -233,6 +247,7 @@ module Xlsxrb
       end
 
       # Sets a row default style index (cellXfs index).
+      #: (untyped row_num, untyped style_id, ?sheet: untyped?) -> untyped
       def set_row_style(row_num, style_id, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
@@ -244,6 +259,7 @@ module Xlsxrb
       end
 
       # Sets a row thick top border flag.
+      #: (untyped row_num, ?thick: bool, ?sheet: untyped?) -> untyped
       def set_row_thick_top(row_num, thick: true, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
@@ -254,6 +270,7 @@ module Xlsxrb
       end
 
       # Sets a row thick bottom border flag.
+      #: (untyped row_num, ?thick: bool, ?sheet: untyped?) -> untyped
       def set_row_thick_bot(row_num, thick: true, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
@@ -264,6 +281,7 @@ module Xlsxrb
       end
 
       # Sets a row phonetic flag.
+      #: (untyped row_num, ?phonetic: bool, ?sheet: untyped?) -> untyped
       def set_row_phonetic(row_num, phonetic: true, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_attrs.key?(sheet_name)
@@ -274,12 +292,14 @@ module Xlsxrb
       end
 
       # Returns row attributes for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def row_attributes(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @row_attrs[sheet_name] || {}
       end
 
       # Merges a range of cells (e.g. "A1:B2").
+      #: (untyped range, ?sheet: untyped?) -> untyped
       def merge(range, sheet: nil)
         raise ArgumentError, "range must be a String like 'A1:B2'" unless range.is_a?(String) && range.match?(/\A[A-Z]+\d+:[A-Z]+\d+\z/)
 
@@ -290,12 +310,14 @@ module Xlsxrb
       end
 
       # Returns merged cell ranges for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def merged_cells(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @merge_cells[sheet_name] || []
       end
 
       # Adds a hyperlink on a cell.
+      #: (untyped cell_address, ?untyped? url, ?sheet: untyped?, ?display: untyped?, ?tooltip: untyped?, ?location: untyped?) -> untyped
       def hyperlink(cell_address, url = nil, sheet: nil, display: nil, tooltip: nil, location: nil)
         validate_cell_address!(cell_address)
         sheet_name = sheet || @sheet_order.first
@@ -311,12 +333,14 @@ module Xlsxrb
       end
 
       # Returns hyperlinks for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def hyperlinks(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @hyperlinks[sheet_name] || {}
       end
 
       # Sets an autoFilter range (e.g. "A1:B10") for the given sheet.
+      #: (untyped range, ?sheet: untyped?) -> untyped
       def set_auto_filter(range, sheet: nil)
         raise ArgumentError, "range must be a String like 'A1:B10'" unless range.is_a?(String) && range.match?(/\A[A-Z]+\d+:[A-Z]+\d+\z/)
 
@@ -327,6 +351,7 @@ module Xlsxrb
       end
 
       # Returns the autoFilter range for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def auto_filter(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @auto_filters[sheet_name]
@@ -341,6 +366,7 @@ module Xlsxrb
       #   { type: :custom, filters: [{ operator: "greaterThan", val: "10" }, { operator: "lessThan", val: "100" }], and: true }
       #   { type: :dynamic, dynamic_type: "today" }
       #   { type: :top10, top: true, percent: false, val: 10 }
+      #: (untyped col_id, untyped filter, ?sheet: untyped?) -> untyped
       def add_filter_column(col_id, filter, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @filter_columns.key?(sheet_name)
@@ -349,6 +375,7 @@ module Xlsxrb
       end
 
       # Returns filter columns for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def filter_columns(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @filter_columns[sheet_name] || {}
@@ -356,6 +383,7 @@ module Xlsxrb
 
       # Sets a sort state for the sheet. ref: sort range, sort_conditions: array of { ref:, descending: }.
       # Options: column_sort:, case_sensitive:, sort_method:
+      #: (untyped ref, untyped sort_conditions, ?sheet: untyped?, **untyped opts) -> untyped
       def set_sort_state(ref, sort_conditions, sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sort_state.key?(sheet_name)
@@ -368,12 +396,14 @@ module Xlsxrb
       end
 
       # Returns sort state for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def sort_state(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @sort_state[sheet_name]
       end
 
       # Registers a custom number format and returns its numFmtId (starting at 164).
+      #: (untyped format_code) -> untyped
       def add_number_format(format_code)
         existing = @num_fmts.find { |nf| nf[:format_code] == format_code }
         return existing[:num_fmt_id] if existing
@@ -384,6 +414,7 @@ module Xlsxrb
       end
 
       # Sets a number format on a cell. num_fmt_id is from add_number_format or a built-in id.
+      #: (untyped cell_address, untyped num_fmt_id, ?sheet: untyped?) -> untyped
       def set_cell_format(cell_address, num_fmt_id, sheet: nil)
         validate_cell_address!(cell_address)
         sheet_name = sheet || @sheet_order.first
@@ -393,6 +424,7 @@ module Xlsxrb
       end
 
       # Registers a font and returns its font_id. Opts: bold, italic, sz, color, name.
+      #: (**untyped opts) -> untyped
       def add_font(**opts)
         existing = @fonts.index(opts)
         return existing if existing
@@ -402,6 +434,7 @@ module Xlsxrb
       end
 
       # Registers a fill and returns its fill_id. Opts: pattern, fg_color, bg_color.
+      #: (**untyped opts) -> untyped
       def add_fill(**opts)
         existing = @fills.index(opts)
         return existing if existing
@@ -412,6 +445,7 @@ module Xlsxrb
 
       # Registers a border and returns its border_id.
       # Opts: left, right, top, bottom (each a hash with :style and optional :color).
+      #: (**untyped opts) -> untyped
       def add_border(**opts)
         existing = @borders.index(opts)
         return existing if existing
@@ -422,6 +456,7 @@ module Xlsxrb
 
       # Registers a cell style (xf entry) and returns its index for use with set_cell_style.
       # Opts: font_id, fill_id, border_id, num_fmt_id, alignment (hash with horizontal, vertical, wrap_text, text_rotation, indent, shrink_to_fit).
+      #: (**untyped opts) -> untyped
       def add_cell_style(**opts)
         entry = {
           num_fmt_id: opts[:num_fmt_id] || 0,
@@ -443,6 +478,7 @@ module Xlsxrb
 
       # Registers a base style definition (cellStyleXf) and a named cellStyle.
       # Returns the xfId for the new base style.
+      #: (name: untyped, ?num_fmt_id: ::Integer, ?font_id: ::Integer, ?fill_id: ::Integer, ?border_id: ::Integer, ?builtin_id: untyped?, ?i_level: untyped?, ?hidden: untyped?, ?custom_builtin: untyped?) -> untyped
       def add_named_cell_style(name:, num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0, builtin_id: nil,
                                i_level: nil, hidden: nil, custom_builtin: nil)
         entry = { num_fmt_id: num_fmt_id, font_id: font_id, fill_id: fill_id, border_id: border_id }
@@ -458,6 +494,7 @@ module Xlsxrb
       end
 
       # Sets a cell style by xf index (from add_cell_style).
+      #: (untyped cell_address, untyped style_id, ?sheet: untyped?) -> untyped
       def set_cell_style(cell_address, style_id, sheet: nil)
         validate_cell_address!(cell_address)
         sheet_name = sheet || @sheet_order.first
@@ -467,6 +504,7 @@ module Xlsxrb
       end
 
       # Marks a cell as containing phonetic text (ph="1" on the <c> element).
+      #: (untyped cell_address, ?sheet: untyped?) -> untyped
       def set_cell_phonetic(cell_address, sheet: nil)
         validate_cell_address!(cell_address)
         sheet_name = sheet || @sheet_order.first
@@ -477,6 +515,7 @@ module Xlsxrb
 
       # Registers a differential format (dxf) for conditional formatting. Returns dxf_id.
       # Opts: font (hash), fill (hash), border (hash), num_fmt (hash).
+      #: (**untyped opts) -> untyped
       def add_dxf(**opts)
         @dxfs << opts
         @dxfs.size - 1
@@ -484,29 +523,34 @@ module Xlsxrb
 
       # Sets the indexed colors palette (array of ARGB hex strings, e.g. ["FF000000", "FFFFFFFF"]).
       # rubocop:disable Naming/AccessorMethodName
+      #: (untyped colors) -> untyped
       def set_indexed_colors(colors)
         @indexed_colors = colors
       end
       # rubocop:enable Naming/AccessorMethodName
 
       # Returns the indexed colors palette.
+      #: () -> untyped
       def indexed_colors
         @indexed_colors.dup
       end
 
       # Sets the MRU (most recently used) colors (array of color hashes, e.g. [{rgb: "FFFF0000"}]).
       # rubocop:disable Naming/AccessorMethodName
+      #: (untyped colors) -> untyped
       def set_mru_colors(colors)
         @mru_colors = colors
       end
       # rubocop:enable Naming/AccessorMethodName
 
       # Returns the MRU colors.
+      #: () -> untyped
       def mru_colors
         @mru_colors.map(&:dup)
       end
 
       # Sets table styles options (defaultTableStyle, defaultPivotStyle).
+      #: (untyped name, untyped value) -> untyped
       def set_table_styles_option(name, value)
         raise ArgumentError, "name must be a Symbol" unless name.is_a?(Symbol)
 
@@ -515,6 +559,7 @@ module Xlsxrb
 
       # Adds a table style definition. Returns the style name.
       # elements: array of { type:, dxf_id:, size: }
+      #: (name: untyped, ?elements: untyped, ?pivot: untyped?, ?table: untyped?) -> untyped
       def add_table_style(name:, elements: [], pivot: nil, table: nil)
         @table_styles[:styles] ||= []
         style = { name: name, elements: elements }
@@ -525,6 +570,7 @@ module Xlsxrb
       end
 
       # Returns table styles configuration.
+      #: () -> untyped
       def table_styles
         deep_copy = {}
         @table_styles.each do |k, v|
@@ -534,6 +580,7 @@ module Xlsxrb
       end
 
       # Sets a core property.
+      #: (untyped name, untyped value) -> untyped
       def core_property(name, value)
         raise ArgumentError, "name must be a Symbol" unless name.is_a?(Symbol)
 
@@ -541,11 +588,13 @@ module Xlsxrb
       end
 
       # Returns core properties hash.
+      #: () -> untyped
       def core_properties
         @core_properties.dup
       end
 
       # Sets an app property.
+      #: (untyped name, untyped value) -> untyped
       def app_property(name, value)
         raise ArgumentError, "name must be a Symbol" unless name.is_a?(Symbol)
 
@@ -553,21 +602,25 @@ module Xlsxrb
       end
 
       # Returns app properties hash.
+      #: () -> untyped
       def app_properties
         @app_properties.dup
       end
 
       # Adds a custom document property. type: :string (default), :number, :bool, :date.
+      #: (untyped name, untyped value, ?type: ::Symbol) -> untyped
       def custom_property(name, value, type: :string)
         @custom_properties << { name: name, value: value, type: type }
       end
 
       # Returns custom properties array.
+      #: () -> untyped
       def custom_properties
         @custom_properties.map(&:dup)
       end
 
       # Sets a sheet-level property (e.g. :tab_color, :summary_below, :summary_right).
+      #: (untyped name, untyped value, ?sheet: untyped?) -> untyped
       def set_sheet_property(name, value, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheet_properties.key?(sheet_name)
@@ -576,12 +629,14 @@ module Xlsxrb
       end
 
       # Returns sheet properties for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def sheet_properties(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         (@sheet_properties[sheet_name] || {}).dup
       end
 
       # Sets phonetic properties for a sheet (e.g. :font_id, :type, :alignment).
+      #: (untyped props, ?sheet: untyped?) -> untyped
       def set_phonetic_properties(props, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @phonetic_properties.key?(sheet_name)
@@ -590,12 +645,14 @@ module Xlsxrb
       end
 
       # Returns phonetic properties for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def phonetic_properties(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @phonetic_properties[sheet_name]&.dup
       end
 
       # Sets a sheet format property (e.g. :default_row_height, :default_col_width, :base_col_width).
+      #: (untyped name, untyped value, ?sheet: untyped?) -> untyped
       def set_sheet_format(name, value, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheet_formats.key?(sheet_name)
@@ -604,12 +661,14 @@ module Xlsxrb
       end
 
       # Returns sheet format properties for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def sheet_format(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         (@sheet_formats[sheet_name] || {}).dup
       end
 
       # Sets a sheet view property (e.g. :show_grid_lines, :show_row_col_headers, :right_to_left, :zoom_scale).
+      #: (untyped name, untyped value, ?sheet: untyped?) -> untyped
       def set_sheet_view(name, value, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheet_views.key?(sheet_name)
@@ -618,12 +677,14 @@ module Xlsxrb
       end
 
       # Returns sheet view properties for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def sheet_view(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         (@sheet_views[sheet_name] || {}).dup
       end
 
       # Sets a freeze pane. row: rows to freeze from top, col: columns to freeze from left.
+      #: (?row: ::Integer, ?col: ::Integer, ?sheet: untyped?) -> untyped
       def set_freeze_pane(row: 0, col: 0, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @freeze_panes.key?(sheet_name)
@@ -633,6 +694,7 @@ module Xlsxrb
 
       # Sets a split pane (non-frozen). x_split/y_split are in 1/20th of a point (twips).
       # top_left_cell: the cell at top-left of the bottom-right pane.
+      #: (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: untyped?, ?sheet: untyped?) -> untyped
       def set_split_pane(x_split: 0, y_split: 0, top_left_cell: nil, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @freeze_panes.key?(sheet_name)
@@ -641,12 +703,14 @@ module Xlsxrb
       end
 
       # Returns freeze pane settings for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def freeze_pane(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @freeze_panes[sheet_name]
       end
 
       # Sets the active cell selection.
+      #: (untyped active_cell, ?sqref: untyped?, ?pane: untyped?, ?active_cell_id: untyped?, ?sheet: untyped?) -> untyped
       def set_selection(active_cell, sqref: nil, pane: nil, active_cell_id: nil, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @selections.key?(sheet_name)
@@ -658,12 +722,14 @@ module Xlsxrb
       end
 
       # Returns selection for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def selection(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @selections[sheet_name]
       end
 
       # Sets a print option (e.g. :grid_lines, :headings, :horizontal_centered, :vertical_centered).
+      #: (untyped name, untyped value, ?sheet: untyped?) -> untyped
       def set_print_option(name, value, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @print_options.key?(sheet_name)
@@ -672,12 +738,14 @@ module Xlsxrb
       end
 
       # Returns print options for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def print_options(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         (@print_options[sheet_name] || {}).dup
       end
 
       # Sets page margins (all values in inches).
+      #: (?left: untyped?, ?right: untyped?, ?top: untyped?, ?bottom: untyped?, ?header: untyped?, ?footer: untyped?, ?sheet: untyped?) -> untyped
       def set_page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @page_margins.key?(sheet_name)
@@ -693,12 +761,14 @@ module Xlsxrb
       end
 
       # Returns page margins for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def page_margins(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @page_margins[sheet_name]
       end
 
       # Sets a page setup property (e.g. :orientation, :paper_size, :scale, :fit_to_width, :fit_to_height).
+      #: (untyped name, untyped value, ?sheet: untyped?) -> untyped
       def set_page_setup(name, value, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @page_setup.key?(sheet_name)
@@ -707,12 +777,14 @@ module Xlsxrb
       end
 
       # Returns page setup for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def page_setup(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         (@page_setup[sheet_name] || {}).dup
       end
 
       # Sets header/footer text (:odd_header, :odd_footer, :even_header, :even_footer).
+      #: (untyped name, untyped value, ?sheet: untyped?) -> untyped
       def set_header_footer(name, value, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @header_footer.key?(sheet_name)
@@ -721,12 +793,14 @@ module Xlsxrb
       end
 
       # Returns header/footer for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def header_footer(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         (@header_footer[sheet_name] || {}).dup
       end
 
       # Adds a row break (page break before a given row number).
+      #: (untyped row_num, ?sheet: untyped?) -> untyped
       def add_row_break(row_num, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @row_breaks.key?(sheet_name)
@@ -735,12 +809,14 @@ module Xlsxrb
       end
 
       # Returns row breaks for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def row_breaks(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @row_breaks[sheet_name] || []
       end
 
       # Adds a column break (page break before a given column index, 1-based).
+      #: (untyped col_index, ?sheet: untyped?) -> untyped
       def add_col_break(col_index, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @col_breaks.key?(sheet_name)
@@ -749,6 +825,7 @@ module Xlsxrb
       end
 
       # Returns column breaks for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def col_breaks(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @col_breaks[sheet_name] || []
@@ -758,6 +835,7 @@ module Xlsxrb
       # sqref: cell range (e.g. "A1:A100")
       # Options: type:, operator:, formula1:, formula2:, allow_blank:, show_input_message:,
       #          show_error_message:, error_style:, error_title:, error:, prompt_title:, prompt:
+      #: (untyped sqref, ?sheet: untyped?, **untyped opts) -> untyped
       def add_data_validation(sqref, sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @data_validations.key?(sheet_name)
@@ -766,12 +844,14 @@ module Xlsxrb
       end
 
       # Returns data validations for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def data_validations(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @data_validations[sheet_name] || []
       end
 
       # Sets a data validations container option (e.g. disable_prompts, x_window, y_window).
+      #: (untyped name, untyped value, ?sheet: untyped?) -> untyped
       def set_data_validations_option(name, value, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @data_validations_options.key?(sheet_name)
@@ -782,6 +862,7 @@ module Xlsxrb
       # Adds a conditional formatting rule to the specified range.
       # Options: type (:cell_is, :expression, :color_scale, :data_bar, :icon_set),
       # operator, priority, formula/formulas, format_id, color_scale, data_bar, icon_set.
+      #: (untyped sqref, ?sheet: untyped?, **untyped opts) -> untyped
       def add_conditional_format(sqref, sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @conditional_formats.key?(sheet_name)
@@ -790,6 +871,7 @@ module Xlsxrb
       end
 
       # Returns conditional formatting rules for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def conditional_formats(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @conditional_formats[sheet_name] || []
@@ -797,6 +879,7 @@ module Xlsxrb
 
       # Adds a table definition to a sheet.
       # columns: array of column name strings.
+      #: (untyped ref, columns: untyped, ?name: untyped?, ?display_name: untyped?, ?sheet: untyped?, ?totals_row_count: ::Integer, ?style: untyped?, **untyped opts) -> untyped
       def add_table(ref, columns:, name: nil, display_name: nil, sheet: nil, totals_row_count: 0, style: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @tables.key?(sheet_name)
@@ -819,17 +902,20 @@ module Xlsxrb
       end
 
       # Returns table definitions for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def tables(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @tables[sheet_name] || []
       end
 
       # Enables shared string table mode (strings stored in sharedStrings.xml).
+      #: () -> untyped
       def use_shared_strings!
         @use_shared_strings = true
       end
 
       # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
+      #: (untyped sheet_name, untyped state) -> untyped
       def set_sheet_state(sheet_name, state)
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
         raise ArgumentError, "state must be :visible, :hidden, or :very_hidden" unless %i[visible hidden very_hidden].include?(state)
@@ -838,11 +924,13 @@ module Xlsxrb
       end
 
       # Returns the sheet state for a given sheet.
+      #: (untyped sheet_name) -> untyped
       def sheet_state(sheet_name)
         @sheet_states[sheet_name] || :visible
       end
 
       # Adds a defined name. Options: sheet: (local scope), hidden: true, value: (formula or constant).
+      #: (untyped name, untyped value, ?sheet: untyped?, ?hidden: bool, **untyped opts) -> untyped
       def add_defined_name(name, value, sheet: nil, hidden: false, **opts)
         entry = { name: name, value: value, hidden: hidden }
         %i[comment description function vb_procedure xlm shortcut_key publish_to_server workbook_parameter
@@ -859,12 +947,14 @@ module Xlsxrb
       end
 
       # Returns defined names array.
+      #: () -> untyped
       def defined_names
         @defined_names.map(&:dup)
       end
 
       # Sets the print area for a sheet. range should be like "A1:D20".
       # Generates the _xlnm.Print_Area defined name automatically.
+      #: (untyped range, ?sheet: untyped?) -> untyped
       def set_print_area(range, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -878,6 +968,7 @@ module Xlsxrb
 
       # Sets print titles (rows and/or columns to repeat on each page).
       # rows: "1:3" repeats rows 1-3, cols: "A:B" repeats columns A-B.
+      #: (?rows: untyped?, ?cols: untyped?, ?sheet: untyped?) -> untyped
       def set_print_titles(rows: nil, cols: nil, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -894,61 +985,73 @@ module Xlsxrb
       end
 
       # Sets a workbook property (e.g. :date1904, :default_theme_version).
+      #: (untyped name, untyped value) -> untyped
       def set_workbook_property(name, value)
         @workbook_properties[name] = value
       end
 
       # Returns workbook properties hash.
+      #: () -> untyped
       def workbook_properties
         @workbook_properties.dup
       end
 
       # Sets a file version property (e.g. :app_name, :last_edited, :lowest_edited, :rup_build, :code_name).
+      #: (untyped name, untyped value) -> untyped
       def set_file_version(name, value)
         @file_version[name] = value
       end
 
       # Returns file version hash.
+      #: () -> untyped
       def file_version
         @file_version.dup
       end
 
       # Sets a file sharing property (e.g. :read_only_recommended, :user_name).
+      #: (untyped name, untyped value) -> untyped
       def set_file_sharing(name, value)
         @file_sharing[name] = value
       end
 
       # Returns file sharing hash.
+      #: () -> untyped
       def file_sharing
         @file_sharing.dup
       end
 
       # Sets a workbook view property (e.g. :active_tab, :first_sheet).
+      #: (untyped name, untyped value) -> untyped
       def set_workbook_view(name, value)
         @workbook_views[name] = value
       end
 
       # Returns workbook view properties hash.
+      #: () -> untyped
       def workbook_views
         @workbook_views.dup
       end
 
       # Sets a calc property (e.g. :calc_id, :full_calc_on_load).
+      #: (untyped name, untyped value) -> untyped
       def set_calc_property(name, value)
         @calc_properties[name] = value
       end
 
       # Returns calc properties hash.
+      #: () -> untyped
       def calc_properties
         @calc_properties.dup
       end
 
       # Sets a file recovery property (e.g. :auto_recover, :crash_save).
+      #: (untyped name, untyped value) -> untyped
       def set_file_recovery_property(name, value)
         @file_recovery_properties[name] = value
       end
 
       # Returns file recovery properties hash.
+      #: () -> untyped
       def file_recovery_properties
         @file_recovery_properties.dup
       end
@@ -958,6 +1061,7 @@ module Xlsxrb
       #   :format_rows, :insert_columns, :insert_rows, :insert_hyperlinks,
       #   :delete_columns, :delete_rows, :select_locked_cells, :sort, :auto_filter,
       #   :pivot_tables, :select_unlocked_cells, :algorithm_name, :hash_value, :salt_value, :spin_count
+      #: (?sheet: untyped?, **untyped opts) -> untyped
       def set_sheet_protection(sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -966,6 +1070,7 @@ module Xlsxrb
       end
 
       # Returns sheet protection settings for the given sheet.
+      #: (?sheet: untyped?) -> untyped
       def sheet_protection(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @sheet_protection[sheet_name]&.dup
@@ -974,6 +1079,7 @@ module Xlsxrb
       # Adds a protected range to the given sheet.
       # Required: name:, sqref:
       # Optional: algorithm_name:, hash_value:, salt_value:, spin_count:, security_descriptors: []
+      #: (?sheet: untyped?, **untyped opts) -> untyped
       def add_protected_range(sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -984,12 +1090,14 @@ module Xlsxrb
       end
 
       # Returns protected ranges for the given sheet.
+      #: (?sheet: untyped?) -> untyped
       def protected_ranges(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         (@protected_ranges[sheet_name] || []).map(&:dup)
       end
 
       # Adds a cell watch to the given sheet.
+      #: (untyped cell_ref, ?sheet: untyped?) -> untyped
       def add_cell_watch(cell_ref, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -998,6 +1106,7 @@ module Xlsxrb
       end
 
       # Returns cell watches for the given sheet.
+      #: (?sheet: untyped?) -> untyped
       def cell_watches(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         (@cell_watches[sheet_name] || []).dup
@@ -1006,6 +1115,7 @@ module Xlsxrb
       # Adds an ignored error entry for the given sheet.
       # Options: sqref:, eval_error:, two_digit_text_year:, number_stored_as_text:, formula:,
       #   formula_range:, unlocked_formula:, empty_cell_reference:, list_data_validation:, calculated_column:
+      #: (?sheet: untyped?, **untyped opts) -> untyped
       def add_ignored_error(sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -1015,6 +1125,7 @@ module Xlsxrb
       end
 
       # Returns ignored errors for the given sheet.
+      #: (?sheet: untyped?) -> untyped
       def ignored_errors(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         (@ignored_errors[sheet_name] || []).dup
@@ -1022,6 +1133,7 @@ module Xlsxrb
 
       # Sets data consolidation options for the given sheet.
       # Options: function:, start_labels:, top_labels:, link:, data_refs: [{ref:, name:, sheet:}]
+      #: (?sheet: untyped?, **untyped opts) -> untyped
       def set_data_consolidate(sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -1030,6 +1142,7 @@ module Xlsxrb
       end
 
       # Returns data consolidation settings for the given sheet.
+      #: (?sheet: untyped?) -> untyped
       def data_consolidate(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @data_consolidate[sheet_name]&.dup
@@ -1037,6 +1150,7 @@ module Xlsxrb
 
       # Sets scenarios for the given sheet.
       # Options: current:, show:, sqref:, scenarios: [{name:, input_cells: [{r:, val:, ...}], ...}]
+      #: (?sheet: untyped?, **untyped opts) -> untyped
       def set_scenarios(sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @sheets.key?(sheet_name)
@@ -1045,6 +1159,7 @@ module Xlsxrb
       end
 
       # Returns scenarios for the given sheet.
+      #: (?sheet: untyped?) -> untyped
       def scenarios(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @scenarios[sheet_name]&.dup
@@ -1052,19 +1167,23 @@ module Xlsxrb
 
       # Sets workbook protection options.
       # Options: :lock_structure, :lock_windows, :password, :algorithm_name, :hash_value, :salt_value, :spin_count
+      #: (**untyped opts) -> untyped
       def set_workbook_protection(**opts)
         @workbook_protection = opts
       end
 
       # Returns workbook protection settings.
+      #: () -> untyped
       def workbook_protection
         @workbook_protection&.dup
       end
 
       # Returns ordered sheet names.
+      #: untyped
       attr_reader :sheet_order
 
       # Adds a raw ZIP entry to be included in the output (for pass-through retention).
+      #: (untyped path, untyped content, ?content_type: untyped?) -> (nil | untyped)
       def add_raw_entry(path, content, content_type: nil)
         @extra_entries[path] = content
         return unless content_type
@@ -1079,6 +1198,7 @@ module Xlsxrb
 
       # Copies all ZIP entries from an existing XLSX file as pass-through.
       # Generated parts override pass-through parts with the same path.
+      #: (untyped filepath) -> untyped
       def copy_entries_from(filepath)
         reader = Xlsxrb::Ooxml::Reader.new(filepath)
         reader.entry_names.each do |name|
@@ -1093,6 +1213,7 @@ module Xlsxrb
       # Inserts an image from file data into the given sheet.
       # file_data: raw image bytes. ext: file extension (e.g. "png").
       # from_col/from_row: anchor start. to_col/to_row: anchor end.
+      #: (untyped file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, ?from_col_off: untyped?, ?from_row_off: untyped?, ?to_col_off: untyped?, ?to_row_off: untyped?, ?name: untyped?, ?description: untyped?, ?title: untyped?, ?hidden: untyped?, ?macro: untyped?, ?no_change_aspect: bool, ?no_crop: untyped?, ?line_color: untyped?, ?line_width: untyped?, ?rotation: untyped?, ?edit_as: untyped?, ?published: untyped?, ?locks_with_sheet: untyped?, ?prints_with_sheet: untyped?, ?src_rect: untyped?, ?alpha_mod_fix: untyped?, ?sheet: untyped?) -> untyped
       def insert_image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, no_change_aspect: true, no_crop: nil, line_color: nil, line_width: nil, rotation: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, src_rect: nil, alpha_mod_fix: nil, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @images.key?(sheet_name)
@@ -1126,6 +1247,7 @@ module Xlsxrb
       end
 
       # Returns images for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def images(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @images[sheet_name] || []
@@ -1134,6 +1256,7 @@ module Xlsxrb
       # Adds a chart to the given sheet.
       # type: :bar, :line, :pie. title: chart title string.
       # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
+      #: (?type: ::Symbol, ?title: untyped?, ?title_overlay: untyped?, ?title_font: untyped?, ?title_fill_color: untyped?, ?title_no_fill: untyped?, ?title_line_color: untyped?, ?title_line_width: untyped?, ?title_line_dash: untyped?, ?title_rotation: untyped?, ?auto_title_deleted: untyped?, ?cat_ref: untyped?, ?val_ref: untyped?, ?series: untyped?, ?legend: untyped?, ?data_labels: untyped?, ?cat_axis_title: untyped?, ?val_axis_title: untyped?, ?cat_axis_title_font: untyped?, ?cat_axis_title_fill: untyped?, ?cat_axis_title_no_fill: untyped?, ?cat_axis_title_line_color: untyped?, ?cat_axis_title_line_width: untyped?, ?cat_axis_title_line_dash: untyped?, ?cat_axis_title_rotation: untyped?, ?val_axis_title_font: untyped?, ?val_axis_title_fill: untyped?, ?val_axis_title_no_fill: untyped?, ?val_axis_title_line_color: untyped?, ?val_axis_title_line_width: untyped?, ?val_axis_title_line_dash: untyped?, ?val_axis_title_rotation: untyped?, ?cat_axis_tick_lbl_pos: untyped?, ?val_axis_tick_lbl_pos: untyped?, ?cat_axis_major_gridlines: untyped?, ?val_axis_major_gridlines: untyped?, ?cat_axis_minor_gridlines: untyped?, ?val_axis_minor_gridlines: untyped?, ?cat_axis_delete: untyped?, ?val_axis_delete: untyped?, ?cat_axis_orientation: untyped?, ?val_axis_orientation: untyped?, ?cat_axis_num_fmt: untyped?, ?val_axis_num_fmt: untyped?, ?cat_axis_major_tick_mark: untyped?, ?cat_axis_minor_tick_mark: untyped?, ?val_axis_major_tick_mark: untyped?, ?val_axis_minor_tick_mark: untyped?, ?cat_axis_crosses: untyped?, ?val_axis_crosses: untyped?, ?cat_axis_crosses_at: untyped?, ?val_axis_crosses_at: untyped?, ?cat_axis_tick_lbl_skip: untyped?, ?cat_axis_tick_mark_skip: untyped?, ?cat_axis_lbl_offset: untyped?, ?cat_axis_auto: untyped?, ?cat_axis_lbl_algn: untyped?, ?cat_axis_no_multi_lvl_lbl: untyped?, ?val_axis_cross_between: untyped?, ?val_axis_major_unit: untyped?, ?val_axis_minor_unit: untyped?, ?cat_axis_scaling_max: untyped?, ?cat_axis_scaling_min: untyped?, ?val_axis_scaling_max: untyped?, ?val_axis_scaling_min: untyped?, ?cat_axis_log_base: untyped?, ?val_axis_log_base: untyped?, ?val_axis_disp_units: untyped?, ?gap_width: untyped?, ?gap_depth: untyped?, ?overlap: untyped?, ?first_slice_ang: untyped?, ?hole_size: untyped?, ?smooth: untyped?, ?marker: untyped?, ?scatter_style: untyped?, ?radar_style: untyped?, ?bar_shape: untyped?, ?bubble_3d: untyped?, ?bubble_scale: untyped?, ?show_neg_bubbles: untyped?, ?size_represents: untyped?, ?wireframe: untyped?, ?grouping: untyped?, ?bar_dir: untyped?, ?vary_colors: untyped?, ?style: untyped?, ?rounded_corners: untyped?, ?view_3d: untyped?, ?cat_axis_pos: untyped?, ?val_axis_pos: untyped?, ?name: untyped?, ?description: untyped?, ?frame_title: untyped?, ?frame_hidden: untyped?, ?frame_macro: untyped?, ?frame_no_grp: untyped?, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, ?from_col_off: untyped?, ?from_row_off: untyped?, ?to_col_off: untyped?, ?to_row_off: untyped?, ?edit_as: untyped?, ?published: untyped?, ?locks_with_sheet: untyped?, ?prints_with_sheet: untyped?, ?plot_vis_only: untyped?, ?disp_blanks_as: untyped?, ?show_d_lbls_over_max: untyped?, ?data_table: untyped?, ?plot_area_fill: untyped?, ?plot_area_no_fill: untyped?, ?plot_area_line_color: untyped?, ?plot_area_line_width: untyped?, ?plot_area_line_dash: untyped?, ?plot_area_layout: untyped?, ?floor: untyped?, ?side_wall: untyped?, ?back_wall: untyped?, ?drop_lines: untyped?, ?hi_low_lines: untyped?, ?ser_lines: untyped?, ?up_down_bars: untyped?, ?band_fmts: untyped?, ?of_pie_type: untyped?, ?split_type: untyped?, ?split_pos: untyped?, ?cust_split: untyped?, ?second_pie_size: untyped?, ?cat_axis_label_rotation: untyped?, ?val_axis_label_rotation: untyped?, ?cat_axis_font: untyped?, ?val_axis_font: untyped?, ?cat_axis_line_color: untyped?, ?cat_axis_line_width: untyped?, ?cat_axis_line_dash: untyped?, ?val_axis_line_color: untyped?, ?val_axis_line_width: untyped?, ?val_axis_line_dash: untyped?, ?cat_axis_fill: untyped?, ?cat_axis_no_fill: untyped?, ?val_axis_fill: untyped?, ?val_axis_no_fill: untyped?, ?cat_axis_type: untyped?, ?cat_axis_base_time_unit: untyped?, ?cat_axis_major_time_unit: untyped?, ?cat_axis_minor_time_unit: untyped?, ?cat_axis_major_unit: untyped?, ?cat_axis_minor_unit: untyped?, ?chart_fill: untyped?, ?chart_no_fill: untyped?, ?chart_line_color: untyped?, ?chart_line_width: untyped?, ?chart_line_dash: untyped?, ?protection: untyped?, ?print_settings: untyped?, ?chart_font: untyped?, ?sheet: untyped?) -> untyped
       def add_chart(type: :bar, title: nil, title_overlay: nil, title_font: nil, title_fill_color: nil, title_no_fill: nil, title_line_color: nil, title_line_width: nil, title_line_dash: nil, title_rotation: nil, auto_title_deleted: nil, cat_ref: nil, val_ref: nil, series: nil, legend: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, cat_axis_title_font: nil, cat_axis_title_fill: nil, cat_axis_title_no_fill: nil, cat_axis_title_line_color: nil, cat_axis_title_line_width: nil, cat_axis_title_line_dash: nil, cat_axis_title_rotation: nil, val_axis_title_font: nil, val_axis_title_fill: nil, val_axis_title_no_fill: nil, val_axis_title_line_color: nil, val_axis_title_line_width: nil, val_axis_title_line_dash: nil, val_axis_title_rotation: nil, cat_axis_tick_lbl_pos: nil, val_axis_tick_lbl_pos: nil, cat_axis_major_gridlines: nil, val_axis_major_gridlines: nil, cat_axis_minor_gridlines: nil, val_axis_minor_gridlines: nil, cat_axis_delete: nil, val_axis_delete: nil, cat_axis_orientation: nil, val_axis_orientation: nil, cat_axis_num_fmt: nil, val_axis_num_fmt: nil, cat_axis_major_tick_mark: nil, cat_axis_minor_tick_mark: nil, val_axis_major_tick_mark: nil, val_axis_minor_tick_mark: nil, cat_axis_crosses: nil, val_axis_crosses: nil, cat_axis_crosses_at: nil, val_axis_crosses_at: nil, cat_axis_tick_lbl_skip: nil, cat_axis_tick_mark_skip: nil, cat_axis_lbl_offset: nil, cat_axis_auto: nil, cat_axis_lbl_algn: nil, cat_axis_no_multi_lvl_lbl: nil, val_axis_cross_between: nil, val_axis_major_unit: nil, val_axis_minor_unit: nil, cat_axis_scaling_max: nil, cat_axis_scaling_min: nil, val_axis_scaling_max: nil, val_axis_scaling_min: nil, cat_axis_log_base: nil, val_axis_log_base: nil, val_axis_disp_units: nil, gap_width: nil, gap_depth: nil, overlap: nil, first_slice_ang: nil, hole_size: nil, smooth: nil, marker: nil, scatter_style: nil, radar_style: nil, bar_shape: nil, bubble_3d: nil, bubble_scale: nil, show_neg_bubbles: nil, size_represents: nil, wireframe: nil, grouping: nil, bar_dir: nil, vary_colors: nil, style: nil, rounded_corners: nil, view_3d: nil, cat_axis_pos: nil, val_axis_pos: nil, name: nil, description: nil, frame_title: nil, frame_hidden: nil, frame_macro: nil, frame_no_grp: nil, from_col: 0, from_row: 0, to_col: 10, to_row: 15, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, plot_vis_only: nil, disp_blanks_as: nil, show_d_lbls_over_max: nil, data_table: nil, plot_area_fill: nil, plot_area_no_fill: nil, plot_area_line_color: nil, plot_area_line_width: nil, plot_area_line_dash: nil, plot_area_layout: nil, floor: nil, side_wall: nil, back_wall: nil, drop_lines: nil, hi_low_lines: nil, ser_lines: nil, up_down_bars: nil, band_fmts: nil, of_pie_type: nil, split_type: nil, split_pos: nil, cust_split: nil, second_pie_size: nil, cat_axis_label_rotation: nil, val_axis_label_rotation: nil, cat_axis_font: nil, val_axis_font: nil, cat_axis_line_color: nil, cat_axis_line_width: nil, cat_axis_line_dash: nil, val_axis_line_color: nil, val_axis_line_width: nil, val_axis_line_dash: nil, cat_axis_fill: nil, cat_axis_no_fill: nil, val_axis_fill: nil, val_axis_no_fill: nil, cat_axis_type: nil, cat_axis_base_time_unit: nil, cat_axis_major_time_unit: nil, cat_axis_minor_time_unit: nil, cat_axis_major_unit: nil, cat_axis_minor_unit: nil, chart_fill: nil, chart_no_fill: nil, chart_line_color: nil, chart_line_width: nil, chart_line_dash: nil, protection: nil, print_settings: nil, chart_font: nil, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @charts_data.key?(sheet_name)
@@ -1297,6 +1420,7 @@ module Xlsxrb
       end
 
       # Returns chart definitions for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def charts(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @charts_data[sheet_name] || []
@@ -1306,6 +1430,7 @@ module Xlsxrb
       # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
       # text: optional text body string.
       # from_col/from_row/to_col/to_row: anchor coordinates.
+      #: (?preset: ::String, ?text: untyped?, ?name: untyped?, ?description: untyped?, ?title: untyped?, ?hidden: untyped?, ?macro: untyped?, ?textlink: untyped?, ?f_locks_text: untyped?, ?no_grp: untyped?, ?no_rot: untyped?, ?fill_color: untyped?, ?fill_alpha: untyped?, ?fill_color_transforms: untyped?, ?no_fill: untyped?, ?gradient_fill: untyped?, ?pattern_fill: untyped?, ?line_color: untyped?, ?line_alpha: untyped?, ?line_color_transforms: untyped?, ?line_width: untyped?, ?no_line: untyped?, ?line_dash: untyped?, ?line_custom_dash: untyped?, ?line_cap: untyped?, ?line_align: untyped?, ?line_compound: untyped?, ?line_join: untyped?, ?line_miter_limit: untyped?, ?head_end: untyped?, ?tail_end: untyped?, ?rotation: untyped?, ?text_wrap: untyped?, ?text_anchor: untyped?, ?text_vert_overflow: untyped?, ?text_horz_overflow: untyped?, ?text_spc_first_last_para: untyped?, ?text_num_col: untyped?, ?text_spc_col: untyped?, ?text_rtl_col: untyped?, ?text_from_word_art: untyped?, ?text_upright: untyped?, ?text_compat_ln_spc: untyped?, ?text_force_aa: untyped?, ?text_warp: untyped?, ?text_vertical: untyped?, ?text_insets: untyped?, ?text_rot: untyped?, ?adjust_values: untyped?, ?text_font: untyped?, ?text_end_para_rpr: untyped?, ?text_def_rpr: untyped?, ?text_align: untyped?, ?text_font_align: untyped?, ?text_def_tab_sz: untyped?, ?text_indent: untyped?, ?text_anchor_ctr: untyped?, ?text_spacing: untyped?, ?text_rtl: untyped?, ?text_ea_ln_brk: untyped?, ?text_latin_ln_brk: untyped?, ?text_hanging_punct: untyped?, ?text_tab_stops: untyped?, ?text_bullet: untyped?, ?text_level: untyped?, ?text_paragraphs: untyped?, ?autofit: untyped?, ?outer_shadow: untyped?, ?inner_shadow: untyped?, ?glow: untyped?, ?soft_edge: untyped?, ?reflection: untyped?, ?blur: untyped?, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, ?from_col_off: untyped?, ?from_row_off: untyped?, ?to_col_off: untyped?, ?to_row_off: untyped?, ?edit_as: untyped?, ?published: untyped?, ?locks_with_sheet: untyped?, ?prints_with_sheet: untyped?, ?sheet: untyped?) -> untyped
       def add_shape(preset: "rect", text: nil, name: nil, description: nil, title: nil, hidden: nil, macro: nil, textlink: nil, f_locks_text: nil, no_grp: nil, no_rot: nil, fill_color: nil, fill_alpha: nil, fill_color_transforms: nil, no_fill: nil, gradient_fill: nil, pattern_fill: nil, line_color: nil, line_alpha: nil, line_color_transforms: nil, line_width: nil, no_line: nil, line_dash: nil, line_custom_dash: nil, line_cap: nil, line_align: nil, line_compound: nil, line_join: nil, line_miter_limit: nil, head_end: nil, tail_end: nil, rotation: nil, text_wrap: nil, text_anchor: nil, text_vert_overflow: nil, text_horz_overflow: nil, text_spc_first_last_para: nil, text_num_col: nil, text_spc_col: nil, text_rtl_col: nil, text_from_word_art: nil, text_upright: nil, text_compat_ln_spc: nil, text_force_aa: nil, text_warp: nil, text_vertical: nil, text_insets: nil, text_rot: nil, adjust_values: nil, text_font: nil, text_end_para_rpr: nil, text_def_rpr: nil, text_align: nil, text_font_align: nil, text_def_tab_sz: nil, text_indent: nil, text_anchor_ctr: nil, text_spacing: nil, text_rtl: nil, text_ea_ln_brk: nil, text_latin_ln_brk: nil, text_hanging_punct: nil, text_tab_stops: nil, text_bullet: nil, text_level: nil, text_paragraphs: nil, autofit: nil, outer_shadow: nil, inner_shadow: nil, glow: nil, soft_edge: nil, reflection: nil, blur: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, from_col_off: nil, from_row_off: nil, to_col_off: nil, to_row_off: nil, edit_as: nil, published: nil, locks_with_sheet: nil, prints_with_sheet: nil, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @shapes_data.key?(sheet_name)
@@ -1398,12 +1523,14 @@ module Xlsxrb
       end
 
       # Returns shape definitions for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def shapes(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @shapes_data[sheet_name] || []
       end
 
       # Adds a comment on a cell.
+      #: (untyped cell_address, untyped text, ?author: ::String, ?sheet: untyped?, ?guid: untyped?, ?shape_id: untyped?) -> untyped
       def add_comment(cell_address, text, author: "Author", sheet: nil, guid: nil, shape_id: nil)
         validate_cell_address!(cell_address)
         sheet_name = sheet || @sheet_order.first
@@ -1416,6 +1543,7 @@ module Xlsxrb
       end
 
       # Returns comment definitions for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def comments(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @comments_data[sheet_name] || []
@@ -1428,6 +1556,7 @@ module Xlsxrb
       # col_fields: array of 0-based field indices for column axis.
       # field_names: array of field name strings (for cache definition).
       # items: hash mapping field index to array of item values.
+      #: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: ::String, ?name: untyped?, ?field_names: untyped?, ?items: untyped?, ?sheet: untyped?, **untyped opts) -> untyped
       def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil, sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @pivot_tables_data.key?(sheet_name)
@@ -1482,6 +1611,7 @@ module Xlsxrb
       end
 
       # Returns pivot table definitions for the first (or given) sheet.
+      #: (?sheet: untyped?) -> untyped
       def pivot_tables(sheet: nil)
         sheet_name = sheet || @sheet_order.first
         @pivot_tables_data[sheet_name] || []
@@ -1490,26 +1620,31 @@ module Xlsxrb
       # Adds an external link reference to another workbook.
       # target: path or URI to the external workbook (e.g. "Book2.xlsx").
       # sheet_names: array of sheet name strings in the external workbook.
+      #: (target: untyped, ?sheet_names: untyped) -> untyped
       def add_external_link(target:, sheet_names: [])
         @external_links << { target: target, sheet_names: sheet_names }
       end
 
       # Returns external link definitions.
+      #: () -> untyped
       def external_links
         @external_links.dup
       end
 
       # Enables macro preservation mode. Required when copy_entries_from loads a .xlsm file.
+      #: () -> untyped
       def preserve_macros!
         @preserve_macros = true
       end
 
       # Returns whether macro preservation is enabled.
+      #: () -> untyped
       def preserve_macros?
         @preserve_macros
       end
 
       # Writes the workbook as an XLSX file to the given path.
+      #: (untyped filepath) -> untyped
       def write(filepath)
         # Pre-register date/datetime formats if any sheet contains Date or Time values.
         needs_date = false
@@ -1731,6 +1866,7 @@ module Xlsxrb
 
       private
 
+      #: (?::Hash[untyped, untyped] all_entries) -> untyped
       def generate_content_types_xml(all_entries = {})
         defaults = {
           "rels" => "application/vnd.openxmlformats-package.relationships+xml",
@@ -1832,6 +1968,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: () -> untyped
       def generate_rels_root
         rid_counter = 1
         parts = [
@@ -1855,6 +1992,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (?::Integer pivot_cache_count) -> untyped
       def generate_workbook_xml(pivot_cache_count = 0)
         wb_attrs = %(xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}")
         wb_attrs << %( conformance="#{@workbook_properties[:conformance]}") if @workbook_properties[:conformance]
@@ -2059,6 +2197,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (?has_calc_chain: bool) -> untyped
       def generate_workbook_rels(has_calc_chain: false)
         parts = [
           XML_HEADER,
@@ -2090,6 +2229,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: () -> (nil | untyped)
       def generate_calc_chain_xml
         chain_entries = []
         @sheet_order.each_with_index do |sheet_name, i|
@@ -2107,6 +2247,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped sheet_cells, untyped sheet_col_widths, untyped sheet_col_attrs, untyped sheet_row_attrs, untyped sheet_auto_filter, untyped sheet_filter_cols, untyped sheet_sort, untyped sheet_merge_cells, untyped sheet_hyperlinks, untyped sheet_cell_styles, untyped sheet_props, untyped sheet_fmt, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf, untyped sheet_rb, untyped sheet_cb, untyped sheet_dv, untyped sheet_cf, ?untyped? sst, ?untyped sheet_tables, ?::Integer hyperlink_count, ?has_drawing: bool, ?has_comments: bool, ?sheet_prot: untyped?, ?vml_rid: untyped?, ?phonetic_pr: untyped?, ?dv_options: ::Hash[untyped, untyped], ?prot_ranges: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?data_consol: untyped?, ?sheet_scenarios: untyped?, ?cell_phonetic: ::Hash[untyped, untyped]) -> untyped
       def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [], ignored_errors: [], data_consol: nil, sheet_scenarios: nil, cell_phonetic: {})
         needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
         worksheet_attrs = %(xmlns="#{SSML_NS}")
@@ -2687,6 +2828,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: () -> ::Array[untyped]
       def build_shared_string_table
         rt_sst = {}.compare_by_identity # Xlsxrb::Elements::RichText object -> global index
         str_sst = {} # String -> global index
@@ -2709,6 +2851,7 @@ module Xlsxrb
         [rt_sst, str_sst]
       end
 
+      #: (untyped sst) -> untyped
       def generate_shared_strings_xml(sst)
         rt_sst, str_sst = sst
         total = rt_sst.size + str_sst.size
@@ -2728,6 +2871,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped tbl) -> untyped
       def generate_table_xml(tbl)
         trc = tbl[:totals_row_count].to_i
         table_attrs = %(xmlns="#{SSML_NS}" id="#{tbl[:id]}" name="#{xml_escape(tbl[:name])}" displayName="#{xml_escape(tbl[:display_name])}" ref="#{tbl[:ref]}")
@@ -2793,6 +2937,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped sheet_hyperlinks, ?untyped sheet_tables, ?::Integer table_start_index) -> untyped
       def generate_worksheet_rels(sheet_hyperlinks, sheet_tables = [], table_start_index = 0)
         parts = [
           XML_HEADER,
@@ -2813,6 +2958,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count) -> untyped
       def build_sheet_rels_parts_v2(sheet_name, sheet_tables, table_start_index, drawing_idx, comment_idx, pivot_start, pivot_count)
         rels = []
         @hyperlinks[sheet_name].each do |(_cell_ref, link)|
@@ -2835,6 +2981,7 @@ module Xlsxrb
         rels
       end
 
+      #: (untyped rels_data) -> untyped
       def generate_generic_rels(rels_data)
         parts = [XML_HEADER, %(<Relationships xmlns="#{REL_NS}">)]
         rels_data.each_with_index do |rel, i|
@@ -2845,6 +2992,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped drawing_parts) -> untyped
       def generate_drawing_xml(drawing_parts)
         parts = [
           XML_HEADER,
@@ -3158,6 +3306,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped para) -> ::String
       def paragraph_xml(para)
         ppr_attrs = +""
         ppr_attrs << %( algn="#{xml_escape(para[:align])}") if para[:align]
@@ -3239,6 +3388,7 @@ module Xlsxrb
         "<a:p>#{ppr_xml}#{runs_xml}#{end_para_rpr_xml}</a:p>"
       end
 
+      #: (untyped tag, untyped font) -> untyped
       def text_char_props_xml(tag, font)
         attrs = +""
         attrs << %( b="1") if font[:bold]
@@ -3346,10 +3496,12 @@ module Xlsxrb
         end
       end
 
+      #: (untyped tag, untyped col, untyped row, ?col_off: ::Integer, ?row_off: ::Integer) -> ::String
       def anchor_xml(tag, col, row, col_off: 0, row_off: 0)
         "<xdr:#{tag}><xdr:col>#{col}</xdr:col><xdr:colOff>#{col_off}</xdr:colOff><xdr:row>#{row}</xdr:row><xdr:rowOff>#{row_off}</xdr:rowOff></xdr:#{tag}>"
       end
 
+      #: (untyped obj) -> ::String
       def client_data_xml(obj)
         cd_attrs = +""
         cd_attrs << ' fLocksWithSheet="0"' if obj[:locks_with_sheet] == false
@@ -3359,6 +3511,7 @@ module Xlsxrb
         "<xdr:clientData#{cd_attrs}/>"
       end
 
+      #: (untyped rels_data) -> untyped
       def generate_drawing_rels(rels_data)
         parts = [XML_HEADER, %(<Relationships xmlns="#{REL_NS}">)]
         rels_data.each_with_index do |rel, i|
@@ -3372,6 +3525,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped title_spec, ?overlay: bool) -> untyped
       def build_chart_title_xml(title_spec, overlay: false)
         overlay_val = overlay ? 1 : 0
         if title_spec.is_a?(Hash)
@@ -3399,6 +3553,7 @@ module Xlsxrb
         end
       end
 
+      #: (untyped title_spec, untyped chart, untyped prefix) -> untyped
       def merge_flat_title_styling(title_spec, chart, prefix)
         font_key = :"#{prefix}_font"
         fill_key = :"#{prefix}_fill"
@@ -3421,6 +3576,7 @@ module Xlsxrb
         spec
       end
 
+      #: (untyped spec) -> untyped
       def build_title_sp_pr(spec)
         children = +""
         children << %(<a:solidFill>#{color_xml(spec[:fill_color])}</a:solidFill>) if spec[:fill_color]
@@ -3434,6 +3590,7 @@ module Xlsxrb
         children.empty? ? "" : "<c:spPr>#{children}</c:spPr>"
       end
 
+      #: (untyped layout) -> ("" | untyped)
       def build_title_layout_xml(layout)
         return "" unless layout.is_a?(Hash)
 
@@ -3445,6 +3602,7 @@ module Xlsxrb
         ml.empty? ? "" : "<c:layout><c:manualLayout>#{ml}</c:manualLayout></c:layout>"
       end
 
+      #: (untyped tag, untyped spec) -> ("" | untyped)
       def gridlines_xml(tag, spec)
         return "" unless spec
 
@@ -3463,6 +3621,7 @@ module Xlsxrb
       end
 
       # Resolves a cell reference like "Sheet1!$A$1:$A$5" to an array of values from @sheets.
+      #: (untyped ref) -> (nil | untyped)
       def resolve_sheet_ref(ref)
         return nil unless ref
 
@@ -3489,6 +3648,7 @@ module Xlsxrb
         cells.map { |addr| @sheets[sheet_name][addr] }
       end
 
+      #: (untyped start_cell, untyped end_cell) -> (::Array[untyped] | untyped)
       def enumerate_cell_range(start_cell, end_cell)
         sc = start_cell.match(/\A([A-Z]+)(\d+)\z/)
         ec = end_cell.match(/\A([A-Z]+)(\d+)\z/)
@@ -3507,6 +3667,7 @@ module Xlsxrb
         cells
       end
 
+      #: (untyped ref) -> ("" | ::String)
       def num_cache_xml(ref)
         values = resolve_sheet_ref(ref)
         return "" unless values
@@ -3519,6 +3680,7 @@ module Xlsxrb
         %(<c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="#{values.size}"/>#{pts.join}</c:numCache>)
       end
 
+      #: (untyped ref) -> ("" | ::String)
       def str_cache_xml(ref)
         values = resolve_sheet_ref(ref)
         return "" unless values
@@ -3531,6 +3693,7 @@ module Xlsxrb
         %(<c:strCache><c:ptCount val="#{values.size}"/>#{pts.join}</c:strCache>)
       end
 
+      #: (untyped color, ?alpha: untyped?, ?transforms: untyped?) -> untyped
       def color_xml(color, alpha: nil, transforms: nil)
         if color.is_a?(Hash) && color[:scheme]
           tag = "schemeClr"
@@ -3552,6 +3715,7 @@ module Xlsxrb
         end
       end
 
+      #: (untyped color) -> untyped
       def normalize_drawing_rgb(color)
         str = color.to_s
         hex = str.delete_prefix("#")
@@ -3569,6 +3733,7 @@ module Xlsxrb
 
       alias srgb_clr_xml color_xml
 
+      #: (untyped rotation, untyped font) -> ("" | ::String)
       def build_axis_txpr(rotation, font)
         return "" unless rotation || font
 
@@ -3590,6 +3755,7 @@ module Xlsxrb
         %(<c:txPr><a:bodyPr#{body_attrs}/><a:lstStyle/><a:p><a:pPr>#{def_rpr}</a:pPr><a:endParaRPr/></a:p></c:txPr>)
       end
 
+      #: (untyped chart) -> untyped
       def generate_chart_xml(chart)
         chart_type = CHART_TYPE_MAP[chart[:type]] || "barChart"
         no_axes = NO_AXIS_CHARTS.include?(chart_type)
@@ -4351,6 +4517,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped sheet_comments) -> untyped
       def generate_comments_xml(sheet_comments)
         authors = sheet_comments.map { |c| c[:author] }.uniq
         parts = [
@@ -4376,6 +4543,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped sheet_comments) -> untyped
       def generate_vml_drawing_xml(sheet_comments)
         parts = [
           '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">',
@@ -4404,6 +4572,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped cell_ref) -> (::Array[0] | ::Array[untyped])
       def cell_to_col_row(cell_ref)
         m = cell_ref.match(/\A([A-Z]+)(\d+)\z/)
         return [0, 0] unless m
@@ -4413,6 +4582,7 @@ module Xlsxrb
         [col, row]
       end
 
+      #: (untyped pivot_table, untyped cache_id) -> untyped
       def generate_pivot_table_xml(pivot_table, cache_id)
         data_caption = pivot_table[:data_caption] || (pivot_table[:data_fields].first ? pivot_table[:data_fields].first[:name] : "Values")
         pt_attrs = %( xmlns="#{SSML_NS}" name="#{xml_escape(pivot_table[:name])}" cacheId="#{cache_id}" dataCaption="#{xml_escape(data_caption)}")
@@ -4556,6 +4726,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped pivot_table, untyped _cache_id) -> untyped
       def generate_pivot_cache_definition_xml(pivot_table, _cache_id)
         pcd_attrs = %( xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}" r:id="rId1" refreshOnLoad="1")
         pcd_attrs << ' saveData="0"' if pivot_table[:cache_save_data] == false
@@ -4611,6 +4782,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped pivot_table) -> untyped
       def generate_pivot_cache_records_xml(pivot_table)
         items = pivot_table[:items]
         if items&.values&.any? { |v| v && !v.empty? }
@@ -4636,6 +4808,7 @@ module Xlsxrb
         end
       end
 
+      #: (untyped cache_id) -> untyped
       def generate_pivot_cache_rels(cache_id)
         [
           XML_HEADER,
@@ -4645,6 +4818,7 @@ module Xlsxrb
         ].join
       end
 
+      #: (untyped cache_id) -> untyped
       def generate_pivot_table_rels(cache_id)
         [
           XML_HEADER,
@@ -4654,6 +4828,7 @@ module Xlsxrb
         ].join
       end
 
+      #: (untyped ext_link) -> untyped
       def generate_external_link_xml(ext_link)
         parts = [
           XML_HEADER,
@@ -4670,6 +4845,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped ext_link) -> untyped
       def generate_external_link_rels(ext_link)
         [
           XML_HEADER,
@@ -4679,6 +4855,7 @@ module Xlsxrb
         ].join
       end
 
+      #: (untyped ct_xml) -> untyped
       def parse_extra_content_types(ct_xml)
         ct_xml.scan(/<Default\s+Extension="([^"]+)"\s+ContentType="([^"]+)"/).each do |ext, ct|
           @extra_ct_defaults[ext] ||= ct
@@ -4688,6 +4865,7 @@ module Xlsxrb
         end
       end
 
+      #: (untyped element, untyped opts) -> ("" | ::String)
       def build_line_end_xml(element, opts)
         return "" unless opts
 
@@ -4698,6 +4876,7 @@ module Xlsxrb
         "<a:#{element}#{attrs}/>"
       end
 
+      #: (untyped value) -> untyped
       def xml_escape(value)
         value.to_s
              .gsub("&", "&amp;")
@@ -4707,6 +4886,7 @@ module Xlsxrb
              .gsub("'", "&apos;")
       end
 
+      #: (untyped rich_text) -> untyped
       def rich_text_xml(rich_text)
         rich_text.runs.map do |run|
           font = run[:font]
@@ -4735,6 +4915,7 @@ module Xlsxrb
         end.join
       end
 
+      #: (untyped cell_ref, untyped value, untyped style_idx, ?untyped? sst, ?ph: untyped?) -> untyped
       def cell_xml(cell_ref, value, style_idx, sst = nil, ph: nil) # rubocop:disable Naming/MethodParameterName
         s_attr = style_idx ? %( s="#{style_idx}") : ""
         ph_attr = ph ? ' ph="1"' : ""
@@ -4807,16 +4988,19 @@ module Xlsxrb
       end
 
       # Returns the numFmtId for dates, registering it on first use.
+      #: () -> untyped
       def date_num_fmt_id
         @date_num_fmt_id ||= add_number_format(Xlsxrb::Ooxml::Utils::DEFAULT_DATE_FORMAT)
       end
 
       # Returns the numFmtId for datetime, registering it on first use.
+      #: () -> untyped
       def datetime_num_fmt_id
         @datetime_num_fmt_id ||= add_number_format(Xlsxrb::Ooxml::Utils::DEFAULT_DATETIME_FORMAT)
       end
 
       # Maps a numFmtId to a cellXfs index. Index 0 is the default (no format).
+      #: (untyped style_value) -> (nil | untyped)
       def resolve_style_index(style_value)
         return nil if style_value.nil?
 
@@ -4841,6 +5025,7 @@ module Xlsxrb
         @xf_index_map[num_fmt_id]
       end
 
+      #: (untyped filter) -> untyped
       def emit_filter_xml(filter)
         case filter[:type]
         when :filters
@@ -4903,6 +5088,7 @@ module Xlsxrb
         end
       end
 
+      #: (untyped parts, untyped rule) -> untyped
       def emit_cf_rule(parts, rule)
         type = rule[:type]
         if type.is_a?(String) || type.is_a?(Symbol)
@@ -4992,6 +5178,7 @@ module Xlsxrb
       end
 
       # Emits a <color> element for CF rules, accepting either a plain RGB string or a hash.
+      #: (untyped color) -> (untyped | ::String)
       def emit_cf_color_xml(color)
         if color.is_a?(Hash)
           emit_color_xml(color)
@@ -5000,6 +5187,7 @@ module Xlsxrb
         end
       end
 
+      #: (untyped sheet_cells) -> ("A1" | ::String)
       def compute_dimension(sheet_cells)
         return "A1" if sheet_cells.empty?
 
@@ -5021,6 +5209,7 @@ module Xlsxrb
         "#{start_col}#{min_row}:#{end_col}#{max_row}"
       end
 
+      #: (untyped index) -> untyped
       def index_to_column_letter(index)
         result = +""
         while index.positive?
@@ -5031,6 +5220,7 @@ module Xlsxrb
         result
       end
 
+      #: () -> untyped
       def generate_core_properties_xml
         parts = [
           XML_HEADER,
@@ -5052,6 +5242,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: () -> untyped
       def generate_app_properties_xml
         parts = [
           XML_HEADER,
@@ -5080,6 +5271,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: () -> untyped
       def generate_custom_properties_xml
         custom_ns = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
         parts = [
@@ -5108,6 +5300,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: () -> untyped
       def generate_styles_xml
         parts = [
           XML_HEADER,
@@ -5240,6 +5433,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped alignment) -> ::String
       def emit_alignment_xml(alignment)
         attrs = []
         attrs << %(horizontal="#{alignment[:horizontal]}") if alignment[:horizontal]
@@ -5254,6 +5448,7 @@ module Xlsxrb
         "<alignment #{attrs.join(" ")}/>"
       end
 
+      #: (untyped protection) -> ::String
       def emit_protection_xml(protection)
         attrs = []
         attrs << %(locked="#{protection[:locked] ? "1" : "0"}") unless protection[:locked].nil?
@@ -5261,6 +5456,7 @@ module Xlsxrb
         "<protection #{attrs.join(" ")}/>"
       end
 
+      #: (untyped source, ?tag: ::String) -> (::String | ::String | ::String | ::String | "")
       def emit_color_xml(source, tag: "color")
         if source[:auto]
           %(<#{tag} auto="1"/>)
@@ -5277,6 +5473,7 @@ module Xlsxrb
         end
       end
 
+      #: (untyped font) -> untyped
       def emit_font_xml(font)
         parts = ["<font>"]
         parts << "<b/>" if font[:bold]
@@ -5304,6 +5501,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped fill) -> (untyped | ::String)
       def emit_fill_xml(fill)
         return emit_gradient_fill_xml(fill[:gradient]) if fill[:gradient]
 
@@ -5321,6 +5519,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped tag, untyped fill, untyped prefix) -> (::String | ::String | ::String | ::String | "")
       def emit_fill_color_xml(tag, fill, prefix)
         if fill[:"#{prefix}_color"]
           %(<#{tag} rgb="#{fill[:"#{prefix}_color"]}"/>)
@@ -5337,6 +5536,7 @@ module Xlsxrb
         end
       end
 
+      #: (untyped gradient) -> untyped
       def emit_gradient_fill_xml(gradient)
         attrs = []
         attrs << %(type="#{gradient[:type]}") if gradient[:type]
@@ -5360,6 +5560,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped brk, default_max: untyped) -> ::String
       def emit_brk_xml(brk, default_max:)
         if brk.is_a?(Hash)
           attrs = %(id="#{brk[:id]}")
@@ -5373,6 +5574,7 @@ module Xlsxrb
         end
       end
 
+      #: (untyped bdr) -> untyped
       def emit_border_xml(bdr)
         border_attrs = []
         border_attrs << ' diagonalUp="1"' if bdr[:diagonal_up]
@@ -5393,6 +5595,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped dxf) -> untyped
       def emit_dxf_xml(dxf)
         parts = ["<dxf>"]
         parts << emit_font_xml(dxf[:font]) if dxf[:font]
@@ -5408,6 +5611,7 @@ module Xlsxrb
         parts.join
       end
 
+      #: (untyped cell_address) -> untyped
       def validate_cell_address!(cell_address)
         raise ArgumentError, "cell address must be a String" unless cell_address.is_a?(String)
 
@@ -5421,26 +5625,31 @@ module Xlsxrb
         raise ArgumentError, "column out of range: #{match[1]}" unless col_index.between?(1, MAX_COLUMN_INDEX)
       end
 
+      #: (untyped letters) -> untyped
       def column_letter_to_index(letters)
         letters.chars.reduce(0) { |sum, char| (sum * 26) + (char.ord - "A".ord + 1) }
       end
 
       # Extracts the column letter(s) from a cell address, e.g. "A" from "A1".
+      #: (untyped cell_address) -> untyped
       def extract_column_letter(cell_address)
         cell_address.match(/^([A-Z]+)/)[1]
       end
 
       # Extracts the row number from a cell address, e.g. 1 from "A1".
+      #: (untyped cell_address) -> untyped
       def extract_row_number(cell_address)
         cell_address.match(/(\d+)$/)[1].to_i
       end
 
       # Converts a range like "A1:D20" to absolute "$A$1:$D$20".
+      #: (untyped range) -> untyped
       def absolute_range(range)
         range.split(":").map { |part| absolute_cell(part) }.join(":")
       end
 
       # Converts "A1" to "$A$1".
+      #: (untyped cell_ref) -> ::String
       def absolute_cell(cell_ref)
         m = cell_ref.match(/\A([A-Z]+)(\d+)\z/)
         raise ArgumentError, "invalid cell reference: #{cell_ref}" unless m
