@@ -43,40 +43,84 @@ module Xlsxrb
     # Applies option-style definitions so callers can use add_style(name, **opts)
     # as an alternative to block-based fluent chaining.
     def apply_options!(**opts)
-      bold(opts[:bold]) if opts.key?(:bold)
-      italic(opts[:italic]) if opts.key?(:italic)
-      size(opts[:size]) if opts.key?(:size)
-      font_name(opts[:font_name]) if opts.key?(:font_name)
-      font_color(opts[:font_color]) if opts.key?(:font_color)
-      underline(opts[:underline]) if opts.key?(:underline)
-      strike(opts[:strike]) if opts.key?(:strike)
-      vert_align(opts[:vert_align]) if opts.key?(:vert_align)
+      if opts.key?(:font)
+        font_opts = opts[:font] || {}
+        bold(font_opts[:bold]) if font_opts.key?(:bold)
+        italic(font_opts[:italic]) if font_opts.key?(:italic)
+        size(font_opts[:size]) if font_opts.key?(:size)
+        font_name(font_opts[:name]) if font_opts.key?(:name)
+        font_color(font_opts[:color]) if font_opts.key?(:color)
+        underline(font_opts[:underline]) if font_opts.key?(:underline)
+        strike(font_opts[:strike]) if font_opts.key?(:strike)
+        vert_align(font_opts[:vert_align]) if font_opts.key?(:vert_align)
+      else
+        bold(opts[:bold]) if opts.key?(:bold)
+        italic(opts[:italic]) if opts.key?(:italic)
+        size(opts[:size]) if opts.key?(:size)
+        font_name(opts[:font_name]) if opts.key?(:font_name)
+        font_color(opts[:font_color]) if opts.key?(:font_color)
+        underline(opts[:underline]) if opts.key?(:underline)
+        strike(opts[:strike]) if opts.key?(:strike)
+        vert_align(opts[:vert_align]) if opts.key?(:vert_align)
+      end
 
-      fill_color(opts[:fill_color]) if opts.key?(:fill_color)
-      if opts.key?(:fill_pattern)
-        pattern = opts[:fill_pattern] || {}
-        fill_pattern(
-          pattern[:pattern] || "solid",
-          fg_color: pattern[:fg_color],
-          bg_color: pattern[:bg_color]
-        )
+      if opts.key?(:fill)
+        fill_opts = opts[:fill] || {}
+        if fill_opts.key?(:color)
+          fill_color(fill_opts[:color])
+        else
+          fill_pattern(
+            fill_opts[:pattern] || "solid",
+            fg_color: fill_opts[:fg_color],
+            bg_color: fill_opts[:bg_color]
+          )
+        end
+      else
+        fill_color(opts[:fill_color]) if opts.key?(:fill_color)
+        if opts.key?(:fill_pattern)
+          pattern = opts[:fill_pattern] || {}
+          fill_pattern(
+            pattern[:pattern] || "solid",
+            fg_color: pattern[:fg_color],
+            bg_color: pattern[:bg_color]
+          )
+        end
       end
       fill_gradient(**opts[:fill_gradient]) if opts.key?(:fill_gradient) && opts[:fill_gradient]
 
-      border_all(**opts[:border_all]) if opts.key?(:border_all) && opts[:border_all]
-      border_left(**opts[:border_left]) if opts.key?(:border_left) && opts[:border_left]
-      border_right(**opts[:border_right]) if opts.key?(:border_right) && opts[:border_right]
-      border_top(**opts[:border_top]) if opts.key?(:border_top) && opts[:border_top]
-      border_bottom(**opts[:border_bottom]) if opts.key?(:border_bottom) && opts[:border_bottom]
+      if opts.key?(:border)
+        border_opts = opts[:border] || {}
+        border_all(**border_opts[:all]) if border_opts.key?(:all) && border_opts[:all]
+        border_left(**border_opts[:left]) if border_opts.key?(:left) && border_opts[:left]
+        border_right(**border_opts[:right]) if border_opts.key?(:right) && border_opts[:right]
+        border_top(**border_opts[:top]) if border_opts.key?(:top) && border_opts[:top]
+        border_bottom(**border_opts[:bottom]) if border_opts.key?(:bottom) && border_opts[:bottom]
+      else
+        border_all(**opts[:border_all]) if opts.key?(:border_all) && opts[:border_all]
+        border_left(**opts[:border_left]) if opts.key?(:border_left) && opts[:border_left]
+        border_right(**opts[:border_right]) if opts.key?(:border_right) && opts[:border_right]
+        border_top(**opts[:border_top]) if opts.key?(:border_top) && opts[:border_top]
+        border_bottom(**opts[:border_bottom]) if opts.key?(:border_bottom) && opts[:border_bottom]
+      end
 
       number_format(opts[:number_format]) if opts.key?(:number_format)
 
-      align_horizontal(opts[:align_horizontal]) if opts.key?(:align_horizontal)
-      align_vertical(opts[:align_vertical]) if opts.key?(:align_vertical)
-      wrap_text(opts[:wrap_text]) if opts.key?(:wrap_text)
-      text_rotation(opts[:text_rotation]) if opts.key?(:text_rotation)
-      indent(opts[:indent]) if opts.key?(:indent)
-      shrink_to_fit(opts[:shrink_to_fit]) if opts.key?(:shrink_to_fit)
+      if opts.key?(:alignment)
+        align_opts = opts[:alignment] || {}
+        align_horizontal(align_opts[:horizontal]) if align_opts.key?(:horizontal)
+        align_vertical(align_opts[:vertical]) if align_opts.key?(:vertical)
+        wrap_text(align_opts[:wrap_text]) if align_opts.key?(:wrap_text)
+        text_rotation(align_opts[:text_rotation]) if align_opts.key?(:text_rotation)
+        indent(align_opts[:indent]) if align_opts.key?(:indent)
+        shrink_to_fit(align_opts[:shrink_to_fit]) if align_opts.key?(:shrink_to_fit)
+      else
+        align_horizontal(opts[:align_horizontal]) if opts.key?(:align_horizontal)
+        align_vertical(opts[:align_vertical]) if opts.key?(:align_vertical)
+        wrap_text(opts[:wrap_text]) if opts.key?(:wrap_text)
+        text_rotation(opts[:text_rotation]) if opts.key?(:text_rotation)
+        indent(opts[:indent]) if opts.key?(:indent)
+        shrink_to_fit(opts[:shrink_to_fit]) if opts.key?(:shrink_to_fit)
+      end
 
       self
     end
