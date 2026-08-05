@@ -13,11 +13,11 @@ Xlsxrb.generate(output_path) do |w|
     style.italic.font_color("FFC00000").fill_color("FFFFFF00")
   end
 
-  w.sheet("Styles") do
-    w.column(0, width: 25)
-    w.column(1, width: 25)
-    w.row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
-    w.row(["Normal Text", "Highlighted Text"], styles: { 1 => "highlight" })
+  w.sheet("Styles") do |sheet|
+    sheet.column(0, width: 25)
+    sheet.column(1, width: 25)
+    sheet.row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
+    sheet.row(["Normal Text", "Highlighted Text"], styles: { 1 => "highlight" })
   end
 end
 
