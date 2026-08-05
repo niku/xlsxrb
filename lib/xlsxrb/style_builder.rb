@@ -21,6 +21,7 @@ module Xlsxrb
 
     def resolve_color(color)
       return nil unless color
+
       if color.is_a?(Symbol) || (color.is_a?(String) && color.start_with?(":") && color.length > 1)
         key = color.to_s.sub(/^:/, "").to_sym
         return COLORS[key] || color.to_s

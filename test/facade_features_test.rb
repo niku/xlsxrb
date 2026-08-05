@@ -119,8 +119,8 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("DV") do |s|
         s.row(["Value"])
         s.validate_data("A2:A100", type: :whole, operator: :between,
-                                         formula1: "1", formula2: "100",
-                                         show_error_message: true, error: "Enter 1-100")
+                                   formula1: "1", formula2: "100",
+                                   show_error_message: true, error: "Enter 1-100")
       end
     end
 
@@ -197,11 +197,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("CF") do |s|
         s.row([90, 45, 72, 88])
         s.conditional_format("A1:D1",
-                                 type: :cell_is,
-                                 operator: :greaterThan,
-                                 formula: "80",
-                                 priority: 1,
-                                 fill_color: "FFFFC7CE")
+                             type: :cell_is,
+                             operator: :greaterThan,
+                             formula: "80",
+                             priority: 1,
+                             fill_color: "FFFFC7CE")
       end
     end
 
@@ -269,11 +269,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.table("A1:B2",
-                    columns: %w[Name Score],
-                    name: "StyledTable",
-                    style: "TableStyleMedium9",
-                    show_first_column: true,
-                    show_row_stripes: false)
+                columns: %w[Name Score],
+                name: "StyledTable",
+                style: "TableStyleMedium9",
+                show_first_column: true,
+                show_row_stripes: false)
       end
     end
 

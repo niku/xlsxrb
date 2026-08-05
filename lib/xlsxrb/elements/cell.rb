@@ -41,24 +41,32 @@ module Xlsxrb
 
       def to_date
         return value if value.is_a?(Date)
-        
+
         # Excel epoch is 1899-12-30
         if value.is_a?(Numeric)
           Date.new(1899, 12, 30) + value.to_i
         else
-          Date.parse(value.to_s) rescue nil
+          begin
+            Date.parse(value.to_s)
+          rescue StandardError
+            nil
+          end
         end
       end
 
       def to_time
         return value if value.is_a?(Time)
-        
+
         if value.is_a?(Numeric)
           days = value.to_f
           base_time = Time.utc(1899, 12, 30)
-          base_time + (days * 86400)
+          base_time + (days * 86_400)
         else
-          Time.parse(value.to_s) rescue nil
+          begin
+            Time.parse(value.to_s)
+          rescue StandardError
+            nil
+          end
         end
       end
 

@@ -67,7 +67,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(["Feb", 200])
         s.row(["Mar", 300])
         s.chart(type: :bar, title: "Quarterly Revenue",
-                    series: [{ cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$B$2:$B$4" }])
+                series: [{ cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$B$2:$B$4" }])
       end
     end
 
@@ -91,7 +91,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(["A", 40])
         s.row(["B", 60])
         s.chart(type: :pie, title: "Distribution",
-                    series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }])
+                series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }])
       end
     end
 
@@ -112,10 +112,10 @@ class ContractTest < Test::Unit::TestCase
         s.row(["Jan", 10, 20])
         s.row(["Feb", 15, 25])
         s.chart(type: :line, title: "Trend Lines",
-                    series: [
-                      { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$B$2:$B$3" },
-                      { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$C$2:$C$3" }
-                    ])
+                series: [
+                  { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$B$2:$B$3" },
+                  { cat_ref: "Trends!$A$2:$A$3", val_ref: "Trends!$C$2:$C$3" }
+                ])
       end
     end
 
@@ -136,10 +136,10 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[X Y])
         s.row([1, 10])
         s.chart(type: :bar, title: "Axes Test",
-                    series: [{ cat_ref: "S1!$A$2:$A$2", val_ref: "S1!$B$2:$B$2" }],
-                    legend: { position: "b" },
-                    cat_axis_title: "Categories",
-                    val_axis_title: "Values")
+                series: [{ cat_ref: "S1!$A$2:$A$2", val_ref: "S1!$B$2:$B$2" }],
+                legend: { position: "b" },
+                cat_axis_title: "Categories",
+                val_axis_title: "Values")
       end
     end
 
@@ -164,8 +164,8 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[Cat Val])
         s.row(["A", 50])
         s.chart(type: :bar, title: "DL Test",
-                    series: [{ cat_ref: "DL!$A$2:$A$2", val_ref: "DL!$B$2:$B$2" }],
-                    data_labels: { show_val: true })
+                series: [{ cat_ref: "DL!$A$2:$A$2", val_ref: "DL!$B$2:$B$2" }],
+                data_labels: { show_val: true })
       end
     end
 
@@ -185,9 +185,9 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[X Y Z])
         s.row([1, 10, 20])
         s.chart(type: :bar, title: "Chart1",
-                    series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$B$2:$B$2" }])
+                series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$B$2:$B$2" }])
         s.chart(type: :pie, title: "Chart2",
-                    series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$C$2:$C$2" }])
+                series: [{ cat_ref: "Multi!$A$2:$A$2", val_ref: "Multi!$C$2:$C$2" }])
       end
     end
 
@@ -209,7 +209,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(["Alpha", 100])
         s.row(["Beta", 200])
         s.chart(type: :bar, title: "Cache Test",
-                    series: [{ cat_ref: "Cache!$A$2:$A$3", val_ref: "Cache!$B$2:$B$3" }])
+                series: [{ cat_ref: "Cache!$A$2:$A$3", val_ref: "Cache!$B$2:$B$3" }])
       end
     end
 
@@ -244,7 +244,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[X Y])
         s.row([1, 10])
         s.chart(type: spec[:input], title: "Type Test",
-                    series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
+                series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
       end
     end
 
@@ -328,7 +328,7 @@ class ContractTest < Test::Unit::TestCase
                 s.row(%w[X Y])
                 s.row([1, 10])
                 s.chart(type: :bar, title: "NS",
-                            series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
+                        series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
             end
           when :in_memory
@@ -338,7 +338,7 @@ class ContractTest < Test::Unit::TestCase
                 s.row(%w[X Y])
                 s.row([1, 10])
                 s.chart(type: :bar, title: "NS",
-                            series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
+                        series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
             end
             Xlsxrb.write(t.path, wb)
@@ -374,7 +374,7 @@ class ContractTest < Test::Unit::TestCase
                 s.row(%w[X Y])
                 s.row([1, 10])
                 s.chart(type: :bar, title: "NS Check",
-                            series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
+                        series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
             end
           when :in_memory
@@ -384,7 +384,7 @@ class ContractTest < Test::Unit::TestCase
                 s.row(%w[X Y])
                 s.row([1, 10])
                 s.chart(type: :bar, title: "NS Check",
-                            series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
+                        series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2" }])
               end
             end
             Xlsxrb.write(t.path, wb)
@@ -425,8 +425,8 @@ class ContractTest < Test::Unit::TestCase
               w.sheet("S") do |s|
                 s.row(["See the shape below"])
                 s.shape(preset: "rect", text: "Important!",
-                            from_col: 0, from_row: 2, to_col: 3, to_row: 6,
-                            fill_color: "#FFFFC0", line_color: "#FF0000")
+                        from_col: 0, from_row: 2, to_col: 3, to_row: 6,
+                        fill_color: "#FFFFC0", line_color: "#FF0000")
               end
             end
           when :in_memory
@@ -435,8 +435,8 @@ class ContractTest < Test::Unit::TestCase
               w.sheet("S") do |s|
                 s.row(["See the shape below"])
                 s.shape(preset: "rect", text: "Important!",
-                            from_col: 0, from_row: 2, to_col: 3, to_row: 6,
-                            fill_color: "#FFFFC0", line_color: "#FF0000")
+                        from_col: 0, from_row: 2, to_col: 3, to_row: 6,
+                        fill_color: "#FFFFC0", line_color: "#FF0000")
               end
             end
             Xlsxrb.write(t.path, wb)
@@ -542,11 +542,11 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("CF") do |s|
         s.row([90, 45, 72, 88])
         s.conditional_format("A1:D1",
-                                 type: :cell_is,
-                                 operator: :greaterThan,
-                                 formula: "80",
-                                 priority: 1,
-                                 fill_color: "FFFFC7CE")
+                             type: :cell_is,
+                             operator: :greaterThan,
+                             formula: "80",
+                             priority: 1,
+                             fill_color: "FFFFC7CE")
       end
     end
 
@@ -593,11 +593,11 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.table("A1:B2",
-                    columns: %w[Name Score],
-                    name: "StyledTable",
-                    style: "TableStyleMedium9",
-                    show_first_column: true,
-                    show_row_stripes: false)
+                columns: %w[Name Score],
+                name: "StyledTable",
+                style: "TableStyleMedium9",
+                show_first_column: true,
+                show_row_stripes: false)
       end
     end
 
@@ -1157,7 +1157,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Shapes") do |s|
         s.row(["Data"])
         s.shape(preset: "roundRect", text: "Call Out",
-                    from_col: 1, from_row: 2, to_col: 4, to_row: 6)
+                from_col: 1, from_row: 2, to_col: 4, to_row: 6)
       end
     end
 

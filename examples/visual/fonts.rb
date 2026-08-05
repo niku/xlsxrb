@@ -41,28 +41,28 @@ Xlsxrb.generate(output_path) do |w|
     s.column(1, width: 35)
 
     s.row(["Font Feature", "Text Preview"], styles: "header")
-    
-    s.row(["Family: Arial", "Arial Text"], styles: ["bg_light", "f_arial"])
+
+    s.row(["Family: Arial", "Arial Text"], styles: %w[bg_light f_arial])
     s.row(["Family: Times New Roman", "Times New Roman"], styles: [nil, "f_times"])
-    s.row(["Family: Courier New", "Courier New Text"], styles: ["bg_light", "f_courier"])
+    s.row(["Family: Courier New", "Courier New Text"], styles: %w[bg_light f_courier])
     s.row(["Family: Georgia", "Georgia Text"], styles: [nil, "f_georgia"])
-    s.row(["Family: Tahoma", "Tahoma Text"], styles: ["bg_light", "f_tahoma"])
-    
+    s.row(["Family: Tahoma", "Tahoma Text"], styles: %w[bg_light f_tahoma])
+
     s.row(["Size: 10pt", "10pt Font Size"], styles: [nil, "sz_10"])
-    s.row(["Size: 16pt", "16pt Font Size"], styles: ["bg_light", "sz_16"])
+    s.row(["Size: 16pt", "16pt Font Size"], styles: %w[bg_light sz_16])
     s.row(["Size: 24pt", "24pt Font Size"], styles: [nil, "sz_24"])
-    
-    s.row(["Color: Red", "Red Text"], styles: ["bg_light", "c_red"])
+
+    s.row(["Color: Red", "Red Text"], styles: %w[bg_light c_red])
     s.row(["Color: Green", "Green Text"], styles: [nil, "c_green"])
-    s.row(["Color: Blue", "Blue Text"], styles: ["bg_light", "c_blue"])
-    
+    s.row(["Color: Blue", "Blue Text"], styles: %w[bg_light c_blue])
+
     s.row(["Style: Bold", "Bold Text"], styles: [nil, "bold"])
-    s.row(["Style: Italic", "Italic Text"], styles: ["bg_light", "italic"])
+    s.row(["Style: Italic", "Italic Text"], styles: %w[bg_light italic])
     s.row(["Style: Underline", "Underline Text"], styles: [nil, "underline"])
-    s.row(["Style: Double Underline", "Double Underline"], styles: ["bg_light", "double_underline"])
+    s.row(["Style: Double Underline", "Double Underline"], styles: %w[bg_light double_underline])
     s.row(["Style: Strike-through", "Strike-through Text"], styles: [nil, "strike"])
-    
-    s.row(["Align: Superscript", "x2 (2 is super)"], styles: ["bg_light", "superscript"])
+
+    s.row(["Align: Superscript", "x2 (2 is super)"], styles: %w[bg_light superscript])
     s.row(["Align: Subscript", "H2O (2 is sub)"], styles: [nil, "subscript"])
   end
 end
