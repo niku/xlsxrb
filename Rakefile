@@ -410,7 +410,7 @@ task doc: %i[wasm fetch_assets] do
      "--exclude 'docs/zeta\\.js' " \
      "--exclude 'docs/office_thread\\.js' " \
      "--exclude 'docs/preview\\.html' " \
-     "--title 'xlsxrb Documentation' --main README.md README.md \"docs/visual/VisualGallery.md\" lib/"
+     "--title 'xlsxrb Documentation' --main README.md README.md CHANGELOG.md CODE_OF_CONDUCT.md docs/*.md \"docs/visual/VisualGallery.md\" lib/"
 
   # Copy visual gallery images and files so they are available in RDoc output
   FileUtils.mkdir_p("doc/test/visual/baselines")
