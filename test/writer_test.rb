@@ -149,30 +149,30 @@ class WriterTest < Test::Unit::TestCase
 
   test "stores merge cell ranges" do
     writer = Xlsxrb::Ooxml::Writer.new
-    writer.merge_cells("A1:B2")
-    writer.merge_cells("C3:D4")
+    writer.merge("A1:B2")
+    writer.merge("C3:D4")
 
     assert_equal(%w[A1:B2 C3:D4], writer.merged_cells)
   end
 
   test "rejects invalid merge cell range" do
     writer = Xlsxrb::Ooxml::Writer.new
-    assert_raise(ArgumentError) { writer.merge_cells("A1") }
-    assert_raise(ArgumentError) { writer.merge_cells("") }
+    assert_raise(ArgumentError) { writer.merge("A1") }
+    assert_raise(ArgumentError) { writer.merge("") }
   end
 
   test "stores hyperlinks" do
     writer = Xlsxrb::Ooxml::Writer.new
-    writer.add_hyperlink("A1", "https://example.com")
-    writer.add_hyperlink("B1", "https://github.com")
+    writer.hyperlink("A1", "https://example.com")
+    writer.hyperlink("B1", "https://github.com")
 
     assert_equal({ "A1" => { url: "https://example.com" }, "B1" => { url: "https://github.com" } }, writer.hyperlinks)
   end
 
   test "stores hyperlinks with display tooltip and location" do
     writer = Xlsxrb::Ooxml::Writer.new
-    writer.add_hyperlink("A1", "https://example.com", display: "Example Site", tooltip: "Click to visit")
-    writer.add_hyperlink("B1", "https://example.com/page", location: "Sheet2!A1")
+    writer.hyperlink("A1", "https://example.com", display: "Example Site", tooltip: "Click to visit")
+    writer.hyperlink("B1", "https://example.com/page", location: "Sheet2!A1")
 
     expected = {
       "A1" => { url: "https://example.com", display: "Example Site", tooltip: "Click to visit" },
@@ -183,14 +183,14 @@ class WriterTest < Test::Unit::TestCase
 
   test "stores internal hyperlink with location only" do
     writer = Xlsxrb::Ooxml::Writer.new
-    writer.add_hyperlink("A1", location: "Sheet2!A1")
+    writer.hyperlink("A1", location: "Sheet2!A1")
 
     assert_equal({ "A1" => { location: "Sheet2!A1" } }, writer.hyperlinks)
   end
 
-  test "add_hyperlink requires url or location" do
+  test "hyperlink requires url or location" do
     writer = Xlsxrb::Ooxml::Writer.new
-    assert_raise(ArgumentError) { writer.add_hyperlink("A1") }
+    assert_raise(ArgumentError) { writer.hyperlink("A1") }
   end
 
   test "adds number formats and assigns to cells" do
@@ -232,10 +232,10 @@ class WriterTest < Test::Unit::TestCase
 
   test "stores core properties" do
     writer = Xlsxrb::Ooxml::Writer.new
-    writer.set_core_property(:title, "My Workbook")
-    writer.set_core_property(:creator, "Test User")
-    writer.set_core_property(:created, "2024-01-15T00:00:00Z")
-    writer.set_core_property(:modified, "2024-01-16T12:00:00Z")
+    writer.core_property(:title, "My Workbook")
+    writer.core_property(:creator, "Test User")
+    writer.core_property(:created, "2024-01-15T00:00:00Z")
+    writer.core_property(:modified, "2024-01-16T12:00:00Z")
 
     props = writer.core_properties
     assert_equal("My Workbook", props[:title])
@@ -246,10 +246,10 @@ class WriterTest < Test::Unit::TestCase
 
   test "stores app properties" do
     writer = Xlsxrb::Ooxml::Writer.new
-    writer.set_app_property(:application, "Xlsxrb")
-    writer.set_app_property(:app_version, "1.0.0")
-    writer.set_app_property(:heading_pairs, [["Worksheets", 2]])
-    writer.set_app_property(:titles_of_parts, %w[Sheet1 Data])
+    writer.app_property(:application, "Xlsxrb")
+    writer.app_property(:app_version, "1.0.0")
+    writer.app_property(:heading_pairs, [["Worksheets", 2]])
+    writer.app_property(:titles_of_parts, %w[Sheet1 Data])
 
     props = writer.app_properties
     assert_equal("Xlsxrb", props[:application])
@@ -2571,16 +2571,16 @@ class WriterTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
-    writer.set_core_property(:title, "My Title")
-    writer.set_core_property(:subject, "My Subject")
-    writer.set_core_property(:creator, "Alice")
-    writer.set_core_property(:keywords, "ruby, xlsx")
-    writer.set_core_property(:description, "A test document")
-    writer.set_core_property(:last_modified_by, "Bob")
-    writer.set_core_property(:revision, "3")
-    writer.set_core_property(:category, "Reports")
-    writer.set_core_property(:content_status, "Draft")
-    writer.set_core_property(:language, "en-US")
+    writer.core_property(:title, "My Title")
+    writer.core_property(:subject, "My Subject")
+    writer.core_property(:creator, "Alice")
+    writer.core_property(:keywords, "ruby, xlsx")
+    writer.core_property(:description, "A test document")
+    writer.core_property(:last_modified_by, "Bob")
+    writer.core_property(:revision, "3")
+    writer.core_property(:category, "Reports")
+    writer.core_property(:content_status, "Draft")
+    writer.core_property(:language, "en-US")
     writer.write(xlsx_path)
 
     xml = read_xml_from_xlsx(xlsx_path, "docProps/core.xml")
@@ -3100,9 +3100,9 @@ class WriterTest < Test::Unit::TestCase
   test "custom properties are written to docProps/custom.xml" do
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
-    writer.add_custom_property("Project", "Alpha")
-    writer.add_custom_property("Version", 42, type: :number)
-    writer.add_custom_property("Active", true, type: :bool)
+    writer.custom_property("Project", "Alpha")
+    writer.custom_property("Version", 42, type: :number)
+    writer.custom_property("Active", true, type: :bool)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-custom", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

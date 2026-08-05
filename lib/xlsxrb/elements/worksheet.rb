@@ -12,9 +12,20 @@ module Xlsxrb
               unmapped_data: unmapped_data, errors: computed_errors.freeze)
       end
 
+      def cells_hash
+        h = {}
+        rows.each do |r|
+          r.cells.each do |c|
+            ref = "#{Cell.column_letter(c.column_index)}#{c.row_index + 1}"
+            h[ref] = c
+          end
+        end
+        h
+      end
+
       def cells
         # Ensure ordered traversal
-        @cells ||= cells_hash.values.sort_by { |c| [c.row_index, c.column_index] }
+        cells_hash.values.sort_by { |c| [c.row_index, c.column_index] }
       end
 
       def [](ref)

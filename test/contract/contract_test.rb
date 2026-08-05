@@ -465,7 +465,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Links") do |s|
         s.row(["Click me"])
-        s.add_hyperlink("A1", "https://example.com", display: "Example")
+        s.hyperlink("A1", "https://example.com", display: "Example")
       end
     end
 
@@ -617,7 +617,7 @@ class ContractTest < Test::Unit::TestCase
   # =====================================================
 
   data(API_PATHS)
-  test "merge_cells: range is preserved" do |api_path|
+  test "merge: range is preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Merge") do |s|
         s.row(["Merged", nil, nil])
@@ -1012,9 +1012,9 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
       end
-      w.set_core_property(:creator, "Author")
-      w.set_app_property(:application, "Xlsxrb")
-      w.add_custom_property("MyProp", "MyValue")
+      w.core_property(:creator, "Author")
+      w.app_property(:application, "Xlsxrb")
+      w.custom_property("MyProp", "MyValue")
     end
 
     assert_equal("Author", reader.core_properties[:creator])
@@ -1206,7 +1206,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Links") do |s|
         s.row(["Click here"])
-        s.add_hyperlink("A1", "https://example.com", display: "Visit Example")
+        s.hyperlink("A1", "https://example.com", display: "Visit Example")
       end
     end
 
@@ -1225,7 +1225,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Nav") do |s|
         s.row(["Jump"])
-        s.add_hyperlink("A1", location: "Nav!B2", display: "Go to B2")
+        s.hyperlink("A1", location: "Nav!B2", display: "Go to B2")
       end
     end
 
@@ -1295,7 +1295,7 @@ class ContractTest < Test::Unit::TestCase
   # =====================================================
 
   data(API_PATHS)
-  test "merge_cells: multiple ranges are all preserved" do |api_path|
+  test "merge: multiple ranges are all preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Merge") do |s|
         s.row(["Title", nil, nil, "Sub", nil])

@@ -325,23 +325,23 @@ module Xlsxrb
     end
 
     # Set a core document property.
-    def set_core_property(name, value)
+    def core_property(name, value)
       @core_properties[name] = value
     end
 
     # Set an app document property.
-    def set_app_property(name, value)
+    def app_property(name, value)
       @app_properties[name] = value
     end
 
     # Set multiple core and/or app properties.
     def properties(core: nil, app: nil)
-      core&.each { |k, v| set_core_property(k, v) }
-      app&.each { |k, v| set_app_property(k, v) }
+      core&.each { |k, v| core_property(k, v) }
+      app&.each { |k, v| app_property(k, v) }
     end
 
     # Add a custom document property.
-    def add_custom_property(name, value, type: :string)
+    def custom_property(name, value, type: :string)
       @custom_properties << { name: name, value: value, type: type }
     end
 
@@ -505,12 +505,7 @@ module Xlsxrb
       style_builder
     end
 
-    # Add a row of values to the sheet.
-    # values:: Array of cell values
-    # styles:: Hash mapping column indices to style names, or Array of style names for each column
-    def add_row(values, **opts)
-      row(values, **opts)
-    end
+
 
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
@@ -614,10 +609,7 @@ module Xlsxrb
       )
     end
 
-    # Set column width for a 0-based column index.
-    def col(index_or_letter, **opts)
-      column(index_or_letter, **opts)
-    end
+
 
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       @columns << Elements::Column.new(
@@ -642,7 +634,7 @@ module Xlsxrb
     # --- Hyperlinks ---
 
     # Add a hyperlink on a cell.
-    def add_hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
+    def hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
       link = { cell: cell }
       link[:url] = url if url
       link[:display] = display if display
@@ -735,15 +727,10 @@ module Xlsxrb
 
     # --- Merge Cells ---
 
-    # Merge a range of cells (e.g. "A1:B2").
-    def merge(range)
-      @merge_cells_ranges << range
-    end
-
-    # Helper for index-based merging.
-    def merge_cells(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
+    # Merge a range of cells (e.g. "A1:B2"), or by coordinate indices.
+    def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       if range
-        merge(range)
+        @merge_cells_ranges << range
       else
         r_start = row || row_start || 0
         r_end = row || row_end || 0
@@ -751,7 +738,7 @@ module Xlsxrb
         c_end = col_end || 0
         start_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_start)}#{r_start + 1}"
         end_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_end)}#{r_end + 1}"
-        merge("#{start_ref}:#{end_ref}")
+        @merge_cells_ranges << "#{start_ref}:#{end_ref}"
       end
     end
 
@@ -1011,10 +998,6 @@ module Xlsxrb
 
     # Add a row of values. values is an Array.
     # styles:: Hash mapping column indices to style names, or Array of style names for each column
-    def add_row(values, **opts)
-      row(values, **opts)
-    end
-
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       sheet if @current_sheet.nil?
 
@@ -1093,10 +1076,6 @@ module Xlsxrb
     end
 
     # Set column width for a 0-based column index.
-    def col(index_or_letter, **opts)
-      column(index_or_letter, **opts)
-    end
-
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       sheet if @current_sheet.nil?
 
@@ -1118,7 +1097,7 @@ module Xlsxrb
 
     # --- Hyperlinks ---
 
-    def add_hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
+    def hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
       sheet if @current_sheet.nil?
       link = { cell: cell }
       link[:url] = url if url
@@ -1203,16 +1182,11 @@ module Xlsxrb
       @current_sparkline_groups << group
     end
 
-    # --- Merge Cells ---
-
-    def merge(range)
+    # Merge a range of cells (e.g. "A1:B2"), or by coordinate indices.
+    def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       sheet if @current_sheet.nil?
-      @current_merge_cells << range
-    end
-
-    def merge_cells(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       if range
-        merge(range)
+        @current_merge_cells << range
       else
         r_start = row || row_start || 0
         r_end = row || row_end || 0
@@ -1220,7 +1194,7 @@ module Xlsxrb
         c_end = col_end || 0
         start_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_start)}#{r_start + 1}"
         end_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_end)}#{r_end + 1}"
-        merge("#{start_ref}:#{end_ref}")
+        @current_merge_cells << "#{start_ref}:#{end_ref}"
       end
     end
 
@@ -1361,23 +1335,23 @@ module Xlsxrb
     end
 
     # Set a core document property.
-    def set_core_property(name, value)
+    def core_property(name, value)
       @core_properties[name] = value
     end
 
     # Set an app document property.
-    def set_app_property(name, value)
+    def app_property(name, value)
       @app_properties[name] = value
     end
 
     # Set multiple core and/or app properties.
     def properties(core: nil, app: nil)
-      core&.each { |k, v| set_core_property(k, v) }
-      app&.each { |k, v| set_app_property(k, v) }
+      core&.each { |k, v| core_property(k, v) }
+      app&.each { |k, v| app_property(k, v) }
     end
 
     # Add a custom document property.
-    def add_custom_property(name, value, type: :string)
+    def custom_property(name, value, type: :string)
       @custom_properties << { name: name, value: value, type: type }
     end
 
