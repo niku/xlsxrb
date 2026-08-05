@@ -185,9 +185,11 @@ class FacadeTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path, wb)
 
       collected = []
-      Xlsxrb.foreach(tmp.path) do |row|
-        assert_instance_of(Xlsxrb::Elements::Row, row)
-        collected << row.cells[0].value
+      Xlsxrb.foreach(tmp.path) do |sheet|
+        sheet.each do |row|
+          assert_instance_of(Xlsxrb::Elements::Row, row)
+          collected << row.cells[0].value
+        end
       end
 
       assert_equal([0, 10, 20, 30, 40], collected)
@@ -217,7 +219,7 @@ class FacadeTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path, wb)
 
       collected = []
-      Xlsxrb.foreach(tmp.path, sheet: "Second") { |row| collected << row.cells[0].value }
+      Xlsxrb.foreach(tmp.path, sheet: "Second") { |sheet| sheet.each { |row| collected << row.cells[0].value } }
       assert_equal(["B"], collected)
     ensure
       tmp.close!
@@ -239,7 +241,7 @@ class FacadeTest < Test::Unit::TestCase
 
       enum = Xlsxrb.foreach(tmp.path)
       assert_instance_of(Enumerator, enum)
-      assert_equal(1, enum.first.cells[0].value)
+      assert_equal(1, enum.first.first.cells[0].value)
     ensure
       tmp.close!
     end
@@ -343,9 +345,11 @@ class FacadeTest < Test::Unit::TestCase
 
       count = 0
       sum = 0
-      Xlsxrb.foreach(tmp.path) do |row|
-        count += 1
-        sum += row.cells[0].value.to_i
+      Xlsxrb.foreach(tmp.path) do |sheet|
+        sheet.each do |row|
+          count += 1
+          sum += row.cells[0].value.to_i
+        end
       end
 
       assert_equal(10_000, count)
@@ -427,8 +431,10 @@ class FacadeTest < Test::Unit::TestCase
       end
 
       values = []
-      Xlsxrb.foreach(tmp.path) do |row|
-        values << row.values
+      Xlsxrb.foreach(tmp.path) do |sheet|
+        sheet.each do |row|
+          values << row.values
+        end
       end
 
       assert_equal([["x", 1], ["y", 2], ["z", 3]], values)
