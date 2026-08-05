@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "view_show_grid_lines.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Hide Grid Lines") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Hide Grid Lines") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.sheet_view(:show_grid_lines, false)

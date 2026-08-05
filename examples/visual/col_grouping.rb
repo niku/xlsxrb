@@ -2,9 +2,9 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "col_grouping.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.sheet("Col Grouping") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  wb.sheet("Col Grouping") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25, outline_level: 0)

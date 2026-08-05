@@ -4,12 +4,12 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "japanese_text.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("ja_font") do |style|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("ja_font") do |style|
     style.font_name("Noto Sans CJK JP").size(12)
   end
 
-  w.sheet("Japanese") do |s|
+  wb.sheet("Japanese") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[日本語ラベル 値], styles: { 0 => "ja_font", 1 => "ja_font" })

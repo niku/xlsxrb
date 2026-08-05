@@ -4,9 +4,9 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "conditional_formatting.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("Scores") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("Scores") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row([90, 45, 72, 88], styles: %w[center center center center])

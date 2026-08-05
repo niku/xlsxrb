@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_grid_lines_print.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Print Grid Lines") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Print Grid Lines") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.print_options(:grid_lines, true)

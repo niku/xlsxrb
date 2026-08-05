@@ -2,11 +2,11 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("left") { |s| s.align_horizontal("left") }
-  w.style("center") { |s| s.align_horizontal("center") }
-  w.style("right") { |s| s.align_horizontal("right") }
-  w.sheet("Alignment") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("left") { |s| s.align_horizontal("left") }
+  wb.style("center") { |s| s.align_horizontal("center") }
+  wb.style("right") { |s| s.align_horizontal("right") }
+  wb.sheet("Alignment") do |s|
     s.print_options(:grid_lines, true)
     s.column(0, width: 20)
     s.column(1, width: 20)

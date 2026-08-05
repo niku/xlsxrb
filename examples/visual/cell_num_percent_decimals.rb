@@ -2,9 +2,9 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_percent_decimals.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("pct2") { |s| s.num_fmt("0.00%") }
-  w.sheet("Percents") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("pct2") { |s| s.num_fmt("0.00%") }
+  wb.sheet("Percents") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])

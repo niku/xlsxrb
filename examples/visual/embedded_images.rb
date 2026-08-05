@@ -24,9 +24,9 @@ end
 
 dummy_png = make_png(100, 100, 255, 0, 0)
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |st| st.align_horizontal(:center) }
-  w.sheet("Images") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |st| st.align_horizontal(:center) }
+  wb.sheet("Images") do |s|
     s.row(["Logo Target cell:", "", "", "Boundary"], styles: %w[left center center center])
     s.row(["", "", "", ""])
     s.row(["", "", "", ""])

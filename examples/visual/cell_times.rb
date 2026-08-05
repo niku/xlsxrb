@@ -3,9 +3,9 @@
 require "xlsxrb"
 require "time"
 output_path = ARGV[0] || "cell_times.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
-  w.sheet("Times") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
+  wb.sheet("Times") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Format", "Time Value"])

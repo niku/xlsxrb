@@ -3,9 +3,9 @@
 require "xlsxrb"
 require "date"
 output_path = ARGV[0] || "cell_dates.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
-  w.sheet("Dates") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
+  wb.sheet("Dates") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Format", "Date Value"])

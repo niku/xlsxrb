@@ -2,9 +2,9 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_equal_to.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("CF Equal") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("CF Equal") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])

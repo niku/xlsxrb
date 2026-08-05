@@ -2,9 +2,9 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "col_widths.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.sheet("Widths") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  wb.sheet("Widths") do |s|
     s.column(0, width: 30)
     s.column(1, width: 10)
     s.row(["Wide Column A", "Narrow B"], styles: %w[border border])

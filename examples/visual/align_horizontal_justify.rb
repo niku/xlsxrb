@@ -2,12 +2,12 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_justify.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("justify_align") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("justify_align") do |s|
     s.align_horizontal("justify")
     s.wrap_text(true)
   end
-  w.sheet("Alignment") do |s|
+  wb.sheet("Alignment") do |s|
     s.column(0, width: 25)
     s.row(["Justified alignment wraps and distributes text evenly."], styles: { 0 => "justify_align" })
   end
