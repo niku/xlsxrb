@@ -219,7 +219,7 @@ class FacadeTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path, wb)
 
       collected = []
-      Xlsxrb.foreach(tmp.path, sheet: "Second") { |sheet| sheet.each { |row| collected << row.cells[0].value } }
+      Xlsxrb.foreach(tmp.path).find { |s| s.name == "Second" }&.each { |row| collected << row.cells[0].value }
       assert_equal(["B"], collected)
     ensure
       tmp.close!
