@@ -23,19 +23,21 @@ module Xlsxrb
         cells[col_index]
       end
 
-      def each(&block)
+      def each(&)
         return to_enum(:each) unless block_given?
-        cells.each(&block)
+
+        cells.each(&)
       end
 
-      def each_cell(&block)
+      def each_cell(&)
         return to_enum(:each_cell) unless block_given?
-        cells.each(&block)
+
+        cells.each(&)
       end
 
       def to_a
         return [] if cells.empty?
-        
+
         max_col = cells.map(&:column_index).max
         arr = Array.new(max_col + 1)
         cells.each do |cell|

@@ -34,21 +34,23 @@ module Xlsxrb
         cells_hash[ref.to_s.upcase]
       end
 
-      def each(&block)
+      def each(&)
         return to_enum(:each) unless block_given?
-        cells.each(&block)
+
+        cells.each(&)
       end
 
-      def each_cell(&block)
+      def each_cell(&)
         return to_enum(:each_cell) unless block_given?
-        cells.each(&block)
+
+        cells.each(&)
       end
 
-      def each_row(&block)
+      def each_row(&)
         return to_enum(:each_row) unless block_given?
-        rows.each(&block)
-      end
 
+        rows.each(&)
+      end
 
       def valid?
         errors.empty?

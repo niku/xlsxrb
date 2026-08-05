@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "test_helper"
 
 class RowHashTest < Test::Unit::TestCase
@@ -38,21 +40,21 @@ class RowHashTest < Test::Unit::TestCase
     wb = Xlsxrb.read(xlsx_path)
     sheet = wb.sheets.first
     assert_equal(1, sheet.rows.size)
-    
+
     cells = sheet.rows[0].cells
-    cell_hash = cells.map { |c| [c.column_index, c] }.to_h
+    cell_hash = cells.to_h { |c| [c.column_index, c] }
 
     # A1
     assert_not_nil(cell_hash[0])
     assert_equal(1, cell_hash[0].value)
-    
+
     # B1
     assert_nil(cell_hash[1])
-    
+
     # C1
     assert_not_nil(cell_hash[2])
     assert_equal(2, cell_hash[2].value)
-    
+
     # D1 (empty but has style index)
     if cell_hash[3]
       assert_nil(cell_hash[3].value)

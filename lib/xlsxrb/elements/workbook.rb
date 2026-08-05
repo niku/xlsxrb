@@ -14,8 +14,8 @@ module Xlsxrb
               unmapped_data: unmapped_data, errors: computed_errors.freeze)
       end
 
-      def each(&block)
-        sheets.each(&block)
+      def each(&)
+        sheets.each(&)
       end
 
       def valid?
