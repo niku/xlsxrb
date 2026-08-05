@@ -740,7 +740,7 @@ module Xlsxrb
 
     # Add a column to the sheet.
     #
-    # @param index [Integer, String] The column index (1-based) or letter.
+    # @param index [Integer, String] The column index (0-based) or letter.
     # @param width [Float, nil] The column width.
     # @param hidden [Boolean] Whether the column is hidden.
     # @param custom_width [Boolean] Whether it's a custom width.
@@ -748,6 +748,8 @@ module Xlsxrb
     # @return [void]
     # : (untyped index, ?width: untyped?, ?hidden: bool, ?custom_width: bool, ?outline_level: untyped?) -> untyped
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
+      index = Elements::Cell.column_index(index) if index.is_a?(String)
+
       @columns << Elements::Column.new(
         index: index,
         width: width,
@@ -1374,7 +1376,7 @@ module Xlsxrb
     # Set column width for a 0-based column index.
     # Add a column to the sheet.
     #
-    # @param index [Integer, String] The column index (1-based) or letter.
+    # @param index [Integer, String] The column index (0-based) or letter.
     # @param width [Float, nil] The column width.
     # @param hidden [Boolean] Whether the column is hidden.
     # @param custom_width [Boolean] Whether it's a custom width.
@@ -1382,6 +1384,7 @@ module Xlsxrb
     # @return [void]
     # : (untyped index, ?width: untyped?, ?hidden: bool, ?custom_width: bool, ?outline_level: untyped?) -> untyped
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
+      index = Elements::Cell.column_index(index) if index.is_a?(String)
       sheet if @current_sheet.nil?
 
       @current_columns << { index: index, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
