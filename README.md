@@ -78,10 +78,10 @@ Generate large files efficiently by writing data directly to the file stream:
 require "xlsxrb"
 
 Xlsxrb.generate("large_output.xlsx") do |writer|
-  writer.sheet("Sales Data") do
-    writer.row(["Date", "Amount", "Status"])
-    writer.row([Date.today, 100, true])
-    writer.column(0, width: 15.5)
+  writer.sheet("Sales Data") do |sheet|
+    sheet.row(["Date", "Amount", "Status"])
+    sheet.row([Date.today, 100, true])
+    sheet.column(0, width: 15.5)
   end
 end
 ```

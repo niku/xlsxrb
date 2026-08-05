@@ -8,14 +8,14 @@ output_path = ARGV[0] || "basic_data.xlsx"
 Xlsxrb.generate(output_path) do |w|
   w.style("currency") { |style| style.number_format("$#,##0.00") }
   w.style("date") { |style| style.number_format("yyyy-mm-dd") }
-  w.sheet("Basic Data") do
-    w.sheet_properties(:fit_to_page, true)
-    w.page_setup(fit_to_width: 1, fit_to_height: 1)
-    w.column(0, width: 25)
-    w.column(1, width: 25)
-    w.row(%w[Product Qty Price Date Active])
-    w.row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
-    w.row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
+  w.sheet("Basic Data") do |sheet|
+    sheet.sheet_properties(:fit_to_page, true)
+    sheet.page_setup(fit_to_width: 1, fit_to_height: 1)
+    sheet.column(0, width: 25)
+    sheet.column(1, width: 25)
+    sheet.row(%w[Product Qty Price Date Active])
+    sheet.row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
+    sheet.row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
   end
 end
 
