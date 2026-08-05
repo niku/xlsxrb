@@ -1197,6 +1197,7 @@ module Xlsxrb
       style_builder
     end
 
+    # Proxy object yielded by the `sheet` method to prevent writing to inactive sheets.
     class WorksheetProxy
       def initialize(writer, sheet_name)
         @writer = writer
@@ -1207,11 +1208,10 @@ module Xlsxrb
         @writer.respond_to?(method_name, include_private)
       end
 
-      def method_missing(method_name, *args, **opts, &block)
-        if @writer.current_sheet != @sheet_name
-          raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet."
-        end
-        @writer.public_send(method_name, *args, **opts, &block)
+      def method_missing(method_name, ...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.public_send(method_name, ...)
       end
     end
 
@@ -1227,9 +1227,7 @@ module Xlsxrb
       internal_sheet_setup(name)
       opts.each { |k, v| set_sheet_property(k, v) }
 
-      if block_given?
-        yield WorksheetProxy.new(self, @current_sheet)
-      end
+      yield WorksheetProxy.new(self, @current_sheet) if block_given?
       @current_sheet
     end
 
