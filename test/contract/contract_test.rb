@@ -1479,10 +1479,10 @@ class ContractTest < Test::Unit::TestCase
     end
 
     collected = []
-    Xlsxrb.foreach(tmp.path, sheet: "Second") { |sheet| sheet.each { |row| collected << row.cells[0]&.value } }
+    Xlsxrb.foreach(tmp.path).find { |s| s.name == "Second" }&.each { |row| collected << row.cells[0]&.value }
     assert_equal(["from_second"], collected,
-                 "foreach with sheet: keyword should read the named sheet [foreach sheet]. " \
-                 "Check Xlsxrb.foreach sheet resolution logic.")
+                 "foreach with find should read the named sheet [foreach sheet]. " \
+                 "Check Xlsxrb.foreach streaming integration with Enumerable.")
   ensure
     tmp&.close!
   end

@@ -267,14 +267,13 @@ module Xlsxrb
   # Streaming read: yields StreamSheet objects one at a time for each sheet.
   #
   # @param source [String, IO] File path or IO object.
-  # @param sheet [Integer, String, nil] Sheet index (0-based) or name. Defaults to nil (yields all sheets).
   # @yield [sheet] Yields each sheet.
   # @yieldparam sheet [StreamSheet] The streaming sheet object.
   # @return [Enumerator] If no block is given.
   # @return [void]
-  # : (untyped source, ?sheet: ::Integer | ::String | nil) ?{ (untyped) -> untyped } -> untyped
-  def self.foreach(source, sheet: nil)
-    return enum_for(:foreach, source, sheet: sheet) unless block_given?
+  # : (untyped source) ?{ (untyped) -> untyped } -> untyped
+  def self.foreach(source)
+    return enum_for(:foreach, source) unless block_given?
 
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
     TRACER.in_span("Xlsxrb.foreach", attributes: attributes) do
@@ -283,16 +282,7 @@ module Xlsxrb
       workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
       rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
 
-      workbook_sheets.each_with_index do |sheet_info, index|
-        if sheet
-          case sheet
-          when Integer
-            next unless index == sheet
-          when String
-            next unless sheet_info[:name] == sheet
-          end
-        end
-
+      workbook_sheets.each do |sheet_info|
         target = rels[sheet_info[:r_id]]
         next unless target
 
