@@ -2,10 +2,10 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "row_grouping.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
-  w.style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
-  w.sheet("Row Grouping") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
+  wb.style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
+  wb.sheet("Row Grouping") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Parent Row 1", ""], styles: %w[parent parent])

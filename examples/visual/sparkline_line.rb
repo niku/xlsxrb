@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "sparkline_line.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Sparkline") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Sparkline") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)

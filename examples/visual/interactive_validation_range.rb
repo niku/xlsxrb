@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_range.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Range Validation") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Range Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Age", "Enter (18-99):"])

@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_comments.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Comments") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Comments") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Item A", "Item B"])

@@ -77,8 +77,8 @@ Generate large files efficiently by writing data directly to the file stream:
 ```ruby
 require "xlsxrb"
 
-Xlsxrb.generate("large_output.xlsx") do |writer|
-  writer.sheet("Sales Data") do |sheet|
+Xlsxrb.generate("large_output.xlsx") do |wb|
+  wb.sheet("Sales Data") do |sheet|
     sheet.row(["Date", "Amount", "Status"])
     sheet.row([Date.today, 100, true])
     sheet.column(0, width: 15.5)

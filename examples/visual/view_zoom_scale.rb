@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "view_zoom_scale.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Zoom 150") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Zoom 150") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.sheet_view(:zoom_scale, 150)

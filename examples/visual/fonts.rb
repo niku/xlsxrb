@@ -4,39 +4,39 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "fonts.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
+Xlsxrb.generate(output_path) do |wb|
   # Font Families (using nested hash options)
-  w.style("f_arial", font: { name: "Arial" })
-  w.style("f_times", font: { name: "Times New Roman" })
-  w.style("f_courier", font: { name: "Courier New" })
-  w.style("f_georgia", font: { name: "Georgia" })
-  w.style("f_tahoma", font: { name: "Tahoma" })
+  wb.style("f_arial", font: { name: "Arial" })
+  wb.style("f_times", font: { name: "Times New Roman" })
+  wb.style("f_courier", font: { name: "Courier New" })
+  wb.style("f_georgia", font: { name: "Georgia" })
+  wb.style("f_tahoma", font: { name: "Tahoma" })
 
   # Font Sizes
-  w.style("sz_10", font: { size: 10 })
-  w.style("sz_16", font: { size: 16 })
-  w.style("sz_24", font: { size: 24 })
+  wb.style("sz_10", font: { size: 10 })
+  wb.style("sz_16", font: { size: 16 })
+  wb.style("sz_24", font: { size: 24 })
 
   # Font Colors
-  w.style("c_red", font: { color: "FFC00000" })
-  w.style("c_green", font: { color: "FF008000" })
-  w.style("c_blue", font: { color: :blue })
+  wb.style("c_red", font: { color: "FFC00000" })
+  wb.style("c_green", font: { color: "FF008000" })
+  wb.style("c_blue", font: { color: :blue })
 
   # Font Styles
-  w.style("bold", font: { bold: true })
-  w.style("italic", font: { italic: true })
-  w.style("underline", font: { underline: true })
-  w.style("double_underline", font: { underline: "double" })
-  w.style("strike", font: { strike: true })
+  wb.style("bold", font: { bold: true })
+  wb.style("italic", font: { italic: true })
+  wb.style("underline", font: { underline: true })
+  wb.style("double_underline", font: { underline: "double" })
+  wb.style("strike", font: { strike: true })
 
   # Vertical Alignment (Subscript / Superscript)
-  w.style("superscript", font: { vert_align: "superscript" })
-  w.style("subscript", font: { vert_align: "subscript" })
+  wb.style("superscript", font: { vert_align: "superscript" })
+  wb.style("subscript", font: { vert_align: "subscript" })
 
-  w.style("header", font: { bold: true, color: :white }, fill: { color: "FF4F81BD" })
-  w.style("bg_light", fill: { color: "FFDCE6F1" })
+  wb.style("header", font: { bold: true, color: :white }, fill: { color: "FF4F81BD" })
+  wb.style("bg_light", fill: { color: "FFDCE6F1" })
 
-  w.sheet("Fonts") do |s|
+  wb.sheet("Fonts") do |s|
     s.column(0, width: 25)
     s.column(1, width: 35)
 

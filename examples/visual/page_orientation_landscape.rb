@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_orientation_landscape.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Landscape") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Landscape") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.page_setup(orientation: :landscape)

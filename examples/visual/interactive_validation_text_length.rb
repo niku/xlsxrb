@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_text_length.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Text Length") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Text Length") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Username", "Enter (< 10 chars):"])

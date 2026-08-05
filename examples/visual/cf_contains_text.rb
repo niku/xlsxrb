@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_contains_text.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("CF Contains") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("CF Contains") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Status"])

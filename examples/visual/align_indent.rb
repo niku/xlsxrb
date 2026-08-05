@@ -2,10 +2,10 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_indent.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("indent_1") { |s| s.align_horizontal("left").indent(1) }
-  w.style("indent_3") { |s| s.align_horizontal("left").indent(3) }
-  w.sheet("Indent") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("indent_1") { |s| s.align_horizontal("left").indent(1) }
+  wb.style("indent_3") { |s| s.align_horizontal("left").indent(3) }
+  wb.sheet("Indent") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.print_options(:grid_lines, true)

@@ -2,8 +2,8 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_booleans.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Booleans") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Booleans") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Label", "Boolean Value"])

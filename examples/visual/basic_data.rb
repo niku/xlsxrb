@@ -5,10 +5,10 @@ require "date"
 
 output_path = ARGV[0] || "basic_data.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("currency") { |style| style.number_format("$#,##0.00") }
-  w.style("date") { |style| style.number_format("yyyy-mm-dd") }
-  w.sheet("Basic Data") do |sheet|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("currency") { |style| style.number_format("$#,##0.00") }
+  wb.style("date") { |style| style.number_format("yyyy-mm-dd") }
+  wb.sheet("Basic Data") do |sheet|
     sheet.sheet_properties(:fit_to_page, true)
     sheet.page_setup(fit_to_width: 1, fit_to_height: 1)
     sheet.column(0, width: 25)
