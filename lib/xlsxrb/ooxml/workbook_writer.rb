@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 require "stringio"
 require_relative "xml_builder"
 require_relative "zip_writer"

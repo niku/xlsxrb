@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 module Xlsxrb
   # Helper class for building cell styles with a fluent DSL.
   # Encapsulates font, fill, border, alignment, and number format properties.

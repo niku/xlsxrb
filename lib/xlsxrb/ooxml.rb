@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 require_relative "ooxml/utils"
 require_relative "ooxml/zip_reader"
 require_relative "ooxml/zip_writer"
