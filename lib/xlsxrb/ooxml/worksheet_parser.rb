@@ -118,6 +118,13 @@ module Xlsxrb
       end
 
       # ---- Fast string-scanning event parser (byte-level) ----
+      #
+      # SECURITY NOTE: This custom XML parsing approach is secure by design against
+      # typical XML vulnerabilities:
+      # - XXE (XML External Entity Expansion): It does not interpret DTDs or expand
+      #   arbitrary entities. It purely scans for literal `<row>` and `<c>` tags.
+      # - ReDoS: It uses O(1) byte indexing and bounded `String#index` searches
+      #   rather than unbounded or backtracking regular expressions.
 
       def self.fast_scan_events(xml_src, shared_strings, part_name, &block)
         xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
@@ -396,6 +403,9 @@ module Xlsxrb
 
       XML_ENTITIES = { "&amp;" => "&", "&lt;" => "<", "&gt;" => ">", "&quot;" => '"', "&apos;" => "'" }.freeze
 
+      # SECURITY NOTE: Decodes only standard predefined XML entities in a single pass.
+      # This completely prevents "Billion Laughs" attacks (exponential entity expansion)
+      # because it avoids recursive expansion and ignores custom entities entirely.
       def self.decode_xml_entities(str)
         str.gsub(/&(?:amp|lt|gt|quot|apos);/, XML_ENTITIES)
       end
