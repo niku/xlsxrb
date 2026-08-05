@@ -280,7 +280,7 @@ module Xlsxrb
       end
 
       # Merges a range of cells (e.g. "A1:B2").
-      def merge_cells(range, sheet: nil)
+      def merge(range, sheet: nil)
         raise ArgumentError, "range must be a String like 'A1:B2'" unless range.is_a?(String) && range.match?(/\A[A-Z]+\d+:[A-Z]+\d+\z/)
 
         sheet_name = sheet || @sheet_order.first
@@ -296,7 +296,7 @@ module Xlsxrb
       end
 
       # Adds a hyperlink on a cell.
-      def add_hyperlink(cell_address, url = nil, sheet: nil, display: nil, tooltip: nil, location: nil)
+      def hyperlink(cell_address, url = nil, sheet: nil, display: nil, tooltip: nil, location: nil)
         validate_cell_address!(cell_address)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @hyperlinks.key?(sheet_name)
@@ -534,7 +534,7 @@ module Xlsxrb
       end
 
       # Sets a core property.
-      def set_core_property(name, value)
+      def core_property(name, value)
         raise ArgumentError, "name must be a Symbol" unless name.is_a?(Symbol)
 
         @core_properties[name] = value
@@ -546,7 +546,7 @@ module Xlsxrb
       end
 
       # Sets an app property.
-      def set_app_property(name, value)
+      def app_property(name, value)
         raise ArgumentError, "name must be a Symbol" unless name.is_a?(Symbol)
 
         @app_properties[name] = value
@@ -558,7 +558,7 @@ module Xlsxrb
       end
 
       # Adds a custom document property. type: :string (default), :number, :bool, :date.
-      def add_custom_property(name, value, type: :string)
+      def custom_property(name, value, type: :string)
         @custom_properties << { name: name, value: value, type: type }
       end
 

@@ -18,7 +18,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], styles: %w[border border border])
     s.row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], styles: %w[border border border])
 
-    s.merge_cells(row: 0, col_start: 0, col_end: 2)
+    s.merge(row: 0, col_start: 0, col_end: 2)
     s.freeze_pane(row: 2, col: 0)
   end
 end

@@ -10,12 +10,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Hyperlinks
   # =====================================================
 
-  test "add_hyperlink options form in build API" do
+  test "hyperlink options form in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Links") do |s|
         s.row(["Click here", "Internal"])
-        s.add_hyperlink("A1", "https://example.com", display: "Example", tooltip: "Visit")
-        s.add_hyperlink("B1", location: "Sheet1!A1")
+        s.hyperlink("A1", "https://example.com", display: "Example", tooltip: "Visit")
+        s.hyperlink("B1", location: "Sheet1!A1")
       end
     end
 
@@ -32,12 +32,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_hyperlink options form in generate API" do
+  test "hyperlink options form in generate API" do
     tmp = Tempfile.new(["facade_hyperlink_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Links") do |s|
         s.row(["Click here"])
-        s.add_hyperlink("A1", "https://example.com", display: "Example")
+        s.hyperlink("A1", "https://example.com", display: "Example")
       end
     end
 
@@ -51,11 +51,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_hyperlink keyword args in build API" do
+  test "hyperlink keyword args in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Links") do |s|
         s.row(["Link"])
-        s.add_hyperlink("A1", "https://example.com", display: "Example")
+        s.hyperlink("A1", "https://example.com", display: "Example")
       end
     end
 
@@ -332,7 +332,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Merge Cells
   # =====================================================
 
-  test "merge_cells in build API" do
+  test "merge in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Merge") do |s|
         s.row(["Merged title", nil, nil])
@@ -351,7 +351,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "merge_cells in generate API" do
+  test "merge in generate API" do
     tmp = Tempfile.new(["facade_merge_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("Merge") do |s|
@@ -755,11 +755,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Document Properties
   # =====================================================
 
-  test "set_core_property in build API" do
+  test "core_property in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.set_core_property(:creator, "Test Author")
-      w.set_core_property(:title, "Test Title")
+      w.core_property(:creator, "Test Author")
+      w.core_property(:title, "Test Title")
     end
 
     tmp = Tempfile.new(["facade_coreprop_build", ".xlsx"])
@@ -773,11 +773,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_core_property in generate API" do
+  test "core_property in generate API" do
     tmp = Tempfile.new(["facade_coreprop_stream", ".xlsx"])
     Xlsxrb.generate(tmp.path) do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.set_core_property(:creator, "Stream Author")
+      w.core_property(:creator, "Stream Author")
     end
 
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
@@ -787,10 +787,10 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "set_app_property in build API" do
+  test "app_property in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.set_app_property(:company, "Acme Corp")
+      w.app_property(:company, "Acme Corp")
     end
 
     tmp = Tempfile.new(["facade_appprop_build", ".xlsx"])
@@ -805,10 +805,10 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_custom_property in build API" do
+  test "custom_property in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.add_custom_property("Department", "Engineering", type: :string)
+      w.custom_property("Department", "Engineering", type: :string)
     end
 
     tmp = Tempfile.new(["facade_custprop_build", ".xlsx"])
@@ -998,10 +998,10 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.freeze_pane(row: 1)
         s.page_margins(left: 1.0, right: 1.0)
         s.page_setup(orientation: :landscape)
-        s.add_hyperlink("A2", "https://example.com")
+        s.hyperlink("A2", "https://example.com")
         s.validate_data("B2:B3", type: :whole, formula1: "0", formula2: "100")
       end
-      w.set_core_property(:creator, "Combined Test")
+      w.core_property(:creator, "Combined Test")
     end
 
     tmp = Tempfile.new(["facade_combined_build", ".xlsx"])
@@ -1034,7 +1034,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.header_footer(odd_header: "&CTest")
         s.conditional_format("B2", type: :cell_is, operator: :greaterThan, formula: "90")
       end
-      w.set_core_property(:title, "Combined Stream")
+      w.core_property(:title, "Combined Stream")
     end
 
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)

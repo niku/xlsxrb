@@ -155,8 +155,8 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "merged")
-    writer.merge_cells("A1:B2")
-    writer.merge_cells("C3:D4")
+    writer.merge("A1:B2")
+    writer.merge("C3:D4")
     writer.write(xlsx_path)
 
     assert_openxml_sdk_scenario_passes("writer_merge_cells_test", xlsx_path)
@@ -171,7 +171,7 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Example")
-    writer.add_hyperlink("A1", "https://example.com")
+    writer.hyperlink("A1", "https://example.com")
     writer.write(xlsx_path)
 
     assert_openxml_sdk_scenario_passes("writer_hyperlink_test", xlsx_path)
@@ -186,11 +186,11 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "Example")
-    writer.add_hyperlink("A1", "https://example.com", display: "Example Site", tooltip: "Click to visit")
+    writer.hyperlink("A1", "https://example.com", display: "Example Site", tooltip: "Click to visit")
     writer.set_cell("B1", "Page")
-    writer.add_hyperlink("B1", "https://example.com/page", location: "Sheet2!A1")
+    writer.hyperlink("B1", "https://example.com/page", location: "Sheet2!A1")
     writer.set_cell("C1", "Internal")
-    writer.add_hyperlink("C1", location: "Sheet1!D1")
+    writer.hyperlink("C1", location: "Sheet1!D1")
     writer.write(xlsx_path)
 
     assert_openxml_sdk_scenario_passes("writer_hyperlink_deep_test", xlsx_path)
@@ -251,10 +251,10 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
-    writer.set_core_property(:title, "My Workbook")
-    writer.set_core_property(:creator, "Test User")
-    writer.set_core_property(:created, "2024-01-15T00:00:00Z")
-    writer.set_core_property(:modified, "2024-01-16T12:00:00Z")
+    writer.core_property(:title, "My Workbook")
+    writer.core_property(:creator, "Test User")
+    writer.core_property(:created, "2024-01-15T00:00:00Z")
+    writer.core_property(:modified, "2024-01-16T12:00:00Z")
     writer.write(xlsx_path)
 
     assert_openxml_sdk_scenario_passes("writer_core_properties_test", xlsx_path)
@@ -269,8 +269,8 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
-    writer.set_app_property(:application, "Xlsxrb")
-    writer.set_app_property(:app_version, "1.0.0")
+    writer.app_property(:application, "Xlsxrb")
+    writer.app_property(:app_version, "1.0.0")
     writer.write(xlsx_path)
 
     assert_openxml_sdk_scenario_passes("writer_app_properties_test", xlsx_path)
@@ -1364,16 +1364,16 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
   test "writer output stores extended core properties correctly" do
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "test")
-    writer.set_core_property(:title, "My Title")
-    writer.set_core_property(:subject, "My Subject")
-    writer.set_core_property(:creator, "Alice")
-    writer.set_core_property(:keywords, "ruby, xlsx")
-    writer.set_core_property(:description, "A test document")
-    writer.set_core_property(:last_modified_by, "Bob")
-    writer.set_core_property(:revision, "3")
-    writer.set_core_property(:category, "Reports")
-    writer.set_core_property(:content_status, "Draft")
-    writer.set_core_property(:language, "en-US")
+    writer.core_property(:title, "My Title")
+    writer.core_property(:subject, "My Subject")
+    writer.core_property(:creator, "Alice")
+    writer.core_property(:keywords, "ruby, xlsx")
+    writer.core_property(:description, "A test document")
+    writer.core_property(:last_modified_by, "Bob")
+    writer.core_property(:revision, "3")
+    writer.core_property(:category, "Reports")
+    writer.core_property(:content_status, "Draft")
+    writer.core_property(:language, "en-US")
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
@@ -1643,9 +1643,9 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     xlsx_tempfile.close
 
     writer = Xlsxrb::Ooxml::Writer.new
-    writer.add_custom_property("Project", "Alpha", type: :lpwstr)
-    writer.add_custom_property("Version", 42, type: :i4)
-    writer.add_custom_property("Active", true, type: :bool)
+    writer.custom_property("Project", "Alpha", type: :lpwstr)
+    writer.custom_property("Version", 42, type: :i4)
+    writer.custom_property("Active", true, type: :bool)
     writer.set_cell("A1", "data")
     writer.write(xlsx_path)
 
