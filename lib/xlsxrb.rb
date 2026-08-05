@@ -1128,6 +1128,8 @@ module Xlsxrb
 
   # DSL context for Xlsxrb.generate streaming writes.
   class StreamWriter
+    attr_reader :current_sheet
+
     # : (untyped target) -> void
     def initialize(target)
       @target = target
@@ -1195,6 +1197,24 @@ module Xlsxrb
       style_builder
     end
 
+    class WorksheetProxy
+      def initialize(writer, sheet_name)
+        @writer = writer
+        @sheet_name = sheet_name
+      end
+
+      def respond_to_missing?(method_name, include_private = false)
+        @writer.respond_to?(method_name, include_private)
+      end
+
+      def method_missing(method_name, *args, **opts, &block)
+        if @writer.current_sheet != @sheet_name
+          raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet."
+        end
+        @writer.public_send(method_name, *args, **opts, &block)
+      end
+    end
+
     # Add a new sheet.
     #
     # @param name [String, nil] The name of the sheet.
@@ -1207,7 +1227,9 @@ module Xlsxrb
       internal_sheet_setup(name)
       opts.each { |k, v| set_sheet_property(k, v) }
 
-      yield self if block_given?
+      if block_given?
+        yield WorksheetProxy.new(self, @current_sheet)
+      end
       @current_sheet
     end
 
