@@ -97,8 +97,12 @@ module Xlsxrb
       end
 
       # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
+      # If passed a string/symbol representing an integer, it returns the integer.
       def self.column_index(letter)
-        letter.to_s.upcase.chars.reduce(0) { |acc, c| (acc * 26) + (c.ord - "A".ord + 1) } - 1
+        str = letter.to_s
+        return str.to_i if str.match?(/\A-?\d+\z/)
+
+        str.upcase.chars.reduce(0) { |acc, c| (acc * 26) + (c.ord - "A".ord + 1) } - 1
       end
 
       # Parses an Excel-style reference to [row_index, col_index] (both 0-based).
