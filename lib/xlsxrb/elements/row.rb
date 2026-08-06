@@ -66,10 +66,14 @@ module Xlsxrb
       end
 
       def self.validate(index, cells)
-        return [].freeze if index.is_a?(Integer) && index >= 0 && cells.is_a?(Array)
+        return [].freeze if index.is_a?(Integer) && index >= 0 && index < 1_048_576 && cells.is_a?(Array)
 
         errs = []
-        errs << "index must be a non-negative Integer (got #{index.inspect})" if !index.is_a?(Integer) || index.negative?
+        if !index.is_a?(Integer) || index.negative?
+          errs << "index must be a non-negative Integer (got #{index.inspect})" 
+        elsif index >= 1_048_576
+          errs << "index must be < 1048576 (got #{index}, max row is 1048576)"
+        end
         errs << "cells must be an Array (got #{cells.class})" unless cells.is_a?(Array)
         errs
       end
