@@ -1296,23 +1296,23 @@ module Xlsxrb
             signature_value = signature.unpack1("V")
             break if [0x02014b50, 0x06054b50].include?(signature_value)
 
-            raise Error, "invalid ZIP local header signature" unless signature_value == 0x04034b50
+            raise ZipError, "invalid ZIP local header signature" unless signature_value == 0x04034b50
 
             header = file.read(26)
-            raise Error, "truncated ZIP local header" if header.nil? || header.bytesize < 26
+            raise ZipError, "truncated ZIP local header" if header.nil? || header.bytesize < 26
 
             _version, flags, compression_method, _mtime, _mdate, _crc32, compressed_size,
               _uncompressed_size, file_name_length, extra_field_length = header.unpack("v v v v v V V V v v")
 
-            raise Error, "ZIP data descriptor is not supported" if flags.anybits?(0x0008)
+            raise ZipError, "ZIP data descriptor is not supported" if flags.anybits?(0x0008)
 
             file_name = file.read(file_name_length)
-            raise Error, "truncated ZIP file name" if file_name.nil? || file_name.bytesize < file_name_length
+            raise ZipError, "truncated ZIP file name" if file_name.nil? || file_name.bytesize < file_name_length
 
             file.read(extra_field_length)
 
             compressed_data = file.read(compressed_size)
-            raise Error, "truncated ZIP entry data" if compressed_data.nil? || compressed_data.bytesize < compressed_size
+            raise ZipError, "truncated ZIP entry data" if compressed_data.nil? || compressed_data.bytesize < compressed_size
 
             next unless file_name == entry_name
 
@@ -1327,7 +1327,7 @@ module Xlsxrb
                 inflater.close
               end
             else
-              raise Error, "unsupported ZIP compression method: #{compression_method}"
+              raise ZipError, "unsupported ZIP compression method: #{compression_method}"
             end
           end
         end
