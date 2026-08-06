@@ -955,11 +955,12 @@ module Xlsxrb
 
     # Freeze panes at the given row and column.
     #
-    # @param row [Integer] The row index to freeze at.
-    # @param col [Integer] The column index to freeze at.
+    # @param row [Integer] The row index to freeze at (0-based).
+    # @param col [Integer, String] The column index to freeze at (0-based or letter).
     # @return [void]
     # : (?row: ::Integer, ?col: ::Integer) -> untyped
     def freeze_pane(row: 0, col: 0)
+      col = Elements::Cell.column_index(col) if col.is_a?(String)
       @freeze_pane = { row: row, col: col }
     end
 
@@ -1097,6 +1098,7 @@ module Xlsxrb
     # Add a page break before a column.
     # : (untyped col_index) -> untyped
     def page_break_col(col_index)
+      col_index = Elements::Cell.column_index(col_index) if col_index.is_a?(String)
       @col_breaks << col_index
     end
 
@@ -1526,8 +1528,14 @@ module Xlsxrb
 
     # --- Freeze / Split Panes ---
 
-    # : (?row: ::Integer, ?col: ::Integer) -> untyped
+    # Freeze panes at the given row and column.
+    #
+    # @param row [Integer] The row index to freeze at (0-based).
+    # @param col [Integer, String] The column index to freeze at (0-based or letter).
+    # @return [void]
+    # : (?row: ::Integer, ?col: untyped) -> untyped
     def freeze_pane(row: 0, col: 0)
+      col = Elements::Cell.column_index(col) if col.is_a?(String)
       sheet if @current_sheet.nil?
       @current_freeze_pane = { row: row, col: col }
     end
@@ -1634,6 +1642,7 @@ module Xlsxrb
 
     # : (untyped col_index) -> untyped
     def page_break_col(col_index)
+      col_index = Elements::Cell.column_index(col_index) if col_index.is_a?(String)
       sheet if @current_sheet.nil?
       @current_col_breaks << col_index
     end
