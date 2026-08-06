@@ -139,7 +139,7 @@ require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
 
-task default: %i[test rubocop typecheck]
+task default: %i[rubocop typecheck test]
 
 namespace :visual do
   desc "Generate docs/visual/ README.md explanation gallery"
