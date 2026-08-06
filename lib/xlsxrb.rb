@@ -644,20 +644,20 @@ module Xlsxrb
       row_index = @rows.size
 
       if values.is_a?(Hash)
-        max_col = values.keys.map { |k| k.is_a?(Integer) ? k : Elements::Cell.column_index(k) }.max || -1
+        max_col = values.keys.map { |k| Elements::Cell.column_index(k) }.max || -1
         cells_array = Array.new(max_col + 1)
         values.each do |k, v|
-          idx = k.is_a?(Integer) ? k : Elements::Cell.column_index(k)
+          idx = Elements::Cell.column_index(k)
           cells_array[idx] = v
         end
         values = cells_array
       end
 
       if styles.is_a?(Hash)
-        max_col_style = styles.keys.map { |k| k.is_a?(Integer) ? k : Elements::Cell.column_index(k) }.max || -1
+        max_col_style = styles.keys.map { |k| Elements::Cell.column_index(k) }.max || -1
         styles_array = Array.new(max_col_style + 1)
         styles.each do |k, v|
-          idx = k.is_a?(Integer) ? k : Elements::Cell.column_index(k)
+          idx = Elements::Cell.column_index(k)
           styles_array[idx] = v
         end
         styles = styles_array
@@ -748,7 +748,7 @@ module Xlsxrb
     # @return [void]
     # : (untyped index, ?width: untyped?, ?hidden: bool, ?custom_width: bool, ?outline_level: untyped?) -> untyped
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
-      index = Elements::Cell.column_index(index) if index.is_a?(String)
+      index = Elements::Cell.column_index(index)
 
       @columns << Elements::Column.new(
         index: index,
@@ -960,7 +960,7 @@ module Xlsxrb
     # @return [void]
     # : (?row: ::Integer, ?col: ::Integer) -> untyped
     def freeze_pane(row: 0, col: 0)
-      col = Elements::Cell.column_index(col) if col.is_a?(String)
+      col = Elements::Cell.column_index(col)
       @freeze_pane = { row: row, col: col }
     end
 
@@ -1098,7 +1098,7 @@ module Xlsxrb
     # Add a page break before a column.
     # : (untyped col_index) -> untyped
     def page_break_col(col_index)
-      col_index = Elements::Cell.column_index(col_index) if col_index.is_a?(String)
+      col_index = Elements::Cell.column_index(col_index)
       @col_breaks << col_index
     end
 
@@ -1313,20 +1313,20 @@ module Xlsxrb
       @current_row_index += 1
 
       if values.is_a?(Hash)
-        max_col = values.keys.map { |k| k.is_a?(Integer) ? k : Elements::Cell.column_index(k) }.max || -1
+        max_col = values.keys.map { |k| Elements::Cell.column_index(k) }.max || -1
         cells_array = Array.new(max_col + 1)
         values.each do |k, v|
-          idx = k.is_a?(Integer) ? k : Elements::Cell.column_index(k)
+          idx = Elements::Cell.column_index(k)
           cells_array[idx] = v
         end
         values = cells_array
       end
 
       if styles.is_a?(Hash)
-        max_col_style = styles.keys.map { |k| k.is_a?(Integer) ? k : Elements::Cell.column_index(k) }.max || -1
+        max_col_style = styles.keys.map { |k| Elements::Cell.column_index(k) }.max || -1
         styles_array = Array.new(max_col_style + 1)
         styles.each do |k, v|
-          idx = k.is_a?(Integer) ? k : Elements::Cell.column_index(k)
+          idx = Elements::Cell.column_index(k)
           styles_array[idx] = v
         end
         styles = styles_array
@@ -1386,7 +1386,7 @@ module Xlsxrb
     # @return [void]
     # : (untyped index, ?width: untyped?, ?hidden: bool, ?custom_width: bool, ?outline_level: untyped?) -> untyped
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
-      index = Elements::Cell.column_index(index) if index.is_a?(String)
+      index = Elements::Cell.column_index(index)
       sheet if @current_sheet.nil?
 
       @current_columns << { index: index, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
@@ -1535,7 +1535,7 @@ module Xlsxrb
     # @return [void]
     # : (?row: ::Integer, ?col: untyped) -> untyped
     def freeze_pane(row: 0, col: 0)
-      col = Elements::Cell.column_index(col) if col.is_a?(String)
+      col = Elements::Cell.column_index(col)
       sheet if @current_sheet.nil?
       @current_freeze_pane = { row: row, col: col }
     end
@@ -1642,7 +1642,7 @@ module Xlsxrb
 
     # : (untyped col_index) -> untyped
     def page_break_col(col_index)
-      col_index = Elements::Cell.column_index(col_index) if col_index.is_a?(String)
+      col_index = Elements::Cell.column_index(col_index)
       sheet if @current_sheet.nil?
       @current_col_breaks << col_index
     end
