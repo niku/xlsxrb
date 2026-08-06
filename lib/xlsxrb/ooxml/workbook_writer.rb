@@ -33,7 +33,7 @@ module Xlsxrb
       def self.write(target, sheets:, shared_strings: [], shared_strings_index: nil, styles: nil,
                      defined_names: nil, core_properties: nil, app_properties: nil,
                      custom_properties: nil, workbook_protection: nil, workbook_properties: nil)
-        Xlsxrb::TRACER.in_span("Ooxml::WorkbookWriter.write") do
+        Xlsxrb.in_span("Ooxml::WorkbookWriter.write") do
           writer = new(sheets: sheets, shared_strings: shared_strings, shared_strings_index: shared_strings_index, styles: styles,
                        defined_names: defined_names, core_properties: core_properties,
                        app_properties: app_properties, custom_properties: custom_properties,

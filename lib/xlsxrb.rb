@@ -28,8 +28,23 @@ module Xlsxrb
     REF   = Elements::CellError.new(code: "#REF!")
     VALUE = Elements::CellError.new(code: "#VALUE!")
   end
+  class ParseError < Error; end
+  class ValidationError < Error; end
+  class ZipError < Error; end
 
   TRACER = OpenTelemetry.tracer_provider.tracer("xlsxrb", Xlsxrb::VERSION)
+
+  def self.in_span(name, attributes: nil, &block)
+    if defined?(Ractor) && Ractor.current != Ractor.main
+      yield
+    else
+      if attributes
+        TRACER.in_span(name, attributes: attributes, &block)
+      else
+        TRACER.in_span(name, &block)
+      end
+    end
+  end
 
   # Helper to easily create RichText objects.
   # Supports both `Xlsxrb.rich_text({ text: "A" }, { text: "B" })`
@@ -132,7 +147,7 @@ module Xlsxrb
   # : (untyped source) -> untyped
   def self.read(source)
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
-    TRACER.in_span("Xlsxrb.read", attributes: attributes) do
+    Xlsxrb.in_span("Xlsxrb.read", attributes: attributes) do
       entries = Ooxml::ZipReader.open(source, &:read_all)
       shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
       styles = Ooxml::StylesParser.parse(entries["xl/styles.xml"])
@@ -163,7 +178,7 @@ module Xlsxrb
     raise Error, "workbook must be an Elements::Workbook" unless workbook.is_a?(Elements::Workbook)
 
     attributes = target.is_a?(String) ? { "filepath" => target } : {}
-    TRACER.in_span("Xlsxrb.write", attributes: attributes) do
+    Xlsxrb.in_span("Xlsxrb.write", attributes: attributes) do
       sst = []
       sst_index = {}
 
@@ -277,7 +292,7 @@ module Xlsxrb
     return enum_for(:foreach, source) unless block_given?
 
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
-    TRACER.in_span("Xlsxrb.foreach", attributes: attributes) do
+    Xlsxrb.in_span("Xlsxrb.foreach", attributes: attributes) do
       entries = Ooxml::ZipReader.open(source, &:read_all)
       shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
       workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
@@ -308,7 +323,7 @@ module Xlsxrb
     raise Error, "block is required" unless block_given?
 
     attributes = target.is_a?(String) ? { "filepath" => target } : {}
-    TRACER.in_span("Xlsxrb.generate", attributes: attributes) do
+    Xlsxrb.in_span("Xlsxrb.generate", attributes: attributes) do
       stream_writer = StreamWriter.new(target)
       yield stream_writer
       stream_writer.close
@@ -324,7 +339,7 @@ module Xlsxrb
   def self.build
     raise Error, "block is required" unless block_given?
 
-    TRACER.in_span("Xlsxrb.build") do
+    Xlsxrb.in_span("Xlsxrb.build") do
       builder = WorkbookBuilder.new
       yield builder
       builder.build
@@ -1772,7 +1787,7 @@ module Xlsxrb
 
     # : () -> untyped
     def close
-      TRACER.in_span("StreamWriter#close") do
+      Xlsxrb.in_span("StreamWriter#close") do
         flush_current_sheet
 
         styles_definition = {
