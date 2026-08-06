@@ -32,19 +32,19 @@ module Xlsxrb
 
       def self.write(target, sheets:, shared_strings: [], shared_strings_index: nil, styles: nil,
                      defined_names: nil, core_properties: nil, app_properties: nil,
-                     custom_properties: nil, workbook_protection: nil)
+                     custom_properties: nil, workbook_protection: nil, workbook_properties: nil)
         Xlsxrb::TRACER.in_span("Ooxml::WorkbookWriter.write") do
           writer = new(sheets: sheets, shared_strings: shared_strings, shared_strings_index: shared_strings_index, styles: styles,
                        defined_names: defined_names, core_properties: core_properties,
                        app_properties: app_properties, custom_properties: custom_properties,
-                       workbook_protection: workbook_protection)
+                       workbook_protection: workbook_protection, workbook_properties: workbook_properties)
           writer.write_to(target)
         end
       end
 
       def initialize(sheets:, shared_strings: [], shared_strings_index: nil, styles: nil,
                      defined_names: nil, core_properties: nil, app_properties: nil,
-                     custom_properties: nil, workbook_protection: nil)
+                     custom_properties: nil, workbook_protection: nil, workbook_properties: nil)
         @sheets = sheets
         @shared_strings = shared_strings
         @shared_strings_index = shared_strings_index
@@ -54,6 +54,7 @@ module Xlsxrb
         @app_properties = app_properties || {}
         @custom_properties = custom_properties || []
         @workbook_protection = workbook_protection
+        @workbook_properties = workbook_properties || { update_links: "never" }
         @drawing_count = 0
         @chart_count = 0
         @comment_count = 0
@@ -437,6 +438,14 @@ module Xlsxrb
                      xmlns: SSML_NS,
                      "xmlns:r": DOC_REL
                    })
+
+        # Workbook properties
+        if @workbook_properties && !@workbook_properties.empty?
+          attrs = {}
+          attrs[:date1904] = "1" if @workbook_properties[:date1904]
+          attrs[:updateLinks] = @workbook_properties[:update_links] if @workbook_properties[:update_links]
+          b.empty_tag("workbookPr", attrs) unless attrs.empty?
+        end
 
         # Workbook protection
         if @workbook_protection
