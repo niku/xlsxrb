@@ -139,7 +139,7 @@ require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
 
-task default: %i[test rubocop]
+task default: %i[test rubocop typecheck]
 
 namespace :visual do
   desc "Generate docs/visual/ README.md explanation gallery"
@@ -517,4 +517,9 @@ end
 desc "Generate RBS signature files from inline annotations"
 task :sig do
   sh "bundle exec rbs-inline --output lib/**/*.rb"
+end
+
+desc "Run static type checking with Steep"
+task typecheck: :sig do
+  sh "bundle exec steep check"
 end

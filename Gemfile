@@ -18,3 +18,5 @@ gem "opentelemetry-sdk", "~> 1.11", groups: %i[development test]
 gem "rbs-inline", require: false, groups: %i[development test]
 gem "ruby_wasm", group: :development
 gem "webrick", group: :development
+
+gem "steep", "~> 2.0", groups: %i[development test]
