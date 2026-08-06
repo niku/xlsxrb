@@ -42,6 +42,24 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("XFD", Xlsxrb::Elements::Cell.column_letter(16_383))
   end
 
+  test "cell column_letter raises ArgumentError for invalid index" do
+    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(-1) }
+    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter("0") }
+    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(1.5) }
+  end
+
+  test "cell column_index converts string digits correctly" do
+    assert_equal(0, Xlsxrb::Elements::Cell.column_index("0"))
+    assert_equal(25, Xlsxrb::Elements::Cell.column_index("25"))
+  end
+
+  test "cell column_index raises ArgumentError for invalid values" do
+    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("-1") }
+    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("!") }
+    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("A1") }
+    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("") }
+  end
+
   test "cell parse_ref converts A1-style to indices" do
     assert_equal([0, 0], Xlsxrb::Elements::Cell.parse_ref("A1"))
     assert_equal([9, 1], Xlsxrb::Elements::Cell.parse_ref("B10"))
