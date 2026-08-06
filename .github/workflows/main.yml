@@ -25,6 +25,8 @@ jobs:
           bundler-cache: true
       - name: Run RuboCop
         run: bundle exec rake rubocop
+      - name: Run Steep Typecheck
+        run: bundle exec rake typecheck
       - name: Run Unit & Contract Tests
         run: bundle exec rake test:unit test:contract
 

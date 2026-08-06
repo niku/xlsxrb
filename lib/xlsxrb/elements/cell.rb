@@ -103,6 +103,7 @@ module Xlsxrb
       def self.column_index(letter)
         if letter.is_a?(Integer)
           raise ArgumentError, "Column index must be >= 0, got #{letter}" if letter.negative?
+
           return letter
         end
 
@@ -110,6 +111,7 @@ module Xlsxrb
         if str.match?(/\A-?\d+\z/)
           val = str.to_i
           raise ArgumentError, "Column index must be >= 0, got #{val}" if val.negative?
+
           return val
         end
 
