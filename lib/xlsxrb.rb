@@ -203,7 +203,8 @@ module Xlsxrb
         core_properties: wb_facade[:core_properties],
         app_properties: wb_facade[:app_properties],
         custom_properties: wb_facade[:custom_properties],
-        workbook_protection: wb_facade[:workbook_protection]
+        workbook_protection: wb_facade[:workbook_protection],
+        workbook_properties: wb_facade[:workbook_properties]
       )
     end
   end
@@ -341,6 +342,21 @@ module Xlsxrb
       @app_properties = {}
       @custom_properties = []
       @workbook_protection = nil
+      @workbook_properties = { update_links: "never" }
+    end
+
+    # Set a workbook property.
+    #
+    # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
+    #   you may expose end-users to malicious external reference vulnerabilities (e.g., CSV/DDE Injection)
+    #   when they open the generated Excel file. Ensure you fully trust the exported data.
+    #
+    # @param name [Symbol] The property name (e.g. :update_links).
+    # @param value [String, Integer, Boolean] The property value.
+    # @return [void]
+    # : (untyped name, untyped value) -> untyped
+    def workbook_property(name, value)
+      @workbook_properties[name] = value
     end
 
     # Add a new sheet.
@@ -469,6 +485,7 @@ module Xlsxrb
       wb_meta[:app_properties] = @app_properties unless @app_properties.empty?
       wb_meta[:custom_properties] = @custom_properties unless @custom_properties.empty?
       wb_meta[:workbook_protection] = @workbook_protection if @workbook_protection
+      wb_meta[:workbook_properties] = @workbook_properties unless @workbook_properties.empty?
 
       Elements::Workbook.new(
         sheets: processed_sheets,
@@ -1191,6 +1208,21 @@ module Xlsxrb
       @app_properties = {}
       @custom_properties = []
       @workbook_protection = nil
+      @workbook_properties = { update_links: "never" }
+    end
+
+    # Set a workbook property.
+    #
+    # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
+    #   you may expose end-users to malicious external reference vulnerabilities (e.g., CSV/DDE Injection)
+    #   when they open the generated Excel file. Ensure you fully trust the exported data.
+    #
+    # @param name [Symbol] The property name (e.g. :update_links).
+    # @param value [String, Integer, Boolean] The property value.
+    # @return [void]
+    # : (untyped name, untyped value) -> untyped
+    def workbook_property(name, value)
+      @workbook_properties[name] = value
     end
 
     # Define a named style that can be applied to cells.
