@@ -99,8 +99,13 @@ module Xlsxrb
       end
 
       # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
-      # If passed a string/symbol representing an integer, it returns the integer.
+      # If passed an integer or string/symbol representing an integer, it validates and returns the integer.
       def self.column_index(letter)
+        if letter.is_a?(Integer)
+          raise ArgumentError, "Column index must be >= 0, got #{letter}" if letter.negative?
+          return letter
+        end
+
         str = letter.to_s
         if str.match?(/\A-?\d+\z/)
           val = str.to_i
