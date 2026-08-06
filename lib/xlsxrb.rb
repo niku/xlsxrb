@@ -325,8 +325,12 @@ module Xlsxrb
     attributes = target.is_a?(String) ? { "filepath" => target } : {}
     Xlsxrb.in_span("Xlsxrb.generate", attributes: attributes) do
       stream_writer = StreamWriter.new(target)
-      yield stream_writer
-      stream_writer.close
+      begin
+        yield stream_writer
+        stream_writer.close
+      ensure
+        stream_writer.cleanup!
+      end
     end
   end
 
@@ -1813,10 +1817,17 @@ module Xlsxrb
         )
       end
     ensure
+      cleanup!
+    end
+
+    # Explicitly remove any remaining tempfiles. Called via ensure block.
+    # : () -> void
+    def cleanup!
       @tempfiles.each do |tmp|
         tmp.close
         tmp.unlink
       end
+      @tempfiles.clear
     end
 
     private
