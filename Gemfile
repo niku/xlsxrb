@@ -22,3 +22,5 @@ gem "webrick", group: :development
 gem "bundler-audit", require: false, group: :development
 
 gem "steep", "~> 2.0", groups: %i[development test]
+gem "memory_profiler", group: :development
+gem "benchmark-ips", group: :development
