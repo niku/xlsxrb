@@ -1,0 +1,23 @@
+name: Benchmark
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    name: Memory & Performance Benchmark
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0.2'
+          bundler-cache: true
+      - name: Run Benchmark Test
+        run: bundle exec ruby test/benchmark_test.rb
