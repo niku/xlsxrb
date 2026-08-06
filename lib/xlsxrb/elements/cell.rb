@@ -84,6 +84,8 @@ module Xlsxrb
 
       # Converts a 0-based column index to a letter (0 -> "A", 25 -> "Z", 26 -> "AA").
       def self.column_letter(index)
+        raise ArgumentError, "Column index must be a non-negative Integer, got #{index.inspect}" unless index.is_a?(Integer) && index >= 0
+
         @column_letters[index] || begin
           result = +""
           i = index
@@ -100,7 +102,13 @@ module Xlsxrb
       # If passed a string/symbol representing an integer, it returns the integer.
       def self.column_index(letter)
         str = letter.to_s
-        return str.to_i if str.match?(/\A-?\d+\z/)
+        if str.match?(/\A-?\d+\z/)
+          val = str.to_i
+          raise ArgumentError, "Column index must be >= 0, got #{val}" if val.negative?
+          return val
+        end
+
+        raise ArgumentError, "Invalid column letter: #{letter.inspect}" unless str.match?(/\A[a-zA-Z]+\z/)
 
         str.upcase.chars.reduce(0) { |acc, c| (acc * 26) + (c.ord - "A".ord + 1) } - 1
       end
