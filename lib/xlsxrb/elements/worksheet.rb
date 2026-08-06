@@ -84,7 +84,12 @@ module Xlsxrb
 
       def self.validate(name, rows)
         errs = []
-        errs << "worksheet name must be a non-empty String (got #{name.inspect})" if name.nil? || (name.is_a?(String) && name.empty?)
+        if name.nil? || !name.is_a?(String) || name.empty?
+          errs << "worksheet name must be a non-empty String (got #{name.inspect})"
+        else
+          errs << "worksheet name cannot exceed 31 characters (got #{name.size})" if name.size > 31
+          errs << "worksheet name cannot contain \\, /, ?, *, [, or ]" if name.match?(/[\\\/?\*\[\]]/)
+        end
         errs << "rows must be an Array (got #{rows.class})" unless rows.is_a?(Array)
         if rows.is_a?(Array)
           indices = rows.map(&:index)
