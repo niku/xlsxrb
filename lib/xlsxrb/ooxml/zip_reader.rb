@@ -120,6 +120,8 @@ module Xlsxrb
         result
       end
 
+      MAX_UNCOMPRESSED_SIZE = 500 * 1024 * 1024 # 500MB per file limit
+
       def find_data_descriptor_stream(io, method)
         if method == 8
           inflater = Zlib::Inflate.new(-Zlib::MAX_WBITS)
@@ -130,7 +132,11 @@ module Xlsxrb
             while (chunk = io.read(chunk_size))
               break if chunk.empty?
 
-              result << inflater.inflate(chunk)
+              inflated = inflater.inflate(chunk)
+              if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
+                raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes"
+              end
+              result << inflated
               consumed += chunk.bytesize
             end
           rescue Zlib::BufError, Zlib::DataError
@@ -160,15 +166,40 @@ module Xlsxrb
         return raw&.dup&.force_encoding("UTF-8") || "" if method.zero? # stored
 
         # Deflated
-        Zlib::Inflate.inflate(-raw || "")
+        safe_inflate(raw || "", -Zlib::MAX_WBITS)
       rescue Zlib::DataError
         # Try with raw deflate (no header)
-        inflater = Zlib::Inflate.new(-Zlib::MAX_WBITS)
+        safe_inflate(raw || "", -Zlib::MAX_WBITS)
+      end
+
+      def safe_inflate(raw, wbits)
+        inflater = Zlib::Inflate.new(wbits)
+        result = +""
+        chunk_size = 32768
+        offset = 0
+        raw_len = raw.bytesize
+
         begin
-          inflater.inflate(raw || "")
+          while offset < raw_len
+            chunk = raw.byteslice(offset, chunk_size)
+            inflated = inflater.inflate(chunk)
+            if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
+              raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes"
+            end
+            result << inflated
+            offset += chunk_size
+          end
+          # Finish inflation
+          inflated = inflater.finish
+          if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
+            raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes"
+          end
+          result << inflated
         ensure
           inflater.close
         end
+
+        result.force_encoding("UTF-8")
       end
     end
   end
