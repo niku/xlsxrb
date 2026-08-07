@@ -86,7 +86,7 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
   test "OOXML string limits (32767 chars)" do
     tmp = Tempfile.new(["string_limits", ".xlsx"])
     begin
-      wb = Xlsxrb.build do |w|
+      wb = Xlsxrb.build(strict_excel_mode: false) do |w|
         w.sheet "Sheet1" do |s|
           s.row ["A" * 32_767, "B" * 32_768]
         end
