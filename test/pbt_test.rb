@@ -129,6 +129,36 @@ class PbtTest < Test::Unit::TestCase
           Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.column 0, width: bad_width } }
         end
       end
+
+      # 4. Sheet name > 31 chars
+      long_sheet_arb = Pbt.alphanumeric_string(min: 32, max: 100)
+      Pbt.property(long_sheet_arb) do |bad_sheet_name|
+        assert_raise(ArgumentError) do
+          Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet(bad_sheet_name) }
+        end
+      end
+
+      # 5. Invalid sheet characters
+      invalid_chars_arb = Pbt.one_of(
+        Pbt.constant("["), Pbt.constant("]"), Pbt.constant("*"),
+        Pbt.constant("?"), Pbt.constant("/"), Pbt.constant("\\")
+      )
+      Pbt.property(invalid_chars_arb) do |bad_char|
+        assert_raise(ArgumentError) do
+          # Create a sheet name that contains the invalid character
+          bad_sheet_name = "Sheet#{bad_char}1"
+          Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet(bad_sheet_name) }
+        end
+      end
+
+      # 6. String length > 32,767
+      # Creating huge strings is slow, so we generate a single huge string and use it
+      huge_string_arb = Pbt.constant("a" * 32_768)
+      Pbt.property(huge_string_arb) do |bad_str|
+        assert_raise(ArgumentError) do
+          Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [bad_str] } }
+        end
+      end
     end
   end
 end
