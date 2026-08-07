@@ -922,4 +922,16 @@ class FacadeTest < Test::Unit::TestCase
     assert_not_equal([], val)
     assert_not_equal({}, val)
   end
+
+  test "WorksheetBuilder#table configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.table("A1:B2", columns: [{name: "A"}])
+      end
+    end
+    val = wb.sheet(0).unmapped_data.dig(:facade, :tables)
+    assert_not_nil(val)
+    assert_not_equal([], val)
+    assert_not_equal({}, val)
+  end
 end
