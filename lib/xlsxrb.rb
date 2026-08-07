@@ -685,6 +685,7 @@ module Xlsxrb
     # : (untyped values, ?styles: untyped?, ?height: untyped?, ?hidden: bool, ?custom_height: bool, ?outline_level: untyped?) -> untyped
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
+      # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
       if @strict_excel_mode && row_index >= 1_048_576
         raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
       end
@@ -728,6 +729,7 @@ module Xlsxrb
 
       max_len = values.size
       max_len = [max_len, styles.size].max if styles.is_a?(Array)
+      # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
       if @strict_excel_mode && max_len > 16_384
         raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns"
       end
@@ -740,6 +742,10 @@ module Xlsxrb
         val = col_index < values.size ? values[col_index] : nil
         unless val.nil? || val.is_a?(String) || val.is_a?(Numeric) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula))
           raise ArgumentError, "Invalid cell value type: #{val.class} for value #{val.inspect}"
+        end
+        # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
+        if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
+          raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters"
         end
         style_name = if style_lookup
                        col_index < styles.size ? styles[col_index] : nil
@@ -1386,6 +1392,7 @@ module Xlsxrb
       sheet if @current_sheet.nil?
 
       row_index = @current_row_index
+      # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
       if @strict_excel_mode && row_index >= 1_048_576
         raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
       end
@@ -1433,6 +1440,7 @@ module Xlsxrb
 
       max_len = values.size
       max_len = [max_len, styles.size].max if styles.is_a?(Array)
+      # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
       if @strict_excel_mode && max_len > 16_384
         raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns"
       end
@@ -1440,6 +1448,11 @@ module Xlsxrb
       max_len.times do |col_idx|
         val = col_idx < values.size ? values[col_idx] : nil
         next if val.nil?
+
+        # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
+        if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
+          raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters"
+        end
 
         addr = "#{Elements::Cell.column_letter(col_idx)}#{row_num}"
         @current_cells[addr] = val
