@@ -4879,6 +4879,7 @@ module Xlsxrb
       # : (untyped value) -> untyped
       def xml_escape(value)
         value.to_s
+             .gsub(/[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/, "")
              .gsub("&", "&amp;")
              .gsub("<", "&lt;")
              .gsub(">", "&gt;")
