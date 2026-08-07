@@ -171,18 +171,22 @@ end
 
 To support reliability, compliance with the ECMA-376 specification, and consistent updates, `xlsxrb` is backed by a highly rigorous, enterprise-grade Quality Assurance (QA) and testing architecture.
 
-Our 4-tier testing strategy ensures total robustness:
+### Multi-Tier Testing Strategy
+* **Round-Trip Testing**: Unit tests verify that every generated sheet can be reliably parsed back by the reader with identical content and styling.
+* **Contract Consistency**: Ensures semantic output consistency between the Streaming (`Xlsxrb.generate`) and In-Memory (`Xlsxrb.build`) APIs.
+* **Property-Based Testing (PBT)**: Automatically generates random data to catch edge cases (e.g., huge numbers, special characters) preventing unexpected crashes.
+* **Concurrency Validation**: Thread and Ractor safety checks to guarantee no global variable pollution during parallel execution.
+* **Security & DoS Protection**: Hardened against malicious files, including memory exhaustion (ZIP Bombs) and infinite parsing loops.
 
-1. Round-Trip Testing: Unit tests verify that every generated sheet can be reliably parsed back by the reader with identical content and styling.
-2. Contract Consistency: The library ensures semantic output consistency between the Streaming (`Xlsxrb.generate`) and In-Memory (`Xlsxrb.build`) APIs.
-3. Official Open XML SDK Validation (E2E): Every feature is validated against the official Microsoft Open XML SDK. Generated spreadsheets are structurally checked to prevent file corruption warnings.
-4. Visual Regression Testing (VRT): To guarantee rendering correctness, generated XLSX files are rendered via a headless LibreOffice Calc engine, and compared pixel-by-pixel against visual baselines.
+### Strict Interoperability & Rendering
+* **Official Open XML SDK Validation (E2E)**: Every generated spreadsheet is structurally validated against the official Microsoft Open XML SDK to prevent file corruption warnings in Microsoft Excel.
+* **Visual Regression Testing (VRT)**: Spreadsheets are rendered via a headless LibreOffice Calc engine and compared pixel-by-pixel against visual baselines to catch subtle rendering regressions.
 
-In addition to the above, we employ Property-Based Testing (PBT), Concurrency Validation, DoS Protection (ZIP Bomb prevention), Runtime Type checking (`RBS::Test`), and continuous Performance/Memory Benchmarking.
+### Performance & Types
+* **Continuous Benchmarking**: Memory usage and processing speeds are profiled in CI on large datasets to prevent performance regressions and OOM leaks.
+* **Runtime Type Validation**: Strong dynamic typing using `RBS::Test` to ensure the library's types are perfectly sound at runtime.
 
-For a comprehensive breakdown of our QA matrix, execution timings, and the specific bugs they prevent, please see [docs/QUALITY_ASSURANCE.md](docs/QUALITY_ASSURANCE.md).
-
-For details on running the tests locally or within our pre-configured Dev Container, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+For a comprehensive breakdown of our QA matrix, see [docs/QUALITY_ASSURANCE.md](docs/QUALITY_ASSURANCE.md). For details on running tests locally, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Development
 
