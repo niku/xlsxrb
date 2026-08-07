@@ -794,4 +794,12 @@ class FacadeTest < Test::Unit::TestCase
     end
     assert_equal({ odd_header: "test" }, wb.sheet(0).unmapped_data.dig(:facade, :header_footer))
   end
+
+  test "WorkbookBuilder#core_property configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.core_property(:creator, "test")
+      w.sheet("S")
+    end
+    assert_equal({creator: "test"}, wb.unmapped_data.dig(:facade, :core_properties))
+  end
 end
