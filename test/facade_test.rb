@@ -992,4 +992,15 @@ class FacadeTest < Test::Unit::TestCase
     assert_not_equal([], val)
     assert_not_equal({}, val)
   end
+
+  test "WorkbookBuilder#print_titles configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.print_titles(rows: "1:2")
+      w.sheet("S")
+    end
+    val = wb.unmapped_data.dig(:facade, :defined_names)
+    assert_not_nil(val)
+    assert_not_equal([], val)
+    assert_not_equal({}, val)
+  end
 end
