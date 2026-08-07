@@ -1,0 +1,23 @@
+# Generated from lib/xlsxrb/ooxml.rb with RBS::Inline
+
+module Xlsxrb
+  # Low-level OOXML infrastructure layer.
+  # Handles ZIP extraction, SAX XML parsing, and XML generation
+  # in strict accordance with ECMA-376.
+  module Ooxml
+    class Event < Data
+      attr_reader type(): untyped
+
+      attr_reader args(): untyped
+
+      attr_reader source(): untyped
+
+      def self.new: (untyped type, untyped args, untyped source) -> instance
+                  | (type: untyped, args: untyped, source: untyped) -> instance
+
+      def self.members: () -> [ :type, :args, :source ]
+
+      def members: () -> [ :type, :args, :source ]
+    end
+  end
+end

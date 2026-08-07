@@ -113,9 +113,9 @@ class PbtTest < Test::Unit::TestCase
           Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [bad_float] } }
         end
       end
-      
+
       # 2. Invalid row heights
-      invalid_height_arb = Pbt.integer.filter { |h| h < 0 || h > 409 }
+      invalid_height_arb = Pbt.integer.filter { |h| h.negative? || h > 409 }
       Pbt.property(invalid_height_arb) do |bad_height|
         assert_raise(ArgumentError) do
           Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [1], height: bad_height } }
@@ -123,7 +123,7 @@ class PbtTest < Test::Unit::TestCase
       end
 
       # 3. Invalid column widths
-      invalid_width_arb = Pbt.integer.filter { |w| w < 0 || w > 255 }
+      invalid_width_arb = Pbt.integer.filter { |w| w.negative? || w > 255 }
       Pbt.property(invalid_width_arb) do |bad_width|
         assert_raise(ArgumentError) do
           Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.column 0, width: bad_width } }
@@ -170,7 +170,7 @@ class PbtTest < Test::Unit::TestCase
         # Should not raise ArgumentError
         Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [good_float] } }
       end
-      
+
       # 2. Valid row heights (0..409)
       valid_height_arb = Pbt.integer(min: 0, max: 409)
       Pbt.property(valid_height_arb) do |good_height|
@@ -184,7 +184,7 @@ class PbtTest < Test::Unit::TestCase
       end
 
       # 4. Valid sheet name lengths (1..31) and characters
-      valid_sheet_arb = Pbt.printable_ascii_string(min: 1, max: 31).filter { |s| !s.match?(/[\[\]\*?\/\\]/) }
+      valid_sheet_arb = Pbt.printable_ascii_string(min: 1, max: 31).filter { |s| !s.match?(%r{[\[\]*?/\\]}) }
       Pbt.property(valid_sheet_arb) do |good_sheet_name|
         Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet(good_sheet_name) }
       end

@@ -53,7 +53,7 @@ module Xlsxrb
   # @param text [String, nil] Simple text.
   # @param font_props [Hash] Font styling options (e.g., bold: true).
   # @return [Elements::RichText] The resulting rich text.
-  # : (*untyped runs, ?text: untyped?, **untyped font_props) -> untyped
+  # : (*Hash[untyped, untyped] runs, ?text: String?, **untyped font_props) -> Elements::RichText
   def self.rich_text(*runs, text: nil, **font_props)
     runs = [{ text: text, font: font_props }] if text
     Elements::RichText.new(runs: runs)
@@ -130,7 +130,7 @@ module Xlsxrb
   # @param expression [String] The formula text (e.g. "SUM(A1:A10)").
   # @param cached_value [Object, nil] Optional cached result. If nil, Excel will calculate on open.
   # @return [Elements::Formula]
-  # : (untyped expression, ?cached_value: untyped?) -> untyped
+  # : (String expression, ?cached_value: untyped?) -> Elements::Formula
   def self.formula(expression, cached_value: nil)
     Elements::Formula.new(
       expression: expression,
@@ -143,7 +143,7 @@ module Xlsxrb
   #
   # @param source [String, IO] File path or IO object.
   # @return [Elements::Workbook] The parsed workbook.
-  # : (untyped source) -> untyped
+  # : (String | IO source) -> Elements::Workbook
   def self.read(source)
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
     Xlsxrb.in_span("Xlsxrb.read", attributes: attributes) do
@@ -171,7 +171,7 @@ module Xlsxrb
   # @param target [String, IO] File path or IO object.
   # @param workbook [Elements::Workbook] The workbook to write.
   # @return [void]
-  # : (untyped target, untyped workbook) -> untyped
+  # : (String | IO target, Elements::Workbook workbook) -> void
   def self.write(target, workbook)
     raise Error, "target is required" if target.nil?
     raise Error, "workbook must be an Elements::Workbook" unless workbook.is_a?(Elements::Workbook)
@@ -242,7 +242,7 @@ module Xlsxrb
   # @yieldparam workbook [Elements::Workbook] The parsed workbook.
   # @yieldreturn [Elements::Workbook] The modified workbook.
   # @return [void]
-  # : (untyped source, ?untyped? target) ?{ (untyped) -> untyped } -> untyped
+  # : (String | IO source, ?(String | IO)? target) ?{ (Elements::Workbook) -> Elements::Workbook } -> void
   def self.modify(source, target = nil)
     raise Error, "source is required" if source.nil?
     raise Error, "block is required" unless block_given?
@@ -284,7 +284,7 @@ module Xlsxrb
   # @yieldparam sheet [StreamSheet] The streaming sheet object.
   # @return [Enumerator] If no block is given.
   # @return [void]
-  # : (untyped source) ?{ (untyped) -> untyped } -> untyped
+  # : (String | IO source) ?{ (StreamSheet) -> void } -> (Enumerator[StreamSheet, void] | void)
   def self.foreach(source)
     return enum_for(:foreach, source) unless block_given?
 
@@ -314,7 +314,7 @@ module Xlsxrb
   # @yield [stream_writer]
   # @yieldparam stream_writer [StreamWriter]
   # @return [void]
-  # : (untyped target) ?{ (untyped) -> untyped } -> untyped
+  # : (String | IO target, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> void
   def self.generate(target, strict_excel_mode: true)
     raise Error, "target is required" if target.nil?
     raise Error, "block is required" unless block_given?
@@ -336,7 +336,7 @@ module Xlsxrb
   # @yield [builder]
   # @yieldparam builder [WorkbookBuilder]
   # @return [Elements::Workbook]
-  # : () ?{ (untyped) -> untyped } -> untyped
+  # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
   def self.build(strict_excel_mode: true)
     raise Error, "block is required" unless block_given?
 
@@ -386,15 +386,9 @@ module Xlsxrb
     # : (?untyped? name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
     def sheet(name = nil, **opts)
       name ||= "Sheet#{@sheets.size + 1}"
-      if @strict_excel_mode && name.length > 31
-        raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)"
-      end
-      if name.match?(/[\[\]\*?\/\\]/)
-        raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)"
-      end
-      if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
-        raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names."
-      end
+      raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
+      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)" if name.match?(%r{[\[\]*?/\\]})
+      raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
 
       sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode)
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
@@ -503,9 +497,8 @@ module Xlsxrb
 
     # : () -> untyped
     def build
-      if @strict_excel_mode && @sheets.empty?
-        raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)"
-      end
+      raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @strict_excel_mode && @sheets.empty?
+
       # Process styles from all sheets and collect style definitions
       processed_sheets, styles_definition = process_styles(@sheets)
 
@@ -687,18 +680,15 @@ module Xlsxrb
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether it's a custom height.
     # @param outline_level [Integer, nil] The outline level.
+    # @note Excel's column limit is 16,384, row limit is 1,048,576, string max length is 32,767.
     # @return [void]
-    # : (untyped values, ?styles: untyped?, ?height: untyped?, ?hidden: bool, ?custom_height: bool, ?outline_level: untyped?) -> untyped
+    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: String | Hash[untyped, untyped] | Array[String | Hash[untyped, untyped] | nil] | nil, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
       # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
       if @strict_excel_mode
-        if row_index >= 1_048_576
-          raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
-        end
-        if height && (height < 0 || height > 409)
-          raise ArgumentError, "Row height #{height} must be between 0 and 409 points (Excel limitation)"
-        end
+        raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows" if row_index >= 1_048_576
+        raise ArgumentError, "Row height #{height} must be between 0 and 409 points (Excel limitation)" if height && (height.negative? || height > 409)
       end
 
       if values.is_a?(Hash)
@@ -748,9 +738,7 @@ module Xlsxrb
       max_len = values.size
       max_len = [max_len, styles.size].max if styles.is_a?(Array)
       # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
-      if @strict_excel_mode && max_len > 16_384
-        raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns"
-      end
+      raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns" if @strict_excel_mode && max_len > 16_384
 
       cells = Array.new(max_len)
       style_lookup = styles.is_a?(Array)
@@ -758,13 +746,9 @@ module Xlsxrb
       col_index = 0
       while col_index < max_len
         val = col_index < values.size ? values[col_index] : nil
-        unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula)) || val.is_a?(Elements::RichText) || (val.is_a?(Array) && val.first.is_a?(Hash) && (val.first.key?(:text) || val.first.key?("text")))
-          raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}"
-        end
+        raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}" unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula)) || val.is_a?(Elements::RichText) || (val.is_a?(Array) && val.first.is_a?(Hash) && (val.first.key?(:text) || val.first.key?("text")))
         # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
-        if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
-          raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters"
-        end
+        raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
 
         if val.is_a?(Array) && val.first.is_a?(Hash) && (val.first.key?(:text) || val.first.key?("text"))
           # Coerce array of hashes to RichText
@@ -838,12 +822,11 @@ module Xlsxrb
     # @param hidden [Boolean] Whether the column is hidden.
     # @param custom_width [Boolean] Whether it's a custom width.
     # @param outline_level [Integer, nil] The outline level.
+    # @note Excel's column width max is 255.
     # @return [void]
-    # : (untyped index, ?width: untyped?, ?hidden: bool, ?custom_width: bool, ?outline_level: untyped?) -> untyped
+    # : (Integer | String | Range[untyped] | Array[untyped] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
-      if @strict_excel_mode && width && (width < 0 || width > 255)
-        raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)"
-      end
+      raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
       indices = case index
                 when Range, Array
@@ -1043,12 +1026,9 @@ module Xlsxrb
     # : (?untyped? range, ?row: untyped?, ?col_start: untyped?, ?col_end: untyped?, ?row_start: untyped?, ?row_end: untyped?) -> untyped
     def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       if range
-        if @strict_excel_mode && !range.match?(/^[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?$/)
-          raise ArgumentError, "Invalid merge range format: '#{range}'. Expected format like 'A1:B2'."
-        end
-        if @merge_cells_ranges.include?(range)
-          return
-        end
+        raise ArgumentError, "Invalid merge range format: '#{range}'. Expected format like 'A1:B2'." if @strict_excel_mode && !range.match?(/^[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?$/)
+        return if @merge_cells_ranges.include?(range)
+
         @merge_cells_ranges << range
       else
         r_start = row || row_start || 0
@@ -1367,15 +1347,9 @@ module Xlsxrb
     # : (?untyped? name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
     def sheet(name = nil, **opts)
       name ||= "Sheet#{@sheets.size + 1}"
-      if @strict_excel_mode && name.length > 31
-        raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)"
-      end
-      if name.match?(/[\[\]\*?\/\\]/)
-        raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)"
-      end
-      if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
-        raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names."
-      end
+      raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
+      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)" if name.match?(%r{[\[\]*?/\\]})
+      raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
 
       internal_sheet_setup(name)
       opts.each { |k, v| set_sheet_property(k, v) }
@@ -1441,20 +1415,17 @@ module Xlsxrb
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether it's a custom height.
     # @param outline_level [Integer, nil] The outline level.
+    # @note Excel's column limit is 16,384, row limit is 1,048,576, string max length is 32,767.
     # @return [void]
-    # : (untyped values, ?styles: untyped?, ?height: untyped?, ?hidden: bool, ?custom_height: bool, ?outline_level: untyped?) -> untyped
+    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: String | Hash[untyped, untyped] | Array[String | Hash[untyped, untyped] | nil] | nil, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       sheet if @current_sheet.nil?
 
       row_index = @current_row_index
       # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
       if @strict_excel_mode
-        if row_index >= 1_048_576
-          raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
-        end
-        if height && (height < 0 || height > 409)
-          raise ArgumentError, "Row height #{height} must be between 0 and 409 points (Excel limitation)"
-        end
+        raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows" if row_index >= 1_048_576
+        raise ArgumentError, "Row height #{height} must be between 0 and 409 points (Excel limitation)" if height && (height.negative? || height > 409)
       end
       @current_row_index += 1
 
@@ -1508,22 +1479,16 @@ module Xlsxrb
       max_len = values.size
       max_len = [max_len, styles.size].max if styles.is_a?(Array)
       # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
-      if @strict_excel_mode && max_len > 16_384
-        raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns"
-      end
+      raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns" if @strict_excel_mode && max_len > 16_384
 
       max_len.times do |col_idx|
         val = col_idx < values.size ? values[col_idx] : nil
         next if val.nil?
 
-        unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula))
-          raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}"
-        end
+        raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}" unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula))
 
         # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
-        if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
-          raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters"
-        end
+        raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
 
         addr = "#{Elements::Cell.column_letter(col_idx)}#{row_num}"
         @current_cells[addr] = val
@@ -1549,12 +1514,11 @@ module Xlsxrb
     # @param hidden [Boolean] Whether the column is hidden.
     # @param custom_width [Boolean] Whether it's a custom width.
     # @param outline_level [Integer, nil] The outline level.
+    # @note Excel's column width max is 255.
     # @return [void]
-    # : (untyped index, ?width: untyped?, ?hidden: bool, ?custom_width: bool, ?outline_level: untyped?) -> untyped
+    # : (Integer | String | Range[untyped] | Array[untyped] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
-      if @strict_excel_mode && width && (width < 0 || width > 255)
-        raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)"
-      end
+      raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
       indices = case index
                 when Range, Array
@@ -1692,9 +1656,8 @@ module Xlsxrb
     def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       sheet if @current_sheet.nil?
       if range
-        if @strict_excel_mode && !range.match?(/^[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?$/)
-          raise ArgumentError, "Invalid merge range format: '#{range}'. Expected format like 'A1:B2'."
-        end
+        raise ArgumentError, "Invalid merge range format: '#{range}'. Expected format like 'A1:B2'." if @strict_excel_mode && !range.match?(/^[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?$/)
+
         @current_merge_cells << range
       else
         r_start = row || row_start || 0
@@ -1921,9 +1884,7 @@ module Xlsxrb
 
     # : () -> untyped
     def close
-      if @strict_excel_mode && @sheets.empty? && @current_sheet.nil?
-        raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)"
-      end
+      raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @strict_excel_mode && @sheets.empty? && @current_sheet.nil?
 
       Xlsxrb.in_span("StreamWriter#close") do
         flush_current_sheet

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "lib/xlsxrb"
 require "date"
 
@@ -8,7 +10,7 @@ def assert_raises(exception_class)
   puts "FAIL: Expected #{exception_class} but nothing was raised!"
 rescue exception_class => e
   puts "PASS: Raised #{exception_class} as expected: #{e.message[0..100]}"
-rescue => e
+rescue StandardError => e
   puts "FAIL: Raised #{e.class} instead of #{exception_class}: #{e.message}"
 end
 
@@ -24,7 +26,7 @@ begin
     end
   end
   puts "FAIL: Successfully built workbook with invalid sheet names! (xlsxrb lacks validation)"
-rescue => e
+rescue StandardError => e
   puts "PASS/FAIL? Raised #{e.class} on invalid sheet names: #{e.message}"
 end
 
@@ -35,12 +37,12 @@ begin
     wb.sheet("Limits") do |s|
       # Try to write a row at an invalid index (if xlsxrb allows specifying row indices, but it's sequential usually)
       # Let's try writing a massive row array
-      massive_row = Array.new(16385, "A")
+      massive_row = Array.new(16_385, "A")
       s.row(massive_row)
     end
   end
   puts "FAIL: Successfully wrote a row with 16385 columns (exceeds Excel limits)"
-rescue => e
+rescue StandardError => e
   puts "PASS/FAIL? Raised #{e.class} on exceeding columns: #{e.message}"
 end
 
@@ -49,11 +51,11 @@ begin
   Xlsxrb.generate("test_types.xlsx") do |wb|
     wb.sheet("Types") do |s|
       # Try writing unsupported objects
-      s.row([1, "text", {a: 1}, Object.new, Class, proc {}])
+      s.row([1, "text", { a: 1 }, Object.new, Class, proc {}])
     end
   end
   puts "FAIL: Successfully wrote objects! Did it call to_s on them or just crash later?"
-rescue => e
+rescue StandardError => e
   puts "PASS: Raised #{e.class} when writing weird objects: #{e.message}"
 end
 
@@ -62,18 +64,24 @@ puts "\n--- 4. Concurrency / State Leakage (assuming it's broken) ---"
 begin
   t1 = Thread.new do
     Xlsxrb.generate("t1.xlsx") do |wb|
-      wb.sheet("S1") { |s| 100.times { s.row([1]) }; sleep 0.1 }
+      wb.sheet("S1") do |s|
+        100.times { s.row([1]) }
+        sleep 0.1
+      end
     end
   end
   t2 = Thread.new do
     Xlsxrb.generate("t2.xlsx") do |wb|
-      wb.sheet("S2") { |s| 100.times { s.row([2]) }; sleep 0.1 }
+      wb.sheet("S2") do |s|
+        100.times { s.row([2]) }
+        sleep 0.1
+      end
     end
   end
   t1.join
   t2.join
   puts "PASS: Threads completed without crashing."
-rescue => e
+rescue StandardError => e
   puts "FAIL: Threads crashed: #{e.class} - #{e.message}"
 end
 
@@ -86,22 +94,22 @@ begin
     end
   end
   puts "FAIL: Allowed malformed DSL calls"
-rescue => e
+rescue StandardError => e
   puts "PASS: Caught malformed DSL calls: #{e.class}"
 end
 
 puts "\n--- 6. Reading non-existent or corrupted files ---"
 begin
-  Xlsxrb.read("does_not_exist.xlsx") { |row| }
+  Xlsxrb.read("does_not_exist.xlsx") { |row| _ = row }
   puts "FAIL: Read non-existent file without error!"
-rescue => e
+rescue StandardError => e
   puts "PASS: Caught non-existent file: #{e.class}"
 end
 
 File.write("corrupt.xlsx", "This is not a zip file")
 begin
-  Xlsxrb.read("corrupt.xlsx") { |row| }
+  Xlsxrb.read("corrupt.xlsx") { |row| _ = row }
   puts "FAIL: Read corrupted file without error!"
-rescue => e
+rescue StandardError => e
   puts "PASS: Caught corrupted file: #{e.class}"
 end

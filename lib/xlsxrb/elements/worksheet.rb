@@ -107,7 +107,7 @@ module Xlsxrb
                      else
                        Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula)
                      end
-          
+
           # Replace cell in the existing row
           new_cells = existing_row.cells.reject { |c| c.column_index == col_idx }
           new_cells << new_cell
@@ -115,14 +115,13 @@ module Xlsxrb
 
           new_row = existing_row.with(cells: new_cells)
           new_rows = rows.map { |r| r.index == row_idx ? new_row : r }
-          with(rows: new_rows)
         else
           # Row doesn't exist, create it
           new_cell = Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula)
           new_row = Row.new(index: row_idx, cells: [new_cell])
           new_rows = (rows + [new_row]).sort_by!(&:index)
-          with(rows: new_rows)
         end
+        with(rows: new_rows)
       end
 
       def self.validate(name, rows)
