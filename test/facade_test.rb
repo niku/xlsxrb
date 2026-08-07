@@ -776,4 +776,13 @@ class FacadeTest < Test::Unit::TestCase
     end
     assert_equal("A1:B10", wb.sheet(0).unmapped_data.dig(:facade, :auto_filter))
   end
+
+  test "WorksheetBuilder#freeze_pane configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.freeze_pane(row: 1, col: "B")
+      end
+    end
+    assert_equal({ row: 1, col: 1 }, wb.sheet(0).unmapped_data.dig(:facade, :freeze_pane))
+  end
 end
