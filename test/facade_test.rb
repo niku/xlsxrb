@@ -759,4 +759,12 @@ class FacadeTest < Test::Unit::TestCase
     assert_equal("Hello", rt.runs[0][:text])
     assert_equal({ bold: true }, rt.runs[0][:font])
   end
+
+  test "WorkbookBuilder#workbook_property configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.workbook_property(:test_prop, "test_val")
+      w.sheet("S")
+    end
+    assert_equal("test_val", wb.unmapped_data.dig(:facade, :workbook_properties, :test_prop))
+  end
 end
