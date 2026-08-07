@@ -818,4 +818,12 @@ class FacadeTest < Test::Unit::TestCase
     end
     assert_equal([{name: "test", value: "test", type: :string}], wb.unmapped_data.dig(:facade, :custom_properties))
   end
+
+  test "WorkbookBuilder#protect_workbook configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.protect_workbook(password: "123")
+      w.sheet("S")
+    end
+    assert_equal({password: "123"}, wb.unmapped_data.dig(:facade, :workbook_protection))
+  end
 end
