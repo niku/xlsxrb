@@ -624,4 +624,123 @@ class FacadeTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+  # 1. Workbook#update_sheet
+  test "Workbook#update_sheet creates a new workbook with the updated sheet" do
+    wb = Xlsxrb::Elements::Workbook.new(
+      sheets: [
+        Xlsxrb::Elements::Worksheet.new(name: "Sheet1", rows: [
+                                          Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Hello")
+                                                                    ])
+                                        ])
+      ]
+    )
+
+    new_wb = wb.update_sheet("Sheet1") do |sheet|
+      sheet.update_cell("A1", value: "World")
+    end
+
+    assert_not_equal wb, new_wb
+    assert_equal "Hello", wb.sheet("Sheet1").cell_value("A1")
+    assert_equal "World", new_wb.sheet("Sheet1").cell_value("A1")
+  end
+
+  # 2. Worksheet#update_cell
+  test "Worksheet#update_cell creates a new cell or updates an existing one" do
+    sheet = Xlsxrb::Elements::Worksheet.new(name: "Test")
+
+    # Update new cell
+    sheet2 = sheet.update_cell("B2", value: 42)
+    assert_nil sheet.cell_value("B2")
+    assert_equal 42, sheet2.cell_value("B2")
+
+    # Update existing cell
+    sheet3 = sheet2.update_cell("B2", value: 100, style_index: 1)
+    assert_equal 42, sheet2.cell_value("B2")
+    assert_equal 100, sheet3.cell_value("B2")
+    assert_equal 1, sheet3["B2"].style_index
+  end
+
+  # 3. Workbook#[]
+  test "Workbook#[] fetches sheet by index or name" do
+    wb = Xlsxrb::Elements::Workbook.new(
+      sheets: [
+        Xlsxrb::Elements::Worksheet.new(name: "First"),
+        Xlsxrb::Elements::Worksheet.new(name: "Second")
+      ]
+    )
+
+    assert_equal "First", wb[0].name
+    assert_equal "Second", wb["Second"].name
+    assert_nil wb["Nonexistent"]
+  end
+
+  # 4. Hash and Range styling in sheet.row and sheet.column
+  test "Hash and Range styling in sheet.row and sheet.column" do
+    temp_file = Tempfile.new(["test_styles", ".xlsx"])
+    temp_file.close
+
+    Xlsxrb.generate(temp_file.path) do |wb|
+      wb.style("bold", &:bold)
+      wb.style("italic", &:italic)
+      wb.style("red") { |s| s.font_color(:red) }
+
+      wb.sheet("Test")
+      wb.row(
+        { "A" => 1, "B" => 2, "C" => 3, "D" => 4 },
+        styles: { "A" => "bold", "B".."C" => "italic", "D" => "red" }
+      )
+
+      wb.column("A".."B", width: 20)
+      wb.column(%w[C D], width: 10)
+    end
+
+    parsed = Xlsxrb.read(temp_file.path)
+    sheet = parsed.sheet("Test")
+
+    assert_equal 1, sheet.cell_value("A1")
+    assert_equal 2, sheet.cell_value("B1")
+    assert_equal 3, sheet.cell_value("C1")
+    assert_equal 4, sheet.cell_value("D1")
+  ensure
+    temp_file&.unlink
+  end
+
+  # 5. StyleBuilder properties
+  test "StyleBuilder apply_options! configures correctly" do
+    sb = Xlsxrb::StyleBuilder.new("test")
+    sb.apply_options!(
+      font: { bold: true, color: :red, name: "Arial", size: 14 },
+      fill: { color: :blue },
+      border: { all: { style: "thick", color: :black } },
+      alignment: { horizontal: "center", vertical: "top", wrap_text: true },
+      number_format: "0.00"
+    )
+
+    assert_equal true, sb.font_props[:bold]
+    assert_equal "FFFF0000", sb.font_props[:color]
+    assert_equal "Arial", sb.font_props[:name]
+    assert_equal 14, sb.font_props[:sz]
+
+    assert_equal "solid", sb.fill_props[:pattern]
+    assert_equal "FF0000FF", sb.fill_props[:fg_color]
+
+    assert_equal "thick", sb.border_props[:top][:style]
+
+    assert_equal "center", sb.alignment[:horizontal]
+    assert_equal "0.00", sb.num_fmt_id
+  end
+
+  test "StyleBuilder fluent DSL configures correctly" do
+    sb = Xlsxrb::StyleBuilder.new("test")
+    sb.font(bold: true, color: :red)
+      .fill_color(:blue)
+      .border_all(style: "thick")
+      .align_horizontal("center")
+      .number_format("0.00")
+
+    assert_equal true, sb.font_props[:bold]
+    assert_equal "FFFF0000", sb.font_props[:color]
+    assert_equal "FF0000FF", sb.fill_props[:fg_color]
+  end
 end
