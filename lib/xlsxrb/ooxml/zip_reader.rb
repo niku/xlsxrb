@@ -76,6 +76,13 @@ module Xlsxrb
 
         io.binmode if io.respond_to?(:binmode)
 
+        first_sig = io.read(4)
+        unless first_sig == LOCAL_HEADER_SIG
+          raise ArgumentError, "Invalid magic number: Expected a valid ZIP/XLSX file format (PK\\x03\\x04)"
+        end
+        io.seek(-4, IO::SEEK_CUR) if io.respond_to?(:seek)
+        io = StringIO.new(first_sig + io.read.b) unless io.respond_to?(:seek)
+
         while true
           sig = io.read(4)
           break unless sig == LOCAL_HEADER_SIG
