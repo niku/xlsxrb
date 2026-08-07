@@ -767,4 +767,13 @@ class FacadeTest < Test::Unit::TestCase
     end
     assert_equal("test_val", wb.unmapped_data.dig(:facade, :workbook_properties, :test_prop))
   end
+
+  test "WorksheetBuilder#auto_filter configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.auto_filter("A1:B10")
+      end
+    end
+    assert_equal("A1:B10", wb.sheet(0).unmapped_data.dig(:facade, :auto_filter))
+  end
 end
