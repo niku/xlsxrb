@@ -898,4 +898,16 @@ class FacadeTest < Test::Unit::TestCase
     assert_not_equal([], val)
     assert_not_equal({}, val)
   end
+
+  test "WorksheetBuilder#validate_data configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.validate_data("A1", type: :whole)
+      end
+    end
+    val = wb.sheet(0).unmapped_data.dig(:facade, :data_validations)
+    assert_not_nil(val)
+    assert_not_equal([], val)
+    assert_not_equal({}, val)
+  end
 end
