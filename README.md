@@ -169,12 +169,18 @@ end
 
 ## Testing & Quality Assurance
 
-To support reliability, compliance with the ECMA-376 specification, and consistent updates, `xlsxrb` is backed by a 4-tier testing strategy:
+To support reliability, compliance with the ECMA-376 specification, and consistent updates, `xlsxrb` is backed by a highly rigorous, enterprise-grade Quality Assurance (QA) and testing architecture.
+
+Our 4-tier testing strategy ensures total robustness:
 
 1. Round-Trip Testing: Unit tests verify that every generated sheet can be reliably parsed back by the reader with identical content and styling.
 2. Contract Consistency: The library ensures semantic output consistency between the Streaming (`Xlsxrb.generate`) and In-Memory (`Xlsxrb.build`) APIs.
 3. Official Open XML SDK Validation (E2E): Every feature is validated against the official Microsoft Open XML SDK. Generated spreadsheets are structurally checked to prevent file corruption warnings.
 4. Visual Regression Testing (VRT): To guarantee rendering correctness, generated XLSX files are rendered via a headless LibreOffice Calc engine, and compared pixel-by-pixel against visual baselines.
+
+In addition to the above, we employ Property-Based Testing (PBT), Concurrency Validation, DoS Protection (ZIP Bomb prevention), Runtime Type checking (`RBS::Test`), and continuous Performance/Memory Benchmarking.
+
+For a comprehensive breakdown of our QA matrix, execution timings, and the specific bugs they prevent, please see [docs/QUALITY_ASSURANCE.md](docs/QUALITY_ASSURANCE.md).
 
 For details on running the tests locally or within our pre-configured Dev Container, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
