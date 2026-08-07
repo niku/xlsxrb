@@ -35,14 +35,6 @@ module Xlsxrb
 
   TRACER = OpenTelemetry.tracer_provider.tracer("xlsxrb", Xlsxrb::VERSION)
 
-  class << self
-    # Global configuration: Whether to raise errors for Excel-specific limits (default: true).
-    # Disabling this allows writing files that conform to ECMA-376 OOXML but may break in Microsoft Excel.
-    # : () -> bool
-    attr_accessor :strict_excel_mode
-  end
-  @strict_excel_mode = true
-
   def self.in_span(name, attributes: nil, &)
     if defined?(Ractor) && Ractor.current != Ractor.main
       yield
@@ -325,13 +317,13 @@ module Xlsxrb
   # @yieldparam stream_writer [StreamWriter]
   # @return [void]
   # : (untyped target) ?{ (untyped) -> untyped } -> untyped
-  def self.generate(target)
+  def self.generate(target, strict_excel_mode: true)
     raise Error, "target is required" if target.nil?
     raise Error, "block is required" unless block_given?
 
     attributes = target.is_a?(String) ? { "filepath" => target } : {}
     Xlsxrb.in_span("Xlsxrb.generate", attributes: attributes) do
-      stream_writer = StreamWriter.new(target)
+      stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode)
       begin
         yield stream_writer
         stream_writer.close
@@ -347,11 +339,11 @@ module Xlsxrb
   # @yieldparam builder [WorkbookBuilder]
   # @return [Elements::Workbook]
   # : () ?{ (untyped) -> untyped } -> untyped
-  def self.build
+  def self.build(strict_excel_mode: true)
     raise Error, "block is required" unless block_given?
 
     Xlsxrb.in_span("Xlsxrb.build") do
-      builder = WorkbookBuilder.new
+      builder = WorkbookBuilder.new(strict_excel_mode: strict_excel_mode)
       yield builder
       builder.build
     end
@@ -359,8 +351,9 @@ module Xlsxrb
 
   # DSL context for Xlsxrb.build.
   class WorkbookBuilder
-    # : () -> void
-    def initialize
+    # : (?strict_excel_mode: bool) -> void
+    def initialize(strict_excel_mode: true)
+      @strict_excel_mode = strict_excel_mode
       @sheets = []
       @sheet_builders = [] # Keep track of sheet builders for style processing
       @defined_names = []
@@ -395,13 +388,13 @@ module Xlsxrb
     # : (?untyped? name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
     def sheet(name = nil, **opts)
       name ||= "Sheet#{@sheets.size + 1}"
-      if Xlsxrb.strict_excel_mode && name.length > 31
+      if @strict_excel_mode && name.length > 31
         raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)"
       end
       if name.match?(/[\[\]\*?\/\\]/)
         raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)"
       end
-      sheet_builder = WorksheetBuilder.new(name)
+      sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode)
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
       yield sheet_builder if block_given?
       @sheet_builders << sheet_builder
@@ -629,9 +622,10 @@ module Xlsxrb
 
   # DSL context for a single worksheet in Xlsxrb.build.
   class WorksheetBuilder
-    # : (untyped name) -> void
-    def initialize(name)
+    # : (untyped name, ?strict_excel_mode: bool) -> void
+    def initialize(name, strict_excel_mode: true)
       @name = name
+      @strict_excel_mode = strict_excel_mode
       @rows = []
       @columns = []
       @charts = []
@@ -691,7 +685,7 @@ module Xlsxrb
     # : (untyped values, ?styles: untyped?, ?height: untyped?, ?hidden: bool, ?custom_height: bool, ?outline_level: untyped?) -> untyped
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
-      if Xlsxrb.strict_excel_mode && row_index >= 1_048_576
+      if @strict_excel_mode && row_index >= 1_048_576
         raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
       end
 
@@ -734,8 +728,8 @@ module Xlsxrb
 
       max_len = values.size
       max_len = [max_len, styles.size].max if styles.is_a?(Array)
-      if Xlsxrb.strict_excel_mode && max_len > 16_384
-        raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16,384 columns"
+      if @strict_excel_mode && max_len > 16_384
+        raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns"
       end
 
       cells = Array.new(max_len)
@@ -1204,9 +1198,10 @@ module Xlsxrb
   class StreamWriter
     attr_reader :current_sheet
 
-    # : (untyped target) -> void
-    def initialize(target)
+    # : (untyped target, ?strict_excel_mode: bool) -> void
+    def initialize(target, strict_excel_mode: true)
       @target = target
+      @strict_excel_mode = strict_excel_mode
       @sst = []
       @sst_index = {}
       @sheets = []
@@ -1313,6 +1308,14 @@ module Xlsxrb
     # @return [void]
     # : (?untyped? name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
     def sheet(name = nil, **opts)
+      name ||= "Sheet#{@sheets.size + 1}"
+      if @strict_excel_mode && name.length > 31
+        raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)"
+      end
+      if name.match?(/[\[\]\*?\/\\]/)
+        raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)"
+      end
+
       internal_sheet_setup(name)
       opts.each { |k, v| set_sheet_property(k, v) }
 
@@ -1383,6 +1386,9 @@ module Xlsxrb
       sheet if @current_sheet.nil?
 
       row_index = @current_row_index
+      if @strict_excel_mode && row_index >= 1_048_576
+        raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
+      end
       @current_row_index += 1
 
       if values.is_a?(Hash)
@@ -1427,6 +1433,9 @@ module Xlsxrb
 
       max_len = values.size
       max_len = [max_len, styles.size].max if styles.is_a?(Array)
+      if @strict_excel_mode && max_len > 16_384
+        raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns"
+      end
 
       max_len.times do |col_idx|
         val = col_idx < values.size ? values[col_idx] : nil
