@@ -219,6 +219,8 @@ task :wasm do
 
   # A. Write custom static stubs and gateways dynamically
   File.write(File.join(bundle_assets_dir, "openssl.rb"), "# frozen_string_literal: true\n")
+  time_rb_path = $LOAD_PATH.lazy.map { |p| File.join(p, "time.rb") }.find { |f| File.exist?(f) }
+  FileUtils.cp(time_rb_path, bundle_assets_dir) if time_rb_path
 
   File.write(File.join(bundle_assets_dir, "opentelemetry.rb"), <<~RUBY)
     # frozen_string_literal: true

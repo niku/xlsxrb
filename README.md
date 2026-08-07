@@ -98,7 +98,49 @@ Xlsxrb.foreach("large_file.xlsx") do |sheet|
 end
 ```
 
-*(For In-Memory document building, cell modifications, or template updating, please refer to the detailed RDoc API documentation).*
+### In-Memory Building & Modifying
+
+`xlsxrb` provides a powerful, immutable-by-default API for modifying existing Excel files or building templates in-memory. 
+
+#### Modifying an Existing File
+You can update specific cells or sheets using the functional `Xlsxrb.modify` API, which yields the parsed `Workbook`.
+
+```ruby
+require "xlsxrb"
+
+# Create a dummy template.xlsx for this example
+Xlsxrb.build { |w| w.sheet("Invoice") }.write("template.xlsx")
+
+Xlsxrb.modify("template.xlsx", "output.xlsx") do |wb|
+  wb.update_sheet("Invoice") do |sheet|
+    # Update a specific cell
+    sheet = sheet.update_cell("C4", value: "INV-10042")
+    sheet = sheet.update_cell("C5", value: Date.today)
+    
+    # Or append new rows
+    sheet.with(rows: sheet.rows + [
+      Xlsxrb::Elements::Row.new(index: sheet.rows.size, cells: [])
+    ])
+  end
+end
+```
+
+#### Hash & Range Styling (Syntactic Sugar)
+You can directly apply inline styles or use Ranges for multiple columns without boilerplate:
+
+```ruby
+Xlsxrb.build do |wb|
+  # Use [] accessor for sheets
+  wb["Report"].row(
+    ["ID", "Name", "Score", "Rank"],
+    # Apply 'header' style to first two columns, and bold inline style to the third
+    styles: { 0..1 => "header", 2 => { font: { bold: true, color: "red" } } }
+  )
+  
+  # Set multiple column widths at once using Ranges
+  wb["Report"].column("A".."D", width: 15.0)
+end
+```
 
 ## Feature Support & ECMA-376 Compliance
 
