@@ -83,7 +83,13 @@ class PbtTest < Test::Unit::TestCase
                   expected_str = expected_val.to_s
                 end
                 
-                actual_str = actual_val.to_s
+                # If the string starts with "=", Xlsxrb writes it as a formula, not a string value
+                if expected_val.is_a?(String) && expected_val.start_with?("=")
+                  actual_str = actual_cell&.formula
+                  expected_str = expected_str[1..] # formula expression omits the "="
+                else
+                  actual_str = actual_val.to_s
+                end
                 
                 # Floating point precision can differ slightly, just check string starts_with for large numbers or something.
                 if expected_val.is_a?(Float) || expected_val.is_a?(Time)
