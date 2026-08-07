@@ -910,4 +910,16 @@ class FacadeTest < Test::Unit::TestCase
     assert_not_equal([], val)
     assert_not_equal({}, val)
   end
+
+  test "WorksheetBuilder#conditional_format configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.conditional_format("A1", type: :cellIs)
+      end
+    end
+    val = wb.sheet(0).unmapped_data.dig(:facade, :conditional_formats)
+    assert_not_nil(val)
+    assert_not_equal([], val)
+    assert_not_equal({}, val)
+  end
 end
