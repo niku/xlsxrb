@@ -31,6 +31,22 @@ module Xlsxrb
           sheets.find { |s| s.name == identifier }
         end
       end
+      alias [] sheet
+
+      # Returns a new Workbook with the specified sheet updated.
+      # If a block is given, it yields the matched sheet and expects a new Worksheet back.
+      def update_sheet(identifier)
+        raise ArgumentError, "block is required" unless block_given?
+
+        sheet_to_update = sheet(identifier)
+        raise ArgumentError, "sheet not found: #{identifier}" unless sheet_to_update
+
+        new_sheet = yield sheet_to_update
+        raise TypeError, "block must return a Worksheet" unless new_sheet.is_a?(Worksheet)
+
+        new_sheets = sheets.map { |s| s == sheet_to_update ? new_sheet : s }
+        with(sheets: new_sheets)
+      end
 
       # Returns sheet names.
       def sheet_names

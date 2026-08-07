@@ -225,17 +225,15 @@ module Xlsxrb
 
   # Modifies an existing XLSX file.
   # Reads the workbook, passes it to the block, and writes the result.
-  # The block receives an Elements::Workbook and must return a modified one (e.g. via `with`).
+  # The block receives an Elements::Workbook and must return a modified one (e.g. via `update_sheet`).
   # If no target is given, the source is overwritten.
   #
   # @example
   #   Xlsxrb.modify("template.xlsx", "output.xlsx") do |wb|
-  #     sheet = wb.sheet(0)
-  #     row0 = sheet.row_at(0)
-  #     new_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "Updated")
-  #     new_row = row0.with(cells: row0.cells.map { |c| c.column_index == 1 ? new_cell : c })
-  #     new_sheet = sheet.with(rows: sheet.rows.map { |r| r.index == 0 ? new_row : r })
-  #     wb.with(sheets: wb.sheets.map.with_index { |s, i| i == 0 ? new_sheet : s })
+  #     wb.update_sheet(0) do |sheet|
+  #       sheet.update_cell("B1", value: "Updated")
+  #            .update_cell("B2", value: 100)
+  #     end
   #   end
   #
   # @param source [String, IO] The source file path or IO object.
@@ -404,6 +402,7 @@ module Xlsxrb
       @sheet_builders << sheet_builder
       @sheets << sheet_builder.build
     end
+    alias [] sheet
 
     # --- Workbook-Level Methods ---
 
@@ -713,10 +712,17 @@ module Xlsxrb
       end
 
       if styles.is_a?(Hash)
-        max_col_style = styles.keys.map { |k| Elements::Cell.column_index(k) }.max || -1
-        styles_array = Array.new(max_col_style + 1)
+        expanded_styles = {}
         styles.each do |k, v|
-          idx = Elements::Cell.column_index(k)
+          if k.is_a?(Range) || k.is_a?(Array)
+            k.each { |idx| expanded_styles[Elements::Cell.column_index(idx)] = v }
+          else
+            expanded_styles[Elements::Cell.column_index(k)] = v
+          end
+        end
+        max_col_style = expanded_styles.keys.max || -1
+        styles_array = Array.new(max_col_style + 1)
+        expanded_styles.each do |idx, v|
           styles_array[idx] = v
         end
         styles = styles_array
@@ -752,18 +758,35 @@ module Xlsxrb
       col_index = 0
       while col_index < max_len
         val = col_index < values.size ? values[col_index] : nil
-        unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula))
+        unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula)) || val.is_a?(Elements::RichText) || (val.is_a?(Array) && val.first.is_a?(Hash) && (val.first.key?(:text) || val.first.key?("text")))
           raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}"
         end
         # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
         if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
           raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters"
         end
+
+        if val.is_a?(Array) && val.first.is_a?(Hash) && (val.first.key?(:text) || val.first.key?("text"))
+          # Coerce array of hashes to RichText
+          runs = val.map do |run|
+            text = run[:text] || run["text"]
+            font = run.reject { |k| k.to_s == "text" }
+            { text: text, font: font.empty? ? nil : font }.compact
+          end
+          val = Elements::RichText.new(runs: runs)
+        end
+
         style_name = if style_lookup
                        col_index < styles.size ? styles[col_index] : nil
                      else
                        styles
                      end
+
+        if style_name.is_a?(Hash)
+          inline_name = "__inline_#{style_name.hash}"
+          style(inline_name, **style_name) unless @styles.key?(inline_name)
+          style_name = inline_name
+        end
         if val.nil? && style_name.nil?
           col_index += 1
           next
@@ -808,9 +831,9 @@ module Xlsxrb
       )
     end
 
-    # Add a column to the sheet.
+    # Add a column or multiple columns to the sheet.
     #
-    # @param index [Integer, String] The column index (0-based) or letter.
+    # @param index [Integer, String, Range, Array] The column index (0-based), letter, or a collection of them.
     # @param width [Float, nil] The column width.
     # @param hidden [Boolean] Whether the column is hidden.
     # @param custom_width [Boolean] Whether it's a custom width.
@@ -821,15 +844,23 @@ module Xlsxrb
       if @strict_excel_mode && width && (width < 0 || width > 255)
         raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)"
       end
-      index = Elements::Cell.column_index(index)
 
-      @columns << Elements::Column.new(
-        index: index,
-        width: width,
-        hidden: hidden,
-        custom_width: custom_width || !width.nil?,
-        outline_level: outline_level
-      )
+      indices = case index
+                when Range, Array
+                  index.map { |i| Elements::Cell.column_index(i) }
+                else
+                  [Elements::Cell.column_index(index)]
+                end
+
+      indices.each do |idx|
+        @columns << Elements::Column.new(
+          index: idx,
+          width: width,
+          hidden: hidden,
+          custom_width: custom_width || !width.nil?,
+          outline_level: outline_level
+        )
+      end
     end
 
     # Add a chart to the sheet.
@@ -1438,10 +1469,17 @@ module Xlsxrb
       end
 
       if styles.is_a?(Hash)
-        max_col_style = styles.keys.map { |k| Elements::Cell.column_index(k) }.max || -1
-        styles_array = Array.new(max_col_style + 1)
+        expanded_styles = {}
         styles.each do |k, v|
-          idx = Elements::Cell.column_index(k)
+          if k.is_a?(Range) || k.is_a?(Array)
+            k.each { |idx| expanded_styles[Elements::Cell.column_index(idx)] = v }
+          else
+            expanded_styles[Elements::Cell.column_index(k)] = v
+          end
+        end
+        max_col_style = expanded_styles.keys.max || -1
+        styles_array = Array.new(max_col_style + 1)
+        expanded_styles.each do |idx, v|
           styles_array[idx] = v
         end
         styles = styles_array
@@ -1517,10 +1555,19 @@ module Xlsxrb
       if @strict_excel_mode && width && (width < 0 || width > 255)
         raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)"
       end
-      index = Elements::Cell.column_index(index)
+
+      indices = case index
+                when Range, Array
+                  index.map { |i| Elements::Cell.column_index(i) }
+                else
+                  [Elements::Cell.column_index(index)]
+                end
+
       sheet if @current_sheet.nil?
 
-      @current_columns << { index: index, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
+      indices.each do |idx|
+        @current_columns << { index: idx, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
+      end
     end
 
     # Add a chart to the current sheet.

@@ -127,6 +127,18 @@ module Xlsxrb
 
     # --- Font Properties ---
 
+    def font(**opts)
+      bold(opts[:bold]) if opts.key?(:bold)
+      italic(opts[:italic]) if opts.key?(:italic)
+      size(opts[:size]) if opts.key?(:size)
+      font_name(opts[:name]) if opts.key?(:name)
+      font_color(opts[:color]) if opts.key?(:color)
+      underline(opts[:underline]) if opts.key?(:underline)
+      strike(opts[:strike]) if opts.key?(:strike)
+      vert_align(opts[:vert_align]) if opts.key?(:vert_align)
+      self
+    end
+
     # rubocop:disable Style/OptionalBooleanParameter
     def bold(value = true)
       @font_props[:bold] = value
@@ -198,6 +210,15 @@ module Xlsxrb
     end
 
     # --- Border Properties ---
+
+    def border(**opts)
+      border_all(**opts[:all]) if opts.key?(:all) && opts[:all]
+      border_left(**opts[:left]) if opts.key?(:left) && opts[:left]
+      border_right(**opts[:right]) if opts.key?(:right) && opts[:right]
+      border_top(**opts[:top]) if opts.key?(:top) && opts[:top]
+      border_bottom(**opts[:bottom]) if opts.key?(:bottom) && opts[:bottom]
+      self
+    end
 
     def border_all(style: "thin", color: nil)
       color_opt = color ? { color: resolve_color(color) } : {}

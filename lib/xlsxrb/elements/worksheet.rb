@@ -82,6 +82,49 @@ module Xlsxrb
         cell&.value
       end
 
+      # Returns a new Worksheet with the specified cell updated.
+      #
+      # @param ref [String] The cell reference (e.g. "B1").
+      # @param value [Object] The new cell value.
+      # @param style_index [Integer, String, nil] Optional new style index.
+      # @param formula [Elements::Formula, nil] Optional new formula.
+      # @return [Worksheet] A new Worksheet instance.
+      def update_cell(ref, value: nil, style_index: nil, formula: nil)
+        parsed = Cell.parse_ref(ref)
+        raise ArgumentError, "invalid cell reference: #{ref}" unless parsed
+
+        row_idx, col_idx = parsed
+        existing_row = row_at(row_idx)
+
+        if existing_row
+          existing_cell = existing_row.cell_at(col_idx)
+          new_cell = if existing_cell
+                       existing_cell.with(
+                         value: value || existing_cell.value,
+                         style_index: style_index || existing_cell.style_index,
+                         formula: formula || existing_cell.formula
+                       )
+                     else
+                       Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula)
+                     end
+          
+          # Replace cell in the existing row
+          new_cells = existing_row.cells.reject { |c| c.column_index == col_idx }
+          new_cells << new_cell
+          new_cells.sort_by!(&:column_index)
+
+          new_row = existing_row.with(cells: new_cells)
+          new_rows = rows.map { |r| r.index == row_idx ? new_row : r }
+          with(rows: new_rows)
+        else
+          # Row doesn't exist, create it
+          new_cell = Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula)
+          new_row = Row.new(index: row_idx, cells: [new_cell])
+          new_rows = (rows + [new_row]).sort_by!(&:index)
+          with(rows: new_rows)
+        end
+      end
+
       def self.validate(name, rows)
         errs = []
         if name.nil? || !name.is_a?(String) || name.empty?
