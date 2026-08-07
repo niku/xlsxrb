@@ -89,14 +89,14 @@ jobs:
 
       - name: Upload Visual Output on Mismatch
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: visual-regression-diffs
           path: test/visual/output/
 
       - name: Upload Explanation Gallery
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: visual-gallery
           path: docs/visual/
