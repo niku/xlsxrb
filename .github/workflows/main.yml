@@ -26,7 +26,7 @@ jobs:
       - name: Run RuboCop
         run: bundle exec rake rubocop
       - name: Run Bundler Audit
-        run: bundle exec rake audit
+        run: bundle exec rake bundle:audit
       - name: Run Steep Typecheck
         run: bundle exec rake typecheck
       - name: Run Unit & Contract Tests
