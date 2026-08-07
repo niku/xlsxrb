@@ -751,4 +751,12 @@ class FacadeTest < Test::Unit::TestCase
     assert_nil(f.cached_value)
     assert_equal(true, f.calculate_always)
   end
+
+  test "Xlsxrb.rich_text returns a rich text element" do
+    rt = Xlsxrb.rich_text(text: "Hello", bold: true)
+    assert_instance_of(Xlsxrb::Elements::RichText, rt)
+    assert_equal(1, rt.runs.size)
+    assert_equal("Hello", rt.runs[0][:text])
+    assert_equal({ bold: true }, rt.runs[0][:font])
+  end
 end
