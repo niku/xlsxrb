@@ -31,7 +31,7 @@ module Xlsxrb
           sheets.find { |s| s.name == identifier }
         end
       end
-      alias [] sheet
+      alias_method :[], :sheet
 
       # Returns a new Workbook with the specified sheet updated.
       # If a block is given, it yields the matched sheet and expects a new Worksheet back.
