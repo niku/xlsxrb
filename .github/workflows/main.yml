@@ -31,6 +31,8 @@ jobs:
         run: bundle exec rake typecheck
       - name: Run Unit & Contract Tests
         run: bundle exec rake test:unit test:contract
+        env:
+          RBS_TEST: "1"
 
   e2e:
     runs-on: ubuntu-latest
