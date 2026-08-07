@@ -504,6 +504,9 @@ module Xlsxrb
 
     # : () -> untyped
     def build
+      if @strict_excel_mode && @sheets.empty?
+        raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)"
+      end
       # Process styles from all sheets and collect style definitions
       processed_sheets, styles_definition = process_styles(@sheets)
 
@@ -690,8 +693,13 @@ module Xlsxrb
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
       # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
-      if @strict_excel_mode && row_index >= 1_048_576
-        raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
+      if @strict_excel_mode
+        if row_index >= 1_048_576
+          raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
+        end
+        if height && (height < 0 || height > 409)
+          raise ArgumentError, "Row height #{height} must be between 0 and 409 points (Excel limitation)"
+        end
       end
 
       if values.is_a?(Hash)
@@ -744,8 +752,8 @@ module Xlsxrb
       col_index = 0
       while col_index < max_len
         val = col_index < values.size ? values[col_index] : nil
-        unless val.nil? || val.is_a?(String) || val.is_a?(Numeric) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula))
-          raise ArgumentError, "Invalid cell value type: #{val.class} for value #{val.inspect}"
+        unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula))
+          raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}"
         end
         # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
         if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
@@ -810,6 +818,9 @@ module Xlsxrb
     # @return [void]
     # : (untyped index, ?width: untyped?, ?hidden: bool, ?custom_width: bool, ?outline_level: untyped?) -> untyped
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
+      if @strict_excel_mode && width && (width < 0 || width > 255)
+        raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)"
+      end
       index = Elements::Cell.column_index(index)
 
       @columns << Elements::Column.new(
@@ -1406,8 +1417,13 @@ module Xlsxrb
 
       row_index = @current_row_index
       # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
-      if @strict_excel_mode && row_index >= 1_048_576
-        raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
+      if @strict_excel_mode
+        if row_index >= 1_048_576
+          raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
+        end
+        if height && (height < 0 || height > 409)
+          raise ArgumentError, "Row height #{height} must be between 0 and 409 points (Excel limitation)"
+        end
       end
       @current_row_index += 1
 
@@ -1462,6 +1478,10 @@ module Xlsxrb
         val = col_idx < values.size ? values[col_idx] : nil
         next if val.nil?
 
+        unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula))
+          raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}"
+        end
+
         # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
         if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
           raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters"
@@ -1494,6 +1514,9 @@ module Xlsxrb
     # @return [void]
     # : (untyped index, ?width: untyped?, ?hidden: bool, ?custom_width: bool, ?outline_level: untyped?) -> untyped
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
+      if @strict_excel_mode && width && (width < 0 || width > 255)
+        raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)"
+      end
       index = Elements::Cell.column_index(index)
       sheet if @current_sheet.nil?
 
@@ -1851,6 +1874,10 @@ module Xlsxrb
 
     # : () -> untyped
     def close
+      if @strict_excel_mode && @sheets.empty? && @current_sheet.nil?
+        raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)"
+      end
+
       Xlsxrb.in_span("StreamWriter#close") do
         flush_current_sheet
 
