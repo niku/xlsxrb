@@ -743,4 +743,12 @@ class FacadeTest < Test::Unit::TestCase
     assert_equal "FFFF0000", sb.font_props[:color]
     assert_equal "FF0000FF", sb.fill_props[:fg_color]
   end
+
+  test "Xlsxrb.formula returns a formula element" do
+    f = Xlsxrb.formula("SUM(A1:A10)")
+    assert_instance_of(Xlsxrb::Elements::Formula, f)
+    assert_equal("SUM(A1:A10)", f.expression)
+    assert_nil(f.cached_value)
+    assert_equal(true, f.calculate_always)
+  end
 end
