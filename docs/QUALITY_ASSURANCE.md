@@ -23,9 +23,3 @@ Below is an overview of the inspection mechanisms, when they run, the quality at
 | **Memory & Speed Benchmark** | Action: `benchmark.yml` | - | ⭕ | - | Performance | Continuous Profiling | Memory leaks, severe performance degradation due to inefficient loop additions. |
 | **Visual Regression Testing (VRT)** | `rake test:visual` | - | ⭕ | - | Visual Accuracy (UI/UX) | Headless Rendering / Pixel Diff | Visual bugs like "cell background colors dropping" or "chart layouts breaking" after code changes. |
 
-## Future Enhancements
-We are constantly looking to improve our testing suite. Future planned enhancements include:
-- **Code Coverage Measurement (SimpleCov):** To ensure 100% C0/C1 branch coverage and prevent untested code paths.
-- **Mutation Testing (Mutant):** To mechanically alter the code and ensure our test assertions are actually effective at catching subtle logic breaks.
-- **Binary Fuzzing (ruby-fuzz):** To bombard the parser with intentionally corrupted byte streams to ensure total resilience against native-level segfaults.
-- **Multi-Ruby Environment Matrix:** Running CI against Ruby 3.1+, JRuby, and TruffleRuby to guarantee cross-runtime compatibility.
