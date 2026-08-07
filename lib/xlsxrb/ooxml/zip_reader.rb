@@ -4,13 +4,15 @@
 
 require "zlib"
 require "stringio"
+require "tempfile"
 
 module Xlsxrb
   module Ooxml
     # Reads ZIP archives using only stdlib (zlib).
     # Scans local file headers sequentially — works with non-seekable IO.
     class ZipReader
-      LOCAL_HEADER_SIG = [0x50, 0x4B, 0x03, 0x04].pack("C4")
+      LOCAL_HEADER_SIG = "PK\x03\x04".b
+      MAX_UNCOMPRESSED_SIZE = 500 * 1024 * 1024 # 500MB per file limit
 
       # Opens a ZIP from a file path or IO and yields the reader.
       def self.open(source)
@@ -59,10 +61,8 @@ module Xlsxrb
 
       def parse_entries
         result = {}
-        
-        io = if @io.is_a?(StringIO)
-               @io
-             elsif @io.respond_to?(:read) && @io.respond_to?(:seek) && @io.respond_to?(:pos)
+
+        io = if @io.is_a?(StringIO) || (@io.respond_to?(:read) && @io.respond_to?(:seek) && @io.respond_to?(:pos))
                @io
              elsif @io.respond_to?(:each) || @io.is_a?(Enumerator)
                tf = Tempfile.new("xlsxrb_zip")
@@ -77,13 +77,12 @@ module Xlsxrb
         io.binmode if io.respond_to?(:binmode)
 
         first_sig = io.read(4)
-        unless first_sig == LOCAL_HEADER_SIG
-          raise ArgumentError, "Invalid magic number: Expected a valid ZIP/XLSX file format (PK\\x03\\x04)"
-        end
+        raise ArgumentError, "Invalid magic number: Expected a valid ZIP/XLSX file format (PK\\x03\\x04)" unless first_sig == LOCAL_HEADER_SIG
+
         io.seek(-4, IO::SEEK_CUR) if io.respond_to?(:seek)
         io = StringIO.new(first_sig + io.read.b) unless io.respond_to?(:seek)
 
-        while true
+        loop do
           sig = io.read(4)
           break unless sig == LOCAL_HEADER_SIG
 
@@ -102,14 +101,12 @@ module Xlsxrb
           has_data_descriptor = gp_flag.anybits?(0x08)
 
           if has_data_descriptor && compressed_size.zero?
-            raw, comp_sz = find_data_descriptor_stream(io, method)
-            entry_data = decompress(raw, method)
-            result[entry_name] = entry_data unless entry_name.end_with?("/")
+            raw, = find_data_descriptor_stream(io, method)
           else
             raw = io.read(compressed_size)
-            entry_data = decompress(raw, method)
-            result[entry_name] = entry_data unless entry_name.end_with?("/")
           end
+          entry_data = decompress(raw, method)
+          result[entry_name] = entry_data unless entry_name.end_with?("/")
         end
 
         if io.is_a?(Tempfile)
@@ -119,8 +116,6 @@ module Xlsxrb
 
         result
       end
-
-      MAX_UNCOMPRESSED_SIZE = 500 * 1024 * 1024 # 500MB per file limit
 
       def find_data_descriptor_stream(io, method)
         if method == 8
@@ -133,9 +128,8 @@ module Xlsxrb
               break if chunk.empty?
 
               inflated = inflater.inflate(chunk)
-              if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
-                raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes"
-              end
+              raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes" if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
+
               result << inflated
               consumed += chunk.bytesize
             end
@@ -149,12 +143,8 @@ module Xlsxrb
           io.seek(-inflater.avail_in, IO::SEEK_CUR) if io.respond_to?(:seek)
 
           desc_sig = io.read(4)
-          if desc_sig == [0x50, 0x4B, 0x07, 0x08].pack("C4")
-            io.read(12)
-          else
-            io.seek(-4, IO::SEEK_CUR)
-            io.read(12)
-          end
+          io.seek(-4, IO::SEEK_CUR) unless desc_sig == [0x50, 0x4B, 0x07, 0x08].pack("C4")
+          io.read(12)
 
           [result, consumed]
         else
@@ -175,7 +165,7 @@ module Xlsxrb
       def safe_inflate(raw, wbits)
         inflater = Zlib::Inflate.new(wbits)
         result = +""
-        chunk_size = 32768
+        chunk_size = 32_768
         offset = 0
         raw_len = raw.bytesize
 
@@ -183,17 +173,15 @@ module Xlsxrb
           while offset < raw_len
             chunk = raw.byteslice(offset, chunk_size)
             inflated = inflater.inflate(chunk)
-            if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
-              raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes"
-            end
+            raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes" if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
+
             result << inflated
             offset += chunk_size
           end
           # Finish inflation
           inflated = inflater.finish
-          if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
-            raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes"
-          end
+          raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes" if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
+
           result << inflated
         ensure
           inflater.close

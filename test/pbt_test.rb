@@ -29,7 +29,6 @@ class PbtTest < Test::Unit::TestCase
         Pbt.array(sheet_name_generator, min: 1, max: 3).filter { |a| a.size == a.uniq.size && !a.empty? },
         Pbt.array(Pbt.array(cell_value_generator, max: 5), max: 5)
       ) do |sheet_names, raw_rows_data|
-        
         # Map raw tuples into actual cell values
         rows_data = raw_rows_data.map do |row|
           row.map do |t|
@@ -56,33 +55,31 @@ class PbtTest < Test::Unit::TestCase
         tmp = Tempfile.new(["pbt_test", ".xlsx"])
         begin
           Xlsxrb.write(tmp.path, workbook)
-          
+
           read_wb = Xlsxrb.read(tmp.path)
-          
+
           assert_equal sheet_names.size, read_wb.sheets.size
-          
+
           sheet_names.each_with_index do |sname, sheet_idx|
             sheet = read_wb.sheets[sheet_idx]
             assert_equal sname, sheet.name
-            
+
             rows_data.each_with_index do |expected_row, row_idx|
               actual_row = sheet.rows.find { |r| r.index == row_idx }
-              
-              if expected_row.all?(&:nil?)
-                next
-              end
-              
+
+              next if expected_row.all?(&:nil?)
+
               expected_row.each_with_index do |expected_val, col_idx|
                 actual_cell = actual_row&.cells&.find { |c| c.column_index == col_idx }
                 actual_val = actual_cell&.value
-                
+
                 # Check loosely since xlsx reader might normalize empty strings to nil, or numbers differently
-                if expected_val.is_a?(Time)
-                  expected_str = Xlsxrb::Ooxml::Utils.datetime_to_serial(expected_val).to_s
-                else
-                  expected_str = expected_val.to_s
-                end
-                
+                expected_str = if expected_val.is_a?(Time)
+                                 Xlsxrb::Ooxml::Utils.datetime_to_serial(expected_val).to_s
+                               else
+                                 expected_val.to_s
+                               end
+
                 # If the string starts with "=", Xlsxrb writes it as a formula, not a string value
                 if expected_val.is_a?(String) && expected_val.start_with?("=")
                   actual_str = actual_cell&.formula
@@ -90,7 +87,7 @@ class PbtTest < Test::Unit::TestCase
                 else
                   actual_str = actual_val.to_s
                 end
-                
+
                 # Floating point precision can differ slightly, just check string starts_with for large numbers or something.
                 if expected_val.is_a?(Float) || expected_val.is_a?(Time)
                   assert_in_delta expected_str.to_f, actual_str.to_f, 0.0001

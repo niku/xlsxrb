@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "test_helper"
 require "memory_profiler"
 require "benchmark/ips"
@@ -26,6 +28,6 @@ class BenchmarkTest < Test::Unit::TestCase
     # A generous threshold of 5MB for retained memory
     assert_operator report.total_retained_memsize, :<, 5_000_000
 
-    File.delete(filename) if File.exist?(filename)
+    FileUtils.rm_f(filename)
   end
 end

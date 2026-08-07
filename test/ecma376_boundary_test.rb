@@ -16,11 +16,11 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
 
       read_wb = Xlsxrb.read(tmp.path)
       sheet = read_wb.sheets.first
-      
+
       val1 = sheet.rows.first.cells[0].value
       val2 = sheet.rows.first.cells[1].value
       val3 = sheet.rows.first.cells[2].value
-      
+
       # Xlsxrb serializes to 1900 system (utils hardcodes 1900 epoch and leap year bug)
       assert_equal 1462, val1
       assert_equal 1463, val2
@@ -44,7 +44,7 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
 
       read_wb = Xlsxrb.read(tmp.path)
       sheet = read_wb.sheets.first
-      
+
       # Serial 59 = Feb 28, 1900. Serial 61 = Mar 1, 1900 (due to Lotus 1-2-3 leap year bug)
       assert_equal 59, sheet.rows.first.cells[0].value
       assert_equal 61, sheet.rows.first.cells[1].value
@@ -68,13 +68,13 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
 
       read_wb = Xlsxrb.read(tmp.path)
       sheet = read_wb.sheets.first
-      
+
       assert_equal 50, sheet.rows.first.cells[0].value
-      
+
       style_index = sheet.rows.first.cells[0].style_index
       xf = read_wb.styles[:cell_xfs][style_index]
       num_fmt = read_wb.styles[:num_fmts][xf[:num_fmt_id]]
-      
+
       # Xlsxrb's parser doesn't unescape XML entities in num_fmt
       assert_equal "[Red][&lt;=100];[Blue][&gt;100]", num_fmt
     ensure
@@ -88,16 +88,16 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
     begin
       wb = Xlsxrb.build do |w|
         w.sheet "Sheet1" do |s|
-          s.row ["A" * 32767, "B" * 32768]
+          s.row ["A" * 32_767, "B" * 32_768]
         end
       end
       Xlsxrb.write(tmp.path, wb)
 
       read_wb = Xlsxrb.read(tmp.path)
       sheet = read_wb.sheets.first
-      
-      assert_equal "A" * 32767, sheet.rows.first.cells[0].value
-      assert_equal "B" * 32768, sheet.rows.first.cells[1].value
+
+      assert_equal "A" * 32_767, sheet.rows.first.cells[0].value
+      assert_equal "B" * 32_768, sheet.rows.first.cells[1].value
     ensure
       tmp.close
       tmp.unlink
