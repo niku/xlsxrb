@@ -161,4 +161,39 @@ class PbtTest < Test::Unit::TestCase
       end
     end
   end
+
+  test "property-based test: strict excel mode allows valid boundaries" do
+    Pbt.assert(num_runs: 50) do
+      # 1. Valid floats
+      valid_float_arb = Pbt.float.filter { |f| !f.nan? && !f.infinite? }
+      Pbt.property(valid_float_arb) do |good_float|
+        # Should not raise ArgumentError
+        Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [good_float] } }
+      end
+      
+      # 2. Valid row heights (0..409)
+      valid_height_arb = Pbt.integer(min: 0, max: 409)
+      Pbt.property(valid_height_arb) do |good_height|
+        Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [1], height: good_height } }
+      end
+
+      # 3. Valid column widths (0..255)
+      valid_width_arb = Pbt.integer(min: 0, max: 255)
+      Pbt.property(valid_width_arb) do |good_width|
+        Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.column 0, width: good_width } }
+      end
+
+      # 4. Valid sheet name lengths (1..31) and characters
+      valid_sheet_arb = Pbt.printable_ascii_string(min: 1, max: 31).filter { |s| !s.match?(/[\[\]\*?\/\\]/) }
+      Pbt.property(valid_sheet_arb) do |good_sheet_name|
+        Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet(good_sheet_name) }
+      end
+
+      # 5. Valid string length (<= 32,767)
+      valid_string_arb = Pbt.printable_ascii_string(min: 0, max: 32_767)
+      Pbt.property(valid_string_arb) do |good_str|
+        Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [good_str] } }
+      end
+    end
+  end
 end
