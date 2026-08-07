@@ -30,7 +30,7 @@ jobs:
           bundler-cache: true
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v6
 
       - name: Build RDoc with WebAssembly Playground
         run: |
