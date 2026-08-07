@@ -810,4 +810,12 @@ class FacadeTest < Test::Unit::TestCase
     end
     assert_equal({company: "test"}, wb.unmapped_data.dig(:facade, :app_properties))
   end
+
+  test "WorkbookBuilder#custom_property configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.custom_property("test", "test")
+      w.sheet("S")
+    end
+    assert_equal([{name: "test", value: "test", type: :string}], wb.unmapped_data.dig(:facade, :custom_properties))
+  end
 end
