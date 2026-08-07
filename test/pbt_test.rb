@@ -14,28 +14,12 @@ class PbtTest < Test::Unit::TestCase
   # Cell values can be numbers, boolean, strings (excluding invalid XML chars), or nil
   def cell_value_generator
     Pbt.tuple(
-      Pbt.choose(0..3),
+      Pbt.choose(0..5),
       Pbt.integer,
       Pbt.boolean,
-      Pbt.printable_ascii_string(max: 20)
-    ).map(
-      ->(t) {
-        case t[0]
-        when 0 then t[1]
-        when 1 then t[2]
-        when 2 then nil
-        when 3 then t[3]
-        end
-      },
-      ->(v) {
-        case v
-        when Integer then [0, v, false, ""]
-        when TrueClass, FalseClass then [1, 0, v, ""]
-        when NilClass then [2, 0, false, ""]
-        when String then [3, 0, false, v]
-        else [2, 0, false, ""]
-        end
-      }
+      Pbt.printable_ascii_string(max: 20),
+      Pbt.float,
+      Pbt.time
     )
   end
 
@@ -44,7 +28,21 @@ class PbtTest < Test::Unit::TestCase
       Pbt.property(
         Pbt.array(sheet_name_generator, min: 1, max: 3).filter { |a| a.size == a.uniq.size && !a.empty? },
         Pbt.array(Pbt.array(cell_value_generator, max: 5), max: 5)
-      ) do |sheet_names, rows_data|
+      ) do |sheet_names, raw_rows_data|
+        
+        # Map raw tuples into actual cell values
+        rows_data = raw_rows_data.map do |row|
+          row.map do |t|
+            case t[0]
+            when 0 then t[1]
+            when 1 then t[2]
+            when 2 then nil
+            when 3 then t[3]
+            when 4 then t[4]
+            when 5 then t[5].utc
+            end
+          end
+        end
         workbook = Xlsxrb.build do |w|
           sheet_names.each do |sname|
             w.sheet(sname) do |s|
@@ -79,10 +77,20 @@ class PbtTest < Test::Unit::TestCase
                 actual_val = actual_cell&.value
                 
                 # Check loosely since xlsx reader might normalize empty strings to nil, or numbers differently
-                expected_str = expected_val.to_s
+                if expected_val.is_a?(Time)
+                  expected_str = Xlsxrb::Ooxml::Utils.datetime_to_serial(expected_val).to_s
+                else
+                  expected_str = expected_val.to_s
+                end
+                
                 actual_str = actual_val.to_s
                 
-                assert_equal expected_str, actual_str
+                # Floating point precision can differ slightly, just check string starts_with for large numbers or something.
+                if expected_val.is_a?(Float) || expected_val.is_a?(Time)
+                  assert_in_delta expected_str.to_f, actual_str.to_f, 0.0001
+                else
+                  assert_equal expected_str, actual_str
+                end
               end
             end
           end

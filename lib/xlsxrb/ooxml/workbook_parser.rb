@@ -30,8 +30,11 @@ module Xlsxrb
         def start_element(_uri, localname, _qname, attrs)
           return unless localname == "sheet"
 
+          name_attr = attrs["name"]
+          name_attr = REXML::Text.unnormalize(name_attr) if name_attr
+
           @sheets << {
-            name: attrs["name"],
+            name: name_attr,
             sheet_id: attrs["sheetId"]&.to_i,
             r_id: attrs["r:id"] || attrs["id"] || attrs.find { |k, _| k.end_with?(":id") }&.last
           }
