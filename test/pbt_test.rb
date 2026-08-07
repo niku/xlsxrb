@@ -103,4 +103,32 @@ class PbtTest < Test::Unit::TestCase
       end
     end
   end
+
+  test "property-based test: strict excel mode validates numeric extremes" do
+    Pbt.assert(num_runs: 50) do
+      # 1. Invalid floats
+      invalid_float_arb = Pbt.one_of(Float::NAN, Float::INFINITY, -Float::INFINITY)
+      Pbt.property(invalid_float_arb) do |bad_float|
+        assert_raise(ArgumentError) do
+          Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [bad_float] } }
+        end
+      end
+      
+      # 2. Invalid row heights
+      invalid_height_arb = Pbt.integer.filter { |h| h < 0 || h > 409 }
+      Pbt.property(invalid_height_arb) do |bad_height|
+        assert_raise(ArgumentError) do
+          Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [1], height: bad_height } }
+        end
+      end
+
+      # 3. Invalid column widths
+      invalid_width_arb = Pbt.integer.filter { |w| w < 0 || w > 255 }
+      Pbt.property(invalid_width_arb) do |bad_width|
+        assert_raise(ArgumentError) do
+          Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.column 0, width: bad_width } }
+        end
+      end
+    end
+  end
 end
