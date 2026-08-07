@@ -387,6 +387,12 @@ module Xlsxrb
     # : (?untyped? name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
     def sheet(name = nil, **opts)
       name ||= "Sheet#{@sheets.size + 1}"
+      if name.length > 31
+        raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)"
+      end
+      if name.match?(/[\[\]\*?\/\\]/)
+        raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)"
+      end
       sheet_builder = WorksheetBuilder.new(name)
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
       yield sheet_builder if block_given?
@@ -677,6 +683,9 @@ module Xlsxrb
     # : (untyped values, ?styles: untyped?, ?height: untyped?, ?hidden: bool, ?custom_height: bool, ?outline_level: untyped?) -> untyped
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
+      if row_index >= 1_048_576
+        raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
+      end
 
       if values.is_a?(Hash)
         max_col = values.keys.map { |k| Elements::Cell.column_index(k) }.max || -1
@@ -717,6 +726,9 @@ module Xlsxrb
 
       max_len = values.size
       max_len = [max_len, styles.size].max if styles.is_a?(Array)
+      if max_len > 16_384
+        raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16,384 columns"
+      end
 
       cells = Array.new(max_len)
       style_lookup = styles.is_a?(Array)
@@ -724,6 +736,9 @@ module Xlsxrb
       col_index = 0
       while col_index < max_len
         val = col_index < values.size ? values[col_index] : nil
+        unless val.nil? || val.is_a?(String) || val.is_a?(Numeric) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula))
+          raise ArgumentError, "Invalid cell value type: #{val.class} for value #{val.inspect}"
+        end
         style_name = if style_lookup
                        col_index < styles.size ? styles[col_index] : nil
                      else
