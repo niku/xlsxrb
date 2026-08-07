@@ -148,7 +148,7 @@ RuboCop::RakeTask.new
 require "bundler/audit/task"
 Bundler::Audit::Task.new
 
-task default: %i[audit rubocop typecheck test]
+task default: %i[bundle:audit rubocop typecheck test]
 
 namespace :visual do
   desc "Generate docs/visual/ README.md explanation gallery"
