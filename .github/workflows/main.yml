@@ -30,9 +30,7 @@ jobs:
       - name: Run Steep Typecheck
         run: bundle exec rake typecheck
       - name: Run Unit & Contract Tests
-        run: bundle exec rake test:unit test:contract
-        env:
-          RBS_TEST: "1"
+        run: bundle exec rake test:rbs
 
   e2e:
     runs-on: ubuntu-latest

@@ -88,6 +88,12 @@ end
 task test: %i[build_sdk_runner ensure_reader_fixtures]
 
 namespace :test do
+  desc "Run tests with runtime type checking enabled (RBS_TEST=1)"
+  task :rbs do
+    ENV["RBS_TEST"] = "1"
+    Rake::Task["test:unit"].invoke
+    Rake::Task["test:contract"].invoke
+  end
   Rake::TestTask.new(:unit) do |t|
     t.libs << "test"
     t.libs << "lib"
