@@ -826,4 +826,16 @@ class FacadeTest < Test::Unit::TestCase
     end
     assert_equal({password: "123"}, wb.unmapped_data.dig(:facade, :workbook_protection))
   end
+
+  test "WorksheetBuilder#split_pane configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.split_pane(x_split: 1, y_split: 1)
+      end
+    end
+    val = wb.sheet(0).unmapped_data.dig(:facade, :split_pane)
+    assert_not_nil(val)
+    assert_not_equal([], val)
+    assert_not_equal({}, val)
+  end
 end
