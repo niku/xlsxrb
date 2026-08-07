@@ -41,18 +41,18 @@ class DosProtectionTest < Test::Unit::TestCase
       error = assert_raises(RuntimeError) do
         Xlsxrb.read(zip_path)
       end
-      
+
       # REXML limits entity expansions and raises RuntimeError.
       assert_match(/entity expansions exceeded/i, error.message)
     ensure
-      File.delete(zip_path) if File.exist?(zip_path)
+      FileUtils.rm_f(zip_path)
     end
   end
 
   # Note on Zip Bomb protection:
-  # The `rubyzip` gem does not strictly prevent decompression of highly compressed archives (Zip Bombs) 
-  # on its own unless explicitly checked (e.g. tracking bytes read vs compressed size). 
-  # However, Xlsxrb provides a streaming read API (`Xlsxrb.foreach`) that avoids loading 
-  # the entire payload into memory at once. Users parsing untrusted files with `Xlsxrb.read` 
+  # The `rubyzip` gem does not strictly prevent decompression of highly compressed archives (Zip Bombs)
+  # on its own unless explicitly checked (e.g. tracking bytes read vs compressed size).
+  # However, Xlsxrb provides a streaming read API (`Xlsxrb.foreach`) that avoids loading
+  # the entire payload into memory at once. Users parsing untrusted files with `Xlsxrb.read`
   # should be aware of memory limitations.
 end

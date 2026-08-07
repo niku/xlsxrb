@@ -70,7 +70,7 @@ module Xlsxrb
 
         errs = []
         if !index.is_a?(Integer) || index.negative?
-          errs << "index must be a non-negative Integer (got #{index.inspect})" 
+          errs << "index must be a non-negative Integer (got #{index.inspect})"
         elsif index >= 1_048_576
           errs << "index must be < 1048576 (got #{index}, max row is 1048576)"
         end

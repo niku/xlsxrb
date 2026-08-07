@@ -88,7 +88,7 @@ module Xlsxrb
           errs << "worksheet name must be a non-empty String (got #{name.inspect})"
         else
           errs << "worksheet name cannot exceed 31 characters (got #{name.size})" if name.size > 31
-          errs << "worksheet name cannot contain \\, /, ?, *, [, or ]" if name.match?(/[\\\/?\*\[\]]/)
+          errs << "worksheet name cannot contain \\, /, ?, *, [, or ]" if name.match?(%r{[\\/?*\[\]]})
         end
         errs << "rows must be an Array (got #{rows.class})" unless rows.is_a?(Array)
         if rows.is_a?(Array)

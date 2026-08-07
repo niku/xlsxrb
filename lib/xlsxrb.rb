@@ -28,21 +28,20 @@ module Xlsxrb
     REF   = Elements::CellError.new(code: "#REF!")
     VALUE = Elements::CellError.new(code: "#VALUE!")
   end
+
   class ParseError < Error; end
   class ValidationError < Error; end
   class ZipError < Error; end
 
   TRACER = OpenTelemetry.tracer_provider.tracer("xlsxrb", Xlsxrb::VERSION)
 
-  def self.in_span(name, attributes: nil, &block)
+  def self.in_span(name, attributes: nil, &)
     if defined?(Ractor) && Ractor.current != Ractor.main
       yield
+    elsif attributes
+      TRACER.in_span(name, attributes: attributes, &)
     else
-      if attributes
-        TRACER.in_span(name, attributes: attributes, &block)
-      else
-        TRACER.in_span(name, &block)
-      end
+      TRACER.in_span(name, &)
     end
   end
 
