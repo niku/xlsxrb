@@ -1,0 +1,88 @@
+# Generated from lib/xlsxrb/style_builder.rb with RBS::Inline
+
+module Xlsxrb
+  # Helper class for building cell styles with a fluent DSL.
+  # Encapsulates font, fill, border, alignment, and number format properties.
+  class StyleBuilder
+    COLORS: untyped
+
+    def resolve_color: (untyped color) -> untyped
+
+    def initialize: (?untyped name) -> untyped
+
+    attr_reader name: untyped
+
+    attr_reader font_props: untyped
+
+    attr_reader fill_props: untyped
+
+    attr_reader border_props: untyped
+
+    attr_reader num_fmt_id: untyped
+
+    attr_reader alignment: untyped
+
+    # Applies option-style definitions so callers can use add_style(name, **opts)
+    # as an alternative to block-based fluent chaining.
+    def apply_options!: (**untyped opts) -> untyped
+
+    # rubocop:disable Style/OptionalBooleanParameter
+    def bold: (?untyped value) -> untyped
+
+    def italic: (?untyped value) -> untyped
+
+    def size: (untyped size_value) -> untyped
+
+    def font_name: (untyped name) -> untyped
+
+    def font_color: (untyped color) -> untyped
+
+    def underline: (?untyped val) -> untyped
+
+    def strike: (?untyped value) -> untyped
+
+    def vert_align: (untyped value) -> untyped
+
+    def fill_pattern: (untyped pattern, ?fg_color: untyped, ?bg_color: untyped) -> untyped
+
+    def fill_color: (untyped color) -> untyped
+
+    def fill: (?pattern: untyped, ?fg_color: untyped, ?bg_color: untyped) -> untyped
+
+    def fill_gradient: (type: untyped, ?degree: untyped, ?stops: untyped) -> untyped
+
+    def border_all: (?style: untyped, ?color: untyped) -> untyped
+
+    def border_left: (?style: untyped, ?color: untyped) -> untyped
+
+    def border_right: (?style: untyped, ?color: untyped) -> untyped
+
+    def border_top: (?style: untyped, ?color: untyped) -> untyped
+
+    def border_bottom: (?style: untyped, ?color: untyped) -> untyped
+
+    # rubocop:disable Naming/MethodParameterName
+    def border_diagonal: (?style: untyped, ?color: untyped, ?up: untyped, ?down: untyped) -> untyped
+
+    def align_horizontal: (untyped value) -> untyped
+
+    def align_vertical: (untyped value) -> untyped
+
+    # rubocop:disable Style/OptionalBooleanParameter
+    def wrap_text: (?untyped value) -> untyped
+
+    def shrink_to_fit: (?untyped value) -> untyped
+
+    def text_rotation: (untyped value) -> untyped
+
+    def indent: (untyped value) -> untyped
+
+    def number_format: (untyped num_fmt_id) -> untyped
+
+    alias num_fmt number_format
+
+    # Register this style with the given Writer, returning the style_id.
+    # writer:: Xlsxrb::Ooxml::Writer instance
+    def register_with: (untyped writer) -> untyped
+  end
+end

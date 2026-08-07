@@ -1,0 +1,8 @@
+# Generated from lib/xlsxrb/elements.rb with RBS::Inline
+
+module Xlsxrb
+  # High-level domain model layer.
+  # Provides immutable Data classes representing Excel concepts.
+  module Elements
+  end
+end
