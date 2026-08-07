@@ -886,4 +886,16 @@ class FacadeTest < Test::Unit::TestCase
     assert_not_equal([], val)
     assert_not_equal({}, val)
   end
+
+  test "WorksheetBuilder#sort_state configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.sort_state("A1:A10", [])
+      end
+    end
+    val = wb.sheet(0).unmapped_data.dig(:facade, :sort_state)
+    assert_not_nil(val)
+    assert_not_equal([], val)
+    assert_not_equal({}, val)
+  end
 end
