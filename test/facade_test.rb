@@ -785,4 +785,13 @@ class FacadeTest < Test::Unit::TestCase
     end
     assert_equal({ row: 1, col: 1 }, wb.sheet(0).unmapped_data.dig(:facade, :freeze_pane))
   end
+
+  test "WorksheetBuilder#header_footer configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.header_footer(odd_header: "test")
+      end
+    end
+    assert_equal({ odd_header: "test" }, wb.sheet(0).unmapped_data.dig(:facade, :header_footer))
+  end
 end
