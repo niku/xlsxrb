@@ -1040,7 +1040,7 @@ module Xlsxrb
       private_constant :ESCAPE_RE, :ESCAPE_MAP
 
       def escape_xml(value)
-        str = value.to_s
+        str = value.to_s.gsub(/[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/, "")
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end
     end

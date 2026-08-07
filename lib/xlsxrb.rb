@@ -394,6 +394,10 @@ module Xlsxrb
       if name.match?(/[\[\]\*?\/\\]/)
         raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)"
       end
+      if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
+        raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names."
+      end
+
       sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode)
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
       yield sheet_builder if block_given?
@@ -997,6 +1001,12 @@ module Xlsxrb
     # : (?untyped? range, ?row: untyped?, ?col_start: untyped?, ?col_end: untyped?, ?row_start: untyped?, ?row_end: untyped?) -> untyped
     def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       if range
+        if @strict_excel_mode && !range.match?(/^[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?$/)
+          raise ArgumentError, "Invalid merge range format: '#{range}'. Expected format like 'A1:B2'."
+        end
+        if @merge_cells_ranges.include?(range)
+          return
+        end
         @merge_cells_ranges << range
       else
         r_start = row || row_start || 0
@@ -1321,6 +1331,9 @@ module Xlsxrb
       if name.match?(/[\[\]\*?\/\\]/)
         raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)"
       end
+      if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
+        raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names."
+      end
 
       internal_sheet_setup(name)
       opts.each { |k, v| set_sheet_property(k, v) }
@@ -1609,6 +1622,9 @@ module Xlsxrb
     def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       sheet if @current_sheet.nil?
       if range
+        if @strict_excel_mode && !range.match?(/^[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?$/)
+          raise ArgumentError, "Invalid merge range format: '#{range}'. Expected format like 'A1:B2'."
+        end
         @current_merge_cells << range
       else
         r_start = row || row_start || 0
