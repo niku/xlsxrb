@@ -15,7 +15,7 @@ jobs:
         ruby:
           - '4.0.5'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Set up Ruby
@@ -40,7 +40,7 @@ jobs:
         ruby:
           - '4.0.5'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Set up Ruby
@@ -60,7 +60,7 @@ jobs:
     name: Visual Examples & VRT
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
