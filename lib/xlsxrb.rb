@@ -35,6 +35,14 @@ module Xlsxrb
 
   TRACER = OpenTelemetry.tracer_provider.tracer("xlsxrb", Xlsxrb::VERSION)
 
+  class << self
+    # Global configuration: Whether to raise errors for Excel-specific limits (default: true).
+    # Disabling this allows writing files that conform to ECMA-376 OOXML but may break in Microsoft Excel.
+    # : () -> bool
+    attr_accessor :strict_excel_mode
+  end
+  @strict_excel_mode = true
+
   def self.in_span(name, attributes: nil, &)
     if defined?(Ractor) && Ractor.current != Ractor.main
       yield
@@ -387,7 +395,7 @@ module Xlsxrb
     # : (?untyped? name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
     def sheet(name = nil, **opts)
       name ||= "Sheet#{@sheets.size + 1}"
-      if name.length > 31
+      if Xlsxrb.strict_excel_mode && name.length > 31
         raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)"
       end
       if name.match?(/[\[\]\*?\/\\]/)
@@ -683,7 +691,7 @@ module Xlsxrb
     # : (untyped values, ?styles: untyped?, ?height: untyped?, ?hidden: bool, ?custom_height: bool, ?outline_level: untyped?) -> untyped
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
-      if row_index >= 1_048_576
+      if Xlsxrb.strict_excel_mode && row_index >= 1_048_576
         raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows"
       end
 
@@ -726,7 +734,7 @@ module Xlsxrb
 
       max_len = values.size
       max_len = [max_len, styles.size].max if styles.is_a?(Array)
-      if max_len > 16_384
+      if Xlsxrb.strict_excel_mode && max_len > 16_384
         raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16,384 columns"
       end
 
