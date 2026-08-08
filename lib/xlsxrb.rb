@@ -10,8 +10,8 @@ require "tempfile"
 begin
   require "bigdecimal"
 rescue LoadError
-  # Fallback for minimal environments (like ruby.wasm) where bigdecimal may not be available.
-  # This prevents NameError when `BigDecimal` is used in case statements.
+  # Define a dummy class for environments without bigdecimal (e.g., ruby.wasm).
+  # This serves only as a fallback to prevent NameError in `case` statements (`when BigDecimal`).
   BigDecimal = Class.new
 end
 require "opentelemetry"
