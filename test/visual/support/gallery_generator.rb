@@ -183,7 +183,6 @@ module Xlsxrb
         markdown << "<tr>\n"
         markdown << "<th align=\"left\">Feature</th>\n"
         markdown << "<th align=\"center\">Visual Preview</th>\n"
-        markdown << "<th align=\"center\">Download XLSX</th>\n"
         markdown << "<th align=\"center\">Link to Detail</th>\n"
         markdown << "</tr>\n"
         markdown << "</thead>\n"
@@ -194,7 +193,6 @@ module Xlsxrb
           markdown << "<tr>\n"
           markdown << "<td><strong>#{item[:title]}</strong></td>\n"
           markdown << "<td align=\"center\"><img src=\"#{first_page}\" width=\"160\" alt=\"#{item[:title]}\"/></td>\n"
-          markdown << "<td align=\"center\"><a href=\"files/#{item[:name]}.xlsx\">Download</a></td>\n"
           markdown << "<td align=\"center\"><a href=\"##{anchor}\">View Code &amp; Detail</a></td>\n"
           markdown << "</tr>\n"
         end
@@ -206,11 +204,10 @@ module Xlsxrb
         # 2. Add Detailed Sections
         items.each do |item|
           markdown << "## #{item[:title]}\n\n"
-          markdown << "[Download .xlsx](files/#{item[:name]}.xlsx)\n\n"
 
           if item[:name].start_with?("interactive_")
             markdown << "> [!TIP]\n"
-            markdown << "> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/#{item[:name]}.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!\n\n"
+            markdown << "> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!\n\n"
           end
 
           markdown << "#{item[:explanation]}\n\n"

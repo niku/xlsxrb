@@ -11,7 +11,6 @@ This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering
 <tr>
 <th align="left">Feature</th>
 <th align="center">Visual Preview</th>
-<th align="center">Download XLSX</th>
 <th align="center">Link to Detail</th>
 </tr>
 </thead>
@@ -19,475 +18,396 @@ This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering
 <tr>
 <td><strong>Align Horizontal</strong></td>
 <td align="center"><img src="../../test/visual/baselines/align_horizontal/page-1.png" width="160" alt="Align Horizontal"/></td>
-<td align="center"><a href="files/align_horizontal.xlsx">Download</a></td>
 <td align="center"><a href="#align-horizontal">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Align Horizontal Fill</strong></td>
 <td align="center"><img src="../../test/visual/baselines/align_horizontal_fill/page-1.png" width="160" alt="Align Horizontal Fill"/></td>
-<td align="center"><a href="files/align_horizontal_fill.xlsx">Download</a></td>
 <td align="center"><a href="#align-horizontal-fill">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Align Horizontal Justify</strong></td>
 <td align="center"><img src="../../test/visual/baselines/align_horizontal_justify/page-1.png" width="160" alt="Align Horizontal Justify"/></td>
-<td align="center"><a href="files/align_horizontal_justify.xlsx">Download</a></td>
 <td align="center"><a href="#align-horizontal-justify">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Align Indent</strong></td>
 <td align="center"><img src="../../test/visual/baselines/align_indent/page-1.png" width="160" alt="Align Indent"/></td>
-<td align="center"><a href="files/align_indent.xlsx">Download</a></td>
 <td align="center"><a href="#align-indent">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Align Text Rotation</strong></td>
 <td align="center"><img src="../../test/visual/baselines/align_text_rotation/page-1.png" width="160" alt="Align Text Rotation"/></td>
-<td align="center"><a href="files/align_text_rotation.xlsx">Download</a></td>
 <td align="center"><a href="#align-text-rotation">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Align Text Wrap</strong></td>
 <td align="center"><img src="../../test/visual/baselines/align_text_wrap/page-1.png" width="160" alt="Align Text Wrap"/></td>
-<td align="center"><a href="files/align_text_wrap.xlsx">Download</a></td>
 <td align="center"><a href="#align-text-wrap">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Align Vertical</strong></td>
 <td align="center"><img src="../../test/visual/baselines/align_vertical/page-1.png" width="160" alt="Align Vertical"/></td>
-<td align="center"><a href="files/align_vertical.xlsx">Download</a></td>
 <td align="center"><a href="#align-vertical">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Basic Data</strong></td>
 <td align="center"><img src="../../test/visual/baselines/basic_data/page-1.png" width="160" alt="Basic Data"/></td>
-<td align="center"><a href="files/basic_data.xlsx">Download</a></td>
 <td align="center"><a href="#basic-data">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Borders</strong></td>
 <td align="center"><img src="../../test/visual/baselines/borders/page-1.png" width="160" alt="Borders"/></td>
-<td align="center"><a href="files/borders.xlsx">Download</a></td>
 <td align="center"><a href="#borders">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Booleans</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_booleans/page-1.png" width="160" alt="Cell Booleans"/></td>
-<td align="center"><a href="files/cell_booleans.xlsx">Download</a></td>
 <td align="center"><a href="#cell-booleans">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Dates</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_dates/page-1.png" width="160" alt="Cell Dates"/></td>
-<td align="center"><a href="files/cell_dates.xlsx">Download</a></td>
 <td align="center"><a href="#cell-dates">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Formulas</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_formulas/page-1.png" width="160" alt="Cell Formulas"/></td>
-<td align="center"><a href="files/cell_formulas.xlsx">Download</a></td>
 <td align="center"><a href="#cell-formulas">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Num Currency Jpy</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_num_currency_jpy/page-1.png" width="160" alt="Cell Num Currency Jpy"/></td>
-<td align="center"><a href="files/cell_num_currency_jpy.xlsx">Download</a></td>
 <td align="center"><a href="#cell-num-currency-jpy">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Num Custom Colors</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_num_custom_colors/page-1.png" width="160" alt="Cell Num Custom Colors"/></td>
-<td align="center"><a href="files/cell_num_custom_colors.xlsx">Download</a></td>
 <td align="center"><a href="#cell-num-custom-colors">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Num Fractions</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_num_fractions/page-1.png" width="160" alt="Cell Num Fractions"/></td>
-<td align="center"><a href="files/cell_num_fractions.xlsx">Download</a></td>
 <td align="center"><a href="#cell-num-fractions">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Num Percent Decimals</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_num_percent_decimals/page-1.png" width="160" alt="Cell Num Percent Decimals"/></td>
-<td align="center"><a href="files/cell_num_percent_decimals.xlsx">Download</a></td>
 <td align="center"><a href="#cell-num-percent-decimals">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Num Scientific</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_num_scientific/page-1.png" width="160" alt="Cell Num Scientific"/></td>
-<td align="center"><a href="files/cell_num_scientific.xlsx">Download</a></td>
 <td align="center"><a href="#cell-num-scientific">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Numbers</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_numbers/page-1.png" width="160" alt="Cell Numbers"/></td>
-<td align="center"><a href="files/cell_numbers.xlsx">Download</a></td>
 <td align="center"><a href="#cell-numbers">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Rich Text</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_rich_text/page-1.png" width="160" alt="Cell Rich Text"/></td>
-<td align="center"><a href="files/cell_rich_text.xlsx">Download</a></td>
 <td align="center"><a href="#cell-rich-text">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cell Times</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cell_times/page-1.png" width="160" alt="Cell Times"/></td>
-<td align="center"><a href="files/cell_times.xlsx">Download</a></td>
 <td align="center"><a href="#cell-times">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Begins With</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_begins_with/page-1.png" width="160" alt="Cf Begins With"/></td>
-<td align="center"><a href="files/cf_begins_with.xlsx">Download</a></td>
 <td align="center"><a href="#cf-begins-with">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Cell Between</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_cell_between/page-1.png" width="160" alt="Cf Cell Between"/></td>
-<td align="center"><a href="files/cf_cell_between.xlsx">Download</a></td>
 <td align="center"><a href="#cf-cell-between">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Cell Equal To</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_cell_equal_to/page-1.png" width="160" alt="Cf Cell Equal To"/></td>
-<td align="center"><a href="files/cf_cell_equal_to.xlsx">Download</a></td>
 <td align="center"><a href="#cf-cell-equal-to">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Cell Greater Equal</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_cell_greater_equal/page-1.png" width="160" alt="Cf Cell Greater Equal"/></td>
-<td align="center"><a href="files/cf_cell_greater_equal.xlsx">Download</a></td>
 <td align="center"><a href="#cf-cell-greater-equal">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Cell Greater Than</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_cell_greater_than/page-1.png" width="160" alt="Cf Cell Greater Than"/></td>
-<td align="center"><a href="files/cf_cell_greater_than.xlsx">Download</a></td>
 <td align="center"><a href="#cf-cell-greater-than">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Cell Less Than</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_cell_less_than/page-1.png" width="160" alt="Cf Cell Less Than"/></td>
-<td align="center"><a href="files/cf_cell_less_than.xlsx">Download</a></td>
 <td align="center"><a href="#cf-cell-less-than">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Color Scale</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_color_scale/page-1.png" width="160" alt="Cf Color Scale"/></td>
-<td align="center"><a href="files/cf_color_scale.xlsx">Download</a></td>
 <td align="center"><a href="#cf-color-scale">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Contains Text</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_contains_text/page-1.png" width="160" alt="Cf Contains Text"/></td>
-<td align="center"><a href="files/cf_contains_text.xlsx">Download</a></td>
 <td align="center"><a href="#cf-contains-text">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Data Bar</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_data_bar/page-1.png" width="160" alt="Cf Data Bar"/></td>
-<td align="center"><a href="files/cf_data_bar.xlsx">Download</a></td>
 <td align="center"><a href="#cf-data-bar">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Ends With</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_ends_with/page-1.png" width="160" alt="Cf Ends With"/></td>
-<td align="center"><a href="files/cf_ends_with.xlsx">Download</a></td>
 <td align="center"><a href="#cf-ends-with">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Expression Formula</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_expression_formula/page-1.png" width="160" alt="Cf Expression Formula"/></td>
-<td align="center"><a href="files/cf_expression_formula.xlsx">Download</a></td>
 <td align="center"><a href="#cf-expression-formula">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Cf Icon Set</strong></td>
 <td align="center"><img src="../../test/visual/baselines/cf_icon_set/page-1.png" width="160" alt="Cf Icon Set"/></td>
-<td align="center"><a href="files/cf_icon_set.xlsx">Download</a></td>
 <td align="center"><a href="#cf-icon-set">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Area</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_area/page-1.png" width="160" alt="Chart Area"/></td>
-<td align="center"><a href="files/chart_area.xlsx">Download</a></td>
 <td align="center"><a href="#chart-area">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Area Stacked</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_area_stacked/page-1.png" width="160" alt="Chart Area Stacked"/></td>
-<td align="center"><a href="files/chart_area_stacked.xlsx">Download</a></td>
 <td align="center"><a href="#chart-area-stacked">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Bar</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_bar/page-1.png" width="160" alt="Chart Bar"/></td>
-<td align="center"><a href="files/chart_bar.xlsx">Download</a></td>
 <td align="center"><a href="#chart-bar">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Bar Percent Stacked</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_bar_percent_stacked/page-1.png" width="160" alt="Chart Bar Percent Stacked"/></td>
-<td align="center"><a href="files/chart_bar_percent_stacked.xlsx">Download</a></td>
 <td align="center"><a href="#chart-bar-percent-stacked">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Bar Stacked</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_bar_stacked/page-1.png" width="160" alt="Chart Bar Stacked"/></td>
-<td align="center"><a href="files/chart_bar_stacked.xlsx">Download</a></td>
 <td align="center"><a href="#chart-bar-stacked">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Doughnut</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_doughnut/page-1.png" width="160" alt="Chart Doughnut"/></td>
-<td align="center"><a href="files/chart_doughnut.xlsx">Download</a></td>
 <td align="center"><a href="#chart-doughnut">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Line</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_line/page-1.png" width="160" alt="Chart Line"/></td>
-<td align="center"><a href="files/chart_line.xlsx">Download</a></td>
 <td align="center"><a href="#chart-line">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Line Stacked</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_line_stacked/page-1.png" width="160" alt="Chart Line Stacked"/></td>
-<td align="center"><a href="files/chart_line_stacked.xlsx">Download</a></td>
 <td align="center"><a href="#chart-line-stacked">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Pie</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_pie/page-1.png" width="160" alt="Chart Pie"/></td>
-<td align="center"><a href="files/chart_pie.xlsx">Download</a></td>
 <td align="center"><a href="#chart-pie">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Radar</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_radar/page-1.png" width="160" alt="Chart Radar"/></td>
-<td align="center"><a href="files/chart_radar.xlsx">Download</a></td>
 <td align="center"><a href="#chart-radar">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Chart Scatter</strong></td>
 <td align="center"><img src="../../test/visual/baselines/chart_scatter/page-1.png" width="160" alt="Chart Scatter"/></td>
-<td align="center"><a href="files/chart_scatter.xlsx">Download</a></td>
 <td align="center"><a href="#chart-scatter">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Col Grouping</strong></td>
 <td align="center"><img src="../../test/visual/baselines/col_grouping/page-1.png" width="160" alt="Col Grouping"/></td>
-<td align="center"><a href="files/col_grouping.xlsx">Download</a></td>
 <td align="center"><a href="#col-grouping">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Col Width Tall</strong></td>
 <td align="center"><img src="../../test/visual/baselines/col_width_tall/page-1.png" width="160" alt="Col Width Tall"/></td>
-<td align="center"><a href="files/col_width_tall.xlsx">Download</a></td>
 <td align="center"><a href="#col-width-tall">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Col Widths</strong></td>
 <td align="center"><img src="../../test/visual/baselines/col_widths/page-1.png" width="160" alt="Col Widths"/></td>
-<td align="center"><a href="files/col_widths.xlsx">Download</a></td>
 <td align="center"><a href="#col-widths">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Conditional Formatting</strong></td>
 <td align="center"><img src="../../test/visual/baselines/conditional_formatting/page-1.png" width="160" alt="Conditional Formatting"/></td>
-<td align="center"><a href="files/conditional_formatting.xlsx">Download</a></td>
 <td align="center"><a href="#conditional-formatting">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Embedded Images</strong></td>
 <td align="center"><img src="../../test/visual/baselines/embedded_images/page-1.png" width="160" alt="Embedded Images"/></td>
-<td align="center"><a href="files/embedded_images.xlsx">Download</a></td>
 <td align="center"><a href="#embedded-images">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Fill Gradients</strong></td>
 <td align="center"><img src="../../test/visual/baselines/fill_gradients/page-1.png" width="160" alt="Fill Gradients"/></td>
-<td align="center"><a href="files/fill_gradients.xlsx">Download</a></td>
 <td align="center"><a href="#fill-gradients">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Fill Patterns</strong></td>
 <td align="center"><img src="../../test/visual/baselines/fill_patterns/page-1.png" width="160" alt="Fill Patterns"/></td>
-<td align="center"><a href="files/fill_patterns.xlsx">Download</a></td>
 <td align="center"><a href="#fill-patterns">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Fill Solid Colors</strong></td>
 <td align="center"><img src="../../test/visual/baselines/fill_solid_colors/page-1.png" width="160" alt="Fill Solid Colors"/></td>
-<td align="center"><a href="files/fill_solid_colors.xlsx">Download</a></td>
 <td align="center"><a href="#fill-solid-colors">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Fonts</strong></td>
 <td align="center"><img src="../../test/visual/baselines/fonts/page-1.png" width="160" alt="Fonts"/></td>
-<td align="center"><a href="files/fonts.xlsx">Download</a></td>
 <td align="center"><a href="#fonts">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Interactive Autofilter</strong></td>
 <td align="center"><img src="../../test/visual/baselines/interactive_autofilter/page-1.png" width="160" alt="Interactive Autofilter"/></td>
-<td align="center"><a href="files/interactive_autofilter.xlsx">Download</a></td>
 <td align="center"><a href="#interactive-autofilter">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Interactive Comments</strong></td>
 <td align="center"><img src="../../test/visual/baselines/interactive_comments/page-1.png" width="160" alt="Interactive Comments"/></td>
-<td align="center"><a href="files/interactive_comments.xlsx">Download</a></td>
 <td align="center"><a href="#interactive-comments">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Interactive Validation Custom</strong></td>
 <td align="center"><img src="../../test/visual/baselines/interactive_validation_custom/page-1.png" width="160" alt="Interactive Validation Custom"/></td>
-<td align="center"><a href="files/interactive_validation_custom.xlsx">Download</a></td>
 <td align="center"><a href="#interactive-validation-custom">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Interactive Validation Date</strong></td>
 <td align="center"><img src="../../test/visual/baselines/interactive_validation_date/page-1.png" width="160" alt="Interactive Validation Date"/></td>
-<td align="center"><a href="files/interactive_validation_date.xlsx">Download</a></td>
 <td align="center"><a href="#interactive-validation-date">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Interactive Validation List</strong></td>
 <td align="center"><img src="../../test/visual/baselines/interactive_validation_list/page-1.png" width="160" alt="Interactive Validation List"/></td>
-<td align="center"><a href="files/interactive_validation_list.xlsx">Download</a></td>
 <td align="center"><a href="#interactive-validation-list">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Interactive Validation Range</strong></td>
 <td align="center"><img src="../../test/visual/baselines/interactive_validation_range/page-1.png" width="160" alt="Interactive Validation Range"/></td>
-<td align="center"><a href="files/interactive_validation_range.xlsx">Download</a></td>
 <td align="center"><a href="#interactive-validation-range">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Interactive Validation Text Length</strong></td>
 <td align="center"><img src="../../test/visual/baselines/interactive_validation_text_length/page-1.png" width="160" alt="Interactive Validation Text Length"/></td>
-<td align="center"><a href="files/interactive_validation_text_length.xlsx">Download</a></td>
 <td align="center"><a href="#interactive-validation-text-length">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Interactive Validation Time</strong></td>
 <td align="center"><img src="../../test/visual/baselines/interactive_validation_time/page-1.png" width="160" alt="Interactive Validation Time"/></td>
-<td align="center"><a href="files/interactive_validation_time.xlsx">Download</a></td>
 <td align="center"><a href="#interactive-validation-time">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Japanese Text</strong></td>
 <td align="center"><img src="../../test/visual/baselines/japanese_text/page-1.png" width="160" alt="Japanese Text"/></td>
-<td align="center"><a href="files/japanese_text.xlsx">Download</a></td>
 <td align="center"><a href="#japanese-text">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Merge Freeze</strong></td>
 <td align="center"><img src="../../test/visual/baselines/merge_freeze/page-1.png" width="160" alt="Merge Freeze"/></td>
-<td align="center"><a href="files/merge_freeze.xlsx">Download</a></td>
 <td align="center"><a href="#merge-freeze">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Page Grid Lines Print</strong></td>
 <td align="center"><img src="../../test/visual/baselines/page_grid_lines_print/page-1.png" width="160" alt="Page Grid Lines Print"/></td>
-<td align="center"><a href="files/page_grid_lines_print.xlsx">Download</a></td>
 <td align="center"><a href="#page-grid-lines-print">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Page Header Footer</strong></td>
 <td align="center"><img src="../../test/visual/baselines/page_header_footer/page-1.png" width="160" alt="Page Header Footer"/></td>
-<td align="center"><a href="files/page_header_footer.xlsx">Download</a></td>
 <td align="center"><a href="#page-header-footer">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Page Headings Print</strong></td>
 <td align="center"><img src="../../test/visual/baselines/page_headings_print/page-1.png" width="160" alt="Page Headings Print"/></td>
-<td align="center"><a href="files/page_headings_print.xlsx">Download</a></td>
 <td align="center"><a href="#page-headings-print">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Page Margins Narrow</strong></td>
 <td align="center"><img src="../../test/visual/baselines/page_margins_narrow/page-1.png" width="160" alt="Page Margins Narrow"/></td>
-<td align="center"><a href="files/page_margins_narrow.xlsx">Download</a></td>
 <td align="center"><a href="#page-margins-narrow">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Page Margins Wide</strong></td>
 <td align="center"><img src="../../test/visual/baselines/page_margins_wide/page-1.png" width="160" alt="Page Margins Wide"/></td>
-<td align="center"><a href="files/page_margins_wide.xlsx">Download</a></td>
 <td align="center"><a href="#page-margins-wide">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Page Orientation Landscape</strong></td>
 <td align="center"><img src="../../test/visual/baselines/page_orientation_landscape/page-1.png" width="160" alt="Page Orientation Landscape"/></td>
-<td align="center"><a href="files/page_orientation_landscape.xlsx">Download</a></td>
 <td align="center"><a href="#page-orientation-landscape">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Page Paper Size A3</strong></td>
 <td align="center"><img src="../../test/visual/baselines/page_paper_size_a3/page-1.png" width="160" alt="Page Paper Size A3"/></td>
-<td align="center"><a href="files/page_paper_size_a3.xlsx">Download</a></td>
 <td align="center"><a href="#page-paper-size-a3">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Row Grouping</strong></td>
 <td align="center"><img src="../../test/visual/baselines/row_grouping/page-1.png" width="160" alt="Row Grouping"/></td>
-<td align="center"><a href="files/row_grouping.xlsx">Download</a></td>
 <td align="center"><a href="#row-grouping">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Row Height Tall</strong></td>
 <td align="center"><img src="../../test/visual/baselines/row_height_tall/page-1.png" width="160" alt="Row Height Tall"/></td>
-<td align="center"><a href="files/row_height_tall.xlsx">Download</a></td>
 <td align="center"><a href="#row-height-tall">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Row Heights</strong></td>
 <td align="center"><img src="../../test/visual/baselines/row_heights/page-1.png" width="160" alt="Row Heights"/></td>
-<td align="center"><a href="files/row_heights.xlsx">Download</a></td>
 <td align="center"><a href="#row-heights">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Sheet Tab Colors</strong></td>
 <td align="center"><img src="../../test/visual/baselines/sheet_tab_colors/page-1.png" width="160" alt="Sheet Tab Colors"/></td>
-<td align="center"><a href="files/sheet_tab_colors.xlsx">Download</a></td>
 <td align="center"><a href="#sheet-tab-colors">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Sparkline Column</strong></td>
 <td align="center"><img src="../../test/visual/baselines/sparkline_column/page-1.png" width="160" alt="Sparkline Column"/></td>
-<td align="center"><a href="files/sparkline_column.xlsx">Download</a></td>
 <td align="center"><a href="#sparkline-column">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Sparkline Line</strong></td>
 <td align="center"><img src="../../test/visual/baselines/sparkline_line/page-1.png" width="160" alt="Sparkline Line"/></td>
-<td align="center"><a href="files/sparkline_line.xlsx">Download</a></td>
 <td align="center"><a href="#sparkline-line">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Styles Fonts Fills</strong></td>
 <td align="center"><img src="../../test/visual/baselines/styles_fonts_fills/page-1.png" width="160" alt="Styles Fonts Fills"/></td>
-<td align="center"><a href="files/styles_fonts_fills.xlsx">Download</a></td>
 <td align="center"><a href="#styles-fonts-fills">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>View Show Grid Lines</strong></td>
 <td align="center"><img src="../../test/visual/baselines/view_show_grid_lines/page-1.png" width="160" alt="View Show Grid Lines"/></td>
-<td align="center"><a href="files/view_show_grid_lines.xlsx">Download</a></td>
 <td align="center"><a href="#view-show-grid-lines">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>View Zoom Scale</strong></td>
 <td align="center"><img src="../../test/visual/baselines/view_zoom_scale/page-1.png" width="160" alt="View Zoom Scale"/></td>
-<td align="center"><a href="files/view_zoom_scale.xlsx">Download</a></td>
 <td align="center"><a href="#view-zoom-scale">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>Workbook Three Sheets</strong></td>
 <td align="center"><img src="../../test/visual/baselines/workbook_three_sheets/page-1.png" width="160" alt="Workbook Three Sheets"/></td>
-<td align="center"><a href="files/workbook_three_sheets.xlsx">Download</a></td>
 <td align="center"><a href="#workbook-three-sheets">View Code &amp; Detail</a></td>
 </tr>
 </tbody>
@@ -497,8 +417,6 @@ This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering
 ---
 
 ## Align Horizontal
-
-[Download .xlsx](files/align_horizontal.xlsx)
 
 Demonstrates horizontal text alignment (left, center, right).
 
@@ -513,11 +431,11 @@ Demonstrates horizontal text alignment (left, center, right).
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("left") { |s| s.align_horizontal("left") }
-  w.style("center") { |s| s.align_horizontal("center") }
-  w.style("right") { |s| s.align_horizontal("right") }
-  w.sheet("Alignment") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("left") { |s| s.align_horizontal("left") }
+  wb.style("center") { |s| s.align_horizontal("center") }
+  wb.style("right") { |s| s.align_horizontal("right") }
+  wb.sheet("Alignment") do |s|
     s.print_options(:grid_lines, true)
     s.column(0, width: 20)
     s.column(1, width: 20)
@@ -552,8 +470,6 @@ Cell C1 ('Right'): align_horizontal = "right"
 
 ## Align Horizontal Fill
 
-[Download .xlsx](files/align_horizontal_fill.xlsx)
-
 Demonstrates horizontal fill alignment (repeats value to fill cell width).
 
 ### Rendered Output (LibreOffice Calc)
@@ -567,9 +483,9 @@ Demonstrates horizontal fill alignment (repeats value to fill cell width).
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_fill.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("fill_align") { |s| s.align_horizontal("fill") }
-  w.sheet("Alignment") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("fill_align") { |s| s.align_horizontal("fill") }
+  wb.sheet("Alignment") do |s|
     s.column(0, width: 30)
     s.row(["X "], styles: { 0 => "fill_align" })
   end
@@ -603,8 +519,6 @@ Cell A1 ('X '): align_h="fill", align_v=nil, wrap=nil, indent=nil, rotation=nil,
 
 ## Align Horizontal Justify
 
-[Download .xlsx](files/align_horizontal_justify.xlsx)
-
 Demonstrates horizontal justify text alignment.
 
 ### Rendered Output (LibreOffice Calc)
@@ -618,12 +532,12 @@ Demonstrates horizontal justify text alignment.
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_justify.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("justify_align") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("justify_align") do |s|
     s.align_horizontal("justify")
     s.wrap_text(true)
   end
-  w.sheet("Alignment") do |s|
+  wb.sheet("Alignment") do |s|
     s.column(0, width: 25)
     s.row(["Justified alignment wraps and distributes text evenly."], styles: { 0 => "justify_align" })
   end
@@ -657,8 +571,6 @@ Cell A1 ('Justified alignment wraps and distributes text evenly.'): align_h="jus
 
 ## Align Indent
 
-[Download .xlsx](files/align_indent.xlsx)
-
 Demonstrates text indentation inside cells.
 
 ### Rendered Output (LibreOffice Calc)
@@ -672,10 +584,10 @@ Demonstrates text indentation inside cells.
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_indent.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("indent_1") { |s| s.align_horizontal("left").indent(1) }
-  w.style("indent_3") { |s| s.align_horizontal("left").indent(3) }
-  w.sheet("Indent") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("indent_1") { |s| s.align_horizontal("left").indent(1) }
+  wb.style("indent_3") { |s| s.align_horizontal("left").indent(3) }
+  wb.sheet("Indent") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.print_options(:grid_lines, true)
@@ -713,8 +625,6 @@ Cell A1 ('No Indent'): align_h=nil, align_v=nil, wrap=nil, indent=nil, rotation=
 
 ## Align Text Rotation
 
-[Download .xlsx](files/align_text_rotation.xlsx)
-
 Demonstrates text rotated by specific angles (45, 90 degrees).
 
 ### Rendered Output (LibreOffice Calc)
@@ -728,10 +638,10 @@ Demonstrates text rotated by specific angles (45, 90 degrees).
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_rotation.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("rot_45") { |s| s.text_rotation(45) }
-  w.style("rot_90") { |s| s.text_rotation(90) }
-  w.sheet("Rotation") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("rot_45") { |s| s.text_rotation(45) }
+  wb.style("rot_90") { |s| s.text_rotation(90) }
+  wb.sheet("Rotation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.print_options(:grid_lines, true)
@@ -768,8 +678,6 @@ Cell B1 ('Rotated 90'): align_h=nil, align_v=nil, wrap=nil, indent=nil, rotation
 
 ## Align Text Wrap
 
-[Download .xlsx](files/align_text_wrap.xlsx)
-
 Demonstrates auto-wrapping multi-line text inside narrow cells.
 
 ### Rendered Output (LibreOffice Calc)
@@ -783,9 +691,9 @@ Demonstrates auto-wrapping multi-line text inside narrow cells.
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_wrap.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("wrap", &:wrap_text)
-  w.sheet("Text Wrap") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("wrap", &:wrap_text)
+  wb.sheet("Text Wrap") do |s|
     s.print_options(:grid_lines, true)
     s.column(0, width: 15)
     s.row(["This is a long sentence that wraps inside the cell."], styles: { 0 => "wrap" })
@@ -820,8 +728,6 @@ Cell A1 ('This is a long sentence that wraps inside the cell.'): align_h=nil, al
 
 ## Align Vertical
 
-[Download .xlsx](files/align_vertical.xlsx)
-
 Demonstrates vertical text alignment (top, center, bottom).
 
 ### Rendered Output (LibreOffice Calc)
@@ -835,11 +741,11 @@ Demonstrates vertical text alignment (top, center, bottom).
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_vertical.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("top") { |s| s.align_vertical("top") }
-  w.style("center") { |s| s.align_vertical("center") }
-  w.style("bottom") { |s| s.align_vertical("bottom") }
-  w.sheet("Vertical Alignment") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("top") { |s| s.align_vertical("top") }
+  wb.style("center") { |s| s.align_vertical("center") }
+  wb.style("bottom") { |s| s.align_vertical("bottom") }
+  wb.sheet("Vertical Alignment") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.print_options(:grid_lines, true)
@@ -877,8 +783,6 @@ Cell C1 ('Bottom'): align_h=nil, align_v="bottom", wrap=nil, indent=nil, rotatio
 
 ## Basic Data
 
-[Download .xlsx](files/basic_data.xlsx)
-
 Demonstrates simple tabular data writing with basic Ruby types (Strings, Numbers, Dates, Booleans).
 
 ### Rendered Output (LibreOffice Calc)
@@ -895,17 +799,17 @@ require "date"
 
 output_path = ARGV[0] || "basic_data.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("currency") { |style| style.number_format("$#,##0.00") }
-  w.style("date") { |style| style.number_format("yyyy-mm-dd") }
-  w.sheet("Basic Data") do
-    w.sheet_properties(:fit_to_page, true)
-    w.page_setup(fit_to_width: 1, fit_to_height: 1)
-    w.column(0, width: 25)
-    w.column(1, width: 25)
-    w.row(%w[Product Qty Price Date Active])
-    w.row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
-    w.row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("currency") { |style| style.number_format("$#,##0.00") }
+  wb.style("date") { |style| style.number_format("yyyy-mm-dd") }
+  wb.sheet("Basic Data") do |sheet|
+    sheet.sheet_properties(:fit_to_page, true)
+    sheet.page_setup(fit_to_width: 1, fit_to_height: 1)
+    sheet.column(0, width: 25)
+    sheet.column(1, width: 25)
+    sheet.row(%w[Product Qty Price Date Active])
+    sheet.row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
+    sheet.row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
   end
 end
 
@@ -934,8 +838,6 @@ Row 2: A3: "Widget B" (String), B3: 5 (Integer), C3: 49.5 (Float), D3: 46073 (In
 
 ## Borders
 
-[Download .xlsx](files/borders.xlsx)
-
 Demonstrates border styles (thin, medium, thick, hair, dashed, medium dashed, dotted, double, dash-dot, medium dash-dot, dash-dot-dot, slanted, and diagonal cross borders) applied to cell ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -951,22 +853,22 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "borders.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("thin") { |s| s.border_all(style: "thin", color: "FF000000") }
-  w.style("medium") { |s| s.border_all(style: "medium", color: "FF000000") }
-  w.style("thick") { |s| s.border_all(style: "thick", color: "FF000000") }
-  w.style("hair") { |s| s.border_all(style: "hair", color: "FF000000") }
-  w.style("dashed") { |s| s.border_all(style: "dashed", color: "FF000000") }
-  w.style("medium_dashed") { |s| s.border_all(style: "mediumDashed", color: "FF000000") }
-  w.style("dotted") { |s| s.border_all(style: "dotted", color: "FF000000") }
-  w.style("double") { |s| s.border_all(style: "double", color: "FF000000") }
-  w.style("dash_dot") { |s| s.border_all(style: "dashDot", color: "FF000000") }
-  w.style("medium_dash_dot") { |s| s.border_all(style: "mediumDashDot", color: "FF000000") }
-  w.style("dash_dot_dot") { |s| s.border_all(style: "dashDotDot", color: "FF000000") }
-  w.style("slanted") { |s| s.border_all(style: "slantedDashDot", color: "FF000000") }
-  w.style("diagonal") { |s| s.border_diagonal(style: "thin", color: "FF000000", up: true, down: true) }
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("thin") { |s| s.border_all(style: "thin", color: "FF000000") }
+  wb.style("medium") { |s| s.border_all(style: "medium", color: "FF000000") }
+  wb.style("thick") { |s| s.border_all(style: "thick", color: "FF000000") }
+  wb.style("hair") { |s| s.border_all(style: "hair", color: "FF000000") }
+  wb.style("dashed") { |s| s.border_all(style: "dashed", color: "FF000000") }
+  wb.style("medium_dashed") { |s| s.border_all(style: "mediumDashed", color: "FF000000") }
+  wb.style("dotted") { |s| s.border_all(style: "dotted", color: "FF000000") }
+  wb.style("double") { |s| s.border_all(style: "double", color: "FF000000") }
+  wb.style("dash_dot") { |s| s.border_all(style: "dashDot", color: "FF000000") }
+  wb.style("medium_dash_dot") { |s| s.border_all(style: "mediumDashDot", color: "FF000000") }
+  wb.style("dash_dot_dot") { |s| s.border_all(style: "dashDotDot", color: "FF000000") }
+  wb.style("slanted") { |s| s.border_all(style: "slantedDashDot", color: "FF000000") }
+  wb.style("diagonal") { |s| s.border_diagonal(style: "thin", color: "FF000000", up: true, down: true) }
 
-  w.sheet("Borders") do |s|
+  wb.sheet("Borders") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.print_options(:grid_lines, true)
@@ -1026,8 +928,6 @@ Row 13: A14: "Diagonal (Cross)" (border_id: 0), B14: "Diagonal Border" (border_i
 
 ## Cell Booleans
 
-[Download .xlsx](files/cell_booleans.xlsx)
-
 Demonstrates boolean values serialized and rendered.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1041,8 +941,8 @@ Demonstrates boolean values serialized and rendered.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_booleans.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Booleans") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Booleans") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Label", "Boolean Value"])
@@ -1076,8 +976,6 @@ Row 2: A3: "Is Pending" (String), B3: false (FalseClass)
 
 ## Cell Dates
 
-[Download .xlsx](files/cell_dates.xlsx)
-
 Demonstrates dates serialized natively and formatted with standard or custom format strings.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1092,9 +990,9 @@ Demonstrates dates serialized natively and formatted with standard or custom for
 require "xlsxrb"
 require "date"
 output_path = ARGV[0] || "cell_dates.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
-  w.sheet("Dates") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
+  wb.sheet("Dates") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Format", "Date Value"])
@@ -1128,8 +1026,6 @@ Row 2: A3: "Formatted Date" (String), B3: 46381 (Integer)
 
 ## Cell Formulas
 
-[Download .xlsx](files/cell_formulas.xlsx)
-
 Demonstrates standard spreadsheet calculations and formulas (SUM, AVERAGE).
 
 ### Rendered Output (LibreOffice Calc)
@@ -1143,8 +1039,8 @@ Demonstrates standard spreadsheet calculations and formulas (SUM, AVERAGE).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_formulas.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Formulas") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Formulas") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Item Value])
@@ -1182,8 +1078,6 @@ Row 4: A5: "AVERAGE" (String), B5: 15 (Integer)
 
 ## Cell Num Currency Jpy
 
-[Download .xlsx](files/cell_num_currency_jpy.xlsx)
-
 Demonstrates Yen Currency format code formatting.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1197,9 +1091,9 @@ Demonstrates Yen Currency format code formatting.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_currency_jpy.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
-  w.sheet("JPY Currency") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
+  wb.sheet("JPY Currency") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
@@ -1235,8 +1129,6 @@ Row 2: A3: "Negative Yen" (Format ID: , Code: nil), B3: -8000 (Format ID: 164, C
 
 ## Cell Num Custom Colors
 
-[Download .xlsx](files/cell_num_custom_colors.xlsx)
-
 Demonstrates custom colored formats for positive and negative numbers.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1250,9 +1142,9 @@ Demonstrates custom colored formats for positive and negative numbers.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_custom_colors.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("custom_color") { |s| s.num_fmt("[Green]#,##0;[Red]-#,##0") }
-  w.sheet("Custom Colors") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("custom_color") { |s| s.num_fmt("[Green]#,##0;[Red]-#,##0") }
+  wb.sheet("Custom Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
@@ -1288,8 +1180,6 @@ Row 2: A3: "Negative (Red)" (Format ID: , Code: nil), B3: -2500 (Format ID: 164,
 
 ## Cell Num Fractions
 
-[Download .xlsx](files/cell_num_fractions.xlsx)
-
 Demonstrates fraction number formats (# ?/?).
 
 ### Rendered Output (LibreOffice Calc)
@@ -1303,9 +1193,9 @@ Demonstrates fraction number formats (# ?/?).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_fractions.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("frac") { |s| s.num_fmt("# ?/?") }
-  w.sheet("Fractions") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("frac") { |s| s.num_fmt("# ?/?") }
+  wb.sheet("Fractions") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
@@ -1343,8 +1233,6 @@ Row 3: A4: "Quarter" (Format ID: , Code: nil), B4: 0.75 (Format ID: 164, Code: "
 
 ## Cell Num Percent Decimals
 
-[Download .xlsx](files/cell_num_percent_decimals.xlsx)
-
 Demonstrates percentages with two decimal places (0.00%).
 
 ### Rendered Output (LibreOffice Calc)
@@ -1358,9 +1246,9 @@ Demonstrates percentages with two decimal places (0.00%).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_percent_decimals.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("pct2") { |s| s.num_fmt("0.00%") }
-  w.sheet("Percents") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("pct2") { |s| s.num_fmt("0.00%") }
+  wb.sheet("Percents") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
@@ -1394,8 +1282,6 @@ Row 1: A2: "Percent with 2 Decimals" (Format ID: , Code: nil), B2: 0.12345 (Form
 
 ## Cell Num Scientific
 
-[Download .xlsx](files/cell_num_scientific.xlsx)
-
 Demonstrates scientific number formats (0.00E+00).
 
 ### Rendered Output (LibreOffice Calc)
@@ -1409,9 +1295,9 @@ Demonstrates scientific number formats (0.00E+00).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_scientific.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("sci") { |s| s.num_fmt("0.00E+00") }
-  w.sheet("Scientific") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("sci") { |s| s.num_fmt("0.00E+00") }
+  wb.sheet("Scientific") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
@@ -1447,8 +1333,6 @@ Row 2: A3: "Small Scientific" (Format ID: , Code: nil), B3: 1.234e-05 (Format ID
 
 ## Cell Numbers
 
-[Download .xlsx](files/cell_numbers.xlsx)
-
 Demonstrates custom formatting for integers, floating point numbers, currencies, and percentages.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1462,10 +1346,10 @@ Demonstrates custom formatting for integers, floating point numbers, currencies,
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_numbers.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("currency") { |s| s.num_fmt("$#,##0.00") }
-  w.style("percent") { |s| s.num_fmt("0.0%") }
-  w.sheet("Numbers") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("currency") { |s| s.num_fmt("$#,##0.00") }
+  wb.style("percent") { |s| s.num_fmt("0.0%") }
+  wb.sheet("Numbers") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
@@ -1503,8 +1387,6 @@ Row 4: A5: "Percentage" (String), B5: 0.85 (Float)
 
 ## Cell Rich Text
 
-[Download .xlsx](files/cell_rich_text.xlsx)
-
 Demonstrates Rich Text cells with multiple font weights, styles, and colors in a single cell.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1518,13 +1400,13 @@ Demonstrates Rich Text cells with multiple font weights, styles, and colors in a
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_rich_text.xlsx"
-Xlsxrb.generate(output_path) do |w|
+Xlsxrb.generate(output_path) do |wb|
   rt = Xlsxrb.rich_text(
     { text: "Normal " },
     { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
     { text: "ITALIC BLUE", font: { italic: true, color: :blue, sz: 20 } }
   )
-  w.sheet("Rich Text") do |s|
+  wb.sheet("Rich Text") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
@@ -1544,19 +1426,9 @@ sheet.rows.each do |row|
 end
 ```
 
-### Console Output
-
-```text
-=== Read Validation ===
-Row 0: A1: "Format" (String), B1: "Value" (String)
-Row 1: A2: "Rich Text Cell" (String), B2: "Normal BOLD RED ITALIC BLUE" (String)
-```
-
 <hr/>
 
 ## Cell Times
-
-[Download .xlsx](files/cell_times.xlsx)
 
 Demonstrates timestamp values serialized natively and formatted showing hours, minutes, and seconds.
 
@@ -1572,9 +1444,9 @@ Demonstrates timestamp values serialized natively and formatted showing hours, m
 require "xlsxrb"
 require "time"
 output_path = ARGV[0] || "cell_times.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
-  w.sheet("Times") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
+  wb.sheet("Times") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Format", "Time Value"])
@@ -1608,8 +1480,6 @@ Row 2: A3: "Time Only" (String), B3: 46204.385416666664 (Float)
 
 ## Cf Begins With
 
-[Download .xlsx](files/cf_begins_with.xlsx)
-
 Demonstrates conditional formatting highlighting cells starting with specific text.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1623,8 +1493,8 @@ Demonstrates conditional formatting highlighting cells starting with specific te
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_begins_with.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("CF Begins") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("CF Begins") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Code"])
@@ -1659,8 +1529,6 @@ Row 3: A4: "A-300"
 
 ## Cf Cell Between
 
-[Download .xlsx](files/cf_cell_between.xlsx)
-
 Demonstrates conditional formatting highlighting cells within a range.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1674,9 +1542,9 @@ Demonstrates conditional formatting highlighting cells within a range.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_between.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("CF Between") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("CF Between") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
@@ -1711,8 +1579,6 @@ Row 3: A4: 5
 
 ## Cf Cell Equal To
 
-[Download .xlsx](files/cf_cell_equal_to.xlsx)
-
 Demonstrates conditional formatting highlighting cells equal to a target value.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1726,9 +1592,9 @@ Demonstrates conditional formatting highlighting cells equal to a target value.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_equal_to.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("CF Equal") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("CF Equal") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
@@ -1763,8 +1629,6 @@ Row 3: A4: 10
 
 ## Cf Cell Greater Equal
 
-[Download .xlsx](files/cf_cell_greater_equal.xlsx)
-
 Demonstrates conditional formatting highlighting cells greater than or equal to a threshold.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1778,9 +1642,9 @@ Demonstrates conditional formatting highlighting cells greater than or equal to 
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_equal.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("CF Greater Equal") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("CF Greater Equal") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
@@ -1815,8 +1679,6 @@ Row 3: A4: 100
 
 ## Cf Cell Greater Than
 
-[Download .xlsx](files/cf_cell_greater_than.xlsx)
-
 Demonstrates conditional formatting highlighting cells greater than a threshold.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1830,9 +1692,9 @@ Demonstrates conditional formatting highlighting cells greater than a threshold.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_than.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("CF Greater") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("CF Greater") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
@@ -1867,8 +1729,6 @@ Row 3: A4: 10
 
 ## Cf Cell Less Than
 
-[Download .xlsx](files/cf_cell_less_than.xlsx)
-
 Demonstrates conditional formatting highlighting cells less than a threshold.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1882,9 +1742,9 @@ Demonstrates conditional formatting highlighting cells less than a threshold.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_less_than.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("CF Less") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("CF Less") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
@@ -1919,8 +1779,6 @@ Row 3: A4: 10
 
 ## Cf Color Scale
 
-[Download .xlsx](files/cf_color_scale.xlsx)
-
 Demonstrates color scale/heatmap conditional formatting.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1934,9 +1792,9 @@ Demonstrates color scale/heatmap conditional formatting.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_color_scale.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("Colors") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row([10], styles: "center")
@@ -1969,8 +1827,6 @@ Row 2: A3: 90
 
 ## Cf Contains Text
 
-[Download .xlsx](files/cf_contains_text.xlsx)
-
 Demonstrates conditional formatting highlighting cells containing specific text.
 
 ### Rendered Output (LibreOffice Calc)
@@ -1984,8 +1840,8 @@ Demonstrates conditional formatting highlighting cells containing specific text.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_contains_text.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("CF Contains") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("CF Contains") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Status"])
@@ -2020,8 +1876,6 @@ Row 3: A4: "Pending"
 
 ## Cf Data Bar
 
-[Download .xlsx](files/cf_data_bar.xlsx)
-
 Demonstrates data bar visual conditional formatting indicators.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2035,9 +1889,9 @@ Demonstrates data bar visual conditional formatting indicators.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_data_bar.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("Data Bars") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("Data Bars") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row([20], styles: "center")
@@ -2070,8 +1924,6 @@ Row 2: A3: 100
 
 ## Cf Ends With
 
-[Download .xlsx](files/cf_ends_with.xlsx)
-
 Demonstrates conditional formatting highlighting cells ending with specific text.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2085,8 +1937,8 @@ Demonstrates conditional formatting highlighting cells ending with specific text
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_ends_with.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("CF Ends") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("CF Ends") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Code"])
@@ -2121,8 +1973,6 @@ Row 3: A4: "300-Z"
 
 ## Cf Expression Formula
 
-[Download .xlsx](files/cf_expression_formula.xlsx)
-
 Demonstrates conditional formatting using a custom formula expression.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2136,9 +1986,9 @@ Demonstrates conditional formatting using a custom formula expression.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_expression_formula.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("CF Expression") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("CF Expression") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
@@ -2175,8 +2025,6 @@ Row 4: A5: 100
 
 ## Cf Icon Set
 
-[Download .xlsx](files/cf_icon_set.xlsx)
-
 Demonstrates icon set indicators (red/yellow/green arrows).
 
 ### Rendered Output (LibreOffice Calc)
@@ -2190,9 +2038,9 @@ Demonstrates icon set indicators (red/yellow/green arrows).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_icon_set.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("Icons") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("Icons") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row([25], styles: "center")
@@ -2225,8 +2073,6 @@ Row 2: A3: 75
 
 ## Chart Area
 
-[Download .xlsx](files/chart_area.xlsx)
-
 Demonstrates embedding a standard 2D Area Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2240,8 +2086,8 @@ Demonstrates embedding a standard 2D Area Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_area.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -2276,8 +2122,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Area Stacked
 
-[Download .xlsx](files/chart_area_stacked.xlsx)
-
 Demonstrates embedding a stacked 2D Area Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2291,8 +2135,8 @@ Demonstrates embedding a stacked 2D Area Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_area_stacked.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Year", "Sales A", "Sales B"])
@@ -2332,8 +2176,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Bar
 
-[Download .xlsx](files/chart_bar.xlsx)
-
 Demonstrates embedding a standard 2D Bar Chart referencing worksheet cell ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2349,8 +2191,8 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "chart_bar.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Sales Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Sales Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -2391,8 +2233,6 @@ Sheet 'Sales Data' has 0 chart(s)
 
 ## Chart Bar Percent Stacked
 
-[Download .xlsx](files/chart_bar_percent_stacked.xlsx)
-
 Demonstrates embedding a 100% stacked 2D Bar Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2406,8 +2246,8 @@ Demonstrates embedding a 100% stacked 2D Bar Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_bar_percent_stacked.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Year", "Sales A", "Sales B"])
@@ -2447,8 +2287,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Bar Stacked
 
-[Download .xlsx](files/chart_bar_stacked.xlsx)
-
 Demonstrates embedding a stacked 2D Bar Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2462,8 +2300,8 @@ Demonstrates embedding a stacked 2D Bar Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_bar_stacked.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Year", "Sales A", "Sales B"])
@@ -2503,8 +2341,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Doughnut
 
-[Download .xlsx](files/chart_doughnut.xlsx)
-
 Demonstrates embedding a standard 2D Doughnut Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2518,8 +2354,8 @@ Demonstrates embedding a standard 2D Doughnut Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_doughnut.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -2561,8 +2397,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Line
 
-[Download .xlsx](files/chart_line.xlsx)
-
 Demonstrates embedding a standard 2D Line Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2576,8 +2410,8 @@ Demonstrates embedding a standard 2D Line Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_line.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -2613,8 +2447,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Line Stacked
 
-[Download .xlsx](files/chart_line_stacked.xlsx)
-
 Demonstrates embedding a stacked 2D Line Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2628,8 +2460,8 @@ Demonstrates embedding a stacked 2D Line Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_line_stacked.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Year", "Sales A", "Sales B"])
@@ -2669,8 +2501,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Pie
 
-[Download .xlsx](files/chart_pie.xlsx)
-
 Demonstrates embedding a standard 2D Pie Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2684,8 +2514,8 @@ Demonstrates embedding a standard 2D Pie Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_pie.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -2727,8 +2557,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Radar
 
-[Download .xlsx](files/chart_radar.xlsx)
-
 Demonstrates embedding a standard 2D Radar Chart.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2742,8 +2570,8 @@ Demonstrates embedding a standard 2D Radar Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_radar.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -2778,8 +2606,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Chart Scatter
 
-[Download .xlsx](files/chart_scatter.xlsx)
-
 Demonstrates embedding a standard 2D Scatter Plot.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2793,8 +2619,8 @@ Demonstrates embedding a standard 2D Scatter Plot.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_scatter.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Data") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -2829,8 +2655,6 @@ Sheet 'Data' has 0 chart(s)
 
 ## Col Grouping
 
-[Download .xlsx](files/col_grouping.xlsx)
-
 Demonstrates outline grouping for columns.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2844,9 +2668,9 @@ Demonstrates outline grouping for columns.
 
 require "xlsxrb"
 output_path = ARGV[0] || "col_grouping.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.sheet("Col Grouping") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  wb.sheet("Col Grouping") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25, outline_level: 0)
@@ -2878,8 +2702,6 @@ Column 2: width=25.0, hidden=false, outline_level=1
 
 ## Col Width Tall
 
-[Download .xlsx](files/col_width_tall.xlsx)
-
 Demonstrates setting very wide column widths.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2893,9 +2715,9 @@ Demonstrates setting very wide column widths.
 
 require "xlsxrb"
 output_path = ARGV[0] || "col_width_tall.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.sheet("Col Width") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  wb.sheet("Col Width") do |s|
     s.column(0, width: 50)
     s.column(1, width: 10)
     s.row(["Very Wide Column (Width 50)", "Normal (10)"], styles: %w[border border])
@@ -2923,8 +2745,6 @@ Column 1: width=10.0, hidden=false, outline_level=
 
 ## Col Widths
 
-[Download .xlsx](files/col_widths.xlsx)
-
 Demonstrates setting custom column widths.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2938,9 +2758,9 @@ Demonstrates setting custom column widths.
 
 require "xlsxrb"
 output_path = ARGV[0] || "col_widths.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.sheet("Widths") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  wb.sheet("Widths") do |s|
     s.column(0, width: 30)
     s.column(1, width: 10)
     s.row(["Wide Column A", "Narrow B"], styles: %w[border border])
@@ -2968,8 +2788,6 @@ Column 1: width=10.0, hidden=false, outline_level=
 
 ## Conditional Formatting
 
-[Download .xlsx](files/conditional_formatting.xlsx)
-
 Demonstrates adding conditional formatting rules that style cells automatically based on value ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -2985,17 +2803,17 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "conditional_formatting.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |style| style.align_horizontal("center") }
-  w.sheet("Scores") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.sheet("Scores") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row([90, 45, 72, 88], styles: %w[center center center center])
 
     s.conditional_format("A1:D1",
-                             type: :cell_is, operator: :greaterThan,
-                             formula: "80", priority: 1,
-                             fill_color: "FFFFC7CE")
+                         type: :cell_is, operator: :greaterThan,
+                         formula: "80", priority: 1,
+                         fill_color: "FFFFC7CE")
   end
 end
 
@@ -3019,8 +2837,6 @@ Row 0: A1: 90, B1: 45, C1: 72, D1: 88
 <hr/>
 
 ## Embedded Images
-
-[Download .xlsx](files/embedded_images.xlsx)
 
 Demonstrates embedding raster PNG images in cell ranges.
 
@@ -3057,9 +2873,9 @@ end
 
 dummy_png = make_png(100, 100, 255, 0, 0)
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("center") { |st| st.align_horizontal(:center) }
-  w.sheet("Images") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("center") { |st| st.align_horizontal(:center) }
+  wb.sheet("Images") do |s|
     s.row(["Logo Target cell:", "", "", "Boundary"], styles: %w[left center center center])
     s.row(["", "", "", ""])
     s.row(["", "", "", ""])
@@ -3107,8 +2923,6 @@ Image #1: name='', target='../media/image1.png' -> ZIP path='xl/media/image1.png
 
 ## Fill Gradients
 
-[Download .xlsx](files/fill_gradients.xlsx)
-
 Demonstrates linear gradients inside cell backgrounds.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3122,14 +2936,14 @@ Demonstrates linear gradients inside cell backgrounds.
 
 require "xlsxrb"
 output_path = ARGV[0] || "fill_gradients.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("gradient") do |style|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("gradient") do |style|
     style.fill_gradient(type: "linear", degree: 45, stops: [
                           { position: 0, color: "FFFFFFFF" },
                           { position: 1, color: "FF4F81BD" }
                         ])
   end
-  w.sheet("Gradients") do |s|
+  wb.sheet("Gradients") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })
@@ -3160,8 +2974,6 @@ Cell B1 ('Gradient Cell'): fill pattern = nil, fg_color = nil
 
 ## Fill Patterns
 
-[Download .xlsx](files/fill_patterns.xlsx)
-
 Demonstrates standard pattern fills (darkGray, darkGrid) in cell backgrounds.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3175,10 +2987,10 @@ Demonstrates standard pattern fills (darkGray, darkGrid) in cell backgrounds.
 
 require "xlsxrb"
 output_path = ARGV[0] || "fill_patterns.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
-  w.style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
-  w.sheet("Patterns") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
+  wb.style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
+  wb.sheet("Patterns") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Pattern Preview])
@@ -3211,8 +3023,6 @@ Cell B1 ('Preview'): fill pattern = nil, fg_color = nil
 
 ## Fill Solid Colors
 
-[Download .xlsx](files/fill_solid_colors.xlsx)
-
 Demonstrates solid cell background fill colors.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3226,10 +3036,10 @@ Demonstrates solid cell background fill colors.
 
 require "xlsxrb"
 output_path = ARGV[0] || "fill_solid_colors.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
-  w.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
-  w.sheet("Fills") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
+  wb.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
+  wb.sheet("Fills") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Color Preview])
@@ -3262,8 +3072,6 @@ Cell B1 ('Preview'): fill pattern = nil, fg_color = nil
 
 ## Fonts
 
-[Download .xlsx](files/fonts.xlsx)
-
 Demonstrates cell fonts properties (Arial, Georgia, Courier New, Times New Roman, Tahoma, sizes 10pt/16pt/24pt, red/green/blue colors, bold/italic/underline/double underline/strike-through styles, superscript/subscript).
 
 ### Rendered Output (LibreOffice Calc)
@@ -3279,65 +3087,65 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "fonts.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
+Xlsxrb.generate(output_path) do |wb|
   # Font Families (using nested hash options)
-  w.style("f_arial", font: { name: "Arial" })
-  w.style("f_times", font: { name: "Times New Roman" })
-  w.style("f_courier", font: { name: "Courier New" })
-  w.style("f_georgia", font: { name: "Georgia" })
-  w.style("f_tahoma", font: { name: "Tahoma" })
+  wb.style("f_arial", font: { name: "Arial" })
+  wb.style("f_times", font: { name: "Times New Roman" })
+  wb.style("f_courier", font: { name: "Courier New" })
+  wb.style("f_georgia", font: { name: "Georgia" })
+  wb.style("f_tahoma", font: { name: "Tahoma" })
 
   # Font Sizes
-  w.style("sz_10", font: { size: 10 })
-  w.style("sz_16", font: { size: 16 })
-  w.style("sz_24", font: { size: 24 })
+  wb.style("sz_10", font: { size: 10 })
+  wb.style("sz_16", font: { size: 16 })
+  wb.style("sz_24", font: { size: 24 })
 
   # Font Colors
-  w.style("c_red", font: { color: "FFC00000" })
-  w.style("c_green", font: { color: "FF008000" })
-  w.style("c_blue", font: { color: :blue })
+  wb.style("c_red", font: { color: "FFC00000" })
+  wb.style("c_green", font: { color: "FF008000" })
+  wb.style("c_blue", font: { color: :blue })
 
   # Font Styles
-  w.style("bold", font: { bold: true })
-  w.style("italic", font: { italic: true })
-  w.style("underline", font: { underline: true })
-  w.style("double_underline", font: { underline: "double" })
-  w.style("strike", font: { strike: true })
+  wb.style("bold", font: { bold: true })
+  wb.style("italic", font: { italic: true })
+  wb.style("underline", font: { underline: true })
+  wb.style("double_underline", font: { underline: "double" })
+  wb.style("strike", font: { strike: true })
 
   # Vertical Alignment (Subscript / Superscript)
-  w.style("superscript", font: { vert_align: "superscript" })
-  w.style("subscript", font: { vert_align: "subscript" })
+  wb.style("superscript", font: { vert_align: "superscript" })
+  wb.style("subscript", font: { vert_align: "subscript" })
 
-  w.style("header", font: { bold: true, color: :white }, fill: { color: "FF4F81BD" })
-  w.style("bg_light", fill: { color: "FFDCE6F1" })
+  wb.style("header", font: { bold: true, color: :white }, fill: { color: "FF4F81BD" })
+  wb.style("bg_light", fill: { color: "FFDCE6F1" })
 
-  w.sheet("Fonts") do |s|
+  wb.sheet("Fonts") do |s|
     s.column(0, width: 25)
     s.column(1, width: 35)
 
     s.row(["Font Feature", "Text Preview"], styles: "header")
-    
-    s.row(["Family: Arial", "Arial Text"], styles: ["bg_light", "f_arial"])
+
+    s.row(["Family: Arial", "Arial Text"], styles: %w[bg_light f_arial])
     s.row(["Family: Times New Roman", "Times New Roman"], styles: [nil, "f_times"])
-    s.row(["Family: Courier New", "Courier New Text"], styles: ["bg_light", "f_courier"])
+    s.row(["Family: Courier New", "Courier New Text"], styles: %w[bg_light f_courier])
     s.row(["Family: Georgia", "Georgia Text"], styles: [nil, "f_georgia"])
-    s.row(["Family: Tahoma", "Tahoma Text"], styles: ["bg_light", "f_tahoma"])
-    
+    s.row(["Family: Tahoma", "Tahoma Text"], styles: %w[bg_light f_tahoma])
+
     s.row(["Size: 10pt", "10pt Font Size"], styles: [nil, "sz_10"])
-    s.row(["Size: 16pt", "16pt Font Size"], styles: ["bg_light", "sz_16"])
+    s.row(["Size: 16pt", "16pt Font Size"], styles: %w[bg_light sz_16])
     s.row(["Size: 24pt", "24pt Font Size"], styles: [nil, "sz_24"])
-    
-    s.row(["Color: Red", "Red Text"], styles: ["bg_light", "c_red"])
+
+    s.row(["Color: Red", "Red Text"], styles: %w[bg_light c_red])
     s.row(["Color: Green", "Green Text"], styles: [nil, "c_green"])
-    s.row(["Color: Blue", "Blue Text"], styles: ["bg_light", "c_blue"])
-    
+    s.row(["Color: Blue", "Blue Text"], styles: %w[bg_light c_blue])
+
     s.row(["Style: Bold", "Bold Text"], styles: [nil, "bold"])
-    s.row(["Style: Italic", "Italic Text"], styles: ["bg_light", "italic"])
+    s.row(["Style: Italic", "Italic Text"], styles: %w[bg_light italic])
     s.row(["Style: Underline", "Underline Text"], styles: [nil, "underline"])
-    s.row(["Style: Double Underline", "Double Underline"], styles: ["bg_light", "double_underline"])
+    s.row(["Style: Double Underline", "Double Underline"], styles: %w[bg_light double_underline])
     s.row(["Style: Strike-through", "Strike-through Text"], styles: [nil, "strike"])
-    
-    s.row(["Align: Superscript", "x2 (2 is super)"], styles: ["bg_light", "superscript"])
+
+    s.row(["Align: Superscript", "x2 (2 is super)"], styles: %w[bg_light superscript])
     s.row(["Align: Subscript", "H2O (2 is sub)"], styles: [nil, "subscript"])
   end
 end
@@ -3354,10 +3162,8 @@ Created /workspaces/xlsxrb/docs/visual/files/fonts.xlsx
 
 ## Interactive Autofilter
 
-[Download .xlsx](files/interactive_autofilter.xlsx)
-
 > [!TIP]
-> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_autofilter.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
+> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!
 
 Demonstrates enabling auto-filter sorting headers on tables. Download the sheet to interactively filter and sort columns.
 
@@ -3374,8 +3180,8 @@ Demonstrates enabling auto-filter sorting headers on tables. Download the sheet 
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_autofilter.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Filter") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Filter") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Name Department])
@@ -3383,7 +3189,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(%w[Bob Eng])
     s.auto_filter("A1:B3")
   end
-  w.defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
+  wb.defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
 end
 
 # 2. Read the generated sheet and print cell values
@@ -3409,10 +3215,8 @@ Row 2: A3: "Bob", B3: "Eng"
 
 ## Interactive Comments
 
-[Download .xlsx](files/interactive_comments.xlsx)
-
 > [!TIP]
-> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_comments.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
+> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!
 
 Demonstrates cell pop-up comments. Open the sheet in Excel and hover your mouse over the cell with the red triangle to view the comment.
 
@@ -3429,8 +3233,8 @@ Demonstrates cell pop-up comments. Open the sheet in Excel and hover your mouse 
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_comments.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Comments") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Comments") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Item A", "Item B"])
@@ -3459,10 +3263,8 @@ Row 0: A1: "Item A", B1: "Item B"
 
 ## Interactive Validation Custom
 
-[Download .xlsx](files/interactive_validation_custom.xlsx)
-
 > [!TIP]
-> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_custom.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
+> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!
 
 Demonstrates interactive custom formula validation rules.
 
@@ -3479,8 +3281,8 @@ Demonstrates interactive custom formula validation rules.
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_custom.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Custom Rule") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Custom Rule") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Number A", "Number B (Must be larger A)"])
@@ -3511,10 +3313,8 @@ Validation range B2: type=custom, formula1=B2>A2, formula2=
 
 ## Interactive Validation Date
 
-[Download .xlsx](files/interactive_validation_date.xlsx)
-
 > [!TIP]
-> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_date.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
+> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!
 
 Demonstrates interactive date range constraints validation rules.
 
@@ -3531,8 +3331,8 @@ Demonstrates interactive date range constraints validation rules.
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_date.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Date Validation") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Date Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Date Range", "Enter Date (2026):"])
@@ -3562,10 +3362,8 @@ Validation range B2: type=date, formula1=Date(2026,1,1), formula2=Date(2026,12,3
 
 ## Interactive Validation List
 
-[Download .xlsx](files/interactive_validation_list.xlsx)
-
 > [!TIP]
-> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_list.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
+> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!
 
 Demonstrates dropdown list data validations. Open the sheet in Excel and select cell A1/A2 to see the dropdown list in action.
 
@@ -3582,8 +3380,8 @@ Demonstrates dropdown list data validations. Open the sheet in Excel and select 
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_list.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("List Validation") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("List Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Department", "Select:"])
@@ -3613,10 +3411,8 @@ Validation range B2: type=list, formula1="HR,Sales,Engineering", formula2=
 
 ## Interactive Validation Range
 
-[Download .xlsx](files/interactive_validation_range.xlsx)
-
 > [!TIP]
-> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_range.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
+> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!
 
 Demonstrates range constraints for whole number validations. Open the sheet in Excel and try entering a value outside 10-100 to trigger the warning.
 
@@ -3633,8 +3429,8 @@ Demonstrates range constraints for whole number validations. Open the sheet in E
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_range.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Range Validation") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Range Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Age", "Enter (18-99):"])
@@ -3664,10 +3460,8 @@ Validation range B2: type=whole, formula1=18, formula2=99
 
 ## Interactive Validation Text Length
 
-[Download .xlsx](files/interactive_validation_text_length.xlsx)
-
 > [!TIP]
-> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_text_length.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
+> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!
 
 Demonstrates interactive text length validation rules.
 
@@ -3684,8 +3478,8 @@ Demonstrates interactive text length validation rules.
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_text_length.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Text Length") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Text Length") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Username", "Enter (< 10 chars):"])
@@ -3715,10 +3509,8 @@ Validation range B2: type=textLength, formula1=10, formula2=
 
 ## Interactive Validation Time
 
-[Download .xlsx](files/interactive_validation_time.xlsx)
-
 > [!TIP]
-> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please **[Download the .xlsx file](files/interactive_validation_time.xlsx)** and open it in Microsoft Excel, LibreOffice Calc, or Apple Numbers to interact with it!
+> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!
 
 Demonstrates interactive time validation rules.
 
@@ -3735,8 +3527,8 @@ Demonstrates interactive time validation rules.
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_time.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Time Validation") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Time Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Schedule", "Enter Time (after 08:00):"])
@@ -3766,8 +3558,6 @@ Validation range B2: type=time, formula1=0.33333, formula2=
 
 ## Japanese Text
 
-[Download .xlsx](files/japanese_text.xlsx)
-
 Demonstrates writing multi-byte Japanese text and setting appropriate Japanese font names (e.g., Noto Sans CJK JP).
 
 ### Rendered Output (LibreOffice Calc)
@@ -3783,12 +3573,12 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "japanese_text.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("ja_font") do |style|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("ja_font") do |style|
     style.font_name("Noto Sans CJK JP").size(12)
   end
 
-  w.sheet("Japanese") do |s|
+  wb.sheet("Japanese") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[日本語ラベル 値], styles: { 0 => "ja_font", 1 => "ja_font" })
@@ -3820,8 +3610,6 @@ Row 1: A2: "売上" (String), B2: 12500 (Integer)
 
 ## Merge Freeze
 
-[Download .xlsx](files/merge_freeze.xlsx)
-
 Demonstrates merging a cell range into a single cell, and freezing the top rows of a sheet.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3837,10 +3625,10 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "merge_freeze.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
-  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.sheet("Merge & Freeze") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
+  wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  wb.sheet("Merge & Freeze") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -3851,7 +3639,7 @@ Xlsxrb.generate(output_path) do |w|
     s.row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], styles: %w[border border border])
     s.row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], styles: %w[border border border])
 
-    s.merge_cells(row: 0, col_start: 0, col_end: 2)
+    s.merge(row: 0, col_start: 0, col_end: 2)
     s.freeze_pane(row: 2, col: 0)
   end
 end
@@ -3880,8 +3668,6 @@ Row 3: A4: "Row 2 Col A", B4: "Row 2 Col B", C4: "Row 2 Col C"
 
 ## Page Grid Lines Print
 
-[Download .xlsx](files/page_grid_lines_print.xlsx)
-
 Demonstrates enabling printing of grid lines.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3895,8 +3681,8 @@ Demonstrates enabling printing of grid lines.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_grid_lines_print.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Print Grid Lines") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Print Grid Lines") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.print_options(:grid_lines, true)
@@ -3930,8 +3716,6 @@ Print Options: {grid_lines: true}
 
 ## Page Header Footer
 
-[Download .xlsx](files/page_header_footer.xlsx)
-
 Demonstrates setting odd page headers and footers.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3945,8 +3729,8 @@ Demonstrates setting odd page headers and footers.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_header_footer.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Header Footer") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Header Footer") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.header_footer(odd_header: "&LMy Company&RPage &P", odd_footer: "&CConfidential")
@@ -3980,8 +3764,6 @@ Print Options: {}
 
 ## Page Headings Print
 
-[Download .xlsx](files/page_headings_print.xlsx)
-
 Demonstrates enabling printing of row and column headings.
 
 ### Rendered Output (LibreOffice Calc)
@@ -3995,8 +3777,8 @@ Demonstrates enabling printing of row and column headings.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_headings_print.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Print Headings") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Print Headings") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.print_options(:headings, true)
@@ -4030,8 +3812,6 @@ Print Options: {headings: true}
 
 ## Page Margins Narrow
 
-[Download .xlsx](files/page_margins_narrow.xlsx)
-
 Demonstrates setting narrow page margins.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4045,8 +3825,8 @@ Demonstrates setting narrow page margins.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_margins_narrow.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Narrow Margins") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Narrow Margins") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.page_margins(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25, header: 0.1, footer: 0.1)
@@ -4080,8 +3860,6 @@ Print Options: {}
 
 ## Page Margins Wide
 
-[Download .xlsx](files/page_margins_wide.xlsx)
-
 Demonstrates setting wide page margins.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4095,8 +3873,8 @@ Demonstrates setting wide page margins.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_margins_wide.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Wide Margins") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Wide Margins") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.page_margins(top: 1.0, bottom: 1.0, left: 1.0, right: 1.0, header: 0.5, footer: 0.5)
@@ -4130,8 +3908,6 @@ Print Options: {}
 
 ## Page Orientation Landscape
 
-[Download .xlsx](files/page_orientation_landscape.xlsx)
-
 Demonstrates landscape page setup for printing.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4145,8 +3921,8 @@ Demonstrates landscape page setup for printing.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_orientation_landscape.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Landscape") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Landscape") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.page_setup(orientation: :landscape)
@@ -4180,8 +3956,6 @@ Print Options: {}
 
 ## Page Paper Size A3
 
-[Download .xlsx](files/page_paper_size_a3.xlsx)
-
 Demonstrates setting paper size to A3 (paper size 8).
 
 ### Rendered Output (LibreOffice Calc)
@@ -4195,8 +3969,8 @@ Demonstrates setting paper size to A3 (paper size 8).
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_paper_size_a3.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("A3 Sheet") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("A3 Sheet") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.page_setup(paper_size: 8) # ISO A3 is paperSize="8"
@@ -4230,8 +4004,6 @@ Print Options: {}
 
 ## Row Grouping
 
-[Download .xlsx](files/row_grouping.xlsx)
-
 Demonstrates outline grouping for rows.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4245,10 +4017,10 @@ Demonstrates outline grouping for rows.
 
 require "xlsxrb"
 output_path = ARGV[0] || "row_grouping.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
-  w.style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
-  w.sheet("Row Grouping") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
+  wb.style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
+  wb.sheet("Row Grouping") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Parent Row 1", ""], styles: %w[parent parent])
@@ -4279,8 +4051,6 @@ Row 2: height=, hidden=false, outline_level=1
 
 ## Row Height Tall
 
-[Download .xlsx](files/row_height_tall.xlsx)
-
 Demonstrates setting very tall row heights.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4294,9 +4064,9 @@ Demonstrates setting very tall row heights.
 
 require "xlsxrb"
 output_path = ARGV[0] || "row_height_tall.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.sheet("Row Height") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  wb.sheet("Row Height") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Very Tall Row (Height 60)", ""], height: 60, styles: %w[border border])
@@ -4325,8 +4095,6 @@ Row 1: height=, hidden=false, outline_level=
 
 ## Row Heights
 
-[Download .xlsx](files/row_heights.xlsx)
-
 Demonstrates setting custom row heights.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4340,9 +4108,9 @@ Demonstrates setting custom row heights.
 
 require "xlsxrb"
 output_path = ARGV[0] || "row_heights.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
-  w.sheet("Heights") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
+  wb.sheet("Heights") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Normal Row", ""], styles: %w[border border])
@@ -4371,8 +4139,6 @@ Row 1: height=40.0, hidden=false, outline_level=
 
 ## Sheet Tab Colors
 
-[Download .xlsx](files/sheet_tab_colors.xlsx)
-
 Demonstrates customizing tab colors of individual worksheets.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4390,14 +4156,14 @@ Demonstrates customizing tab colors of individual worksheets.
 
 require "xlsxrb"
 output_path = ARGV[0] || "sheet_tab_colors.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Red Tab") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Red Tab") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.sheet_properties(:tab_color, :red)
     s.row(["Red tab sheet"])
   end
-  w.sheet("Green Tab") do |s|
+  wb.sheet("Green Tab") do |s|
     s.sheet_properties(:tab_color, :green)
     s.row(["Green tab sheet"])
   end
@@ -4425,8 +4191,6 @@ Sheet: Green Tab, tab color: "green"
 
 ## Sparkline Column
 
-[Download .xlsx](files/sparkline_column.xlsx)
-
 Demonstrates embedded column sparklines in cell ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4440,8 +4204,8 @@ Demonstrates embedded column sparklines in cell ranges.
 
 require "xlsxrb"
 output_path = ARGV[0] || "sparkline_column.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Sparkline") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Sparkline") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -4475,8 +4239,6 @@ Row 0: A1: 5, B1: 12, C1: 8, D1: 15
 
 ## Sparkline Line
 
-[Download .xlsx](files/sparkline_line.xlsx)
-
 Demonstrates embedded line sparklines in cell ranges.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4492,8 +4254,8 @@ Demonstrates embedded line sparklines in cell ranges.
 
 require "xlsxrb"
 output_path = ARGV[0] || "sparkline_line.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Sparkline") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Sparkline") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
@@ -4530,8 +4292,6 @@ Row 0: A1: 10, B1: 20, C1: 15, D1: 30
 
 ## Styles Fonts Fills
 
-[Download .xlsx](files/styles_fonts_fills.xlsx)
-
 Demonstrates cell formatting, including custom font sizing, bold/italic text, custom text colors, and background fill colors.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4547,20 +4307,20 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "styles_fonts_fills.xlsx"
 
-Xlsxrb.generate(output_path) do |w|
-  w.style("header") do |style|
+Xlsxrb.generate(output_path) do |wb|
+  wb.style("header") do |style|
     style.bold.size(14).font_color("FFFFFFFF").fill_color("FF4F81BD")
   end
 
-  w.style("highlight") do |style|
+  wb.style("highlight") do |style|
     style.italic.font_color("FFC00000").fill_color("FFFFFF00")
   end
 
-  w.sheet("Styles") do
-    w.column(0, width: 25)
-    w.column(1, width: 25)
-    w.row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
-    w.row(["Normal Text", "Highlighted Text"], styles: { 1 => "highlight" })
+  wb.sheet("Styles") do |sheet|
+    sheet.column(0, width: 25)
+    sheet.column(1, width: 25)
+    sheet.row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
+    sheet.row(["Normal Text", "Highlighted Text"], styles: { 1 => "highlight" })
   end
 end
 
@@ -4591,8 +4351,6 @@ Row 1: A2: "Normal Text" (font=, fill=), B2: "Highlighted Text" (font=Calibri, f
 
 ## View Show Grid Lines
 
-[Download .xlsx](files/view_show_grid_lines.xlsx)
-
 Demonstrates disabling visible grid lines in spreadsheet view.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4608,8 +4366,8 @@ Demonstrates disabling visible grid lines in spreadsheet view.
 
 require "xlsxrb"
 output_path = ARGV[0] || "view_show_grid_lines.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Hide Grid Lines") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Hide Grid Lines") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.sheet_view(:show_grid_lines, false)
@@ -4638,8 +4396,6 @@ Sheet 'Hide Grid Lines' views zoom scale: %, show grid lines: false
 
 ## View Zoom Scale
 
-[Download .xlsx](files/view_zoom_scale.xlsx)
-
 Demonstrates setting custom zoom scale in sheet view (e.g. 150%).
 
 ### Rendered Output (LibreOffice Calc)
@@ -4655,8 +4411,8 @@ Demonstrates setting custom zoom scale in sheet view (e.g. 150%).
 
 require "xlsxrb"
 output_path = ARGV[0] || "view_zoom_scale.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("Zoom 150") do |s|
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("Zoom 150") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.sheet_view(:zoom_scale, 150)
@@ -4685,8 +4441,6 @@ Sheet 'Zoom 150' views zoom scale: 150%, show grid lines:
 
 ## Workbook Three Sheets
 
-[Download .xlsx](files/workbook_three_sheets.xlsx)
-
 Demonstrates creating workbooks with multiple worksheets.
 
 ### Rendered Output (LibreOffice Calc)
@@ -4704,10 +4458,10 @@ Demonstrates creating workbooks with multiple worksheets.
 
 require "xlsxrb"
 output_path = ARGV[0] || "workbook_three_sheets.xlsx"
-Xlsxrb.generate(output_path) do |w|
-  w.sheet("First Sheet") { |s| s.row(["First Sheet Data"]) }
-  w.sheet("Second Sheet") { |s| s.row(["Second Sheet Data"]) }
-  w.sheet("Third Sheet") { |s| s.row(["Third Sheet Data"]) }
+Xlsxrb.generate(output_path) do |wb|
+  wb.sheet("First Sheet") { |s| s.row(["First Sheet Data"]) }
+  wb.sheet("Second Sheet") { |s| s.row(["Second Sheet Data"]) }
+  wb.sheet("Third Sheet") { |s| s.row(["Third Sheet Data"]) }
 end
 
 # 2. Read the generated sheet and print the sheets structure
