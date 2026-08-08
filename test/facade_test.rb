@@ -800,7 +800,7 @@ class FacadeTest < Test::Unit::TestCase
       w.core_property(:creator, "test")
       w.sheet("S")
     end
-    assert_equal({creator: "test"}, wb.unmapped_data.dig(:facade, :core_properties))
+    assert_equal({ creator: "test" }, wb.unmapped_data.dig(:facade, :core_properties))
   end
 
   test "WorkbookBuilder#app_property configures correctly" do
@@ -808,7 +808,7 @@ class FacadeTest < Test::Unit::TestCase
       w.app_property(:company, "test")
       w.sheet("S")
     end
-    assert_equal({company: "test"}, wb.unmapped_data.dig(:facade, :app_properties))
+    assert_equal({ company: "test" }, wb.unmapped_data.dig(:facade, :app_properties))
   end
 
   test "WorkbookBuilder#custom_property configures correctly" do
@@ -816,7 +816,7 @@ class FacadeTest < Test::Unit::TestCase
       w.custom_property("test", "test")
       w.sheet("S")
     end
-    assert_equal([{name: "test", value: "test", type: :string}], wb.unmapped_data.dig(:facade, :custom_properties))
+    assert_equal([{ name: "test", value: "test", type: :string }], wb.unmapped_data.dig(:facade, :custom_properties))
   end
 
   test "WorkbookBuilder#protect_workbook configures correctly" do
@@ -824,7 +824,7 @@ class FacadeTest < Test::Unit::TestCase
       w.protect_workbook(password: "123")
       w.sheet("S")
     end
-    assert_equal({password: "123"}, wb.unmapped_data.dig(:facade, :workbook_protection))
+    assert_equal({ password: "123" }, wb.unmapped_data.dig(:facade, :workbook_protection))
   end
 
   test "WorksheetBuilder#split_pane configures correctly" do
@@ -926,7 +926,7 @@ class FacadeTest < Test::Unit::TestCase
   test "WorksheetBuilder#table configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
-        s.table("A1:B2", columns: [{name: "A"}])
+        s.table("A1:B2", columns: [{ name: "A" }])
       end
     end
     val = wb.sheet(0).unmapped_data.dig(:facade, :tables)
@@ -1042,7 +1042,7 @@ class FacadeTest < Test::Unit::TestCase
 
   test "WorkbookBuilder#properties configures correctly" do
     wb = Xlsxrb.build do |w|
-      w.properties(core: {creator: "test"})
+      w.properties(core: { creator: "test" })
       w.sheet("S")
     end
     val = wb.unmapped_data.dig(:facade, :core_properties)
