@@ -1027,4 +1027,16 @@ class FacadeTest < Test::Unit::TestCase
     assert_not_equal([], val)
     assert_not_equal({}, val)
   end
+
+  test "WorksheetBuilder#sheet_view configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.sheet_view(:zoom_scale, 150)
+      end
+    end
+    val = wb.sheet(0).unmapped_data.dig(:facade, :sheet_view)
+    assert_not_nil(val)
+    assert_not_equal([], val)
+    assert_not_equal({}, val)
+  end
 end
