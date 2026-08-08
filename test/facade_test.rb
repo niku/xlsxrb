@@ -1015,4 +1015,16 @@ class FacadeTest < Test::Unit::TestCase
     assert_not_equal([], val)
     assert_not_equal({}, val)
   end
+
+  test "WorksheetBuilder#sheet_properties configures correctly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.sheet_properties(:tab_color, "FF0000")
+      end
+    end
+    val = wb.sheet(0).unmapped_data.dig(:facade, :sheet_properties)
+    assert_not_nil(val)
+    assert_not_equal([], val)
+    assert_not_equal({}, val)
+  end
 end
