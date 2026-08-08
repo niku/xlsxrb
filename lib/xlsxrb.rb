@@ -7,7 +7,13 @@ require "time"
 require "openssl"
 require "securerandom"
 require "tempfile"
-require "bigdecimal"
+begin
+  require "bigdecimal"
+rescue LoadError
+  # Fallback for minimal environments (like ruby.wasm) where bigdecimal may not be available.
+  # This prevents NameError when `BigDecimal` is used in case statements.
+  BigDecimal = Class.new
+end
 require "opentelemetry"
 require_relative "xlsxrb/version"
 require_relative "xlsxrb/ooxml/zip_generator"
