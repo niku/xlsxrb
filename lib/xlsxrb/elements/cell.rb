@@ -133,7 +133,7 @@ module Xlsxrb
       def self.validate(row_index, column_index, value)
         if row_index.is_a?(Integer) && row_index >= 0 && row_index < 1_048_576 &&
            column_index.is_a?(Integer) && column_index >= 0 && column_index < 16_384 &&
-           (value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value == true || value == false || value.is_a?(Date) || value.is_a?(Time))
+           (value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value == true || value == false || value.is_a?(Date) || value.is_a?(Time) || value.is_a?(Formula) || (value.is_a?(Hash) && value.key?(:formula)) || value.is_a?(RichText) || value.is_a?(CellError))
           return [].freeze
         end
 
