@@ -1086,47 +1086,6 @@ class FacadeTest < Test::Unit::TestCase
     assert_equal [{ val: "Sheet1!$B$1:$B$5" }], c[:series]
   end
 
-  test "ChartBuilder#method_missing captures arbitrary properties" do
-    wb = Xlsxrb.build do |w|
-      w.sheet("S1") do |s|
-        s.chart(target: "A1", type: :bar) do |c|
-          c.legend(position: :bottom)
-          c.custom_prop("val")
-        end
-      end
-    end
-    c = wb.sheet(0).charts.first
-    assert_equal({ position: :bottom }, c[:legend])
-    assert_equal("val", c[:custom_prop])
-  end
-
-  test "ChartBuilder#respond_to_missing? returns true" do
-    cb = Xlsxrb::ChartBuilder.new
-    assert_equal true, cb.respond_to?(:some_random_method)
-  end
-
-  test "SeriesBuilder captures arbitrary properties" do
-    wb = Xlsxrb.build do |w|
-      w.sheet("S1") do |s|
-        s.chart(target: "A1", type: :bar) do |c|
-          c.series do |sb|
-            sb.val "Sheet1!$A$1"
-            sb.name title: "Test"
-          end
-        end
-      end
-    end
-    c = wb.sheet(0).charts.first
-    series = c[:series].first
-    assert_equal("Sheet1!$A$1", series[:val])
-    assert_equal({ title: "Test" }, series[:name])
-  end
-
-  test "SeriesBuilder#respond_to_missing? returns true" do
-    sb = Xlsxrb::ChartBuilder::SeriesBuilder.new
-    assert_equal true, sb.respond_to?(:anything)
-  end
-
   test "WorksheetBuilder#hyperlink captures options properly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|

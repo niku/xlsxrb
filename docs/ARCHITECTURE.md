@@ -18,6 +18,18 @@ Xlsxrb uses **only** the Ruby standard library and Bundled Gems:
 
 ---
 
+## Coding Policies
+
+### 🚫 The `method_missing` Policy
+As a strict rule, **we do not accept dynamic method definitions using `method_missing`** anywhere in the codebase. All user-facing API methods and internal delegations must be explicitly defined in the code. This ensures:
+1. **Type Safety & Static Analysis**: RBS and Steep can completely validate arguments and structures.
+2. **Developer Experience**: IDE autocompletion, jump-to-definition, and YARD documentation work perfectly.
+3. **Traceability**: If a method exists, you can `grep` for it.
+
+Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mappings (e.g. `ChartBuilder`, `SeriesBuilder`) would traditionally benefit from dynamic method delegation to avoid boilerplate, we explicitly generate and write out those delegations in the source code.
+
+---
+
 ## Directory Structure
 
 ```

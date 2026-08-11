@@ -93,15 +93,81 @@ module Xlsxrb
       @options[:series]
     end
 
-    # : (untyped name, *untyped args, **untyped kwargs) { (?) -> untyped } -> untyped
-    def method_missing(name, *args, **kwargs, &)
-      key = name.to_sym
-      @options[key] = kwargs.empty? ? args.first : kwargs
+    # Configures the legend property for this chart.
+    # @return [Object] the configured property
+    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    def legend(*args, **kwargs)
+      @options[:legend] = kwargs.empty? ? args.first : kwargs
     end
 
-    # : (untyped _name, ?bool _include_private) -> true
-    def respond_to_missing?(_name, _include_private = false)
-      true
+    # Configures the plot_area property for this chart.
+    # @return [Object] the configured property
+    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    def plot_area(*args, **kwargs)
+      @options[:plot_area] = kwargs.empty? ? args.first : kwargs
+    end
+
+    # Configures the chart_space property for this chart.
+    # @return [Object] the configured property
+    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    def chart_space(*args, **kwargs)
+      @options[:chart_space] = kwargs.empty? ? args.first : kwargs
+    end
+
+    # Configures the style property for this chart.
+    # @return [Object] the configured property
+    # : (*(Hash[Symbol, untyped] | String | Integer) args, **untyped kwargs) -> untyped
+    def style(*args, **kwargs)
+      @options[:style] = kwargs.empty? ? args.first : kwargs
+    end
+
+    # Configures the data_labels property for this chart.
+    # @return [Object] the configured property
+    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    def data_labels(*args, **kwargs)
+      @options[:data_labels] = kwargs.empty? ? args.first : kwargs
+    end
+
+    # Configures the plot_visible_only property for this chart.
+    # @return [Object] the configured property
+    # : (*(bool | String) args, **untyped kwargs) -> untyped
+    def plot_visible_only(*args, **kwargs)
+      @options[:plot_visible_only] = kwargs.empty? ? args.first : kwargs
+    end
+
+    # Configures the display_blanks_as property for this chart.
+    # @return [Object] the configured property
+    # : (*(String) args, **untyped kwargs) -> untyped
+    def display_blanks_as(*args, **kwargs)
+      @options[:display_blanks_as] = kwargs.empty? ? args.first : kwargs
+    end
+
+    # Configures the view3d property for this chart.
+    # @return [Object] the configured property
+    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    def view3d(*args, **kwargs)
+      @options[:view3d] = kwargs.empty? ? args.first : kwargs
+    end
+
+    # Configures the category_axis property for this chart.
+    # @return [Object] the configured property
+    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    def category_axis(*args, **kwargs)
+      @options[:category_axis] = kwargs.empty? ? args.first : kwargs
+    end
+
+    # Configures the value_axis property for this chart.
+    # @return [Object] the configured property
+    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    def value_axis(*args, **kwargs)
+      @options[:value_axis] = kwargs.empty? ? args.first : kwargs
+    end
+
+    # Configures the show_legend_key property for this chart.
+    # @return [Object] the configured property
+    # : (*(bool | String) args, **untyped kwargs) -> untyped
+    def show_legend_key(*args, **kwargs)
+      @options[:show_legend_key] = kwargs.empty? ? args.first : kwargs
     end
 
     # Builder for a single series entry in block-style chart definitions.
@@ -114,15 +180,81 @@ module Xlsxrb
       # : untyped
       attr_reader :options
 
-      # : (untyped name, *untyped args, **untyped kwargs) { (?) -> untyped } -> untyped
-      def method_missing(name, *args, **kwargs, &)
-        key = name.to_sym
-        @options[key] = kwargs.empty? ? args.first : kwargs
+      # Configures the categories property for this series.
+      # @return [Object] the configured property
+      # : (*(Hash[Symbol, untyped] | String | Array[String]) args, **untyped kwargs) -> untyped
+      def categories(*args, **kwargs)
+        @options[:categories] = kwargs.empty? ? args.first : kwargs
       end
 
-      # : (untyped _name, ?bool _include_private) -> true
-      def respond_to_missing?(_name, _include_private = false)
-        true
+      # Configures the values property for this series.
+      # @return [Object] the configured property
+      # : (*(Hash[Symbol, untyped] | String | Array[Numeric]) args, **untyped kwargs) -> untyped
+      def values(*args, **kwargs)
+        @options[:values] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures the name property for this series.
+      # @return [Object] the configured property
+      # : (*(String) args, **untyped kwargs) -> untyped
+      def name(*args, **kwargs)
+        @options[:name] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures the marker property for this series.
+      # @return [Object] the configured property
+      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      def marker(*args, **kwargs)
+        @options[:marker] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures the fill property for this series.
+      # @return [Object] the configured property
+      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      def fill(*args, **kwargs)
+        @options[:fill] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures the line property for this series.
+      # @return [Object] the configured property
+      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      def line(*args, **kwargs)
+        @options[:line] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures the trendline property for this series.
+      # @return [Object] the configured property
+      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      def trendline(*args, **kwargs)
+        @options[:trendline] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures the data_labels property for this series.
+      # @return [Object] the configured property
+      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      def data_labels(*args, **kwargs)
+        @options[:data_labels] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures the smooth property for this series.
+      # @return [Object] the configured property
+      # : (*(bool | String) args, **untyped kwargs) -> untyped
+      def smooth(*args, **kwargs)
+        @options[:smooth] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures the shape property for this series.
+      # @return [Object] the configured property
+      # : (*(String) args, **untyped kwargs) -> untyped
+      def shape(*args, **kwargs)
+        @options[:shape] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures the type property for this series.
+      # @return [Object] the configured property
+      # : (*(String) args, **untyped kwargs) -> untyped
+      def type(*args, **kwargs)
+        @options[:type] = kwargs.empty? ? args.first : kwargs
       end
     end
   end
@@ -1332,14 +1464,364 @@ module Xlsxrb
         @sheet_name = sheet_name
       end
 
-      def respond_to_missing?(method_name, include_private = false)
-        @writer.respond_to?(method_name, include_private)
+      # Delegates to StreamWriter#style.
+      # @see StreamWriter#style
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def style(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.style(...)
       end
 
-      def method_missing(method_name, ...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+      # Delegates to StreamWriter#merge.
+      # @see StreamWriter#merge
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def merge(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.public_send(method_name, ...)
+        @writer.merge(...)
+      end
+
+      # Delegates to StreamWriter#shape.
+      # @see StreamWriter#shape
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def shape(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.shape(...)
+      end
+
+      # Delegates to StreamWriter#internal_sheet_setup.
+      # @see StreamWriter#internal_sheet_setup
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def internal_sheet_setup(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.internal_sheet_setup(...)
+      end
+
+      # Delegates to StreamWriter#row.
+      # @see StreamWriter#row
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def row(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.row(...)
+      end
+
+      # Delegates to StreamWriter#column.
+      # @see StreamWriter#column
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def column(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.column(...)
+      end
+
+      # Delegates to StreamWriter#chart.
+      # @see StreamWriter#chart
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def chart(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.chart(...)
+      end
+
+      # Delegates to StreamWriter#hyperlink.
+      # @see StreamWriter#hyperlink
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def hyperlink(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.hyperlink(...)
+      end
+
+      # Delegates to StreamWriter#auto_filter.
+      # @see StreamWriter#auto_filter
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def auto_filter(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.auto_filter(...)
+      end
+
+      # Delegates to StreamWriter#filter_column.
+      # @see StreamWriter#filter_column
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def filter_column(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.filter_column(...)
+      end
+
+      # Delegates to StreamWriter#sort_state.
+      # @see StreamWriter#sort_state
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def sort_state(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sort_state(...)
+      end
+
+      # Delegates to StreamWriter#validate_data.
+      # @see StreamWriter#validate_data
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def validate_data(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.validate_data(...)
+      end
+
+      # Delegates to StreamWriter#conditional_format.
+      # @see StreamWriter#conditional_format
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def conditional_format(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.conditional_format(...)
+      end
+
+      # Delegates to StreamWriter#table.
+      # @see StreamWriter#table
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def table(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.table(...)
+      end
+
+      # Delegates to StreamWriter#cleanup!.
+      # @see StreamWriter#cleanup!
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def cleanup!(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.cleanup!(...)
+      end
+
+      # Delegates to StreamWriter#comment.
+      # @see StreamWriter#comment
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def comment(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.comment(...)
+      end
+
+      # Delegates to StreamWriter#pivot_table.
+      # @see StreamWriter#pivot_table
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def pivot_table(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.pivot_table(...)
+      end
+
+      # Delegates to StreamWriter#sparkline_group.
+      # @see StreamWriter#sparkline_group
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def sparkline_group(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sparkline_group(...)
+      end
+
+      # Delegates to StreamWriter#workbook_property.
+      # @see StreamWriter#workbook_property
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def workbook_property(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.workbook_property(...)
+      end
+
+      # Delegates to StreamWriter#sheet_properties.
+      # @see StreamWriter#sheet_properties
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def sheet_properties(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sheet_properties(...)
+      end
+
+      # Delegates to StreamWriter#defined_name.
+      # @see StreamWriter#defined_name
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def defined_name(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.defined_name(...)
+      end
+
+      # Delegates to StreamWriter#freeze_pane.
+      # @see StreamWriter#freeze_pane
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def freeze_pane(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.freeze_pane(...)
+      end
+
+      # Delegates to StreamWriter#print_area.
+      # @see StreamWriter#print_area
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def print_area(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.print_area(...)
+      end
+
+      # Delegates to StreamWriter#print_titles.
+      # @see StreamWriter#print_titles
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def print_titles(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.print_titles(...)
+      end
+
+      # Delegates to StreamWriter#split_pane.
+      # @see StreamWriter#split_pane
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def split_pane(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.split_pane(...)
+      end
+
+      # Delegates to StreamWriter#protect_workbook.
+      # @see StreamWriter#protect_workbook
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def protect_workbook(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.protect_workbook(...)
+      end
+
+      # Delegates to StreamWriter#core_property.
+      # @see StreamWriter#core_property
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def core_property(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.core_property(...)
+      end
+
+      # Delegates to StreamWriter#select_cell.
+      # @see StreamWriter#select_cell
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def select_cell(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.select_cell(...)
+      end
+
+      # Delegates to StreamWriter#page_margins.
+      # @see StreamWriter#page_margins
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def page_margins(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.page_margins(...)
+      end
+
+      # Delegates to StreamWriter#page_setup.
+      # @see StreamWriter#page_setup
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def page_setup(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.page_setup(...)
+      end
+
+      # Delegates to StreamWriter#header_footer.
+      # @see StreamWriter#header_footer
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def header_footer(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.header_footer(...)
+      end
+
+      # Delegates to StreamWriter#print_options.
+      # @see StreamWriter#print_options
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def print_options(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.print_options(...)
+      end
+
+      # Delegates to StreamWriter#properties.
+      # @see StreamWriter#properties
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def properties(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.properties(...)
+      end
+
+      # Delegates to StreamWriter#app_property.
+      # @see StreamWriter#app_property
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def app_property(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.app_property(...)
+      end
+
+      # Delegates to StreamWriter#protect_sheet.
+      # @see StreamWriter#protect_sheet
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def protect_sheet(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.protect_sheet(...)
+      end
+
+      # Delegates to StreamWriter#custom_property.
+      # @see StreamWriter#custom_property
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def custom_property(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.custom_property(...)
+      end
+
+      # Delegates to StreamWriter#image.
+      # @see StreamWriter#image
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def image(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.image(...)
+      end
+
+      # Delegates to StreamWriter#sheet_view.
+      # @see StreamWriter#sheet_view
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def sheet_view(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sheet_view(...)
+      end
+
+      # Delegates to StreamWriter#page_break_row.
+      # @see StreamWriter#page_break_row
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def page_break_row(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.page_break_row(...)
+      end
+
+      # Delegates to StreamWriter#page_break_col.
+      # @see StreamWriter#page_break_col
+      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      def page_break_col(...)
+        raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.page_break_col(...)
       end
     end
 
