@@ -28,6 +28,11 @@ As a strict rule, **we do not accept dynamic method definitions using `method_mi
 
 Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mappings (e.g. `ChartBuilder`, `SeriesBuilder`) would traditionally benefit from dynamic method delegation to avoid boilerplate, we explicitly generate and write out those delegations in the source code.
 
+### API Contract (SemVer)
+- Methods tagged with `@api public` in their YARD documentation are guaranteed to follow SemVer.
+- Methods without this tag (or tagged `@api private`) are internal and may change at any time.
+- Note that during the 0.x series, this is a "best effort" promise, but after 1.0.0, strict SemVer guarantees will apply to all `@api public` methods.
+
 ---
 
 ## Directory Structure

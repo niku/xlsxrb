@@ -3,7 +3,7 @@
 require "test_helper"
 require "tempfile"
 
-class FacadeTest < Test::Unit::TestCase
+class PublicApiTest < Test::Unit::TestCase
   # --- Read / Write ---
 
   test "Xlsxrb.read returns a Workbook from a written file" do
@@ -1464,16 +1464,17 @@ class FacadeTest < Test::Unit::TestCase
   end
 
   test "Xlsxrb.read parses workbook" do
-    path = "test/visual/output/test_read_mutation.xlsx"
-    Xlsxrb.generate(path) do |w|
+    temp = Tempfile.new(["test_read", ".xlsx"])
+    Xlsxrb.generate(temp.path) do |w|
       w.sheet("S1") { |s| s.row ["A"] }
     end
 
-    wb = Xlsxrb.read(path)
+    wb = Xlsxrb.read(temp.path)
     assert_equal "S1", wb.sheets.first.name
     assert_equal "A", wb.sheets.first.rows.first.cells.first.value
   ensure
-    FileUtils.rm_f(path)
+    temp&.close
+    temp&.unlink
   end
 
   test "WorksheetBuilder#merge with options" do

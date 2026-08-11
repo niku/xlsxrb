@@ -59,6 +59,7 @@ module Xlsxrb
   # @param text [String, nil] Simple text.
   # @param font_props [Hash] Font styling options (e.g., bold: true).
   # @return [Elements::RichText] The resulting rich text.
+  # @api public
   # : (*Hash[untyped, untyped] runs, ?text: String?, **untyped font_props) -> Elements::RichText
   def self.rich_text(*runs, text: nil, **font_props)
     runs = [{ text: text, font: font_props }] if text
@@ -75,11 +76,14 @@ module Xlsxrb
     # : untyped
     attr_reader :options
 
+    # @api public
     # : (untyped value) -> untyped
     def type(value) = @options[:type] = value
+    # @api public
     # : (untyped value) -> untyped
     def title(value) = @options[:title] = value
 
+    # @api public
     # : (?untyped? value) ?{ (untyped) -> untyped } -> untyped
     def series(value = nil)
       @options[:series] ||= []
@@ -95,6 +99,7 @@ module Xlsxrb
 
     # Configures the legend property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
     def legend(*args, **kwargs)
       @options[:legend] = kwargs.empty? ? args.first : kwargs
@@ -102,6 +107,7 @@ module Xlsxrb
 
     # Configures the plot_area property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
     def plot_area(*args, **kwargs)
       @options[:plot_area] = kwargs.empty? ? args.first : kwargs
@@ -109,6 +115,7 @@ module Xlsxrb
 
     # Configures the chart_space property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
     def chart_space(*args, **kwargs)
       @options[:chart_space] = kwargs.empty? ? args.first : kwargs
@@ -116,6 +123,7 @@ module Xlsxrb
 
     # Configures the style property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(Hash[Symbol, untyped] | String | Integer) args, **untyped kwargs) -> untyped
     def style(*args, **kwargs)
       @options[:style] = kwargs.empty? ? args.first : kwargs
@@ -123,6 +131,7 @@ module Xlsxrb
 
     # Configures the data_labels property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
     def data_labels(*args, **kwargs)
       @options[:data_labels] = kwargs.empty? ? args.first : kwargs
@@ -130,6 +139,7 @@ module Xlsxrb
 
     # Configures the plot_visible_only property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(bool | String) args, **untyped kwargs) -> untyped
     def plot_visible_only(*args, **kwargs)
       @options[:plot_visible_only] = kwargs.empty? ? args.first : kwargs
@@ -137,6 +147,7 @@ module Xlsxrb
 
     # Configures the display_blanks_as property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(String) args, **untyped kwargs) -> untyped
     def display_blanks_as(*args, **kwargs)
       @options[:display_blanks_as] = kwargs.empty? ? args.first : kwargs
@@ -144,6 +155,7 @@ module Xlsxrb
 
     # Configures the view3d property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
     def view3d(*args, **kwargs)
       @options[:view3d] = kwargs.empty? ? args.first : kwargs
@@ -151,6 +163,7 @@ module Xlsxrb
 
     # Configures the category_axis property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
     def category_axis(*args, **kwargs)
       @options[:category_axis] = kwargs.empty? ? args.first : kwargs
@@ -158,6 +171,7 @@ module Xlsxrb
 
     # Configures the value_axis property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
     def value_axis(*args, **kwargs)
       @options[:value_axis] = kwargs.empty? ? args.first : kwargs
@@ -165,6 +179,7 @@ module Xlsxrb
 
     # Configures the show_legend_key property for this chart.
     # @return [Object] the configured property
+    # @api public
     # : (*(bool | String) args, **untyped kwargs) -> untyped
     def show_legend_key(*args, **kwargs)
       @options[:show_legend_key] = kwargs.empty? ? args.first : kwargs
@@ -182,6 +197,7 @@ module Xlsxrb
 
       # Configures the categories property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(Hash[Symbol, untyped] | String | Array[String]) args, **untyped kwargs) -> untyped
       def categories(*args, **kwargs)
         @options[:categories] = kwargs.empty? ? args.first : kwargs
@@ -189,6 +205,7 @@ module Xlsxrb
 
       # Configures the values property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(Hash[Symbol, untyped] | String | Array[Numeric]) args, **untyped kwargs) -> untyped
       def values(*args, **kwargs)
         @options[:values] = kwargs.empty? ? args.first : kwargs
@@ -196,6 +213,7 @@ module Xlsxrb
 
       # Configures the name property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(String) args, **untyped kwargs) -> untyped
       def name(*args, **kwargs)
         @options[:name] = kwargs.empty? ? args.first : kwargs
@@ -203,6 +221,7 @@ module Xlsxrb
 
       # Configures the marker property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
       def marker(*args, **kwargs)
         @options[:marker] = kwargs.empty? ? args.first : kwargs
@@ -210,6 +229,7 @@ module Xlsxrb
 
       # Configures the fill property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
       def fill(*args, **kwargs)
         @options[:fill] = kwargs.empty? ? args.first : kwargs
@@ -217,6 +237,7 @@ module Xlsxrb
 
       # Configures the line property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
       def line(*args, **kwargs)
         @options[:line] = kwargs.empty? ? args.first : kwargs
@@ -224,6 +245,7 @@ module Xlsxrb
 
       # Configures the trendline property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
       def trendline(*args, **kwargs)
         @options[:trendline] = kwargs.empty? ? args.first : kwargs
@@ -231,6 +253,7 @@ module Xlsxrb
 
       # Configures the data_labels property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
       def data_labels(*args, **kwargs)
         @options[:data_labels] = kwargs.empty? ? args.first : kwargs
@@ -238,6 +261,7 @@ module Xlsxrb
 
       # Configures the smooth property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(bool | String) args, **untyped kwargs) -> untyped
       def smooth(*args, **kwargs)
         @options[:smooth] = kwargs.empty? ? args.first : kwargs
@@ -245,6 +269,7 @@ module Xlsxrb
 
       # Configures the shape property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(String) args, **untyped kwargs) -> untyped
       def shape(*args, **kwargs)
         @options[:shape] = kwargs.empty? ? args.first : kwargs
@@ -252,6 +277,7 @@ module Xlsxrb
 
       # Configures the type property for this series.
       # @return [Object] the configured property
+      # @api public
       # : (*(String) args, **untyped kwargs) -> untyped
       def type(*args, **kwargs)
         @options[:type] = kwargs.empty? ? args.first : kwargs
@@ -268,6 +294,7 @@ module Xlsxrb
   # @param expression [String] The formula text (e.g. "SUM(A1:A10)").
   # @param cached_value [Object, nil] Optional cached result. If nil, Excel will calculate on open.
   # @return [Elements::Formula]
+  # @api public
   # : (String expression, ?cached_value: untyped?) -> Elements::Formula
   def self.formula(expression, cached_value: nil)
     Elements::Formula.new(
@@ -281,6 +308,7 @@ module Xlsxrb
   #
   # @param source [String, IO] File path or IO object.
   # @return [Elements::Workbook] The parsed workbook.
+  # @api public
   # : (String | IO source) -> Elements::Workbook
   def self.read(source)
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
@@ -309,6 +337,7 @@ module Xlsxrb
   # @param target [String, IO] File path or IO object.
   # @param workbook [Elements::Workbook] The workbook to write.
   # @return [void]
+  # @api public
   # : (String | IO target, Elements::Workbook workbook) -> void
   def self.write(target, workbook)
     raise Error, "target is required" if target.nil?
@@ -380,6 +409,7 @@ module Xlsxrb
   # @yieldparam workbook [Elements::Workbook] The parsed workbook.
   # @yieldreturn [Elements::Workbook] The modified workbook.
   # @return [void]
+  # @api public
   # : (String | IO source, ?(String | IO)? target) ?{ (Elements::Workbook) -> Elements::Workbook } -> void
   def self.modify(source, target = nil)
     raise Error, "source is required" if source.nil?
@@ -422,6 +452,7 @@ module Xlsxrb
   # @yieldparam sheet [StreamSheet] The streaming sheet object.
   # @return [Enumerator] If no block is given.
   # @return [void]
+  # @api public
   # : (String | IO source) ?{ (StreamSheet) -> void } -> (Enumerator[StreamSheet, void] | void)
   def self.foreach(source)
     return enum_for(:foreach, source) unless block_given?
@@ -452,6 +483,7 @@ module Xlsxrb
   # @yield [stream_writer]
   # @yieldparam stream_writer [StreamWriter]
   # @return [void]
+  # @api public
   # : (String | IO target, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> void
   def self.generate(target, strict_excel_mode: true)
     raise Error, "target is required" if target.nil?
@@ -474,6 +506,7 @@ module Xlsxrb
   # @yield [builder]
   # @yieldparam builder [WorkbookBuilder]
   # @return [Elements::Workbook]
+  # @api public
   # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
   def self.build(strict_excel_mode: true)
     raise Error, "block is required" unless block_given?
@@ -509,6 +542,7 @@ module Xlsxrb
     # @param name [Symbol] The property name (e.g. :update_links).
     # @param value [String, Integer, Boolean] The property value.
     # @return [void]
+    # @api public
     # : (untyped name, untyped value) -> untyped
     def workbook_property(name, value)
       @workbook_properties[name] = value
@@ -521,6 +555,7 @@ module Xlsxrb
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [WorksheetBuilder]
     # @return [void]
+    # @api public
     # : (?untyped? name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
     def sheet(name = nil, **opts)
       name ||= "Sheet#{@sheets.size + 1}"
@@ -545,6 +580,7 @@ module Xlsxrb
     # @param sheet [String, nil] Local sheet name.
     # @param hidden [Boolean] Whether the defined name is hidden.
     # @return [void]
+    # @api public
     # : (untyped name, untyped value, ?sheet: untyped?, ?hidden: bool) -> untyped
     def defined_name(name, value, sheet: nil, hidden: false)
       entry = { name: name, value: value, hidden: hidden }
@@ -557,6 +593,7 @@ module Xlsxrb
     # @param range [String] The range string (e.g. "A1:B10").
     # @param sheet [String, nil] The sheet name.
     # @return [void]
+    # @api public
     # : (untyped range, ?sheet: untyped?) -> untyped
     def print_area(range, sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
@@ -571,6 +608,7 @@ module Xlsxrb
     # @param cols [String, nil] Columns to repeat (e.g. "A:B").
     # @param sheet [String, nil] The sheet name.
     # @return [void]
+    # @api public
     # : (?rows: untyped?, ?cols: untyped?, ?sheet: untyped?) -> untyped
     def print_titles(rows: nil, cols: nil, sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
@@ -586,6 +624,7 @@ module Xlsxrb
     #
     # @param opts [Hash] Protection options.
     # @return [void]
+    # @api public
     # : (**untyped opts) -> untyped
     def protect_workbook(**opts)
       @workbook_protection = opts
@@ -596,6 +635,7 @@ module Xlsxrb
     # @param name [Symbol] The property name.
     # @param value [String, Integer, Time] The property value.
     # @return [void]
+    # @api public
     # : (untyped name, untyped value) -> untyped
     def core_property(name, value)
       @core_properties[name] = value
@@ -606,6 +646,7 @@ module Xlsxrb
     # @param name [Symbol] The property name.
     # @param value [String, Integer, Time] The property value.
     # @return [void]
+    # @api public
     # : (untyped name, untyped value) -> untyped
     def app_property(name, value)
       @app_properties[name] = value
@@ -616,6 +657,7 @@ module Xlsxrb
     # @param core [Hash, nil] Core properties.
     # @param app [Hash, nil] App properties.
     # @return [void]
+    # @api public
     # : (?core: untyped?, ?app: untyped?) -> untyped
     def properties(core: nil, app: nil)
       core&.each { |k, v| core_property(k, v) }
@@ -628,11 +670,13 @@ module Xlsxrb
     # @param value [String, Integer, Float, Boolean, Time] The property value.
     # @param type [Symbol] The type of property (:string, :number, :bool, :date).
     # @return [void]
+    # @api public
     # : (untyped name, untyped value, ?type: ::Symbol) -> untyped
     def custom_property(name, value, type: :string)
       @custom_properties << { name: name, value: value, type: type }
     end
 
+    # @api public
     # : () -> untyped
     def build
       raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @strict_excel_mode && @sheets.empty?
@@ -801,6 +845,7 @@ module Xlsxrb
     # @yield [style_builder]
     # @yieldparam style_builder [StyleBuilder]
     # @return [StyleBuilder]
+    # @api public
     # : (untyped name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
     def style(name, **opts)
       style_builder = StyleBuilder.new(name)
@@ -820,6 +865,7 @@ module Xlsxrb
     # @param outline_level [Integer, nil] The outline level.
     # @note Excel's column limit is 16,384, row limit is 1,048,576, string max length is 32,767.
     # @return [void]
+    # @api public
     # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: String | Hash[untyped, untyped] | Array[String | Hash[untyped, untyped] | nil] | nil, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
@@ -962,6 +1008,7 @@ module Xlsxrb
     # @param outline_level [Integer, nil] The outline level.
     # @note Excel's column width max is 255.
     # @return [void]
+    # @api public
     # : (Integer | String | Range[untyped] | Array[untyped] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
@@ -990,6 +1037,7 @@ module Xlsxrb
     # @yield [builder]
     # @yieldparam builder [ChartBuilder]
     # @return [void]
+    # @api public
     # : (**untyped options) ?{ (untyped) -> untyped } -> untyped
     def chart(**options)
       if block_given?
@@ -1010,6 +1058,7 @@ module Xlsxrb
     # @param tooltip [String, nil] The tooltip.
     # @param location [String, nil] The internal location reference.
     # @return [void]
+    # @api public
     # : (untyped cell, ?untyped? url, ?display: untyped?, ?tooltip: untyped?, ?location: untyped?) -> untyped
     def hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
       link = { cell: cell }
@@ -1026,6 +1075,7 @@ module Xlsxrb
     #
     # @param range [String] The filter range.
     # @return [void]
+    # @api public
     # : (untyped range) -> untyped
     def auto_filter(range)
       @auto_filter = range
@@ -1036,6 +1086,7 @@ module Xlsxrb
     # @param col_id [Integer] 0-based column index within the filter range.
     # @param filter [Hash] The filter options.
     # @return [void]
+    # @api public
     # : (untyped col_id, untyped filter) -> untyped
     def filter_column(col_id, filter)
       @filter_columns[col_id] = filter
@@ -1047,6 +1098,7 @@ module Xlsxrb
     # @param sort_conditions [Array<Hash>] Sort conditions.
     # @param opts [Hash] Additional options.
     # @return [void]
+    # @api public
     # : (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
     def sort_state(ref, sort_conditions, **opts)
       @sort_state = { ref: ref, sort_conditions: sort_conditions }.merge(opts)
@@ -1059,6 +1111,7 @@ module Xlsxrb
     # @param sqref [String] The cell range (e.g. "A1:A100").
     # @param opts [Hash] Data validation options.
     # @return [void]
+    # @api public
     # : (untyped sqref, **untyped opts) -> untyped
     def validate_data(sqref, **opts)
       @data_validations << opts.merge(sqref: sqref)
@@ -1071,6 +1124,7 @@ module Xlsxrb
     # @param sqref [String] The cell range.
     # @param opts [Hash] Conditional format options.
     # @return [void]
+    # @api public
     # : (untyped sqref, **untyped opts) -> untyped
     def conditional_format(sqref, **opts)
       @conditional_formats << opts.merge(sqref: sqref)
@@ -1087,6 +1141,7 @@ module Xlsxrb
     # @param style [String, nil] The table style.
     # @param opts [Hash] Additional options.
     # @return [void]
+    # @api public
     # : (untyped ref, columns: untyped, ?name: untyped?, ?display_name: untyped?, ?style: untyped?, **untyped opts) -> untyped
     def table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
       tbl = { ref: ref, columns: columns }
@@ -1110,6 +1165,7 @@ module Xlsxrb
     # @param field_names [Array<String>, nil] Override field names.
     # @param items [Array, nil] Items configuration.
     # @return [void]
+    # @api public
     # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: ::String, ?name: untyped?, ?field_names: untyped?, ?items: untyped?) -> untyped
     def pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
       @pivot_tables ||= []
@@ -1129,6 +1185,7 @@ module Xlsxrb
     # @param text [String] The comment text.
     # @param author [String] The author name.
     # @return [void]
+    # @api public
     # : (untyped cell, untyped text, ?author: ::String) -> untyped
     def comment(cell, text, author: "Author")
       @comments << { cell: cell, text: text, author: author }
@@ -1142,6 +1199,7 @@ module Xlsxrb
     # @param type [String, nil] "line" (default), "column", or "stacked".
     # @param opts [Hash] Additional options.
     # @return [void]
+    # @api public
     # : (sparklines: untyped, ?type: untyped?, **untyped opts) -> untyped
     def sparkline_group(sparklines:, type: nil, **opts)
       group = { sparklines: sparklines }
@@ -1161,6 +1219,7 @@ module Xlsxrb
     # @param row_start [Integer, nil] Starting row index.
     # @param row_end [Integer, nil] Ending row index.
     # @return [void]
+    # @api public
     # : (?untyped? range, ?row: untyped?, ?col_start: untyped?, ?col_end: untyped?, ?row_start: untyped?, ?row_end: untyped?) -> untyped
     def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       if range
@@ -1186,6 +1245,7 @@ module Xlsxrb
     # @param row [Integer] The row index to freeze at (0-based).
     # @param col [Integer, String] The column index to freeze at (0-based or letter).
     # @return [void]
+    # @api public
     # : (?row: ::Integer, ?col: ::Integer) -> untyped
     def freeze_pane(row: 0, col: 0)
       col = Elements::Cell.column_index(col)
@@ -1198,6 +1258,7 @@ module Xlsxrb
     # @param y_split [Integer] Y coordinate.
     # @param top_left_cell [String, nil] Top left cell reference.
     # @return [void]
+    # @api public
     # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: untyped?) -> untyped
     def split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
       @split_pane = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell }
@@ -1209,6 +1270,7 @@ module Xlsxrb
     # @param sqref [String, nil] The selected range.
     # @param pane [String, nil] The pane to select in.
     # @return [void]
+    # @api public
     # : (untyped active_cell, ?sqref: untyped?, ?pane: untyped?) -> untyped
     def select_cell(active_cell, sqref: nil, pane: nil)
       @selection = { active_cell: active_cell, sqref: sqref || active_cell }
@@ -1226,6 +1288,7 @@ module Xlsxrb
     # @param header [Float, nil] Header margin.
     # @param footer [Float, nil] Footer margin.
     # @return [void]
+    # @api public
     # : (?left: untyped?, ?right: untyped?, ?top: untyped?, ?bottom: untyped?, ?header: untyped?, ?footer: untyped?) -> untyped
     def page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
       @page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
@@ -1235,6 +1298,7 @@ module Xlsxrb
     #
     # @param opts [Hash] Page setup options.
     # @return [void]
+    # @api public
     # : (**untyped opts) -> untyped
     def page_setup(**opts)
       @page_setup.merge!(opts)
@@ -1244,6 +1308,7 @@ module Xlsxrb
     #
     # @param opts [Hash] Header and footer options.
     # @return [void]
+    # @api public
     # : (**untyped opts) -> untyped
     def header_footer(**opts)
       @header_footer.merge!(opts)
@@ -1254,6 +1319,7 @@ module Xlsxrb
     # @param name [Symbol] Option name.
     # @param value [Object] Option value.
     # @return [void]
+    # @api public
     # : (untyped name, untyped value) -> untyped
     def print_options(name, value)
       @print_options[name] = value
@@ -1265,6 +1331,7 @@ module Xlsxrb
     #
     # @param opts [Hash] Sheet protection options.
     # @return [void]
+    # @api public
     # : (**untyped opts) -> untyped
     def protect_sheet(**opts)
       normalized = opts.dup
@@ -1283,6 +1350,7 @@ module Xlsxrb
     # --- Images ---
 
     # Insert an image from raw file data.
+    # @api public
     # : (untyped file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> untyped
     def image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
       img = { file_data: file_data, ext: ext, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
@@ -1293,6 +1361,7 @@ module Xlsxrb
     # --- Shapes ---
 
     # Add a shape to the sheet.
+    # @api public
     # : (?preset: ::String, ?text: untyped?, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> untyped
     def shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
       shape = { preset: preset, text: text, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
@@ -1304,12 +1373,14 @@ module Xlsxrb
     # --- Sheet Properties ---
 
     # Set a sheet-level property (e.g. :tab_color).
+    # @api public
     # : (untyped name, untyped value) -> untyped
     def sheet_properties(name, value)
       @sheet_properties[name] = value
     end
 
     # Set a sheet view property (e.g. :show_grid_lines, :zoom_scale).
+    # @api public
     # : (untyped name, untyped value) -> untyped
     def sheet_view(name, value)
       @sheet_view[name] = value
@@ -1318,18 +1389,21 @@ module Xlsxrb
     # --- Row / Column Breaks ---
 
     # Add a page break before a row.
+    # @api public
     # : (untyped row_num) -> untyped
     def page_break_row(row_num)
       @row_breaks << row_num
     end
 
     # Add a page break before a column.
+    # @api public
     # : (untyped col_index) -> untyped
     def page_break_col(col_index)
       col_index = Elements::Cell.column_index(col_index)
       @col_breaks << col_index
     end
 
+    # @api public
     # : () -> untyped
     def build
       facade_meta = {}
@@ -2596,6 +2670,7 @@ module Xlsxrb
   end
 
   # Builds a raw cell hash from a value for streaming writes.
+  # @api public
   # : (untyped row_index, untyped col_index, untyped value, untyped sst, untyped sst_index) -> untyped
   def self.build_raw_cell_from_value(row_index, col_index, value, sst, sst_index)
     ref = "#{Elements::Cell.column_letter(col_index)}#{row_index + 1}"
