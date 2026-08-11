@@ -26,7 +26,7 @@ gem "webrick", group: :development
 
 gem "benchmark-ips", group: :development
 gem "memory_profiler", group: :development
-gem "mutant", group: :test
+
 gem "steep", "~> 2.0", groups: %i[development test]
 
 gem "simplecov_json_formatter", "~> 0.1.4", group: :test

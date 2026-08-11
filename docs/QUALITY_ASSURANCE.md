@@ -15,6 +15,7 @@ Below is an overview of the inspection mechanisms, when they run, the quality at
 | **Unit & Contract Tests** | `rake test:unit test:contract` | ⭕ | ⭕ | - | Accuracy / Functional Reqs | Dynamic Analysis (Assertions) | Method specification violations, unexpected return values, edge-case failures. |
 | **Runtime Type Validation (RBS::Test)** | `rake test:rbs` | △ (Opt-in) | ⭕ | - | Type Safety (Dynamic) | Dynamic Analysis (Runtime Hooks) | Type errors slipping past static checks, divergence between RBS docs and implementation. |
 | **Property-Based Testing (PBT)** | Included in `rake test:unit` | ⭕ | ⭕ | - | Robustness / Exhaustiveness | Automated Random Generation | Crashes caused by "unexpected inputs" (e.g., empty strings, huge numbers, special symbols like `=`). |
+
 | **Security Validation (DoS Protection)** | Included in `rake test:unit` | ⭕ | ⭕ | - | Availability / Safety | Dynamic Analysis (Malicious Input) | Memory/disk exhaustion from ZIP bombs, infinite parsing loops from malformed files. |
 | **Concurrency Validation (Thread/Ractor)** | Included in `rake test:unit` | ⭕ | ⭕ | - | Thread Safety | Dynamic Analysis (Parallel Execution) | Global variable pollution, data mixing during concurrent request processing. |
 | **XSD Schema Validation** | Included in `rake test:unit` | ⭕ | ⭕ | - | Compatibility / Compliance | Structural Validation | "We found a problem with some content in it" errors when opening in Excel. |

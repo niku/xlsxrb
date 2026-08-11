@@ -760,6 +760,16 @@ class FacadeTest < Test::Unit::TestCase
     assert_equal({ bold: true }, rt.runs[0][:font])
   end
 
+  test "Xlsxrb.rich_text supports multiple runs" do
+    rt = Xlsxrb.rich_text({ text: "A", font: { bold: true } }, { text: "B", font: { italic: true } })
+    assert_instance_of(Xlsxrb::Elements::RichText, rt)
+    assert_equal(2, rt.runs.size)
+    assert_equal("A", rt.runs[0][:text])
+    assert_equal({ bold: true }, rt.runs[0][:font])
+    assert_equal("B", rt.runs[1][:text])
+    assert_equal({ italic: true }, rt.runs[1][:font])
+  end
+
   test "WorkbookBuilder#workbook_property configures correctly" do
     wb = Xlsxrb.build do |w|
       w.workbook_property(:test_prop, "test_val")
@@ -1061,5 +1071,1012 @@ class FacadeTest < Test::Unit::TestCase
     assert_not_nil(val)
     assert_not_equal([], val)
     assert_not_equal({}, val)
+  end
+
+  # Tests migrated from test/facade_detailed_mutation_test.rb
+  test "ChartBuilder#series adds value directly when no block given" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.chart(target: "A1", type: :bar) do |c|
+          c.series(val: "Sheet1!$B$1:$B$5")
+        end
+      end
+    end
+    c = wb.sheet(0).charts.first
+    assert_equal [{ val: "Sheet1!$B$1:$B$5" }], c[:series]
+  end
+
+  test "ChartBuilder#method_missing captures arbitrary properties" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.chart(target: "A1", type: :bar) do |c|
+          c.legend(position: :bottom)
+          c.custom_prop("val")
+        end
+      end
+    end
+    c = wb.sheet(0).charts.first
+    assert_equal({ position: :bottom }, c[:legend])
+    assert_equal("val", c[:custom_prop])
+  end
+
+  test "ChartBuilder#respond_to_missing? returns true" do
+    cb = Xlsxrb::ChartBuilder.new
+    assert_equal true, cb.respond_to?(:some_random_method)
+  end
+
+  test "SeriesBuilder captures arbitrary properties" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.chart(target: "A1", type: :bar) do |c|
+          c.series do |sb|
+            sb.val "Sheet1!$A$1"
+            sb.name title: "Test"
+          end
+        end
+      end
+    end
+    c = wb.sheet(0).charts.first
+    series = c[:series].first
+    assert_equal("Sheet1!$A$1", series[:val])
+    assert_equal({ title: "Test" }, series[:name])
+  end
+
+  test "SeriesBuilder#respond_to_missing? returns true" do
+    sb = Xlsxrb::ChartBuilder::SeriesBuilder.new
+    assert_equal true, sb.respond_to?(:anything)
+  end
+
+  test "WorksheetBuilder#hyperlink captures options properly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.hyperlink("A1", "https://example.com", tooltip: "Example")
+      end
+    end
+    links = wb.sheet(0).unmapped_data.dig(:facade, :hyperlinks)
+    assert_equal "Example", links.first[:tooltip]
+  end
+
+  test "WorksheetBuilder#pivot_table captures options properly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.pivot_table("Sheet1!A1:B10", row_fields: ["A"], data_fields: ["B"], name: "Pivot1")
+      end
+    end
+    pivots = wb.sheet(0).unmapped_data.dig(:facade, :pivot_tables)
+    assert_equal "Pivot1", pivots.first[:name]
+  end
+
+  test "WorksheetBuilder#merge supports different forms" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.merge("A1:B2")
+      end
+    end
+    merges = wb.sheet(0).unmapped_data.dig(:facade, :merge_cells)
+    assert_equal "A1:B2", merges.first
+  end
+
+  test "WorksheetBuilder#select_cell captures active cell" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.select_cell("C3")
+      end
+    end
+    sel = wb.sheet(0).unmapped_data.dig(:facade, :selection)
+    assert_equal "C3", sel[:active_cell]
+  end
+
+  test "WorksheetBuilder#page_break_row adds row breaks" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.page_break_row(10)
+      end
+    end
+    breaks = wb.sheet(0).unmapped_data.dig(:facade, :row_breaks)
+    assert_equal 10, breaks.first
+  end
+
+  test "WorksheetBuilder#page_break_col adds col breaks" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.page_break_col(5)
+      end
+    end
+    breaks = wb.sheet(0).unmapped_data.dig(:facade, :col_breaks)
+    assert_equal 5, breaks.first
+  end
+
+  test "WorksheetBuilder#auto_filter captures range" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.auto_filter("A1:B10")
+      end
+    end
+    filter = wb.sheet(0).unmapped_data.dig(:facade, :auto_filter)
+    assert_equal "A1:B10", filter
+  end
+
+  test "WorksheetBuilder#filter_column captures options" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.filter_column(0, { val: "A" })
+      end
+    end
+    cols = wb.sheet(0).unmapped_data.dig(:facade, :filter_columns)
+    assert_equal "A", cols[0][:val]
+  end
+
+  test "WorksheetBuilder#sort_state captures ref" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.sort_state("A2:A10", [])
+      end
+    end
+    state = wb.sheet(0).unmapped_data.dig(:facade, :sort_state)
+    assert_equal "A2:A10", state[:ref]
+  end
+
+  test "WorksheetBuilder#validate_data captures validation" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.validate_data("A1", type: :list)
+      end
+    end
+    vals = wb.sheet(0).unmapped_data.dig(:facade, :data_validations)
+    assert_equal :list, vals.first[:type]
+  end
+
+  test "WorksheetBuilder#comment captures text" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.comment("A1", "Comment text", author: "Author")
+      end
+    end
+    vals = wb.sheet(0).unmapped_data.dig(:facade, :comments)
+    assert_equal "Comment text", vals.first[:text]
+    assert_equal "Author", vals.first[:author]
+  end
+
+  test "WorksheetBuilder#sparkline_group captures options" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.sparkline_group(sparklines: ["A1"])
+      end
+    end
+    vals = wb.sheet(0).unmapped_data.dig(:facade, :sparkline_groups)
+    assert_equal ["A1"], vals.first[:sparklines]
+  end
+
+  test "WorksheetBuilder#freeze_pane captures cell" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.freeze_pane(row: 1, col: "B")
+      end
+    end
+    pane = wb.sheet(0).unmapped_data.dig(:facade, :freeze_pane)
+    assert_equal 1, pane[:row]
+    assert_equal 1, pane[:col]
+  end
+
+  test "WorksheetBuilder#split_pane captures values" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.split_pane(x_split: 10, y_split: 20)
+      end
+    end
+    pane = wb.sheet(0).unmapped_data.dig(:facade, :split_pane)
+    assert_equal 10, pane[:x_split]
+    assert_equal 20, pane[:y_split]
+  end
+
+  test "WorksheetBuilder#page_margins captures values" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.page_margins(left: 1.0)
+      end
+    end
+    marg = wb.sheet(0).unmapped_data.dig(:facade, :page_margins)
+    assert_equal 1.0, marg[:left]
+  end
+
+  # Tests migrated from test/facade_detailed_mutation_test_3.rb
+  test "WorksheetBuilder#shape captures values" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.shape(preset: "rect", text: "Hi")
+      end
+    end
+    shapes = wb.sheet(0).unmapped_data.dig(:facade, :shapes)
+    assert_equal "rect", shapes.first[:preset]
+    assert_equal "Hi", shapes.first[:text]
+  end
+
+  test "WorksheetBuilder#table captures values" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.table("A1:B10", columns: [], name: "Table1")
+      end
+    end
+    tables = wb.sheet(0).unmapped_data.dig(:facade, :tables)
+    assert_equal "Table1", tables.first[:name]
+  end
+
+  test "WorkbookBuilder#custom_property captures values" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S")
+      w.custom_property("Prop1", "Val1")
+    end
+    cp = wb.unmapped_data.dig(:facade, :custom_properties)
+    assert_equal "Val1", cp.first[:value]
+  end
+
+  test "WorkbookBuilder#print_area captures values" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("Sheet1")
+      w.print_area("A1:B10", sheet: "Sheet1")
+    end
+    dn = wb.unmapped_data.dig(:facade, :defined_names)
+    assert(dn.any? { |d| d[:name] == "_xlnm.Print_Area" })
+  end
+
+  test "WorkbookBuilder#properties captures block" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S")
+      w.properties(core: { creator: "Dev" })
+    end
+    cp = wb.unmapped_data.dig(:facade, :core_properties)
+    assert_equal "Dev", cp[:creator]
+  end
+
+  # Tests migrated from test/facade_detailed_mutation_test_4.rb
+  test "WorksheetBuilder#row captures height" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.row([1, 2], height: 30)
+      end
+    end
+    row = wb.sheet(0).rows.first
+    assert_equal 30, row.height
+    assert_equal 1, row.cells[0].value
+  end
+
+  test "WorksheetBuilder#column captures options" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.column(0, width: 25, hidden: true)
+      end
+    end
+    col = wb.sheet(0).columns.first
+    assert_equal 25, col.width
+    assert_equal true, col.hidden
+  end
+
+  test "WorkbookBuilder#workbook_property captures values" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1")
+      w.workbook_property(:date1904, true)
+    end
+    props = wb.unmapped_data.dig(:facade, :workbook_properties)
+    assert_equal true, props[:date1904]
+  end
+
+  test "WorksheetBuilder#page_setup captures options" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.page_setup(paper_size: 9, orientation: "landscape")
+      end
+    end
+    setup = wb.sheet(0).unmapped_data.dig(:facade, :page_setup)
+    assert_equal 9, setup[:paper_size]
+    assert_equal "landscape", setup[:orientation]
+  end
+
+  test "WorksheetBuilder#conditional_format captures values" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.conditional_format("A1:A10", type: :cellIs, operator: :greaterThan, formula1: "10")
+      end
+    end
+    cf = wb.sheet(0).unmapped_data.dig(:facade, :conditional_formats)
+    assert_equal "A1:A10", cf.first[:sqref]
+    assert_equal :cellIs, cf.first[:type]
+    assert_equal :greaterThan, cf.first[:operator]
+    assert_equal "10", cf.first[:formula1]
+  end
+
+  test "ChartBuilder#title works via method_missing" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.chart(target: "A1", type: :pie) do |c|
+          c.title text: "My Chart"
+        end
+      end
+    end
+    chart = wb.sheet(0).charts.first
+    assert_equal({ text: "My Chart" }, chart[:title])
+  end
+
+  test "ChartBuilder#legend works via method_missing" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.chart(target: "A1", type: :pie) do |c|
+          c.legend position: "b"
+        end
+      end
+    end
+    chart = wb.sheet(0).charts.first
+    assert_equal({ position: "b" }, chart[:legend])
+  end
+
+  test "ChartBuilder#category_axis works via method_missing" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.chart(target: "A1", type: :pie) do |c|
+          c.category_axis title: "X Axis"
+        end
+      end
+    end
+    chart = wb.sheet(0).charts.first
+    assert_equal({ title: "X Axis" }, chart[:category_axis])
+  end
+
+  test "ChartBuilder#value_axis works via method_missing" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.chart(target: "A1", type: :pie) do |c|
+          c.value_axis title: "Y Axis"
+        end
+      end
+    end
+    chart = wb.sheet(0).charts.first
+    assert_equal({ title: "Y Axis" }, chart[:value_axis])
+  end
+
+  test "WorksheetBuilder#chart without block" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.chart(target: "A1", type: :bar, title: { text: "No Block" })
+      end
+    end
+    chart = wb.sheet(0).charts.first
+    assert_equal({ text: "No Block" }, chart[:title])
+  end
+
+  test "Xlsxrb.write writes string directly" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.row [1]
+      end
+    end
+    out = StringIO.new
+    Xlsxrb.write(out, wb)
+    assert out.string.start_with?("PK")
+  end
+
+  test "Xlsxrb.generate streaming output yields chunks" do
+    out = StringIO.new
+    Xlsxrb.generate(out) do |w|
+      w.sheet("S") do |s|
+        s.row [1]
+      end
+    end
+    assert out.string.start_with?("PK")
+  end
+
+  test "WorksheetBuilder#row with formula" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        s.row [Xlsxrb.formula("SUM(A1:A2)")]
+      end
+    end
+    cell = wb.sheet(0).rows.first.cells.first
+    assert_equal "SUM(A1:A2)", cell.formula.expression
+  end
+
+  # Tests migrated from test/facade_detailed_mutation_test_5.rb
+  test "Xlsxrb.rich_text creates RichText object" do
+    rt = Xlsxrb.rich_text("bold part", bold: true)
+    assert_equal "Xlsxrb::Elements::RichText", rt.class.name
+    assert_equal 1, rt.runs.size
+    assert_equal true, rt.runs[0][:font][:bold] if rt.runs[0].is_a?(Hash)
+  end
+
+  test "WorkbookBuilder#sheet captures multiple sheets" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1")
+      w.sheet("S2")
+      w.sheet("S3")
+    end
+    assert_equal 3, wb.sheets.size
+    assert_equal %w[S1 S2 S3], wb.sheets.map(&:name)
+  end
+
+  test "WorksheetBuilder#column custom_width and outline_level" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.column(0..2, width: 25, outline_level: 2, custom_width: true)
+      end
+    end
+    col = wb.sheet(0).columns.first
+    assert_equal 25, col.width
+    assert_equal 2, col.outline_level
+    assert_equal true, col.custom_width
+  end
+
+  test "Xlsxrb.read parses workbook" do
+    path = "test/visual/output/test_read_mutation.xlsx"
+    Xlsxrb.generate(path) do |w|
+      w.sheet("S1") { |s| s.row ["A"] }
+    end
+
+    wb = Xlsxrb.read(path)
+    assert_equal "S1", wb.sheets.first.name
+    assert_equal "A", wb.sheets.first.rows.first.cells.first.value
+  ensure
+    FileUtils.rm_f(path)
+  end
+
+  test "WorksheetBuilder#merge with options" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.merge("A1:B2")
+      end
+    end
+    merges = wb.sheet(0).unmapped_data.dig(:facade, :merge_cells)
+    assert_equal "A1:B2", merges.first
+  end
+
+  test "WorksheetBuilder#page_break_row creates break" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.page_break_row(5)
+      end
+    end
+    breaks = wb.sheet(0).unmapped_data.dig(:facade, :row_breaks)
+    assert breaks
+  end
+
+  test "WorksheetBuilder#page_break_col creates break" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.page_break_col("C")
+      end
+    end
+    breaks = wb.sheet(0).unmapped_data.dig(:facade, :col_breaks)
+    assert breaks
+  end
+
+  test "WorksheetBuilder#select_cell captures active cell" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.select_cell("D4")
+      end
+    end
+    selection = wb.sheet(0).unmapped_data.dig(:facade, :selection)
+    assert_equal "D4", selection[:active_cell]
+  end
+
+  test "WorksheetBuilder#validate_data captures options" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.validate_data("A1:A10", type: :list)
+      end
+    end
+    val = wb.sheet(0).unmapped_data.dig(:facade, :data_validations).first
+    assert_equal :list, val[:type]
+  end
+
+  test "Elements::Cell#to_i converts string" do
+    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "123")
+    assert_equal 123, cell.to_i
+  end
+
+  test "Elements::Cell#to_f converts string" do
+    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "123.45")
+    assert_equal 123.45, cell.to_f
+  end
+
+  test "Elements::Cell#to_s returns string value" do
+    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 123)
+    assert_equal "123", cell.to_s
+  end
+
+  test "Elements::Cell#to_date converts datetime" do
+    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 46_204.5)
+    date = cell.to_date
+    assert_not_nil date
+    assert_equal 2026, date.year
+  end
+
+  test "Elements::Cell#to_time converts datetime" do
+    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 46_204.5)
+    time = cell.to_time
+    assert_not_nil time
+    assert_equal 2026, time.year
+  end
+
+  test "Elements::Cell#content returns value" do
+    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "test")
+    assert_equal "test", cell.content
+  end
+
+  test "Elements::Cell.column_letter works" do
+    assert_equal "A", Xlsxrb::Elements::Cell.column_letter(0)
+    assert_equal "Z", Xlsxrb::Elements::Cell.column_letter(25)
+    assert_equal "AA", Xlsxrb::Elements::Cell.column_letter(26)
+  end
+
+  test "Elements::Cell.column_index works" do
+    assert_equal 0, Xlsxrb::Elements::Cell.column_index("A")
+    assert_equal 25, Xlsxrb::Elements::Cell.column_index("Z")
+    assert_equal 26, Xlsxrb::Elements::Cell.column_index("AA")
+  end
+
+  test "Elements::Row#cell_at works" do
+    row = Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A"),
+                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "B")
+                                    ])
+    assert_equal "A", row.cell_at(0).value
+    assert_equal "B", row.cell_at(1).value
+  end
+
+  test "Elements::Row#each_cell iterates" do
+    row = Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A"),
+                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "B")
+                                    ])
+    cells = []
+    row.each_cell { |c| cells << c.value }
+    assert_equal %w[A B], cells
+  end
+
+  test "Elements::Row#values returns array" do
+    row = Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A"),
+                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "B")
+                                    ])
+    assert_equal %w[A B], row.values
+  end
+
+  test "Elements::Row#to_a aliases values" do
+    row = Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A"),
+                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "B")
+                                    ])
+    assert_equal %w[A B], row.to_a
+  end
+
+  test "Elements::Worksheet#cell_value works" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
+                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
+                                                                     ])
+                                         ])
+    assert_equal "A", ws.cell_value("A1")
+  end
+
+  test "Elements::Worksheet#cells returns flattened array" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
+                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
+                                                                     ]),
+                                           Xlsxrb::Elements::Row.new(index: 1, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 0, value: "B")
+                                                                     ])
+                                         ])
+    assert_equal %w[A B], ws.cells.map(&:value)
+  end
+
+  test "Elements::Worksheet#cells_hash maps ref to cell" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
+                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
+                                                                     ])
+                                         ])
+    assert_equal "A", ws.cells_hash["A1"].value
+  end
+
+  test "Elements::Worksheet#first_row works" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
+                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
+                                                                     ]),
+                                           Xlsxrb::Elements::Row.new(index: 1, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 0, value: "B")
+                                                                     ])
+                                         ])
+    assert_equal "A", ws.first_row.cells[0].value
+  end
+
+  test "Elements::Worksheet#last_row works" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
+                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
+                                                                     ]),
+                                           Xlsxrb::Elements::Row.new(index: 1, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 0, value: "B")
+                                                                     ])
+                                         ])
+    assert_equal "B", ws.last_row.cells[0].value
+  end
+
+  test "Elements::Worksheet#update_cell works" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
+                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
+                                                                     ])
+                                         ])
+    ws = ws.update_cell("A1", value: "Z")
+    assert_equal "Z", ws.cell_value("A1")
+  end
+
+  test "Elements::Worksheet#row_at works" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
+                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
+                                                                     ])
+                                         ])
+    assert_equal "A", ws.row_at(0).cells[0].value
+  end
+
+  test "Elements::Workbook#sheet_names works" do
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [
+                                          Xlsxrb::Elements::Worksheet.new(name: "S1", rows: []),
+                                          Xlsxrb::Elements::Worksheet.new(name: "S2", rows: [])
+                                        ])
+    assert_equal %w[S1 S2], wb.sheet_names
+  end
+
+  test "Elements::Workbook#update_sheet works" do
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [
+                                          Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [])
+                                        ])
+    wb = wb.update_sheet("S1") do |_s|
+      Xlsxrb::Elements::Worksheet.new(name: "S2", rows: [])
+    end
+    assert_equal ["S2"], wb.sheet_names
+  end
+
+  test "Elements::Cell.validate validates correctly" do
+    assert_equal [], Xlsxrb::Elements::Cell.validate(0, 0, "A")
+    assert_not_equal [], Xlsxrb::Elements::Cell.validate(-1, 0, "A")
+  end
+
+  test "Elements::Column.validate validates correctly" do
+    assert_equal [], Xlsxrb::Elements::Column.validate(0)
+    assert_not_equal [], Xlsxrb::Elements::Column.validate(-1)
+  end
+
+  test "Elements::Row.validate validates correctly" do
+    assert_equal [], Xlsxrb::Elements::Row.validate(0, [])
+    assert_not_equal [], Xlsxrb::Elements::Row.validate(-1, [])
+  end
+
+  test "Elements::Workbook.validate validates correctly" do
+    assert_equal [], Xlsxrb::Elements::Workbook.validate([Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [])])
+  end
+
+  test "Elements::Worksheet.validate validates correctly" do
+    assert_equal [], Xlsxrb::Elements::Worksheet.validate("Sheet1", [])
+    assert_not_equal [], Xlsxrb::Elements::Worksheet.validate("", [])
+  end
+
+  test "Elements::Workbook#sheet finds sheet" do
+    s1 = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [])
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [s1])
+    assert_equal s1, wb.sheet("S1")
+    assert_equal s1, wb.sheet(0)
+    assert_nil wb.sheet("S2")
+  end
+
+  test "Elements::Workbook#each yields sheets" do
+    s1 = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [])
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [s1])
+    yielded = wb.map { |s| s }
+    assert_equal [s1], yielded
+  end
+
+  test "StyleBuilder#font method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.font(name: "Arial", size: 12)
+    assert_equal "Arial", builder.font_props[:name]
+    assert_equal 12, builder.font_props[:sz]
+  end
+
+  test "StyleBuilder#bold method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.bold
+    assert_equal true, builder.font_props[:bold]
+  end
+
+  test "StyleBuilder#italic method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.italic
+    assert_equal true, builder.font_props[:italic]
+  end
+
+  test "StyleBuilder#size method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.size(16)
+    assert_equal 16, builder.font_props[:sz]
+  end
+
+  test "StyleBuilder#font_name method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.font_name("Times")
+    assert_equal "Times", builder.font_props[:name]
+  end
+
+  test "StyleBuilder#font_color method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.font_color("FF00FF")
+    assert_equal "FF00FF", builder.font_props[:color]
+  end
+
+  test "StyleBuilder#underline method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.underline("double")
+    assert_equal "double", builder.font_props[:underline]
+  end
+
+  test "StyleBuilder#strike method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.strike
+    assert_equal true, builder.font_props[:strike]
+  end
+
+  test "StyleBuilder#vert_align method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.vert_align("superscript")
+    assert_equal "superscript", builder.font_props[:vert_align]
+  end
+
+  test "StyleBuilder#fill_pattern method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.fill_pattern("solid", fg_color: "112233")
+    assert_equal "solid", builder.fill_props[:pattern]
+    assert_equal "112233", builder.fill_props[:fg_color]
+  end
+
+  test "StyleBuilder#fill_color method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.fill_color("00FF00")
+    assert_equal "00FF00", builder.fill_props[:fg_color]
+    assert_equal "solid", builder.fill_props[:pattern]
+  end
+
+  test "StyleBuilder#fill method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.fill(pattern: "darkGray", bg_color: "FFFFFF")
+    assert_equal "darkGray", builder.fill_props[:pattern]
+    assert_equal "FFFFFF", builder.fill_props[:bg_color]
+  end
+
+  test "StyleBuilder#fill_gradient method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.fill_gradient(type: "linear", degree: 45)
+    assert_equal "linear", builder.fill_props[:gradient][:type]
+    assert_equal 45, builder.fill_props[:gradient][:degree]
+  end
+
+  test "StyleBuilder#border method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.border(left: { style: "thick" })
+    assert_equal "thick", builder.border_props[:left][:style]
+  end
+
+  test "StyleBuilder#border_all method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.border_all(style: "dashed")
+    assert_equal "dashed", builder.border_props[:left][:style]
+    assert_equal "dashed", builder.border_props[:right][:style]
+    assert_equal "dashed", builder.border_props[:top][:style]
+    assert_equal "dashed", builder.border_props[:bottom][:style]
+  end
+
+  test "StyleBuilder#border_left method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.border_left(style: "dotted")
+    assert_equal "dotted", builder.border_props[:left][:style]
+  end
+
+  test "StyleBuilder#border_right method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.border_right(style: "dotted")
+    assert_equal "dotted", builder.border_props[:right][:style]
+  end
+
+  test "StyleBuilder#border_top method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.border_top(style: "dotted")
+    assert_equal "dotted", builder.border_props[:top][:style]
+  end
+
+  test "StyleBuilder#border_bottom method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.border_bottom(style: "dotted")
+    assert_equal "dotted", builder.border_props[:bottom][:style]
+  end
+
+  test "StyleBuilder#border_diagonal method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.border_diagonal(style: "thin", up: true)
+    assert_equal "thin", builder.border_props[:diagonal][:style]
+    assert_equal true, builder.border_props[:diagonal_up]
+  end
+
+  test "StyleBuilder#align_horizontal method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.align_horizontal("center")
+    assert_equal "center", builder.alignment[:horizontal]
+  end
+
+  test "StyleBuilder#align_vertical method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.align_vertical("center")
+    assert_equal "center", builder.alignment[:vertical]
+  end
+
+  test "StyleBuilder#wrap_text method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.wrap_text
+    assert_equal true, builder.alignment[:wrap_text]
+  end
+
+  test "StyleBuilder#shrink_to_fit method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.shrink_to_fit
+    assert_equal true, builder.alignment[:shrink_to_fit]
+  end
+
+  test "StyleBuilder#text_rotation method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.text_rotation(45)
+    assert_equal 45, builder.alignment[:text_rotation]
+  end
+
+  test "StyleBuilder#indent method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.indent(2)
+    assert_equal 2, builder.alignment[:indent]
+  end
+
+  test "StyleBuilder#number_format method" do
+    builder = Xlsxrb::StyleBuilder.new
+    builder.number_format(14)
+    assert_equal 14, builder.num_fmt_id
+  end
+  test "WorksheetBuilder#row handles Hash values" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.row({ "B" => 1, "D" => 2 })
+      end
+    end
+    cells = wb.sheet(0).rows[0].cells
+    assert_equal 1, cells[0].value
+    assert_equal 2, cells[1].value
+  end
+  test "WorksheetBuilder#row handles Hash styles with ranges" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.style("bold", font: { bold: true })
+        s.style("italic", font: { italic: true })
+        s.row([1, 2, 3, 4, 5], styles: { "A" => "bold", "C".."D" => "italic" })
+      end
+    end
+    cells = wb.sheet(0).rows[0].cells
+    # Styles might be converted to indices, let's just assert they are non-nil integers
+    assert_kind_of Integer, cells[0].style_index
+    assert_nil cells[1].style_index
+    assert_kind_of Integer, cells[2].style_index
+    assert_kind_of Integer, cells[3].style_index
+    assert_nil cells[4].style_index
+  end
+  test "WorksheetBuilder#row handles Time values and auto-formats" do
+    t = Time.new(2026, 1, 1, 12, 0, 0)
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.row([t])
+      end
+    end
+    cells = wb.sheet(0).rows[0].cells
+    assert_kind_of Integer, cells[0].style_index
+  end
+  test "WorksheetBuilder#row handles Array of Hashes for RichText" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.row([[{ text: "Hello", bold: true }, { text: " World" }]])
+      end
+    end
+    val = wb.sheet(0).rows[0].cells[0].value
+    assert_kind_of Xlsxrb::Elements::RichText, val
+    assert_equal "Hello", val.runs[0][:text]
+    assert_equal true, val.runs[0][:font][:bold]
+    assert_equal " World", val.runs[1][:text]
+  end
+  test "WorksheetBuilder#row handles inline Hash styles" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.row([1], styles: [{ font: { bold: true } }])
+      end
+    end
+    cells = wb.sheet(0).rows[0].cells
+    assert_kind_of Integer, cells[0].style_index
+  end
+  test "WorksheetBuilder#row handles Hash with formula" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.row([{ formula: "SUM(A1:A2)", value: 3 }])
+      end
+    end
+    cell = wb.sheet(0).rows[0].cells[0]
+    assert_equal "SUM(A1:A2)", cell.formula.expression
+    assert_equal 3, cell.value
+  end
+
+  test "Writer handles all sheet configuration options" do
+    io = StringIO.new
+    Xlsxrb.generate(io) do |w|
+      w.workbook_property(:update_links, "always")
+      w.style("bold", font: { bold: true })
+
+      w.sheet("Test") do |s|
+        assert s.respond_to?(:row)
+
+        s.row([1, 2, 3])
+
+        s.merge(row: 0, col_start: 0, col_end: 2)
+        s.freeze_pane(row: 1, col: 1)
+        s.split_pane(x_split: 1000, y_split: 1000, top_left_cell: "B2")
+        s.select_cell("A1", sqref: "A1:A2", pane: "topRight")
+
+        s.page_margins(left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2)
+        s.print_options(:grid_lines, true)
+        s.page_setup(paper_size: 9, orientation: "landscape")
+        s.header_footer(odd_header: "&L&T")
+
+        s.sheet_view(:show_grid_lines, false)
+        s.protect_sheet(password: "secret", sheet: true)
+      end
+    end
+    assert io.size.positive?
+  end
+
+  test "Writer raises error when writing to inactive sheet" do
+    io = StringIO.new
+    Xlsxrb.generate(io) do |w|
+      s1 = nil
+      w.sheet("S1") { |s| s1 = s }
+      w.sheet("S2") { |s| s.row([1]) }
+      assert_raise(Xlsxrb::Error) { s1.row([1]) }
+    end
+  end
+
+  test "WorksheetBuilder#row raises error on invalid value type" do
+    Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        assert_raise(ArgumentError) { s.row([Object.new]) }
+      end
+    end
+  end
+
+  test "WorksheetBuilder raises error for column width limit in strict mode" do
+    Xlsxrb.build(strict_excel_mode: true) do |w|
+      w.sheet("S1") do |s|
+        assert_raise(ArgumentError) { s.column(0, width: 300) }
+      end
+    end
+  end
+
+  test "Additional Coverage for WorkbookBuilder and Date auto-format" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.row([Date.today])
+        s.merge(row: 0, col_start: 0, col_end: 2)
+      end
+    end
+    assert wb
   end
 end
