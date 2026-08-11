@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "test_helper_simplecov"
+
 if ENV["RBS_TEST"] == "1"
   ENV["RBS_TEST_TARGET"] ||= "Xlsxrb::*"
   require "rbs/test/setup"

@@ -11,6 +11,7 @@ gem "rake", "~> 13.0"
 gem "nokogiri", group: :test
 gem "pbt", group: :test
 gem "rubyzip", group: :test
+gem "simplecov", require: false, group: :test
 gem "test-unit", "~> 3.0"
 
 gem "rubocop", "~> 1.21"
@@ -25,4 +26,7 @@ gem "webrick", group: :development
 
 gem "benchmark-ips", group: :development
 gem "memory_profiler", group: :development
+gem "mutant", group: :test
 gem "steep", "~> 2.0", groups: %i[development test]
+
+gem "simplecov_json_formatter", "~> 0.1.4", group: :test
