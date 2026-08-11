@@ -60,7 +60,7 @@ module Xlsxrb
   # @param font_props [Hash] Font styling options (e.g., bold: true).
   # @return [Elements::RichText] The resulting rich text.
   # @api public
-  # : (*Hash[untyped, untyped] runs, ?text: String?, **untyped font_props) -> Elements::RichText
+  # : (*Hash[Symbol, String | Integer | bool | nil] runs, ?text: String?, **String | Integer | bool | nil font_props) -> Elements::RichText
   def self.rich_text(*runs, text: nil, **font_props)
     runs = [{ text: text, font: font_props }] if text
     Elements::RichText.new(runs: runs)
@@ -73,18 +73,18 @@ module Xlsxrb
       @options = {}
     end
 
-    # : untyped
+    # : Hash[Symbol, String | Integer | bool | nil]
     attr_reader :options
 
     # @api public
-    # : (untyped value) -> untyped
+    # : (String value) -> String
     def type(value) = @options[:type] = value
     # @api public
-    # : (untyped value) -> untyped
+    # : (String value) -> String
     def title(value) = @options[:title] = value
 
     # @api public
-    # : (?untyped? value) ?{ (untyped) -> untyped } -> untyped
+    # : (?Hash[Symbol, String | Integer | bool | nil]? value) ?{ (SeriesBuilder) -> void } -> Array[Hash[Symbol, String | Integer | bool | nil]]
     def series(value = nil)
       @options[:series] ||= []
       if block_given?
@@ -100,7 +100,7 @@ module Xlsxrb
     # Configures the legend property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
     def legend(*args, **kwargs)
       @options[:legend] = kwargs.empty? ? args.first : kwargs
     end
@@ -108,7 +108,7 @@ module Xlsxrb
     # Configures the plot_area property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
     def plot_area(*args, **kwargs)
       @options[:plot_area] = kwargs.empty? ? args.first : kwargs
     end
@@ -116,7 +116,7 @@ module Xlsxrb
     # Configures the chart_space property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
     def chart_space(*args, **kwargs)
       @options[:chart_space] = kwargs.empty? ? args.first : kwargs
     end
@@ -124,7 +124,7 @@ module Xlsxrb
     # Configures the style property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(Hash[Symbol, untyped] | String | Integer) args, **untyped kwargs) -> untyped
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String | Integer) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Integer)
     def style(*args, **kwargs)
       @options[:style] = kwargs.empty? ? args.first : kwargs
     end
@@ -132,7 +132,7 @@ module Xlsxrb
     # Configures the data_labels property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
     def data_labels(*args, **kwargs)
       @options[:data_labels] = kwargs.empty? ? args.first : kwargs
     end
@@ -140,7 +140,7 @@ module Xlsxrb
     # Configures the plot_visible_only property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(bool | String) args, **untyped kwargs) -> untyped
+    # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
     def plot_visible_only(*args, **kwargs)
       @options[:plot_visible_only] = kwargs.empty? ? args.first : kwargs
     end
@@ -148,7 +148,7 @@ module Xlsxrb
     # Configures the display_blanks_as property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(String) args, **untyped kwargs) -> untyped
+    # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
     def display_blanks_as(*args, **kwargs)
       @options[:display_blanks_as] = kwargs.empty? ? args.first : kwargs
     end
@@ -156,7 +156,7 @@ module Xlsxrb
     # Configures the view3d property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
     def view3d(*args, **kwargs)
       @options[:view3d] = kwargs.empty? ? args.first : kwargs
     end
@@ -164,7 +164,7 @@ module Xlsxrb
     # Configures the category_axis property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
     def category_axis(*args, **kwargs)
       @options[:category_axis] = kwargs.empty? ? args.first : kwargs
     end
@@ -172,7 +172,7 @@ module Xlsxrb
     # Configures the value_axis property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
     def value_axis(*args, **kwargs)
       @options[:value_axis] = kwargs.empty? ? args.first : kwargs
     end
@@ -180,7 +180,7 @@ module Xlsxrb
     # Configures the show_legend_key property for this chart.
     # @return [Object] the configured property
     # @api public
-    # : (*(bool | String) args, **untyped kwargs) -> untyped
+    # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
     def show_legend_key(*args, **kwargs)
       @options[:show_legend_key] = kwargs.empty? ? args.first : kwargs
     end
@@ -192,13 +192,13 @@ module Xlsxrb
         @options = {}
       end
 
-      # : untyped
+      # : Hash[Symbol, String | Integer | bool | nil]
       attr_reader :options
 
       # Configures the categories property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(Hash[Symbol, untyped] | String | Array[String]) args, **untyped kwargs) -> untyped
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String | Array[String]) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Array[String])
       def categories(*args, **kwargs)
         @options[:categories] = kwargs.empty? ? args.first : kwargs
       end
@@ -206,7 +206,7 @@ module Xlsxrb
       # Configures the values property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(Hash[Symbol, untyped] | String | Array[Numeric]) args, **untyped kwargs) -> untyped
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String | Array[Numeric]) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Array[Numeric])
       def values(*args, **kwargs)
         @options[:values] = kwargs.empty? ? args.first : kwargs
       end
@@ -214,7 +214,7 @@ module Xlsxrb
       # Configures the name property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(String) args, **untyped kwargs) -> untyped
+      # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
       def name(*args, **kwargs)
         @options[:name] = kwargs.empty? ? args.first : kwargs
       end
@@ -222,7 +222,7 @@ module Xlsxrb
       # Configures the marker property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
       def marker(*args, **kwargs)
         @options[:marker] = kwargs.empty? ? args.first : kwargs
       end
@@ -230,7 +230,7 @@ module Xlsxrb
       # Configures the fill property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
       def fill(*args, **kwargs)
         @options[:fill] = kwargs.empty? ? args.first : kwargs
       end
@@ -238,7 +238,7 @@ module Xlsxrb
       # Configures the line property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
       def line(*args, **kwargs)
         @options[:line] = kwargs.empty? ? args.first : kwargs
       end
@@ -246,7 +246,7 @@ module Xlsxrb
       # Configures the trendline property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
       def trendline(*args, **kwargs)
         @options[:trendline] = kwargs.empty? ? args.first : kwargs
       end
@@ -254,7 +254,7 @@ module Xlsxrb
       # Configures the data_labels property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(Hash[Symbol, untyped] | String) args, **untyped kwargs) -> untyped
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
       def data_labels(*args, **kwargs)
         @options[:data_labels] = kwargs.empty? ? args.first : kwargs
       end
@@ -262,7 +262,7 @@ module Xlsxrb
       # Configures the smooth property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(bool | String) args, **untyped kwargs) -> untyped
+      # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
       def smooth(*args, **kwargs)
         @options[:smooth] = kwargs.empty? ? args.first : kwargs
       end
@@ -270,7 +270,7 @@ module Xlsxrb
       # Configures the shape property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(String) args, **untyped kwargs) -> untyped
+      # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
       def shape(*args, **kwargs)
         @options[:shape] = kwargs.empty? ? args.first : kwargs
       end
@@ -278,7 +278,7 @@ module Xlsxrb
       # Configures the type property for this series.
       # @return [Object] the configured property
       # @api public
-      # : (*(String) args, **untyped kwargs) -> untyped
+      # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
       def type(*args, **kwargs)
         @options[:type] = kwargs.empty? ? args.first : kwargs
       end
@@ -295,7 +295,7 @@ module Xlsxrb
   # @param cached_value [Object, nil] Optional cached result. If nil, Excel will calculate on open.
   # @return [Elements::Formula]
   # @api public
-  # : (String expression, ?cached_value: untyped?) -> Elements::Formula
+  # : (String expression, ?cached_value: String | Numeric | bool | nil) -> Elements::Formula
   def self.formula(expression, cached_value: nil)
     Elements::Formula.new(
       expression: expression,
@@ -543,7 +543,7 @@ module Xlsxrb
     # @param value [String, Integer, Boolean] The property value.
     # @return [void]
     # @api public
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
     def workbook_property(name, value)
       @workbook_properties[name] = value
     end
@@ -556,7 +556,7 @@ module Xlsxrb
     # @yieldparam sheet_builder [WorksheetBuilder]
     # @return [void]
     # @api public
-    # : (?untyped? name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
+    # : (?String? name, **String | Integer | bool | nil opts) ?{ (WorksheetBuilder) -> void } -> void
     def sheet(name = nil, **opts)
       name ||= "Sheet#{@sheets.size + 1}"
       raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
@@ -581,7 +581,7 @@ module Xlsxrb
     # @param hidden [Boolean] Whether the defined name is hidden.
     # @return [void]
     # @api public
-    # : (untyped name, untyped value, ?sheet: untyped?, ?hidden: bool) -> untyped
+    # : (String name, String value, ?sheet: String?, ?hidden: bool) -> void
     def defined_name(name, value, sheet: nil, hidden: false)
       entry = { name: name, value: value, hidden: hidden }
       entry[:local_sheet_name] = sheet if sheet
@@ -594,7 +594,7 @@ module Xlsxrb
     # @param sheet [String, nil] The sheet name.
     # @return [void]
     # @api public
-    # : (untyped range, ?sheet: untyped?) -> untyped
+    # : (String range, ?sheet: String?) -> void
     def print_area(range, sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
       value = "'#{sheet_name}'!#{absolute_range(range)}"
@@ -609,7 +609,7 @@ module Xlsxrb
     # @param sheet [String, nil] The sheet name.
     # @return [void]
     # @api public
-    # : (?rows: untyped?, ?cols: untyped?, ?sheet: untyped?) -> untyped
+    # : (?rows: String?, ?cols: String?, ?sheet: String?) -> void
     def print_titles(rows: nil, cols: nil, sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
       parts = []
@@ -625,7 +625,7 @@ module Xlsxrb
     # @param opts [Hash] Protection options.
     # @return [void]
     # @api public
-    # : (**untyped opts) -> untyped
+    # : (**String | Integer | bool | nil opts) -> void
     def protect_workbook(**opts)
       @workbook_protection = opts
     end
@@ -636,7 +636,7 @@ module Xlsxrb
     # @param value [String, Integer, Time] The property value.
     # @return [void]
     # @api public
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | Time value) -> void
     def core_property(name, value)
       @core_properties[name] = value
     end
@@ -647,7 +647,7 @@ module Xlsxrb
     # @param value [String, Integer, Time] The property value.
     # @return [void]
     # @api public
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | Time value) -> void
     def app_property(name, value)
       @app_properties[name] = value
     end
@@ -658,7 +658,7 @@ module Xlsxrb
     # @param app [Hash, nil] App properties.
     # @return [void]
     # @api public
-    # : (?core: untyped?, ?app: untyped?) -> untyped
+    # : (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
     def properties(core: nil, app: nil)
       core&.each { |k, v| core_property(k, v) }
       app&.each { |k, v| app_property(k, v) }
@@ -671,13 +671,13 @@ module Xlsxrb
     # @param type [Symbol] The type of property (:string, :number, :bool, :date).
     # @return [void]
     # @api public
-    # : (untyped name, untyped value, ?type: ::Symbol) -> untyped
+    # : (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
     def custom_property(name, value, type: :string)
       @custom_properties << { name: name, value: value, type: type }
     end
 
     # @api public
-    # : () -> untyped
+    # : () -> Elements::Workbook
     def build
       raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @strict_excel_mode && @sheets.empty?
 
@@ -846,7 +846,7 @@ module Xlsxrb
     # @yieldparam style_builder [StyleBuilder]
     # @return [StyleBuilder]
     # @api public
-    # : (untyped name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
+    # : (String name, **String | Integer | bool | nil opts) ?{ (WorksheetBuilder) -> void } -> void
     def style(name, **opts)
       style_builder = StyleBuilder.new(name)
       style_builder.apply_options!(**opts) unless opts.empty?
@@ -866,7 +866,7 @@ module Xlsxrb
     # @note Excel's column limit is 16,384, row limit is 1,048,576, string max length is 32,767.
     # @return [void]
     # @api public
-    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: String | Hash[untyped, untyped] | Array[String | Hash[untyped, untyped] | nil] | nil, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    # : (Array[String | Numeric | bool | nil] | Hash[Integer | String, String | Numeric | bool | nil] values, ?styles: String | Hash[Symbol, String | Integer | bool | nil] | Array[String | Hash[Symbol, String | Integer | bool | nil] | nil] | nil, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       row_index = @rows.size
       # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
@@ -1009,7 +1009,7 @@ module Xlsxrb
     # @note Excel's column width max is 255.
     # @return [void]
     # @api public
-    # : (Integer | String | Range[untyped] | Array[untyped] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
+    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
@@ -1038,7 +1038,7 @@ module Xlsxrb
     # @yieldparam builder [ChartBuilder]
     # @return [void]
     # @api public
-    # : (**untyped options) ?{ (untyped) -> untyped } -> untyped
+    # : (**String | Integer | bool | nil options) ?{ (ChartBuilder) -> void } -> void
     def chart(**options)
       if block_given?
         builder = ChartBuilder.new
@@ -1059,7 +1059,7 @@ module Xlsxrb
     # @param location [String, nil] The internal location reference.
     # @return [void]
     # @api public
-    # : (untyped cell, ?untyped? url, ?display: untyped?, ?tooltip: untyped?, ?location: untyped?) -> untyped
+    # : (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
     def hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
       link = { cell: cell }
       link[:url] = url if url
@@ -1166,7 +1166,7 @@ module Xlsxrb
     # @param items [Array, nil] Items configuration.
     # @return [void]
     # @api public
-    # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: ::String, ?name: untyped?, ?field_names: untyped?, ?items: untyped?) -> untyped
+    # : (String source_ref, row_fields: Array[String], data_fields: Array[String], ?col_fields: Array[String], ?dest_ref: ::String, ?name: String?, ?field_names: Hash[String, String]?, ?items: Array[String]?) -> void
     def pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
       @pivot_tables ||= []
       @pivot_tables << {
@@ -1186,7 +1186,7 @@ module Xlsxrb
     # @param author [String] The author name.
     # @return [void]
     # @api public
-    # : (untyped cell, untyped text, ?author: ::String) -> untyped
+    # : (String | Integer cell, String text, ?author: ::String) -> void
     def comment(cell, text, author: "Author")
       @comments << { cell: cell, text: text, author: author }
     end
@@ -1200,7 +1200,7 @@ module Xlsxrb
     # @param opts [Hash] Additional options.
     # @return [void]
     # @api public
-    # : (sparklines: untyped, ?type: untyped?, **untyped opts) -> untyped
+    # : (sparklines: Array[String], ?type: String?, **String | Integer | bool | nil opts) -> void
     def sparkline_group(sparklines:, type: nil, **opts)
       group = { sparklines: sparklines }
       group[:type] = type if type
@@ -1220,7 +1220,7 @@ module Xlsxrb
     # @param row_end [Integer, nil] Ending row index.
     # @return [void]
     # @api public
-    # : (?untyped? range, ?row: untyped?, ?col_start: untyped?, ?col_end: untyped?, ?row_start: untyped?, ?row_end: untyped?) -> untyped
+    # : (?String? range, ?String? row, ?String? col_start, ?String? col_end, ?String? row_start, ?String? row_end) -> void
     def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       if range
         raise ArgumentError, "Invalid merge range format: '#{range}'. Expected format like 'A1:B2'." if @strict_excel_mode && !range.match?(/^[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?$/)
@@ -1246,7 +1246,7 @@ module Xlsxrb
     # @param col [Integer, String] The column index to freeze at (0-based or letter).
     # @return [void]
     # @api public
-    # : (?row: ::Integer, ?col: ::Integer) -> untyped
+    # : (?row: ::Integer, ?col: ::Integer) -> void
     def freeze_pane(row: 0, col: 0)
       col = Elements::Cell.column_index(col)
       @freeze_pane = { row: row, col: col }
@@ -1259,7 +1259,7 @@ module Xlsxrb
     # @param top_left_cell [String, nil] Top left cell reference.
     # @return [void]
     # @api public
-    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: untyped?) -> untyped
+    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
     def split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
       @split_pane = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell }
     end
@@ -1271,7 +1271,7 @@ module Xlsxrb
     # @param pane [String, nil] The pane to select in.
     # @return [void]
     # @api public
-    # : (untyped active_cell, ?sqref: untyped?, ?pane: untyped?) -> untyped
+    # : (String active_cell, ?sqref: String?, ?pane: String?) -> void
     def select_cell(active_cell, sqref: nil, pane: nil)
       @selection = { active_cell: active_cell, sqref: sqref || active_cell }
       @selection[:pane] = pane if pane
@@ -1289,7 +1289,7 @@ module Xlsxrb
     # @param footer [Float, nil] Footer margin.
     # @return [void]
     # @api public
-    # : (?left: untyped?, ?right: untyped?, ?top: untyped?, ?bottom: untyped?, ?header: untyped?, ?footer: untyped?) -> untyped
+    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
     def page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
       @page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
     end
@@ -1299,7 +1299,7 @@ module Xlsxrb
     # @param opts [Hash] Page setup options.
     # @return [void]
     # @api public
-    # : (**untyped opts) -> untyped
+    # : (**String | Integer | bool | nil opts) -> void
     def page_setup(**opts)
       @page_setup.merge!(opts)
     end
@@ -1309,7 +1309,7 @@ module Xlsxrb
     # @param opts [Hash] Header and footer options.
     # @return [void]
     # @api public
-    # : (**untyped opts) -> untyped
+    # : (**String | Integer | bool | nil opts) -> void
     def header_footer(**opts)
       @header_footer.merge!(opts)
     end
@@ -1320,7 +1320,7 @@ module Xlsxrb
     # @param value [Object] Option value.
     # @return [void]
     # @api public
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | bool value) -> void
     def print_options(name, value)
       @print_options[name] = value
     end
@@ -1332,7 +1332,7 @@ module Xlsxrb
     # @param opts [Hash] Sheet protection options.
     # @return [void]
     # @api public
-    # : (**untyped opts) -> untyped
+    # : (**String | Integer | bool | nil opts) -> void
     def protect_sheet(**opts)
       normalized = opts.dup
       plain_password = normalized[:password]
@@ -1351,7 +1351,7 @@ module Xlsxrb
 
     # Insert an image from raw file data.
     # @api public
-    # : (untyped file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> untyped
+    # : (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **String | Integer | bool | nil opts) -> void
     def image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
       img = { file_data: file_data, ext: ext, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
       img.merge!(opts)
@@ -1362,7 +1362,7 @@ module Xlsxrb
 
     # Add a shape to the sheet.
     # @api public
-    # : (?preset: ::String, ?text: untyped?, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> untyped
+    # : (?preset: ::String, ?text: String?, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **String | Integer | bool | nil opts) -> void
     def shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
       shape = { preset: preset, text: text, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
       shape[:name] = opts.delete(:name) || "Shape #{@shapes.size + 1}"
@@ -1374,14 +1374,14 @@ module Xlsxrb
 
     # Set a sheet-level property (e.g. :tab_color).
     # @api public
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | bool | Float value) -> void
     def sheet_properties(name, value)
       @sheet_properties[name] = value
     end
 
     # Set a sheet view property (e.g. :show_grid_lines, :zoom_scale).
     # @api public
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | bool | Float value) -> void
     def sheet_view(name, value)
       @sheet_view[name] = value
     end
@@ -1390,21 +1390,21 @@ module Xlsxrb
 
     # Add a page break before a row.
     # @api public
-    # : (untyped row_num) -> untyped
+    # : (Integer row_num) -> void
     def page_break_row(row_num)
       @row_breaks << row_num
     end
 
     # Add a page break before a column.
     # @api public
-    # : (untyped col_index) -> untyped
+    # : (Integer col_index) -> void
     def page_break_col(col_index)
       col_index = Elements::Cell.column_index(col_index)
       @col_breaks << col_index
     end
 
     # @api public
-    # : () -> untyped
+    # : () -> Elements::Worksheet
     def build
       facade_meta = {}
       facade_meta[:hyperlinks] = @hyperlinks unless @hyperlinks.empty?
@@ -1440,7 +1440,7 @@ module Xlsxrb
     end
 
     # Internal: returns styles for later processing by WorkbookBuilder
-    # : untyped
+    # : Elements::Workbook
     attr_reader :styles
   end
 
@@ -1448,7 +1448,7 @@ module Xlsxrb
   class StreamWriter
     attr_reader :current_sheet
 
-    # : (untyped target, ?strict_excel_mode: bool) -> void
+    # : (String | IO target, ?strict_excel_mode: bool) -> void
     def initialize(target, strict_excel_mode: true)
       @target = target
       @strict_excel_mode = strict_excel_mode
@@ -1506,7 +1506,7 @@ module Xlsxrb
     # @param name [Symbol] The property name (e.g. :update_links).
     # @param value [String, Integer, Boolean] The property value.
     # @return [void]
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | bool value) -> void
     def workbook_property(name, value)
       @workbook_properties[name] = value
     end
@@ -1518,7 +1518,7 @@ module Xlsxrb
     # @yield [style_builder]
     # @yieldparam style_builder [StyleBuilder]
     # @return [StyleBuilder]
-    # : (untyped name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
+    # : (String name, **String | Integer | bool | nil opts) ?{ (WorksheetBuilder) -> void } -> void
     def style(name, **opts)
       style_builder = StyleBuilder.new(name)
       style_builder.apply_options!(**opts) unless opts.empty?
@@ -1540,7 +1540,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#style.
       # @see StreamWriter#style
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def style(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1549,7 +1549,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#merge.
       # @see StreamWriter#merge
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def merge(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1558,7 +1558,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#shape.
       # @see StreamWriter#shape
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def shape(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1567,7 +1567,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#internal_sheet_setup.
       # @see StreamWriter#internal_sheet_setup
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def internal_sheet_setup(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1576,7 +1576,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#row.
       # @see StreamWriter#row
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def row(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1585,7 +1585,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#column.
       # @see StreamWriter#column
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def column(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1594,7 +1594,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#chart.
       # @see StreamWriter#chart
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def chart(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1603,7 +1603,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#hyperlink.
       # @see StreamWriter#hyperlink
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def hyperlink(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1612,7 +1612,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#auto_filter.
       # @see StreamWriter#auto_filter
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def auto_filter(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1621,7 +1621,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#filter_column.
       # @see StreamWriter#filter_column
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def filter_column(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1630,7 +1630,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#sort_state.
       # @see StreamWriter#sort_state
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def sort_state(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1639,7 +1639,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#validate_data.
       # @see StreamWriter#validate_data
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def validate_data(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1648,7 +1648,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#conditional_format.
       # @see StreamWriter#conditional_format
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def conditional_format(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1657,7 +1657,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#table.
       # @see StreamWriter#table
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def table(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1666,7 +1666,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#cleanup!.
       # @see StreamWriter#cleanup!
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def cleanup!(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1675,7 +1675,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#comment.
       # @see StreamWriter#comment
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def comment(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1684,7 +1684,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#pivot_table.
       # @see StreamWriter#pivot_table
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def pivot_table(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1693,7 +1693,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#sparkline_group.
       # @see StreamWriter#sparkline_group
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def sparkline_group(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1702,7 +1702,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#workbook_property.
       # @see StreamWriter#workbook_property
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def workbook_property(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1711,7 +1711,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#sheet_properties.
       # @see StreamWriter#sheet_properties
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def sheet_properties(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1720,7 +1720,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#defined_name.
       # @see StreamWriter#defined_name
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def defined_name(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1729,7 +1729,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#freeze_pane.
       # @see StreamWriter#freeze_pane
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def freeze_pane(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1738,7 +1738,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#print_area.
       # @see StreamWriter#print_area
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def print_area(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1747,7 +1747,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#print_titles.
       # @see StreamWriter#print_titles
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def print_titles(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1756,7 +1756,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#split_pane.
       # @see StreamWriter#split_pane
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def split_pane(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1765,7 +1765,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#protect_workbook.
       # @see StreamWriter#protect_workbook
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def protect_workbook(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1774,7 +1774,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#core_property.
       # @see StreamWriter#core_property
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def core_property(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1783,7 +1783,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#select_cell.
       # @see StreamWriter#select_cell
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def select_cell(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1792,7 +1792,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#page_margins.
       # @see StreamWriter#page_margins
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def page_margins(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1801,7 +1801,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#page_setup.
       # @see StreamWriter#page_setup
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def page_setup(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1810,7 +1810,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#header_footer.
       # @see StreamWriter#header_footer
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def header_footer(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1819,7 +1819,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#print_options.
       # @see StreamWriter#print_options
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def print_options(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1828,7 +1828,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#properties.
       # @see StreamWriter#properties
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def properties(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1837,7 +1837,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#app_property.
       # @see StreamWriter#app_property
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def app_property(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1846,7 +1846,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#protect_sheet.
       # @see StreamWriter#protect_sheet
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def protect_sheet(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1855,7 +1855,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#custom_property.
       # @see StreamWriter#custom_property
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def custom_property(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1864,7 +1864,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#image.
       # @see StreamWriter#image
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def image(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1873,7 +1873,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#sheet_view.
       # @see StreamWriter#sheet_view
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def sheet_view(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1882,7 +1882,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#page_break_row.
       # @see StreamWriter#page_break_row
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def page_break_row(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1891,7 +1891,7 @@ module Xlsxrb
 
       # Delegates to StreamWriter#page_break_col.
       # @see StreamWriter#page_break_col
-      # : (*untyped, **untyped) { (?) -> untyped } -> untyped
+      # : (*String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil, **String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil) { (?) -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil } -> String | Integer | bool | Hash[Symbol, String | Integer | bool | nil] | nil
       def page_break_col(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1906,7 +1906,7 @@ module Xlsxrb
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [WorksheetBuilder]
     # @return [void]
-    # : (?untyped? name, **untyped opts) ?{ (untyped) -> untyped } -> untyped
+    # : (?String? name, **String | Integer | bool | nil opts) ?{ (WorksheetProxy) -> void } -> void
     def sheet(name = nil, **opts)
       name ||= "Sheet#{@sheets.size + 1}"
       raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
@@ -1921,7 +1921,7 @@ module Xlsxrb
     end
 
     # Internal: Start or switch to a named sheet (internal helper).
-    # : (?untyped? name) ?{ (untyped) -> untyped } -> (nil | untyped)
+    # : (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
     def internal_sheet_setup(name = nil)
       flush_current_sheet
       name ||= "Sheet#{@sheets.size + 1}"
@@ -1979,7 +1979,7 @@ module Xlsxrb
     # @param outline_level [Integer, nil] The outline level.
     # @note Excel's column limit is 16,384, row limit is 1,048,576, string max length is 32,767.
     # @return [void]
-    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: String | Hash[untyped, untyped] | Array[String | Hash[untyped, untyped] | nil] | nil, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    # : (Array[String | Numeric | bool | nil] | Hash[Integer | String, String | Numeric | bool | nil] values, ?styles: String | Hash[Symbol, String | Integer | bool | nil] | Array[String | Hash[Symbol, String | Integer | bool | nil] | nil] | nil, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
       sheet if @current_sheet.nil?
 
@@ -2078,7 +2078,7 @@ module Xlsxrb
     # @param outline_level [Integer, nil] The outline level.
     # @note Excel's column width max is 255.
     # @return [void]
-    # : (Integer | String | Range[untyped] | Array[untyped] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
+    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
@@ -2097,7 +2097,7 @@ module Xlsxrb
     end
 
     # Add a chart to the current sheet.
-    # : (**untyped options) ?{ (untyped) -> untyped } -> untyped
+    # : (**String | Integer | bool | nil options) ?{ (ChartBuilder) -> void } -> void
     def chart(**options)
       sheet if @current_sheet.nil?
 
@@ -2112,7 +2112,7 @@ module Xlsxrb
 
     # --- Hyperlinks ---
 
-    # : (untyped cell, ?untyped? url, ?display: untyped?, ?tooltip: untyped?, ?location: untyped?) -> untyped
+    # : (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
     def hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
       sheet if @current_sheet.nil?
       link = { cell: cell }
@@ -2125,19 +2125,19 @@ module Xlsxrb
 
     # --- Auto Filter / Sort ---
 
-    # : (untyped range) -> untyped
+    # : (String range) -> void
     def auto_filter(range)
       sheet if @current_sheet.nil?
       @current_auto_filter = range
     end
 
-    # : (untyped col_id, untyped filter) -> untyped
+    # : (String | Integer col_id, String | Hash[Symbol, String | Integer | bool | nil] filter) -> void
     def filter_column(col_id, filter)
       sheet if @current_sheet.nil?
       @current_filter_columns[col_id] = filter
     end
 
-    # : (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
+    # : (String ref, Array[String | Hash[Symbol, String | Integer | bool | nil]] sort_conditions, **String | Integer | bool | nil opts) -> void
     def sort_state(ref, sort_conditions, **opts)
       sheet if @current_sheet.nil?
       @current_sort_state = { ref: ref, sort_conditions: sort_conditions }.merge(opts)
@@ -2145,7 +2145,7 @@ module Xlsxrb
 
     # --- Data Validation ---
 
-    # : (untyped sqref, **untyped opts) -> untyped
+    # : (String sqref, **String | Integer | bool | nil opts) -> void
     def validate_data(sqref, **opts)
       sheet if @current_sheet.nil?
       @current_data_validations << opts.merge(sqref: sqref)
@@ -2153,7 +2153,7 @@ module Xlsxrb
 
     # --- Conditional Formatting ---
 
-    # : (untyped sqref, **untyped opts) -> untyped
+    # : (String sqref, **String | Integer | bool | nil opts) -> void
     def conditional_format(sqref, **opts)
       sheet if @current_sheet.nil?
       @current_conditional_formats << opts.merge(sqref: sqref)
@@ -2161,7 +2161,7 @@ module Xlsxrb
 
     # --- Tables ---
 
-    # : (untyped ref, columns: untyped, ?name: untyped?, ?display_name: untyped?, ?style: untyped?, **untyped opts) -> untyped
+    # : (String ref, columns: Array[String | Hash[Symbol, String | Integer | bool | nil]], ?name: String?, ?display_name: String?, ?style: String?, **String | Integer | bool | nil opts) -> void
     def table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
       sheet if @current_sheet.nil?
       tbl = { ref: ref, columns: columns }
@@ -2174,7 +2174,7 @@ module Xlsxrb
 
     # --- Pivot Tables ---
 
-    # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: ::String, ?name: untyped?, ?field_names: untyped?, ?items: untyped?) -> untyped
+    # : (String source_ref, row_fields: Array[String], data_fields: Array[String], ?col_fields: Array[String], ?dest_ref: ::String, ?name: String?, ?field_names: Hash[String, String]?, ?items: Array[String]?) -> void
     def pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
       sheet if @current_sheet.nil?
       @current_pivot_tables ||= []
@@ -2188,7 +2188,7 @@ module Xlsxrb
 
     # --- Comments ---
 
-    # : (untyped cell, untyped text, ?author: ::String) -> untyped
+    # : (String | Integer cell, String text, ?author: ::String) -> void
     def comment(cell, text, author: "Author")
       sheet if @current_sheet.nil?
       @current_comments << { cell: cell, text: text, author: author }
@@ -2196,7 +2196,7 @@ module Xlsxrb
 
     # --- Sparklines ---
 
-    # : (sparklines: untyped, ?type: untyped?, **untyped opts) -> untyped
+    # : (sparklines: Array[String], ?type: String?, **String | Integer | bool | nil opts) -> void
     def sparkline_group(sparklines:, type: nil, **opts)
       sheet if @current_sheet.nil?
       group = { sparklines: sparklines }
@@ -2214,7 +2214,7 @@ module Xlsxrb
     # @param row_start [Integer, nil] Starting row index.
     # @param row_end [Integer, nil] Ending row index.
     # @return [void]
-    # : (?untyped? range, ?row: untyped?, ?col_start: untyped?, ?col_end: untyped?, ?row_start: untyped?, ?row_end: untyped?) -> untyped
+    # : (?String? range, ?String? row, ?String? col_start, ?String? col_end, ?String? row_start, ?String? row_end) -> void
     def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       sheet if @current_sheet.nil?
       if range
@@ -2239,20 +2239,20 @@ module Xlsxrb
     # @param row [Integer] The row index to freeze at (0-based).
     # @param col [Integer, String] The column index to freeze at (0-based or letter).
     # @return [void]
-    # : (?row: ::Integer, ?col: untyped) -> untyped
+    # : (?row: ::Integer, ?col: ::Integer) -> void
     def freeze_pane(row: 0, col: 0)
       col = Elements::Cell.column_index(col)
       sheet if @current_sheet.nil?
       @current_freeze_pane = { row: row, col: col }
     end
 
-    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: untyped?) -> untyped
+    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
     def split_pane(x_split: 0, y_split: 0, top_left_cell: nil)
       sheet if @current_sheet.nil?
       @current_split_pane = { x_split: x_split, y_split: y_split, top_left_cell: top_left_cell }
     end
 
-    # : (untyped active_cell, ?sqref: untyped?, ?pane: untyped?) -> untyped
+    # : (String active_cell, ?sqref: String?, ?pane: String?) -> void
     def select_cell(active_cell, sqref: nil, pane: nil)
       sheet if @current_sheet.nil?
       @current_selection = { active_cell: active_cell, sqref: sqref || active_cell }
@@ -2261,25 +2261,25 @@ module Xlsxrb
 
     # --- Page Setup / Margins / Print ---
 
-    # : (?left: untyped?, ?right: untyped?, ?top: untyped?, ?bottom: untyped?, ?header: untyped?, ?footer: untyped?) -> untyped
+    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
     def page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
       sheet if @current_sheet.nil?
       @current_page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
     end
 
-    # : (**untyped opts) -> untyped
+    # : (**String | Integer | bool | nil opts) -> void
     def page_setup(**opts)
       sheet if @current_sheet.nil?
       @current_page_setup.merge!(opts)
     end
 
-    # : (**untyped opts) -> untyped
+    # : (**String | Integer | bool | nil opts) -> void
     def header_footer(**opts)
       sheet if @current_sheet.nil?
       @current_header_footer.merge!(opts)
     end
 
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | bool value) -> void
     def print_options(name, value)
       sheet if @current_sheet.nil?
       @current_print_options[name] = value
@@ -2287,7 +2287,7 @@ module Xlsxrb
 
     # --- Sheet Protection ---
 
-    # : (**untyped opts) -> untyped
+    # : (**String | Integer | bool | nil opts) -> void
     def protect_sheet(**opts)
       sheet if @current_sheet.nil?
       normalized = opts.dup
@@ -2305,7 +2305,7 @@ module Xlsxrb
 
     # --- Images ---
 
-    # : (untyped file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> untyped
+    # : (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **String | Integer | bool | nil opts) -> void
     def image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
       sheet if @current_sheet.nil?
       img = { file_data: file_data, ext: ext, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
@@ -2315,7 +2315,7 @@ module Xlsxrb
 
     # --- Shapes ---
 
-    # : (?preset: ::String, ?text: untyped?, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> untyped
+    # : (?preset: ::String, ?text: String?, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **String | Integer | bool | nil opts) -> void
     def shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
       sheet if @current_sheet.nil?
       shape = { preset: preset, text: text, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
@@ -2326,13 +2326,13 @@ module Xlsxrb
 
     # --- Sheet Properties ---
 
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | bool | Float value) -> void
     def sheet_properties(name, value)
       sheet if @current_sheet.nil?
       @current_sheet_properties[name] = value
     end
 
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | bool | Float value) -> void
     def sheet_view(name, value)
       sheet if @current_sheet.nil?
       @current_sheet_view[name] = value
@@ -2340,13 +2340,13 @@ module Xlsxrb
 
     # --- Row / Column Breaks ---
 
-    # : (untyped row_num) -> untyped
+    # : (Integer row_num) -> void
     def page_break_row(row_num)
       sheet if @current_sheet.nil?
       @current_row_breaks << row_num
     end
 
-    # : (untyped col_index) -> untyped
+    # : (Integer col_index) -> void
     def page_break_col(col_index)
       col_index = Elements::Cell.column_index(col_index)
       sheet if @current_sheet.nil?
@@ -2362,7 +2362,7 @@ module Xlsxrb
     # @param sheet [String, nil] Local sheet name.
     # @param hidden [Boolean] Whether the defined name is hidden.
     # @return [void]
-    # : (untyped name, untyped value, ?sheet: untyped?, ?hidden: bool) -> untyped
+    # : (String name, String value, ?sheet: String?, ?hidden: bool) -> void
     def defined_name(name, value, sheet: nil, hidden: false)
       entry = { name: name, value: value, hidden: hidden }
       if sheet
@@ -2373,7 +2373,7 @@ module Xlsxrb
     end
 
     # Set the print area for the current or named sheet.
-    # : (untyped range, ?sheet: untyped?) -> untyped
+    # : (String range, ?sheet: String?) -> void
     def print_area(range, sheet: nil)
       sheet_name = sheet || @current_sheet || "Sheet1"
       value = "'#{sheet_name}'!#{absolute_range(range)}"
@@ -2382,7 +2382,7 @@ module Xlsxrb
     end
 
     # Set print titles for the current or named sheet.
-    # : (?rows: untyped?, ?cols: untyped?, ?sheet: untyped?) -> untyped
+    # : (?rows: String?, ?cols: String?, ?sheet: String?) -> void
     def print_titles(rows: nil, cols: nil, sheet: nil)
       sheet_name = sheet || @current_sheet || "Sheet1"
       parts = []
@@ -2397,7 +2397,7 @@ module Xlsxrb
     #
     # @param opts [Hash] Protection options.
     # @return [void]
-    # : (**untyped opts) -> untyped
+    # : (**String | Integer | bool | nil opts) -> void
     def protect_workbook(**opts)
       @workbook_protection = opts
     end
@@ -2407,7 +2407,7 @@ module Xlsxrb
     # @param name [Symbol] The property name.
     # @param value [String, Integer, Time] The property value.
     # @return [void]
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | Time value) -> void
     def core_property(name, value)
       @core_properties[name] = value
     end
@@ -2417,7 +2417,7 @@ module Xlsxrb
     # @param name [Symbol] The property name.
     # @param value [String, Integer, Time] The property value.
     # @return [void]
-    # : (untyped name, untyped value) -> untyped
+    # : (Symbol name, String | Integer | Time value) -> void
     def app_property(name, value)
       @app_properties[name] = value
     end
@@ -2427,7 +2427,7 @@ module Xlsxrb
     # @param core [Hash, nil] Core properties.
     # @param app [Hash, nil] App properties.
     # @return [void]
-    # : (?core: untyped?, ?app: untyped?) -> untyped
+    # : (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
     def properties(core: nil, app: nil)
       core&.each { |k, v| core_property(k, v) }
       app&.each { |k, v| app_property(k, v) }
@@ -2439,12 +2439,12 @@ module Xlsxrb
     # @param value [String, Integer, Float, Boolean, Time] The property value.
     # @param type [Symbol] The type of property (:string, :number, :bool, :date).
     # @return [void]
-    # : (untyped name, untyped value, ?type: ::Symbol) -> untyped
+    # : (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
     def custom_property(name, value, type: :string)
       @custom_properties << { name: name, value: value, type: type }
     end
 
-    # : () -> untyped
+    # : () -> Elements::Workbook
     def close
       raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @strict_excel_mode && @sheets.empty? && @current_sheet.nil?
 
