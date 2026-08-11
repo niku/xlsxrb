@@ -4,12 +4,13 @@ require "test_helper"
 
 class DateTimeStyleTest < Test::Unit::TestCase
   test "auto injects default date and time styles" do
-    Xlsxrb.generate("test_dates.xlsx") do |w|
+    temp = Tempfile.new(["test_dates", ".xlsx"])
+    Xlsxrb.generate(temp.path) do |w|
       w.sheet("S") do |s|
         s.row([Date.new(2026, 1, 1), Time.new(2026, 1, 1, 12, 0, 0)])
       end
     end
-    wb = Xlsxrb.read("test_dates.xlsx")
+    wb = Xlsxrb.read(temp.path)
     sheet = wb.sheets.first
     date_cell = sheet.rows.first.cells[0]
     time_cell = sheet.rows.first.cells[1]

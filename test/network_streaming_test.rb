@@ -6,6 +6,13 @@ require "net/http"
 
 class NetworkStreamingTest < Test::Unit::TestCase
   def setup
+    @temp_file = Tempfile.new(["network_streaming", ".xlsx"])
+    Xlsxrb.generate(@temp_file.path) do |w|
+      w.sheet("Data") do |s|
+        s.row(%w[Hello World])
+      end
+    end
+
     @port = rand(18_080..19_079)
     @server = WEBrick::HTTPServer.new(
       Port: @port,
@@ -14,9 +21,8 @@ class NetworkStreamingTest < Test::Unit::TestCase
     )
 
     @server.mount_proc("/") do |_req, res|
-      file_path = File.expand_path("../test_dates.xlsx", __dir__)
       res.chunked = true
-      res.body = File.open(file_path, "rb")
+      res.body = File.open(@temp_file.path, "rb")
     end
 
     @server_thread = Thread.new { @server.start }
@@ -26,6 +32,8 @@ class NetworkStreamingTest < Test::Unit::TestCase
   def teardown
     @server.shutdown
     @server_thread.join
+    @temp_file.close
+    @temp_file.unlink
   end
 
   def test_streaming_read
