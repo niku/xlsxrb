@@ -1,0 +1,4 @@
+module REXML
+  module SAX2Listener
+  end
+end

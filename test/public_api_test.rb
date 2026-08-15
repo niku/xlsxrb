@@ -1507,7 +1507,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert breaks
   end
 
-  test "WorksheetBuilder#select_cell captures active cell" do
+  test "WorksheetBuilder#select_cell captures active cell coordinate" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
         s.select_cell("D4")
@@ -2038,5 +2038,164 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     assert wb
+  end
+  def test_workbook_builder_public_methods
+    wb = Xlsxrb::WorkbookBuilder.new(strict_excel_mode: false)
+    wb.workbook_property(:update_links, "always")
+
+    # Check defined_name
+    wb.defined_name("MyName", "Sheet1!$A$1", hidden: true)
+
+    # Check print_area
+    wb.print_area("A1:D10", sheet: "Sheet1")
+
+    # Check print_titles
+    wb.print_titles(rows: "1:2", cols: "A:B", sheet: "Sheet1")
+
+    # Check properties
+    wb.protect_workbook(password: "secret", lock_structure: true)
+    wb.core_property(:title, "Test Title")
+    wb.app_property(:company, "MyCompany")
+    wb.properties(core: { creator: "Me" }, app: { manager: "Boss" })
+    wb.custom_property("MyCustomProp", "Value", type: :string)
+
+    wb.sheet("Sheet1") do |sheet|
+      sheet.row(["Data"])
+    end
+
+    workbook = wb.build
+    assert_instance_of Xlsxrb::Elements::Workbook, workbook
+    assert_equal "always", workbook.unmapped_data[:facade][:workbook_properties][:update_links]
+    assert_equal "Test Title", workbook.unmapped_data[:facade][:core_properties][:title]
+    assert_equal "MyCompany", workbook.unmapped_data[:facade][:app_properties][:company]
+    assert_equal "Me", workbook.unmapped_data[:facade][:core_properties][:creator]
+    assert_equal "Boss", workbook.unmapped_data[:facade][:app_properties][:manager]
+    assert_equal "MyCustomProp", workbook.unmapped_data[:facade][:custom_properties].first[:name]
+    assert_equal "secret", workbook.unmapped_data[:facade][:workbook_protection][:password]
+  end
+
+  def test_worksheet_builder_public_methods
+    wb = Xlsxrb::WorkbookBuilder.new(strict_excel_mode: false)
+    wb.sheet("Sheet1") do |sheet|
+      # sheet properties
+      sheet.sheet_properties(:tab_color, "FF0000")
+      sheet.page_setup(orientation: "landscape")
+      sheet.page_margins(left: 0.5)
+
+      # rows
+      sheet.row(%w[A1 B1 C1], height: 20)
+      sheet.row([]) # empty row
+      sheet.row([Xlsxrb.formula("SUM(1,2)"), Xlsxrb.rich_text(text: "Hi", bold: true)])
+
+      # merges
+      sheet.merge("A1:B1")
+
+      # freeze panes
+      sheet.freeze_pane(row: 1, col: 1)
+
+      # column
+      sheet.column(1, width: 15, hidden: false)
+
+      # protection
+      sheet.protect_sheet(password: "123")
+
+      # data validation
+      sheet.validate_data("A1", type: "list", formula1: '"A,B,C"')
+
+      # chart
+      sheet.chart(type: "bar", anchor: "D1", width: 300, height: 200) do |c|
+        c.title "My Chart"
+        c.series do |s|
+          s.values [1, 2, 3]
+        end
+      end
+
+      # image
+      sheet.image("binary_data", anchor: "E1", width: 100, height: 50)
+
+      # styles
+      sheet.style("mystyle", bold: true, size: 14)
+      sheet.row(["Styled"], styles: ["mystyle"])
+    end
+
+    assert_instance_of Xlsxrb::Elements::Workbook, wb.build
+  end
+
+  def test_stream_writer_public_methods
+    require "stringio"
+    io = StringIO.new
+
+    # Test block format
+    Xlsxrb.generate(io, strict_excel_mode: false) do |writer|
+      writer.sheet("Sheet1") do |sheet|
+        sheet.row(%w[A1 B1])
+        sheet.row([])
+        sheet.row([1, 2, 3])
+      end
+
+      writer.sheet("Sheet2")
+    end
+
+    assert io.size.positive?
+
+    # Test manual open/close
+    io2 = StringIO.new
+    sw = Xlsxrb::StreamWriter.new(io2, strict_excel_mode: false)
+    sw.sheet("Sheet1") do |s|
+      s.row([1, 2])
+    end
+    sw.close
+    sw.cleanup!
+    assert io2.size.positive?
+  end
+
+  def test_chart_builder
+    cb = Xlsxrb::ChartBuilder.new
+    cb.type "line"
+    cb.title "Sales"
+    cb.legend position: "bottom"
+    cb.plot_area(layout: "default")
+    cb.chart_space(rounded_corners: true)
+    cb.style 2
+    cb.data_labels(show_val: true)
+    cb.plot_visible_only true
+    cb.display_blanks_as "gap"
+    cb.view3d(rot_x: 30)
+    cb.category_axis(title: "Months")
+    cb.value_axis(title: "Revenue")
+    cb.show_legend_key true
+
+    cb.series do |s|
+      s.name "Q1"
+      s.categories %w[Jan Feb]
+      s.values [10, 20]
+      s.marker symbol: "circle"
+      s.fill type: "solid"
+      s.line color: "FF0000"
+      s.trendline type: "linear"
+      s.data_labels show_val: false
+      s.smooth true
+      s.shape "cone"
+      s.type "bar"
+    end
+
+    assert_equal "line", cb.options[:type]
+    assert_equal "Sales", cb.options[:title]
+    assert_equal 1, cb.options[:series].size
+    assert_equal "Q1", cb.options[:series].first[:name]
+  end
+
+  def test_ooxml_writer
+    require "tempfile"
+    Tempfile.create(["test", ".xlsx"]) do |f|
+      Xlsxrb::Ooxml::WorkbookWriter.write(
+        f.path,
+        sheets: [{ name: "Sheet1", rows: [], columns: [] }],
+        shared_strings: [],
+        shared_strings_index: {},
+        styles: {}
+      )
+      assert File.exist?(f.path)
+    end
   end
 end

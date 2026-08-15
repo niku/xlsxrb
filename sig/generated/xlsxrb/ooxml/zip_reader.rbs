@@ -1,0 +1,45 @@
+# Generated from lib/xlsxrb/ooxml/zip_reader.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Reads ZIP archives using only stdlib (zlib).
+    # Scans local file headers sequentially — works with non-seekable IO.
+    class ZipReader
+      LOCAL_HEADER_SIG: untyped
+
+      MAX_UNCOMPRESSED_SIZE: untyped
+
+      attr_accessor max_uncompressed_size: untyped
+
+      # Opens a ZIP from a file path or IO and yields the reader.
+      # : (untyped source, ?max_uncompressed_size: Integer) ?{ (ZipReader) -> untyped } -> (ZipReader | untyped)
+      def self.open: (untyped source, ?max_uncompressed_size: Integer) ?{ (ZipReader) -> untyped } -> (ZipReader | untyped)
+
+      # : (untyped io, ?max_uncompressed_size: Integer) -> void
+      def initialize: (untyped io, ?max_uncompressed_size: Integer) -> void
+
+      # Returns a Hash { entry_name => raw_bytes } for all entries.
+      def read_all: () -> untyped
+
+      # Returns raw bytes for a single entry, or nil if not found.
+      def read_entry: (untyped name) -> untyped
+
+      # Yields (entry_name, data_string) for each file in the archive.
+      def each_entry: () ?{ (?) -> untyped } -> untyped
+
+      private
+
+      def entries: () -> untyped
+
+      def parse_entries: () -> untyped
+
+      def parse_from_central_directory: (untyped io) -> untyped
+
+      def find_data_descriptor_stream: (untyped io, untyped method) -> untyped
+
+      def decompress: (untyped raw, untyped method) -> untyped
+
+      def safe_inflate: (untyped raw, untyped wbits) -> untyped
+    end
+  end
+end

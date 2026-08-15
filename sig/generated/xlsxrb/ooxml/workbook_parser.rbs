@@ -1,0 +1,46 @@
+# Generated from lib/xlsxrb/ooxml/workbook_parser.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # SAX-based parser for xl/workbook.xml.
+    # Returns sheet list: [{ name:, sheet_id:, r_id: }, ...].
+    class WorkbookParser
+      def self.parse: (untyped xml_string) -> untyped
+
+      # SAX listener for workbook.xml sheets.
+      class Listener
+        include REXML::SAX2Listener
+
+        attr_reader sheets: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped localname, untyped _qname, untyped attrs) -> untyped
+
+        def end_element: (untyped _uri, untyped _localname, untyped _qname) -> untyped
+
+        def characters: (untyped _text) -> untyped
+      end
+    end
+
+    # Parses .rels files to build rId -> target mapping.
+    class RelationshipsParser
+      def self.parse: (untyped xml_string) -> untyped
+
+      # SAX listener for .rels relationship files.
+      class Listener
+        include REXML::SAX2Listener
+
+        attr_reader relationships: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped localname, untyped _qname, untyped attrs) -> untyped
+
+        def end_element: (untyped _uri, untyped _localname, untyped _qname) -> untyped
+
+        def characters: (untyped _text) -> untyped
+      end
+    end
+  end
+end

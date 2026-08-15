@@ -2,8 +2,14 @@
 
 require_relative "test_helper_simplecov"
 
-ENV["RBS_TEST_TARGET"] ||= "Xlsxrb::*"
-require "rbs/test/setup"
+# Loading `rbs/test/setup` globally hooks every method call at runtime.
+# This causes massive memory bloat (OOM) and extreme slowdowns during
+# heavy property-based or benchmark testing. We only enable it
+# selectively in CI via `bundle exec rake test:rbs`.
+if ENV["RBS_TEST"] == "1"
+  ENV["RBS_TEST_TARGET"] ||= "Xlsxrb::*"
+  require "rbs/test/setup"
+end
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "xlsxrb"

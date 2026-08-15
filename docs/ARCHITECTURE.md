@@ -26,12 +26,19 @@ As a strict rule, **we do not accept dynamic method definitions using `method_mi
 2. **Developer Experience**: IDE autocompletion, jump-to-definition, and YARD documentation work perfectly.
 3. **Traceability**: If a method exists, you can `grep` for it.
 
-Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mappings (e.g. `ChartBuilder`, `SeriesBuilder`) would traditionally benefit from dynamic method delegation to avoid boilerplate, we explicitly generate and write out those delegations in the source code.
+Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mappings (e.g. `ChartBuilder`, `SeriesBuilder`) would traditionally benefit from dynamic delegation to avoid boilerplate, we explicitly generate and write out those delegations in the source code.
 
-### API Contract (SemVer)
-- Methods tagged with `@api public` in their YARD documentation are guaranteed to follow SemVer.
-- Methods without this tag (or tagged `@api private`) are internal and may change at any time.
-- Note that during the 0.x series, this is a "best effort" promise, but after 1.0.0, strict SemVer guarantees will apply to all `@api public` methods.
+### 1. **`Xlsxrb` Module is the ONLY Entrypoint:**
+   The `Xlsxrb` module provides the top-level methods: `generate`, `build`, `read`, `foreach`, and `modify`. Users should **never** instantiate internal classes (like `Xlsxrb::Ooxml::WorkbookWriter`) directly.
+
+2. **The `@api public` Contract (SemVer Guarantee):**
+   Any module, class, or method tagged with `# @api public` in its YARD documentation is guaranteed to follow Semantic Versioning.
+   - Patch versions (0.1.x -> 0.1.y) will not break these APIs.
+   - Minor versions (0.x.0 -> 0.y.0) will not break these APIs once 1.0.0 is released (during 0.x.x, it is a best-effort promise).
+   - Major versions (1.x -> 2.x) are the only time breaking changes to `@api public` components are permitted.
+
+3. **Block-Yielded Objects are Public APIs:**
+   All builder objects yielded into blocks (e.g., `writer` in `Xlsxrb.generate { |writer| }`, `sheet` in `writer.sheet { |sheet| }`, `chart` in `sheet.chart { |chart| }`) are explicitly marked as `@api public`. Their exposed methods constitute the DSL and are strictly protected by the SemVer contract.
 
 ---
 

@@ -22,6 +22,7 @@ class ConcurrentTest < Test::Unit::TestCase
 
   def test_ractor_safety
     omit "Ractors are not supported in this Ruby version" unless defined?(Ractor)
+    omit "RBS::Test runtime hooks are incompatible with Ractor isolation" if defined?(RBS::Test)
 
     ractors = 5.times.map do |i|
       Ractor.new(i) do |idx|

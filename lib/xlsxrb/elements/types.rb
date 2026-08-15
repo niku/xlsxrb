@@ -4,6 +4,10 @@
 
 module Xlsxrb
   module Elements
+    EMPTY_ERRORS = [].freeze
+    EMPTY_HASH = {}.freeze
+    EMPTY_CELLS = [].freeze
+
     # Represents a formula with an optional cached value.
     # Optional: type (:shared, :array), ref (range), shared_index (si for shared formulas)
     Formula = Data.define(:expression, :cached_value, :type, :ref, :shared_index, :calculate_always, :aca, :bx, :dt2d, :dtr, :r1, :r2) do

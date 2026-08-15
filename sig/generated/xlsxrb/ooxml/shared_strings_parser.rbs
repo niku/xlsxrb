@@ -1,0 +1,21 @@
+# Generated from lib/xlsxrb/ooxml/shared_strings_parser.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # SAX-based parser for xl/sharedStrings.xml.
+    # Returns an Array of strings (index = SST index).
+    class SharedStringsParser
+      XML_ENTITIES: untyped
+
+      # Parses all shared strings and returns an Array of strings.
+      def self.parse: (untyped xml_string, ?_part_name: untyped) -> untyped
+
+      # Yields Event objects for each shared string.
+      def self.each_event: (untyped xml_string, ?part_name: untyped) ?{ (?) -> untyped } -> untyped
+
+      def self.fast_scan: (untyped xml_src) -> untyped
+
+      def self.extract_multi_t: (untyped xml, untyped from, untyped to) -> untyped
+    end
+  end
+end

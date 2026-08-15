@@ -61,6 +61,10 @@ gems:
   version: '0'
   source:
     type: stdlib
+- name: language_server-protocol
+  version: 3.17.0.6
+  source:
+    type: rubygems
 - name: lint_roller
   version: '1.1'
   source:
@@ -89,6 +93,14 @@ gems:
   version: '0'
   source:
     type: stdlib
+- name: nokogiri
+  version: '1.11'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: 9ab762c8247028f90620fc93c4e7aac20eb693d7
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
 - name: openssl
   version: '0'
   source:
@@ -113,6 +125,10 @@ gems:
     revision: 82762423fc5694b82888ea89a972847cf19838c2
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
+- name: pbt
+  version: 0.7.0
+  source:
+    type: rubygems
 - name: pp
   version: '0'
   source:
@@ -181,6 +197,14 @@ gems:
   version: 2.9.4
   source:
     type: rubygems
+- name: rubyzip
+  version: '3.2'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: 9ab762c8247028f90620fc93c4e7aac20eb693d7
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
 - name: securerandom
   version: '0'
   source:
@@ -221,4 +245,8 @@ gems:
   version: 1.9.2
   source:
     type: rubygems
+- name: zlib
+  version: '0'
+  source:
+    type: stdlib
 gemfile_lock_path: Gemfile.lock

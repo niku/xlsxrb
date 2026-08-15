@@ -1,0 +1,27 @@
+# Generated from lib/xlsxrb/elements/worksheet.rb with RBS::Inline
+
+module Xlsxrb
+  module Elements
+    # Represents a single worksheet in a workbook.
+    class Worksheet < Data
+      attr_reader name(): untyped
+
+      attr_reader rows(): untyped
+
+      attr_reader columns(): untyped
+
+      attr_reader charts(): untyped
+
+      attr_reader unmapped_data(): untyped
+
+      attr_reader errors(): untyped
+
+      def self.new: (untyped name, untyped rows, untyped columns, untyped charts, untyped unmapped_data, untyped errors) -> instance
+                  | (name: untyped, rows: untyped, columns: untyped, charts: untyped, unmapped_data: untyped, errors: untyped) -> instance
+
+      def self.members: () -> [ :name, :rows, :columns, :charts, :unmapped_data, :errors ]
+
+      def members: () -> [ :name, :rows, :columns, :charts, :unmapped_data, :errors ]
+    end
+  end
+end

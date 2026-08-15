@@ -1,0 +1,44 @@
+# Generated from lib/xlsxrb/ooxml/styles_parser.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # SAX-based parser for xl/styles.xml.
+    # Returns a Hash with :num_fmts, :fonts, :fills, :borders, :cell_xfs, :cell_style_xfs.
+    class StylesParser
+      def self.parse: (untyped xml_string) -> untyped
+
+      # SAX listener for parsing styles.xml content.
+      class Listener
+        include REXML::SAX2Listener
+
+        attr_reader result: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped localname, untyped _qname, untyped attrs) -> untyped
+
+        def end_element: (untyped _uri, untyped localname, untyped _qname) -> untyped
+
+        def characters: (untyped _text) -> untyped
+
+        private
+
+        def parent_context?: (untyped tag) -> untyped
+
+        def handle_color: (untyped attrs) -> untyped
+
+        def handle_fill_color: (untyped localname, untyped attrs) -> untyped
+
+        def handle_border_side: (untyped side, untyped attrs) -> untyped
+
+        def handle_xf: (untyped attrs) -> untyped
+
+        def handle_alignment: (untyped attrs) -> untyped
+
+        def finalize_xf: () -> untyped
+
+        def extract_color: (untyped attrs) -> untyped
+      end
+    end
+  end
+end

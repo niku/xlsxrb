@@ -1,0 +1,880 @@
+# Generated from lib/xlsxrb/ooxml/writer.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Writes spreadsheet data into an XLSX file.
+    class Writer
+      XML_HEADER: ::String
+
+      CT_NS: ::String
+
+      REL_NS: ::String
+
+      SSML_NS: ::String
+
+      DOC_REL_NS: ::String
+
+      CP_NS: ::String
+
+      DC_NS: ::String
+
+      DCTERMS_NS: ::String
+
+      XSI_NS: ::String
+
+      APP_NS: ::String
+
+      VT_NS: ::String
+
+      CELL_ADDRESS_PATTERN: ::Regexp
+
+      MAX_ROW: ::Integer
+
+      MAX_COLUMN_INDEX: ::Integer
+
+      attr_reader fonts: untyped
+
+      attr_reader fills: untyped
+
+      attr_reader borders: untyped
+
+      attr_reader xf_entries: untyped
+
+      attr_reader num_fmts: untyped
+
+      # : () -> void
+      def initialize: () -> untyped
+
+      # Adds a new sheet. Raises if name is already taken.
+      # : (untyped name) -> untyped
+      def add_sheet: (untyped name) -> untyped
+
+      # Registers a cell value at the given address (e.g. "A1").
+      # : (untyped cell_address, untyped value, ?sheet: untyped?) -> untyped
+      def set_cell: (untyped cell_address, untyped value, ?sheet: untyped) -> untyped
+
+      # Returns the registered cells for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def cells: (?sheet: untyped) -> untyped
+
+      # Sets the width for a column (e.g. "A", "BC").
+      # : (untyped col_letter, untyped width, ?sheet: untyped?) -> untyped
+      def set_column_width: (untyped col_letter, untyped width, ?sheet: untyped) -> untyped
+
+      # Returns column widths for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def column_widths: (?sheet: untyped) -> untyped
+
+      # Sets a column attribute (e.g. :hidden, :best_fit, :outline_level, :collapsed, :style).
+      # : (untyped col_letter, untyped name, untyped value, ?sheet: untyped?) -> untyped
+      def set_column_attribute: (untyped col_letter, untyped name, untyped value, ?sheet: untyped) -> untyped
+
+      # Returns column attributes for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def column_attributes: (?sheet: untyped) -> untyped
+
+      # Sets a row height.
+      # : (untyped row_num, untyped height, ?sheet: untyped?) -> untyped
+      def set_row_height: (untyped row_num, untyped height, ?sheet: untyped) -> untyped
+
+      # Hides a row.
+      # : (untyped row_num, ?hidden: bool, ?sheet: untyped?) -> untyped
+      def set_row_hidden: (untyped row_num, ?hidden: untyped, ?sheet: untyped) -> untyped
+
+      # Sets a row outline level.
+      # : (untyped row_num, untyped level, ?sheet: untyped?) -> untyped
+      def set_row_outline_level: (untyped row_num, untyped level, ?sheet: untyped) -> untyped
+
+      # Sets a row collapsed state.
+      # : (untyped row_num, ?collapsed: bool, ?sheet: untyped?) -> untyped
+      def set_row_collapsed: (untyped row_num, ?collapsed: untyped, ?sheet: untyped) -> untyped
+
+      # Sets a row default style index (cellXfs index).
+      # : (untyped row_num, untyped style_id, ?sheet: untyped?) -> untyped
+      def set_row_style: (untyped row_num, untyped style_id, ?sheet: untyped) -> untyped
+
+      # Sets a row thick top border flag.
+      # : (untyped row_num, ?thick: bool, ?sheet: untyped?) -> untyped
+      def set_row_thick_top: (untyped row_num, ?thick: untyped, ?sheet: untyped) -> untyped
+
+      # Sets a row thick bottom border flag.
+      # : (untyped row_num, ?thick: bool, ?sheet: untyped?) -> untyped
+      def set_row_thick_bot: (untyped row_num, ?thick: untyped, ?sheet: untyped) -> untyped
+
+      # Sets a row phonetic flag.
+      # : (untyped row_num, ?phonetic: bool, ?sheet: untyped?) -> untyped
+      def set_row_phonetic: (untyped row_num, ?phonetic: untyped, ?sheet: untyped) -> untyped
+
+      # Returns row attributes for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def row_attributes: (?sheet: untyped) -> untyped
+
+      # Merges a range of cells (e.g. "A1:B2").
+      # : (untyped range, ?sheet: untyped?) -> untyped
+      def merge: (untyped range, ?sheet: untyped) -> untyped
+
+      # Returns merged cell ranges for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def merged_cells: (?sheet: untyped) -> untyped
+
+      # Adds a hyperlink on a cell.
+      # : (untyped cell_address, ?untyped? url, ?sheet: untyped?, ?display: untyped?, ?tooltip: untyped?, ?location: untyped?) -> untyped
+      def hyperlink: (untyped cell_address, ?untyped url, ?sheet: untyped, ?display: untyped, ?tooltip: untyped, ?location: untyped) -> untyped
+
+      # Returns hyperlinks for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def hyperlinks: (?sheet: untyped) -> untyped
+
+      # Sets an autoFilter range (e.g. "A1:B10") for the given sheet.
+      # : (untyped range, ?sheet: untyped?) -> untyped
+      def set_auto_filter: (untyped range, ?sheet: untyped) -> untyped
+
+      # Returns the autoFilter range for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def auto_filter: (?sheet: untyped) -> untyped
+
+      # Adds a filter column to the autoFilter.
+      # col_id: 0-based column index within the autoFilter range.
+      # filter: hash describing the filter, e.g.
+      #   { type: :filters, values: ["A", "B"] }
+      #   { type: :filters, blank: true }
+      #   { type: :custom, operator: "greaterThan", val: "100" }
+      #   { type: :custom, filters: [{ operator: "greaterThan", val: "10" }, { operator: "lessThan", val: "100" }], and: true }
+      #   { type: :dynamic, dynamic_type: "today" }
+      #   { type: :top10, top: true, percent: false, val: 10 }
+      # : (untyped col_id, untyped filter, ?sheet: untyped?) -> untyped
+      def add_filter_column: (untyped col_id, untyped filter, ?sheet: untyped) -> untyped
+
+      # Returns filter columns for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def filter_columns: (?sheet: untyped) -> untyped
+
+      # Sets a sort state for the sheet. ref: sort range, sort_conditions: array of { ref:, descending: }.
+      # Options: column_sort:, case_sensitive:, sort_method:
+      # : (untyped ref, untyped sort_conditions, ?sheet: untyped?, **untyped opts) -> untyped
+      def set_sort_state: (untyped ref, untyped sort_conditions, ?sheet: untyped, **untyped opts) -> untyped
+
+      # Returns sort state for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def sort_state: (?sheet: untyped) -> untyped
+
+      # Registers a custom number format and returns its numFmtId (starting at 164).
+      # : (untyped format_code) -> untyped
+      def add_number_format: (untyped format_code) -> untyped
+
+      # Sets a number format on a cell. num_fmt_id is from add_number_format or a built-in id.
+      # : (untyped cell_address, untyped num_fmt_id, ?sheet: untyped?) -> untyped
+      def set_cell_format: (untyped cell_address, untyped num_fmt_id, ?sheet: untyped) -> untyped
+
+      # Registers a font and returns its font_id. Opts: bold, italic, sz, color, name.
+      # : (**untyped opts) -> untyped
+      def add_font: (**untyped opts) -> untyped
+
+      # Registers a fill and returns its fill_id. Opts: pattern, fg_color, bg_color.
+      # : (**untyped opts) -> untyped
+      def add_fill: (**untyped opts) -> untyped
+
+      # Registers a border and returns its border_id.
+      # Opts: left, right, top, bottom (each a hash with :style and optional :color).
+      # : (**untyped opts) -> untyped
+      def add_border: (**untyped opts) -> untyped
+
+      # Registers a cell style (xf entry) and returns its index for use with set_cell_style.
+      # Opts: font_id, fill_id, border_id, num_fmt_id, alignment (hash with horizontal, vertical, wrap_text, text_rotation, indent, shrink_to_fit).
+      # : (**untyped opts) -> untyped
+      def add_cell_style: (**untyped opts) -> untyped
+
+      # Registers a base style definition (cellStyleXf) and a named cellStyle.
+      # Returns the xfId for the new base style.
+      # : (name: untyped, ?num_fmt_id: ::Integer, ?font_id: ::Integer, ?fill_id: ::Integer, ?border_id: ::Integer, ?builtin_id: untyped?, ?i_level: untyped?, ?hidden: untyped?, ?custom_builtin: untyped?) -> untyped
+      def add_named_cell_style: (name: untyped, ?num_fmt_id: untyped, ?font_id: untyped, ?fill_id: untyped, ?border_id: untyped, ?builtin_id: untyped, ?i_level: untyped, ?hidden: untyped, ?custom_builtin: untyped) -> untyped
+
+      # Sets a cell style by xf index (from add_cell_style).
+      # : (untyped cell_address, untyped style_id, ?sheet: untyped?) -> untyped
+      def set_cell_style: (untyped cell_address, untyped style_id, ?sheet: untyped) -> untyped
+
+      # Marks a cell as containing phonetic text (ph="1" on the <c> element).
+      # : (untyped cell_address, ?sheet: untyped?) -> untyped
+      def set_cell_phonetic: (untyped cell_address, ?sheet: untyped) -> untyped
+
+      # Registers a differential format (dxf) for conditional formatting. Returns dxf_id.
+      # Opts: font (hash), fill (hash), border (hash), num_fmt (hash).
+      # : (**untyped opts) -> untyped
+      def add_dxf: (**untyped opts) -> untyped
+
+      # Sets the indexed colors palette (array of ARGB hex strings, e.g. ["FF000000", "FFFFFFFF"]).
+      # rubocop:disable Naming/AccessorMethodName
+      # : (untyped colors) -> untyped
+      def set_indexed_colors: (untyped colors) -> untyped
+
+      # Returns the indexed colors palette.
+      # : () -> untyped
+      def indexed_colors: () -> untyped
+
+      # Sets the MRU (most recently used) colors (array of color hashes, e.g. [{rgb: "FFFF0000"}]).
+      # rubocop:disable Naming/AccessorMethodName
+      # : (untyped colors) -> untyped
+      def set_mru_colors: (untyped colors) -> untyped
+
+      # Returns the MRU colors.
+      # : () -> untyped
+      def mru_colors: () -> untyped
+
+      # Sets table styles options (defaultTableStyle, defaultPivotStyle).
+      # : (untyped name, untyped value) -> untyped
+      def set_table_styles_option: (untyped name, untyped value) -> untyped
+
+      # Adds a table style definition. Returns the style name.
+      # elements: array of { type:, dxf_id:, size: }
+      # : (name: untyped, ?elements: untyped, ?pivot: untyped?, ?table: untyped?) -> untyped
+      def add_table_style: (name: untyped, ?elements: untyped, ?pivot: untyped, ?table: untyped) -> untyped
+
+      # Returns table styles configuration.
+      # : () -> untyped
+      def table_styles: () -> untyped
+
+      # Sets a core property.
+      # : (untyped name, untyped value) -> untyped
+      def core_property: (untyped name, untyped value) -> untyped
+
+      # Returns core properties hash.
+      # : () -> untyped
+      def core_properties: () -> untyped
+
+      # Sets an app property.
+      # : (untyped name, untyped value) -> untyped
+      def app_property: (untyped name, untyped value) -> untyped
+
+      # Returns app properties hash.
+      # : () -> untyped
+      def app_properties: () -> untyped
+
+      # Adds a custom document property. type: :string (default), :number, :bool, :date.
+      # : (untyped name, untyped value, ?type: ::Symbol) -> untyped
+      def custom_property: (untyped name, untyped value, ?type: untyped) -> untyped
+
+      # Returns custom properties array.
+      # : () -> untyped
+      def custom_properties: () -> untyped
+
+      # Sets a sheet-level property (e.g. :tab_color, :summary_below, :summary_right).
+      # : (untyped name, untyped value, ?sheet: untyped?) -> untyped
+      def set_sheet_property: (untyped name, untyped value, ?sheet: untyped) -> untyped
+
+      # Returns sheet properties for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def sheet_properties: (?sheet: untyped) -> untyped
+
+      # Sets phonetic properties for a sheet (e.g. :font_id, :type, :alignment).
+      # : (untyped props, ?sheet: untyped?) -> untyped
+      def set_phonetic_properties: (untyped props, ?sheet: untyped) -> untyped
+
+      # Returns phonetic properties for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def phonetic_properties: (?sheet: untyped) -> untyped
+
+      # Sets a sheet format property (e.g. :default_row_height, :default_col_width, :base_col_width).
+      # : (untyped name, untyped value, ?sheet: untyped?) -> untyped
+      def set_sheet_format: (untyped name, untyped value, ?sheet: untyped) -> untyped
+
+      # Returns sheet format properties for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def sheet_format: (?sheet: untyped) -> untyped
+
+      # Sets a sheet view property (e.g. :show_grid_lines, :show_row_col_headers, :right_to_left, :zoom_scale).
+      # : (untyped name, untyped value, ?sheet: untyped?) -> untyped
+      def set_sheet_view: (untyped name, untyped value, ?sheet: untyped) -> untyped
+
+      # Returns sheet view properties for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def sheet_view: (?sheet: untyped) -> untyped
+
+      # Sets a freeze pane. row: rows to freeze from top, col: columns to freeze from left.
+      # : (?row: ::Integer, ?col: ::Integer, ?sheet: untyped?) -> untyped
+      def set_freeze_pane: (?row: untyped, ?col: untyped, ?sheet: untyped) -> untyped
+
+      # Sets a split pane (non-frozen). x_split/y_split are in 1/20th of a point (twips).
+      # top_left_cell: the cell at top-left of the bottom-right pane.
+      # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: untyped?, ?sheet: untyped?) -> untyped
+      def set_split_pane: (?x_split: untyped, ?y_split: untyped, ?top_left_cell: untyped, ?sheet: untyped) -> untyped
+
+      # Returns freeze pane settings for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def freeze_pane: (?sheet: untyped) -> untyped
+
+      # Sets the active cell selection.
+      # : (untyped active_cell, ?sqref: untyped?, ?pane: untyped?, ?active_cell_id: untyped?, ?sheet: untyped?) -> untyped
+      def set_selection: (untyped active_cell, ?sqref: untyped, ?pane: untyped, ?active_cell_id: untyped, ?sheet: untyped) -> untyped
+
+      # Returns selection for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def selection: (?sheet: untyped) -> untyped
+
+      # Sets a print option (e.g. :grid_lines, :headings, :horizontal_centered, :vertical_centered).
+      # : (untyped name, untyped value, ?sheet: untyped?) -> untyped
+      def set_print_option: (untyped name, untyped value, ?sheet: untyped) -> untyped
+
+      # Returns print options for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def print_options: (?sheet: untyped) -> untyped
+
+      # Sets page margins (all values in inches).
+      # : (?left: untyped?, ?right: untyped?, ?top: untyped?, ?bottom: untyped?, ?header: untyped?, ?footer: untyped?, ?sheet: untyped?) -> untyped
+      def set_page_margins: (?left: untyped, ?right: untyped, ?top: untyped, ?bottom: untyped, ?header: untyped, ?footer: untyped, ?sheet: untyped) -> untyped
+
+      # Returns page margins for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def page_margins: (?sheet: untyped) -> untyped
+
+      # Sets a page setup property (e.g. :orientation, :paper_size, :scale, :fit_to_width, :fit_to_height).
+      # : (untyped name, untyped value, ?sheet: untyped?) -> untyped
+      def set_page_setup: (untyped name, untyped value, ?sheet: untyped) -> untyped
+
+      # Returns page setup for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def page_setup: (?sheet: untyped) -> untyped
+
+      # Sets header/footer text (:odd_header, :odd_footer, :even_header, :even_footer).
+      # : (untyped name, untyped value, ?sheet: untyped?) -> untyped
+      def set_header_footer: (untyped name, untyped value, ?sheet: untyped) -> untyped
+
+      # Returns header/footer for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def header_footer: (?sheet: untyped) -> untyped
+
+      # Adds a row break (page break before a given row number).
+      # : (untyped row_num, ?sheet: untyped?) -> untyped
+      def add_row_break: (untyped row_num, ?sheet: untyped) -> untyped
+
+      # Returns row breaks for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def row_breaks: (?sheet: untyped) -> untyped
+
+      # Adds a column break (page break before a given column index, 1-based).
+      # : (untyped col_index, ?sheet: untyped?) -> untyped
+      def add_col_break: (untyped col_index, ?sheet: untyped) -> untyped
+
+      # Returns column breaks for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def col_breaks: (?sheet: untyped) -> untyped
+
+      # Adds a data validation rule.
+      # sqref: cell range (e.g. "A1:A100")
+      # Options: type:, operator:, formula1:, formula2:, allow_blank:, show_input_message:,
+      #          show_error_message:, error_style:, error_title:, error:, prompt_title:, prompt:
+      # : (untyped sqref, ?sheet: untyped?, **untyped opts) -> untyped
+      def add_data_validation: (untyped sqref, ?sheet: untyped, **untyped opts) -> untyped
+
+      # Returns data validations for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def data_validations: (?sheet: untyped) -> untyped
+
+      # Sets a data validations container option (e.g. disable_prompts, x_window, y_window).
+      # : (untyped name, untyped value, ?sheet: untyped?) -> untyped
+      def set_data_validations_option: (untyped name, untyped value, ?sheet: untyped) -> untyped
+
+      # Adds a conditional formatting rule to the specified range.
+      # Options: type (:cell_is, :expression, :color_scale, :data_bar, :icon_set),
+      # operator, priority, formula/formulas, format_id, color_scale, data_bar, icon_set.
+      # : (untyped sqref, ?sheet: untyped?, **untyped opts) -> untyped
+      def add_conditional_format: (untyped sqref, ?sheet: untyped, **untyped opts) -> untyped
+
+      # Returns conditional formatting rules for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def conditional_formats: (?sheet: untyped) -> untyped
+
+      # Adds a table definition to a sheet.
+      # columns: array of column name strings.
+      # : (untyped ref, columns: untyped, ?name: untyped?, ?display_name: untyped?, ?sheet: untyped?, ?totals_row_count: ::Integer, ?style: untyped?, **untyped opts) -> untyped
+      def add_table: (untyped ref, columns: untyped, ?name: untyped, ?display_name: untyped, ?sheet: untyped, ?totals_row_count: untyped, ?style: untyped, **untyped opts) -> untyped
+
+      # Returns table definitions for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def tables: (?sheet: untyped) -> untyped
+
+      # Enables shared string table mode (strings stored in sharedStrings.xml).
+      # : () -> untyped
+      def use_shared_strings!: () -> untyped
+
+      # Sets a sheet's visibility state (:visible, :hidden, :very_hidden).
+      # : (untyped sheet_name, untyped state) -> untyped
+      def set_sheet_state: (untyped sheet_name, untyped state) -> untyped
+
+      # Returns the sheet state for a given sheet.
+      # : (untyped sheet_name) -> untyped
+      def sheet_state: (untyped sheet_name) -> untyped
+
+      # Adds a defined name. Options: sheet: (local scope), hidden: true, value: (formula or constant).
+      # : (untyped name, untyped value, ?sheet: untyped?, ?hidden: bool, **untyped opts) -> untyped
+      def add_defined_name: (untyped name, untyped value, ?sheet: untyped, ?hidden: untyped, **untyped opts) -> untyped
+
+      # Returns defined names array.
+      # : () -> untyped
+      def defined_names: () -> untyped
+
+      # Sets the print area for a sheet. range should be like "A1:D20".
+      # Generates the _xlnm.Print_Area defined name automatically.
+      # : (untyped range, ?sheet: untyped?) -> untyped
+      def set_print_area: (untyped range, ?sheet: untyped) -> untyped
+
+      # Sets print titles (rows and/or columns to repeat on each page).
+      # rows: "1:3" repeats rows 1-3, cols: "A:B" repeats columns A-B.
+      # : (?rows: untyped?, ?cols: untyped?, ?sheet: untyped?) -> untyped
+      def set_print_titles: (?rows: untyped, ?cols: untyped, ?sheet: untyped) -> untyped
+
+      # Sets a workbook property (e.g. :date1904, :default_theme_version).
+      # : (untyped name, untyped value) -> untyped
+      def set_workbook_property: (untyped name, untyped value) -> untyped
+
+      # Returns workbook properties hash.
+      # : () -> untyped
+      def workbook_properties: () -> untyped
+
+      # Sets a file version property (e.g. :app_name, :last_edited, :lowest_edited, :rup_build, :code_name).
+      # : (untyped name, untyped value) -> untyped
+      def set_file_version: (untyped name, untyped value) -> untyped
+
+      # Returns file version hash.
+      # : () -> untyped
+      def file_version: () -> untyped
+
+      # Sets a file sharing property (e.g. :read_only_recommended, :user_name).
+      # : (untyped name, untyped value) -> untyped
+      def set_file_sharing: (untyped name, untyped value) -> untyped
+
+      # Returns file sharing hash.
+      # : () -> untyped
+      def file_sharing: () -> untyped
+
+      # Sets a workbook view property (e.g. :active_tab, :first_sheet).
+      # : (untyped name, untyped value) -> untyped
+      def set_workbook_view: (untyped name, untyped value) -> untyped
+
+      # Returns workbook view properties hash.
+      # : () -> untyped
+      def workbook_views: () -> untyped
+
+      # Sets a calc property (e.g. :calc_id, :full_calc_on_load).
+      # : (untyped name, untyped value) -> untyped
+      def set_calc_property: (untyped name, untyped value) -> untyped
+
+      # Returns calc properties hash.
+      # : () -> untyped
+      def calc_properties: () -> untyped
+
+      # Sets a file recovery property (e.g. :auto_recover, :crash_save).
+      # : (untyped name, untyped value) -> untyped
+      def set_file_recovery_property: (untyped name, untyped value) -> untyped
+
+      # Returns file recovery properties hash.
+      # : () -> untyped
+      def file_recovery_properties: () -> untyped
+
+      # Sets sheet protection options.
+      # Options: :password, :sheet, :objects, :scenarios, :format_cells, :format_columns,
+      #   :format_rows, :insert_columns, :insert_rows, :insert_hyperlinks,
+      #   :delete_columns, :delete_rows, :select_locked_cells, :sort, :auto_filter,
+      #   :pivot_tables, :select_unlocked_cells, :algorithm_name, :hash_value, :salt_value, :spin_count
+      # : (?sheet: untyped?, **untyped opts) -> untyped
+      def set_sheet_protection: (?sheet: untyped, **untyped opts) -> untyped
+
+      # Returns sheet protection settings for the given sheet.
+      # : (?sheet: untyped?) -> untyped
+      def sheet_protection: (?sheet: untyped) -> untyped
+
+      # Adds a protected range to the given sheet.
+      # Required: name:, sqref:
+      # Optional: algorithm_name:, hash_value:, salt_value:, spin_count:, security_descriptors: []
+      # : (?sheet: untyped?, **untyped opts) -> untyped
+      def add_protected_range: (?sheet: untyped, **untyped opts) -> untyped
+
+      # Returns protected ranges for the given sheet.
+      # : (?sheet: untyped?) -> untyped
+      def protected_ranges: (?sheet: untyped) -> untyped
+
+      # Adds a cell watch to the given sheet.
+      # : (untyped cell_ref, ?sheet: untyped?) -> untyped
+      def add_cell_watch: (untyped cell_ref, ?sheet: untyped) -> untyped
+
+      # Returns cell watches for the given sheet.
+      # : (?sheet: untyped?) -> untyped
+      def cell_watches: (?sheet: untyped) -> untyped
+
+      # Adds an ignored error entry for the given sheet.
+      # Options: sqref:, eval_error:, two_digit_text_year:, number_stored_as_text:, formula:,
+      #   formula_range:, unlocked_formula:, empty_cell_reference:, list_data_validation:, calculated_column:
+      # : (?sheet: untyped?, **untyped opts) -> untyped
+      def add_ignored_error: (?sheet: untyped, **untyped opts) -> untyped
+
+      # Returns ignored errors for the given sheet.
+      # : (?sheet: untyped?) -> untyped
+      def ignored_errors: (?sheet: untyped) -> untyped
+
+      # Sets data consolidation options for the given sheet.
+      # Options: function:, start_labels:, top_labels:, link:, data_refs: [{ref:, name:, sheet:}]
+      # : (?sheet: untyped?, **untyped opts) -> untyped
+      def set_data_consolidate: (?sheet: untyped, **untyped opts) -> untyped
+
+      # Returns data consolidation settings for the given sheet.
+      # : (?sheet: untyped?) -> untyped
+      def data_consolidate: (?sheet: untyped) -> untyped
+
+      # Sets scenarios for the given sheet.
+      # Options: current:, show:, sqref:, scenarios: [{name:, input_cells: [{r:, val:, ...}], ...}]
+      # : (?sheet: untyped?, **untyped opts) -> untyped
+      def set_scenarios: (?sheet: untyped, **untyped opts) -> untyped
+
+      # Returns scenarios for the given sheet.
+      # : (?sheet: untyped?) -> untyped
+      def scenarios: (?sheet: untyped) -> untyped
+
+      # Sets workbook protection options.
+      # Options: :lock_structure, :lock_windows, :password, :algorithm_name, :hash_value, :salt_value, :spin_count
+      # : (**untyped opts) -> untyped
+      def set_workbook_protection: (**untyped opts) -> untyped
+
+      # Returns workbook protection settings.
+      # : () -> untyped
+      def workbook_protection: () -> untyped
+
+      # Returns ordered sheet names.
+      # : untyped
+      attr_reader sheet_order: untyped
+
+      # Adds a raw ZIP entry to be included in the output (for pass-through retention).
+      # : (untyped path, untyped content, ?content_type: untyped?) -> (nil | untyped)
+      def add_raw_entry: (untyped path, untyped content, ?content_type: untyped) -> untyped
+
+      # Copies all ZIP entries from an existing XLSX file as pass-through.
+      # Generated parts override pass-through parts with the same path.
+      # : (untyped filepath) -> untyped
+      def copy_entries_from: (untyped filepath) -> untyped
+
+      # Inserts an image from file data into the given sheet.
+      # file_data: raw image bytes. ext: file extension (e.g. "png").
+      # from_col/from_row: anchor start. to_col/to_row: anchor end.
+      # : (untyped file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, ?from_col_off: untyped?, ?from_row_off: untyped?, ?to_col_off: untyped?, ?to_row_off: untyped?, ?name: untyped?, ?description: untyped?, ?title: untyped?, ?hidden: untyped?, ?macro: untyped?, ?no_change_aspect: bool, ?no_crop: untyped?, ?line_color: untyped?, ?line_width: untyped?, ?rotation: untyped?, ?edit_as: untyped?, ?published: untyped?, ?locks_with_sheet: untyped?, ?prints_with_sheet: untyped?, ?src_rect: untyped?, ?alpha_mod_fix: untyped?, ?sheet: untyped?) -> untyped
+      def insert_image: (untyped file_data, ?ext: untyped, ?from_col: untyped, ?from_row: untyped, ?to_col: untyped, ?to_row: untyped, ?from_col_off: untyped, ?from_row_off: untyped, ?to_col_off: untyped, ?to_row_off: untyped, ?name: untyped, ?description: untyped, ?title: untyped, ?hidden: untyped, ?macro: untyped, ?no_change_aspect: untyped, ?no_crop: untyped, ?line_color: untyped, ?line_width: untyped, ?rotation: untyped, ?edit_as: untyped, ?published: untyped, ?locks_with_sheet: untyped, ?prints_with_sheet: untyped, ?src_rect: untyped, ?alpha_mod_fix: untyped, ?sheet: untyped) -> untyped
+
+      # Returns images for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def images: (?sheet: untyped) -> untyped
+
+      # Adds a chart to the given sheet.
+      # type: :bar, :line, :pie. title: chart title string.
+      # data_ref: e.g. "Sheet1!$A$1:$B$4". cat_ref/val_ref for explicit series.
+      # : (?type: ::Symbol, ?title: untyped?, ?title_overlay: untyped?, ?title_font: untyped?, ?title_fill_color: untyped?, ?title_no_fill: untyped?, ?title_line_color: untyped?, ?title_line_width: untyped?, ?title_line_dash: untyped?, ?title_rotation: untyped?, ?auto_title_deleted: untyped?, ?cat_ref: untyped?, ?val_ref: untyped?, ?series: untyped?, ?legend: untyped?, ?data_labels: untyped?, ?cat_axis_title: untyped?, ?val_axis_title: untyped?, ?cat_axis_title_font: untyped?, ?cat_axis_title_fill: untyped?, ?cat_axis_title_no_fill: untyped?, ?cat_axis_title_line_color: untyped?, ?cat_axis_title_line_width: untyped?, ?cat_axis_title_line_dash: untyped?, ?cat_axis_title_rotation: untyped?, ?val_axis_title_font: untyped?, ?val_axis_title_fill: untyped?, ?val_axis_title_no_fill: untyped?, ?val_axis_title_line_color: untyped?, ?val_axis_title_line_width: untyped?, ?val_axis_title_line_dash: untyped?, ?val_axis_title_rotation: untyped?, ?cat_axis_tick_lbl_pos: untyped?, ?val_axis_tick_lbl_pos: untyped?, ?cat_axis_major_gridlines: untyped?, ?val_axis_major_gridlines: untyped?, ?cat_axis_minor_gridlines: untyped?, ?val_axis_minor_gridlines: untyped?, ?cat_axis_delete: untyped?, ?val_axis_delete: untyped?, ?cat_axis_orientation: untyped?, ?val_axis_orientation: untyped?, ?cat_axis_num_fmt: untyped?, ?val_axis_num_fmt: untyped?, ?cat_axis_major_tick_mark: untyped?, ?cat_axis_minor_tick_mark: untyped?, ?val_axis_major_tick_mark: untyped?, ?val_axis_minor_tick_mark: untyped?, ?cat_axis_crosses: untyped?, ?val_axis_crosses: untyped?, ?cat_axis_crosses_at: untyped?, ?val_axis_crosses_at: untyped?, ?cat_axis_tick_lbl_skip: untyped?, ?cat_axis_tick_mark_skip: untyped?, ?cat_axis_lbl_offset: untyped?, ?cat_axis_auto: untyped?, ?cat_axis_lbl_algn: untyped?, ?cat_axis_no_multi_lvl_lbl: untyped?, ?val_axis_cross_between: untyped?, ?val_axis_major_unit: untyped?, ?val_axis_minor_unit: untyped?, ?cat_axis_scaling_max: untyped?, ?cat_axis_scaling_min: untyped?, ?val_axis_scaling_max: untyped?, ?val_axis_scaling_min: untyped?, ?cat_axis_log_base: untyped?, ?val_axis_log_base: untyped?, ?val_axis_disp_units: untyped?, ?gap_width: untyped?, ?gap_depth: untyped?, ?overlap: untyped?, ?first_slice_ang: untyped?, ?hole_size: untyped?, ?smooth: untyped?, ?marker: untyped?, ?scatter_style: untyped?, ?radar_style: untyped?, ?bar_shape: untyped?, ?bubble_3d: untyped?, ?bubble_scale: untyped?, ?show_neg_bubbles: untyped?, ?size_represents: untyped?, ?wireframe: untyped?, ?grouping: untyped?, ?bar_dir: untyped?, ?vary_colors: untyped?, ?style: untyped?, ?rounded_corners: untyped?, ?view_3d: untyped?, ?cat_axis_pos: untyped?, ?val_axis_pos: untyped?, ?name: untyped?, ?description: untyped?, ?frame_title: untyped?, ?frame_hidden: untyped?, ?frame_macro: untyped?, ?frame_no_grp: untyped?, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, ?from_col_off: untyped?, ?from_row_off: untyped?, ?to_col_off: untyped?, ?to_row_off: untyped?, ?edit_as: untyped?, ?published: untyped?, ?locks_with_sheet: untyped?, ?prints_with_sheet: untyped?, ?plot_vis_only: untyped?, ?disp_blanks_as: untyped?, ?show_d_lbls_over_max: untyped?, ?data_table: untyped?, ?plot_area_fill: untyped?, ?plot_area_no_fill: untyped?, ?plot_area_line_color: untyped?, ?plot_area_line_width: untyped?, ?plot_area_line_dash: untyped?, ?plot_area_layout: untyped?, ?floor: untyped?, ?side_wall: untyped?, ?back_wall: untyped?, ?drop_lines: untyped?, ?hi_low_lines: untyped?, ?ser_lines: untyped?, ?up_down_bars: untyped?, ?band_fmts: untyped?, ?of_pie_type: untyped?, ?split_type: untyped?, ?split_pos: untyped?, ?cust_split: untyped?, ?second_pie_size: untyped?, ?cat_axis_label_rotation: untyped?, ?val_axis_label_rotation: untyped?, ?cat_axis_font: untyped?, ?val_axis_font: untyped?, ?cat_axis_line_color: untyped?, ?cat_axis_line_width: untyped?, ?cat_axis_line_dash: untyped?, ?val_axis_line_color: untyped?, ?val_axis_line_width: untyped?, ?val_axis_line_dash: untyped?, ?cat_axis_fill: untyped?, ?cat_axis_no_fill: untyped?, ?val_axis_fill: untyped?, ?val_axis_no_fill: untyped?, ?cat_axis_type: untyped?, ?cat_axis_base_time_unit: untyped?, ?cat_axis_major_time_unit: untyped?, ?cat_axis_minor_time_unit: untyped?, ?cat_axis_major_unit: untyped?, ?cat_axis_minor_unit: untyped?, ?chart_fill: untyped?, ?chart_no_fill: untyped?, ?chart_line_color: untyped?, ?chart_line_width: untyped?, ?chart_line_dash: untyped?, ?protection: untyped?, ?print_settings: untyped?, ?chart_font: untyped?, ?sheet: untyped?) -> untyped
+      def add_chart: (?type: untyped, ?title: untyped, ?title_overlay: untyped, ?title_font: untyped, ?title_fill_color: untyped, ?title_no_fill: untyped, ?title_line_color: untyped, ?title_line_width: untyped, ?title_line_dash: untyped, ?title_rotation: untyped, ?auto_title_deleted: untyped, ?cat_ref: untyped, ?val_ref: untyped, ?series: untyped, ?legend: untyped, ?data_labels: untyped, ?cat_axis_title: untyped, ?val_axis_title: untyped, ?cat_axis_title_font: untyped, ?cat_axis_title_fill: untyped, ?cat_axis_title_no_fill: untyped, ?cat_axis_title_line_color: untyped, ?cat_axis_title_line_width: untyped, ?cat_axis_title_line_dash: untyped, ?cat_axis_title_rotation: untyped, ?val_axis_title_font: untyped, ?val_axis_title_fill: untyped, ?val_axis_title_no_fill: untyped, ?val_axis_title_line_color: untyped, ?val_axis_title_line_width: untyped, ?val_axis_title_line_dash: untyped, ?val_axis_title_rotation: untyped, ?cat_axis_tick_lbl_pos: untyped, ?val_axis_tick_lbl_pos: untyped, ?cat_axis_major_gridlines: untyped, ?val_axis_major_gridlines: untyped, ?cat_axis_minor_gridlines: untyped, ?val_axis_minor_gridlines: untyped, ?cat_axis_delete: untyped, ?val_axis_delete: untyped, ?cat_axis_orientation: untyped, ?val_axis_orientation: untyped, ?cat_axis_num_fmt: untyped, ?val_axis_num_fmt: untyped, ?cat_axis_major_tick_mark: untyped, ?cat_axis_minor_tick_mark: untyped, ?val_axis_major_tick_mark: untyped, ?val_axis_minor_tick_mark: untyped, ?cat_axis_crosses: untyped, ?val_axis_crosses: untyped, ?cat_axis_crosses_at: untyped, ?val_axis_crosses_at: untyped, ?cat_axis_tick_lbl_skip: untyped, ?cat_axis_tick_mark_skip: untyped, ?cat_axis_lbl_offset: untyped, ?cat_axis_auto: untyped, ?cat_axis_lbl_algn: untyped, ?cat_axis_no_multi_lvl_lbl: untyped, ?val_axis_cross_between: untyped, ?val_axis_major_unit: untyped, ?val_axis_minor_unit: untyped, ?cat_axis_scaling_max: untyped, ?cat_axis_scaling_min: untyped, ?val_axis_scaling_max: untyped, ?val_axis_scaling_min: untyped, ?cat_axis_log_base: untyped, ?val_axis_log_base: untyped, ?val_axis_disp_units: untyped, ?gap_width: untyped, ?gap_depth: untyped, ?overlap: untyped, ?first_slice_ang: untyped, ?hole_size: untyped, ?smooth: untyped, ?marker: untyped, ?scatter_style: untyped, ?radar_style: untyped, ?bar_shape: untyped, ?bubble_3d: untyped, ?bubble_scale: untyped, ?show_neg_bubbles: untyped, ?size_represents: untyped, ?wireframe: untyped, ?grouping: untyped, ?bar_dir: untyped, ?vary_colors: untyped, ?style: untyped, ?rounded_corners: untyped, ?view_3d: untyped, ?cat_axis_pos: untyped, ?val_axis_pos: untyped, ?name: untyped, ?description: untyped, ?frame_title: untyped, ?frame_hidden: untyped, ?frame_macro: untyped, ?frame_no_grp: untyped, ?from_col: untyped, ?from_row: untyped, ?to_col: untyped, ?to_row: untyped, ?from_col_off: untyped, ?from_row_off: untyped, ?to_col_off: untyped, ?to_row_off: untyped, ?edit_as: untyped, ?published: untyped, ?locks_with_sheet: untyped, ?prints_with_sheet: untyped, ?plot_vis_only: untyped, ?disp_blanks_as: untyped, ?show_d_lbls_over_max: untyped, ?data_table: untyped, ?plot_area_fill: untyped, ?plot_area_no_fill: untyped, ?plot_area_line_color: untyped, ?plot_area_line_width: untyped, ?plot_area_line_dash: untyped, ?plot_area_layout: untyped, ?floor: untyped, ?side_wall: untyped, ?back_wall: untyped, ?drop_lines: untyped, ?hi_low_lines: untyped, ?ser_lines: untyped, ?up_down_bars: untyped, ?band_fmts: untyped, ?of_pie_type: untyped, ?split_type: untyped, ?split_pos: untyped, ?cust_split: untyped, ?second_pie_size: untyped, ?cat_axis_label_rotation: untyped, ?val_axis_label_rotation: untyped, ?cat_axis_font: untyped, ?val_axis_font: untyped, ?cat_axis_line_color: untyped, ?cat_axis_line_width: untyped, ?cat_axis_line_dash: untyped, ?val_axis_line_color: untyped, ?val_axis_line_width: untyped, ?val_axis_line_dash: untyped, ?cat_axis_fill: untyped, ?cat_axis_no_fill: untyped, ?val_axis_fill: untyped, ?val_axis_no_fill: untyped, ?cat_axis_type: untyped, ?cat_axis_base_time_unit: untyped, ?cat_axis_major_time_unit: untyped, ?cat_axis_minor_time_unit: untyped, ?cat_axis_major_unit: untyped, ?cat_axis_minor_unit: untyped, ?chart_fill: untyped, ?chart_no_fill: untyped, ?chart_line_color: untyped, ?chart_line_width: untyped, ?chart_line_dash: untyped, ?protection: untyped, ?print_settings: untyped, ?chart_font: untyped, ?sheet: untyped) -> untyped
+
+      # Returns chart definitions for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def charts: (?sheet: untyped) -> untyped
+
+      # Adds a shape to the given sheet.
+      # preset: preset geometry name (e.g. "rect", "ellipse", "roundRect").
+      # text: optional text body string.
+      # from_col/from_row/to_col/to_row: anchor coordinates.
+      # : (?preset: ::String, ?text: untyped?, ?name: untyped?, ?description: untyped?, ?title: untyped?, ?hidden: untyped?, ?macro: untyped?, ?textlink: untyped?, ?f_locks_text: untyped?, ?no_grp: untyped?, ?no_rot: untyped?, ?fill_color: untyped?, ?fill_alpha: untyped?, ?fill_color_transforms: untyped?, ?no_fill: untyped?, ?gradient_fill: untyped?, ?pattern_fill: untyped?, ?line_color: untyped?, ?line_alpha: untyped?, ?line_color_transforms: untyped?, ?line_width: untyped?, ?no_line: untyped?, ?line_dash: untyped?, ?line_custom_dash: untyped?, ?line_cap: untyped?, ?line_align: untyped?, ?line_compound: untyped?, ?line_join: untyped?, ?line_miter_limit: untyped?, ?head_end: untyped?, ?tail_end: untyped?, ?rotation: untyped?, ?text_wrap: untyped?, ?text_anchor: untyped?, ?text_vert_overflow: untyped?, ?text_horz_overflow: untyped?, ?text_spc_first_last_para: untyped?, ?text_num_col: untyped?, ?text_spc_col: untyped?, ?text_rtl_col: untyped?, ?text_from_word_art: untyped?, ?text_upright: untyped?, ?text_compat_ln_spc: untyped?, ?text_force_aa: untyped?, ?text_warp: untyped?, ?text_vertical: untyped?, ?text_insets: untyped?, ?text_rot: untyped?, ?adjust_values: untyped?, ?text_font: untyped?, ?text_end_para_rpr: untyped?, ?text_def_rpr: untyped?, ?text_align: untyped?, ?text_font_align: untyped?, ?text_def_tab_sz: untyped?, ?text_indent: untyped?, ?text_anchor_ctr: untyped?, ?text_spacing: untyped?, ?text_rtl: untyped?, ?text_ea_ln_brk: untyped?, ?text_latin_ln_brk: untyped?, ?text_hanging_punct: untyped?, ?text_tab_stops: untyped?, ?text_bullet: untyped?, ?text_level: untyped?, ?text_paragraphs: untyped?, ?autofit: untyped?, ?outer_shadow: untyped?, ?inner_shadow: untyped?, ?glow: untyped?, ?soft_edge: untyped?, ?reflection: untyped?, ?blur: untyped?, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, ?from_col_off: untyped?, ?from_row_off: untyped?, ?to_col_off: untyped?, ?to_row_off: untyped?, ?edit_as: untyped?, ?published: untyped?, ?locks_with_sheet: untyped?, ?prints_with_sheet: untyped?, ?sheet: untyped?) -> untyped
+      def add_shape: (?preset: untyped, ?text: untyped, ?name: untyped, ?description: untyped, ?title: untyped, ?hidden: untyped, ?macro: untyped, ?textlink: untyped, ?f_locks_text: untyped, ?no_grp: untyped, ?no_rot: untyped, ?fill_color: untyped, ?fill_alpha: untyped, ?fill_color_transforms: untyped, ?no_fill: untyped, ?gradient_fill: untyped, ?pattern_fill: untyped, ?line_color: untyped, ?line_alpha: untyped, ?line_color_transforms: untyped, ?line_width: untyped, ?no_line: untyped, ?line_dash: untyped, ?line_custom_dash: untyped, ?line_cap: untyped, ?line_align: untyped, ?line_compound: untyped, ?line_join: untyped, ?line_miter_limit: untyped, ?head_end: untyped, ?tail_end: untyped, ?rotation: untyped, ?text_wrap: untyped, ?text_anchor: untyped, ?text_vert_overflow: untyped, ?text_horz_overflow: untyped, ?text_spc_first_last_para: untyped, ?text_num_col: untyped, ?text_spc_col: untyped, ?text_rtl_col: untyped, ?text_from_word_art: untyped, ?text_upright: untyped, ?text_compat_ln_spc: untyped, ?text_force_aa: untyped, ?text_warp: untyped, ?text_vertical: untyped, ?text_insets: untyped, ?text_rot: untyped, ?adjust_values: untyped, ?text_font: untyped, ?text_end_para_rpr: untyped, ?text_def_rpr: untyped, ?text_align: untyped, ?text_font_align: untyped, ?text_def_tab_sz: untyped, ?text_indent: untyped, ?text_anchor_ctr: untyped, ?text_spacing: untyped, ?text_rtl: untyped, ?text_ea_ln_brk: untyped, ?text_latin_ln_brk: untyped, ?text_hanging_punct: untyped, ?text_tab_stops: untyped, ?text_bullet: untyped, ?text_level: untyped, ?text_paragraphs: untyped, ?autofit: untyped, ?outer_shadow: untyped, ?inner_shadow: untyped, ?glow: untyped, ?soft_edge: untyped, ?reflection: untyped, ?blur: untyped, ?from_col: untyped, ?from_row: untyped, ?to_col: untyped, ?to_row: untyped, ?from_col_off: untyped, ?from_row_off: untyped, ?to_col_off: untyped, ?to_row_off: untyped, ?edit_as: untyped, ?published: untyped, ?locks_with_sheet: untyped, ?prints_with_sheet: untyped, ?sheet: untyped) -> untyped
+
+      # Returns shape definitions for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def shapes: (?sheet: untyped) -> untyped
+
+      # Adds a comment on a cell.
+      # : (untyped cell_address, untyped text, ?author: ::String, ?sheet: untyped?, ?guid: untyped?, ?shape_id: untyped?) -> untyped
+      def add_comment: (untyped cell_address, untyped text, ?author: untyped, ?sheet: untyped, ?guid: untyped, ?shape_id: untyped) -> untyped
+
+      # Returns comment definitions for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def comments: (?sheet: untyped) -> untyped
+
+      # Adds a pivot table to the given sheet.
+      # source_ref: data source range (e.g. "Sheet1!A1:C4").
+      # row_fields: array of 0-based field indices for row axis.
+      # data_fields: array of { fld:, name:, subtotal: } hashes.
+      # col_fields: array of 0-based field indices for column axis.
+      # field_names: array of field name strings (for cache definition).
+      # items: hash mapping field index to array of item values.
+      # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: ::String, ?name: untyped?, ?field_names: untyped?, ?items: untyped?, ?sheet: untyped?, **untyped opts) -> untyped
+      def add_pivot_table: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, ?sheet: untyped, **untyped opts) -> untyped
+
+      # Returns pivot table definitions for the first (or given) sheet.
+      # : (?sheet: untyped?) -> untyped
+      def pivot_tables: (?sheet: untyped) -> untyped
+
+      # Adds an external link reference to another workbook.
+      # target: path or URI to the external workbook (e.g. "Book2.xlsx").
+      # sheet_names: array of sheet name strings in the external workbook.
+      # : (target: untyped, ?sheet_names: untyped) -> untyped
+      def add_external_link: (target: untyped, ?sheet_names: untyped) -> untyped
+
+      # Returns external link definitions.
+      # : () -> untyped
+      def external_links: () -> untyped
+
+      # Enables macro preservation mode. Required when copy_entries_from loads a .xlsm file.
+      # : () -> untyped
+      def preserve_macros!: () -> untyped
+
+      # Returns whether macro preservation is enabled.
+      # : () -> untyped
+      def preserve_macros?: () -> untyped
+
+      # Writes the workbook as an XLSX file to the given path.
+      # : (untyped filepath) -> untyped
+      def write: (untyped filepath) -> untyped
+
+      CF_TYPE_MAP: untyped
+
+      XDR_NS: ::String
+
+      A_NS: ::String
+
+      C_NS: ::String
+
+      CHART_TYPE_MAP: untyped
+
+      NO_AXIS_CHARTS: untyped
+
+      THREE_AXIS_CHARTS: untyped
+
+      GROUPING_CHARTS: untyped
+
+      private
+
+      # : (?::Hash[untyped, untyped] all_entries) -> untyped
+      def generate_content_types_xml: (?untyped all_entries) -> untyped
+
+      # : () -> untyped
+      def generate_rels_root: () -> untyped
+
+      # : (?::Integer pivot_cache_count) -> untyped
+      def generate_workbook_xml: (?untyped pivot_cache_count) -> untyped
+
+      # : (?has_calc_chain: bool) -> untyped
+      def generate_workbook_rels: (?has_calc_chain: untyped) -> untyped
+
+      # : () -> (nil | untyped)
+      def generate_calc_chain_xml: () -> untyped
+
+      # : (untyped sheet_cells, untyped sheet_col_widths, untyped sheet_col_attrs, untyped sheet_row_attrs, untyped sheet_auto_filter, untyped sheet_filter_cols, untyped sheet_sort, untyped sheet_merge_cells, untyped sheet_hyperlinks, untyped sheet_cell_styles, untyped sheet_props, untyped sheet_fmt, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf, untyped sheet_rb, untyped sheet_cb, untyped sheet_dv, untyped sheet_cf, ?untyped? sst, ?untyped sheet_tables, ?::Integer hyperlink_count, ?has_drawing: bool, ?has_comments: bool, ?sheet_prot: untyped?, ?vml_rid: untyped?, ?phonetic_pr: untyped?, ?dv_options: ::Hash[untyped, untyped], ?prot_ranges: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?data_consol: untyped?, ?sheet_scenarios: untyped?, ?cell_phonetic: ::Hash[untyped, untyped]) -> untyped
+      def generate_worksheet_xml: (untyped sheet_cells, untyped sheet_col_widths, untyped sheet_col_attrs, untyped sheet_row_attrs, untyped sheet_auto_filter, untyped sheet_filter_cols, untyped sheet_sort, untyped sheet_merge_cells, untyped sheet_hyperlinks, untyped sheet_cell_styles, untyped sheet_props, untyped sheet_fmt, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf, untyped sheet_rb, untyped sheet_cb, untyped sheet_dv, untyped sheet_cf, ?untyped sst, ?untyped sheet_tables, ?untyped hyperlink_count, ?has_drawing: untyped, ?has_comments: untyped, ?sheet_prot: untyped, ?vml_rid: untyped, ?phonetic_pr: untyped, ?dv_options: untyped, ?prot_ranges: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?data_consol: untyped, ?sheet_scenarios: untyped, ?cell_phonetic: untyped) -> untyped
+
+      # : () -> ::Array[untyped]
+      def build_shared_string_table: () -> untyped
+
+      # : (untyped sst) -> untyped
+      def generate_shared_strings_xml: (untyped sst) -> untyped
+
+      # : (untyped tbl) -> untyped
+      def generate_table_xml: (untyped tbl) -> untyped
+
+      # : (untyped sheet_hyperlinks, ?untyped sheet_tables, ?::Integer table_start_index) -> untyped
+      def generate_worksheet_rels: (untyped sheet_hyperlinks, ?untyped sheet_tables, ?untyped table_start_index) -> untyped
+
+      # : (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count) -> untyped
+      def build_sheet_rels_parts_v2: (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count) -> untyped
+
+      # : (untyped rels_data) -> untyped
+      def generate_generic_rels: (untyped rels_data) -> untyped
+
+      # : (untyped drawing_parts) -> untyped
+      def generate_drawing_xml: (untyped drawing_parts) -> untyped
+
+      # : (untyped para) -> ::String
+      def paragraph_xml: (untyped para) -> untyped
+
+      # : (untyped tag, untyped font) -> untyped
+      def text_char_props_xml: (untyped tag, untyped font) -> untyped
+
+      # : (untyped tag, untyped col, untyped row, ?col_off: ::Integer, ?row_off: ::Integer) -> ::String
+      def anchor_xml: (untyped tag, untyped col, untyped row, ?col_off: untyped, ?row_off: untyped) -> untyped
+
+      # : (untyped obj) -> ::String
+      def client_data_xml: (untyped obj) -> untyped
+
+      # : (untyped rels_data) -> untyped
+      def generate_drawing_rels: (untyped rels_data) -> untyped
+
+      # : (untyped title_spec, ?overlay: bool) -> untyped
+      def build_chart_title_xml: (untyped title_spec, ?overlay: untyped) -> untyped
+
+      # : (untyped title_spec, untyped chart, untyped prefix) -> untyped
+      def merge_flat_title_styling: (untyped title_spec, untyped chart, untyped prefix) -> untyped
+
+      # : (untyped spec) -> untyped
+      def build_title_sp_pr: (untyped spec) -> untyped
+
+      # : (untyped layout) -> ("" | untyped)
+      def build_title_layout_xml: (untyped layout) -> untyped
+
+      # : (untyped tag, untyped spec) -> ("" | untyped)
+      def gridlines_xml: (untyped tag, untyped spec) -> untyped
+
+      # Resolves a cell reference like "Sheet1!$A$1:$A$5" to an array of values from @sheets.
+      # : (untyped ref) -> (nil | untyped)
+      def resolve_sheet_ref: (untyped ref) -> untyped
+
+      # : (untyped start_cell, untyped end_cell) -> (::Array[untyped] | untyped)
+      def enumerate_cell_range: (untyped start_cell, untyped end_cell) -> untyped
+
+      # : (untyped ref) -> ("" | ::String)
+      def num_cache_xml: (untyped ref) -> untyped
+
+      # : (untyped ref) -> ("" | ::String)
+      def str_cache_xml: (untyped ref) -> untyped
+
+      # : (untyped color, ?alpha: untyped?, ?transforms: untyped?) -> untyped
+      def color_xml: (untyped color, ?alpha: untyped, ?transforms: untyped) -> untyped
+
+      # : (untyped color) -> untyped
+      def normalize_drawing_rgb: (untyped color) -> untyped
+
+      alias srgb_clr_xml color_xml
+
+      # : (untyped rotation, untyped font) -> ("" | ::String)
+      def build_axis_txpr: (untyped rotation, untyped font) -> untyped
+
+      # : (untyped chart) -> untyped
+      def generate_chart_xml: (untyped chart) -> untyped
+
+      # : (untyped sheet_comments) -> untyped
+      def generate_comments_xml: (untyped sheet_comments) -> untyped
+
+      # : (untyped sheet_comments) -> untyped
+      def generate_vml_drawing_xml: (untyped sheet_comments) -> untyped
+
+      # : (untyped cell_ref) -> (::Array[0] | ::Array[untyped])
+      def cell_to_col_row: (untyped cell_ref) -> untyped
+
+      # : (untyped pivot_table, untyped cache_id) -> untyped
+      def generate_pivot_table_xml: (untyped pivot_table, untyped cache_id) -> untyped
+
+      # : (untyped pivot_table, untyped _cache_id) -> untyped
+      def generate_pivot_cache_definition_xml: (untyped pivot_table, untyped _cache_id) -> untyped
+
+      # : (untyped pivot_table) -> untyped
+      def generate_pivot_cache_records_xml: (untyped pivot_table) -> untyped
+
+      # : (untyped cache_id) -> untyped
+      def generate_pivot_cache_rels: (untyped cache_id) -> untyped
+
+      # : (untyped cache_id) -> untyped
+      def generate_pivot_table_rels: (untyped cache_id) -> untyped
+
+      # : (untyped ext_link) -> untyped
+      def generate_external_link_xml: (untyped ext_link) -> untyped
+
+      # : (untyped ext_link) -> untyped
+      def generate_external_link_rels: (untyped ext_link) -> untyped
+
+      # : (untyped ct_xml) -> untyped
+      def parse_extra_content_types: (untyped ct_xml) -> untyped
+
+      # : (untyped element, untyped opts) -> ("" | ::String)
+      def build_line_end_xml: (untyped element, untyped opts) -> untyped
+
+      # : (untyped value) -> untyped
+      def xml_escape: (untyped value) -> untyped
+
+      # : (untyped rich_text) -> untyped
+      def rich_text_xml: (untyped rich_text) -> untyped
+
+      # : (untyped cell_ref, untyped value, untyped style_idx, ?untyped? sst, ?ph: untyped?) -> untyped
+      def cell_xml: (untyped cell_ref, untyped value, untyped style_idx, ?untyped sst, ?ph: untyped) -> untyped
+
+      # Returns the numFmtId for dates, registering it on first use.
+      # : () -> untyped
+      def date_num_fmt_id: () -> untyped
+
+      # Returns the numFmtId for datetime, registering it on first use.
+      # : () -> untyped
+      def datetime_num_fmt_id: () -> untyped
+
+      # Maps a numFmtId to a cellXfs index. Index 0 is the default (no format).
+      # : (untyped style_value) -> (nil | untyped)
+      def resolve_style_index: (untyped style_value) -> untyped
+
+      # : (untyped filter) -> untyped
+      def emit_filter_xml: (untyped filter) -> untyped
+
+      # : (untyped parts, untyped rule) -> untyped
+      def emit_cf_rule: (untyped parts, untyped rule) -> untyped
+
+      # Emits a <color> element for CF rules, accepting either a plain RGB string or a hash.
+      # : (untyped color) -> (untyped | ::String)
+      def emit_cf_color_xml: (untyped color) -> untyped
+
+      # : (untyped sheet_cells) -> ("A1" | ::String)
+      def compute_dimension: (untyped sheet_cells) -> untyped
+
+      # : (untyped index) -> untyped
+      def index_to_column_letter: (untyped index) -> untyped
+
+      # : () -> untyped
+      def generate_core_properties_xml: () -> untyped
+
+      # : () -> untyped
+      def generate_app_properties_xml: () -> untyped
+
+      # : () -> untyped
+      def generate_custom_properties_xml: () -> untyped
+
+      # : () -> untyped
+      def generate_styles_xml: () -> untyped
+
+      # : (untyped alignment) -> ::String
+      def emit_alignment_xml: (untyped alignment) -> untyped
+
+      # : (untyped protection) -> ::String
+      def emit_protection_xml: (untyped protection) -> untyped
+
+      # : (untyped source, ?tag: ::String) -> (::String | ::String | ::String | ::String | "")
+      def emit_color_xml: (untyped source, ?tag: untyped) -> untyped
+
+      # : (untyped font) -> untyped
+      def emit_font_xml: (untyped font) -> untyped
+
+      # : (untyped fill) -> (untyped | ::String)
+      def emit_fill_xml: (untyped fill) -> untyped
+
+      # : (untyped tag, untyped fill, untyped prefix) -> (::String | ::String | ::String | ::String | "")
+      def emit_fill_color_xml: (untyped tag, untyped fill, untyped prefix) -> untyped
+
+      # : (untyped gradient) -> untyped
+      def emit_gradient_fill_xml: (untyped gradient) -> untyped
+
+      # : (untyped brk, default_max: untyped) -> ::String
+      def emit_brk_xml: (untyped brk, default_max: untyped) -> untyped
+
+      # : (untyped bdr) -> untyped
+      def emit_border_xml: (untyped bdr) -> untyped
+
+      # : (untyped dxf) -> untyped
+      def emit_dxf_xml: (untyped dxf) -> untyped
+
+      # : (untyped cell_address) -> untyped
+      def validate_cell_address!: (untyped cell_address) -> untyped
+
+      # : (untyped letters) -> untyped
+      def column_letter_to_index: (untyped letters) -> untyped
+
+      # Extracts the column letter(s) from a cell address, e.g. "A" from "A1".
+      # : (untyped cell_address) -> untyped
+      def extract_column_letter: (untyped cell_address) -> untyped
+
+      # Extracts the row number from a cell address, e.g. 1 from "A1".
+      # : (untyped cell_address) -> untyped
+      def extract_row_number: (untyped cell_address) -> untyped
+
+      # Converts a range like "A1:D20" to absolute "$A$1:$D$20".
+      # : (untyped range) -> untyped
+      def absolute_range: (untyped range) -> untyped
+
+      # Converts "A1" to "$A$1".
+      # : (untyped cell_ref) -> ::String
+      def absolute_cell: (untyped cell_ref) -> untyped
+    end
+  end
+end

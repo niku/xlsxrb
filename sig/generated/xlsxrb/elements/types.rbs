@@ -1,0 +1,74 @@
+# Generated from lib/xlsxrb/elements/types.rb with RBS::Inline
+
+module Xlsxrb
+  module Elements
+    EMPTY_ERRORS: untyped
+
+    EMPTY_HASH: untyped
+
+    EMPTY_CELLS: untyped
+
+    # Represents a formula with an optional cached value.
+    # Optional: type (:shared, :array), ref (range), shared_index (si for shared formulas)
+    class Formula < Data
+      attr_reader expression(): untyped
+
+      attr_reader cached_value(): untyped
+
+      attr_reader type(): untyped
+
+      attr_reader ref(): untyped
+
+      attr_reader shared_index(): untyped
+
+      attr_reader calculate_always(): untyped
+
+      attr_reader aca(): untyped
+
+      attr_reader bx(): untyped
+
+      attr_reader dt2d(): untyped
+
+      attr_reader dtr(): untyped
+
+      attr_reader r1(): untyped
+
+      attr_reader r2(): untyped
+
+      def self.new: (untyped expression, untyped cached_value, untyped type, untyped ref, untyped shared_index, untyped calculate_always, untyped aca, untyped bx, untyped dt2d, untyped dtr, untyped r1, untyped r2) -> instance
+                  | (expression: untyped, cached_value: untyped, type: untyped, ref: untyped, shared_index: untyped, calculate_always: untyped, aca: untyped, bx: untyped, dt2d: untyped, dtr: untyped, r1: untyped, r2: untyped) -> instance
+
+      def self.members: () -> [ :expression, :cached_value, :type, :ref, :shared_index, :calculate_always, :aca, :bx, :dt2d, :dtr, :r1, :r2 ]
+
+      def members: () -> [ :expression, :cached_value, :type, :ref, :shared_index, :calculate_always, :aca, :bx, :dt2d, :dtr, :r1, :r2 ]
+    end
+
+    # Represents a cell error value (e.g. #N/A, #REF!, #DIV/0!).
+    VALID_ERROR_CODES: untyped
+
+    class CellError < Data
+      attr_reader code(): untyped
+
+      def self.new: (untyped code) -> instance
+                  | (code: untyped) -> instance
+
+      def self.members: () -> [ :code ]
+
+      def members: () -> [ :code ]
+    end
+
+    # Represents a rich text string with formatting runs.
+    # runs: array of hashes, each with :text and optional :font (hash of font properties).
+    # Font properties: :bold, :italic, :underline, :sz, :color, :name
+    class RichText < Data
+      attr_reader runs(): untyped
+
+      def self.new: (untyped runs) -> instance
+                  | (runs: untyped) -> instance
+
+      def self.members: () -> [ :runs ]
+
+      def members: () -> [ :runs ]
+    end
+  end
+end

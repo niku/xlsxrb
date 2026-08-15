@@ -1,0 +1,40 @@
+# Generated from lib/xlsxrb/ooxml/utils.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # OOXML-specific utility methods and constants.
+    module Utils
+      # Excel 1900 date system epoch.
+      EPOCH_1900: untyped
+
+      # Built-in number format codes defined by SpreadsheetML.
+      BUILTIN_NUM_FMT_CODES: untyped
+
+      # Built-in numFmtIds that represent date/time formats.
+      BUILTIN_DATE_FMT_IDS: untyped
+
+      # Default date format code used by Writer for Date cells.
+      DEFAULT_DATE_FORMAT: ::String
+
+      # Default date-time format code used by Writer for Time cells.
+      DEFAULT_DATETIME_FORMAT: ::String
+
+      # Converts a Date to an Excel serial number (1900 system).
+      def self.date_to_serial: (untyped date) -> untyped
+
+      # Converts an Excel serial number (1900 system) to a Date.
+      def self.serial_to_date: (untyped serial) -> untyped
+
+      # Converts a Time to a fractional Excel serial number (1900 system).
+      def self.datetime_to_serial: (untyped time) -> untyped
+
+      # Converts a fractional Excel serial number to a Time (1900 system, UTC).
+      def self.serial_to_datetime: (untyped serial) -> untyped
+
+      # Hashes a plain-text password for use with sheet/workbook protection.
+      # Returns { algorithm_name:, hash_value:, salt_value:, spin_count: }.
+      # Algorithm per ECMA-376 Part 4 §2.4.2.24.
+      def self.hash_password: (untyped password, ?algorithm: untyped, ?salt: untyped, ?spin_count: untyped) -> untyped
+    end
+  end
+end

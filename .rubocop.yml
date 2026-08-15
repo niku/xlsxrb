@@ -338,3 +338,8 @@ Style/TallyMethod: # new in 1.85
   Enabled: true
 Style/YAMLFileRead: # new in 1.53
   Enabled: true
+
+# Allows `rbs-inline` type signatures (e.g., `#: (String) -> void`) 
+# without triggering missing space errors.
+Layout/LeadingCommentSpace: # new in 1.53
+  AllowRBSInlineAnnotation: true

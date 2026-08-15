@@ -1,0 +1,38 @@
+# Generated from lib/xlsxrb/ooxml/zip_generator.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Generates a simple ZIP file using only the standard library.
+    class ZipGenerator
+      def initialize: (untyped filepath) -> untyped
+
+      # Adds an entry to the ZIP archive.
+      def add_entry: (untyped filepath, untyped content) -> untyped
+
+      # Generates the ZIP file.
+      def generate: () -> untyped
+
+      private
+
+      def write_entries: () -> untyped
+
+      def write_local_header: (untyped entry) -> untyped
+
+      def write_file_data: (untyped entry) -> untyped
+
+      def write_central_directory: () -> untyped
+
+      def compress: (untyped content) -> untyped
+
+      def crc32: (untyped content) -> untyped
+
+      def dos_datetime: (untyped time) -> untyped
+
+      def le16: (untyped value) -> untyped
+
+      def le32: (untyped value) -> untyped
+
+      def calculate_central_dir_size: () -> untyped
+    end
+  end
+end

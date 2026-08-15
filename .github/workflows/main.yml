@@ -29,6 +29,10 @@ jobs:
         run: bundle exec rake bundle:audit
       - name: Run Steep Typecheck
         run: bundle exec rake typecheck
+      - name: Verify RBS is in sync with inline annotations
+        run: |
+          bundle exec rake sig
+          git diff --exit-code sig/
       - name: Run Unit & Contract Tests
         run: bundle exec rake test:rbs
       - name: Upload Coverage Report

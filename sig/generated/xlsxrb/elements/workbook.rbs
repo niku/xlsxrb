@@ -1,0 +1,25 @@
+# Generated from lib/xlsxrb/elements/workbook.rb with RBS::Inline
+
+module Xlsxrb
+  module Elements
+    # Represents an entire XLSX workbook.
+    class Workbook < Data
+      attr_reader sheets(): untyped
+
+      attr_reader shared_strings(): untyped
+
+      attr_reader styles(): untyped
+
+      attr_reader unmapped_data(): untyped
+
+      attr_reader errors(): untyped
+
+      def self.new: (untyped sheets, untyped shared_strings, untyped styles, untyped unmapped_data, untyped errors) -> instance
+                  | (sheets: untyped, shared_strings: untyped, styles: untyped, unmapped_data: untyped, errors: untyped) -> instance
+
+      def self.members: () -> [ :sheets, :shared_strings, :styles, :unmapped_data, :errors ]
+
+      def members: () -> [ :sheets, :shared_strings, :styles, :unmapped_data, :errors ]
+    end
+  end
+end

@@ -1,0 +1,45 @@
+# Generated from lib/xlsxrb/ooxml/zip_writer.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Writes ZIP archives using only stdlib (zlib).
+    # Supports streaming: entries are written sequentially, central directory at close.
+    class ZipWriter
+      def self.open: (untyped target) ?{ (?) -> untyped } -> untyped
+
+      def initialize: (untyped io) -> untyped
+
+      # Add a file entry with string content.
+      def add_entry: (untyped path, untyped content) -> untyped
+
+      # Add a file entry with binary content (no encoding conversion).
+      def add_binary_entry: (untyped path, untyped content) -> untyped
+
+      # Write a string directly into the current ZIP entry stream.
+      # Use start_entry / write_data / finish_entry for true streaming.
+      def start_entry: (untyped path) -> untyped
+
+      def write_data: (untyped str) -> untyped
+
+      def finish_entry: () -> untyped
+
+      def close: () -> untyped
+
+      private
+
+      def determine_seekable: () -> untyped
+
+      def write_bytes: (untyped data) -> untyped
+
+      def write_raw_entry: (untyped path, untyped content_bytes) -> untyped
+
+      def deflate: (untyped content) -> untyped
+
+      def write_local_header: (untyped path, untyped crc, untyped compressed_size, untyped uncompressed_size, ?gp_flag: untyped, ?count_bytes: untyped) -> untyped
+
+      def write_central_directory: () -> untyped
+
+      def write_end_of_central_directory: (untyped cd_offset, untyped cd_size) -> untyped
+    end
+  end
+end

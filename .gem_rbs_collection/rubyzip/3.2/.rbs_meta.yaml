@@ -1,0 +1,9 @@
+---
+name: rubyzip
+version: '3.2'
+source:
+  type: git
+  name: ruby/gem_rbs_collection
+  revision: 9ab762c8247028f90620fc93c4e7aac20eb693d7
+  remote: https://github.com/ruby/gem_rbs_collection.git
+  repo_dir: gems

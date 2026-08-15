@@ -1,0 +1,1276 @@
+# Generated from lib/xlsxrb.rb with RBS::Inline
+
+# Ruby XLSX read/write library.
+module Xlsxrb
+  class Error < StandardError
+    DIV0: untyped
+
+    NA: untyped
+
+    NAME: untyped
+
+    NULL: untyped
+
+    NUM: untyped
+
+    REF: untyped
+
+    VALUE: untyped
+  end
+
+  class ParseError < Error
+  end
+
+  class ValidationError < Error
+  end
+
+  class ZipError < Error
+  end
+
+  TRACER: untyped
+
+  def self.in_span: (untyped name, ?attributes: untyped) ?{ (?) -> untyped } -> untyped
+
+  # Helper to easily create RichText objects.
+  # Supports both `Xlsxrb.rich_text({ text: "A" }, { text: "B" })`
+  # and `Xlsxrb.rich_text(text: "Hi", bold: true)`
+  #
+  # @param runs [Array<Hash>] Optional rich text runs.
+  # @param text [String, nil] Simple text.
+  # @param font_props [Hash] Font styling options (e.g., bold: true).
+  # @return [Elements::RichText] The resulting rich text.
+  # @api public
+  # : (*untyped runs, ?text: String?, **untyped font_props) -> untyped
+  def self.rich_text: (*untyped runs, ?text: String?, **untyped font_props) -> untyped
+
+  # Builder for block-style chart definitions.
+  # @api public
+  class ChartBuilder
+    # : () -> void
+    def initialize: () -> void
+
+    # : Hash[Symbol, untyped]
+    attr_reader options: untyped
+
+    # @api public
+    # : (untyped value) -> untyped
+    def type: (untyped value) -> untyped
+
+    # @api public
+    # : (untyped value) -> untyped
+    def title: (untyped value) -> untyped
+
+    # @api public
+    # : (?Hash[Symbol, untyped]? value) ?{ (SeriesBuilder) -> void } -> Array[Hash[Symbol, untyped]]
+    def series: (?Hash[Symbol, untyped]? value) ?{ (SeriesBuilder) -> void } -> Array[Hash[Symbol, untyped]]
+
+    # Configures the legend property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    def legend: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+    # Configures the plot_area property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    def plot_area: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+    # Configures the chart_space property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    def chart_space: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+    # Configures the style property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String | Integer) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Integer)
+    def style: (*Hash[Symbol, String | Integer | bool | nil] | String | Integer args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Integer)
+
+    # Configures the data_labels property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    def data_labels: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+    # Configures the plot_visible_only property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
+    def plot_visible_only: (*bool | String args, **String | Integer | bool | nil kwargs) -> (bool | String)
+
+    # Configures the display_blanks_as property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
+    def display_blanks_as: (*String args, **String | Integer | bool | nil kwargs) -> String
+
+    # Configures the view3d property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    def view3d: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+    # Configures the category_axis property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    def category_axis: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+    # Configures the value_axis property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    def value_axis: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+    # Configures the show_legend_key property for this chart.
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object] the configured property
+    # @api public
+    # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
+    def show_legend_key: (*bool | String args, **String | Integer | bool | nil kwargs) -> (bool | String)
+
+    # Builder for a single series entry in block-style chart definitions.
+    # @api public
+    class SeriesBuilder
+      # : () -> void
+      def initialize: () -> void
+
+      # : Hash[Symbol, untyped]
+      attr_reader options: untyped
+
+      # Configures the categories property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*untyped args, **untyped kwargs) -> untyped
+      def categories: (*untyped args, **untyped kwargs) -> untyped
+
+      # Configures the values property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*untyped args, **untyped kwargs) -> untyped
+      def values: (*untyped args, **untyped kwargs) -> untyped
+
+      # Configures the name property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*untyped args, **untyped kwargs) -> untyped
+      def name: (*untyped args, **untyped kwargs) -> untyped
+
+      # Configures the marker property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*untyped args, **untyped kwargs) -> untyped
+      def marker: (*untyped args, **untyped kwargs) -> untyped
+
+      # Configures the fill property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      def fill: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+      # Configures the line property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      def line: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+      # Configures the trendline property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      def trendline: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+      # Configures the data_labels property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      def data_labels: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+
+      # Configures the smooth property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
+      def smooth: (*bool | String args, **String | Integer | bool | nil kwargs) -> (bool | String)
+
+      # Configures the shape property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
+      def shape: (*String args, **String | Integer | bool | nil kwargs) -> String
+
+      # Configures the type property for this series.
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Object] the configured property
+      # @api public
+      # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
+      def type: (*String args, **String | Integer | bool | nil kwargs) -> String
+    end
+  end
+
+  # Creates a Formula object for use in row values.
+  #
+  # @param expression [String] The formula text (e.g. "SUM(A1:A10)").
+  # @param cached_value [Object, nil] Optional cached result. If nil, Excel will calculate on open.
+  # @return [Elements::Formula]
+  # @api public
+  # : (String expression, ?cached_value: String | Numeric | bool | nil) -> untyped
+  def self.formula: (String expression, ?cached_value: String | Numeric | bool | nil) -> untyped
+
+  # Reads an XLSX file into an Elements::Workbook.
+  #
+  # @param source [String, IO] File path or IO object.
+  # @return [Elements::Workbook] The parsed workbook.
+  # @api public
+  # : (untyped source) -> untyped
+  def self.read: (untyped source) -> untyped
+
+  # Writes an Elements::Workbook to an XLSX file.
+  #
+  # @param target [String, IO] File path or IO object.
+  # @param workbook [Elements::Workbook] The workbook to write.
+  # @return [void]
+  # @api public
+  # : (untyped target, untyped workbook) -> void
+  def self.write: (untyped target, untyped workbook) -> void
+
+  # Modifies an existing XLSX file.
+  # Reads the workbook, passes it to the block, and writes the result.
+  # The block receives an Elements::Workbook and must return a modified one (e.g. via `update_sheet`).
+  # If no target is given, the source is overwritten.
+  #
+  # @example
+  #   Xlsxrb.modify("template.xlsx", "output.xlsx") do |wb|
+  #     wb.update_sheet(0) do |sheet|
+  #       sheet.update_cell("B1", value: "Updated")
+  #            .update_cell("B2", value: 100)
+  #     end
+  #   end
+  #
+  # @param source [String, IO] The source file path or IO object.
+  # @param target [String, IO, nil] The target file path or IO object. If nil, overwrites source.
+  # @yield [workbook] Yields the parsed workbook.
+  # @yieldparam workbook [Elements::Workbook] The parsed workbook.
+  # @yieldreturn [Elements::Workbook] The modified workbook.
+  # @return [void]
+  # @api public
+  # : (untyped source, ?untyped target) ?{ (untyped) -> untyped } -> void
+  def self.modify: (untyped source, ?untyped target) ?{ (untyped) -> untyped } -> void
+
+  # Represents a sheet being streamed sequentially.
+  class StreamSheet
+    attr_reader name: untyped
+
+    def initialize: (untyped name, untyped sheet_xml, untyped shared_strings) -> untyped
+
+    # : () { (Elements::Row) -> void } -> void
+    # : | () -> Enumerator[Elements::Row, void]
+    def each_row: () { (Elements::Row) -> void } -> void
+
+    # : () { (Elements::Row) -> void } -> void
+    # : | () -> Enumerator[Elements::Row, void]
+    def each: () { (Elements::Row) -> void } -> void
+  end
+
+  # Streaming read: yields StreamSheet objects one at a time for each sheet.
+  #
+  # @param source [String, IO] File path or IO object.
+  # @yield [sheet] Yields each sheet.
+  # @yieldparam sheet [StreamSheet] The streaming sheet object.
+  # @return [Enumerator] If no block is given.
+  # @return [void]
+  # @api public
+  # : (untyped source) ?{ (StreamSheet) -> void } -> untyped
+  def self.foreach: (untyped source) ?{ (StreamSheet) -> void } -> untyped
+
+  # Streaming write: yields a StreamWriter context for building XLSX on-the-fly.
+  #
+  # @param target [String, IO] File path or IO object.
+  # @yield [stream_writer]
+  # @yieldparam stream_writer [Xlsxrb::StreamWriter]
+  # @return [void]
+  # @api public
+  # : (untyped target, ?strict_excel_mode: bool) ?{ (Xlsxrb::StreamWriter) -> void } -> void
+  def self.generate: (untyped target, ?strict_excel_mode: bool) ?{ (Xlsxrb::StreamWriter) -> void } -> void
+
+  # Builds an Elements::Workbook in memory using a DSL.
+  #
+  # @yield [builder]
+  # @yieldparam builder [Xlsxrb::WorkbookBuilder]
+  # @return [Elements::Workbook]
+  # @api public
+  # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> untyped
+  def self.build: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> untyped
+
+  # DSL context for Xlsxrb.build.
+  # @api public
+  class WorkbookBuilder
+    # : (?strict_excel_mode: bool) -> void
+    def initialize: (?strict_excel_mode: bool) -> void
+
+    # Set a workbook property.
+    #
+    # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
+    #   you may expose end-users to malicious external reference vulnerabilities (e.g., CSV/DDE Injection)
+    #   when they open the generated Excel file. Ensure you fully trust the exported data.
+    #
+    # @param name [Symbol] The property name (e.g. :update_links).
+    # @param value [String, Integer, Boolean] The property value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
+    def workbook_property: (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
+
+    # Add a new sheet.
+    #
+    # @param name [String, nil] The name of the sheet.
+    # @param opts [Hash] Sheet properties.
+    # @yield [sheet_builder]
+    # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
+    # @return [void]
+    # @api public
+    # : (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
+    def sheet: (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
+
+    alias [] sheet
+
+    # Add a defined name.
+    #
+    # @param name [String] The defined name.
+    # @param value [String] The formula or value.
+    # @param sheet [String, nil] Local sheet name.
+    # @param hidden [Boolean] Whether the defined name is hidden.
+    # @return [void]
+    # @api public
+    # : (String name, String value, ?sheet: String?, ?hidden: bool) -> void
+    def defined_name: (String name, String value, ?sheet: String?, ?hidden: bool) -> void
+
+    # Set the print area for a sheet.
+    #
+    # @param range [String] The range string (e.g. "A1:B10").
+    # @param sheet [String, nil] The sheet name.
+    # @return [void]
+    # @api public
+    # : (String range, ?sheet: String?) -> void
+    def print_area: (String range, ?sheet: String?) -> void
+
+    # Set print titles for a sheet.
+    #
+    # @param rows [String, nil] Rows to repeat (e.g. "1:2").
+    # @param cols [String, nil] Columns to repeat (e.g. "A:B").
+    # @param sheet [String, nil] The sheet name.
+    # @return [void]
+    # @api public
+    # : (?rows: String?, ?cols: String?, ?sheet: String?) -> void
+    def print_titles: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
+
+    # Set workbook protection.
+    #
+    # @param opts [Hash] Protection options.
+    # @return [void]
+    # @api public
+    # : (**String | Integer | bool | nil opts) -> void
+    def protect_workbook: (**String | Integer | bool | nil opts) -> void
+
+    # Set a core document property.
+    #
+    # @param name [Symbol] The property name.
+    # @param value [String, Integer, Time] The property value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, String | Integer | Time value) -> void
+    def core_property: (Symbol name, String | Integer | Time value) -> void
+
+    # Set an app document property.
+    #
+    # @param name [Symbol] The property name.
+    # @param value [String, Integer, Time] The property value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, String | Integer | Time value) -> void
+    def app_property: (Symbol name, String | Integer | Time value) -> void
+
+    # Set multiple core and/or app properties.
+    #
+    # @param core [Hash, nil] Core properties.
+    # @param app [Hash, nil] App properties.
+    # @return [void]
+    # @api public
+    # : (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
+    def properties: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
+
+    # Add a custom document property.
+    #
+    # @param name [String] The property name.
+    # @param value [String, Integer, Float, Boolean, Time] The property value.
+    # @param type [Symbol] The type of property (:string, :number, :bool, :date).
+    # @return [void]
+    # @api public
+    # : (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
+    def custom_property: (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
+
+    # @api public
+    # : () -> untyped
+    def build: () -> untyped
+
+    private
+
+    # : (untyped range) -> untyped
+    def absolute_range: (untyped range) -> untyped
+
+    # : (untyped names, untyped sheets) -> untyped
+    def resolve_defined_names: (untyped names, untyped sheets) -> untyped
+
+    # : (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
+    def process_styles: (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
+
+    # : (untyped writer) -> { fonts: untyped, fills: untyped, borders: untyped, xf_entries: untyped, num_fmts: untyped }
+    def extract_styles_from_writer: (untyped writer) -> { fonts: untyped, fills: untyped, borders: untyped, xf_entries: untyped, num_fmts: untyped }
+  end
+
+  # DSL context for a single worksheet in Xlsxrb.build.
+  # @api public
+  class WorksheetBuilder
+    # : (untyped name, ?strict_excel_mode: bool) -> void
+    def initialize: (untyped name, ?strict_excel_mode: bool) -> void
+
+    # Define a named style that can be applied to cells.
+    #
+    # @param name [String] The name of the style.
+    # @param opts [Hash] Style options (e.g. bold: true).
+    # @yield [style_builder]
+    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
+    # @return [StyleBuilder]
+    # @api public
+    # : (String name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+    def style: (String name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+
+    # Add a row to the sheet.
+    #
+    # @param values [Array, Hash] The cell values.
+    # @param styles [String, Array<String>, nil] Styles to apply to cells.
+    # @param height [Float, nil] The row height.
+    # @param hidden [Boolean] Whether the row is hidden.
+    # @param custom_height [Boolean] Whether it's a custom height.
+    # @param outline_level [Integer, nil] The outline level.
+    # @note Excel's column limit is 16,384, row limit is 1,048,576, string max length is 32,767.
+    # @return [void]
+    # @api public
+    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+
+    # Add a column or multiple columns to the sheet.
+    #
+    # @param index [Integer, String, Range, Array] The column index (0-based), letter, or a collection of them.
+    # @param width [Float, nil] The column width.
+    # @param hidden [Boolean] Whether the column is hidden.
+    # @param custom_width [Boolean] Whether it's a custom width.
+    # @param outline_level [Integer, nil] The outline level.
+    # @note Excel's column width max is 255.
+    # @return [void]
+    # @api public
+    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
+    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
+
+    # Add a chart to the sheet.
+    #
+    # @param options [Hash] Chart options.
+    # @yield [builder]
+    # @yieldparam builder [Xlsxrb::ChartBuilder]
+    # @return [void]
+    # @api public
+    # : (**untyped options) ?{ (ChartBuilder) -> void } -> void
+    def chart: (**untyped options) ?{ (ChartBuilder) -> void } -> void
+
+    # Add a hyperlink on a cell.
+    #
+    # @param cell [String] The cell reference (e.g. "A1").
+    # @param url [String, nil] The URL.
+    # @param display [String, nil] The display text.
+    # @param tooltip [String, nil] The tooltip.
+    # @param location [String, nil] The internal location reference.
+    # @return [void]
+    # @api public
+    # : (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+    def hyperlink: (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+
+    # Set an auto filter range (e.g. "A1:D10").
+    #
+    # @param range [String] The filter range.
+    # @return [void]
+    # @api public
+    # : (untyped range) -> untyped
+    def auto_filter: (untyped range) -> untyped
+
+    # Add a filter column to the auto filter.
+    #
+    # @param col_id [Integer] 0-based column index within the filter range.
+    # @param filter [Hash] The filter options.
+    # @return [void]
+    # @api public
+    # : (untyped col_id, untyped filter) -> untyped
+    def filter_column: (untyped col_id, untyped filter) -> untyped
+
+    # Set sort state.
+    #
+    # @param ref [String] The sort range.
+    # @param sort_conditions [Array<Hash>] Sort conditions.
+    # @param opts [Hash] Additional options.
+    # @return [void]
+    # @api public
+    # : (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
+    def sort_state: (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
+
+    # Add a data validation rule.
+    #
+    # @param sqref [String] The cell range (e.g. "A1:A100").
+    # @param opts [Hash] Data validation options.
+    # @return [void]
+    # @api public
+    # : (untyped sqref, **untyped opts) -> untyped
+    def validate_data: (untyped sqref, **untyped opts) -> untyped
+
+    # Add a conditional formatting rule.
+    #
+    # @param sqref [String] The cell range.
+    # @param opts [Hash] Conditional format options.
+    # @return [void]
+    # @api public
+    # : (untyped sqref, **untyped opts) -> untyped
+    def conditional_format: (untyped sqref, **untyped opts) -> untyped
+
+    # Add a table to the sheet.
+    #
+    # @param ref [String] The table range.
+    # @param columns [Array<String>] The column names.
+    # @param name [String, nil] The table name.
+    # @param display_name [String, nil] The display name.
+    # @param style [String, nil] The table style.
+    # @param opts [Hash] Additional options.
+    # @return [void]
+    # @api public
+    # : (untyped ref, columns: untyped, ?name: untyped?, ?display_name: untyped?, ?style: untyped?, **untyped opts) -> untyped
+    def table: (untyped ref, columns: untyped, ?name: untyped?, ?display_name: untyped?, ?style: untyped?, **untyped opts) -> untyped
+
+    # Add a pivot table to the sheet.
+    #
+    # @param source_ref [String] data source range (e.g. "Sheet1!A1:C10").
+    # @param row_fields [Array<Integer>] array of 0-based field indices for row axis.
+    # @param data_fields [Array<Hash>] array of { fld:, name:, subtotal: } hashes.
+    # @param col_fields [Array<Integer>] array of 0-based field indices for column axis.
+    # @param dest_ref [String] top-left cell for the pivot table (default "E1").
+    # @param name [String, nil] Pivot table name.
+    # @param field_names [Array<String>, nil] Override field names.
+    # @param items [Array, nil] Items configuration.
+    # @return [void]
+    # @api public
+    # : (untyped source_ref, **untyped opts) -> void
+    def pivot_table: (untyped source_ref, **untyped opts) -> void
+
+    # Add a comment on a cell.
+    #
+    # @param cell [String] The cell reference.
+    # @param text [String] The comment text.
+    # @param author [String] The author name.
+    # @return [void]
+    # @api public
+    # : (String | Integer cell, String text, ?author: ::String) -> void
+    def comment: (String | Integer cell, String text, ?author: ::String) -> void
+
+    # Add a sparkline group to the sheet.
+    #
+    # @param sparklines [Array<Hash>] Array of { data_ref:, location_ref: } hashes.
+    # @param type [String, nil] "line" (default), "column", or "stacked".
+    # @param opts [Hash] Additional options.
+    # @return [void]
+    # @api public
+    # : (**untyped opts) -> void
+    def sparkline_group: (**untyped opts) -> void
+
+    # Merge a range of cells (e.g. "A1:B2"), or by coordinate indices.
+    #
+    # @param range [String, nil] The string range.
+    # @param row [Integer, nil] Single row index.
+    # @param col_start [Integer, nil] Starting column index.
+    # @param col_end [Integer, nil] Ending column index.
+    # @param row_start [Integer, nil] Starting row index.
+    # @param row_end [Integer, nil] Ending row index.
+    # @return [void]
+    # @api public
+    # : (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
+    def merge: (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
+
+    # Freeze panes at the given row and column.
+    #
+    # @param row [Integer] The row index to freeze at (0-based).
+    # @param col [Integer, String] The column index to freeze at (0-based or letter).
+    # @return [void]
+    # @api public
+    # : (?row: Integer, ?col: (Integer | String)) -> void
+    def freeze_pane: (?row: Integer, ?col: Integer | String) -> void
+
+    # Split panes (non-frozen).
+    #
+    # @param x_split [Integer] X coordinate.
+    # @param y_split [Integer] Y coordinate.
+    # @param top_left_cell [String, nil] Top left cell reference.
+    # @return [void]
+    # @api public
+    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
+    def split_pane: (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
+
+    # Set active cell selection.
+    #
+    # @param active_cell [String] The active cell reference.
+    # @param sqref [String, nil] The selected range.
+    # @param pane [String, nil] The pane to select in.
+    # @return [void]
+    # @api public
+    # : (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
+    def select_cell: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
+
+    # Set page margins (in inches).
+    #
+    # @param left [Float, nil] Left margin.
+    # @param right [Float, nil] Right margin.
+    # @param top [Float, nil] Top margin.
+    # @param bottom [Float, nil] Bottom margin.
+    # @param header [Float, nil] Header margin.
+    # @param footer [Float, nil] Footer margin.
+    # @return [void]
+    # @api public
+    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
+    def page_margins: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
+
+    # Set page setup properties.
+    #
+    # @param opts [Hash] Page setup options.
+    # @return [void]
+    # @api public
+    # : (**untyped opts) -> void
+    def page_setup: (**untyped opts) -> void
+
+    # Set header/footer text.
+    #
+    # @param opts [Hash] Header and footer options.
+    # @return [void]
+    # @api public
+    # : (**untyped opts) -> void
+    def header_footer: (**untyped opts) -> void
+
+    # Set a print option.
+    #
+    # @param name [Symbol] Option name.
+    # @param value [Object] Option value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, untyped value) -> void
+    def print_options: (Symbol name, untyped value) -> void
+
+    # Set sheet protection options.
+    #
+    # @param opts [Hash] Sheet protection options.
+    # @return [void]
+    # @api public
+    # : (**untyped opts) -> void
+    def protect_sheet: (**untyped opts) -> void
+
+    # Insert an image from raw file data.
+    # @api public
+    # : (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
+    def image: (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
+
+    # Add a shape to the sheet.
+    # @api public
+    # : (**untyped opts) -> void
+    def shape: (**untyped opts) -> void
+
+    # Set a sheet-level property (e.g. :tab_color).
+    # @api public
+    # : (Symbol name, untyped value) -> void
+    def sheet_properties: (Symbol name, untyped value) -> void
+
+    # Set a sheet view property (e.g. :show_grid_lines, :zoom_scale).
+    # @api public
+    # : (Symbol name, untyped value) -> void
+    def sheet_view: (Symbol name, untyped value) -> void
+
+    # Add a page break before a row.
+    # @api public
+    # : (Integer row_num) -> void
+    def page_break_row: (Integer row_num) -> void
+
+    # Add a page break before a column.
+    # @api public
+    # : (Integer | String col_index) -> void
+    def page_break_col: (Integer | String col_index) -> void
+
+    # @api public
+    # : () -> untyped
+    def build: () -> untyped
+
+    # Internal: returns styles for later processing by WorkbookBuilder
+    # : untyped
+    attr_reader styles: untyped
+  end
+
+  # DSL context for Xlsxrb.generate streaming writes.
+  # @api public
+  class StreamWriter
+    attr_reader current_sheet: untyped
+
+    # : (untyped target, ?strict_excel_mode: bool) -> void
+    def initialize: (untyped target, ?strict_excel_mode: bool) -> void
+
+    # Set a workbook property.
+    #
+    # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
+    #   you may expose end-users to malicious external reference vulnerabilities (e.g., CSV/DDE Injection)
+    #   when they open the generated Excel file. Ensure you fully trust the exported data.
+    #
+    # @param name [Symbol] The property name (e.g. :update_links).
+    # @param value [String, Integer, Boolean] The property value.
+    # @return [void]
+    # : (Symbol name, String | Integer | bool value) -> void
+    def workbook_property: (Symbol name, String | Integer | bool value) -> void
+
+    # Define a named style that can be applied to cells.
+    #
+    # @param name [String] The name of the style.
+    # @param opts [Hash] Style options (e.g. bold: true).
+    # @yield [style_builder]
+    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
+    # @return [StyleBuilder]
+    # : (String name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+    def style: (String name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+
+    # Proxy object yielded by the `sheet` method to prevent writing to inactive sheets.
+    # @api public
+    class WorksheetProxy
+      def initialize: (untyped writer, untyped sheet_name) -> untyped
+
+      # Delegates to StreamWriter#style.
+      # @see StreamWriter#style
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      # : (*untyped args, **untyped kwargs) ?{ (Xlsxrb::StyleBuilder) -> void } -> untyped
+      def style: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+               | (*untyped args, **untyped kwargs) ?{ (Xlsxrb::StyleBuilder) -> void } -> untyped
+
+      # Delegates to StreamWriter#merge.
+      # @see StreamWriter#merge
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def merge: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#shape.
+      # @see StreamWriter#shape
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def shape: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#internal_sheet_setup.
+      # @see StreamWriter#internal_sheet_setup
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def internal_sheet_setup: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#row.
+      # @see StreamWriter#row
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def row: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#column.
+      # @see StreamWriter#column
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def column: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#chart.
+      # @see StreamWriter#chart
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def chart: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#hyperlink.
+      # @see StreamWriter#hyperlink
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def hyperlink: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#auto_filter.
+      # @see StreamWriter#auto_filter
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def auto_filter: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#filter_column.
+      # @see StreamWriter#filter_column
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def filter_column: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#sort_state.
+      # @see StreamWriter#sort_state
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def sort_state: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#validate_data.
+      # @see StreamWriter#validate_data
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def validate_data: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#conditional_format.
+      # @see StreamWriter#conditional_format
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def conditional_format: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#table.
+      # @see StreamWriter#table
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def table: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#cleanup!.
+      # @see StreamWriter#cleanup!
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def cleanup!: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#comment.
+      # @see StreamWriter#comment
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def comment: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#pivot_table.
+      # @see StreamWriter#pivot_table
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def pivot_table: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#sparkline_group.
+      # @see StreamWriter#sparkline_group
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def sparkline_group: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#workbook_property.
+      # @see StreamWriter#workbook_property
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def workbook_property: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#sheet_properties.
+      # @see StreamWriter#sheet_properties
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def sheet_properties: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#defined_name.
+      # @see StreamWriter#defined_name
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def defined_name: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#freeze_pane.
+      # @see StreamWriter#freeze_pane
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def freeze_pane: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#print_area.
+      # @see StreamWriter#print_area
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def print_area: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#print_titles.
+      # @see StreamWriter#print_titles
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def print_titles: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#split_pane.
+      # @see StreamWriter#split_pane
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def split_pane: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#protect_workbook.
+      # @see StreamWriter#protect_workbook
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def protect_workbook: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#core_property.
+      # @see StreamWriter#core_property
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def core_property: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#select_cell.
+      # @see StreamWriter#select_cell
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def select_cell: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#page_margins.
+      # @see StreamWriter#page_margins
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def page_margins: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#page_setup.
+      # @see StreamWriter#page_setup
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def page_setup: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#header_footer.
+      # @see StreamWriter#header_footer
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def header_footer: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#print_options.
+      # @see StreamWriter#print_options
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def print_options: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#properties.
+      # @see StreamWriter#properties
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def properties: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#app_property.
+      # @see StreamWriter#app_property
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def app_property: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#protect_sheet.
+      # @see StreamWriter#protect_sheet
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def protect_sheet: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#custom_property.
+      # @see StreamWriter#custom_property
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def custom_property: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#image.
+      # @see StreamWriter#image
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def image: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#sheet_view.
+      # @see StreamWriter#sheet_view
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def sheet_view: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#page_break_row.
+      # @see StreamWriter#page_break_row
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def page_break_row: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+
+      # Delegates to StreamWriter#page_break_col.
+      # @see StreamWriter#page_break_col
+      # @api public
+      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      def page_break_col: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+    end
+
+    # Add a new sheet.
+    #
+    # @param name [String, nil] The name of the sheet.
+    # @param opts [Hash] Sheet properties.
+    # @yield [sheet_builder]
+    # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
+    # @return [void]
+    # : (?String? name, **untyped opts) ?{ (WorksheetProxy) -> void } -> untyped
+    def sheet: (?String? name, **untyped opts) ?{ (WorksheetProxy) -> void } -> untyped
+
+    # Internal: Start or switch to a named sheet (internal helper).
+    # : (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
+    def internal_sheet_setup: (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
+
+    # Add a row of values. values is an Array.
+    # styles:: Hash mapping column indices to style names, or Array of style names for each column
+    # Add a row to the sheet.
+    #
+    # @param values [Array, Hash] The cell values.
+    # @param styles [String, Array<String>, nil] Styles to apply to cells.
+    # @param height [Float, nil] The row height.
+    # @param hidden [Boolean] Whether the row is hidden.
+    # @param custom_height [Boolean] Whether it's a custom height.
+    # @param outline_level [Integer, nil] The outline level.
+    # @note Excel's column limit is 16,384, row limit is 1,048,576, string max length is 32,767.
+    # @return [void]
+    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+
+    # Set column width for a 0-based column index.
+    # Add a column to the sheet.
+    #
+    # @param index [Integer, String] The column index (0-based) or letter.
+    # @param width [Float, nil] The column width.
+    # @param hidden [Boolean] Whether the column is hidden.
+    # @param custom_width [Boolean] Whether it's a custom width.
+    # @param outline_level [Integer, nil] The outline level.
+    # @note Excel's column width max is 255.
+    # @return [void]
+    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
+    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
+
+    # Add a chart to the current sheet.
+    # : (**untyped options) ?{ (ChartBuilder) -> void } -> void
+    def chart: (**untyped options) ?{ (ChartBuilder) -> void } -> void
+
+    # --- Hyperlinks ---
+    # : (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+    def hyperlink: (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+
+    # --- Auto Filter / Sort ---
+    # : (String range) -> void
+    def auto_filter: (String range) -> void
+
+    # : (untyped col_id, untyped filter) -> untyped
+    def filter_column: (untyped col_id, untyped filter) -> untyped
+
+    # : (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
+    def sort_state: (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
+
+    # --- Data Validation ---
+    # : (untyped sqref, **untyped opts) -> void
+    def validate_data: (untyped sqref, **untyped opts) -> void
+
+    # --- Conditional Formatting ---
+    # : (untyped sqref, **untyped opts) -> void
+    def conditional_format: (untyped sqref, **untyped opts) -> void
+
+    # --- Tables ---
+    # : (untyped ref, **untyped opts) -> void
+    def table: (untyped ref, **untyped opts) -> void
+
+    # --- Pivot Tables ---
+    # : (untyped source_ref, **untyped opts) -> void
+    def pivot_table: (untyped source_ref, **untyped opts) -> void
+
+    # --- Comments ---
+    # : (String | Integer cell, String text, ?author: ::String) -> void
+    def comment: (String | Integer cell, String text, ?author: ::String) -> void
+
+    # --- Sparklines ---
+    # : (**untyped opts) -> void
+    def sparkline_group: (**untyped opts) -> void
+
+    # Merge a range of cells (e.g. "A1:B2"), or by coordinate indices.
+    #
+    # @param range [String, nil] The string range.
+    # @param row [Integer, nil] Single row index.
+    # @param col_start [Integer, nil] Starting column index.
+    # @param col_end [Integer, nil] Ending column index.
+    # @param row_start [Integer, nil] Starting row index.
+    # @param row_end [Integer, nil] Ending row index.
+    # @return [void]
+    # : (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
+    def merge: (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
+
+    # Freeze panes at the given row and column.
+    #
+    # @param row [Integer] The row index to freeze at (0-based).
+    # @param col [Integer, String] The column index to freeze at (0-based or letter).
+    # @return [void]
+    # : (?row: Integer, ?col: (Integer | String)) -> void
+    def freeze_pane: (?row: Integer, ?col: Integer | String) -> void
+
+    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
+    def split_pane: (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
+
+    # : (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
+    def select_cell: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
+
+    # --- Page Setup / Margins / Print ---
+    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
+    def page_margins: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
+
+    # : (**untyped opts) -> void
+    def page_setup: (**untyped opts) -> void
+
+    # : (**untyped opts) -> void
+    def header_footer: (**untyped opts) -> void
+
+    # : (Symbol name, untyped value) -> void
+    def print_options: (Symbol name, untyped value) -> void
+
+    # --- Sheet Protection ---
+    # : (**untyped opts) -> void
+    def protect_sheet: (**untyped opts) -> void
+
+    # --- Images ---
+    # : (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
+    def image: (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
+
+    # --- Shapes ---
+    # : (**untyped opts) -> void
+    def shape: (**untyped opts) -> void
+
+    # --- Sheet Properties ---
+    # : (Symbol name, untyped value) -> void
+    def sheet_properties: (Symbol name, untyped value) -> void
+
+    # : (Symbol name, untyped value) -> void
+    def sheet_view: (Symbol name, untyped value) -> void
+
+    # --- Row / Column Breaks ---
+    # : (Integer row_num) -> void
+    def page_break_row: (Integer row_num) -> void
+
+    # : (Integer col_index) -> void
+    def page_break_col: (Integer col_index) -> void
+
+    # Add a defined name.
+    #
+    # @param name [String] The defined name.
+    # @param value [String] The formula or value.
+    # @param sheet [String, nil] Local sheet name.
+    # @param hidden [Boolean] Whether the defined name is hidden.
+    # @return [void]
+    # : (String name, String value, ?sheet: String?, ?hidden: bool) -> void
+    def defined_name: (String name, String value, ?sheet: String?, ?hidden: bool) -> void
+
+    # Set the print area for the current or named sheet.
+    # : (String range, ?sheet: String?) -> void
+    def print_area: (String range, ?sheet: String?) -> void
+
+    # Set print titles for the current or named sheet.
+    # : (?rows: String?, ?cols: String?, ?sheet: String?) -> void
+    def print_titles: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
+
+    # Set workbook protection.
+    #
+    # @param opts [Hash] Protection options.
+    # @return [void]
+    # : (**String | Integer | bool | nil opts) -> void
+    def protect_workbook: (**String | Integer | bool | nil opts) -> void
+
+    # Set a core document property.
+    #
+    # @param name [Symbol] The property name.
+    # @param value [String, Integer, Time] The property value.
+    # @return [void]
+    # : (Symbol name, String | Integer | Time value) -> void
+    def core_property: (Symbol name, String | Integer | Time value) -> void
+
+    # Set an app document property.
+    #
+    # @param name [Symbol] The property name.
+    # @param value [String, Integer, Time] The property value.
+    # @return [void]
+    # : (Symbol name, String | Integer | Time value) -> void
+    def app_property: (Symbol name, String | Integer | Time value) -> void
+
+    # Set multiple core and/or app properties.
+    #
+    # @param core [Hash, nil] Core properties.
+    # @param app [Hash, nil] App properties.
+    # @return [void]
+    # : (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
+    def properties: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
+
+    # Add a custom document property.
+    #
+    # @param name [String] The property name.
+    # @param value [String, Integer, Float, Boolean, Time] The property value.
+    # @param type [Symbol] The type of property (:string, :number, :bool, :date).
+    # @return [void]
+    # : (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
+    def custom_property: (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
+
+    # : () -> untyped
+    def close: () -> untyped
+
+    # Explicitly remove any remaining tempfiles. Called via ensure block.
+    # : () -> void
+    def cleanup!: () -> void
+
+    private
+
+    # : (untyped range) -> untyped
+    def absolute_range: (untyped range) -> untyped
+
+    # : (untyped names, untyped sheets) -> untyped
+    def resolve_defined_names: (untyped names, untyped sheets) -> untyped
+
+    # : () -> (nil | untyped)
+    def flush_current_sheet: () -> (nil | untyped)
+  end
+
+  private def self.build_worksheet: (untyped name, untyped sheet_xml, untyped shared_strings, untyped _styles) -> untyped
+
+  private def self.build_row_from_raw: (untyped raw_row) -> untyped
+
+  private def self.build_raw_cell: (untyped cell, untyped sst, untyped sst_index) -> untyped
+
+  private def self.build_row_attrs: (untyped row) -> untyped
+
+  # Builds a raw cell hash from a value for streaming writes.
+  # @api public
+  # : (untyped row_index, untyped col_index, untyped value, untyped sst, untyped sst_index) -> untyped
+  def self.build_raw_cell_from_value: (untyped row_index, untyped col_index, untyped value, untyped sst, untyped sst_index) -> untyped
+end

@@ -1,0 +1,67 @@
+# Generated from lib/xlsxrb/ooxml/worksheet_parser.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Streaming parser for xl/worksheets/sheetN.xml.
+    # Uses a fast string-scanning approach for row/cell extraction,
+    # falling back to REXML SAX only for column definitions and unmapped data.
+    class WorksheetParser
+      EMPTY_ARRAY: untyped
+
+      EMPTY_HASH: untyped
+
+      # Parses all rows from a worksheet XML string.
+      # Returns an Array of raw row hashes:
+      #   { index:, cells: [{ ref:, type:, style_index:, value:, formula: }], attrs:, unmapped: }
+      def self.parse: (untyped xml_string, ?shared_strings: untyped) -> untyped
+
+      # Streaming parse: yields one raw row hash at a time.
+      def self.each_row: (untyped xml_string, ?shared_strings: untyped, ?part_name: untyped) ?{ (?) -> untyped } -> untyped
+
+      # Parses column definitions (<cols>) from a worksheet.
+      def self.parse_columns: (untyped xml_string, ?part_name: untyped) -> untyped
+
+      # Yields Event objects for columns, rows, cells, and hyperlinks.
+      def self.each_event: (untyped xml_string, ?shared_strings: untyped, ?part_name: untyped) ?{ (?) -> untyped } -> untyped
+
+      def self.fast_scan_events: (untyped xml_src, untyped shared_strings, untyped part_name) ?{ (?) -> untyped } -> untyped
+
+      def self.extract_row_attrs: (untyped row_tag) -> untyped
+
+      # Extract an attribute value from a small tag substring (bounded search).
+      def self.tag_attr: (untyped tag, untyped prefix) -> untyped
+
+      def self.fast_scan_cells_events: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source) ?{ (?) -> untyped } -> untyped
+
+      def self.extract_inline_text: (untyped xml, untyped from, untyped to) -> untyped
+
+      def self.resolve_fast_value: (untyped raw, untyped type, untyped shared_strings) -> untyped
+
+      XML_ENTITIES: untyped
+
+      # SECURITY NOTE: Decodes only standard predefined XML entities in a single pass.
+      # This completely prevents "Billion Laughs" attacks (exponential entity expansion)
+      # because it avoids recursive expansion and ignores custom entities entirely.
+      def self.decode_xml_entities: (untyped str) -> untyped
+
+      # Parses <cols> section for column definitions.
+      class ColumnsListener
+        include REXML::SAX2Listener
+
+        attr_reader columns: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped localname, untyped _qname, untyped attrs) -> untyped
+
+        def end_element: (untyped _uri, untyped localname, untyped _qname) -> untyped
+
+        def characters: (untyped _text) -> untyped
+      end
+
+      def self.fast_scan_rows_direct: (untyped xml_src, untyped shared_strings, untyped part_name) ?{ (?) -> untyped } -> untyped
+
+      def self.fast_parse_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source) -> untyped
+    end
+  end
+end

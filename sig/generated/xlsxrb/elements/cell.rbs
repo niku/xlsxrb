@@ -1,0 +1,30 @@
+# Generated from lib/xlsxrb/elements/cell.rb with RBS::Inline
+
+module Xlsxrb
+  module Elements
+    # Represents a single cell in a worksheet.
+    # All indices are 0-based.
+    class Cell < Data
+      attr_reader row_index(): untyped
+
+      attr_reader column_index(): untyped
+
+      attr_reader value(): untyped
+
+      attr_reader formula(): untyped
+
+      attr_reader style_index(): untyped
+
+      attr_reader unmapped_data(): untyped
+
+      attr_reader errors(): untyped
+
+      def self.new: (untyped row_index, untyped column_index, untyped value, untyped formula, untyped style_index, untyped unmapped_data, untyped errors) -> instance
+                  | (row_index: untyped, column_index: untyped, value: untyped, formula: untyped, style_index: untyped, unmapped_data: untyped, errors: untyped) -> instance
+
+      def self.members: () -> [ :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors ]
+
+      def members: () -> [ :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors ]
+    end
+  end
+end

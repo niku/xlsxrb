@@ -1,0 +1,66 @@
+# Generated from lib/xlsxrb/ooxml/workbook_writer.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Orchestrates writing a complete XLSX workbook.
+    # Generates all required OpenXML parts and assembles them into a ZIP.
+    class WorkbookWriter
+      SSML_NS: ::String
+
+      REL_NS: ::String
+
+      CT_NS: ::String
+
+      DOC_REL: ::String
+
+      # Wraps a ZipWriter entry to provide a standard IO-like #write interface.
+      class ZipEntryIO
+        def initialize: (untyped zip) -> untyped
+
+        def write: (untyped data) -> untyped
+
+        alias << write
+      end
+
+      def self.write: (untyped target, sheets: untyped, ?shared_strings: untyped, ?shared_strings_index: untyped, ?styles: untyped, ?defined_names: untyped, ?core_properties: untyped, ?app_properties: untyped, ?custom_properties: untyped, ?workbook_protection: untyped, ?workbook_properties: untyped) -> untyped
+
+      def initialize: (sheets: untyped, ?shared_strings: untyped, ?shared_strings_index: untyped, ?styles: untyped, ?defined_names: untyped, ?core_properties: untyped, ?app_properties: untyped, ?custom_properties: untyped, ?workbook_protection: untyped, ?workbook_properties: untyped) -> untyped
+
+      def write_to: (untyped target) -> untyped
+
+      private
+
+      def build_sheet_rels_from_list: (untyped rels) -> untyped
+
+      def build_content_types: () -> untyped
+
+      def build_root_rels: () -> untyped
+
+      def build_workbook_xml: () -> untyped
+
+      def build_workbook_rels: () -> untyped
+
+      def build_styles_xml: () -> untyped
+
+      def preprocess_conditional_formats!: () -> untyped
+
+      def extract_dxf_from_rule!: (untyped rule) -> untyped
+
+      def write_dxf_font: (untyped builder, untyped font) -> untyped
+
+      def write_dxf_fill: (untyped builder, untyped fill) -> untyped
+
+      def build_shared_strings_xml: () -> untyped
+
+      def write_worksheet_xml: (untyped io, untyped sheet, ?drawing_rid: untyped, ?sheet_protection: untyped, ?auto_filter: untyped, ?filter_columns: untyped, ?sort_state: untyped, ?merge_cells: untyped, ?conditional_formats: untyped, ?data_validations: untyped, ?hyperlinks: untyped, ?print_options: untyped, ?page_margins: untyped, ?page_setup: untyped, ?header_footer: untyped, ?row_breaks: untyped, ?col_breaks: untyped, ?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped, ?sheet_properties: untyped, ?tables: untyped, ?table_start_rid: untyped, ?legacy_drawing_rid: untyped, ?sparkline_groups: untyped) -> untyped
+
+      def build_table_xml: (untyped tbl, untyped table_id) -> untyped
+
+      def build_core_properties_xml: () -> untyped
+
+      def build_app_properties_xml: () -> untyped
+
+      def build_custom_properties_xml: () -> untyped
+    end
+  end
+end

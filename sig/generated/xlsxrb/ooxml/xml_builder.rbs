@@ -1,0 +1,45 @@
+# Generated from lib/xlsxrb/ooxml/xml_builder.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Streams well-formed XML to a writable IO without building a DOM.
+    class XmlBuilder
+      XML_HEADER: ::String
+
+      ESCAPE_MAP: untyped
+
+      ESCAPE_RE: ::Regexp
+
+      def initialize: (untyped io) -> untyped
+
+      def declaration: () -> untyped
+
+      EMPTY_HASH: untyped
+
+      # Opens a tag, yields for children, then closes the tag.
+      def tag: (untyped name, ?untyped attrs) ?{ (?) -> untyped } -> untyped
+
+      def open_tag: (untyped name, ?untyped attrs) -> untyped
+
+      def close_tag: (untyped name) -> untyped
+
+      def empty_tag: (untyped name, ?untyped attrs) -> untyped
+
+      def text: (untyped content) -> untyped
+
+      # Write raw XML string (for unmapped_data restoration).
+      def raw: (untyped xml_string) -> untyped
+
+      # Serialize an unmapped_data hash back to XML.
+      def write_unmapped: (untyped node) -> untyped
+
+      def to_s: () -> untyped
+
+      private
+
+      def write_attrs: (untyped attrs) -> untyped
+
+      def escape: (untyped value) -> untyped
+    end
+  end
+end

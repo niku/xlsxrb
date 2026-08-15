@@ -1,0 +1,92 @@
+# Generated from lib/xlsxrb/ooxml/worksheet_writer.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Generates worksheet XML for a list of rows.
+    # Supports streaming: rows can be written one at a time.
+    class WorksheetWriter
+      SSML_NS: ::String
+
+      DOC_REL_NS: ::String
+
+      def initialize: (untyped io) -> untyped
+
+      # Write the worksheet header. Call once before writing rows.
+      # Options for pre-sheetData elements:
+      #   sheet_properties: Hash of sheet-level properties (:tab_color, etc.)
+      #   freeze_pane: { row:, col:, state: :frozen }
+      #   split_pane: { x_split:, y_split:, top_left_cell: }
+      #   selection: { active_cell:, sqref:, pane: }
+      #   sheet_view: Hash of sheet view properties
+      def start: (?columns: untyped, ?sheet_properties: untyped, ?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped) -> untyped
+
+      # Write a single row. Automatically calls start if needed.
+      def write_row: (untyped row_index, untyped cells, ?attrs: untyped, ?unmapped: untyped, ?sst_index: untyped) -> untyped
+
+      # Highly optimized row writing for StreamWriter that avoids allocating intermediate Hashes.
+      def write_row_values: (untyped row_index, untyped values, ?styles: untyped, ?style_map: untyped, ?sst: untyped, ?sst_index: untyped, ?attrs: untyped) -> untyped
+
+      # Write the worksheet footer. Call once after all rows.
+      # Options for post-sheetData elements (in OOXML order):
+      def finish: (?drawing_rid: untyped, ?sheet_protection: untyped, ?auto_filter: untyped, ?filter_columns: untyped, ?sort_state: untyped, ?merge_cells: untyped, ?conditional_formats: untyped, ?data_validations: untyped, ?hyperlinks: untyped, ?print_options: untyped, ?page_margins: untyped, ?page_setup: untyped, ?header_footer: untyped, ?row_breaks: untyped, ?col_breaks: untyped, ?tables: untyped, ?table_start_rid: untyped, ?legacy_drawing_rid: untyped, ?sparkline_groups: untyped) -> untyped
+
+      private
+
+      def write_sheet_properties: (untyped props) -> untyped
+
+      def write_sheet_views: (?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped) -> untyped
+
+      def write_sheet_protection: (untyped opts) -> untyped
+
+      def write_auto_filter: (untyped range, untyped filter_columns, untyped sort_state) -> untyped
+
+      def write_filter_column: (untyped col_id, untyped filter) -> untyped
+
+      def write_merge_cells: (untyped ranges) -> untyped
+
+      def write_conditional_formatting: (untyped rules) -> untyped
+
+      def write_data_validations: (untyped validations) -> untyped
+
+      def write_hyperlinks: (untyped links) -> untyped
+
+      def write_print_options: (untyped opts) -> untyped
+
+      def write_page_margins: (untyped margins) -> untyped
+
+      def write_page_setup: (untyped opts) -> untyped
+
+      def write_header_footer: (untyped opts) -> untyped
+
+      def write_row_breaks: (untyped breaks) -> untyped
+
+      def write_col_breaks: (untyped breaks) -> untyped
+
+      def write_table_parts: (untyped tables, untyped start_rid) -> untyped
+
+      def write_sparklines: (untyped groups) -> untyped
+
+      def write_sparkline_color: (untyped tag, untyped color) -> untyped
+
+      def write_columns: (untyped columns) -> untyped
+
+      def write_cell: (untyped cell) -> untyped
+
+      def cell_type: (untyped value) -> untyped
+
+      def xml_cell_value: (untyped value, untyped _type) -> untyped
+
+      def cell_ref: (untyped row_index, untyped col_index) -> untyped
+
+      def column_letter: (untyped index) -> untyped
+
+      INVALID_XML_CHARS_RE: ::Regexp
+
+      ESCAPE_RE: ::Regexp
+
+      ESCAPE_MAP: untyped
+
+      def escape_xml: (untyped value) -> untyped
+    end
+  end
+end

@@ -1,0 +1,30 @@
+# Generated from lib/xlsxrb/ooxml/xml_parser.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Thin wrapper around REXML SAX2 parser for streaming XML processing.
+    # Unknown elements are captured as unmapped data hashes.
+    module XmlParser
+      # Parses XML string using SAX2, calling the given listener.
+      def self.parse: (untyped xml_string, untyped listener) -> untyped
+
+      # Base listener with unmapped-data collection support.
+      class BaseListener
+        include REXML::SAX2Listener
+
+        attr_reader unmapped_data: untyped
+
+        def initialize: () -> untyped
+
+        # Override in subclass: return true if the tag is recognized.
+        def recognized_tag?: (untyped _uri, untyped _localname, untyped _qname) -> untyped
+
+        def start_element: (untyped uri, untyped localname, untyped qname, untyped attrs) -> untyped
+
+        def end_element: (untyped _uri, untyped _localname, untyped _qname) -> untyped
+
+        def characters: (untyped text) -> untyped
+      end
+    end
+  end
+end

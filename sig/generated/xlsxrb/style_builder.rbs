@@ -3,12 +3,14 @@
 module Xlsxrb
   # Helper class for building cell styles with a fluent DSL.
   # Encapsulates font, fill, border, alignment, and number format properties.
+  # @api public
   class StyleBuilder
     COLORS: untyped
 
     def resolve_color: (untyped color) -> untyped
 
-    def initialize: (?untyped name) -> untyped
+    # : (?String? name) -> void
+    def initialize: (?String? name) -> void
 
     attr_reader name: untyped
 
@@ -24,65 +26,225 @@ module Xlsxrb
 
     # Applies option-style definitions so callers can use add_style(name, **opts)
     # as an alternative to block-based fluent chaining.
-    def apply_options!: (**untyped opts) -> untyped
+    # Applies option-style definitions so callers can use add_style(name, **opts)
+    # as an alternative to block-based fluent chaining.
+    # @param opts [Hash] The styling options.
+    # @return [self]
+    # @api public
+    # : (**untyped) -> self
+    def apply_options!: (**untyped) -> self
+
+    # Configures multiple font properties at once.
+    # @param opts [Hash] The font properties.
+    # @return [self]
+    # @api public
+    # : (**untyped) -> self
+    def font: (**untyped) -> self
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def bold: (?untyped value) -> untyped
+    # Sets the font to bold.
+    # @param value [Boolean] Whether to apply bold.
+    # @return [self]
+    # @api public
+    # : (?bool) -> self
+    def bold: (?bool) -> self
 
-    def italic: (?untyped value) -> untyped
+    # Sets the font to italic.
+    # @param value [Boolean] Whether to apply italic.
+    # @return [self]
+    # @api public
+    # : (?bool) -> self
+    def italic: (?bool) -> self
 
-    def size: (untyped size_value) -> untyped
+    # Sets the font size.
+    # @param size_value [Numeric] The size.
+    # @return [self]
+    # @api public
+    # : (Numeric) -> self
+    def size: (Numeric) -> self
 
-    def font_name: (untyped name) -> untyped
+    # Sets the font name.
+    # @param name [String] The font name.
+    # @return [self]
+    # @api public
+    # : (String) -> self
+    def font_name: (String) -> self
 
-    def font_color: (untyped color) -> untyped
+    # Sets the font color.
+    # @param color [String, Symbol] The color.
+    # @return [self]
+    # @api public
+    # : (String | Symbol) -> self
+    def font_color: (String | Symbol) -> self
 
-    def underline: (?untyped val) -> untyped
+    # Sets the font underline style.
+    # @param val [String] The underline style (e.g., 'single').
+    # @return [self]
+    # @api public
+    # : (?String) -> self
+    def underline: (?String) -> self
 
-    def strike: (?untyped value) -> untyped
+    # Sets the font strikethrough.
+    # @param value [Boolean] Whether to apply strike.
+    # @return [self]
+    # @api public
+    # : (?bool) -> self
+    def strike: (?bool) -> self
 
-    def vert_align: (untyped value) -> untyped
+    # Sets the vertical alignment of the font.
+    # @param value [String] The alignment value.
+    # @return [self]
+    # @api public
+    # : (String) -> self
+    def vert_align: (String) -> self
 
-    def fill_pattern: (untyped pattern, ?fg_color: untyped, ?bg_color: untyped) -> untyped
+    # Sets the fill pattern.
+    # @param pattern [String, Symbol] The pattern type.
+    # @param fg_color [String, Symbol, nil] The foreground color.
+    # @param bg_color [String, Symbol, nil] The background color.
+    # @return [self]
+    # @api public
+    # Configures fill properties.
+    # @param pattern [String, Symbol] The pattern type.
+    # @param fg_color [String, Symbol, nil] The foreground color.
+    # @param bg_color [String, Symbol, nil] The background color.
+    # @return [self]
+    # @api public
+    # : (String | Symbol pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> self
+    def fill_pattern: (String | Symbol pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> self
 
-    def fill_color: (untyped color) -> untyped
+    # Sets a solid fill color.
+    # @param color [String, Symbol] The color.
+    # @return [self]
+    # @api public
+    # : (String | Symbol) -> self
+    def fill_color: (String | Symbol) -> self
 
-    def fill: (?pattern: untyped, ?fg_color: untyped, ?bg_color: untyped) -> untyped
+    # : (?pattern: String | Symbol, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> self
+    def fill: (?pattern: String | Symbol, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> self
 
-    def fill_gradient: (type: untyped, ?degree: untyped, ?stops: untyped) -> untyped
+    # Sets a gradient fill.
+    # @param type [String] The gradient type.
+    # @param degree [Numeric, nil] The degree.
+    # @param stops [Array] The gradient stops.
+    # @return [self]
+    # @api public
+    # : (type: String, ?degree: Numeric | nil, ?stops: Array[untyped]) -> self
+    def fill_gradient: (type: String, ?degree: Numeric | nil, ?stops: Array[untyped]) -> self
 
-    def border_all: (?style: untyped, ?color: untyped) -> untyped
+    # Configures multiple border properties.
+    # @param opts [Hash] Border options.
+    # @return [self]
+    # @api public
+    # : (**untyped) -> self
+    def border: (**untyped) -> self
 
-    def border_left: (?style: untyped, ?color: untyped) -> untyped
+    # Sets all borders.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    def border_all: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
 
-    def border_right: (?style: untyped, ?color: untyped) -> untyped
+    # Sets the left border.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    def border_left: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
 
-    def border_top: (?style: untyped, ?color: untyped) -> untyped
+    # Sets the right border.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    def border_right: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
 
-    def border_bottom: (?style: untyped, ?color: untyped) -> untyped
+    # Sets the top border.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    def border_top: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+
+    # Sets the bottom border.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    def border_bottom: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
 
     # rubocop:disable Naming/MethodParameterName
-    def border_diagonal: (?style: untyped, ?color: untyped, ?up: untyped, ?down: untyped) -> untyped
+    # Sets diagonal borders.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @param up [Boolean] Diagonal up.
+    # @param down [Boolean] Diagonal down.
+    # @return [self]
+    # @api public
+    # : (?style: String | Symbol, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
+    def border_diagonal: (?style: String | Symbol, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
 
-    def align_horizontal: (untyped value) -> untyped
+    # Sets horizontal alignment.
+    # @param value [String, Symbol] The alignment.
+    # @return [self]
+    # @api public
+    # : (String | Symbol) -> self
+    def align_horizontal: (String | Symbol) -> self
 
-    def align_vertical: (untyped value) -> untyped
+    # Sets vertical alignment.
+    # @param value [String, Symbol] The alignment.
+    # @return [self]
+    # @api public
+    # : (String | Symbol) -> self
+    def align_vertical: (String | Symbol) -> self
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def wrap_text: (?untyped value) -> untyped
+    # Sets text wrapping.
+    # @param value [Boolean] Whether to wrap text.
+    # @return [self]
+    # @api public
+    # : (?bool) -> self
+    def wrap_text: (?bool) -> self
 
-    def shrink_to_fit: (?untyped value) -> untyped
+    # Sets shrink to fit.
+    # @param value [Boolean] Whether to shrink text.
+    # @return [self]
+    # @api public
+    # : (?bool) -> self
+    def shrink_to_fit: (?bool) -> self
 
-    def text_rotation: (untyped value) -> untyped
+    # Sets text rotation.
+    # @param value [Numeric] The rotation angle.
+    # @return [self]
+    # @api public
+    # : (Numeric) -> self
+    def text_rotation: (Numeric) -> self
 
-    def indent: (untyped value) -> untyped
+    # Sets text indent.
+    # @param value [Numeric] The indent level.
+    # @return [self]
+    # @api public
+    # : (Numeric) -> self
+    def indent: (Numeric) -> self
 
-    def number_format: (untyped num_fmt_id) -> untyped
+    # Sets the number format.
+    # @param num_fmt_id [String, Integer] The format id or format string.
+    # @return [self]
+    # @api public
+    # : (String | Integer) -> self
+    def number_format: (String | Integer) -> self
 
     alias num_fmt number_format
 
     # Register this style with the given Writer, returning the style_id.
     # writer:: Xlsxrb::Ooxml::Writer instance
-    def register_with: (untyped writer) -> untyped
+    # : (untyped writer) -> Integer
+    def register_with: (untyped writer) -> Integer
   end
 end

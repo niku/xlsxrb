@@ -3,8 +3,6 @@
 target :lib do
   signature "sig"
 
-  check "lib/xlsxrb.rb"
-
   library "date"
   library "time"
   library "securerandom"

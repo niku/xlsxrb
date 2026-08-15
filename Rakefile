@@ -527,7 +527,8 @@ namespace :doc do
 end
 desc "Generate RBS signature files from inline annotations"
 task :sig do
-  sh "bundle exec rbs-inline --output lib/**/*.rb"
+  files = FileList["lib/**/*.rb"].to_a
+  sh "bundle", "exec", "rbs-inline", "--output=sig/generated", "--base=lib", *files
 end
 
 desc "Run static type checking with Steep"

@@ -1,0 +1,30 @@
+# Generated from lib/xlsxrb/elements/column.rb with RBS::Inline
+
+module Xlsxrb
+  module Elements
+    # Represents column formatting in a worksheet.
+    # index is 0-based.
+    class Column < Data
+      attr_reader index(): untyped
+
+      attr_reader width(): untyped
+
+      attr_reader hidden(): untyped
+
+      attr_reader custom_width(): untyped
+
+      attr_reader outline_level(): untyped
+
+      attr_reader unmapped_data(): untyped
+
+      attr_reader errors(): untyped
+
+      def self.new: (untyped index, untyped width, untyped hidden, untyped custom_width, untyped outline_level, untyped unmapped_data, untyped errors) -> instance
+                  | (index: untyped, width: untyped, hidden: untyped, custom_width: untyped, outline_level: untyped, unmapped_data: untyped, errors: untyped) -> instance
+
+      def self.members: () -> [ :index, :width, :hidden, :custom_width, :outline_level, :unmapped_data, :errors ]
+
+      def members: () -> [ :index, :width, :hidden, :custom_width, :outline_level, :unmapped_data, :errors ]
+    end
+  end
+end

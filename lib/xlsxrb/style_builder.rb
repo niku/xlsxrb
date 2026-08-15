@@ -5,6 +5,7 @@
 module Xlsxrb
   # Helper class for building cell styles with a fluent DSL.
   # Encapsulates font, fill, border, alignment, and number format properties.
+  # @api public
   class StyleBuilder
     COLORS = {
       black: "FF000000",
@@ -29,7 +30,7 @@ module Xlsxrb
       color.to_s
     end
 
-    # : (?String? name) -> void
+    #: (?String? name) -> void
     def initialize(name = nil)
       @name = name
       @font_props = {}
@@ -43,7 +44,12 @@ module Xlsxrb
 
     # Applies option-style definitions so callers can use add_style(name, **opts)
     # as an alternative to block-based fluent chaining.
-    # : (**untyped opts) -> self
+    # Applies option-style definitions so callers can use add_style(name, **opts)
+    # as an alternative to block-based fluent chaining.
+    # @param opts [Hash] The styling options.
+    # @return [self]
+    # @api public
+    #: (**untyped) -> self
     def apply_options!(**opts)
       if opts.key?(:font)
         font_opts = opts[:font] || {}
@@ -129,7 +135,11 @@ module Xlsxrb
 
     # --- Font Properties ---
 
-    # : (**untyped opts) -> self
+    # Configures multiple font properties at once.
+    # @param opts [Hash] The font properties.
+    # @return [self]
+    # @api public
+    #: (**untyped) -> self
     def font(**opts)
       bold(opts[:bold]) if opts.key?(:bold)
       italic(opts[:italic]) if opts.key?(:italic)
@@ -143,49 +153,81 @@ module Xlsxrb
     end
 
     # rubocop:disable Style/OptionalBooleanParameter
-    # : (?bool value) -> self
+    # Sets the font to bold.
+    # @param value [Boolean] Whether to apply bold.
+    # @return [self]
+    # @api public
+    #: (?bool) -> self
     def bold(value = true)
       @font_props[:bold] = value
       self
     end
 
-    # : (?bool value) -> self
+    # Sets the font to italic.
+    # @param value [Boolean] Whether to apply italic.
+    # @return [self]
+    # @api public
+    #: (?bool) -> self
     def italic(value = true)
       @font_props[:italic] = value
       self
     end
 
-    # : (Numeric size_value) -> self
+    # Sets the font size.
+    # @param size_value [Numeric] The size.
+    # @return [self]
+    # @api public
+    #: (Numeric) -> self
     def size(size_value)
       @font_props[:sz] = size_value.to_i
       self
     end
 
-    # : (String name) -> self
+    # Sets the font name.
+    # @param name [String] The font name.
+    # @return [self]
+    # @api public
+    #: (String) -> self
     def font_name(name)
       @font_props[:name] = name
       self
     end
 
-    # : (String | Symbol color) -> self
+    # Sets the font color.
+    # @param color [String, Symbol] The color.
+    # @return [self]
+    # @api public
+    #: (String | Symbol) -> self
     def font_color(color)
       @font_props[:color] = resolve_color(color)
       self
     end
 
-    # : (?String val) -> self
+    # Sets the font underline style.
+    # @param val [String] The underline style (e.g., 'single').
+    # @return [self]
+    # @api public
+    #: (?String) -> self
     def underline(val = "single")
       @font_props[:underline] = val
       self
     end
 
-    # : (?bool value) -> self
+    # Sets the font strikethrough.
+    # @param value [Boolean] Whether to apply strike.
+    # @return [self]
+    # @api public
+    #: (?bool) -> self
     def strike(value = true)
       @font_props[:strike] = value
       self
     end
 
-    # : (String value) -> self
+    # Sets the vertical alignment of the font.
+    # @param value [String] The alignment value.
+    # @return [self]
+    # @api public
+    #: (String) -> self
     def vert_align(value)
       @font_props[:vert_align] = value
       self
@@ -194,7 +236,19 @@ module Xlsxrb
 
     # --- Fill Properties ---
 
-    # : (String | Symbol pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> self
+    # Sets the fill pattern.
+    # @param pattern [String, Symbol] The pattern type.
+    # @param fg_color [String, Symbol, nil] The foreground color.
+    # @param bg_color [String, Symbol, nil] The background color.
+    # @return [self]
+    # @api public
+    # Configures fill properties.
+    # @param pattern [String, Symbol] The pattern type.
+    # @param fg_color [String, Symbol, nil] The foreground color.
+    # @param bg_color [String, Symbol, nil] The background color.
+    # @return [self]
+    # @api public
+    #: (String | Symbol pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> self
     def fill_pattern(pattern, fg_color: nil, bg_color: nil)
       @fill_props[:pattern] = pattern
       @fill_props[:fg_color] = fg_color if fg_color
@@ -202,19 +256,29 @@ module Xlsxrb
       self
     end
 
-    # : (String | Symbol color) -> self
+    # Sets a solid fill color.
+    # @param color [String, Symbol] The color.
+    # @return [self]
+    # @api public
+    #: (String | Symbol) -> self
     def fill_color(color)
       @fill_props[:pattern] = "solid"
       @fill_props[:fg_color] = resolve_color(color)
       self
     end
 
-    # : (?pattern: String | Symbol, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> self
+    #: (?pattern: String | Symbol, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> self
     def fill(pattern: "solid", fg_color: nil, bg_color: nil)
       fill_pattern(pattern, fg_color: resolve_color(fg_color), bg_color: resolve_color(bg_color))
     end
 
-    # : (type: String, ?degree: Numeric | nil, ?stops: Array[untyped]) -> self
+    # Sets a gradient fill.
+    # @param type [String] The gradient type.
+    # @param degree [Numeric, nil] The degree.
+    # @param stops [Array] The gradient stops.
+    # @return [self]
+    # @api public
+    #: (type: String, ?degree: Numeric | nil, ?stops: Array[untyped]) -> self
     def fill_gradient(type:, degree: nil, stops: [])
       @fill_props[:gradient] = {
         type: type,
@@ -226,7 +290,11 @@ module Xlsxrb
 
     # --- Border Properties ---
 
-    # : (**untyped opts) -> self
+    # Configures multiple border properties.
+    # @param opts [Hash] Border options.
+    # @return [self]
+    # @api public
+    #: (**untyped) -> self
     def border(**opts)
       border_all(**opts[:all]) if opts.key?(:all) && opts[:all]
       border_left(**opts[:left]) if opts.key?(:left) && opts[:left]
@@ -236,7 +304,12 @@ module Xlsxrb
       self
     end
 
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # Sets all borders.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
     def border_all(style: "thin", color: nil)
       color_opt = color ? { color: resolve_color(color) } : {}
       @border_props[:left] = { style: style, **color_opt }
@@ -246,32 +319,59 @@ module Xlsxrb
       self
     end
 
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # Sets the left border.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
     def border_left(style: "thin", color: nil)
       @border_props[:left] = { style: style, color: resolve_color(color) }.compact
       self
     end
 
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # Sets the right border.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
     def border_right(style: "thin", color: nil)
       @border_props[:right] = { style: style, color: resolve_color(color) }.compact
       self
     end
 
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # Sets the top border.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
     def border_top(style: "thin", color: nil)
       @border_props[:top] = { style: style, color: resolve_color(color) }.compact
       self
     end
 
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # Sets the bottom border.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @return [self]
+    # @api public
+    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
     def border_bottom(style: "thin", color: nil)
       @border_props[:bottom] = { style: style, color: resolve_color(color) }.compact
       self
     end
 
     # rubocop:disable Naming/MethodParameterName
-    # : (?style: String | Symbol, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
+    # Sets diagonal borders.
+    # @param style [String, Symbol] The border style.
+    # @param color [String, Symbol, nil] The color.
+    # @param up [Boolean] Diagonal up.
+    # @param down [Boolean] Diagonal down.
+    # @return [self]
+    # @api public
+    #: (?style: String | Symbol, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
     def border_diagonal(style: "thin", color: nil, up: false, down: false)
       @border_props[:diagonal] = { style: style, color: resolve_color(color) }.compact
       @border_props[:diagonal_up] = true if up
@@ -282,39 +382,63 @@ module Xlsxrb
 
     # --- Alignment Properties ---
 
-    # : (String | Symbol value) -> self
+    # Sets horizontal alignment.
+    # @param value [String, Symbol] The alignment.
+    # @return [self]
+    # @api public
+    #: (String | Symbol) -> self
     def align_horizontal(value)
       @alignment[:horizontal] = value
       self
     end
 
-    # : (String | Symbol value) -> self
+    # Sets vertical alignment.
+    # @param value [String, Symbol] The alignment.
+    # @return [self]
+    # @api public
+    #: (String | Symbol) -> self
     def align_vertical(value)
       @alignment[:vertical] = value
       self
     end
 
     # rubocop:disable Style/OptionalBooleanParameter
-    # : (?bool value) -> self
+    # Sets text wrapping.
+    # @param value [Boolean] Whether to wrap text.
+    # @return [self]
+    # @api public
+    #: (?bool) -> self
     def wrap_text(value = true)
       @alignment[:wrap_text] = value
       self
     end
 
-    # : (?bool value) -> self
+    # Sets shrink to fit.
+    # @param value [Boolean] Whether to shrink text.
+    # @return [self]
+    # @api public
+    #: (?bool) -> self
     def shrink_to_fit(value = true)
       @alignment[:shrink_to_fit] = value
       self
     end
     # rubocop:enable Style/OptionalBooleanParameter
 
-    # : (Numeric value) -> self
+    # Sets text rotation.
+    # @param value [Numeric] The rotation angle.
+    # @return [self]
+    # @api public
+    #: (Numeric) -> self
     def text_rotation(value)
       @alignment[:text_rotation] = value
       self
     end
 
-    # : (Numeric value) -> self
+    # Sets text indent.
+    # @param value [Numeric] The indent level.
+    # @return [self]
+    # @api public
+    #: (Numeric) -> self
     def indent(value)
       @alignment[:indent] = value.to_i
       self
@@ -322,7 +446,11 @@ module Xlsxrb
 
     # --- Number Format ---
 
-    # : (String | Integer num_fmt_id) -> self
+    # Sets the number format.
+    # @param num_fmt_id [String, Integer] The format id or format string.
+    # @return [self]
+    # @api public
+    #: (String | Integer) -> self
     def number_format(num_fmt_id)
       @num_fmt_id = num_fmt_id
       self
@@ -331,7 +459,7 @@ module Xlsxrb
 
     # Register this style with the given Writer, returning the style_id.
     # writer:: Xlsxrb::Ooxml::Writer instance
-    # : (untyped writer) -> Integer
+    #: (untyped writer) -> Integer
     def register_with(writer)
       font_id = 0
       fill_id = 0
