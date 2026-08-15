@@ -1,4 +1,8 @@
 ## [Unreleased]
+- No unreleased changes.
+
+## [0.1.6] - 2026-08-15
+
 ### Added
 - Support for unseekable IO streams (pipes, `ActionDispatch::Response::Buffer`, socket streams) across streaming reader and writer.
 - Complete `rbs-inline` type annotations across all library source files and automated `sig/generated/` synchronization in CI.
@@ -14,16 +18,6 @@
 ### Documentation
 - Overhauled `benchmark.rb` with `bundler/inline` for deterministic, zero-setup benchmark reproduction pinning peer gem versions.
 - Updated README.md Motivation and Benchmark tables with verified default vs optional string storage architecture (SST vs Inline) and latest 1,000,000 cells measurements.
-
-## [0.1.5] - 2026-08-11
-
-## [0.1.5] - 2026-08-11
-
-## [0.1.5] - 2026-08-11
-
-## [0.1.5] - 2026-08-11
-
-## [0.1.5] - 2026-08-11
 
 ## [0.1.5] - 2026-08-11
 
