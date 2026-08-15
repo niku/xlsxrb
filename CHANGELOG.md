@@ -1,6 +1,16 @@
 ## [Unreleased]
 - No unreleased changes.
 
+## [0.1.7] - 2026-08-16
+
+### Added
+- Bundled native Ruby LSP Add-on (`RubyLsp::Xlsxrb::Addon`) for zero-configuration, context-aware method autocompletion and rich markdown documentation in VS Code and LSP-enabled editors for block arguments (`wb.`, `s.`, `sheet.`, `stream_writer.`, `stream_sheet.`).
+- Comprehensive YARD documentation (`@param`, `@return`, `@example`) across all public APIs, builders, proxies, and elements.
+
+### Developer Experience
+- Enhanced `rbs-inline` type signatures across all facade methods and builder objects with automated RBS generation.
+- Added VS Code Steep extension configuration for Dev Containers.
+
 ## [0.1.6] - 2026-08-15
 
 ### Added
