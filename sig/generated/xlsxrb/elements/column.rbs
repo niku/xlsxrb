@@ -4,6 +4,11 @@ module Xlsxrb
   module Elements
     # Represents column formatting in a worksheet.
     # index is 0-based.
+    #
+    # @example
+    #   col = Elements::Column.new(index: 0, width: 25.0)
+    #
+    # @api public
     class Column < Data
       attr_reader index(): untyped
 

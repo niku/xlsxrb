@@ -3,7 +3,14 @@
 module Xlsxrb
   module Elements
     # Represents a single row in a worksheet.
-    # index is 0-based.
+    # All row and column indices are 0-based.
+    #
+    # @example Access cell by index or symbol
+    #   row = sheet.row_at(0)
+    #   cell = row[0]       # cell at column 0
+    #   row.to_a            # array of cell values
+    #
+    # @api public
     class Row < Data
       attr_reader index(): untyped
 

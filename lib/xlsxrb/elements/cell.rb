@@ -5,8 +5,25 @@
 module Xlsxrb
   module Elements
     # Represents a single cell in a worksheet.
-    # All indices are 0-based.
+    # All row and column indices are 0-based.
+    #
+    # @example Access cell properties
+    #   cell = sheet["A1"]
+    #   cell.value       # raw value
+    #   cell.ref         # "A1"
+    #   cell.to_i        # integer value
+    #   cell.to_date     # Date value
+    #
+    # @api public
     Cell = Data.define(:row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors) do
+      # @param row_index [Integer] 0-based row index.
+      # @param column_index [Integer] 0-based column index.
+      # @param value [Object, nil] The cell's value.
+      # @param formula [Elements::Formula, nil] Optional formula.
+      # @param style_index [Integer, String, nil] Style identifier.
+      # @param unmapped_data [Hash] Additional metadata.
+      # @param errors [Array<String>, nil] Validation errors.
+      #: (row_index: Integer, column_index: Integer, ?value: untyped, ?formula: Elements::Formula?, ?style_index: Integer | String | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil)
         computed_errors = errors || self.class.validate(row_index, column_index, value)
         computed_errors = computed_errors.freeze unless computed_errors.frozen?
@@ -14,15 +31,29 @@ module Xlsxrb
               style_index: style_index, unmapped_data: unmapped_data, errors: computed_errors)
       end
 
+      # Returns whether the cell is valid according to OOXML specifications.
+      #
+      # @return [Boolean]
+      #: () -> bool
       def valid?
         errors.empty?
       end
 
-      # Excel-style reference (e.g. "A1").
+      # Returns the Excel-style reference (e.g. "A1", "B2").
+      #
+      # @return [String]
+      # @api public
+      #: () -> String
       def ref
         "#{self.class.column_letter(column_index)}#{row_index + 1}"
       end
 
+      # Access cell attributes by Symbol key.
+      #
+      # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type).
+      # @return [Object, nil]
+      # @api public
+      #: (Symbol key) -> untyped
       def [](key)
         case key
         when :value then value
@@ -39,22 +70,47 @@ module Xlsxrb
         end
       end
 
+      # Returns the cell value.
+      #
+      # @return [Object, nil]
+      # @api public
+      #: () -> untyped
       def content
         value
       end
 
+      # Returns the string representation of the cell value.
+      #
+      # @return [String]
+      # @api public
+      #: () -> String
       def to_s
         value.to_s
       end
 
+      # Converts the cell value to Integer.
+      #
+      # @return [Integer]
+      # @api public
+      #: () -> Integer
       def to_i
         value.to_i
       end
 
+      # Converts the cell value to Float.
+      #
+      # @return [Float]
+      # @api public
+      #: () -> Float
       def to_f
         value.to_f
       end
 
+      # Converts the cell value (numeric serial date or date string) to Date.
+      #
+      # @return [Date, nil]
+      # @api public
+      #: () -> Date?
       def to_date
         return value if value.is_a?(Date)
 
@@ -70,6 +126,11 @@ module Xlsxrb
         end
       end
 
+      # Converts the cell value (numeric serial datetime or datetime string) to Time.
+      #
+      # @return [Time, nil]
+      # @api public
+      #: () -> Time?
       def to_time
         return value if value.is_a?(Time)
 
@@ -98,7 +159,16 @@ module Xlsxrb
         result.freeze
       end.freeze
 
-      # Converts a 0-based column index to a letter (0 -> "A", 25 -> "Z", 26 -> "AA").
+      # Converts a 0-based column index to an Excel letter (0 -> "A", 25 -> "Z", 26 -> "AA").
+      #
+      # @example
+      #   Cell.column_letter(0)  #=> "A"
+      #   Cell.column_letter(26) #=> "AA"
+      #
+      # @param index [Integer] 0-based column index.
+      # @return [String] Excel column letter.
+      # @api public
+      #: (Integer index) -> String
       def self.column_letter(index)
         raise ArgumentError, "Column index must be a non-negative Integer, got #{index.inspect}" unless index.is_a?(Integer) && index >= 0
 
@@ -115,7 +185,15 @@ module Xlsxrb
       end
 
       # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
-      # If passed an integer or string/symbol representing an integer, it validates and returns the integer.
+      #
+      # @example
+      #   Cell.column_index("A")  #=> 0
+      #   Cell.column_index(:AA)  #=> 26
+      #
+      # @param letter [String, Symbol, Integer] Column letter or integer index.
+      # @return [Integer] 0-based column index.
+      # @api public
+      #: (String | Symbol | Integer letter) -> Integer
       def self.column_index(letter)
         if letter.is_a?(Integer)
           raise ArgumentError, "Column index must be >= 0, got #{letter}" if letter.negative?
@@ -137,6 +215,15 @@ module Xlsxrb
       end
 
       # Parses an Excel-style reference to [row_index, col_index] (both 0-based).
+      #
+      # @example
+      #   Cell.parse_ref("A1")  #=> [0, 0]
+      #   Cell.parse_ref("C10") #=> [9, 2]
+      #
+      # @param ref [String, nil] Excel cell reference.
+      # @return [Array(Integer, Integer), nil] 0-based [row_index, col_index].
+      # @api public
+      #: (String? ref) -> [Integer, Integer]?
       def self.parse_ref(ref)
         return nil unless ref
 
@@ -162,6 +249,13 @@ module Xlsxrb
         [row, col - 1]
       end
 
+      # Validates cell coordinates and value type against OOXML specifications.
+      #
+      # @param row_index [Integer]
+      # @param column_index [Integer]
+      # @param value [Object]
+      # @return [Array<String>] List of errors.
+      #: (untyped row_index, untyped column_index, untyped value) -> Array[String]
       def self.validate(row_index, column_index, value)
         if row_index.is_a?(Integer) && row_index >= 0 && row_index < 1_048_576 &&
            column_index.is_a?(Integer) && column_index >= 0 && column_index < 16_384 &&

@@ -5,15 +5,33 @@
 module Xlsxrb
   module Elements
     # Represents a single worksheet in a workbook.
+    #
+    # @example Access cells and rows
+    #   sheet = workbook.sheet(0)
+    #   cell = sheet["A1"]
+    #   sheet.each_row { |row| puts row.to_a.inspect }
+    #
+    # @api public
     Worksheet = Data.define(:name, :rows, :columns, :charts, :unmapped_data, :errors) do
       include Enumerable
 
+      # @param name [String] The worksheet name (max 31 characters).
+      # @param rows [Array<Elements::Row>] Rows in the sheet.
+      # @param columns [Array<Elements::Column>] Column definitions.
+      # @param charts [Array<Hash>] Charts in the sheet.
+      # @param unmapped_data [Hash] Additional metadata for round-tripping.
+      # @param errors [Array<String>, nil] Validation errors.
+      #: (name: String, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize(name:, rows: [], columns: [], charts: [], unmapped_data: {}, errors: nil)
         computed_errors = errors || self.class.validate(name, rows)
         super(name: name, rows: rows.freeze, columns: columns.freeze, charts: charts.freeze,
               unmapped_data: unmapped_data, errors: computed_errors.freeze)
       end
 
+      # Returns a Hash mapping Excel cell references (e.g. "A1") to Cell objects.
+      #
+      # @return [Hash<String, Elements::Cell>]
+      #: () -> Hash[String, Elements::Cell]
       def cells_hash
         h = {}
         rows.each do |r|
@@ -25,51 +43,131 @@ module Xlsxrb
         h
       end
 
+      # Returns all cells ordered by row and column index.
+      #
+      # @return [Array<Elements::Cell>]
+      # @api public
+      #: () -> Array[Elements::Cell]
       def cells
         # Ensure ordered traversal
         cells_hash.values.sort_by { |c| [c.row_index, c.column_index] }
       end
 
+      # Access a cell by its Excel-style reference (e.g. "A1").
+      #
+      # @example
+      #   sheet["A1"] #=> #<Elements::Cell value="Hello">
+      #
+      # @param ref [String, Symbol] Cell reference (e.g. "A1" or :A1).
+      # @return [Elements::Cell, nil]
+      # @api public
+      #: (String | Symbol ref) -> Elements::Cell?
       def [](ref)
         cells_hash[ref.to_s.upcase]
       end
 
+      # Iterate over cells in the worksheet.
+      #
+      # @example
+      #   sheet.each do |cell|
+      #     puts cell.value
+      #   end
+      #
+      # @yield [cell]
+      # @yieldparam cell [Elements::Cell]
+      # @return [Enumerator, void]
+      # @api public
+      #: () { (Elements::Cell) -> void } -> void
+      #: | () -> Enumerator[Elements::Cell, void]
       def each(&)
         return to_enum(:each) unless block_given?
 
         cells.each(&)
       end
 
+      # Iterate over cells in the worksheet.
+      #
+      # @example
+      #   sheet.each_cell do |cell|
+      #     puts "#{cell.ref}: #{cell.value}"
+      #   end
+      #
+      # @yield [cell]
+      # @yieldparam cell [Elements::Cell]
+      # @return [Enumerator, void]
+      # @api public
+      #: () { (Elements::Cell) -> void } -> void
+      #: | () -> Enumerator[Elements::Cell, void]
       def each_cell(&)
         return to_enum(:each_cell) unless block_given?
 
         cells.each(&)
       end
 
+      # Iterate over rows in the worksheet.
+      #
+      # @example
+      #   sheet.each_row do |row|
+      #     puts "Row #{row.index}: #{row.to_a.inspect}"
+      #   end
+      #
+      # @yield [row]
+      # @yieldparam row [Elements::Row]
+      # @return [Enumerator, void]
+      # @api public
+      #: () { (Elements::Row) -> void } -> void
+      #: | () -> Enumerator[Elements::Row, void]
       def each_row(&)
         return to_enum(:each_row) unless block_given?
 
         rows.each(&)
       end
 
+      # Returns whether the worksheet is valid according to OOXML specifications.
+      #
+      # @return [Boolean]
+      #: () -> bool
       def valid?
         errors.empty?
       end
 
       # Returns the row at the given 0-based index, or nil.
+      #
+      # @param index [Integer] 0-based row index.
+      # @return [Elements::Row, nil]
+      # @api public
+      #: (Integer index) -> Elements::Row?
       def row_at(index)
         rows.find { |r| r.index == index }
       end
 
+      # Returns the first row in the sheet, or nil.
+      #
+      # @return [Elements::Row, nil]
+      # @api public
+      #: () -> Elements::Row?
       def first_row
         rows.min_by(&:index)
       end
 
+      # Returns the last row in the sheet, or nil.
+      #
+      # @return [Elements::Row, nil]
+      # @api public
+      #: () -> Elements::Row?
       def last_row
         rows.max_by(&:index)
       end
 
-      # Returns cell value at Excel-style reference (e.g. "A1").
+      # Returns the raw cell value at the given Excel-style reference (e.g. "A1").
+      #
+      # @example
+      #   sheet.cell_value("A1") #=> "Sales Report"
+      #
+      # @param ref [String] Cell reference (e.g. "A1").
+      # @return [Object, nil]
+      # @api public
+      #: (String ref) -> untyped
       def cell_value(ref)
         parsed = Cell.parse_ref(ref)
         return nil unless parsed
@@ -84,11 +182,16 @@ module Xlsxrb
 
       # Returns a new Worksheet with the specified cell updated.
       #
+      # @example
+      #   new_sheet = sheet.update_cell("B1", value: "Updated")
+      #
       # @param ref [String] The cell reference (e.g. "B1").
       # @param value [Object] The new cell value.
       # @param style_index [Integer, String, nil] Optional new style index.
       # @param formula [Elements::Formula, nil] Optional new formula.
       # @return [Worksheet] A new Worksheet instance.
+      # @api public
+      #: (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?) -> Elements::Worksheet
       def update_cell(ref, value: nil, style_index: nil, formula: nil)
         parsed = Cell.parse_ref(ref)
         raise ArgumentError, "invalid cell reference: #{ref}" unless parsed
@@ -124,6 +227,12 @@ module Xlsxrb
         with(rows: new_rows)
       end
 
+      # Validates worksheet name and rows against OOXML limits.
+      #
+      # @param name [String]
+      # @param rows [Array<Elements::Row>]
+      # @return [Array<String>] List of errors.
+      #: (untyped name, untyped rows) -> Array[String]
       def self.validate(name, rows)
         errs = []
         if name.nil? || !name.is_a?(String) || name.empty?

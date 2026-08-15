@@ -82,8 +82,8 @@ Generate large files efficiently by writing data directly to the file stream:
 ```ruby
 require "xlsxrb"
 
-Xlsxrb.generate("large_output.xlsx") do |wb|
-  wb.sheet("Sales Data") do |sheet|
+Xlsxrb.generate("large_output.xlsx") do |stream_writer|
+  stream_writer.sheet("Sales Data") do |sheet|
     sheet.row(["Date", "Amount", "Status"])
     sheet.row([Date.today, 100, true])
     sheet.column(0, width: 15.5)
@@ -97,7 +97,7 @@ Read rows one at a time without loading the entire file into memory:
 require "xlsxrb"
 
 Xlsxrb.foreach("large_file.xlsx") do |sheet|
-  sheet.each do |row|
+  sheet.each_row do |row|
     puts "Row #{row.index}: #{row.cells.map(&:value).join(', ')}"
   end
 end
@@ -108,17 +108,17 @@ end
 `xlsxrb` provides a powerful, immutable-by-default API for modifying existing Excel files or building templates in-memory. 
 
 #### Modifying an Existing File
-You can update specific cells or sheets using the functional `Xlsxrb.modify` API, which yields the parsed `Workbook`.
+You can update specific cells or sheets using the functional `Xlsxrb.modify` API, which yields the parsed `Elements::Workbook`.
 
 ```ruby
 require "xlsxrb"
 
-# Create a dummy template.xlsx for this example
-Xlsxrb.build { |w| w.sheet("Invoice") }.write("template.xlsx")
+# Create a template.xlsx for this example
+Xlsxrb.build { |builder| builder.sheet("Invoice") }.write("template.xlsx")
 
-Xlsxrb.modify("template.xlsx", "output.xlsx") do |wb|
-  wb.update_sheet("Invoice") do |sheet|
-    # Update a specific cell
+Xlsxrb.modify("template.xlsx", "output.xlsx") do |workbook|
+  workbook.update_sheet("Invoice") do |sheet|
+    # Update specific cells (returns updated sheet)
     sheet = sheet.update_cell("C4", value: "INV-10042")
     sheet = sheet.update_cell("C5", value: Date.today)
     
@@ -134,16 +134,31 @@ end
 You can directly apply inline styles or use Ranges for multiple columns without boilerplate:
 
 ```ruby
-Xlsxrb.build do |wb|
+Xlsxrb.build do |builder|
   # Use [] accessor for sheets
-  wb["Report"].row(
+  builder["Report"].row(
     ["ID", "Name", "Score", "Rank"],
     # Apply 'header' style to first two columns, and bold inline style to the third
     styles: { 0..1 => "header", 2 => { font: { bold: true, color: "red" } } }
   )
   
   # Set multiple column widths at once using Ranges
-  wb["Report"].column("A".."D", width: 15.0)
+  builder["Report"].column("A".."D", width: 15.0)
+end
+```
+
+### IDE Autocompletion & Ruby LSP Support
+
+`xlsxrb` bundles a native **Ruby LSP Add-on** (`RubyLsp::Xlsxrb::Addon`) and full **RBS signatures**, enabling zero-configuration method autocompletion and rich Markdown documentation in VS Code and other LSP-enabled editors.
+
+Whether you use standard descriptive block variable names (`|stream_writer|`, `|sheet|`, `|workbook|`) or short names (`|wb|`, `|s|`), your editor will automatically provide complete method suggestions and parameter hints:
+
+```ruby
+Xlsxrb.generate("output.xlsx") do |stream_writer| # or |wb|
+  stream_writer.sheet("Data") do |sheet|           # or |s|
+    sheet.row(["Product", "Price"], styles: :bold)
+    sheet.auto_filter("A1:B100")
+  end
 end
 ```
 

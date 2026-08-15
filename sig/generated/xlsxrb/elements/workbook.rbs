@@ -2,7 +2,14 @@
 
 module Xlsxrb
   module Elements
-    # Represents an entire XLSX workbook.
+    # Represents an entire in-memory XLSX workbook.
+    #
+    # @example Access sheets
+    #   workbook = Xlsxrb.read("report.xlsx")
+    #   sheet = workbook.sheet(0) # or workbook["Sheet1"]
+    #   workbook.each { |s| puts s.name }
+    #
+    # @api public
     class Workbook < Data
       attr_reader sheets(): untyped
 

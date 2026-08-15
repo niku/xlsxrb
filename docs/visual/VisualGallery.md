@@ -1426,6 +1426,14 @@ sheet.rows.each do |row|
 end
 ```
 
+### Console Output
+
+```text
+=== Read Validation ===
+Row 0: A1: "Format" (String), B1: "Value" (String)
+Row 1: A2: "Rich Text Cell" (String), B2: "Normal BOLD RED ITALIC BLUE" (String)
+```
+
 <hr/>
 
 ## Cell Times

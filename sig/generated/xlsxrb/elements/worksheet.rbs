@@ -3,6 +3,13 @@
 module Xlsxrb
   module Elements
     # Represents a single worksheet in a workbook.
+    #
+    # @example Access cells and rows
+    #   sheet = workbook.sheet(0)
+    #   cell = sheet["A1"]
+    #   sheet.each_row { |row| puts row.to_a.inspect }
+    #
+    # @api public
     class Worksheet < Data
       attr_reader name(): untyped
 

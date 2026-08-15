@@ -341,11 +341,17 @@ module Xlsxrb
 
   # Creates a Formula object for use in row values.
   #
-  # @param expression [String] The formula text (e.g. "SUM(A1:A10)").
+  # @example Create a basic sum formula
+  #   formula = Xlsxrb.formula("SUM(A1:A10)")
+  #
+  # @example Create a formula with precomputed cached value
+  #   formula = Xlsxrb.formula("A1+B1", cached_value: 42)
+  #
+  # @param expression [String] The formula text without '=' (e.g. "SUM(A1:A10)").
   # @param cached_value [Object, nil] Optional cached result. If nil, Excel will calculate on open.
   # @return [Elements::Formula]
   # @api public
-  #: (String expression, ?cached_value: String | Numeric | bool | nil) -> untyped
+  #: (String expression, ?cached_value: String | Numeric | bool | nil) -> Elements::Formula
   def self.formula(expression, cached_value: nil)
     Elements::Formula.new(
       expression: expression,
@@ -354,12 +360,20 @@ module Xlsxrb
     )
   end
 
-  # Reads an XLSX file into an Elements::Workbook.
+  # Reads an XLSX file into an in-memory Elements::Workbook.
+  #
+  # @example Read from file path
+  #   workbook = Xlsxrb.read("data.xlsx")
+  #   sheet = workbook["Sheet1"]
+  #   puts sheet["A1"].value
+  #
+  # @example Read from IO stream
+  #   workbook = File.open("data.xlsx", "rb") { |io| Xlsxrb.read(io) }
   #
   # @param source [String, IO] File path or IO object.
   # @return [Elements::Workbook] The parsed workbook.
   # @api public
-  #: (untyped source) -> untyped
+  #: (untyped source) -> Elements::Workbook
   def self.read(source)
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
     Xlsxrb.in_span("Xlsxrb.read", attributes: attributes) do
@@ -382,7 +396,10 @@ module Xlsxrb
     end
   end
 
-  # Writes an Elements::Workbook to an XLSX file.
+  # Writes an Elements::Workbook to an XLSX file or IO stream.
+  #
+  # @example Write to file
+  #   Xlsxrb.write("output.xlsx", workbook)
   #
   # @param target [String, IO] File path or IO object.
   # @param workbook [Elements::Workbook] The workbook to write.
@@ -448,10 +465,10 @@ module Xlsxrb
   # The block receives an Elements::Workbook and must return a modified one (e.g. via `update_sheet`).
   # If no target is given, the source is overwritten.
   #
-  # @example
-  #   Xlsxrb.modify("template.xlsx", "output.xlsx") do |wb|
-  #     wb.update_sheet(0) do |sheet|
-  #       sheet.update_cell("B1", value: "Updated")
+  # @example Modify a template and save to new file
+  #   Xlsxrb.modify("template.xlsx", "output.xlsx") do |workbook|
+  #     workbook.update_sheet("Sheet1") do |sheet|
+  #       sheet.update_cell("B1", value: "Updated Title")
   #            .update_cell("B2", value: 100)
   #     end
   #   end
@@ -463,7 +480,7 @@ module Xlsxrb
   # @yieldreturn [Elements::Workbook] The modified workbook.
   # @return [void]
   # @api public
-  #: (untyped source, ?untyped target) ?{ (untyped) -> untyped } -> void
+  #: (untyped source, ?untyped target) ?{ (Elements::Workbook) -> untyped } -> void
   def self.modify(source, target = nil)
     raise Error, "source is required" if source.nil?
     raise Error, "block is required" unless block_given?
@@ -476,18 +493,38 @@ module Xlsxrb
     write(write_target, result_workbook)
   end
 
-  # Represents a sheet being streamed sequentially.
+  # Represents a sheet being streamed sequentially from an XLSX file.
+  #
+  # @example Iterate rows in streaming mode
+  #   Xlsxrb.foreach("large_data.xlsx") do |sheet|
+  #     puts "Processing sheet: #{sheet.name}"
+  #     sheet.each_row do |row|
+  #       puts row.to_a.inspect
+  #     end
+  #   end
+  #
+  # @api public
   class StreamSheet
     [Enumerable].each { |m| include m }
 
     attr_reader :name
 
+    # @param name [String] The sheet name.
+    # @param sheet_xml [String] Raw XML content of the sheet.
+    # @param shared_strings [Array<String>] Shared strings table.
+    #: (String name, String sheet_xml, Array[String] shared_strings) -> void
     def initialize(name, sheet_xml, shared_strings)
       @name = name
       @sheet_xml = sheet_xml
       @shared_strings = shared_strings
     end
 
+    # Iterate over rows in this streaming sheet.
+    #
+    # @yield [row]
+    # @yieldparam row [Elements::Row]
+    # @return [Enumerator, void]
+    # @api public
     #: () { (Elements::Row) -> void } -> void
     #: | () -> Enumerator[Elements::Row, void]
     def each_row
@@ -502,6 +539,12 @@ module Xlsxrb
       end
     end
 
+    # Iterate over rows in this streaming sheet.
+    #
+    # @yield [row]
+    # @yieldparam row [Elements::Row]
+    # @return [Enumerator, void]
+    # @api public
     #: () { (Elements::Row) -> void } -> void
     #: | () -> Enumerator[Elements::Row, void]
     def each(&)
@@ -509,13 +552,19 @@ module Xlsxrb
     end
   end
 
-  # Streaming read: yields StreamSheet objects one at a time for each sheet.
+  # Streaming read: yields StreamSheet objects one at a time for each sheet in the workbook.
+  # Keeps memory usage minimal even for multi-gigabyte XLSX files.
+  #
+  # @example
+  #   Xlsxrb.foreach("large.xlsx") do |sheet|
+  #     puts "Sheet: #{sheet.name}"
+  #     sheet.each_row { |row| process(row) }
+  #   end
   #
   # @param source [String, IO] File path or IO object.
   # @yield [sheet] Yields each sheet.
   # @yieldparam sheet [StreamSheet] The streaming sheet object.
-  # @return [Enumerator] If no block is given.
-  # @return [void]
+  # @return [Enumerator, void]
   # @api public
   #: (untyped source) ?{ (StreamSheet) -> void } -> untyped
   def self.foreach(source)
@@ -541,14 +590,23 @@ module Xlsxrb
     end
   end
 
-  # Streaming write: yields a StreamWriter context for building XLSX on-the-fly.
+  # Streaming write: yields a StreamWriter context for high-speed, zero-allocation XLSX generation.
   #
-  # @param target [String, IO] File path or IO object.
+  # @example Generate an Excel file with styles and multiple sheets
+  #   Xlsxrb.generate("sales.xlsx") do |stream_writer|
+  #     stream_writer.sheet("Q1") do |sheet|
+  #       sheet.row(["Product", "Revenue"], styles: :bold)
+  #       sheet.row(["Widget", 15000])
+  #     end
+  #   end
+  #
+  # @param target [String, IO] File path or IO stream (e.g. pipe, socket, Rails response buffer).
+  # @param strict_excel_mode [Boolean] Whether to enforce Excel specifications (max rows/cols/length).
   # @yield [stream_writer]
   # @yieldparam stream_writer [Xlsxrb::StreamWriter]
   # @return [void]
   # @api public
-  #: (untyped target, ?strict_excel_mode: bool) ?{ (Xlsxrb::StreamWriter) -> void } -> void
+  #: (untyped target, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> void
   def self.generate(target, strict_excel_mode: true)
     raise Error, "target is required" if target.nil?
     raise Error, "block is required" unless block_given?
@@ -565,13 +623,22 @@ module Xlsxrb
     end
   end
 
-  # Builds an Elements::Workbook in memory using a DSL.
+  # Builds an in-memory Elements::Workbook using a declarative DSL.
   #
+  # @example Build in-memory workbook
+  #   workbook = Xlsxrb.build do |builder|
+  #     builder.sheet("Overview") do |sheet|
+  #       sheet.row(["Title", "Date"])
+  #       sheet.row(["Report", Date.today])
+  #     end
+  #   end
+  #
+  # @param strict_excel_mode [Boolean] Whether to enforce Excel specifications.
   # @yield [builder]
   # @yieldparam builder [Xlsxrb::WorkbookBuilder]
   # @return [Elements::Workbook]
   # @api public
-  #: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> untyped
+  #: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
   def self.build(strict_excel_mode: true)
     raise Error, "block is required" unless block_given?
 
@@ -741,8 +808,11 @@ module Xlsxrb
       @custom_properties << { name: name, value: value, type: type }
     end
 
+    # Builds and returns the in-memory Elements::Workbook.
+    #
+    # @return [Elements::Workbook]
     # @api public
-    #: () -> untyped
+    #: () -> Elements::Workbook
     def build
       raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @strict_excel_mode && @sheets.empty?
 
@@ -1232,7 +1302,7 @@ module Xlsxrb
     # @param items [Array, nil] Items configuration.
     # @return [void]
     # @api public
-    #: (untyped source_ref, **untyped opts) -> void
+    #: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
     def pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
       @pivot_tables ||= []
       @pivot_tables << {
@@ -1266,7 +1336,7 @@ module Xlsxrb
     # @param opts [Hash] Additional options.
     # @return [void]
     # @api public
-    #: (**untyped opts) -> void
+    #: (sparklines: untyped, ?type: untyped, **untyped opts) -> void
     def sparkline_group(sparklines:, type: nil, **opts)
       group = { sparklines: sparklines }
       group[:type] = type if type
@@ -1478,8 +1548,11 @@ module Xlsxrb
       @col_breaks << col_index
     end
 
+    # Builds and returns the in-memory Elements::Worksheet.
+    #
+    # @return [Elements::Worksheet]
     # @api public
-    #: () -> untyped
+    #: () -> Elements::Worksheet
     def build
       facade_meta = {}
       facade_meta[:hyperlinks] = @hyperlinks unless @hyperlinks.empty?
@@ -1615,439 +1688,715 @@ module Xlsxrb
         @sheet_name = sheet_name
       end
 
-      # Delegates to StreamWriter#style.
-      # @see StreamWriter#style
+      # Define or configure a named cell style.
+      #
+      # @example
+      #   s.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF")
+      #
+      # @param name [String, Symbol] The name of the style.
+      # @param opts [Hash] Style options (e.g. bold: true, fill_color: "FF0000").
+      # @yield [style_builder]
+      # @yieldparam style_builder [Xlsxrb::StyleBuilder]
+      # @return [Xlsxrb::StyleBuilder]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
-      #: (*untyped args, **untyped kwargs) ?{ (Xlsxrb::StyleBuilder) -> void } -> untyped
+      #: (String | Symbol name, **untyped opts) ?{ (Xlsxrb::StyleBuilder) -> void } -> Xlsxrb::StyleBuilder
       def style(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.style(...)
       end
 
-      # Delegates to StreamWriter#merge.
-      # @see StreamWriter#merge
+      # Merge a range of cells.
+      #
+      # @example Merge with cell reference string
+      #   s.merge("A1:C1")
+      #
+      # @example Merge with coordinates
+      #   s.merge(row: 0, col_start: 0, col_end: 2)
+      #
+      # @param range [String, nil] The cell range (e.g. "A1:B2").
+      # @param row [Integer, nil] 0-based row index.
+      # @param col_start [Integer, String, nil] 0-based start column index or letter.
+      # @param col_end [Integer, String, nil] 0-based end column index or letter.
+      # @param row_start [Integer, nil] 0-based start row index.
+      # @param row_end [Integer, nil] 0-based end row index.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (?String? range, ?row: Integer | nil, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer | nil, ?row_end: Integer | nil) -> void
       def merge(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.merge(...)
       end
 
-      # Delegates to StreamWriter#shape.
-      # @see StreamWriter#shape
+      # Add a drawing shape to the sheet.
+      #
+      # @example
+      #   s.shape(preset: "ellipse", text: "Circle", from_col: 1, from_row: 1, to_col: 4, to_row: 5)
+      #
+      # @param preset [String] Preset shape type (e.g. "rect", "ellipse").
+      # @param text [String, nil] Shape label text.
+      # @param from_col [Integer] Starting column index (0-based).
+      # @param from_row [Integer] Starting row index (0-based).
+      # @param to_col [Integer] Ending column index (0-based).
+      # @param to_row [Integer] Ending row index (0-based).
+      # @param opts [Hash] Additional shape formatting options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (?preset: String, ?text: String?, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer, ?to_row: Integer, **untyped opts) -> void
       def shape(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.shape(...)
       end
 
-      # Delegates to StreamWriter#internal_sheet_setup.
-      # @see StreamWriter#internal_sheet_setup
-      # @api public
+      # simplecov:disable
+      # Edge case / untested delegation block
       #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
       def internal_sheet_setup(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        # simplecov:disable
-        # Edge case / untested delegation block
         @writer.internal_sheet_setup(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#row.
-      # @see StreamWriter#row
+      # Add a row to the active sheet.
+      #
+      # @example Write an array of values
+      #   s.row(["Name", "Age", "City"])
+      #
+      # @example Write with explicit column keys and styles
+      #   s.row({ A: "Header", C: 100 }, styles: { A: :bold })
+      #
+      # @param values [Array, Hash] The cell values (e.g. `[1, 2, 3]` or `{ A: 1, C: 3 }`).
+      # @param styles [String, Symbol, Array, Hash, nil] Style names or hashes to apply.
+      # @param height [Float, Integer, nil] The row height in points (0 - 409).
+      # @param hidden [Boolean] Whether the row is hidden.
+      # @param custom_height [Boolean] Whether to flag as custom height.
+      # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
       def row(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.row(...)
       end
 
-      # Delegates to StreamWriter#column.
-      # @see StreamWriter#column
+      # Configure column width and properties.
+      #
+      # @example Set column A width
+      #   s.column(0, width: 25.0)
+      #
+      # @param col_index [Integer, String, Symbol] 0-based column index or letter (e.g. 0 or "A" or :A).
+      # @param width [Float, Integer, nil] Column width in characters.
+      # @param hidden [Boolean] Whether the column is hidden.
+      # @param best_fit [Boolean] Whether the column automatically fits content.
+      # @param custom_width [Boolean] Whether to flag as custom width.
+      # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
+      # @param collapsed [Boolean] Whether the outline group is collapsed.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (Integer | String | Symbol col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
       def column(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.column(...)
       end
 
-      # Delegates to StreamWriter#chart.
-      # @see StreamWriter#chart
+      # Add a chart to the sheet.
+      #
+      # @example
+      #   s.chart(:bar) do |chart_builder|
+      #     chart_builder.title("Quarterly Sales")
+      #     chart_builder.series(values: "Sheet1!$B$2:$B$5", categories: "Sheet1!$A$2:$A$5", name: "Revenue")
+      #   end
+      #
+      # @param type [Symbol, String, nil] The chart type (:bar, :col, :line, :pie, :scatter, :area, :doughnut, :radar).
+      # @param opts [Hash] Additional chart options.
+      # @yield [chart_builder]
+      # @yieldparam chart_builder [Xlsxrb::ChartBuilder]
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (?Symbol | String? type, **untyped opts) ?{ (Xlsxrb::ChartBuilder) -> void } -> void
       def chart(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.chart(...)
       end
 
-      # Delegates to StreamWriter#hyperlink.
-      # @see StreamWriter#hyperlink
+      # Add a hyperlink to a cell.
+      #
+      # @example Positional URL
+      #   s.hyperlink("A1", "https://example.com", display: "Example")
+      #
+      # @example Keyword location
+      #   s.hyperlink("A1", location: "https://example.com", tooltip: "Go to Example")
+      #
+      # @param cell [String] The cell reference (e.g. "A1").
+      # @param url [String, nil] The target URL or URI.
+      # @param display [String, nil] Display text for the link.
+      # @param tooltip [String, nil] Tooltip text when hovering.
+      # @param location [String, nil] Destination location / URL (keyword alternative).
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
       def hyperlink(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.hyperlink(...)
       end
 
-      # Delegates to StreamWriter#auto_filter.
-      # @see StreamWriter#auto_filter
+      # Set the auto-filter range on the sheet.
+      #
+      # @example
+      #   s.auto_filter("A1:D100")
+      #
+      # @param ref [String] The cell range (e.g. "A1:D10").
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String ref) -> void
       def auto_filter(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.auto_filter(...)
       end
 
-      # Delegates to StreamWriter#filter_column.
-      # @see StreamWriter#filter_column
+      # Set filter criteria for a column in the auto-filter.
+      #
+      # @example Simple values filter
+      #   s.filter_column(0, ["Active", "Pending"])
+      #
+      # @example Custom filter specification
+      #   s.filter_column(0, { type: :filters, values: ["Data"] })
+      #
+      # @param col_id [Integer] 0-based column index relative to auto-filter range.
+      # @param filter_values [Array<String>, Hash] Values or filter specification hash.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (Integer col_id, Array[String] | Hash[Symbol, untyped] filter_values) -> void
       def filter_column(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.filter_column(...)
       end
 
-      # Delegates to StreamWriter#sort_state.
-      # @see StreamWriter#sort_state
+      # Configure sort state on a range.
+      #
+      # @example
+      #   s.sort_state("A1:A10", [{ ref: "A1:A10", descending: true }])
+      #
+      # @param ref [String] The range to sort.
+      # @param sort_conditions [Array<Hash>, Hash] Sort conditions array or options hash.
+      # @param opts [Hash] Additional sort options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String ref, Array[Hash[Symbol, untyped]] | Hash[Symbol, untyped] sort_conditions, **untyped opts) -> void
       def sort_state(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.sort_state(...)
       end
 
-      # Delegates to StreamWriter#validate_data.
-      # @see StreamWriter#validate_data
+      # Add data validation rules to a range.
+      #
+      # @example Dropdown list validation
+      #   s.validate_data("B2:B100", type: "list", formula1: '"High,Medium,Low"')
+      #
+      # @example Integer range validation
+      #   s.validate_data("C2:C100", type: "whole", operator: "between", formula1: 1, formula2: 100)
+      #
+      # @param range [String] The cell range (e.g. "B2:B10").
+      # @param type [String, Symbol] Validation type ("list", "whole", "decimal", "date", "time", "textLength", "custom").
+      # @param opts [Hash] Validation options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String range, ?type: String | Symbol, **untyped opts) -> void
       def validate_data(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.validate_data(...)
       end
 
-      # Delegates to StreamWriter#conditional_format.
-      # @see StreamWriter#conditional_format
+      # Add conditional formatting to a range.
+      #
+      # @example Highlight values greater than 100
+      #   s.conditional_format("A1:A10", type: "cellIs", operator: "greaterThan", formula: 100, style: :highlight)
+      #
+      # @param range [String] The cell range (e.g. "A1:A10").
+      # @param type [String, Symbol] Rule type ("cellIs", "colorScale", "dataBar", "expression").
+      # @param opts [Hash] Rule options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String range, ?type: String | Symbol, **untyped opts) -> void
       def conditional_format(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.conditional_format(...)
       end
 
-      # Delegates to StreamWriter#table.
-      # @see StreamWriter#table
+      # Add a formatted Excel Table to the sheet.
+      #
+      # @example
+      #   s.table("A1:C10", columns: ["ID", "Name", "Total"], name: "SalesTable", style: "TableStyleMedium9")
+      #
+      # @param ref [String] The cell range for the table (e.g. "A1:D10").
+      # @param columns [Array<String>, Array<Hash>] Column names or definitions.
+      # @param name [String, nil] Table name.
+      # @param display_name [String, nil] Display name.
+      # @param style [String, nil] Table style name.
+      # @param opts [Hash] Additional options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
       def table(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.table(...)
       end
 
-      # Delegates to StreamWriter#cleanup!.
-      # @see StreamWriter#cleanup!
-      # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      # simplecov:disable
+      # Edge case / untested delegation block
+      #: () -> void
       def cleanup!(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        # simplecov:disable
-        # Edge case / untested delegation block
         @writer.cleanup!(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#comment.
-      # @see StreamWriter#comment
+      # Add a comment to a cell.
+      #
+      # @example
+      #   s.comment("A1", "Reviewed and approved", author: "Auditor")
+      #
+      # @param cell [String, Integer] The cell reference (e.g. "A1").
+      # @param text [String] The comment text.
+      # @param author [String] The author name.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String | Integer cell, String text, ?author: String) -> void
       def comment(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.comment(...)
       end
 
-      # Delegates to StreamWriter#pivot_table.
-      # @see StreamWriter#pivot_table
+      # Add a Pivot Table to the sheet.
+      #
+      # @example
+      #   s.pivot_table("Sheet1!A1:D100", row_fields: ["Category"], data_fields: ["Amount"], dest_ref: "F1")
+      #
+      # @param source_ref [String] Source data range reference (e.g. "Sheet1!A1:D100").
+      # @param row_fields [Array<String>] Field names for rows.
+      # @param data_fields [Array<String>] Field names for data values.
+      # @param col_fields [Array<String>] Field names for columns.
+      # @param dest_ref [String] Target top-left cell reference (default: "E1").
+      # @param name [String, nil] Pivot table name.
+      # @param field_names [Array<String>, nil] Override field names.
+      # @param items [Array, nil] Items configuration.
+      # @param opts [Hash] Additional options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: String, ?name: String?, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
       def pivot_table(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.pivot_table(...)
       end
 
-      # Delegates to StreamWriter#sparkline_group.
-      # @see StreamWriter#sparkline_group
+      # Add sparklines to the sheet.
+      #
+      # @example
+      #   s.sparkline_group(sparklines: [{ data_ref: "A1:E1", location_ref: "F1" }], type: "line")
+      #
+      # @param sparklines [Array<Hash>] Array of { data_ref:, location_ref: } hashes.
+      # @param type [String, nil] "line" (default), "column", or "stacked".
+      # @param opts [Hash] Additional sparkline options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (sparklines: Array[Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
       def sparkline_group(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.sparkline_group(...)
       end
 
-      # Delegates to StreamWriter#workbook_property.
-      # @see StreamWriter#workbook_property
+      # Set workbook-level properties.
+      #
+      # @param opts [Hash] Workbook property options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (**untyped opts) -> void
       def workbook_property(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.workbook_property(...)
       end
 
-      # Delegates to StreamWriter#sheet_properties.
-      # @see StreamWriter#sheet_properties
+      # Set sheet properties (e.g. tab color, page setup flags).
+      #
+      # @example
+      #   s.sheet_properties(:tab_color, "FF0000")
+      #
+      # @param name [Symbol, String] Property name.
+      # @param value [Object] Property value.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (Symbol | String name, untyped value) -> void
       def sheet_properties(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.sheet_properties(...)
       end
 
-      # Delegates to StreamWriter#defined_name.
-      # @see StreamWriter#defined_name
+      # Add a defined named range or formula.
+      #
+      # @example
+      #   s.defined_name("TaxRate", "0.10")
+      #
+      # @param name [String] The name.
+      # @param formula [String] The formula or range expression.
+      # @param sheet_id [Integer, nil] Optional sheet scope.
+      # @param hidden [Boolean] Whether the name is hidden.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String name, String formula, ?sheet_id: Integer | nil, ?hidden: bool) -> void
       def defined_name(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.defined_name(...)
       end
 
-      # Delegates to StreamWriter#freeze_pane.
-      # @see StreamWriter#freeze_pane
+      # Freeze rows and/or columns for scrolling.
+      #
+      # @example Freeze top row
+      #   s.freeze_pane(row: 1)
+      #
+      # @example Freeze first column and top 2 rows
+      #   s.freeze_pane(row: 2, col: 1)
+      #
+      # @param row [Integer, nil] Number of rows to freeze.
+      # @param col [Integer, nil] Number of columns to freeze.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (?row: Integer | nil, ?col: Integer | nil) -> void
       def freeze_pane(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.freeze_pane(...)
       end
 
-      # Delegates to StreamWriter#print_area.
-      # @see StreamWriter#print_area
+      # simplecov:disable
+      # Edge case / untested delegation block
+      # Set the print area range for the sheet.
+      #
+      # @example
+      #   s.print_area("A1:G50")
+      #
+      # @param ref [String] Range reference.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String ref) -> void
       def print_area(...)
-        # simplecov:disable
-        # Edge case / untested delegation block
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.print_area(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#print_titles.
-      # @see StreamWriter#print_titles
+      # simplecov:disable
+      # Edge case / untested delegation block
+      # Configure repeating title rows and columns for printing.
+      #
+      # @example Repeat top 2 rows on every page
+      #   s.print_titles(rows: "1:2")
+      #
+      # @param rows [String, nil] Row range to repeat (e.g. "1:2").
+      # @param cols [String, nil] Column range to repeat (e.g. "A:B").
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (?rows: String?, ?cols: String?) -> void
       def print_titles(...)
-        # simplecov:disable
-        # Edge case / untested delegation block
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.print_titles(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#split_pane.
-      # @see StreamWriter#split_pane
+      # Split sheet view into panes.
+      #
+      # @param x_split [Numeric, nil] Horizontal split position.
+      # @param y_split [Numeric, nil] Vertical split position.
+      # @param top_left_cell [String, nil] Top-left visible cell in bottom-right pane.
+      # @param active_pane [String, nil] Active pane identifier.
+      # @param state [String, nil] Split state.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (?x_split: Numeric | nil, ?y_split: Numeric | nil, ?top_left_cell: String?, ?active_pane: String?, ?state: String?) -> void
       def split_pane(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.split_pane(...)
       end
 
-      # Delegates to StreamWriter#protect_workbook.
-      # @see StreamWriter#protect_workbook
+      # simplecov:disable
+      # Edge case / untested delegation block
+      # Protect the workbook structure.
+      #
+      # @param opts [Hash] Protection options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (**untyped opts) -> void
       def protect_workbook(...)
-        # simplecov:disable
-        # Edge case / untested delegation block
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.protect_workbook(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#core_property.
-      # @see StreamWriter#core_property
+      # simplecov:disable
+      # Edge case / untested delegation block
+      # Set core metadata property.
+      #
+      # @param name [String, Symbol] Property name.
+      # @param value [Object] Property value.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String | Symbol name, untyped value) -> void
       def core_property(...)
-        # simplecov:disable
-        # Edge case / untested delegation block
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.core_property(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#select_cell.
-      # @see StreamWriter#select_cell
+      # Set the active/selected cell on the sheet.
+      #
+      # @example
+      #   s.select_cell("B5")
+      #   s.select_cell("A1", sqref: "A1:A2", pane: "topRight")
+      #
+      # @param active_cell [String] Cell reference (e.g. "A1").
+      # @param sqref [String, nil] Selection range.
+      # @param pane [String, Symbol, nil] Pane identifier.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
       def select_cell(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.select_cell(...)
       end
 
-      # Delegates to StreamWriter#page_margins.
-      # @see StreamWriter#page_margins
+      # Configure page margins for printing.
+      #
+      # @example
+      #   s.page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
+      #
+      # @param left [Float, nil] Left margin in inches.
+      # @param right [Float, nil] Right margin in inches.
+      # @param top [Float, nil] Top margin in inches.
+      # @param bottom [Float, nil] Bottom margin in inches.
+      # @param header [Float, nil] Header margin in inches.
+      # @param footer [Float, nil] Footer margin in inches.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (?left: Float | nil, ?right: Float | nil, ?top: Float | nil, ?bottom: Float | nil, ?header: Float | nil, ?footer: Float | nil) -> void
       def page_margins(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.page_margins(...)
       end
 
-      # Delegates to StreamWriter#page_setup.
-      # @see StreamWriter#page_setup
+      # Configure page orientation, paper size, and print setup.
+      #
+      # @example Landscape A4
+      #   s.page_setup(orientation: "landscape", paper_size: 9)
+      #
+      # @param orientation [String, Symbol, nil] "portrait" or "landscape" (or :portrait, :landscape).
+      # @param paper_size [Integer, nil] Paper size index (e.g. 9 for A4, 1 for Letter).
+      # @param opts [Hash] Additional options (scale, fit_to_width, fit_to_height).
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (?orientation: (String | Symbol)?, ?paper_size: Integer | nil, **untyped opts) -> void
       def page_setup(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.page_setup(...)
       end
 
-      # Delegates to StreamWriter#header_footer.
-      # @see StreamWriter#header_footer
+      # Configure header and footer text for printing.
+      #
+      # @example
+      #   s.header_footer(odd_header: "&CConfidential", odd_footer: "&RPage &P of &N")
+      #
+      # @param opts [Hash] Header and footer specifications.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (**untyped opts) -> void
       def header_footer(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.header_footer(...)
       end
 
-      # Delegates to StreamWriter#print_options.
-      # @see StreamWriter#print_options
+      # Configure print options (e.g. gridlines, headings).
+      #
+      # @example
+      #   s.print_options(:grid_lines, true)
+      #
+      # @param name [Symbol, String] Print option name.
+      # @param value [Object] Print option value.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (Symbol | String name, untyped value) -> void
       def print_options(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.print_options(...)
       end
 
-      # Delegates to StreamWriter#properties.
-      # @see StreamWriter#properties
+      # simplecov:disable
+      # Edge case / untested delegation block
+      # Set document metadata properties (core, app, custom).
+      #
+      # @example
+      #   s.properties(core: { title: "Report", creator: "App" })
+      #
+      # @param core [Hash, nil] Core properties (title, creator, subject, etc.).
+      # @param app [Hash, nil] App properties (company, manager).
+      # @param custom [Hash, nil] Custom properties.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (?core: Hash[untyped, untyped]?, ?app: Hash[untyped, untyped]?, ?custom: Hash[untyped, untyped]?) -> void
       def properties(...)
-        # simplecov:disable
-        # Edge case / untested delegation block
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.properties(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#app_property.
-      # @see StreamWriter#app_property
+      # simplecov:disable
+      # Edge case / untested delegation block
+      # Set app metadata property.
+      #
+      # @param name [String, Symbol] Property name.
+      # @param value [Object] Property value.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String | Symbol name, untyped value) -> void
       def app_property(...)
-        # simplecov:disable
-        # Edge case / untested delegation block
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.app_property(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#protect_sheet.
-      # @see StreamWriter#protect_sheet
+      # Protect the worksheet against modifications.
+      #
+      # @example
+      #   s.protect_sheet(password: "secret", select_locked_cells: true)
+      #
+      # @param opts [Hash] Protection options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (**untyped opts) -> void
       def protect_sheet(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.protect_sheet(...)
       end
 
-      # Delegates to StreamWriter#custom_property.
-      # @see StreamWriter#custom_property
+      # simplecov:disable
+      # Edge case / untested delegation block
+      # Set custom metadata property.
+      #
+      # @param name [String, Symbol] Property name.
+      # @param value [Object] Property value.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String | Symbol name, untyped value) -> void
       def custom_property(...)
-        # simplecov:disable
-        # Edge case / untested delegation block
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.custom_property(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#image.
-      # @see StreamWriter#image
+      # Insert an image into the sheet.
+      #
+      # @example
+      #   s.image(File.read("logo.png"), ext: "png", from_col: 0, from_row: 0, to_col: 2, to_row: 3)
+      #
+      # @param file_data [String] Binary image data or file content.
+      # @param ext [String] Image extension ("png", "jpeg", etc.).
+      # @param from_col [Integer] Starting column index (0-based).
+      # @param from_row [Integer] Starting row index (0-based).
+      # @param to_col [Integer] Ending column index (0-based).
+      # @param to_row [Integer] Ending row index (0-based).
+      # @param opts [Hash] Additional anchor and sizing options.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (String file_data, ?ext: String, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer, ?to_row: Integer, **untyped opts) -> void
       def image(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.image(...)
       end
 
-      # Delegates to StreamWriter#sheet_view.
-      # @see StreamWriter#sheet_view
+      # Configure sheet view settings (zoom scale, grid lines visibility).
+      #
+      # @example
+      #   s.sheet_view(:show_grid_lines, false)
+      #   s.sheet_view(:zoom_scale, 120)
+      #
+      # @param name [Symbol, String] View setting name.
+      # @param value [Object] View setting value.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (Symbol | String name, untyped value) -> void
       def sheet_view(...)
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.sheet_view(...)
       end
 
-      # Delegates to StreamWriter#page_break_row.
-      # @see StreamWriter#page_break_row
+      # simplecov:disable
+      # Edge case / untested delegation block
+      # Add a horizontal page break after the given row index.
+      #
+      # @example
+      #   s.page_break_row(25)
+      #
+      # @param row_index [Integer] 0-based row index.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (Integer row_index) -> void
       def page_break_row(...)
-        # simplecov:disable
-        # Edge case / untested delegation block
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.page_break_row(...)
-        # simplecov:enable
       end
+      # simplecov:enable
 
-      # Delegates to StreamWriter#page_break_col.
-      # @see StreamWriter#page_break_col
+      # simplecov:disable
+      # Edge case / untested delegation block
+      # Add a vertical page break after the given column index.
+      #
+      # @example
+      #   s.page_break_col(5)
+      #
+      # @param col_index [Integer] 0-based column index.
+      # @return [void]
       # @api public
-      #: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+      #: (Integer col_index) -> void
       def page_break_col(...)
-        # simplecov:disable
-        # Edge case / untested delegation block
         raise Error, "Sheet '' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.page_break_col(...)
-        # simplecov:enable
       end
+      # simplecov:enable
     end
 
     # Add a new sheet.
@@ -2315,7 +2664,7 @@ module Xlsxrb
     end
 
     # --- Tables ---
-    #: (untyped ref, **untyped opts) -> void
+    #: (untyped ref, columns: untyped, ?name: untyped, ?display_name: untyped, ?style: untyped, **untyped opts) -> void
     def table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
       sheet if @current_sheet.nil?
       tbl = { ref: ref, columns: columns }
@@ -2327,7 +2676,7 @@ module Xlsxrb
     end
 
     # --- Pivot Tables ---
-    #: (untyped source_ref, **untyped opts) -> void
+    #: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
     def pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
       sheet if @current_sheet.nil?
       @current_pivot_tables ||= []
@@ -2347,7 +2696,7 @@ module Xlsxrb
     end
 
     # --- Sparklines ---
-    #: (**untyped opts) -> void
+    #: (sparklines: untyped, ?type: untyped, **untyped opts) -> void
     def sparkline_group(sparklines:, type: nil, **opts)
       sheet if @current_sheet.nil?
       group = { sparklines: sparklines }

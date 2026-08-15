@@ -8,8 +8,12 @@ module Xlsxrb
 
     EMPTY_CELLS: untyped
 
-    # Represents a formula with an optional cached value.
-    # Optional: type (:shared, :array), ref (range), shared_index (si for shared formulas)
+    # Represents an Excel formula with an optional cached value and calculation properties.
+    #
+    # @example Create a formula
+    #   formula = Elements::Formula.new(expression: "SUM(A1:A10)")
+    #
+    # @api public
     class Formula < Data
       attr_reader expression(): untyped
 
@@ -44,6 +48,7 @@ module Xlsxrb
     end
 
     # Represents a cell error value (e.g. #N/A, #REF!, #DIV/0!).
+    # @api public
     VALID_ERROR_CODES: untyped
 
     class CellError < Data
@@ -57,9 +62,12 @@ module Xlsxrb
       def members: () -> [ :code ]
     end
 
-    # Represents a rich text string with formatting runs.
-    # runs: array of hashes, each with :text and optional :font (hash of font properties).
-    # Font properties: :bold, :italic, :underline, :sz, :color, :name
+    # Represents a rich text string with multiple formatting runs.
+    #
+    # @example
+    #   rt = Elements::RichText.new(runs: [{ text: "Hello ", font: { bold: true } }, { text: "World" }])
+    #
+    # @api public
     class RichText < Data
       attr_reader runs(): untyped
 

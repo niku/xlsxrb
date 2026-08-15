@@ -3,7 +3,16 @@
 module Xlsxrb
   module Elements
     # Represents a single cell in a worksheet.
-    # All indices are 0-based.
+    # All row and column indices are 0-based.
+    #
+    # @example Access cell properties
+    #   cell = sheet["A1"]
+    #   cell.value       # raw value
+    #   cell.ref         # "A1"
+    #   cell.to_i        # integer value
+    #   cell.to_date     # Date value
+    #
+    # @api public
     class Cell < Data
       attr_reader row_index(): untyped
 

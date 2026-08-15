@@ -4,25 +4,63 @@
 
 module Xlsxrb
   module Elements
-    # Represents an entire XLSX workbook.
+    # Represents an entire in-memory XLSX workbook.
+    #
+    # @example Access sheets
+    #   workbook = Xlsxrb.read("report.xlsx")
+    #   sheet = workbook.sheet(0) # or workbook["Sheet1"]
+    #   workbook.each { |s| puts s.name }
+    #
+    # @api public
     Workbook = Data.define(:sheets, :shared_strings, :styles, :unmapped_data, :errors) do
       include Enumerable
 
+      # @param sheets [Array<Elements::Worksheet>] Worksheets in the workbook.
+      # @param shared_strings [Array<String>] Shared strings table.
+      # @param styles [Hash] Styles definition.
+      # @param unmapped_data [Hash] Additional metadata for round-tripping.
+      # @param errors [Array<String>, nil] Validation errors.
+      #: (?sheets: Array[Elements::Worksheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize(sheets: [], shared_strings: [], styles: {}, unmapped_data: {}, errors: nil)
         computed_errors = errors || self.class.validate(sheets)
         super(sheets: sheets.freeze, shared_strings: shared_strings.freeze, styles: styles,
               unmapped_data: unmapped_data, errors: computed_errors.freeze)
       end
 
+      # Iterate over worksheets.
+      #
+      # @example
+      #   workbook.each do |sheet|
+      #     puts sheet.name
+      #   end
+      #
+      # @yield [sheet]
+      # @yieldparam sheet [Elements::Worksheet]
+      # @return [Enumerator, void]
+      #: () { (Elements::Worksheet) -> void } -> void
+      #: | () -> Enumerator[Elements::Worksheet, void]
       def each(&)
         sheets.each(&)
       end
 
+      # Returns whether the workbook is valid according to ECMA-376 rules.
+      #
+      # @return [Boolean]
+      #: () -> bool
       def valid?
         errors.empty?
       end
 
-      # Returns the sheet at the given 0-based index or by name.
+      # Returns the worksheet at the given 0-based index or by name.
+      #
+      # @example
+      #   wb.sheet(0)
+      #   wb.sheet("Sales")
+      #
+      # @param identifier [Integer, String] 0-based index or sheet name.
+      # @return [Elements::Worksheet, nil]
+      # @api public
+      #: (?Integer | String identifier) -> Elements::Worksheet?
       def sheet(identifier = 0)
         case identifier
         when Integer
@@ -34,7 +72,20 @@ module Xlsxrb
       alias_method :[], :sheet
 
       # Returns a new Workbook with the specified sheet updated.
-      # If a block is given, it yields the matched sheet and expects a new Worksheet back.
+      # Yields the matched worksheet to the block, which must return a new Worksheet.
+      #
+      # @example
+      #   new_wb = wb.update_sheet("Sheet1") do |sheet|
+      #     sheet.update_cell("A1", value: "New Title")
+      #   end
+      #
+      # @param identifier [Integer, String] 0-based index or sheet name.
+      # @yield [sheet]
+      # @yieldparam sheet [Elements::Worksheet] The worksheet to update.
+      # @yieldreturn [Elements::Worksheet] The modified worksheet.
+      # @return [Elements::Workbook] A new Workbook instance.
+      # @api public
+      #: (Integer | String identifier) { (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
       def update_sheet(identifier)
         raise ArgumentError, "block is required" unless block_given?
 
@@ -48,16 +99,33 @@ module Xlsxrb
         with(sheets: new_sheets)
       end
 
-      # Returns sheet names.
+      # Returns an Array of all worksheet names.
+      #
+      # @return [Array<String>]
+      # @api public
+      #: () -> Array[String]
       def sheet_names
         sheets.map(&:name)
       end
 
-      # Save the workbook to a file.
+      # Save the workbook to an XLSX file.
+      #
+      # @example
+      #   wb.save("output.xlsx")
+      #
+      # @param filepath [String, IO] Destination file path or IO stream.
+      # @return [void]
+      # @api public
+      #: (untyped filepath) -> void
       def save(filepath)
         Xlsxrb.write(filepath, self)
       end
 
+      # Validates workbook structure according to OOXML specifications.
+      #
+      # @param sheets [Array<Elements::Worksheet>]
+      # @return [Array<String>] List of error messages.
+      #: (untyped sheets) -> Array[String]
       def self.validate(sheets)
         errs = []
         errs << "sheets must be an Array (got #{sheets.class})" unless sheets.is_a?(Array)
