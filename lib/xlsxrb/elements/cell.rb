@@ -7,7 +7,7 @@ module Xlsxrb
     # Represents a single cell in a worksheet.
     # All indices are 0-based.
     Cell = Data.define(:row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors) do
-      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: {}, errors: nil)
+      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil)
         computed_errors = errors || self.class.validate(row_index, column_index, value)
         computed_errors = computed_errors.freeze unless computed_errors.frozen?
         super(row_index: row_index, column_index: column_index, value: value, formula: formula,
@@ -21,6 +21,22 @@ module Xlsxrb
       # Excel-style reference (e.g. "A1").
       def ref
         "#{self.class.column_letter(column_index)}#{row_index + 1}"
+      end
+
+      def [](key)
+        case key
+        when :value then value
+        when :formula then formula
+        when :style_index then style_index
+        when :ref then ref
+        when :column_index then column_index
+        when :row_index then row_index
+        when :type
+          case value
+          when String then "s"
+          when true, false then "b"
+          end
+        end
       end
 
       def content
@@ -122,19 +138,35 @@ module Xlsxrb
 
       # Parses an Excel-style reference to [row_index, col_index] (both 0-based).
       def self.parse_ref(ref)
-        match = ref.match(/\A([A-Z]+)(\d+)\z/)
-        return nil unless match
+        return nil unless ref
 
-        col = match[1].chars.reduce(0) { |acc, c| (acc * 26) + (c.ord - "A".ord + 1) } - 1
-        row = match[2].to_i - 1
-        [row, col]
+        bytes = ref.b
+        len = bytes.bytesize
+        col = 0
+        i = 0
+        while i < len
+          b = bytes.getbyte(i)
+          if b.between?(65, 90)
+            col = (col * 26) + (b - 64)
+            i += 1
+          elsif b.between?(97, 122)
+            col = (col * 26) + (b - 96)
+            i += 1
+          else
+            break
+          end
+        end
+        return nil if i.zero? || i == len
+
+        row = bytes.byteslice(i, len - i).to_i - 1
+        [row, col - 1]
       end
 
       def self.validate(row_index, column_index, value)
         if row_index.is_a?(Integer) && row_index >= 0 && row_index < 1_048_576 &&
            column_index.is_a?(Integer) && column_index >= 0 && column_index < 16_384 &&
            (value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value == true || value == false || value.is_a?(Date) || value.is_a?(Time) || value.is_a?(Formula) || (value.is_a?(Hash) && value.key?(:formula)) || value.is_a?(RichText) || value.is_a?(CellError))
-          return [].freeze
+          return EMPTY_ERRORS
         end
 
         errs = []

@@ -9,8 +9,8 @@ module Xlsxrb
     Row = Data.define(:index, :cells, :height, :hidden, :custom_height, :outline_level, :unmapped_data, :errors) do
       include Enumerable
 
-      def initialize(index:, cells: [], height: nil, hidden: false, custom_height: false, outline_level: nil,
-                     unmapped_data: {}, errors: nil)
+      def initialize(index:, cells: EMPTY_CELLS, height: nil, hidden: false, custom_height: false, outline_level: nil,
+                     unmapped_data: EMPTY_HASH, errors: nil)
         computed_errors = errors || self.class.validate(index, cells)
         computed_errors = computed_errors.freeze unless computed_errors.frozen?
         cells = cells.freeze unless cells.frozen?
@@ -20,7 +20,20 @@ module Xlsxrb
       end
 
       def [](col_index)
-        cells[col_index]
+        case col_index
+        when Symbol
+          case col_index
+          when :cells then cells
+          when :index then index
+          when :height then height
+          when :hidden then hidden
+          when :custom_height then custom_height
+          when :outline_level then outline_level
+          when :attrs then { height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level }
+          end
+        else
+          cells[col_index]
+        end
       end
 
       def each(&)
@@ -66,7 +79,7 @@ module Xlsxrb
       end
 
       def self.validate(index, cells)
-        return [].freeze if index.is_a?(Integer) && index >= 0 && index < 1_048_576 && cells.is_a?(Array)
+        return EMPTY_ERRORS if index.is_a?(Integer) && index >= 0 && index < 1_048_576 && cells.is_a?(Array)
 
         errs = []
         if !index.is_a?(Integer) || index.negative?

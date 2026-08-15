@@ -3,6 +3,9 @@
 - Support for unseekable IO streams (pipes, `ActionDispatch::Response::Buffer`, socket streams) across streaming reader and writer.
 - Complete `rbs-inline` type annotations across all library source files and automated `sig/generated/` synchronization in CI.
 - Automated Steep static type-checking workflow in GitHub Actions.
+- Hash-compatible symbol indexing in `Elements::Row#[]` (`:cells`, `:index`, `:height`, `:attrs`) and `Elements::Cell#[]` (`:value`, `:ref`, `:style_index`).
+
+## [0.1.5] - 2026-08-11
 
 ## [0.1.5] - 2026-08-11
 
