@@ -6,17 +6,22 @@ A Ruby library for reading and writing XLSX files with streaming support.
 
 The Ruby ecosystem already has great XLSX libraries. Each is well-designed for its purpose:
 
-| Library                                            | Read | Write | Streaming (low memory) |
-| -------------------------------------------------- | ---- | ----- | ---------------------- |
-| [roo](https://rubygems.org/gems/roo)               | ✅   | ❌    | ✅                     |
-| [creek](https://rubygems.org/gems/creek)           | ✅   | ❌    | ✅                     |
-| [xsv](https://rubygems.org/gems/xsv)               | ✅   | ❌    | ✅                     |
-| [caxlsx / axlsx](https://rubygems.org/gems/caxlsx) | ❌   | ✅    | ❌                     |
-| [xlsxtream](https://rubygems.org/gems/xlsxtream)   | ❌   | ✅    | ✅                     |
-| [rubyXL](https://rubygems.org/gems/rubyXL)         | ✅   | ✅    | ❌                     |
-| [fast_excel](https://rubygems.org/gems/fast_excel) | ❌   | ✅    | ✅                     |
+| Library                                            | Read | Write | Model                 | Write String Storage | Rich Formatting |
+| -------------------------------------------------- | ---- | ----- | --------------------- | -------------------- | --------------- |
+| [roo](https://rubygems.org/gems/roo)               | ✅   | ❌    | Streaming             | N/A (Read-only)      | ⚠️ (Formulas, Basic styles) |
+| [creek](https://rubygems.org/gems/creek)           | ✅   | ❌    | Streaming             | N/A (Read-only)      | ❌ (Raw cell values) |
+| [xsv](https://rubygems.org/gems/xsv)               | ✅   | ❌    | Streaming             | N/A (Read-only)      | ❌ (Fast plain text) |
+| [caxlsx / axlsx](https://rubygems.org/gems/caxlsx) | ❌   | ✅    | In-Memory             | Inline (opt: SST)    | ✅ (Charts, Styles) |
+| [xlsxtream](https://rubygems.org/gems/xlsxtream)   | ❌   | ✅    | Streaming             | Inline (opt: SST)    | ❌ (Plain data only) |
+| [fast_excel](https://rubygems.org/gems/fast_excel) | ❌   | ✅    | Streaming (C Ext)     | SST (opt: Inline)    | ⚠️ (Basic styles) |
+| [rubyXL](https://rubygems.org/gems/rubyXL)         | ✅   | ✅    | In-Memory             | Inline / Direct      | ✅ (DOM editing) |
+| **[xlsxrb](https://github.com/niku/xlsxrb)**       | ✅   | ✅    | **Streaming / In-Memory** | **SST**          | ✅ **(Full Features)** |
 
-Each of these libraries makes deliberate tradeoffs, and they do so thoughtfully. Some focus exclusively on highly efficient reading or writing by streaming data, while others provide a rich API for complex, in-memory document modifications.
+Each of these libraries makes deliberate tradeoffs, and they do so thoughtfully:
+* **Memory & Execution Model (Streaming vs In-Memory)**: Streaming libraries write or read rows sequentially on-the-fly to maintain a constant, low-memory footprint regardless of row count. In-memory libraries build complete document object trees, offering flexible random access and cell updates at the cost of high RAM usage on large sheets.
+* **String Storage Architecture (SST vs Inline Strings)**:
+  * **SST (Shared String Table)**: De-duplicates strings into a central dictionary (`xl/sharedStrings.xml`), referencing them by numeric IDs in cell entries (`<c t="s"><v>0</v></c>`). This is standard Microsoft Excel behavior, producing significantly smaller raw XML documents (50–100% smaller) and reducing Excel's memory footprint when opening spreadsheets.
+  * **Inline Strings**: Writes text directly into cell payloads (`<c t="inlineStr"><is><t>...</t></is></c>`). Bypassing the dictionary enables blazing-fast raw throughput for simple data exports, but inflates uncompressed XML size and limits advanced formatting (e.g. styling, cell merges, charts).
 
 Traditionally, attempting to build a "complete package" that offers both reading and writing, rich features, high performance, strict compatibility, and comprehensive documentation presents an inherent open-source challenge: the cumulative maintenance overhead often exceeds the capacity of individual human maintainers.
 
@@ -156,37 +161,39 @@ For detailed specification references and policies, see [SPEC_SOURCES.md](docs/S
 
 ## Benchmarks
 
-The following benchmarks measure the time and memory required to process a 1,000,000 cells (100,000 rows × 10 columns) spreadsheet, demonstrating `xlsxrb`'s memory consumption and processing times.
+The following benchmarks measure the time, peak memory, and GC count required to process a 1,000,000 cells (100,000 rows × 10 columns) spreadsheet across popular Ruby Excel libraries. Each test is executed across 3 independent runs in isolated subprocesses; median values are reported along with the mean execution time.
 
 ### Write Performance (1,000,000 cells)
 
-| Library                | Time    | Peak Memory | GC Count |
-| ---------------------- | ------- | ----------- | -------- |
-| xlsxtream (Streaming)  | 0.12 s  | 64.9 MB     | 9.0      |
-| fast_excel (Streaming) | 1.34 s  | 64.5 MB     | 28.0     |
-| caxlsx (In-Memory)     | 2.64 s  | 142.7 MB    | 16.0     |
-| xlsxrb (Streaming)     | 3.32 s  | 216.9 MB    | 65.0     |
-| xlsxrb (In-Memory)     | 6.23 s  | 431.2 MB    | 68.0     |
-| rubyXL (In-Memory)     | 37.16 s | 2105.9 MB   | 90.0     |
+| Library                | Model       | Write String Storage | Time (Median) | Time (Mean) | Peak Memory | GC Count |
+| ---------------------- | ----------- | -------------------- | ------------- | ----------- | ----------- | -------- |
+| xlsxtream 3.1.0        | Streaming   | Inline String        | 1.23 s        | 1.25 s      | 18.1 MB     | 1061.0   |
+| xlsxrb (Streaming)     | Streaming   | SST (Shared)         | 1.62 s        | 1.62 s      | 94.5 MB     | 39.0     |
+| fast_excel 0.5.0 (C)   | Streaming   | SST (Shared)         | 2.03 s        | 2.03 s      | 147.9 MB    | 263.0    |
+| xlsxrb (In-Memory)     | In-Memory   | SST (Shared)         | 4.06 s        | 4.06 s      | 280.3 MB    | 32.0     |
+| caxlsx 4.5.0           | In-Memory   | Inline String        | 5.36 s        | 5.35 s      | 188.7 MB    | 23.0     |
+| rubyXL 3.4.38          | In-Memory   | Inline String        | 38.02 s       | 38.03 s     | 2166.0 MB   | 104.0    |
+
+> **Note**: All libraries are evaluated in their **default, out-of-the-box configuration**. Under the same Microsoft Excel-standard Shared String Table (SST) architecture, Pure Ruby `xlsxrb` (Streaming: 1.62s, In-Memory: 4.06s) writes 1,000,000 cells faster than the C-extension `fast_excel` (2.03s) and in-memory gems like `caxlsx` (5.36s).
 
 ### Read Performance (1,000,000 cells)
 
-| Library            | Time    | Peak Memory | GC Count |
-| ------------------ | ------- | ----------- | -------- |
-| xlsxrb (Streaming) | 5.38 s  | 101.8 MB    | 1429.0   |
-| creek (Streaming)  | 7.05 s  | 706.2 MB    | 3985.0   |
-| roo (Streaming)    | 7.24 s  | 128.1 MB    | 279.0    |
-| xlsxrb (In-Memory) | 8.62 s  | 996.1 MB    | 28.0     |
-| xsv (Streaming)    | 14.41 s | 93.5 MB     | 998.0    |
-| rubyXL (In-Memory) | 24.58 s | 1856.8 MB   | 127.0    |
+| Library                | Model       | Time (Median) | Time (Mean) | Peak Memory | GC Count |
+| ---------------------- | ----------- | ------------- | ----------- | ----------- | -------- |
+| xlsxrb (Streaming)     | Streaming   | 3.38 s        | 3.37 s      | 90.6 MB     | 40.0     |
+| xlsxrb (In-Memory)     | In-Memory   | 5.75 s        | 5.94 s      | 250.9 MB    | 55.0     |
+| creek 2.6.3            | Streaming   | 7.90 s        | 7.93 s      | 835.7 MB    | 481.0    |
+| roo 3.0.0              | Streaming   | 10.34 s       | 10.28 s     | 139.0 MB    | 107.0    |
+| xsv 1.4.1              | Streaming   | 16.39 s       | 17.28 s     | 75.4 MB     | 2215.0   |
+| rubyXL 3.4.38          | In-Memory   | 35.45 s       | 35.38 s     | 2281.3 MB   | 146.0    |
 
-### Running the Benchmarks Locally
+### Running the Benchmarks Locally (Reproducibility)
 
-The benchmark data is gathered using the bundled [benchmark.rb](file:///workspaces/xlsxrb/benchmark.rb) script, which runs each library's code in isolated subprocesses to ensure accurate memory and GC measurements.
+The benchmark suite leverages [`bundler/inline`](https://bundler.io/v2.5/guides/bundler_in_a_single_file_ruby_script.html) to automatically manage and download all peer ecosystem gems without modifying the project's core `Gemfile` or requiring manual global `gem install` steps. Each library is executed in an isolated subprocess (`Bundler.with_unbundled_env`) across multiple runs with standard business dataset rows (integers, strings, floats, booleans, dates) to ensure clean memory and GC measurements without cross-contamination.
 
-To run the benchmark locally for 1,000,000 cells (100,000 rows):
+To run the complete benchmark suite:
 ```bash
-ruby benchmark.rb 100000
+ruby benchmark.rb 100000 10
 ```
 
 ## Security (Protection against CSV/Excel Injection)

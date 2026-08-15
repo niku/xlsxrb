@@ -11,6 +11,12 @@
 - **Streaming Read**: Implemented zero-allocation byte scanning for cell attributes (`r="..."`, `t="..."`, `s="..."`) and direct integer conversion for SST indexes, cutting GC count by ~70% (129 -> 40) and boosting 1,000,000 cells read to 3.38s.
 - **In-Memory Read**: Reduced peak memory footprint by 57% (582 MB -> 250 MB).
 
+### Documentation
+- Overhauled `benchmark.rb` with `bundler/inline` for deterministic, zero-setup benchmark reproduction pinning peer gem versions.
+- Updated README.md Motivation and Benchmark tables with verified default vs optional string storage architecture (SST vs Inline) and latest 1,000,000 cells measurements.
+
+## [0.1.5] - 2026-08-11
+
 ## [0.1.5] - 2026-08-11
 
 ## [0.1.5] - 2026-08-11
