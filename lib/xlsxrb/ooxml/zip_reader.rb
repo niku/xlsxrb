@@ -13,11 +13,13 @@ module Xlsxrb
     class ZipReader
       LOCAL_HEADER_SIG = "PK\x03\x04".b
       MAX_UNCOMPRESSED_SIZE = 500 * 1024 * 1024 # 500MB per file limit
+      attr_accessor :max_uncompressed_size
 
       # Opens a ZIP from a file path or IO and yields the reader.
-      def self.open(source)
+      #: (untyped source, ?max_uncompressed_size: Integer) ?{ (ZipReader) -> untyped } -> (ZipReader | untyped)
+      def self.open(source, max_uncompressed_size: MAX_UNCOMPRESSED_SIZE)
         io = source.is_a?(String) ? File.open(source, "rb") : source
-        reader = new(io)
+        reader = new(io, max_uncompressed_size: max_uncompressed_size)
         if block_given?
           begin
             yield reader
@@ -29,8 +31,10 @@ module Xlsxrb
         end
       end
 
-      def initialize(io)
+      #: (untyped io, ?max_uncompressed_size: Integer) -> void
+      def initialize(io, max_uncompressed_size: MAX_UNCOMPRESSED_SIZE)
         @io = io
+        @max_uncompressed_size = max_uncompressed_size
         @entries = nil
       end
 
@@ -60,8 +64,6 @@ module Xlsxrb
       end
 
       def parse_entries
-        result = {}
-
         io = if @io.is_a?(StringIO) || (@io.respond_to?(:read) && @io.respond_to?(:seek) && @io.respond_to?(:pos))
                @io
              elsif @io.respond_to?(:each) || @io.is_a?(Enumerator)
@@ -79,8 +81,20 @@ module Xlsxrb
         first_sig = io.read(4)
         raise ArgumentError, "Invalid magic number: Expected a valid ZIP/XLSX file format (PK\\x03\\x04)" unless first_sig == LOCAL_HEADER_SIG
 
+        # Try parsing via Central Directory first (standard and handles Data Descriptors perfectly)
+        cd_result = parse_from_central_directory(io)
+        if cd_result && !cd_result.empty?
+          if io.is_a?(Tempfile)
+            io.close
+            io.unlink
+          end
+          return cd_result
+        end
+
         io.seek(-4, IO::SEEK_CUR) if io.respond_to?(:seek)
         io = StringIO.new(first_sig + io.read.b) unless io.respond_to?(:seek)
+
+        result = {}
 
         loop do
           sig = io.read(4)
@@ -101,11 +115,11 @@ module Xlsxrb
           has_data_descriptor = gp_flag.anybits?(0x08)
 
           if has_data_descriptor && compressed_size.zero?
-            raw, = find_data_descriptor_stream(io, method)
+            entry_data, = find_data_descriptor_stream(io, method)
           else
             raw = io.read(compressed_size)
+            entry_data = decompress(raw, method)
           end
-          entry_data = decompress(raw, method)
           result[entry_name] = entry_data unless entry_name.end_with?("/")
         end
 
@@ -117,36 +131,107 @@ module Xlsxrb
         result
       end
 
+      def parse_from_central_directory(io)
+        return nil unless io.respond_to?(:seek) && io.respond_to?(:pos)
+
+        io.seek(0, IO::SEEK_END)
+        file_size = io.pos
+        return nil if file_size < 22
+
+        max_search = [file_size, 65_557].min
+        search_offset = file_size - max_search
+        io.seek(search_offset, IO::SEEK_SET)
+        search_buf = io.read(max_search)
+        return nil unless search_buf
+
+        eocd_index = search_buf.rindex("PK\x05\x06")
+        return nil unless eocd_index
+
+        eocd_pos = search_offset + eocd_index
+        io.seek(eocd_pos + 4, IO::SEEK_SET)
+        eocd_data = io.read(18)
+        return nil unless eocd_data && eocd_data.bytesize == 18
+
+        _disk_num, _cd_disk, _disk_entries, total_entries, _cd_size, cd_offset, _comment_len = eocd_data.unpack("vvvvVVv")
+        return nil if cd_offset > file_size
+
+        io.seek(cd_offset, IO::SEEK_SET)
+        result = {}
+
+        total_entries.times do
+          sig = io.read(4)
+          break unless sig == "PK\x01\x02"
+
+          cd_header = io.read(42)
+          break unless cd_header && cd_header.bytesize == 42
+
+          _v_made, _v_need, _gp, method, _time, _date, _crc, csize, _usize, nlen, elen, clen, _dnum, _iattr, _eattr, offset = cd_header.unpack("vvvvvvVVVvvvvvVV")
+          entry_name = io.read(nlen).force_encoding("UTF-8")
+          io.read(elen + clen)
+
+          next if entry_name.end_with?("/")
+
+          current_cd_pos = io.pos
+
+          io.seek(offset, IO::SEEK_SET)
+          local_sig = io.read(4)
+          next unless local_sig == LOCAL_HEADER_SIG
+
+          local_header = io.read(26)
+          next unless local_header && local_header.bytesize == 26
+
+          local_nlen = local_header[22, 2].unpack1("v")
+          local_elen = local_header[24, 2].unpack1("v")
+          io.seek(offset + 30 + local_nlen + local_elen, IO::SEEK_SET)
+
+          raw = io.read(csize)
+          entry_data = decompress(raw, method)
+          result[entry_name] = entry_data
+
+          io.seek(current_cd_pos, IO::SEEK_SET)
+        end
+
+        result
+      rescue ArgumentError => e
+        raise e
+      rescue StandardError
+        nil
+      end
+
       def find_data_descriptor_stream(io, method)
         if method == 8
           inflater = Zlib::Inflate.new(-Zlib::MAX_WBITS)
           result = +""
-          consumed = 0
           chunk_size = 4096
           begin
-            while (chunk = io.read(chunk_size))
+            while !inflater.finished? && (chunk = io.read(chunk_size))
               break if chunk.empty?
 
               inflated = inflater.inflate(chunk)
-              raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes" if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
+              limit = @max_uncompressed_size || MAX_UNCOMPRESSED_SIZE
+              raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
 
               result << inflated
-              consumed += chunk.bytesize
             end
           rescue Zlib::BufError, Zlib::DataError
             # Inflation ended
           ensure
-            consumed -= inflater.avail_in
+            remaining_bytes = inflater.avail_in
             inflater.close
           end
 
-          io.seek(-inflater.avail_in, IO::SEEK_CUR) if io.respond_to?(:seek)
+          io.seek(-remaining_bytes, IO::SEEK_CUR) if io.respond_to?(:seek) && remaining_bytes.positive?
 
           desc_sig = io.read(4)
-          io.seek(-4, IO::SEEK_CUR) unless desc_sig == [0x50, 0x4B, 0x07, 0x08].pack("C4")
-          io.read(12)
+          if desc_sig == [0x50, 0x4B, 0x07, 0x08].pack("C4")
+            io.read(12)
+          elsif desc_sig == [0x50, 0x4B, 0x03, 0x04].pack("C4") || desc_sig == [0x50, 0x4B, 0x01, 0x02].pack("C4")
+            io.seek(-4, IO::SEEK_CUR) if io.respond_to?(:seek)
+          elsif desc_sig
+            io.read(8)
+          end
 
-          [result, consumed]
+          [result, 0]
         else
           [io.read(0), 0]
         end
@@ -168,19 +253,20 @@ module Xlsxrb
         chunk_size = 32_768
         offset = 0
         raw_len = raw.bytesize
+        limit = @max_uncompressed_size || MAX_UNCOMPRESSED_SIZE
 
         begin
           while offset < raw_len
             chunk = raw.byteslice(offset, chunk_size)
             inflated = inflater.inflate(chunk)
-            raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes" if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
+            raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
 
             result << inflated
             offset += chunk_size
           end
           # Finish inflation
           inflated = inflater.finish
-          raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{MAX_UNCOMPRESSED_SIZE} bytes" if result.bytesize + inflated.bytesize > MAX_UNCOMPRESSED_SIZE
+          raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
 
           result << inflated
         ensure

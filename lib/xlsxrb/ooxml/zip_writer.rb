@@ -28,6 +28,8 @@ module Xlsxrb
         @io = io
         @entries = []
         @closed = false
+        @bytes_written = 0
+        @seekable = determine_seekable
       end
 
       # Add a file entry with string content.
@@ -51,17 +53,22 @@ module Xlsxrb
       def start_entry(path)
         raise "ZipWriter is closed" if @closed
 
+        entry_offset = @bytes_written
+        gp_flag = @seekable ? 0 : 0x0008
+
         @current_entry = {
           path: path,
-          offset: @io.is_a?(StringIO) ? @io.pos : @io.tell,
+          offset: entry_offset,
           deflater: Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS),
           crc: Zlib.crc32,
           uncompressed_size: 0,
-          compressed_size: 0
+          compressed_size: 0,
+          gp_flag: gp_flag,
+          seekable: @seekable
         }
 
-        # Write a placeholder local header (will be patched later if IO supports seek)
-        write_local_header(path, 0, 0, 0)
+        # Write local header (if unseekable, sizes/crc are 0 and bit 3 is set)
+        write_local_header(path, 0, 0, 0, gp_flag: gp_flag)
       end
 
       def write_data(str)
@@ -74,7 +81,7 @@ module Xlsxrb
         @current_entry[:uncompressed_size] += bytes.bytesize
         compressed = @current_entry[:deflater].deflate(bytes, Zlib::SYNC_FLUSH)
         @current_entry[:compressed_size] += compressed.bytesize
-        @io.write(compressed)
+        write_bytes(compressed)
       end
 
       def finish_entry
@@ -86,17 +93,21 @@ module Xlsxrb
         # Flush remaining deflate data
         remaining = entry[:deflater].finish
         entry[:compressed_size] += remaining.bytesize
-        @io.write(remaining)
+        write_bytes(remaining)
         entry[:deflater].close
 
         final_crc = entry[:crc] & 0xFFFFFFFF
 
-        # Patch the local header if seekable
-        current_pos = @io.is_a?(StringIO) ? @io.pos : @io.tell
-        if @io.respond_to?(:seek)
+        if entry[:seekable]
+          # Patch the local header if seekable
+          current_pos = @io.is_a?(StringIO) ? @io.pos : @io.tell
           @io.seek(entry[:offset])
-          write_local_header(entry[:path], final_crc, entry[:compressed_size], entry[:uncompressed_size])
+          write_local_header(entry[:path], final_crc, entry[:compressed_size], entry[:uncompressed_size], gp_flag: 0, count_bytes: false)
           @io.seek(current_pos)
+        else
+          # Write Data Descriptor (signature 0x08074b50 + crc32 + comp_size + uncomp_size)
+          descriptor = [0x08074B50, final_crc, entry[:compressed_size], entry[:uncompressed_size]].pack("VVVV")
+          write_bytes(descriptor)
         end
 
         @entries << {
@@ -104,7 +115,8 @@ module Xlsxrb
           crc32: final_crc,
           compressed_size: entry[:compressed_size],
           uncompressed_size: entry[:uncompressed_size],
-          offset: entry[:offset]
+          offset: entry[:offset],
+          gp_flag: entry[:gp_flag]
         }
       end
 
@@ -114,28 +126,47 @@ module Xlsxrb
         finish_entry if @current_entry
 
         @closed = true
-        cd_offset = @io.is_a?(StringIO) ? @io.pos : @io.tell
+        cd_offset = @bytes_written
         cd_size = write_central_directory
         write_end_of_central_directory(cd_offset, cd_size)
       end
 
       private
 
+      def determine_seekable
+        return true if @io.is_a?(StringIO)
+        return false unless @io.respond_to?(:seek) && @io.respond_to?(:tell)
+
+        begin
+          @io.tell
+          true
+        rescue SystemCallError, IOError
+          false
+        end
+      end
+
+      def write_bytes(data)
+        return if data.nil? || data.empty?
+
+        @io.write(data)
+        @bytes_written += data.bytesize
+      end
+
       def write_raw_entry(path, content_bytes)
         crc = Zlib.crc32(content_bytes) & 0xFFFFFFFF
         compressed = deflate(content_bytes)
+        offset = @bytes_written
 
-        offset = @io.is_a?(StringIO) ? @io.pos : @io.tell
-
-        write_local_header(path, crc, compressed.bytesize, content_bytes.bytesize)
-        @io.write(compressed)
+        write_local_header(path, crc, compressed.bytesize, content_bytes.bytesize, gp_flag: 0)
+        write_bytes(compressed)
 
         @entries << {
           path: path,
           crc32: crc,
           compressed_size: compressed.bytesize,
           uncompressed_size: content_bytes.bytesize,
-          offset: offset
+          offset: offset,
+          gp_flag: 0
         }
       end
 
@@ -148,12 +179,12 @@ module Xlsxrb
         end
       end
 
-      def write_local_header(path, crc, compressed_size, uncompressed_size)
+      def write_local_header(path, crc, compressed_size, uncompressed_size, gp_flag: 0, count_bytes: true)
         name_bytes = path.encode("UTF-8").b
         header = [
           0x04034B50,        # local file header signature
           20,                # version needed (2.0)
-          0,                 # general purpose bit flag
+          gp_flag,           # general purpose bit flag (0x0008 if data descriptor follows)
           8,                 # compression method (deflate)
           0,                 # last mod file time
           33,                # last mod file date
@@ -163,8 +194,14 @@ module Xlsxrb
           name_bytes.bytesize,
           0                  # extra field length
         ].pack("VvvvvvVVVvv")
-        @io.write(header)
-        @io.write(name_bytes)
+
+        if count_bytes
+          write_bytes(header)
+          write_bytes(name_bytes)
+        else
+          @io.write(header)
+          @io.write(name_bytes)
+        end
       end
 
       def write_central_directory
@@ -175,7 +212,7 @@ module Xlsxrb
             0x02014B50,        # central directory file header signature
             20,                # version made by
             20,                # version needed
-            0,                 # general purpose bit flag
+            entry[:gp_flag] || 0, # general purpose bit flag
             8,                 # compression method
             0,                 # last mod file time
             33,                # last mod file date
@@ -190,8 +227,9 @@ module Xlsxrb
             0,                 # external file attributes
             entry[:offset]     # relative offset of local header
           ].pack("VvvvvvvVVVvvvvvVV")
-          @io.write(header)
-          @io.write(name_bytes)
+
+          write_bytes(header)
+          write_bytes(name_bytes)
           size += header.bytesize + name_bytes.bytesize
         end
         size
@@ -208,7 +246,7 @@ module Xlsxrb
           cd_offset,           # offset of central directory
           0                    # comment length
         ].pack("VvvvvVVv")
-        @io.write(eocd)
+        write_bytes(eocd)
       end
     end
   end

@@ -1,5 +1,8 @@
 ## [Unreleased]
-- No unreleased changes.
+### Added
+- Support for unseekable IO streams (pipes, `ActionDispatch::Response::Buffer`, socket streams) across streaming reader and writer.
+
+## [0.1.5] - 2026-08-11
 
 ## [0.1.5] - 2026-08-11
 
