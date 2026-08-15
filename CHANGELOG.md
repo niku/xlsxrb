@@ -5,6 +5,14 @@
 - Automated Steep static type-checking workflow in GitHub Actions.
 - Hash-compatible symbol indexing in `Elements::Row#[]` (`:cells`, `:index`, `:height`, `:attrs`) and `Elements::Cell#[]` (`:value`, `:ref`, `:style_index`).
 
+### Performance
+- **Streaming Write**: Replaced per-cell micro IO calls with row-level string buffering and fast-path serialization for unstyled cells (1,000,000 cells in 1.62s with standard SST).
+- **In-Memory Write**: Optimized DOM serialization (`WorksheetWriter#write_row`) with row-level buffer aggregation, boosting 1,000,000 cells write from 22.33s to 4.06s (5.5x faster) and reducing GC count by 83%.
+- **Streaming Read**: Implemented zero-allocation byte scanning for cell attributes (`r="..."`, `t="..."`, `s="..."`) and direct integer conversion for SST indexes, cutting GC count by ~70% (129 -> 40) and boosting 1,000,000 cells read to 3.38s.
+- **In-Memory Read**: Reduced peak memory footprint by 57% (582 MB -> 250 MB).
+
+## [0.1.5] - 2026-08-11
+
 ## [0.1.5] - 2026-08-11
 
 ## [0.1.5] - 2026-08-11

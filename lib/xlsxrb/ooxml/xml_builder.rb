@@ -27,8 +27,10 @@ module Xlsxrb
         self
       end
 
+      EMPTY_HASH = {}.freeze
+
       # Opens a tag, yields for children, then closes the tag.
-      def tag(name, attrs = {}, &block)
+      def tag(name, attrs = EMPTY_HASH, &block)
         if block
           open_tag(name, attrs)
           yield self
@@ -39,22 +41,26 @@ module Xlsxrb
         self
       end
 
-      def open_tag(name, attrs = {})
-        @io << "<#{name}"
-        write_attrs(attrs)
-        @io << ">"
+      def open_tag(name, attrs = EMPTY_HASH)
+        @io.write("<")
+        @io.write(name)
+        write_attrs(attrs) unless attrs.empty?
+        @io.write(">")
         self
       end
 
       def close_tag(name)
-        @io << "</#{name}>"
+        @io.write("</")
+        @io.write(name)
+        @io.write(">")
         self
       end
 
-      def empty_tag(name, attrs = {})
-        @io << "<#{name}"
-        write_attrs(attrs)
-        @io << "/>"
+      def empty_tag(name, attrs = EMPTY_HASH)
+        @io.write("<")
+        @io.write(name)
+        write_attrs(attrs) unless attrs.empty?
+        @io.write("/>")
         self
       end
 

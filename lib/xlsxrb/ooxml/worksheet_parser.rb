@@ -393,8 +393,7 @@ module Xlsxrb
           if raw.include?(".")
             raw.to_f
           else
-            int_val = raw.to_i
-            int_val.to_s == raw ? int_val : raw.to_f
+            raw.to_i
           end
         end
       end
@@ -482,19 +481,53 @@ module Xlsxrb
             next
           end
 
-          row_tag = xml.byteslice(row_start, tag_end - row_start)
           row_index = 0
-          r_val = tag_attr(row_tag, ' r="')
-          row_index = r_val.to_i - 1 if r_val
+          has_custom_attrs = false
+          ri = row_start + 4
+          while ri < tag_end
+            rb = xml.getbyte(ri)
+            if rb == 114 && xml.getbyte(ri + 1) == 61 && xml.getbyte(ri + 2) == 34 # r="
+              ri += 3
+              while ri < tag_end
+                cb = xml.getbyte(ri)
+                break unless cb.between?(48, 57)
 
-          attrs = extract_row_attrs(row_tag)
+                row_index = (row_index * 10) + (cb - 48)
+                ri += 1
+
+              end
+              row_index -= 1
+            elsif [104, 99, 111].include?(rb) # 'h', 'c', 'o' for ht, customHeight, hidden, outlineLevel
+              has_custom_attrs = true
+              ri += 1
+            else
+              ri += 1
+            end
+          end
+
+          attrs = if has_custom_attrs
+                    row_tag = xml.byteslice(row_start, tag_end - row_start)
+                    extract_row_attrs(row_tag)
+                  else
+                    EMPTY_HASH
+                  end
+
           row_end = xml.index("</row>", tag_end + 1)
           break unless row_end
 
           row_source = { part: part_name, row: row_index }
           cells = fast_parse_cells_direct(xml, tag_end + 1, row_end, shared_strings, row_source)
 
-          block.call({ index: row_index, cells: cells, attrs: attrs, unmapped: EMPTY_ARRAY, source: row_source })
+          row_obj = Elements::Row.new(
+            index: row_index,
+            cells: cells,
+            height: attrs[:height],
+            hidden: attrs[:hidden] || false,
+            custom_height: attrs[:custom_height] || false,
+            outline_level: attrs[:outline_level],
+            errors: Elements::EMPTY_ERRORS
+          )
+          block.call(row_obj)
 
           pos = row_end + 6
         end
@@ -519,18 +552,90 @@ module Xlsxrb
           c_tag_end = xml.index(">", c_start + 2)
           break unless c_tag_end
 
-          # Extract tag substring for bounded attribute search
-          c_tag = xml.byteslice(c_start, c_tag_end - c_start)
-          ref = tag_attr(c_tag, ' r="')
-          type = tag_attr(c_tag, ' t="')
-          style_str = tag_attr(c_tag, ' s="')
-          style_index = style_str&.to_i
+          # Zero-allocation attribute scan directly within the tag
+          type = nil
+          style_index = nil
+          col_idx = nil
+          row_idx = nil
+
+          ai = c_start + 2
+          while ai < c_tag_end
+            b = xml.getbyte(ai)
+            if [32, 9, 10, 13].include?(b)
+              ai += 1
+              next
+            end
+
+            if b == 114 && xml.getbyte(ai + 1) == 61 && xml.getbyte(ai + 2) == 34 # r="
+              ai += 3
+              col_idx = 0
+              while ai < c_tag_end
+                cb = xml.getbyte(ai)
+                if cb.between?(65, 90)
+                  col_idx = (col_idx * 26) + (cb - 64)
+                  ai += 1
+                elsif cb.between?(97, 122)
+                  col_idx = (col_idx * 26) + (cb - 96)
+                  ai += 1
+                else
+                  break
+                end
+              end
+              col_idx -= 1
+              row_idx = 0
+              while ai < c_tag_end
+                cb = xml.getbyte(ai)
+                break unless cb.between?(48, 57)
+
+                row_idx = (row_idx * 10) + (cb - 48)
+                ai += 1
+
+              end
+              row_idx -= 1
+              ai += 1 if xml.getbyte(ai) == 34
+            elsif b == 116 && xml.getbyte(ai + 1) == 61 && xml.getbyte(ai + 2) == 34 # t="
+              ai += 3
+              type_b = xml.getbyte(ai)
+              if type_b == 115 && xml.getbyte(ai + 1) == 34 # "s"
+                type = "s"
+                ai += 2
+              elsif type_b == 98 && xml.getbyte(ai + 1) == 34 # "b"
+                type = "b"
+                ai += 2
+              elsif type_b == 101 && xml.getbyte(ai + 1) == 34 # "e"
+                type = "e"
+                ai += 2
+              else
+                t_end = xml.index('"', ai)
+                type = xml.byteslice(ai, t_end - ai) if t_end
+                ai = t_end ? t_end + 1 : c_tag_end
+              end
+            elsif b == 115 && xml.getbyte(ai + 1) == 61 && xml.getbyte(ai + 2) == 34 # s="
+              ai += 3
+              style_index = 0
+              while ai < c_tag_end
+                cb = xml.getbyte(ai)
+                break unless cb.between?(48, 57)
+
+                style_index = (style_index * 10) + (cb - 48)
+                ai += 1
+
+              end
+              ai += 1 if xml.getbyte(ai) == 34
+            else
+              ai += 1
+            end
+          end
 
           # Self-closing <c ... />
           if xml.getbyte(c_tag_end - 1) == 47
-            cell_source = row_source.dup
-            cell_source[:cell] = ref
-            cells << { ref: ref, type: type, style_index: style_index, value: nil, source: cell_source }
+            cells << Elements::Cell.new(
+              row_index: row_idx || row_source[:row],
+              column_index: col_idx || cells.size,
+              value: nil,
+              style_index: style_index,
+              errors: Elements::EMPTY_ERRORS
+            )
             pos = c_tag_end + 1
             next
           end
@@ -554,8 +659,21 @@ module Xlsxrb
                 v_val_start = tag_pos + 3
                 v_end = xml.index("</v>", v_val_start)
                 if v_end
-                  raw_value = xml.byteslice(v_val_start, v_end - v_val_start)
-                  value = resolve_fast_value(raw_value, type, shared_strings)
+                  if type == "s"
+                    # Zero-allocation integer parse for SST index
+                    s_idx = 0
+                    v_i = v_val_start
+                    while v_i < v_end
+                      s_idx = (s_idx * 10) + (xml.getbyte(v_i) - 48)
+                      v_i += 1
+                    end
+                    value = shared_strings[s_idx] || ""
+                  elsif type == "b"
+                    value = xml.getbyte(v_val_start) == 49 # '1'
+                  else
+                    raw_value = xml.byteslice(v_val_start, v_end - v_val_start)
+                    value = resolve_fast_value(raw_value, type, shared_strings)
+                  end
                   cpos = v_end + 4
                 else
                   cpos = tag_pos + 3
@@ -603,11 +721,14 @@ module Xlsxrb
           end
 
           val_to_use = inline_str || value
-          cell_source = row_source.dup
-          cell_source[:cell] = ref
-          cell = { ref: ref, type: type, style_index: style_index, value: val_to_use, source: cell_source }
-          cell[:formula] = formula if formula
-          cells << cell
+          cells << Elements::Cell.new(
+            row_index: row_idx || row_source[:row],
+            column_index: col_idx || cells.size,
+            value: val_to_use,
+            formula: formula,
+            style_index: style_index,
+            errors: Elements::EMPTY_ERRORS
+          )
 
           pos = c_end + 4
         end

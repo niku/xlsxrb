@@ -16,6 +16,7 @@ module Xlsxrb
       def initialize(io)
         @io = io
         @builder = XmlBuilder.new(@io)
+        @row_buffer = String.new(capacity: 65_536)
         @started = false
         @finished = false
       end
@@ -47,27 +48,27 @@ module Xlsxrb
 
         row_num = row_index + 1
         row_num_str = row_num.to_s
-        io = @io
-        io.write("<row r=\"")
-        io.write(row_num_str)
-        io.write('"')
+        buf = @row_buffer
+        buf.clear
+        buf << '<row r="' << row_num_str << '"'
         if attrs[:height]
-          io.write(' ht="')
-          io.write(attrs[:height].to_s)
-          io.write('" customHeight="1"')
+          buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"'
         elsif attrs[:custom_height]
-          io.write(' customHeight="1"')
+          buf << ' customHeight="1"'
         end
-        io.write(' hidden="1"') if attrs[:hidden]
-        if attrs[:outline_level]
-          io.write(' outlineLevel="')
-          io.write(attrs[:outline_level].to_s)
-          io.write('"')
-        end
-        io.write(">")
+        buf << ' hidden="1"' if attrs[:hidden]
+        buf << ' outlineLevel="' << attrs[:outline_level].to_s << '"' if attrs[:outline_level]
+        buf << ">"
 
         cells.each do |cell|
-          if cell.is_a?(Hash)
+          if cell.is_a?(Elements::Cell)
+            value = cell.value
+            style_id = cell.style_index
+            col_ref = cell.ref || "#{column_letter(cell.column_index)}#{row_num_str}"
+            formula = cell.formula
+            formula_ca = false
+            cell_type_val = nil
+          elsif cell.is_a?(Hash)
             value = cell[:value]
             style_id = cell[:style_index]
             col_ref = cell[:ref] || "#{column_letter(cell[:column_index])}#{row_num_str}"
@@ -75,24 +76,45 @@ module Xlsxrb
             formula_ca = cell[:formula_ca]
             cell_type_val = cell[:type]
           else
-            value = cell.value
-            style_id = cell.style_index
-            col_ref = cell.ref || "#{column_letter(cell.column_index)}#{row_num_str}"
-            formula = cell.formula
+            value = cell
+            style_id = nil
+            col_ref = nil
+            formula = nil
             formula_ca = false
             cell_type_val = nil
           end
 
-          if value.nil? && formula.nil?
-            io.write('<c r="')
-            io.write(col_ref)
-            io.write('"')
-            if style_id
-              io.write(' s="')
-              io.write(style_id.to_s)
-              io.write('"')
+          # Fast path for common unstyled cells
+          if !formula && !style_id && !cell_type_val
+            case value
+            when Integer, Float
+              buf << '<c r="' << col_ref << '"><v>' << value.to_s << "</v></c>"
+              next
+            when String
+              if !value.start_with?("=") && sst_index && (idx = sst_index[value])
+                buf << '<c r="' << col_ref << '" t="s"><v>' << idx.to_s << "</v></c>"
+                next
+              end
+            when true
+              buf << '<c r="' << col_ref << '" t="b"><v>1</v></c>'
+              next
+            when false
+              buf << '<c r="' << col_ref << '" t="b"><v>0</v></c>'
+              next
+            when nil
+              buf << '<c r="' << col_ref << '"/>'
+              next
+            when Date
+              serial = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+              buf << '<c r="' << col_ref << '"><v>' << serial.to_s << "</v></c>"
+              next
             end
-            io.write("/>")
+          end
+
+          if value.nil? && formula.nil?
+            buf << '<c r="' << col_ref << '"'
+            buf << ' s="' << style_id.to_s << '"' if style_id
+            buf << "/>"
             next
           end
 
@@ -148,86 +170,70 @@ module Xlsxrb
             end
           end
 
-          io.write('<c r="')
-          io.write(col_ref)
-          io.write('"')
-          if style_id
-            io.write(' s="')
-            io.write(style_id.to_s)
-            io.write('"')
-          end
-          if type
-            io.write(' t="')
-            io.write(type)
-            io.write('"')
-          end
+          buf << '<c r="' << col_ref << '"'
+          buf << ' s="' << style_id.to_s << '"' if style_id
+          buf << ' t="' << type << '"' if type
 
           if type == "inlineStr"
             if xml_val.is_a?(Xlsxrb::Elements::RichText)
-              io.write("><is>")
+              buf << "><is>"
               xml_val.runs.each do |run|
                 font = run[:font]
                 if font && !font.empty?
-                  io.write("<r><rPr>")
-                  io.write("<b/>") if font[:bold]
-                  io.write("<i/>") if font[:italic]
-                  io.write("<strike/>") if font[:strike]
+                  buf << "<r><rPr>"
+                  buf << "<b/>" if font[:bold]
+                  buf << "<i/>" if font[:italic]
+                  buf << "<strike/>" if font[:strike]
                   if font[:underline]
                     if font[:underline] == true
-                      io.write("<u/>")
+                      buf << "<u/>"
                     else
-                      io.write("<u val=\"#{font[:underline]}\"/>")
+                      buf << '<u val="' << font[:underline].to_s << '"/>'
                     end
                   end
-                  io.write("<vertAlign val=\"#{font[:vert_align]}\"/>") if font[:vert_align]
-                  io.write("<sz val=\"#{font[:sz]}\"/>") if font[:sz]
+                  buf << '<vertAlign val="' << font[:vert_align].to_s << '"/>' if font[:vert_align]
+                  buf << '<sz val="' << font[:sz].to_s << '"/>' if font[:sz]
                   if font[:color]
-                    io.write("<color rgb=\"#{font[:color]}\"/>")
+                    buf << '<color rgb="' << font[:color].to_s << '"/>'
                   elsif font[:theme]
                     tint_attr = font[:tint] ? " tint=\"#{font[:tint]}\"" : ""
-                    io.write("<color theme=\"#{font[:theme]}\"#{tint_attr}/>")
+                    buf << '<color theme="' << font[:theme].to_s << '"' << tint_attr << "/>"
                   end
-                  io.write("<rFont val=\"#{escape_xml(font[:name])}\"/>") if font[:name]
-                  io.write("<family val=\"#{font[:family]}\"/>") if font[:family]
-                  io.write("<scheme val=\"#{font[:scheme]}\"/>") if font[:scheme]
-                  io.write("</rPr><t>")
+                  buf << '<rFont val="' << escape_xml(font[:name]) << '"/>' if font[:name]
+                  buf << '<family val="' << font[:family].to_s << '"/>' if font[:family]
+                  buf << '<scheme val="' << font[:scheme].to_s << '"/>' if font[:scheme]
+                  buf << "</rPr><t>"
                 else
-                  io.write("<r><t>")
+                  buf << "<r><t>"
                 end
-                io.write(escape_xml(run[:text]))
-                io.write("</t></r>")
+                buf << escape_xml(run[:text]) << "</t></r>"
               end
-              io.write("</is></c>")
+              buf << "</is></c>"
             else
-              io.write("><is><t>")
-              io.write(escape_xml(xml_val.to_s))
-              io.write("</t></is></c>")
+              buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
             end
           elsif formula_expr
-            if formula_ca
-              io.write('><f ca="1">')
-            else
-              io.write("><f>")
-            end
-            io.write(escape_xml(formula_expr))
-            io.write("</f>")
+            buf << if formula_ca
+                     '><f ca="1">'
+                   else
+                     "><f>"
+                   end
+            buf << escape_xml(formula_expr) << "</f>"
             if xml_val
-              io.write("<v>")
-              io.write(xml_val.to_s)
-              io.write("</v></c>")
+              buf << "<v>" << xml_val.to_s << "</v></c>"
             else
-              io.write("</c>")
+              buf << "</c>"
             end
           else
-            io.write("><v>")
-            io.write(xml_val.to_s)
-            io.write("</v></c>")
+            buf << "><v>" << xml_val.to_s << "</v></c>"
           end
         end
 
-        unmapped.each { |node| @builder.write_unmapped(node) }
+        buf << "</row>"
+        @io.write(buf)
+        buf.clear
 
-        io.write("</row>")
+        unmapped.each { |node| @builder.write_unmapped(node) }
       end
 
       # Highly optimized row writing for StreamWriter that avoids allocating intermediate Hashes.
@@ -239,24 +245,15 @@ module Xlsxrb
         is_styles_collection = styles && (styles.is_a?(Array) || styles.is_a?(Hash))
         single_style_id = nil
         single_style_id = style_map[styles] if styles && style_map && !is_styles_collection
-        io = @io
-        io.write("<row r=\"")
-        io.write(row_num_str)
-        io.write('"')
+
+        buf = @row_buffer ||= String.new(capacity: 65_536)
+        buf << '<row r="' << row_num_str << '"'
         if attrs
-          if attrs[:height]
-            io.write(' ht="')
-            io.write(attrs[:height].to_s)
-            io.write('" customHeight="1"')
-          end
-          io.write(' hidden="1"') if attrs[:hidden]
-          if attrs[:outline_level]
-            io.write(' outlineLevel="')
-            io.write(attrs[:outline_level].to_s)
-            io.write('"')
-          end
+          buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"' if attrs[:height]
+          buf << ' hidden="1"' if attrs[:hidden]
+          buf << ' outlineLevel="' << attrs[:outline_level].to_s << '"' if attrs[:outline_level]
         end
-        io.write(">")
+        buf << ">"
 
         max_len = values.length
         if is_styles_collection
@@ -280,29 +277,54 @@ module Xlsxrb
           col_ref = column_letter(col_index)
 
           if value.nil?
-            if style_id
-              io.write('<c r="')
-              io.write(col_ref)
-              io.write(row_num_str)
-              io.write('" s="')
-              io.write(style_id.to_s)
-              io.write('"/>')
-            end
+            buf << '<c r="' << col_ref << row_num_str << '" s="' << style_id.to_s << '"/>' if style_id
             col_index += 1
             next
           end
 
-          # Auto-convert string starting with '=' to formula
-          if value.is_a?(String) && value.start_with?("=")
-            formula_expr = value
-            xml_val = nil
-          else
-            formula_expr = nil
-            xml_val = value
+          # Fast path: unstyled numbers, booleans, and simple strings (majority of cells)
+          if style_id.nil? && !value.is_a?(Xlsxrb::Elements::Formula) && !value.is_a?(Hash)
+            case value
+            when Integer, Float
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << value.to_s << "</v></c>"
+              col_index += 1
+              next
+            when String
+              unless value.start_with?("=")
+                idx = sst_index[value]
+                unless idx
+                  sst << value
+                  idx = sst.size - 1
+                  sst_index[value] = idx
+                end
+                buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx.to_s << "</v></c>"
+                col_index += 1
+                next
+              end
+            when true
+              buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>1</v></c>'
+              col_index += 1
+              next
+            when false
+              buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>0</v></c>'
+              col_index += 1
+              next
+            when Date
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value).to_s << "</v></c>"
+              col_index += 1
+              next
+            when Time
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value).to_s << "</v></c>"
+              col_index += 1
+              next
+            end
           end
 
-          type = nil
+          # General path: styled, formula, rich text, or complex cell
+          formula_expr = nil
           formula_ca = false
+          xml_val = value
+          type = nil
 
           case value
           when Xlsxrb::Elements::Formula
@@ -336,8 +358,9 @@ module Xlsxrb
               end
             end
           when String
-            if value.start_with?("=")
-              # already set formula_expr
+            if value.start_with?("=") && value.length > 1
+              formula_expr = value
+              xml_val = nil
             else
               idx = sst_index[value]
               unless idx
@@ -376,45 +399,31 @@ module Xlsxrb
 
           formula_expr = formula_expr[1..] if formula_expr&.start_with?("=")
 
-          io.write('<c r="')
-          io.write(col_ref)
-          io.write(row_num_str)
-          io.write('"')
-          if style_id
-            io.write(' s="')
-            io.write(style_id.to_s)
-            io.write('"')
-          end
-          if type
-            io.write(' t="')
-            io.write(type)
-            io.write('"')
-          end
+          buf << '<c r="' << col_ref << row_num_str << '"'
+          buf << ' s="' << style_id.to_s << '"' if style_id
+          buf << ' t="' << type << '"' if type
           if formula_expr
-            if formula_ca
-              io.write('><f ca="1">')
-            else
-              io.write("><f>")
-            end
-            io.write(escape_xml(formula_expr))
-            io.write("</f>")
+            buf << if formula_ca
+                     '><f ca="1">'
+                   else
+                     "><f>"
+                   end
+            buf << escape_xml(formula_expr) << "</f>"
             if xml_val
-              io.write("<v>")
-              io.write(xml_val.to_s)
-              io.write("</v></c>")
+              buf << "<v>" << xml_val.to_s << "</v></c>"
             else
-              io.write("</c>")
+              buf << "</c>"
             end
           else
-            io.write("><v>")
-            io.write(xml_val.to_s)
-            io.write("</v></c>")
+            buf << "><v>" << xml_val.to_s << "</v></c>"
           end
 
           col_index += 1
         end
 
-        io.write("</row>")
+        buf << "</row>"
+        @io.write(buf)
+        buf.clear
       end
 
       # Write the worksheet footer. Call once after all rows.
@@ -430,6 +439,10 @@ module Xlsxrb
 
         start unless @started
         @finished = true
+        if @row_buffer && !@row_buffer.empty?
+          @io.write(@row_buffer)
+          @row_buffer.clear
+        end
         @builder.close_tag("sheetData")
 
         # Elements must appear in OOXML specification order after sheetData
@@ -1035,12 +1048,14 @@ module Xlsxrb
         Xlsxrb::Elements::Cell.column_letter(index)
       end
 
+      INVALID_XML_CHARS_RE = /[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/
       ESCAPE_RE = /[&<>"']/
       ESCAPE_MAP = { "&" => "&amp;", "<" => "&lt;", ">" => "&gt;", '"' => "&quot;", "'" => "&apos;" }.freeze
-      private_constant :ESCAPE_RE, :ESCAPE_MAP
+      private_constant :INVALID_XML_CHARS_RE, :ESCAPE_RE, :ESCAPE_MAP
 
       def escape_xml(value)
-        str = value.to_s.gsub(/[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/, "")
+        str = value.to_s
+        str = str.gsub(INVALID_XML_CHARS_RE, "") if str.match?(INVALID_XML_CHARS_RE)
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end
     end
