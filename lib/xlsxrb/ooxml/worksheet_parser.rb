@@ -515,17 +515,17 @@ module Xlsxrb
           row_end = xml.index("</row>", tag_end + 1)
           break unless row_end
 
-          row_source = { part: part_name, row: row_index }
-          cells = fast_parse_cells_direct(xml, tag_end + 1, row_end, shared_strings, row_source)
-
-          row_obj = Elements::Row.new(
+          { part: part_name, row: row_index }
+          row_obj = StreamRow.new(
             index: row_index,
-            cells: cells,
+            xml_bytes: xml,
+            from: tag_end + 1,
+            to: row_end,
+            shared_strings: shared_strings,
             height: attrs[:height],
             hidden: attrs[:hidden] || false,
             custom_height: attrs[:custom_height] || false,
-            outline_level: attrs[:outline_level],
-            errors: Elements::EMPTY_ERRORS
+            outline_level: attrs[:outline_level]
           )
           block.call(row_obj)
 
@@ -537,7 +537,13 @@ module Xlsxrb
 
       def self.fast_parse_cells_direct(xml, from, to, shared_strings, row_source)
         cells = []
+        fast_scan_cells_direct(xml, from, to, shared_strings, row_source) { |c| cells << c }
+        cells
+      end
+
+      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, &block)
         pos = from
+        cell_count = 0
 
         while pos < to
           c_start = xml.index("<c", pos)
@@ -589,7 +595,6 @@ module Xlsxrb
 
                 row_idx = (row_idx * 10) + (cb - 48)
                 ai += 1
-
               end
               row_idx -= 1
               ai += 1 if xml.getbyte(ai) == 34
@@ -619,7 +624,6 @@ module Xlsxrb
 
                 style_index = (style_index * 10) + (cb - 48)
                 ai += 1
-
               end
               ai += 1 if xml.getbyte(ai) == 34
             else
@@ -629,13 +633,15 @@ module Xlsxrb
 
           # Self-closing <c ... />
           if xml.getbyte(c_tag_end - 1) == 47
-            cells << Elements::Cell.new(
+            cell_obj = Elements::Cell.new(
               row_index: row_idx || row_source[:row],
-              column_index: col_idx || cells.size,
+              column_index: col_idx || cell_count,
               value: nil,
               style_index: style_index,
               errors: Elements::EMPTY_ERRORS
             )
+            cell_count += 1
+            block.call(cell_obj)
             pos = c_tag_end + 1
             next
           end
@@ -721,19 +727,19 @@ module Xlsxrb
           end
 
           val_to_use = inline_str || value
-          cells << Elements::Cell.new(
+          cell_obj = Elements::Cell.new(
             row_index: row_idx || row_source[:row],
-            column_index: col_idx || cells.size,
+            column_index: col_idx || cell_count,
             value: val_to_use,
             formula: formula,
             style_index: style_index,
             errors: Elements::EMPTY_ERRORS
           )
+          cell_count += 1
+          block.call(cell_obj)
 
           pos = c_end + 4
         end
-
-        cells
       end
 
       private_class_method :fast_parse_cells_direct

@@ -62,6 +62,8 @@ module Xlsxrb
       def self.fast_scan_rows_direct: (untyped xml_src, untyped shared_strings, untyped part_name) ?{ (?) -> untyped } -> untyped
 
       def self.fast_parse_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source) -> untyped
+
+      def self.fast_scan_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source) ?{ (?) -> untyped } -> untyped
     end
   end
 end

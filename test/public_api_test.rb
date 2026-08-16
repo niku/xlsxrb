@@ -38,7 +38,39 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
-  test "Xlsxrb.write raises on nil target" do
+  test "Xlsxrb.write returns binary string when target is omitted" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "S", rows: [
+                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "In-Memory")
+                                                                     ])
+                                         ])
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
+
+    binary = Xlsxrb.write(wb)
+    assert_kind_of(String, binary)
+    assert(binary.start_with?("PK\x03\x04"))
+    assert_equal(Encoding::ASCII_8BIT, binary.encoding)
+
+    # Validate that it can be parsed back
+    parsed = Xlsxrb.read(binary)
+    assert_equal(1, parsed.sheets.size)
+    assert_equal("In-Memory", parsed.sheet(0).cell_value("A1"))
+  end
+
+  test "Xlsxrb.read automatically handles raw binary string" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("Users") do |s|
+        s.row(["Alice", 30])
+      end
+    end
+    binary = Xlsxrb.write(wb)
+
+    parsed = Xlsxrb.read(binary)
+    assert_equal(1, parsed.sheets.size)
+    assert_equal("Alice", parsed.sheet("Users").cell_value("A1"))
+  end
+
+  test "Xlsxrb.write raises on nil target when two arguments are given" do
     ws = Xlsxrb::Elements::Worksheet.new(name: "S")
     wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
     assert_raise(Xlsxrb::Error) { Xlsxrb.write(nil, wb) }
@@ -46,6 +78,7 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "Xlsxrb.write raises on non-workbook" do
     assert_raise(Xlsxrb::Error) { Xlsxrb.write("/tmp/test.xlsx", "not a workbook") }
+    assert_raise(Xlsxrb::Error) { Xlsxrb.write("not a workbook") }
   end
 
   test "round-trip preserves numeric types" do
@@ -187,7 +220,7 @@ class PublicApiTest < Test::Unit::TestCase
       collected = []
       Xlsxrb.foreach(tmp.path) do |sheet|
         sheet.each do |row|
-          assert_instance_of(Xlsxrb::Elements::Row, row)
+          assert(row.is_a?(Xlsxrb::StreamRow) || row.is_a?(Xlsxrb::Elements::Row))
           collected << row.cells[0].value
         end
       end
@@ -196,6 +229,46 @@ class PublicApiTest < Test::Unit::TestCase
     ensure
       tmp.close!
     end
+  end
+
+  test "StreamRow supports lazy cell streaming via each_cell" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("Wide") do |s|
+        s.row(%w[A B C D E F])
+      end
+    end
+    binary = Xlsxrb.write(wb)
+
+    cells_streamed = []
+    Xlsxrb.foreach(binary) do |sheet|
+      sheet.each_row do |row|
+        assert_kind_of(Xlsxrb::StreamRow, row)
+        row.each_cell do |cell|
+          cells_streamed << cell.value
+        end
+      end
+    end
+
+    assert_equal(%w[A B C D E F], cells_streamed)
+  end
+
+  test "StreamSheet#each_cell streams all cells across rows continuously" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("Grid") do |s|
+        s.row([1, 2])
+        s.row([3, 4])
+      end
+    end
+    binary = Xlsxrb.write(wb)
+
+    cells = []
+    Xlsxrb.foreach(binary) do |sheet|
+      sheet.each_cell do |cell|
+        cells << cell.value
+      end
+    end
+
+    assert_equal([1, 2, 3, 4], cells)
   end
 
   test "Xlsxrb.foreach with sheet name" do

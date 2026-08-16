@@ -1436,8 +1436,8 @@ class ContractTest < Test::Unit::TestCase
     collected = []
     Xlsxrb.foreach(tmp.path) do |sheet|
       sheet.each do |row|
-        assert_instance_of(Xlsxrb::Elements::Row, row,
-                           "foreach should yield Elements::Row instances inside sheet")
+        assert(row.is_a?(Xlsxrb::StreamRow) || row.is_a?(Xlsxrb::Elements::Row),
+               "foreach should yield StreamRow/Row instances inside sheet")
         collected << row.cells.map(&:value)
       end
     end

@@ -24,6 +24,7 @@ require_relative "xlsxrb/ooxml/writer"
 require_relative "xlsxrb/ooxml/reader"
 require_relative "xlsxrb/ooxml"
 require_relative "xlsxrb/elements"
+require_relative "xlsxrb/stream_row"
 require_relative "xlsxrb/style_builder"
 
 # Ruby XLSX read/write library.
@@ -362,19 +363,24 @@ module Xlsxrb
 
   # Reads an XLSX file into an in-memory Elements::Workbook.
   #
+  # Reads an XLSX file, raw binary string, or stream and returns an Elements::Workbook.
+  #
   # @example Read from file path
   #   workbook = Xlsxrb.read("data.xlsx")
-  #   sheet = workbook["Sheet1"]
-  #   puts sheet["A1"].value
+  #
+  # @example Read from raw binary string
+  #   workbook = Xlsxrb.read(raw_binary_string)
   #
   # @example Read from IO stream
   #   workbook = File.open("data.xlsx", "rb") { |io| Xlsxrb.read(io) }
   #
-  # @param source [String, IO] File path or IO object.
+  # @param source [String, IO] File path, binary content string (e.g. starting with PK..), or IO object.
   # @return [Elements::Workbook] The parsed workbook.
   # @api public
-  #: (untyped source) -> Elements::Workbook
+  #: (String | IO source) -> Elements::Workbook
   def self.read(source)
+    source = StringIO.new(source) if source.is_a?(String) && (source.start_with?("PK\x03\x04") || source.include?("\x00"))
+
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
     Xlsxrb.in_span("Xlsxrb.read", attributes: attributes) do
       entries = Ooxml::ZipReader.open(source, &:read_all)
@@ -396,17 +402,43 @@ module Xlsxrb
     end
   end
 
-  # Writes an Elements::Workbook to an XLSX file or IO stream.
+  # Writes an Elements::Workbook to an XLSX file, IO stream, or returns a binary string.
+  #
+  # @overload write(workbook)
+  #   Exports the workbook to an in-memory binary String.
+  #   @param workbook [Elements::Workbook] The workbook to write.
+  #   @return [String] Binary data representing the XLSX file.
+  #
+  # @overload write(target, workbook)
+  #   Writes the workbook to a file path or IO stream.
+  #   @param target [String, IO] Destination file path or writable IO object.
+  #   @param workbook [Elements::Workbook] The workbook to write.
+  #   @return [void]
+  #
+  # @example Export to in-memory binary string
+  #   binary_data = Xlsxrb.write(workbook)
   #
   # @example Write to file
   #   Xlsxrb.write("output.xlsx", workbook)
   #
-  # @param target [String, IO] File path or IO object.
-  # @param workbook [Elements::Workbook] The workbook to write.
-  # @return [void]
+  # @example Write to IO stream
+  #   Xlsxrb.write(io, workbook)
+  #
   # @api public
-  #: (untyped target, untyped workbook) -> void
-  def self.write(target, workbook)
+  #: (Elements::Workbook workbook) -> String
+  #: (String | IO target, Elements::Workbook workbook) -> void
+  def self.write(target_or_workbook, workbook = nil)
+    if workbook.nil?
+      wb = target_or_workbook
+      raise Error, "workbook must be an Elements::Workbook" unless wb.is_a?(Elements::Workbook)
+
+      io = StringIO.new
+      io.binmode
+      write(io, wb)
+      return io.string.b
+    end
+
+    target = target_or_workbook
     raise Error, "target is required" if target.nil?
     raise Error, "workbook must be an Elements::Workbook" unless workbook.is_a?(Elements::Workbook)
 
@@ -495,11 +527,20 @@ module Xlsxrb
 
   # Represents a sheet being streamed sequentially from an XLSX file.
   #
-  # @example Iterate rows in streaming mode
+  # @example Iterate rows and cells in streaming mode (O(1) memory)
   #   Xlsxrb.foreach("large_data.xlsx") do |sheet|
   #     puts "Processing sheet: #{sheet.name}"
   #     sheet.each_row do |row|
-  #       puts row.to_a.inspect
+  #       row.each_cell do |cell|
+  #         puts "#{cell.ref}: #{cell.value}"
+  #       end
+  #     end
+  #   end
+  #
+  # @example Stream all cells across the sheet continuously
+  #   Xlsxrb.foreach("large_data.xlsx") do |sheet|
+  #     sheet.each_cell do |cell|
+  #       puts "#{cell.ref} = #{cell.value}"
   #     end
   #   end
   #
@@ -522,16 +563,16 @@ module Xlsxrb
     # Iterate over rows in this streaming sheet.
     #
     # @yield [row]
-    # @yieldparam row [Elements::Row]
+    # @yieldparam row [StreamRow, Elements::Row]
     # @return [Enumerator, void]
     # @api public
-    #: () { (Elements::Row) -> void } -> void
-    #: | () -> Enumerator[Elements::Row, void]
+    #: () { (StreamRow | Elements::Row) -> void } -> void
+    #: | () -> Enumerator[StreamRow | Elements::Row, void]
     def each_row
       return enum_for(:each_row) unless block_given?
 
       Ooxml::WorksheetParser.each_row(@sheet_xml, shared_strings: @shared_strings) do |row|
-        if row.is_a?(Elements::Row)
+        if row.is_a?(Elements::Row) || row.is_a?(StreamRow)
           yield row
         else
           yield Xlsxrb.send(:build_row_from_raw, row)
@@ -539,14 +580,30 @@ module Xlsxrb
       end
     end
 
+    # Iterate over all cells in this sheet directly as a continuous stream.
+    #
+    # @yield [cell]
+    # @yieldparam cell [Elements::Cell]
+    # @return [Enumerator, void]
+    # @api public
+    #: () { (Elements::Cell) -> void } -> void
+    #: | () -> Enumerator[Elements::Cell, void]
+    def each_cell(&)
+      return enum_for(:each_cell) unless block_given?
+
+      each_row do |row|
+        row.each_cell(&)
+      end
+    end
+
     # Iterate over rows in this streaming sheet.
     #
     # @yield [row]
-    # @yieldparam row [Elements::Row]
+    # @yieldparam row [StreamRow, Elements::Row]
     # @return [Enumerator, void]
     # @api public
-    #: () { (Elements::Row) -> void } -> void
-    #: | () -> Enumerator[Elements::Row, void]
+    #: () { (StreamRow | Elements::Row) -> void } -> void
+    #: | () -> Enumerator[StreamRow | Elements::Row, void]
     def each(&)
       each_row(&)
     end
@@ -569,6 +626,8 @@ module Xlsxrb
   #: (untyped source) ?{ (StreamSheet) -> void } -> untyped
   def self.foreach(source)
     return enum_for(:foreach, source) unless block_given?
+
+    source = StringIO.new(source) if source.is_a?(String) && (source.start_with?("PK\x03\x04") || source.include?("\x00"))
 
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
     Xlsxrb.in_span("Xlsxrb.foreach", attributes: attributes) do

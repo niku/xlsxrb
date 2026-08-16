@@ -1,0 +1,125 @@
+# Generated from lib/xlsxrb/stream_row.rb with RBS::Inline
+
+module Xlsxrb
+  # Streaming row implementation that parses cells on-demand / lazily.
+  # Provides O(1) memory consumption even for rows with tens of thousands of columns.
+  #
+  # @example Streaming cells one-by-one (O(1) memory)
+  #   row.each_cell do |cell|
+  #     puts "#{cell.ref}: #{cell.value}"
+  #   end
+  #
+  # @example Random access or array conversion (cached on-demand)
+  #   cell = row[0]
+  #   values = row.to_a
+  #
+  # @api public
+  class StreamRow
+    attr_reader index: untyped
+
+    attr_reader height: untyped
+
+    attr_reader hidden: untyped
+
+    attr_reader custom_height: untyped
+
+    attr_reader outline_level: untyped
+
+    # @param index [Integer] 0-based row index.
+    # @param xml_bytes [String] Raw ASCII-8BIT XML bytes.
+    # @param from [Integer] Byte offset where cells start.
+    # @param to [Integer] Byte offset where cells end.
+    # @param shared_strings [Array<String>] Shared strings table.
+    # @param height [Float, Integer, nil] Row height in points.
+    # @param hidden [Boolean] Whether the row is hidden.
+    # @param custom_height [Boolean] Whether custom height is set.
+    # @param outline_level [Integer, nil] Grouping/outline level.
+    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+
+    # Iterate over cells in this streaming row one by one.
+    #
+    # @yield [cell]
+    # @yieldparam cell [Elements::Cell]
+    # @return [Enumerator, void]
+    # @api public
+    # : () { (Elements::Cell) -> void } -> void
+    # : | () -> Enumerator[Elements::Cell, void]
+    def each_cell: () { (Elements::Cell) -> void } -> void
+
+    # Iterate over cells in this streaming row.
+    #
+    # @yield [cell]
+    # @yieldparam cell [Elements::Cell]
+    # @return [Enumerator, void]
+    # @api public
+    # : () { (Elements::Cell) -> void } -> void
+    # : | () -> Enumerator[Elements::Cell, void]
+    def each: () { (Elements::Cell) -> void } -> void
+
+    # Returns all cells as an Array. Cached on first access.
+    #
+    # @return [Array<Elements::Cell>]
+    # @api public
+    # : () -> Array[Elements::Cell]
+    def cells: () -> Array[Elements::Cell]
+
+    # Access a cell by 0-based column index, or access row attributes via Symbol.
+    #
+    # @param col_index [Integer, Symbol] Column index or attribute symbol.
+    # @return [Elements::Cell, Object, nil]
+    # @api public
+    # : (Integer | Symbol col_index) -> untyped
+    def []: (Integer | Symbol col_index) -> untyped
+
+    # Access a cell by 0-based column index.
+    #
+    # @param col_index [Integer] 0-based column index.
+    # @return [Elements::Cell, nil]
+    # @api public
+    # : (Integer col_index) -> Elements::Cell?
+    def cell_at: (Integer col_index) -> Elements::Cell?
+
+    # Convert row cells to an Array of raw values (sparse columns get nil).
+    #
+    # @return [Array<Object>]
+    # @api public
+    # : () -> Array[untyped]
+    def to_a: () -> Array[untyped]
+
+    # Returns cell values as an Array.
+    #
+    # @return [Array<Object>]
+    # @api public
+    # : () -> Array[untyped]
+    def values: () -> Array[untyped]
+
+    # Returns whether the row is valid according to OOXML specifications.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def valid?: () -> bool
+
+    # Unmapped metadata for compatibility with Elements::Row.
+    #
+    # @return [Hash]
+    # @api public
+    # : () -> Hash[untyped, untyped]
+    def unmapped_data: () -> Hash[untyped, untyped]
+
+    # Validation errors for compatibility with Elements::Row.
+    #
+    # @return [Array<String>]
+    # @api public
+    # : () -> Array[String]
+    def errors: () -> Array[String]
+
+    # Human-readable representation.
+    #
+    # @return [String]
+    # @api public
+    # : () -> String
+    def inspect: () -> String
+  end
+end
