@@ -21,7 +21,7 @@ class PublicApiTest < Test::Unit::TestCase
 
       Xlsxrb.write(tmp.path, wb)
 
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
 
       assert_instance_of(Xlsxrb::Elements::Workbook, result)
       assert_equal(1, result.sheets.size)
@@ -52,7 +52,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, binary.encoding)
 
     # Validate that it can be parsed back
-    parsed = Xlsxrb.read(binary)
+    parsed = Xlsxrb.read(binary).load
     assert_equal(1, parsed.sheets.size)
     assert_equal("In-Memory", parsed.sheet(0).cell_value("A1"))
   end
@@ -65,7 +65,7 @@ class PublicApiTest < Test::Unit::TestCase
     end
     binary = Xlsxrb.write(wb)
 
-    parsed = Xlsxrb.read(binary)
+    parsed = Xlsxrb.read(binary).load
     assert_equal(1, parsed.sheets.size)
     assert_equal("Alice", parsed.sheet("Users").cell_value("A1"))
   end
@@ -95,7 +95,7 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
 
       sheet = result.sheet(0)
       assert_equal(0, sheet.cell_value("A1"))
@@ -127,7 +127,7 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
 
       assert_equal(2, result.sheets.size)
       assert_equal(%w[First Second], result.sheet_names)
@@ -150,7 +150,7 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
 
       assert_equal(true, result.sheet(0).cell_value("A1"))
       assert_equal(false, result.sheet(0).cell_value("B1"))
@@ -168,7 +168,7 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
 
       assert_equal("", result.sheet(0).cell_value("A1"))
     ensure
@@ -192,7 +192,7 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
 
       assert_equal(100, result.sheet(0).rows.size)
       assert_equal(0, result.sheet(0).cell_value("A1"))
@@ -203,10 +203,10 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
-  # --- foreach ---
+  # --- Streaming read via Xlsxrb.read(&block) ---
 
-  test "Xlsxrb.foreach yields rows one at a time" do
-    tmp = Tempfile.new(["foreach_test", ".xlsx"])
+  test "Xlsxrb.read with block yields rows one at a time" do
+    tmp = Tempfile.new(["read_stream_test", ".xlsx"])
     begin
       rows = (0...5).map do |i|
         Xlsxrb::Elements::Row.new(
@@ -218,7 +218,7 @@ class PublicApiTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path, wb)
 
       collected = []
-      Xlsxrb.foreach(tmp.path) do |sheet|
+      Xlsxrb.read(tmp.path) do |sheet|
         sheet.each do |row|
           assert(row.is_a?(Xlsxrb::StreamRow) || row.is_a?(Xlsxrb::Elements::Row))
           collected << row.cells[0].value
@@ -240,7 +240,7 @@ class PublicApiTest < Test::Unit::TestCase
     binary = Xlsxrb.write(wb)
 
     cells_streamed = []
-    Xlsxrb.foreach(binary) do |sheet|
+    Xlsxrb.read(binary) do |sheet|
       sheet.each_row do |row|
         assert_kind_of(Xlsxrb::StreamRow, row)
         row.each_cell do |cell|
@@ -262,7 +262,7 @@ class PublicApiTest < Test::Unit::TestCase
     binary = Xlsxrb.write(wb)
 
     cells = []
-    Xlsxrb.foreach(binary) do |sheet|
+    Xlsxrb.read(binary) do |sheet|
       sheet.each_cell do |cell|
         cells << cell.value
       end
@@ -271,8 +271,8 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal([1, 2, 3, 4], cells)
   end
 
-  test "Xlsxrb.foreach with sheet name" do
-    tmp = Tempfile.new(["foreach_sheet", ".xlsx"])
+  test "Xlsxrb.read with multiple sheets streaming" do
+    tmp = Tempfile.new(["read_multi_sheet", ".xlsx"])
     begin
       ws1 = Xlsxrb::Elements::Worksheet.new(
         name: "First",
@@ -291,48 +291,68 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2])
       Xlsxrb.write(tmp.path, wb)
 
-      collected = []
-      Xlsxrb.foreach(tmp.path).find { |s| s.name == "Second" }&.each { |row| collected << row.cells[0].value }
-      assert_equal(["B"], collected)
+      sheets_found = []
+      Xlsxrb.read(tmp.path) do |sheet|
+        sheet.each_row { |row| sheets_found << [sheet.name, row.cells[0].value] }
+      end
+      assert_equal([%w[First A], %w[Second B]], sheets_found)
     ensure
       tmp.close!
     end
   end
 
-  test "Xlsxrb.foreach returns enumerator without block" do
-    tmp = Tempfile.new(["foreach_enum", ".xlsx"])
-    begin
-      ws = Xlsxrb::Elements::Worksheet.new(
-        name: "S",
-        rows: [Xlsxrb::Elements::Row.new(
-          index: 0,
-          cells: [Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 1)]
-        )]
-      )
-      wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
-      Xlsxrb.write(tmp.path, wb)
-
-      enum = Xlsxrb.foreach(tmp.path)
-      assert_instance_of(Enumerator, enum)
-      assert_equal(1, enum.first.first.cells[0].value)
-    ensure
-      tmp.close!
+  test "Xlsxrb.read without block returns lazy StreamSheets requiring load for random access" do
+    wb_data = Xlsxrb.build do |b|
+      b.sheet("LazySheet") do |s|
+        s.row(%w[Header1 Header2])
+        s.row([100, 200])
+      end
     end
+    binary = Xlsxrb.write(wb_data)
+
+    wb = Xlsxrb.read(binary)
+    sheet = wb.sheet(0)
+
+    # 1. Sheet is a StreamSheet (O(1) memory)
+    assert_kind_of(Xlsxrb::StreamSheet, sheet)
+
+    # 2. Streaming iteration works on StreamSheet without parsing all rows up-front
+    streamed_values = []
+    sheet.each_row do |row|
+      assert_kind_of(Xlsxrb::StreamRow, row)
+      streamed_values << row.to_a
+    end
+    assert_equal([%w[Header1 Header2], [100, 200]], streamed_values)
+
+    # 3. StreamSheet does not have coordinate random access ([])
+    assert_not_respond_to(sheet, :[])
+
+    # 4. Explicit loading into Elements::Worksheet enables random access
+    doc_sheet = sheet.load
+    assert_kind_of(Xlsxrb::Elements::Worksheet, doc_sheet)
+    assert_equal("Header1", doc_sheet["A1"].value)
+    assert_equal(200, doc_sheet["B2"].value)
+    assert_equal(2, doc_sheet.rows.size)
+
+    # 5. Workbook#load loads all sheets into memory
+    loaded_wb = wb.load
+    assert_kind_of(Xlsxrb::Elements::Worksheet, loaded_wb.sheet(0))
+    assert_equal("Header1", loaded_wb["LazySheet"]["A1"].value)
   end
 
   # --- generate ---
 
-  test "Xlsxrb.generate creates a valid XLSX" do
+  test "Xlsxrb.write creates a valid XLSX" do
     tmp = Tempfile.new(["generate_test", ".xlsx"])
     begin
-      Xlsxrb.generate(tmp.path) do |w|
+      Xlsxrb.write(tmp.path) do |w|
         w.sheet("Output")
         w.row(%w[Name Score])
         w.row(["Alice", 95])
         w.row(["Bob", 87])
       end
 
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
       assert_equal(1, result.sheets.size)
       assert_equal("Output", result.sheet(0).name)
       assert_equal(3, result.sheet(0).rows.size)
@@ -343,17 +363,17 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
-  test "Xlsxrb.generate with multiple sheets" do
+  test "Xlsxrb.write with multiple sheets" do
     tmp = Tempfile.new(["gen_multi", ".xlsx"])
     begin
-      Xlsxrb.generate(tmp.path) do |w|
+      Xlsxrb.write(tmp.path) do |w|
         w.sheet("Sheet1")
         w.row([1, 2, 3])
         w.sheet("Sheet2")
         w.row([4, 5, 6])
       end
 
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
       assert_equal(2, result.sheets.size)
       assert_equal(1, result.sheet("Sheet1").cell_value("A1"))
       assert_equal(4, result.sheet("Sheet2").cell_value("A1"))
@@ -362,14 +382,14 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
-  test "Xlsxrb.generate without explicit sheet" do
+  test "Xlsxrb.write without explicit sheet" do
     tmp = Tempfile.new(["gen_implicit", ".xlsx"])
     begin
-      Xlsxrb.generate(tmp.path) do |w|
+      Xlsxrb.write(tmp.path) do |w|
         w.row(["auto"])
       end
 
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
       assert_equal("Sheet1", result.sheet(0).name)
       assert_equal("auto", result.sheet(0).cell_value("A1"))
     ensure
@@ -377,22 +397,22 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
-  test "Xlsxrb.generate raises on nil target" do
-    assert_raise(Xlsxrb::Error) { Xlsxrb.generate(nil) { |_w| } } # rubocop:disable Lint/EmptyBlock
+  test "Xlsxrb.write raises on nil target" do
+    assert_raise(Xlsxrb::Error) { Xlsxrb.write(nil) { |_w| } } # rubocop:disable Lint/EmptyBlock
   end
 
-  test "Xlsxrb.generate raises without block" do
-    assert_raise(Xlsxrb::Error) { Xlsxrb.generate("/tmp/test.xlsx") }
+  test "Xlsxrb.write raises without block" do
+    assert_raise(Xlsxrb::Error) { Xlsxrb.write("/tmp/test.xlsx") }
   end
 
-  test "Xlsxrb.generate with booleans and nil" do
+  test "Xlsxrb.write with booleans and nil" do
     tmp = Tempfile.new(["gen_types", ".xlsx"])
     begin
-      Xlsxrb.generate(tmp.path) do |w|
+      Xlsxrb.write(tmp.path) do |w|
         w.row([true, false, nil, "text", 42])
       end
 
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
       row = result.sheet(0).rows[0]
       assert_equal(true, row.cell_at(0).value)
       assert_equal(false, row.cell_at(1).value)
@@ -406,10 +426,10 @@ class PublicApiTest < Test::Unit::TestCase
 
   # --- Streaming benchmarks ---
 
-  test "foreach processes large file without excessive memory" do
+  test "read with block processes large file without excessive memory" do
     tmp = Tempfile.new(["large_foreach", ".xlsx"])
     begin
-      Xlsxrb.generate(tmp.path) do |w|
+      Xlsxrb.write(tmp.path) do |w|
         w.sheet("Big")
         10_000.times do |i|
           w.row([i, "row#{i}", i * 0.5])
@@ -418,7 +438,7 @@ class PublicApiTest < Test::Unit::TestCase
 
       count = 0
       sum = 0
-      Xlsxrb.foreach(tmp.path) do |sheet|
+      Xlsxrb.read(tmp.path) do |sheet|
         sheet.each do |row|
           count += 1
           sum += row.cells[0].value.to_i
@@ -435,14 +455,14 @@ class PublicApiTest < Test::Unit::TestCase
   test "generate can write many rows" do
     tmp = Tempfile.new(["large_gen", ".xlsx"])
     begin
-      Xlsxrb.generate(tmp.path) do |w|
+      Xlsxrb.write(tmp.path) do |w|
         w.sheet("Large")
         10_000.times do |i|
           w.row([i, "data#{i}"])
         end
       end
 
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
       assert_equal(10_000, result.sheet(0).rows.size)
       assert_equal(0, result.sheet(0).cell_value("A1"))
       assert_equal(9999, result.sheet(0).cell_value("A10000"))
@@ -482,7 +502,7 @@ class PublicApiTest < Test::Unit::TestCase
       wb2 = Xlsxrb.read(tmp1.path)
       Xlsxrb.write(tmp2.path, wb2)
 
-      wb3 = Xlsxrb.read(tmp2.path)
+      wb3 = Xlsxrb.read(tmp2.path).load
 
       assert_equal("A", wb3.sheet(0).cell_value("A1"))
       assert_equal(1, wb3.sheet(0).cell_value("B1"))
@@ -497,14 +517,14 @@ class PublicApiTest < Test::Unit::TestCase
   test "generate then foreach round-trip" do
     tmp = Tempfile.new(["gen_foreach_rt", ".xlsx"])
     begin
-      Xlsxrb.generate(tmp.path) do |w|
+      Xlsxrb.write(tmp.path) do |w|
         w.row(["x", 1])
         w.row(["y", 2])
         w.row(["z", 3])
       end
 
       values = []
-      Xlsxrb.foreach(tmp.path) do |sheet|
+      Xlsxrb.read(tmp.path) do |sheet|
         sheet.each do |row|
           values << row.values
         end
@@ -518,7 +538,7 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "chart works in Streaming generate API" do
     tmp = Tempfile.new(["facade_chart_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Sales") do |s|
         s.row(%w[Month Value])
         s.row(["Jan", 100])
@@ -584,7 +604,7 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "chart supports block form in generate API" do
     tmp = Tempfile.new(["facade_chart_block_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Sales") do
         w.row(%w[Month Value])
         w.row(["Jan", 100])
@@ -634,7 +654,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
 
       # Read back and verify
-      result = Xlsxrb.read(target.path)
+      result = Xlsxrb.read(target.path).load
       assert_equal("Data", result.sheet(0).name)
       assert_equal("Alice", result.sheet(0).cell_value("A2"))
       assert_equal(99, result.sheet(0).cell_value("B3"))
@@ -663,7 +683,7 @@ class PublicApiTest < Test::Unit::TestCase
         wb.with(sheets: [new_sheet])
       end
 
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
       assert_equal("modified", result.sheet(0).cell_value("A1"))
     ensure
       tmp.close!
@@ -691,7 +711,7 @@ class PublicApiTest < Test::Unit::TestCase
       # Block returns nil — workbook should be preserved
       Xlsxrb.modify(tmp.path) { |_wb| nil }
 
-      result = Xlsxrb.read(tmp.path)
+      result = Xlsxrb.read(tmp.path).load
       assert_equal("keep", result.sheet(0).cell_value("A1"))
     ensure
       tmp.close!
@@ -753,7 +773,7 @@ class PublicApiTest < Test::Unit::TestCase
     temp_file = Tempfile.new(["test_styles", ".xlsx"])
     temp_file.close
 
-    Xlsxrb.generate(temp_file.path) do |wb|
+    Xlsxrb.write(temp_file.path) do |wb|
       wb.style("bold", &:bold)
       wb.style("italic", &:italic)
       wb.style("red") { |s| s.font_color(:red) }
@@ -768,7 +788,7 @@ class PublicApiTest < Test::Unit::TestCase
       wb.column(%w[C D], width: 10)
     end
 
-    parsed = Xlsxrb.read(temp_file.path)
+    parsed = Xlsxrb.read(temp_file.path).load
     sheet = parsed.sheet("Test")
 
     assert_equal 1, sheet.cell_value("A1")
@@ -1486,9 +1506,9 @@ class PublicApiTest < Test::Unit::TestCase
     assert out.string.start_with?("PK")
   end
 
-  test "Xlsxrb.generate streaming output yields chunks" do
+  test "Xlsxrb.write streaming output yields chunks" do
     out = StringIO.new
-    Xlsxrb.generate(out) do |w|
+    Xlsxrb.write(out) do |w|
       w.sheet("S") do |s|
         s.row [1]
       end
@@ -1538,11 +1558,11 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "Xlsxrb.read parses workbook" do
     temp = Tempfile.new(["test_read", ".xlsx"])
-    Xlsxrb.generate(temp.path) do |w|
+    Xlsxrb.write(temp.path) do |w|
       w.sheet("S1") { |s| s.row ["A"] }
     end
 
-    wb = Xlsxrb.read(temp.path)
+    wb = Xlsxrb.read(temp.path).load
     assert_equal "S1", wb.sheets.first.name
     assert_equal "A", wb.sheets.first.rows.first.cells.first.value
   ensure
@@ -2051,7 +2071,7 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "Writer handles all sheet configuration options" do
     io = StringIO.new
-    Xlsxrb.generate(io) do |w|
+    Xlsxrb.write(io) do |w|
       w.workbook_property(:update_links, "always")
       w.style("bold", font: { bold: true })
 
@@ -2079,7 +2099,7 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "Writer raises error when writing to inactive sheet" do
     io = StringIO.new
-    Xlsxrb.generate(io) do |w|
+    Xlsxrb.write(io) do |w|
       s1 = nil
       w.sheet("S1") { |s| s1 = s }
       w.sheet("S2") { |s| s.row([1]) }
@@ -2199,7 +2219,7 @@ class PublicApiTest < Test::Unit::TestCase
     io = StringIO.new
 
     # Test block format
-    Xlsxrb.generate(io, strict_excel_mode: false) do |writer|
+    Xlsxrb.write(io, strict_excel_mode: false) do |writer|
       writer.sheet("Sheet1") do |sheet|
         sheet.row(%w[A1 B1])
         sheet.row([])

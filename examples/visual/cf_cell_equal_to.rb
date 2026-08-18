@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_equal_to.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("CF Equal") do |s|
     s.column(0, width: 25)
@@ -17,7 +17,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }

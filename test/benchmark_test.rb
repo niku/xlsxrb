@@ -7,14 +7,14 @@ require "benchmark/ips"
 class BenchmarkTest < Test::Unit::TestCase
   def test_streaming_read_memory_usage
     filename = "test_10k_rows.xlsx"
-    Xlsxrb.generate(filename) do |wb|
+    Xlsxrb.write(filename) do |wb|
       wb.sheet("Data") do |sheet|
         10_000.times { |i| sheet.row(["Row #{i}", i, "Status #{i}"]) }
       end
     end
 
     report = MemoryProfiler.report do
-      Xlsxrb.foreach(filename) do |sheet|
+      Xlsxrb.read(filename) do |sheet|
         sheet.each do |row|
           # Just iterate
         end

@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_paper_size_a3.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("A3 Sheet") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -14,7 +14,7 @@ end
 # 2. Read the generated sheet and print page setup properties
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 margins = reader.page_margins(sheet: sheet.name)
 setup = reader.page_setup(sheet: sheet.name)

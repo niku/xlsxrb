@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_bar_percent_stacked.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -27,6 +27,6 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"

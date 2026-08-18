@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_radar.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -22,6 +22,6 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"

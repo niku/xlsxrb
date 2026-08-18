@@ -15,7 +15,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
 
   def generate_streaming_xlsx(&)
     tmp = Tempfile.new(["facade_e2e_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path, &)
+    Xlsxrb.write(tmp.path, &)
     tmp
   end
 

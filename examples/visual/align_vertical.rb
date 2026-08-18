@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_vertical.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("top") { |s| s.align_vertical("top") }
   wb.style("center") { |s| s.align_vertical("center") }
   wb.style("bottom") { |s| s.align_vertical("bottom") }
@@ -16,7 +16,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|

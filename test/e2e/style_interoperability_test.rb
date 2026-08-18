@@ -30,7 +30,7 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
       Xlsxrb.write(xlsx_tempfile.path, workbook)
 
       # Verify file exists and can be read back
-      read_workbook = Xlsxrb.read(xlsx_tempfile.path)
+      read_workbook = Xlsxrb.read(xlsx_tempfile.path).load
       assert_equal(1, read_workbook.sheets.size)
 
       sheet = read_workbook.sheets[0]
@@ -54,7 +54,7 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
   test "streaming mode: write and validate styled cells via Open XML SDK" do
     xlsx_tempfile = Tempfile.new(["streaming_style_e2e", ".xlsx"])
     begin
-      Xlsxrb.generate(xlsx_tempfile.path) do |w|
+      Xlsxrb.write(xlsx_tempfile.path) do |w|
         # Define styles
         w.style("header") do |style|
           style.bold.size(12).font_color("FF0000FF")
@@ -77,7 +77,7 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
       end
 
       # Read back and verify
-      read_workbook = Xlsxrb.read(xlsx_tempfile.path)
+      read_workbook = Xlsxrb.read(xlsx_tempfile.path).load
       assert_equal(1, read_workbook.sheets.size)
       assert_equal(6, read_workbook.sheets[0].rows.size)
 

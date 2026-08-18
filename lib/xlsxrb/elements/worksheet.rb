@@ -4,16 +4,20 @@
 
 module Xlsxrb
   module Elements
-    # Represents a single worksheet in a workbook.
+    # Represents a single fully parsed, in-memory worksheet in a workbook.
+    # Provides coordinate random access (sheet["A1"]), row lookups (row_at),
+    # and immutable cell updates (update_cell).
     #
     # @example Access cells and rows
-    #   sheet = workbook.sheet(0)
+    #   sheet = workbook.sheet(0).load
     #   cell = sheet["A1"]
-    #   sheet.each_row { |row| puts row.to_a.inspect }
+    #   row = sheet.row_at(0)
     #
     # @api public
-    Worksheet = Data.define(:name, :rows, :columns, :charts, :unmapped_data, :errors) do
-      include Enumerable
+    class Worksheet
+      [Enumerable].each { |m| include m }
+
+      attr_reader :name, :rows, :columns, :charts, :unmapped_data, :errors
 
       # @param name [String] The worksheet name (max 31 characters).
       # @param rows [Array<Elements::Row>] Rows in the sheet.
@@ -23,9 +27,13 @@ module Xlsxrb
       # @param errors [Array<String>, nil] Validation errors.
       #: (name: String, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize(name:, rows: [], columns: [], charts: [], unmapped_data: {}, errors: nil)
-        computed_errors = errors || self.class.validate(name, rows)
-        super(name: name, rows: rows.freeze, columns: columns.freeze, charts: charts.freeze,
-              unmapped_data: unmapped_data, errors: computed_errors.freeze)
+        @name = name
+        @rows = (rows || []).freeze
+        @columns = (columns || []).freeze
+        @charts = (charts || []).freeze
+        @unmapped_data = (unmapped_data || {}).freeze
+        computed_errors = errors || self.class.validate(@name, @rows)
+        @errors = computed_errors.freeze
       end
 
       # Returns a Hash mapping Excel cell references (e.g. "A1") to Cell objects.
@@ -49,7 +57,6 @@ module Xlsxrb
       # @api public
       #: () -> Array[Elements::Cell]
       def cells
-        # Ensure ordered traversal
         cells_hash.values.sort_by { |c| [c.row_index, c.column_index] }
       end
 
@@ -66,42 +73,23 @@ module Xlsxrb
         cells_hash[ref.to_s.upcase]
       end
 
-      # Iterate over cells in the worksheet.
+      # Iterate over rows in the worksheet.
       #
       # @example
-      #   sheet.each do |cell|
-      #     puts cell.value
+      #   sheet.each do |row|
+      #     puts row.to_a.inspect
       #   end
       #
-      # @yield [cell]
-      # @yieldparam cell [Elements::Cell]
+      # @yield [row]
+      # @yieldparam row [Elements::Row]
       # @return [Enumerator, void]
       # @api public
-      #: () { (Elements::Cell) -> void } -> void
-      #: | () -> Enumerator[Elements::Cell, void]
+      #: () { (Elements::Row) -> void } -> void
+      #: | () -> Enumerator[Elements::Row, void]
       def each(&)
         return to_enum(:each) unless block_given?
 
-        cells.each(&)
-      end
-
-      # Iterate over cells in the worksheet.
-      #
-      # @example
-      #   sheet.each_cell do |cell|
-      #     puts "#{cell.ref}: #{cell.value}"
-      #   end
-      #
-      # @yield [cell]
-      # @yieldparam cell [Elements::Cell]
-      # @return [Enumerator, void]
-      # @api public
-      #: () { (Elements::Cell) -> void } -> void
-      #: | () -> Enumerator[Elements::Cell, void]
-      def each_cell(&)
-        return to_enum(:each_cell) unless block_given?
-
-        cells.each(&)
+        rows.each(&)
       end
 
       # Iterate over rows in the worksheet.
@@ -121,6 +109,20 @@ module Xlsxrb
         return to_enum(:each_row) unless block_given?
 
         rows.each(&)
+      end
+
+      # Iterate over all cells across rows.
+      #
+      # @yield [cell]
+      # @yieldparam cell [Elements::Cell]
+      # @return [Enumerator, void]
+      # @api public
+      #: () { (Elements::Cell) -> void } -> void
+      #: | () -> Enumerator[Elements::Cell, void]
+      def each_cell(&)
+        return to_enum(:each_cell) unless block_given?
+
+        cells.each(&)
       end
 
       # Returns whether the worksheet is valid according to OOXML specifications.
@@ -226,6 +228,60 @@ module Xlsxrb
         end
         with(rows: new_rows)
       end
+
+      # Returns a new Worksheet with attributes replaced (Data-like behavior).
+      #
+      # @param changes [Hash]
+      # @return [Worksheet]
+      # @api public
+      #: (**untyped) -> Elements::Worksheet
+      def with(**changes)
+        new_name = changes.key?(:name) ? changes[:name] : name
+        new_rows = changes.key?(:rows) ? changes[:rows] : rows
+        new_cols = changes.key?(:columns) ? changes[:columns] : columns
+        new_charts = changes.key?(:charts) ? changes[:charts] : charts
+        new_unmapped = changes.key?(:unmapped_data) ? changes[:unmapped_data] : unmapped_data
+        new_errors = changes.key?(:errors) ? changes[:errors] : errors
+
+        self.class.new(
+          name: new_name,
+          rows: new_rows,
+          columns: new_cols,
+          charts: new_charts,
+          unmapped_data: new_unmapped,
+          errors: new_errors
+        )
+      end
+
+      # Support pattern matching.
+      #: (Array[Symbol]?) -> Hash[Symbol, untyped]
+      def deconstruct_keys(_keys)
+        { name: name, rows: rows, columns: columns, charts: charts, unmapped_data: unmapped_data, errors: errors }
+      end
+
+      # Compare worksheets for equality.
+      #: (untyped other) -> bool
+      def ==(other)
+        return false unless other.is_a?(Worksheet)
+
+        name == other.name && rows == other.rows && columns == other.columns && charts == other.charts
+      end
+      alias eql? ==
+
+      #: () -> Integer
+      def hash
+        [self.class, name, rows, columns, charts].hash
+      end
+
+      # Returns self when load is called on an already in-memory Worksheet.
+      #
+      # @return [Elements::Worksheet]
+      # @api public
+      #: () -> Elements::Worksheet
+      def load
+        self
+      end
+      alias to_worksheet load
 
       # Validates worksheet name and rows against OOXML limits.
       #

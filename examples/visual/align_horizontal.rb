@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("left") { |s| s.align_horizontal("left") }
   wb.style("center") { |s| s.align_horizontal("center") }
   wb.style("right") { |s| s.align_horizontal("right") }
@@ -17,7 +17,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Alignment (Xlsxrb.read) ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 

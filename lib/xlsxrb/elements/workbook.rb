@@ -42,6 +42,7 @@ module Xlsxrb
       def each(&)
         sheets.each(&)
       end
+      alias_method :each_sheet, :each
 
       # Returns whether the workbook is valid according to ECMA-376 rules.
       #
@@ -71,6 +72,22 @@ module Xlsxrb
       end
       alias_method :[], :sheet
 
+      # Loads all sheets into memory, returning an Elements::Workbook where every
+      # worksheet is a fully-parsed Elements::Worksheet supporting coordinate random access.
+      #
+      # @example
+      #   wb = Xlsxrb.read("file.xlsx").load
+      #   puts wb["Sheet1"]["A1"].value
+      #
+      # @return [Elements::Workbook]
+      # @api public
+      #: () -> Elements::Workbook
+      def load
+        loaded_sheets = sheets.map { |s| s.respond_to?(:load) ? s.load : s }
+        with(sheets: loaded_sheets)
+      end
+      alias_method :to_workbook, :load
+
       # Returns a new Workbook with the specified sheet updated.
       # Yields the matched worksheet to the block, which must return a new Worksheet.
       #
@@ -92,10 +109,11 @@ module Xlsxrb
         sheet_to_update = sheet(identifier)
         raise ArgumentError, "sheet not found: #{identifier}" unless sheet_to_update
 
+        sheet_to_update = sheet_to_update.load if sheet_to_update.respond_to?(:load)
         new_sheet = yield sheet_to_update
         raise TypeError, "block must return a Worksheet" unless new_sheet.is_a?(Worksheet)
 
-        new_sheets = sheets.map { |s| s == sheet_to_update ? new_sheet : s }
+        new_sheets = sheets.map { |s| s.name == sheet_to_update.name ? new_sheet : s }
         with(sheets: new_sheets)
       end
 

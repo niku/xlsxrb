@@ -80,12 +80,12 @@ For visual demonstrations of various features, check the [Visual Examples Galler
 ### Quick Start: Streaming (Recommended)
 
 #### Streaming Write
-Generate large files efficiently by writing data directly to the file stream:
+Generate large files efficiently with $O(1)$ constant memory by writing data directly to the stream:
 ```ruby
 require "xlsxrb"
 
-Xlsxrb.generate("large_output.xlsx") do |stream_writer|
-  stream_writer.sheet("Sales Data") do |sheet|
+Xlsxrb.write("large_output.xlsx") do |writer|
+  writer.sheet("Sales Data") do |sheet|
     sheet.row(["Date", "Amount", "Status"])
     sheet.row([Date.today, 100, true])
     sheet.column(0, width: 15.5)
@@ -94,15 +94,63 @@ end
 ```
 
 #### Streaming Read
-Read rows one at a time without loading the entire file into memory:
+Read rows and cells lazily one at a time with $O(1)$ constant memory (even for wide sheets with thousands of columns):
 ```ruby
 require "xlsxrb"
 
-Xlsxrb.foreach("large_file.xlsx") do |sheet|
+# Stream row-by-row and cell-by-cell (O(1) memory)
+Xlsxrb.read("large_file.xlsx") do |sheet|
   sheet.each_row do |row|
-    puts "Row #{row.index}: #{row.cells.map(&:value).join(', ')}"
+    row.each_cell do |cell|
+      puts "#{cell.ref}: #{cell.value}"
+    end
   end
 end
+
+# Or stream all cells across the sheet directly
+Xlsxrb.read("large_file.xlsx") do |sheet|
+  sheet.each_cell do |cell|
+    puts "#{cell.ref} = #{cell.value}"
+  end
+end
+```
+
+### Ruby-Idiomatic Core APIs
+
+`xlsxrb` provides clean, standard Ruby interfaces (`Enumerable`, `Row#to_a`, `sheet["A1"]`) that feel natural to every Ruby developer without learning complex library-specific APIs:
+
+#### Reading Spreadsheets
+```ruby
+require "xlsxrb"
+
+# 1. Read from file path, IO, or raw binary string (O(1) constant memory streaming)
+workbook = Xlsxrb.read("data.xlsx")
+sheet = workbook.sheets.first
+
+# 2. Extract sheet data into 2D array of values via standard Enumerable
+matrix = sheet.map(&:to_a) # => [["Name", "Score"], ["Alice", 100], ["Bob", 95]]
+
+# 3. Explicitly load into memory for coordinate random access (e.g. sheet["A1"])
+doc_sheet = sheet.load
+doc_sheet["A1"]         # => #<Xlsxrb::Elements::Cell value="Name" ...>
+doc_sheet["A1"].value   # => "Name"
+```
+
+#### Writing & In-Memory Export (Rails & Mailers)
+```ruby
+# Build workbook
+wb = Xlsxrb.build do |b|
+  b.sheet("Report") do |s|
+    s.row(["Metric", "Value"])
+    s.row(["Users", 1000])
+  end
+end
+
+# Save directly to file:
+Xlsxrb.write("report.xlsx", wb)
+
+# Or export to binary string (ideal for Rails send_data & ActionMailer):
+binary_data = Xlsxrb.write(wb)
 ```
 
 ### In-Memory Building & Modifying
@@ -156,8 +204,8 @@ end
 Whether you use standard descriptive block variable names (`|stream_writer|`, `|sheet|`, `|workbook|`) or short names (`|wb|`, `|s|`), your editor will automatically provide complete method suggestions and parameter hints:
 
 ```ruby
-Xlsxrb.generate("output.xlsx") do |stream_writer| # or |wb|
-  stream_writer.sheet("Data") do |sheet|           # or |s|
+Xlsxrb.write("output.xlsx") do |writer| # or |wb|
+  writer.sheet("Data") do |sheet|      # or |s|
     sheet.row(["Product", "Price"], styles: :bold)
     sheet.auto_filter("A1:B100")
   end
@@ -228,7 +276,7 @@ As an extra layer of "defense in depth", `xlsxrb` configures the workbook to **n
 If you absolutely need external links to update automatically, you can explicitly override this (though **it is highly discouraged due to security risks**):
 
 ```ruby
-Xlsxrb.generate("file.xlsx") do |wb|
+Xlsxrb.write("file.xlsx") do |wb|
   # WARNING: Enabling this can expose users to malicious external reference vulnerabilities!
   wb.workbook_property(:update_links, "always") 
   # ...
@@ -241,7 +289,7 @@ To support reliability, compliance with the ECMA-376 specification, and consiste
 
 ### Multi-Tier Testing Strategy
 * **Round-Trip Testing**: Unit tests verify that every generated sheet can be reliably parsed back by the reader with identical content and styling.
-* **Contract Consistency**: Ensures semantic output consistency between the Streaming (`Xlsxrb.generate`) and In-Memory (`Xlsxrb.build`) APIs.
+* **Contract Consistency**: Ensures semantic output consistency between the Streaming (`Xlsxrb.write`) and In-Memory (`Xlsxrb.build`) APIs.
 * **Property-Based Testing (PBT)**: Automatically generates random data to catch edge cases (e.g., huge numbers, special characters) preventing unexpected crashes.
 * **Concurrency Validation**: Thread and Ractor safety checks to guarantee no global variable pollution during parallel execution.
 * **Security & DoS Protection**: Hardened against malicious files, including memory exhaustion (ZIP Bombs) and infinite parsing loops.

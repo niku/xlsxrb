@@ -25,7 +25,7 @@ class RowHashTest < Test::Unit::TestCase
     xlsx_path = xlsx_tempfile.path
     xlsx_tempfile.close
 
-    Xlsxrb.generate(xlsx_path) do |w|
+    Xlsxrb.write(xlsx_path) do |w|
       w.sheet("HashRow") do |s|
         s.style("bold", font: { bold: true })
         s.style("italic", font: { italic: true })
@@ -38,7 +38,7 @@ class RowHashTest < Test::Unit::TestCase
 
   def check_sheet(xlsx_path)
     wb = Xlsxrb.read(xlsx_path)
-    sheet = wb.sheets.first
+    sheet = wb.sheets.first.load
     assert_equal(1, sheet.rows.size)
 
     cells = sheet.rows[0].cells

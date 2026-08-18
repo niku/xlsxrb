@@ -4,7 +4,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "fonts.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   # Font Families (using nested hash options)
   wb.style("f_arial", font: { name: "Arial" })
   wb.style("f_times", font: { name: "Times New Roman" })

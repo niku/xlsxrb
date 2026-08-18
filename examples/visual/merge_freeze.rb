@@ -4,7 +4,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "merge_freeze.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Merge & Freeze") do |s|
@@ -25,7 +25,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }

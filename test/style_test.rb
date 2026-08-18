@@ -35,7 +35,7 @@ class StyleTest < Test::Unit::TestCase
   test "streaming mode: style and apply to rows" do
     tmp = Tempfile.new(["style_stream_test", ".xlsx"])
     begin
-      Xlsxrb.generate(tmp.path) do |w|
+      Xlsxrb.write(tmp.path) do |w|
         # Define styles
         w.style("heading") do |style|
           style.bold.size(14).font_color("FFFF0000")
@@ -59,7 +59,7 @@ class StyleTest < Test::Unit::TestCase
       end
 
       # Verify the file was created and can be read back
-      workbook = Xlsxrb.read(tmp.path)
+      workbook = Xlsxrb.read(tmp.path).load
       assert_equal(1, workbook.sheets.size)
       sheet = workbook.sheets[0]
       assert_equal(4, sheet.rows.size)
@@ -99,7 +99,7 @@ class StyleTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path, workbook)
 
       # Read back
-      read_workbook = Xlsxrb.read(tmp.path)
+      read_workbook = Xlsxrb.read(tmp.path).load
       assert_equal(1, read_workbook.sheets.size)
       sheet = read_workbook.sheets[0]
       assert_equal(2, sheet.rows.size)

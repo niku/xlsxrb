@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "col_width_tall.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Col Width") do |s|
     s.column(0, width: 50)
@@ -13,7 +13,7 @@ end
 
 # 2. Read the generated sheet and print column dimensions
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.columns.each do |col|
   puts "Column #{col.index}: width=#{col.width}, hidden=#{col.hidden}, outline_level=#{col.outline_level}"

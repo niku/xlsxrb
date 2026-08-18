@@ -14,7 +14,7 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
       end
       Xlsxrb.write(tmp.path, wb)
 
-      read_wb = Xlsxrb.read(tmp.path)
+      read_wb = Xlsxrb.read(tmp.path).load
       sheet = read_wb.sheets.first
 
       val1 = sheet.rows.first.cells[0].value
@@ -42,7 +42,7 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
       end
       Xlsxrb.write(tmp.path, wb)
 
-      read_wb = Xlsxrb.read(tmp.path)
+      read_wb = Xlsxrb.read(tmp.path).load
       sheet = read_wb.sheets.first
 
       # Serial 59 = Feb 28, 1900. Serial 61 = Mar 1, 1900 (due to Lotus 1-2-3 leap year bug)
@@ -66,7 +66,7 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
       end
       Xlsxrb.write(tmp.path, wb)
 
-      read_wb = Xlsxrb.read(tmp.path)
+      read_wb = Xlsxrb.read(tmp.path).load
       sheet = read_wb.sheets.first
 
       assert_equal 50, sheet.rows.first.cells[0].value
@@ -93,7 +93,7 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
       end
       Xlsxrb.write(tmp.path, wb)
 
-      read_wb = Xlsxrb.read(tmp.path)
+      read_wb = Xlsxrb.read(tmp.path).load
       sheet = read_wb.sheets.first
 
       assert_equal "A" * 32_767, sheet.rows.first.cells[0].value

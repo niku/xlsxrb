@@ -4,7 +4,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "styles_fonts_fills.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("header") do |style|
     style.bold.size(14).font_color("FFFFFFFF").fill_color("FF4F81BD")
   end
@@ -23,7 +23,7 @@ end
 
 # 2. Read the generated sheet and print styling details
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(4).each do |row|
   row_cells = row.cells.map do |c|

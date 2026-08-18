@@ -151,7 +151,7 @@ RUNNER_SCRIPT = <<~'RUBY'
   when ["xlsxrb_stream", "write"]
     require_relative "lib/xlsxrb"
     measure do
-      Xlsxrb.generate(filename) do |wb|
+      Xlsxrb.write(filename) do |wb|
         wb.sheet("Data") do |sheet|
           rows.times do |r|
             sheet.row(generate_row(r, cols))
@@ -175,7 +175,7 @@ RUNNER_SCRIPT = <<~'RUBY'
     require_relative "lib/xlsxrb"
     measure do
       count = 0
-      Xlsxrb.foreach(filename) do |sheet|
+      Xlsxrb.read(filename) do |sheet|
         sheet.each do |row|
           row.cells.each do |cell|
             _val = cell.value

@@ -10,7 +10,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "cell_numbers.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("currency") { |s| s.num_fmt("$#,##0.00") }
             w.style("percent") { |s| s.num_fmt("0.0%") }
             w.sheet("Numbers") do |s|
@@ -28,7 +28,7 @@ module Xlsxrb
           require "xlsxrb"
           require "date"
           output_path = ARGV[0] || "cell_dates.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
             w.sheet("Dates") do |s|
               s.row(["Format", "Date Value"])
@@ -43,7 +43,7 @@ module Xlsxrb
           require "xlsxrb"
           require "time"
           output_path = ARGV[0] || "cell_times.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
             w.sheet("Times") do |s|
               s.row(["Format", "Time Value"])
@@ -57,7 +57,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "cell_booleans.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Booleans") do |s|
               s.row(["Label", "Boolean Value"])
               s.row(["Is Active", true])
@@ -70,7 +70,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "cell_rich_text.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             rt = Xlsxrb.rich_text(
               { text: "Normal " },
               { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
@@ -87,7 +87,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "cell_formulas.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Formulas") do |s|
               s.row(["Item", "Value"])
               s.row(["A", 10])
@@ -102,7 +102,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "font_families.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("arial") { |s| s.font_name("Arial") }
             w.style("times") { |s| s.font_name("Times New Roman") }
             w.style("courier") { |s| s.font_name("Courier New") }
@@ -119,7 +119,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "font_sizes.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("size_10") { |s| s.size(10) }
             w.style("size_16") { |s| s.size(16) }
             w.style("size_24") { |s| s.size(24) }
@@ -136,7 +136,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "font_colors.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("red") { |s| s.font_color("FFC00000") }
             w.style("green") { |s| s.font_color("FF00B050") }
             w.style("blue") { |s| s.font_color("FF0070C0") }
@@ -153,7 +153,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "font_styles.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("bold") { |s| s.bold }
             w.style("italic") { |s| s.italic }
             w.style("underline") { |s| s.underline }
@@ -172,7 +172,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "font_vertical_align.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("super") { |s| s.vert_align("superscript") }
             w.style("sub") { |s| s.vert_align("subscript") }
             w.sheet("Vertical Align") do |s|
@@ -187,7 +187,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "border_thin.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("thin") { |s| s.border_left(style: "thin").border_right(style: "thin").border_top(style: "thin").border_bottom(style: "thin") }
             w.sheet("Thin Borders") do |s|
               s.row(["Normal Cell", "Thin Border Cell"], styles: { 1 => "thin" })
@@ -199,7 +199,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "border_medium.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("medium") { |s| s.border_left(style: "medium").border_right(style: "medium").border_top(style: "medium").border_bottom(style: "medium") }
             w.sheet("Medium Borders") do |s|
               s.row(["Normal Cell", "Medium Border Cell"], styles: { 1 => "medium" })
@@ -211,7 +211,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "border_dashed.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("dashed") { |s| s.border_left(style: "dashed").border_right(style: "dashed").border_top(style: "dashed").border_bottom(style: "dashed") }
             w.sheet("Dashed Borders") do |s|
               s.row(["Normal Cell", "Dashed Border Cell"], styles: { 1 => "dashed" })
@@ -223,7 +223,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "border_double.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("double") { |s| s.border_left(style: "double").border_right(style: "double").border_top(style: "double").border_bottom(style: "double") }
             w.sheet("Double Borders") do |s|
               s.row(["Normal Cell", "Double Border Cell"], styles: { 1 => "double" })
@@ -235,7 +235,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "border_slanted.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("slanted") { |s| s.border_left(style: "slantedDashDot").border_right(style: "slantedDashDot").border_top(style: "slantedDashDot").border_bottom(style: "slantedDashDot") }
             w.sheet("Slanted Borders") do |s|
               s.row(["Normal Cell", "Slanted Border Cell"], styles: { 1 => "slanted" })
@@ -247,7 +247,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "fill_solid_colors.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
             w.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
             w.sheet("Fills") do |s|
@@ -262,7 +262,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "fill_patterns.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
             w.style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
             w.sheet("Patterns") do |s|
@@ -277,7 +277,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "fill_gradients.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("gradient") do |style|
               style.fill_gradient(type: "linear", degree: 45, stops: [
                 { position: 0, color: "FFFFFFFF" },
@@ -294,7 +294,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "align_horizontal.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("left") { |s| s.align_horizontal("left") }
             w.style("center") { |s| s.align_horizontal("center") }
             w.style("right") { |s| s.align_horizontal("right") }
@@ -312,7 +312,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "align_vertical.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("top") { |s| s.align_vertical("top") }
             w.style("center") { |s| s.align_vertical("center") }
             w.style("bottom") { |s| s.align_vertical("bottom") }
@@ -327,7 +327,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "align_text_rotation.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("rot_45") { |s| s.text_rotation(45) }
             w.style("rot_90") { |s| s.text_rotation(90) }
             w.sheet("Rotation") do |s|
@@ -341,7 +341,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "align_text_wrap.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("wrap") { |s| s.wrap_text }
             w.sheet("Text Wrap") do |s|
               s.print_options(:grid_lines, true)
@@ -355,7 +355,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "align_indent.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.style("indent_1") { |s| s.indent(1) }
             w.style("indent_3") { |s| s.indent(3) }
             w.sheet("Indent") do |s|
@@ -371,7 +371,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "col_widths.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Widths") do |s|
               s.column(0, width: 30)
               s.column(1, width: 10)
@@ -384,7 +384,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "row_heights.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Heights") do |s|
               s.row(["Normal Row"])
               s.row(["Tall Row"], height: 40)
@@ -396,7 +396,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "row_grouping.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Row Grouping") do |s|
               s.row(["Parent Row 1"])
               s.row(["Child Row 1.1"], outline_level: 1)
@@ -409,7 +409,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "col_grouping.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Col Grouping") do |s|
               s.column(0, outline_level: 0)
               s.column(1, outline_level: 1)
@@ -423,7 +423,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "chart_line.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Data") do |s|
               s.row(["Day", "Value"])
               s.row(["Mon", 10])
@@ -443,7 +443,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "chart_area.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Data") do |s|
               s.row(["Day", "Value"])
               s.row(["Mon", 10])
@@ -462,7 +462,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "chart_pie.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Data") do |s|
               s.row(["Label", "Percent"])
               s.row(["Yes", 70])
@@ -481,7 +481,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "chart_doughnut.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Data") do |s|
               s.row(["Label", "Percent"])
               s.row(["A", 40])
@@ -500,7 +500,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "chart_scatter.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Data") do |s|
               s.row(["X", "Y"])
               s.row([1, 10])
@@ -519,7 +519,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "chart_radar.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Data") do |s|
               s.row(["Stat", "Value"])
               s.row(["Atk", 80])
@@ -538,7 +538,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "sparkline_line.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Sparkline") do |s|
               s.row([10, 20, 15, 30, nil])
               s.sparkline_group(
@@ -553,7 +553,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "sparkline_column.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Sparkline") do |s|
               s.row([5, 12, 8, 15, nil])
               s.sparkline_group(
@@ -568,7 +568,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "cf_color_scale.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Colors") do |s|
               s.row([10])
               s.row([50])
@@ -582,7 +582,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "cf_data_bar.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Data Bars") do |s|
               s.row([20])
               s.row([60])
@@ -596,7 +596,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "cf_icon_set.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Icons") do |s|
               s.row([25])
               s.row([50])
@@ -610,7 +610,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "interactive_autofilter.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Filter") do |s|
               s.row(["Name", "Department"])
               s.row(["Alice", "HR"])
@@ -625,7 +625,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "interactive_validation_list.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("List Validation") do |s|
               s.row(["Department", "Select:"])
               s.validate_data("B2", in: %w[HR Sales Engineering])
@@ -637,7 +637,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "interactive_validation_range.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Range Validation") do |s|
               s.row(["Age", "Enter (18-99):"])
               s.validate_data("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
@@ -649,7 +649,7 @@ module Xlsxrb
           # frozen_string_literal: true
           require "xlsxrb"
           output_path = ARGV[0] || "interactive_comments.xlsx"
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Comments") do |s|
               s.row(["Item A", "Item B"])
               s.comment("A1", "This is an important comment.", author: "System")
@@ -676,7 +676,7 @@ module Xlsxrb
             0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
           ].pack("C*")
 
-          Xlsxrb.generate(output_path) do |w|
+          Xlsxrb.write(output_path) do |w|
             w.sheet("Images") do |s|
               s.row(["Logo Target cell:"])
               s.image(dummy_png, ext: "png", from_col: 1, from_row: 1, to_col: 3, to_row: 5)

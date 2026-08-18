@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_justify.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("justify_align") do |s|
     s.align_horizontal("justify")
     s.wrap_text(true)
@@ -15,7 +15,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|

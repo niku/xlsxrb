@@ -52,7 +52,7 @@ class DosProtectionTest < Test::Unit::TestCase
   # Note on Zip Bomb protection:
   # The `rubyzip` gem does not strictly prevent decompression of highly compressed archives (Zip Bombs)
   # on its own unless explicitly checked (e.g. tracking bytes read vs compressed size).
-  # However, Xlsxrb provides a streaming read API (`Xlsxrb.foreach`) that avoids loading
+  # However, Xlsxrb provides a streaming read API (`Xlsxrb.read`) that avoids loading
   # the entire payload into memory at once. Users parsing untrusted files with `Xlsxrb.read`
   # should be aware of memory limitations.
 end

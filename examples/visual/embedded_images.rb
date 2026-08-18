@@ -24,7 +24,7 @@ end
 
 dummy_png = make_png(100, 100, 255, 0, 0)
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |st| st.align_horizontal(:center) }
   wb.sheet("Images") do |s|
     s.row(["Logo Target cell:", "", "", "Boundary"], styles: %w[left center center center])
@@ -43,7 +43,7 @@ end
 # 2. Read the generated sheet and print cell values + parsed embedded images details
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }

@@ -29,7 +29,7 @@ As a strict rule, **we do not accept dynamic method definitions using `method_mi
 Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mappings (e.g. `ChartBuilder`, `SeriesBuilder`) would traditionally benefit from dynamic delegation to avoid boilerplate, we explicitly generate and write out those delegations in the source code.
 
 ### 1. **`Xlsxrb` Module is the ONLY Entrypoint:**
-   The `Xlsxrb` module provides the top-level methods: `generate`, `build`, `read`, `foreach`, and `modify`. Users should **never** instantiate internal classes (like `Xlsxrb::Ooxml::WorkbookWriter`) directly.
+   The `Xlsxrb` module provides the top-level methods: `read`, `write`, `build`, and `modify`. Users should **never** instantiate internal classes (like `Xlsxrb::Ooxml::WorkbookWriter`) directly.
 
 2. **The `@api public` Contract (SemVer Guarantee):**
    Any module, class, or method tagged with `# @api public` in its YARD documentation is guaranteed to follow Semantic Versioning.
@@ -38,7 +38,7 @@ Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mapp
    - Major versions (1.x -> 2.x) are the only time breaking changes to `@api public` components are permitted.
 
 3. **Block-Yielded Objects are Public APIs:**
-   All builder objects yielded into blocks (e.g., `writer` in `Xlsxrb.generate { |writer| }`, `sheet` in `writer.sheet { |sheet| }`, `chart` in `sheet.chart { |chart| }`) are explicitly marked as `@api public`. Their exposed methods constitute the DSL and are strictly protected by the SemVer contract.
+   All builder objects yielded into blocks (e.g., `writer` in `Xlsxrb.write { |writer| }`, `sheet` in `writer.sheet { |sheet| }`, `chart` in `sheet.chart { |chart| }`) are explicitly marked as `@api public`. Their exposed methods constitute the DSL and are strictly protected by the SemVer contract.
 
 ---
 
@@ -46,10 +46,11 @@ Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mapp
 
 ```
 lib/
-  xlsxrb.rb                          # Facade: Xlsxrb.read / .write / .foreach / .generate / .build
+  xlsxrb.rb                          # Facade: Xlsxrb.read / .write / .build / .modify
   xlsxrb/
     version.rb                       # Xlsxrb::VERSION
     elements.rb                      # Requires for Elements layer
+    stream_row.rb                    # Lazy/streaming row and cell reader (O(1) memory)
     ooxml.rb                         # Requires for Ooxml layer
     ooxml/                           # Layer 1 – Low-level OOXML
       reader.rb                      #   Xlsxrb::Ooxml::Reader (core reading logic)
@@ -94,19 +95,20 @@ This layer directly handles ZIP extraction, XML parsing (via SAX), and XML gener
 * **`Xlsxrb::Ooxml::XmlBuilder`**: Emits well-formed XML strings via `<<` to a writable IO, supporting streaming generation without building a DOM.
 * **Part-specific parsers/writers**: `WorksheetParser`, `SharedStringsParser`, `StylesParser`, `WorkbookParser`, etc., each encapsulating the SAX event handling for one OpenXML part.
 
-### 2. High-Level Domain Model (The "Elements" Layer)
+### 2. High-Level Domain Model (The "Elements" Layer) & Streaming Row Layer
 
-**Namespace:** `Xlsxrb::Elements`
+**Namespace:** `Xlsxrb::Elements` and `Xlsxrb::StreamRow`
 
 **Responsibility:**
 This layer provides idiomatic, easy-to-use Ruby objects representing Excel concepts. It utilizes Ruby 3.2+ `Data` classes for immutability and precise structural definition. All domain models are encapsulated here to keep the top-level namespace clean.
 
-**Core Objects (`Data` classes):**
-* **`Xlsxrb::Elements::Workbook`**: Represents the entire file structure. Contains `sheets` (Array of Worksheet), shared styles metadata, and `unmapped_data`.
-* **`Xlsxrb::Elements::Worksheet`**: Represents a single sheet. Contains `name`, `rows` (Array of Row), `columns` (Array of Column), and sheet-level properties.
-* **`Xlsxrb::Elements::Row`**: Represents one row. Contains `index` (0-based), `cells` (Array of Cell), and row-level attributes (height, hidden, etc.).
-* **`Xlsxrb::Elements::Column`**: Represents column formatting. Contains `index` (0-based), `width`, and column-level attributes.
-* **`Xlsxrb::Elements::Cell`**: Represents a single cell. Contains `row_index`, `column_index` (both 0-based), `value` (Ruby native type), `formula`, `style`, and `unmapped_data`.
+**Core Objects:**
+* **`Xlsxrb::Elements::Workbook`**: Represents the entire file structure (`Data` class). Contains `sheets` (Array of Worksheet), shared styles metadata, and `unmapped_data`.
+* **`Xlsxrb::Elements::Worksheet`**: Represents a single sheet (`Data` class). Contains `name`, `rows` (Array of Row), `columns` (Array of Column), and sheet-level properties.
+* **`Xlsxrb::Elements::Row`**: Represents one in-memory row (`Data` class). Contains `index` (0-based), `cells` (Array of Cell), and row-level attributes.
+* **`Xlsxrb::StreamRow`**: Represents a streaming row with lazy cell parsing. Provides `row.each_cell` / `row.each` for $O(1)$ constant memory streaming, caching cells on-demand if indexed or converted to an array.
+* **`Xlsxrb::Elements::Column`**: Represents column formatting (`Data` class). Contains `index` (0-based), `width`, and column-level attributes.
+* **`Xlsxrb::Elements::Cell`**: Represents a single cell (`Data` class). Contains `row_index`, `column_index` (both 0-based), `value` (Ruby native type), `formula`, `style`, and `unmapped_data`.
 
 **Design Principles:**
 * **Zero-based Indexing:** To maintain consistency with Ruby's core language (Arrays/Enumerable), all indices (rows, columns, and worksheets) are **0-based**. For Excel-style coordination, use string references like `cell("A1")`.
@@ -115,17 +117,19 @@ This layer provides idiomatic, easy-to-use Ruby objects representing Excel conce
 
 ### 3. The Facade / Entrypoint Layer
 
-**Namespace:** `Xlsxrb` module methods
+**Namespace:** `Xlsxrb`
 
 **Responsibility:**
-Acts as the primary bridge, offering both In-Memory and Streaming APIs.
+Acts as the primary bridge, offering symmetric In-Memory and Streaming APIs.
 
 | Method | Type | Description |
 | :--- | :--- | :--- |
-| **`Xlsxrb.read(source)`** | In-Memory | Loads the entire file into a `Workbook` object. |
-| **`Xlsxrb.foreach(source, **options)`** | **Streaming** | Yields each `Row` one by one. Ideal for large files. |
-| **`Xlsxrb.write(target, workbook)`** | In-Memory | Saves a `Workbook` object to a file or IO. |
-| **`Xlsxrb.generate(target, &block)`** | **Streaming** | Provides a DSL to stream data directly to a file/IO. |
+| **`Xlsxrb.read(source, &block)`** | **Streaming** | Streams sheets (`StreamSheet`) and rows (`StreamRow`) with $O(1)$ constant memory. |
+| **`Xlsxrb.write(target, &block)`** | **Streaming** | Streams rows directly to file/IO with minimal memory. |
+| **`Xlsxrb.read(source)`** | In-Memory | Loads from file path, IO, or raw binary string into a `Workbook`. |
+| **`Xlsxrb.write(target, wb)`** / **`Xlsxrb.write(wb)`** | In-Memory | Saves `Workbook` to file/IO, or returns raw binary string (single argument). |
+| **`Xlsxrb.build(&block)`** | In-Memory | Builds an immutable `Workbook` using DSL. |
+| **`Xlsxrb.modify(source, target, &block)`** | In-Memory | Updates cells/sheets of an existing workbook. |
 
 ### Facade Expansion Policy
 
@@ -134,7 +138,7 @@ The long-term API goal is that **all spreadsheet features implemented in the low
 This applies to both:
 
 * **In-Memory DSL** (`Xlsxrb.build` -> `WorkbookBuilder` / `WorksheetBuilder`)
-* **Streaming DSL** (`Xlsxrb.generate` -> `StreamWriter`)
+* **Streaming DSL** (`Xlsxrb.write` -> `StreamWriter`)
 
 The Facade should not expose only a hand-picked subset forever. If a feature is stable and supported in the low-level writer, the default expectation is that it should eventually gain a high-level entry point.
 
@@ -193,7 +197,7 @@ If a low-level feature is workbook-scoped, do not force it into a worksheet-only
 
 For each feature, choose a single primary Facade shape and reuse it across modes:
 
-* `Xlsxrb.build` and `Xlsxrb.generate` should feel structurally similar
+* `Xlsxrb.build` and `Xlsxrb.write` should feel structurally similar
 * streaming and in-memory APIs may differ internally, but the surface API should remain as close as possible
 * differences are acceptable only when memory or ordering constraints make them unavoidable
 
@@ -291,28 +295,26 @@ Ooxml::WorkbookWriter      ── writes workbook.xml, styles.xml, sharedStrings
 Ooxml::ZipWriter           ── writes ZIP output ──► target (path / IO)
 ```
 
-### `Xlsxrb.foreach(source, **options)` — Streaming Read
+### `Xlsxrb.read(source, &block)` — Streaming Read
 
 ```
-source (path / IO)
+source (path / IO / binary string)
   │
   ▼
 Ooxml::ZipReader           ── locates xl/sharedStrings.xml, xl/worksheets/sheetN.xml
   │
   ▼  (SAX parse SST first — kept in memory as a flat Array of strings)
   │
-  ▼  (then SAX stream worksheet)
-Ooxml::WorksheetParser     ── on each </row> event:
-  │                           1. build Elements::Row with resolved cell values
-  │                           2. yield Row to caller's block
-  │                           3. discard Row (GC eligible)
+  ▼  (then SAX stream worksheet with StreamRow lazy cell scanner)
+Ooxml::WorksheetParser     ── yields StreamRow to caller's block
+  │
   ▼
-caller's block receives Elements::Row, processes, moves on
+caller's block receives StreamRow, streams cells via each_cell with O(1) memory
 ```
 
-Key memory invariant: only **one Row** (plus the shared-string table) is alive at any time.
+Key memory invariant: only **one Row / Cell** (plus the shared-string table) is parsed at any time.
 
-### `Xlsxrb.generate(target, &block)` — Streaming Write
+### `Xlsxrb.write(target, &block)` — Streaming Write
 
 ```
 caller's block
@@ -418,7 +420,7 @@ Every new high-level DSL feature must satisfy the following quality rules before
 If a feature is intended to exist in both writing modes, tests must cover:
 
 * `Xlsxrb.build` / `Xlsxrb.write`
-* `Xlsxrb.generate`
+* `Xlsxrb.write`
 
 If a feature can only exist in one mode for a technical reason, that restriction must be documented explicitly in code comments and user-facing docs.
 

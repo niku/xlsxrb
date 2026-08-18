@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "sparkline_line.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Sparkline") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -21,7 +21,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(3).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }

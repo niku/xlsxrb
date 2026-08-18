@@ -361,33 +361,46 @@ module Xlsxrb
     )
   end
 
-  # Reads an XLSX file into an in-memory Elements::Workbook.
+  # Reads an XLSX file (streaming / lazy-loaded by default) from a file path, IO stream, or binary String.
   #
-  # Reads an XLSX file, raw binary string, or stream and returns an Elements::Workbook.
+  # Sheets and rows are streamed lazily with O(1) constant memory. If a block is given,
+  # yields each StreamSheet sequentially.
   #
-  # @example Read from file path
-  #   workbook = Xlsxrb.read("data.xlsx")
+  # Call #load on the returned Workbook or Sheet to convert to an in-memory representation
+  # for coordinate random access (e.g. sheet["A1"]).
   #
-  # @example Read from raw binary string
-  #   workbook = Xlsxrb.read(raw_binary_string)
+  # @example Streaming read across sheets and rows (O(1) memory)
+  #   Xlsxrb.read("large.xlsx") do |sheet|
+  #     puts "Sheet: #{sheet.name}"
+  #     sheet.each_row do |row|
+  #       row.each_cell { |cell| puts "#{cell.ref}: #{cell.value}" }
+  #     end
+  #   end
   #
-  # @example Read from IO stream
-  #   workbook = File.open("data.xlsx", "rb") { |io| Xlsxrb.read(io) }
+  # @example Lazy workbook access and explicit in-memory loading
+  #   wb = Xlsxrb.read("data.xlsx")
+  #   sheet = wb.sheets.first
+  #   sheet.each_row { |row| ... }   # streams with O(1) memory
+  #   doc_sheet = sheet.load         # explicitly load into memory
+  #   puts doc_sheet["A1"].value     # coordinate random access
   #
-  # @param source [String, IO] File path, binary content string (e.g. starting with PK..), or IO object.
-  # @return [Elements::Workbook] The parsed workbook.
+  # @param source [String, IO] File path, binary content string (starting with PK..), or IO object.
+  # @yield [sheet] Yields each streaming sheet.
+  # @yieldparam sheet [StreamSheet] The streaming worksheet object.
+  # @return [Elements::Workbook, void] Returns Elements::Workbook when no block is given.
   # @api public
+  #: (String | IO source) { (StreamSheet) -> void } -> void
   #: (String | IO source) -> Elements::Workbook
-  def self.read(source)
+  def self.read(source, &)
     source = StringIO.new(source) if source.is_a?(String) && (source.start_with?("PK\x03\x04") || source.include?("\x00"))
 
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
     Xlsxrb.in_span("Xlsxrb.read", attributes: attributes) do
       entries = Ooxml::ZipReader.open(source, &:read_all)
       shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
-      styles = Ooxml::StylesParser.parse(entries["xl/styles.xml"])
       workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
       rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
+      styles = Ooxml::StylesParser.parse(entries["xl/styles.xml"])
 
       sheets = workbook_sheets.map do |sheet_info|
         target = rels[sheet_info[:r_id]]
@@ -395,40 +408,81 @@ module Xlsxrb
 
         sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
         sheet_xml = entries[sheet_path]
-        build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles)
+        next nil if sheet_xml.nil? || sheet_xml.empty?
+
+        StreamSheet.new(
+          sheet_info[:name],
+          sheet_xml,
+          shared_strings,
+          styles
+        )
       end.compact
 
-      Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
+      wb = Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
+
+      if block_given?
+        sheets.each(&)
+        nil
+      else
+        wb
+      end
     end
   end
 
-  # Writes an Elements::Workbook to an XLSX file, IO stream, or returns a binary string.
+  # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
+  #
+  # @overload write(target, strict_excel_mode: true, &block)
+  #   Streaming write: yields a StreamWriter context for high-speed, zero-allocation XLSX generation.
+  #   @param target [String, IO] Destination file path or writable IO object.
+  #   @param strict_excel_mode [Boolean] Whether to enforce Excel specifications.
+  #   @yield [stream_writer]
+  #   @yieldparam stream_writer [Xlsxrb::StreamWriter]
+  #   @return [void]
   #
   # @overload write(workbook)
-  #   Exports the workbook to an in-memory binary String.
+  #   In-memory write: exports the workbook to an in-memory binary String.
   #   @param workbook [Elements::Workbook] The workbook to write.
   #   @return [String] Binary data representing the XLSX file.
   #
   # @overload write(target, workbook)
-  #   Writes the workbook to a file path or IO stream.
+  #   In-memory write: writes the workbook to a file path or IO stream.
   #   @param target [String, IO] Destination file path or writable IO object.
   #   @param workbook [Elements::Workbook] The workbook to write.
   #   @return [void]
   #
-  # @example Export to in-memory binary string
+  # @example Streaming write to file
+  #   Xlsxrb.write("output.xlsx") do |writer|
+  #     writer.sheet("Sheet1") { |s| s.row(["Hello", "World"]) }
+  #   end
+  #
+  # @example In-memory export to binary string
   #   binary_data = Xlsxrb.write(workbook)
   #
-  # @example Write to file
+  # @example In-memory write to file
   #   Xlsxrb.write("output.xlsx", workbook)
-  #
-  # @example Write to IO stream
-  #   Xlsxrb.write(io, workbook)
   #
   # @api public
   #: (Elements::Workbook workbook) -> String
   #: (String | IO target, Elements::Workbook workbook) -> void
-  def self.write(target_or_workbook, workbook = nil)
-    if workbook.nil?
+  #: (String | IO target, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> void
+  def self.write(target_or_workbook, workbook_or_nil = nil, strict_excel_mode: true, &block)
+    if block_given?
+      target = target_or_workbook
+      raise Error, "target is required" if target.nil?
+
+      attributes = target.is_a?(String) ? { "filepath" => target } : {}
+      return Xlsxrb.in_span("Xlsxrb.write", attributes: attributes) do
+        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode)
+        begin
+          yield stream_writer
+          stream_writer.close
+        ensure
+          stream_writer.cleanup!
+        end
+      end
+    end
+
+    if workbook_or_nil.nil?
       wb = target_or_workbook
       raise Error, "workbook must be an Elements::Workbook" unless wb.is_a?(Elements::Workbook)
 
@@ -439,6 +493,7 @@ module Xlsxrb
     end
 
     target = target_or_workbook
+    workbook = workbook_or_nil
     raise Error, "target is required" if target.nil?
     raise Error, "workbook must be an Elements::Workbook" unless workbook.is_a?(Elements::Workbook)
 
@@ -448,7 +503,8 @@ module Xlsxrb
       sst_index = {}
 
       # Collect shared strings and build index without allocating new Hashes
-      sheet_data = workbook.sheets.map do |ws|
+      sheet_data = workbook.sheets.map do |raw_ws|
+        ws = raw_ws.respond_to?(:load) ? raw_ws.load : raw_ws
         ws.rows.each do |row|
           row.cells.each do |cell|
             val = cell.value
@@ -517,7 +573,7 @@ module Xlsxrb
     raise Error, "source is required" if source.nil?
     raise Error, "block is required" unless block_given?
 
-    workbook = read(source)
+    workbook = read(source).load
     result_workbook = yield workbook
     result_workbook = workbook unless result_workbook.is_a?(Elements::Workbook)
 
@@ -526,9 +582,13 @@ module Xlsxrb
   end
 
   # Represents a sheet being streamed sequentially from an XLSX file.
+  # Provides O(1) constant-memory streaming over rows and cells.
+  #
+  # Call #load (or #to_worksheet) to convert this streaming sheet into an
+  # in-memory Elements::Worksheet supporting coordinate random access (sheet["A1"]).
   #
   # @example Iterate rows and cells in streaming mode (O(1) memory)
-  #   Xlsxrb.foreach("large_data.xlsx") do |sheet|
+  #   Xlsxrb.read("large_data.xlsx") do |sheet|
   #     puts "Processing sheet: #{sheet.name}"
   #     sheet.each_row do |row|
   #       row.each_cell do |cell|
@@ -537,12 +597,10 @@ module Xlsxrb
   #     end
   #   end
   #
-  # @example Stream all cells across the sheet continuously
-  #   Xlsxrb.foreach("large_data.xlsx") do |sheet|
-  #     sheet.each_cell do |cell|
-  #       puts "#{cell.ref} = #{cell.value}"
-  #     end
-  #   end
+  # @example Load into an in-memory Worksheet for coordinate random access
+  #   wb = Xlsxrb.read("data.xlsx")
+  #   doc_sheet = wb.sheet(0).load
+  #   puts doc_sheet["A1"].value
   #
   # @api public
   class StreamSheet
@@ -553,14 +611,16 @@ module Xlsxrb
     # @param name [String] The sheet name.
     # @param sheet_xml [String] Raw XML content of the sheet.
     # @param shared_strings [Array<String>] Shared strings table.
-    #: (String name, String sheet_xml, Array[String] shared_strings) -> void
-    def initialize(name, sheet_xml, shared_strings)
+    # @param styles [Hash, nil] Styles table.
+    #: (String name, String sheet_xml, Array[String] shared_strings, ?Hash[untyped, untyped]? styles) -> void
+    def initialize(name, sheet_xml, shared_strings, styles = nil)
       @name = name
       @sheet_xml = sheet_xml
       @shared_strings = shared_strings
+      @styles = styles
     end
 
-    # Iterate over rows in this streaming sheet.
+    # Iterate over rows in this streaming sheet (O(1) memory).
     #
     # @yield [row]
     # @yieldparam row [StreamRow, Elements::Row]
@@ -580,7 +640,7 @@ module Xlsxrb
       end
     end
 
-    # Iterate over all cells in this sheet directly as a continuous stream.
+    # Iterate over all cells across rows continuously (O(1) memory).
     #
     # @yield [cell]
     # @yieldparam cell [Elements::Cell]
@@ -596,7 +656,7 @@ module Xlsxrb
       end
     end
 
-    # Iterate over rows in this streaming sheet.
+    # Default Enumerable iteration iterates rows in the streaming sheet.
     #
     # @yield [row]
     # @yieldparam row [StreamRow, Elements::Row]
@@ -607,79 +667,18 @@ module Xlsxrb
     def each(&)
       each_row(&)
     end
-  end
 
-  # Streaming read: yields StreamSheet objects one at a time for each sheet in the workbook.
-  # Keeps memory usage minimal even for multi-gigabyte XLSX files.
-  #
-  # @example
-  #   Xlsxrb.foreach("large.xlsx") do |sheet|
-  #     puts "Sheet: #{sheet.name}"
-  #     sheet.each_row { |row| process(row) }
-  #   end
-  #
-  # @param source [String, IO] File path or IO object.
-  # @yield [sheet] Yields each sheet.
-  # @yieldparam sheet [StreamSheet] The streaming sheet object.
-  # @return [Enumerator, void]
-  # @api public
-  #: (untyped source) ?{ (StreamSheet) -> void } -> untyped
-  def self.foreach(source)
-    return enum_for(:foreach, source) unless block_given?
-
-    source = StringIO.new(source) if source.is_a?(String) && (source.start_with?("PK\x03\x04") || source.include?("\x00"))
-
-    attributes = source.is_a?(String) ? { "filepath" => source } : {}
-    Xlsxrb.in_span("Xlsxrb.foreach", attributes: attributes) do
-      entries = Ooxml::ZipReader.open(source, &:read_all)
-      shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
-      workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
-      rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
-
-      workbook_sheets.each do |sheet_info|
-        target = rels[sheet_info[:r_id]]
-        next unless target
-
-        sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
-        sheet_xml = entries[sheet_path]
-        next if sheet_xml.nil? || sheet_xml.empty?
-
-        yield StreamSheet.new(sheet_info[:name], sheet_xml, shared_strings)
-      end
+    # Loads this sheet completely into an in-memory Elements::Worksheet,
+    # enabling coordinate random access (sheet["A1"]), row lookups (row_at),
+    # and immutable cell updates (update_cell).
+    #
+    # @return [Elements::Worksheet] The fully parsed in-memory worksheet.
+    # @api public
+    #: () -> Elements::Worksheet
+    def load
+      Xlsxrb.send(:build_worksheet, @name, @sheet_xml, @shared_strings, @styles)
     end
-  end
-
-  # Streaming write: yields a StreamWriter context for high-speed, zero-allocation XLSX generation.
-  #
-  # @example Generate an Excel file with styles and multiple sheets
-  #   Xlsxrb.generate("sales.xlsx") do |stream_writer|
-  #     stream_writer.sheet("Q1") do |sheet|
-  #       sheet.row(["Product", "Revenue"], styles: :bold)
-  #       sheet.row(["Widget", 15000])
-  #     end
-  #   end
-  #
-  # @param target [String, IO] File path or IO stream (e.g. pipe, socket, Rails response buffer).
-  # @param strict_excel_mode [Boolean] Whether to enforce Excel specifications (max rows/cols/length).
-  # @yield [stream_writer]
-  # @yieldparam stream_writer [Xlsxrb::StreamWriter]
-  # @return [void]
-  # @api public
-  #: (untyped target, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> void
-  def self.generate(target, strict_excel_mode: true)
-    raise Error, "target is required" if target.nil?
-    raise Error, "block is required" unless block_given?
-
-    attributes = target.is_a?(String) ? { "filepath" => target } : {}
-    Xlsxrb.in_span("Xlsxrb.generate", attributes: attributes) do
-      stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode)
-      begin
-        yield stream_writer
-        stream_writer.close
-      ensure
-        stream_writer.cleanup!
-      end
-    end
+    alias to_worksheet load
   end
 
   # Builds an in-memory Elements::Workbook using a declarative DSL.

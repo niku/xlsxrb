@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_scientific.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("sci") { |s| s.num_fmt("0.00E+00") }
   wb.sheet("Scientific") do |s|
     s.column(0, width: 25)
@@ -15,7 +15,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell numbers and format codes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|

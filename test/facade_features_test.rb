@@ -4,7 +4,7 @@ require "test_helper"
 require "tempfile"
 
 # Tests for all newly promoted Facade DSL features.
-# Each feature is tested in both streaming (Xlsxrb.generate) and in-memory (Xlsxrb.build) modes.
+# Each feature is tested in both streaming (Xlsxrb.write) and in-memory (Xlsxrb.build) modes.
 class FacadeFeaturesTest < Test::Unit::TestCase
   # =====================================================
   # Hyperlinks
@@ -34,7 +34,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "hyperlink options form in generate API" do
     tmp = Tempfile.new(["facade_hyperlink_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Links") do |s|
         s.row(["Click here"])
         s.hyperlink("A1", "https://example.com", display: "Example")
@@ -95,7 +95,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "auto_filter in generate API" do
     tmp = Tempfile.new(["facade_autofilter_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
@@ -137,7 +137,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "validate_data keyword args in generate API" do
     tmp = Tempfile.new(["facade_dv_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("DV") do |s|
         s.row(["Value"])
         s.validate_data("A2:A100", in: %w[A B C], show_error_message: true)
@@ -177,7 +177,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "conditional_format in generate API" do
     tmp = Tempfile.new(["facade_cf_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("CF") do |s|
         s.row([10, 20, 30])
         s.conditional_format("A1:C1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1)
@@ -193,7 +193,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "conditional_format with fill_color emits dxf and dxfId" do
     tmp = Tempfile.new(["facade_cf_dxf_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("CF") do |s|
         s.row([90, 45, 72, 88])
         s.conditional_format("A1:D1",
@@ -246,7 +246,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "table in generate API" do
     tmp = Tempfile.new(["facade_table_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Tables") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
@@ -264,7 +264,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "table accepts style string in generate API" do
     tmp = Tempfile.new(["facade_table_style_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Tables") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
@@ -313,7 +313,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "comment in generate API" do
     tmp = Tempfile.new(["facade_comment_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Comments") do |s|
         s.row(["Value"])
         s.comment("A1", "Stream comment", author: "Author")
@@ -353,7 +353,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "merge in generate API" do
     tmp = Tempfile.new(["facade_merge_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Merge") do |s|
         s.row(["Merged"])
         s.merge("A1:B1")
@@ -394,7 +394,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "freeze_pane in generate API" do
     tmp = Tempfile.new(["facade_freeze_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Frozen") do |s|
         s.row(["Header"])
         s.row([1])
@@ -435,7 +435,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "page_margins in generate API" do
     tmp = Tempfile.new(["facade_margins_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Margins") do |s|
         s.row(["Data"])
         s.page_margins(left: 0.5, right: 0.5)
@@ -475,7 +475,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "page_setup in generate API" do
     tmp = Tempfile.new(["facade_pagesetup_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Setup") do |s|
         s.row(["Data"])
         s.page_setup(orientation: :portrait, scale: 80)
@@ -516,7 +516,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "header_footer in generate API" do
     tmp = Tempfile.new(["facade_hf_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("HF") do |s|
         s.row(["Data"])
         s.header_footer(odd_header: "&LLeft Header")
@@ -578,7 +578,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "protect_sheet keyword args in generate API" do
     tmp = Tempfile.new(["facade_prot_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Protected") do |s|
         s.row(["Data"])
         s.protect_sheet(sheet: true, scenarios: true)
@@ -594,7 +594,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "protect_sheet plain password is hashed in generate API" do
     tmp = Tempfile.new(["facade_prot_hash_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Protected") do |s|
         s.row(["Data"])
         s.protect_sheet(sheet: true, password: "secret")
@@ -665,7 +665,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "defined_name in generate API" do
     tmp = Tempfile.new(["facade_defname_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row([100])
       end
@@ -701,7 +701,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "print_titles in generate API" do
     tmp = Tempfile.new(["facade_printtitles_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row(%w[Header1 Header2])
         s.row([1, 2])
@@ -739,7 +739,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "protect_workbook in generate API" do
     tmp = Tempfile.new(["facade_wbprot_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
       w.protect_workbook(lock_structure: true, lock_windows: true)
     end
@@ -775,7 +775,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "core_property in generate API" do
     tmp = Tempfile.new(["facade_coreprop_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
       w.core_property(:creator, "Stream Author")
     end
@@ -881,7 +881,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "image in generate API" do
     tmp = Tempfile.new(["facade_image_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Img") do |s|
         s.row(["With image"])
         s.image(MINIMAL_PNG, ext: "png")
@@ -919,7 +919,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "shape in generate API" do
     tmp = Tempfile.new(["facade_shape_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Shapes") do |s|
         s.row(["Data"])
         s.shape(preset: "ellipse", text: "Circle")
@@ -1023,7 +1023,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "multiple features on same sheet in generate API" do
     tmp = Tempfile.new(["facade_combined_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Combined") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
@@ -1063,7 +1063,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_formula_build", ".xlsx"])
     Xlsxrb.write(tmp.path, workbook)
 
-    result = Xlsxrb.read(tmp.path)
+    result = Xlsxrb.read(tmp.path).load
     sheet = result.sheet(0)
     cell = sheet.row_at(0).cell_at(2)
     assert_not_nil(cell, "Cell at column 2 (C1) should exist")
@@ -1076,13 +1076,13 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "formula without cached value in generate API" do
     tmp = Tempfile.new(["facade_formula_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Calc") do |s|
         s.row([10, 20, Xlsxrb.formula("SUM(A1:B1)")])
       end
     end
 
-    result = Xlsxrb.read(tmp.path)
+    result = Xlsxrb.read(tmp.path).load
     sheet = result.sheet(0)
     cell = sheet.row_at(0).cell_at(2)
     assert_not_nil(cell, "Cell at column 2 (C1) should exist")
@@ -1103,7 +1103,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_formula_cached", ".xlsx"])
     Xlsxrb.write(tmp.path, workbook)
 
-    result = Xlsxrb.read(tmp.path)
+    result = Xlsxrb.read(tmp.path).load
     sheet = result.sheet(0)
     cell = sheet.row_at(0).cell_at(2)
     assert_not_nil(cell, "Cell at column 2 (C1) should exist")
@@ -1159,7 +1159,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "pivot_table in generate API" do
     tmp = Tempfile.new(["facade_pivot_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row(%w[Region Product Amount])
         s.row(["East", "Widget", 100])
@@ -1223,7 +1223,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
   test "sparkline_group in generate API produces extLst XML" do
     tmp = Tempfile.new(["facade_sparkline_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Data") do |s|
         s.row([1, 2, 3])
         s.row([4, 5, 6])

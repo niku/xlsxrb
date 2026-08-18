@@ -693,9 +693,9 @@ module RubyLsp
 
           if caller_receiver_is_xlsxrb?(caller_receiver)
             case method_name
-            when :generate then return :stream_writer
+            when :write then return :stream_writer
+            when :read then return :stream_sheet
             when :build then return :workbook_builder
-            when :foreach then return :stream_sheet
             when :modify then return :workbook
             end
           end
@@ -718,25 +718,23 @@ module RubyLsp
       def infer_each_block_target(caller_receiver)
         if receiver_matches?(caller_receiver, %i[workbook wb])
           :worksheet
-        elsif receiver_matches?(caller_receiver, %i[row r])
+        elsif receiver_matches?(caller_receiver, %i[row r stream_row])
           :cell
         else
           :row
         end
       end
 
-      def infer_from_variable_name(receiver_name)
-        case receiver_name
-        when :wb, :stream_writer, :w
-          :stream_writer
-        when :workbook
-          :workbook
-        when :s, :ws, :sheet
+      def infer_from_variable_name(name)
+        case name
+        when :wb, :workbook
+          :workbook_builder
+        when :s, :sheet, :ws, :worksheet
           :worksheet_proxy
-        when :worksheet
-          :worksheet
-        when :stream_sheet
+        when :stream_sheet, :ss
           :stream_sheet
+        when :stream_writer, :sw
+          :stream_writer
         when :r, :row
           :row
         when :c, :cell

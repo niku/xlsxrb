@@ -1,6 +1,17 @@
 ## [Unreleased]
 - No unreleased changes.
 
+## [0.1.8] - 2026-08-18
+
+### Changed
+- **Unified Symmetric Entrypoints**: Consolidated reading into `Xlsxrb.read` (supporting file path, IO, and raw binary string) and writing into `Xlsxrb.write` (supporting streaming blocks or in-memory Workbooks). Removed legacy `open`, `foreach`, and `generate` methods.
+- **Streaming-First Defaults**: `Xlsxrb.read` yields and returns lightweight `StreamSheet` instances with $O(1)$ constant-memory consumption by default.
+- **Explicit In-Memory Materialization (`#load`)**: Stripped accidental random-access memory traps from `StreamSheet`; introduced explicit `StreamSheet#load` / `Workbook#load` (inspired by ActiveRecord Relations) to transition from lazy streaming to in-memory `Elements::Worksheet` / `Elements::Workbook`.
+- **`CoordinateAccess` Module**: Extracted coordinate lookup methods (`[]`, `cell_value`, `row_at`, `first_row`, `last_row`, `cells`, `cells_hash`) into a dedicated `Xlsxrb::Elements::CoordinateAccess` mixin module included in `Elements::Worksheet`.
+
+### Added
+- **Default Cell Streaming (`Xlsxrb::StreamRow`)**: Enabled streaming along both row and cell dimensions via `row.each_cell` and `sheet.each_cell`, parsing cells on-demand to handle sheets with thousands of columns in $O(1)$ constant memory.
+
 ## [0.1.7] - 2026-08-16
 
 ### Added

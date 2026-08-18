@@ -2,33 +2,192 @@
 
 module Xlsxrb
   module Elements
-    # Represents a single worksheet in a workbook.
+    # Represents a single fully parsed, in-memory worksheet in a workbook.
+    # Provides coordinate random access (sheet["A1"]), row lookups (row_at),
+    # and immutable cell updates (update_cell).
     #
     # @example Access cells and rows
-    #   sheet = workbook.sheet(0)
+    #   sheet = workbook.sheet(0).load
     #   cell = sheet["A1"]
-    #   sheet.each_row { |row| puts row.to_a.inspect }
+    #   row = sheet.row_at(0)
     #
     # @api public
-    class Worksheet < Data
-      attr_reader name(): untyped
+    class Worksheet
+      attr_reader name: untyped
 
-      attr_reader rows(): untyped
+      attr_reader rows: untyped
 
-      attr_reader columns(): untyped
+      attr_reader columns: untyped
 
-      attr_reader charts(): untyped
+      attr_reader charts: untyped
 
-      attr_reader unmapped_data(): untyped
+      attr_reader unmapped_data: untyped
 
-      attr_reader errors(): untyped
+      attr_reader errors: untyped
 
-      def self.new: (untyped name, untyped rows, untyped columns, untyped charts, untyped unmapped_data, untyped errors) -> instance
-                  | (name: untyped, rows: untyped, columns: untyped, charts: untyped, unmapped_data: untyped, errors: untyped) -> instance
+      # @param name [String] The worksheet name (max 31 characters).
+      # @param rows [Array<Elements::Row>] Rows in the sheet.
+      # @param columns [Array<Elements::Column>] Column definitions.
+      # @param charts [Array<Hash>] Charts in the sheet.
+      # @param unmapped_data [Hash] Additional metadata for round-tripping.
+      # @param errors [Array<String>, nil] Validation errors.
+      # : (name: String, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (name: String, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
-      def self.members: () -> [ :name, :rows, :columns, :charts, :unmapped_data, :errors ]
+      # Returns a Hash mapping Excel cell references (e.g. "A1") to Cell objects.
+      #
+      # @return [Hash<String, Elements::Cell>]
+      # : () -> Hash[String, Elements::Cell]
+      def cells_hash: () -> Hash[String, Elements::Cell]
 
-      def members: () -> [ :name, :rows, :columns, :charts, :unmapped_data, :errors ]
+      # Returns all cells ordered by row and column index.
+      #
+      # @return [Array<Elements::Cell>]
+      # @api public
+      # : () -> Array[Elements::Cell]
+      def cells: () -> Array[Elements::Cell]
+
+      # Access a cell by its Excel-style reference (e.g. "A1").
+      #
+      # @example
+      #   sheet["A1"] #=> #<Elements::Cell value="Hello">
+      #
+      # @param ref [String, Symbol] Cell reference (e.g. "A1" or :A1).
+      # @return [Elements::Cell, nil]
+      # @api public
+      # : (String | Symbol ref) -> Elements::Cell?
+      def []: (String | Symbol ref) -> Elements::Cell?
+
+      # Iterate over rows in the worksheet.
+      #
+      # @example
+      #   sheet.each do |row|
+      #     puts row.to_a.inspect
+      #   end
+      #
+      # @yield [row]
+      # @yieldparam row [Elements::Row]
+      # @return [Enumerator, void]
+      # @api public
+      # : () { (Elements::Row) -> void } -> void
+      # : | () -> Enumerator[Elements::Row, void]
+      def each: () { (Elements::Row) -> void } -> void
+
+      # Iterate over rows in the worksheet.
+      #
+      # @example
+      #   sheet.each_row do |row|
+      #     puts "Row #{row.index}: #{row.to_a.inspect}"
+      #   end
+      #
+      # @yield [row]
+      # @yieldparam row [Elements::Row]
+      # @return [Enumerator, void]
+      # @api public
+      # : () { (Elements::Row) -> void } -> void
+      # : | () -> Enumerator[Elements::Row, void]
+      def each_row: () { (Elements::Row) -> void } -> void
+
+      # Iterate over all cells across rows.
+      #
+      # @yield [cell]
+      # @yieldparam cell [Elements::Cell]
+      # @return [Enumerator, void]
+      # @api public
+      # : () { (Elements::Cell) -> void } -> void
+      # : | () -> Enumerator[Elements::Cell, void]
+      def each_cell: () { (Elements::Cell) -> void } -> void
+
+      # Returns whether the worksheet is valid according to OOXML specifications.
+      #
+      # @return [Boolean]
+      # : () -> bool
+      def valid?: () -> bool
+
+      # Returns the row at the given 0-based index, or nil.
+      #
+      # @param index [Integer] 0-based row index.
+      # @return [Elements::Row, nil]
+      # @api public
+      # : (Integer index) -> Elements::Row?
+      def row_at: (Integer index) -> Elements::Row?
+
+      # Returns the first row in the sheet, or nil.
+      #
+      # @return [Elements::Row, nil]
+      # @api public
+      # : () -> Elements::Row?
+      def first_row: () -> Elements::Row?
+
+      # Returns the last row in the sheet, or nil.
+      #
+      # @return [Elements::Row, nil]
+      # @api public
+      # : () -> Elements::Row?
+      def last_row: () -> Elements::Row?
+
+      # Returns the raw cell value at the given Excel-style reference (e.g. "A1").
+      #
+      # @example
+      #   sheet.cell_value("A1") #=> "Sales Report"
+      #
+      # @param ref [String] Cell reference (e.g. "A1").
+      # @return [Object, nil]
+      # @api public
+      # : (String ref) -> untyped
+      def cell_value: (String ref) -> untyped
+
+      # Returns a new Worksheet with the specified cell updated.
+      #
+      # @example
+      #   new_sheet = sheet.update_cell("B1", value: "Updated")
+      #
+      # @param ref [String] The cell reference (e.g. "B1").
+      # @param value [Object] The new cell value.
+      # @param style_index [Integer, String, nil] Optional new style index.
+      # @param formula [Elements::Formula, nil] Optional new formula.
+      # @return [Worksheet] A new Worksheet instance.
+      # @api public
+      # : (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?) -> Elements::Worksheet
+      def update_cell: (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?) -> Elements::Worksheet
+
+      # Returns a new Worksheet with attributes replaced (Data-like behavior).
+      #
+      # @param changes [Hash]
+      # @return [Worksheet]
+      # @api public
+      # : (**untyped) -> Elements::Worksheet
+      def with: (**untyped) -> Elements::Worksheet
+
+      # Support pattern matching.
+      # : (Array[Symbol]?) -> Hash[Symbol, untyped]
+      def deconstruct_keys: (Array[Symbol]?) -> Hash[Symbol, untyped]
+
+      # Compare worksheets for equality.
+      # : (untyped other) -> bool
+      def ==: (untyped other) -> bool
+
+      alias eql? ==
+
+      # : () -> Integer
+      def hash: () -> Integer
+
+      # Returns self when load is called on an already in-memory Worksheet.
+      #
+      # @return [Elements::Worksheet]
+      # @api public
+      # : () -> Elements::Worksheet
+      def load: () -> Elements::Worksheet
+
+      alias to_worksheet load
+
+      # Validates worksheet name and rows against OOXML limits.
+      #
+      # @param name [String]
+      # @param rows [Array<Elements::Row>]
+      # @return [Array<String>] List of errors.
+      # : (untyped name, untyped rows) -> Array[String]
+      def self.validate: (untyped name, untyped rows) -> Array[String]
     end
   end
 end

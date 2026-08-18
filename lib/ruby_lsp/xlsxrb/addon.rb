@@ -12,7 +12,7 @@ module RubyLsp
     # This add-on serves as a bridge/polyfill for current Ruby LSP environments.
     # While xlsxrb ships with complete RBS signatures (`sig/generated/`), Ruby LSP's
     # type inferrer does not yet perform automatic static type inference from method
-    # block signatures to block parameters (e.g., `Xlsxrb.generate do |wb|`).
+    # block signatures to block parameters (e.g., `Xlsxrb.write do |wb|`).
     #
     # This add-on enables immediate out-of-the-box autocompletion and rich Markdown
     # documentation across all public block arguments.

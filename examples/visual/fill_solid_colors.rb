@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "fill_solid_colors.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
   wb.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
   wb.sheet("Fills") do |s|
@@ -16,7 +16,7 @@ end
 
 # 2. Read the generated sheet and print cell fill properties
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|

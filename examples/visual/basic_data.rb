@@ -5,7 +5,7 @@ require "date"
 
 output_path = ARGV[0] || "basic_data.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("currency") { |style| style.number_format("$#,##0.00") }
   wb.style("date") { |style| style.number_format("yyyy-mm-dd") }
   wb.sheet("Basic Data") do |sheet|
@@ -21,7 +21,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell values and Ruby classes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|

@@ -7,7 +7,7 @@ require "net/http"
 class NetworkStreamingTest < Test::Unit::TestCase
   def setup
     @temp_file = Tempfile.new(["network_streaming", ".xlsx"])
-    Xlsxrb.generate(@temp_file.path) do |w|
+    Xlsxrb.write(@temp_file.path) do |w|
       w.sheet("Data") do |s|
         s.row(%w[Hello World])
       end

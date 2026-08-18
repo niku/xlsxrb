@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_range.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Range Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -14,7 +14,7 @@ end
 # 2. Read the generated sheet and print data validations
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|

@@ -30,10 +30,10 @@ class RubyLspAddonTest < Test::Unit::TestCase
     assert_kind_of(RubyLsp::Xlsxrb::Addon, discovered)
   end
 
-  # 1. Xlsxrb.generate -> StreamWriter
+  # 1. Xlsxrb.write -> StreamWriter
   def test_stream_writer_completions_in_generate_block
     source = <<~RUBY
-      Xlsxrb.generate("test.xlsx") do |wb|
+      Xlsxrb.write("test.xlsx") do |wb|
         wb.sheet
       end
     RUBY
@@ -71,10 +71,10 @@ class RubyLspAddonTest < Test::Unit::TestCase
     assert_includes(build_item.detail, "Xlsxrb::WorkbookBuilder")
   end
 
-  # 3. Xlsxrb.foreach -> StreamSheet
-  def test_stream_sheet_completions_in_foreach_block
+  # 3. Xlsxrb.read -> StreamSheet
+  def test_stream_sheet_completions_in_read_block
     source = <<~RUBY
-      Xlsxrb.foreach("test.xlsx") do |sheet|
+      Xlsxrb.read("test.xlsx") do |sheet|
         sheet.each_row
       end
     RUBY
@@ -113,7 +113,7 @@ class RubyLspAddonTest < Test::Unit::TestCase
   # 5. wb.sheet -> WorksheetProxy
   def test_worksheet_proxy_completions_in_sheet_block
     source = <<~RUBY
-      Xlsxrb.generate("test.xlsx") do |wb|
+      Xlsxrb.write("test.xlsx") do |wb|
         wb.sheet("Sheet1") do |s|
           s.row
         end
@@ -259,7 +259,7 @@ class RubyLspAddonTest < Test::Unit::TestCase
   # 12. SortText Priority Ordering
   def test_sort_text_priority_ordering
     source = <<~RUBY
-      Xlsxrb.generate("test.xlsx") do |wb|
+      Xlsxrb.write("test.xlsx") do |wb|
         wb.sheet("S1") do |s|
           s.row
         end

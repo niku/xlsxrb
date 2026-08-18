@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_wrap.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("wrap", &:wrap_text)
   wb.sheet("Text Wrap") do |s|
     s.print_options(:grid_lines, true)
@@ -13,7 +13,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|

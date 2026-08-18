@@ -7,9 +7,19 @@ require "fileutils"
 require "open3"
 require "tmpdir"
 
+def dotnet_available?
+  system("which dotnet > /dev/null 2>&1")
+end
+
 desc "Build the Open XML SDK runner"
 task :build_sdk_runner do
-  sh "dotnet build vendor/sdk_runner/sdk_runner.csproj -c Release"
+  if dotnet_available?
+    sh "dotnet build vendor/sdk_runner/sdk_runner.csproj -c Release"
+  elsif File.exist?(sdk_runner_dll)
+    puts "dotnet not found in PATH, but pre-built sdk_runner.dll exists. Skipping build."
+  else
+    warn "dotnet command not found and sdk_runner.dll is missing. Cannot build SDK runner."
+  end
 end
 
 def reader_fixture_dir
@@ -38,9 +48,12 @@ rescue ArgumentError
 end
 
 desc "Ensure SDK-generated reader fixtures exist"
-task ensure_reader_fixtures: :build_sdk_runner do
+task :ensure_reader_fixtures do
   missing_specs = reader_fixture_specs.reject { |_scenario_name, fixture_path| File.exist?(fixture_path) }
   next if missing_specs.empty?
+
+  Rake::Task[:build_sdk_runner].invoke
+  raise "Cannot generate #{missing_specs.size} missing reader fixture(s) because dotnet is not installed." unless dotnet_available?
 
   FileUtils.mkdir_p(reader_fixture_dir)
 
@@ -77,15 +90,13 @@ task ensure_reader_fixtures: :build_sdk_runner do
   raise failures.pop
 end
 
-Rake::TestTask.new(:test) do |t|
+Rake::TestTask.new(test: :ensure_reader_fixtures) do |t|
   t.libs << "test"
   t.libs << "lib"
   t.test_files = FileList["test/**/*_test.rb"]
   workers = ENV.fetch("TEST_WORKERS", Etc.nprocessors)
   t.options = "--parallel --n-workers=#{workers}"
 end
-
-task test: %i[build_sdk_runner ensure_reader_fixtures]
 
 namespace :test do
   desc "Run tests with runtime type checking enabled (RBS_TEST=1)"

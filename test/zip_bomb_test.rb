@@ -6,7 +6,7 @@ class ZipBombTest < Test::Unit::TestCase
   test "read mitigates ZIP bombs by limiting uncompressed size" do
     Tempfile.create(["bomb", ".xlsx"]) do |f|
       # Create a valid zip with one highly compressed file that expands to > 100 bytes
-      Xlsxrb.generate(f.path) do |w|
+      Xlsxrb.write(f.path) do |w|
         w.sheet("Sheet1") do |s|
           s.row(["A" * 1000])
         end

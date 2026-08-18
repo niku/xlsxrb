@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_fill.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("fill_align") { |s| s.align_horizontal("fill") }
   wb.sheet("Alignment") do |s|
     s.column(0, width: 30)
@@ -12,7 +12,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|

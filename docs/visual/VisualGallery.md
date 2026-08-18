@@ -431,7 +431,7 @@ Demonstrates horizontal text alignment (left, center, right).
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("left") { |s| s.align_horizontal("left") }
   wb.style("center") { |s| s.align_horizontal("center") }
   wb.style("right") { |s| s.align_horizontal("right") }
@@ -446,7 +446,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Alignment (Xlsxrb.read) ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 
@@ -483,7 +483,7 @@ Demonstrates horizontal fill alignment (repeats value to fill cell width).
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_fill.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("fill_align") { |s| s.align_horizontal("fill") }
   wb.sheet("Alignment") do |s|
     s.column(0, width: 30)
@@ -493,7 +493,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
@@ -532,7 +532,7 @@ Demonstrates horizontal justify text alignment.
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_justify.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("justify_align") do |s|
     s.align_horizontal("justify")
     s.wrap_text(true)
@@ -545,7 +545,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
@@ -584,7 +584,7 @@ Demonstrates text indentation inside cells.
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_indent.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("indent_1") { |s| s.align_horizontal("left").indent(1) }
   wb.style("indent_3") { |s| s.align_horizontal("left").indent(3) }
   wb.sheet("Indent") do |s|
@@ -599,7 +599,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
@@ -638,7 +638,7 @@ Demonstrates text rotated by specific angles (45, 90 degrees).
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_rotation.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("rot_45") { |s| s.text_rotation(45) }
   wb.style("rot_90") { |s| s.text_rotation(90) }
   wb.sheet("Rotation") do |s|
@@ -651,7 +651,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
@@ -691,7 +691,7 @@ Demonstrates auto-wrapping multi-line text inside narrow cells.
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_wrap.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("wrap", &:wrap_text)
   wb.sheet("Text Wrap") do |s|
     s.print_options(:grid_lines, true)
@@ -702,7 +702,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
@@ -741,7 +741,7 @@ Demonstrates vertical text alignment (top, center, bottom).
 
 require "xlsxrb"
 output_path = ARGV[0] || "align_vertical.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("top") { |s| s.align_vertical("top") }
   wb.style("center") { |s| s.align_vertical("center") }
   wb.style("bottom") { |s| s.align_vertical("bottom") }
@@ -755,7 +755,7 @@ end
 
 # 2. Read the generated sheet and print the parsed alignments
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
@@ -799,7 +799,7 @@ require "date"
 
 output_path = ARGV[0] || "basic_data.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("currency") { |style| style.number_format("$#,##0.00") }
   wb.style("date") { |style| style.number_format("yyyy-mm-dd") }
   wb.sheet("Basic Data") do |sheet|
@@ -815,7 +815,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell values and Ruby classes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -853,7 +853,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "borders.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("thin") { |s| s.border_all(style: "thin", color: "FF000000") }
   wb.style("medium") { |s| s.border_all(style: "medium", color: "FF000000") }
   wb.style("thick") { |s| s.border_all(style: "thick", color: "FF000000") }
@@ -892,7 +892,7 @@ end
 
 # Read check
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -941,7 +941,7 @@ Demonstrates boolean values serialized and rendered.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_booleans.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Booleans") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -953,7 +953,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell values and Ruby classes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -990,7 +990,7 @@ Demonstrates dates serialized natively and formatted with standard or custom for
 require "xlsxrb"
 require "date"
 output_path = ARGV[0] || "cell_dates.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
   wb.sheet("Dates") do |s|
     s.column(0, width: 25)
@@ -1003,7 +1003,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell values and Ruby classes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1039,7 +1039,7 @@ Demonstrates standard spreadsheet calculations and formulas (SUM, AVERAGE).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_formulas.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Formulas") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1053,7 +1053,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell values and Ruby classes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1091,7 +1091,7 @@ Demonstrates Yen Currency format code formatting.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_currency_jpy.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
   wb.sheet("JPY Currency") do |s|
     s.column(0, width: 25)
@@ -1104,7 +1104,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell numbers and format codes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1142,7 +1142,7 @@ Demonstrates custom colored formats for positive and negative numbers.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_custom_colors.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("custom_color") { |s| s.num_fmt("[Green]#,##0;[Red]-#,##0") }
   wb.sheet("Custom Colors") do |s|
     s.column(0, width: 25)
@@ -1155,7 +1155,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell numbers and format codes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1193,7 +1193,7 @@ Demonstrates fraction number formats (# ?/?).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_fractions.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("frac") { |s| s.num_fmt("# ?/?") }
   wb.sheet("Fractions") do |s|
     s.column(0, width: 25)
@@ -1207,7 +1207,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell numbers and format codes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1246,7 +1246,7 @@ Demonstrates percentages with two decimal places (0.00%).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_percent_decimals.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("pct2") { |s| s.num_fmt("0.00%") }
   wb.sheet("Percents") do |s|
     s.column(0, width: 25)
@@ -1258,7 +1258,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell numbers and format codes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1295,7 +1295,7 @@ Demonstrates scientific number formats (0.00E+00).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_scientific.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("sci") { |s| s.num_fmt("0.00E+00") }
   wb.sheet("Scientific") do |s|
     s.column(0, width: 25)
@@ -1308,7 +1308,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell numbers and format codes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1346,7 +1346,7 @@ Demonstrates custom formatting for integers, floating point numbers, currencies,
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_numbers.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("currency") { |s| s.num_fmt("$#,##0.00") }
   wb.style("percent") { |s| s.num_fmt("0.0%") }
   wb.sheet("Numbers") do |s|
@@ -1362,7 +1362,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell values and Ruby classes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1400,7 +1400,7 @@ Demonstrates Rich Text cells with multiple font weights, styles, and colors in a
 
 require "xlsxrb"
 output_path = ARGV[0] || "cell_rich_text.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   rt = Xlsxrb.rich_text(
     { text: "Normal " },
     { text: "BOLD RED ", font: { bold: true, color: "FFC00000", sz: 16 } },
@@ -1416,7 +1416,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell values and Ruby classes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1452,7 +1452,7 @@ Demonstrates timestamp values serialized natively and formatted showing hours, m
 require "xlsxrb"
 require "time"
 output_path = ARGV[0] || "cell_times.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
   wb.sheet("Times") do |s|
     s.column(0, width: 25)
@@ -1465,7 +1465,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell values and Ruby classes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -1501,7 +1501,7 @@ Demonstrates conditional formatting highlighting cells starting with specific te
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_begins_with.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("CF Begins") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1515,7 +1515,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1550,7 +1550,7 @@ Demonstrates conditional formatting highlighting cells within a range.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_between.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("CF Between") do |s|
     s.column(0, width: 25)
@@ -1565,7 +1565,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1600,7 +1600,7 @@ Demonstrates conditional formatting highlighting cells equal to a target value.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_equal_to.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("CF Equal") do |s|
     s.column(0, width: 25)
@@ -1615,7 +1615,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1650,7 +1650,7 @@ Demonstrates conditional formatting highlighting cells greater than or equal to 
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_equal.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("CF Greater Equal") do |s|
     s.column(0, width: 25)
@@ -1665,7 +1665,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1700,7 +1700,7 @@ Demonstrates conditional formatting highlighting cells greater than a threshold.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_than.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("CF Greater") do |s|
     s.column(0, width: 25)
@@ -1715,7 +1715,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1750,7 +1750,7 @@ Demonstrates conditional formatting highlighting cells less than a threshold.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_less_than.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("CF Less") do |s|
     s.column(0, width: 25)
@@ -1765,7 +1765,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1800,7 +1800,7 @@ Demonstrates color scale/heatmap conditional formatting.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_color_scale.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("Colors") do |s|
     s.column(0, width: 25)
@@ -1814,7 +1814,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1848,7 +1848,7 @@ Demonstrates conditional formatting highlighting cells containing specific text.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_contains_text.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("CF Contains") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1862,7 +1862,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1897,7 +1897,7 @@ Demonstrates data bar visual conditional formatting indicators.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_data_bar.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("Data Bars") do |s|
     s.column(0, width: 25)
@@ -1911,7 +1911,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1945,7 +1945,7 @@ Demonstrates conditional formatting highlighting cells ending with specific text
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_ends_with.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("CF Ends") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1959,7 +1959,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -1994,7 +1994,7 @@ Demonstrates conditional formatting using a custom formula expression.
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_expression_formula.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("CF Expression") do |s|
     s.column(0, width: 25)
@@ -2010,7 +2010,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -2046,7 +2046,7 @@ Demonstrates icon set indicators (red/yellow/green arrows).
 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_icon_set.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("Icons") do |s|
     s.column(0, width: 25)
@@ -2060,7 +2060,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -2094,7 +2094,7 @@ Demonstrates embedding a standard 2D Area Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_area.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -2114,7 +2114,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2143,7 +2143,7 @@ Demonstrates embedding a stacked 2D Area Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_area_stacked.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2168,7 +2168,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2199,7 +2199,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "chart_bar.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Sales Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -2225,7 +2225,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2254,7 +2254,7 @@ Demonstrates embedding a 100% stacked 2D Bar Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_bar_percent_stacked.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2279,7 +2279,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2308,7 +2308,7 @@ Demonstrates embedding a stacked 2D Bar Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_bar_stacked.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2333,7 +2333,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2362,7 +2362,7 @@ Demonstrates embedding a standard 2D Doughnut Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_doughnut.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -2389,7 +2389,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2418,7 +2418,7 @@ Demonstrates embedding a standard 2D Line Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_line.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -2439,7 +2439,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2468,7 +2468,7 @@ Demonstrates embedding a stacked 2D Line Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_line_stacked.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2493,7 +2493,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2522,7 +2522,7 @@ Demonstrates embedding a standard 2D Pie Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_pie.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -2549,7 +2549,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2578,7 +2578,7 @@ Demonstrates embedding a standard 2D Radar Chart.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_radar.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -2598,7 +2598,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2627,7 +2627,7 @@ Demonstrates embedding a standard 2D Scatter Plot.
 
 require "xlsxrb"
 output_path = ARGV[0] || "chart_scatter.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -2647,7 +2647,7 @@ end
 
 # 2. Read the generated sheet and print the chart count
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"
 ```
@@ -2676,7 +2676,7 @@ Demonstrates outline grouping for columns.
 
 require "xlsxrb"
 output_path = ARGV[0] || "col_grouping.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Col Grouping") do |s|
     s.sheet_properties(:fit_to_page, true)
@@ -2690,7 +2690,7 @@ end
 
 # 2. Read the generated sheet and print column dimensions
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.columns.each do |col|
   puts "Column #{col.index}: width=#{col.width}, hidden=#{col.hidden}, outline_level=#{col.outline_level}"
@@ -2723,7 +2723,7 @@ Demonstrates setting very wide column widths.
 
 require "xlsxrb"
 output_path = ARGV[0] || "col_width_tall.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Col Width") do |s|
     s.column(0, width: 50)
@@ -2734,7 +2734,7 @@ end
 
 # 2. Read the generated sheet and print column dimensions
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.columns.each do |col|
   puts "Column #{col.index}: width=#{col.width}, hidden=#{col.hidden}, outline_level=#{col.outline_level}"
@@ -2766,7 +2766,7 @@ Demonstrates setting custom column widths.
 
 require "xlsxrb"
 output_path = ARGV[0] || "col_widths.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Widths") do |s|
     s.column(0, width: 30)
@@ -2777,7 +2777,7 @@ end
 
 # 2. Read the generated sheet and print column dimensions
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.columns.each do |col|
   puts "Column #{col.index}: width=#{col.width}, hidden=#{col.hidden}, outline_level=#{col.outline_level}"
@@ -2811,7 +2811,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "conditional_formatting.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |style| style.align_horizontal("center") }
   wb.sheet("Scores") do |s|
     s.column(0, width: 25)
@@ -2827,7 +2827,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -2881,7 +2881,7 @@ end
 
 dummy_png = make_png(100, 100, 255, 0, 0)
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |st| st.align_horizontal(:center) }
   wb.sheet("Images") do |s|
     s.row(["Logo Target cell:", "", "", "Boundary"], styles: %w[left center center center])
@@ -2900,7 +2900,7 @@ end
 # 2. Read the generated sheet and print cell values + parsed embedded images details
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -2944,7 +2944,7 @@ Demonstrates linear gradients inside cell backgrounds.
 
 require "xlsxrb"
 output_path = ARGV[0] || "fill_gradients.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("gradient") do |style|
     style.fill_gradient(type: "linear", degree: 45, stops: [
                           { position: 0, color: "FFFFFFFF" },
@@ -2960,7 +2960,7 @@ end
 
 # 2. Read the generated sheet and print cell fill properties
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
@@ -2995,7 +2995,7 @@ Demonstrates standard pattern fills (darkGray, darkGrid) in cell backgrounds.
 
 require "xlsxrb"
 output_path = ARGV[0] || "fill_patterns.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("dark_gray") { |s| s.fill(pattern: "darkGray", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
   wb.style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
   wb.sheet("Patterns") do |s|
@@ -3009,7 +3009,7 @@ end
 
 # 2. Read the generated sheet and print cell fill properties
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
@@ -3044,7 +3044,7 @@ Demonstrates solid cell background fill colors.
 
 require "xlsxrb"
 output_path = ARGV[0] || "fill_solid_colors.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
   wb.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
   wb.sheet("Fills") do |s|
@@ -3058,7 +3058,7 @@ end
 
 # 2. Read the generated sheet and print cell fill properties
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|
@@ -3095,7 +3095,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "fonts.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   # Font Families (using nested hash options)
   wb.style("f_arial", font: { name: "Arial" })
   wb.style("f_times", font: { name: "Times New Roman" })
@@ -3188,7 +3188,7 @@ Demonstrates enabling auto-filter sorting headers on tables. Download the sheet 
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_autofilter.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Filter") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3202,7 +3202,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -3241,7 +3241,7 @@ Demonstrates cell pop-up comments. Open the sheet in Excel and hover your mouse 
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_comments.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Comments") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3252,7 +3252,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -3289,7 +3289,7 @@ Demonstrates interactive custom formula validation rules.
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_custom.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Custom Rule") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3302,7 +3302,7 @@ end
 # 2. Read the generated sheet and print data validations
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|
@@ -3339,7 +3339,7 @@ Demonstrates interactive date range constraints validation rules.
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_date.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Date Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3351,7 +3351,7 @@ end
 # 2. Read the generated sheet and print data validations
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|
@@ -3388,7 +3388,7 @@ Demonstrates dropdown list data validations. Open the sheet in Excel and select 
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_list.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("List Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3400,7 +3400,7 @@ end
 # 2. Read the generated sheet and print data validations
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|
@@ -3437,7 +3437,7 @@ Demonstrates range constraints for whole number validations. Open the sheet in E
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_range.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Range Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3449,7 +3449,7 @@ end
 # 2. Read the generated sheet and print data validations
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|
@@ -3486,7 +3486,7 @@ Demonstrates interactive text length validation rules.
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_text_length.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Text Length") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3498,7 +3498,7 @@ end
 # 2. Read the generated sheet and print data validations
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|
@@ -3535,7 +3535,7 @@ Demonstrates interactive time validation rules.
 
 require "xlsxrb"
 output_path = ARGV[0] || "interactive_validation_time.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Time Validation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3547,7 +3547,7 @@ end
 # 2. Read the generated sheet and print data validations
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 validations = reader.data_validations(sheet: sheet.name)
 validations.each do |v|
@@ -3581,7 +3581,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "japanese_text.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("ja_font") do |style|
     style.font_name("Noto Sans CJK JP").size(12)
   end
@@ -3596,7 +3596,7 @@ end
 
 # 2. Read the generated sheet and print parsed cell values and Ruby classes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|
@@ -3633,7 +3633,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "merge_freeze.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Merge & Freeze") do |s|
@@ -3654,7 +3654,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(5).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -3689,7 +3689,7 @@ Demonstrates enabling printing of grid lines.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_grid_lines_print.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Print Grid Lines") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3701,7 +3701,7 @@ end
 # 2. Read the generated sheet and print page setup properties
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 margins = reader.page_margins(sheet: sheet.name)
 setup = reader.page_setup(sheet: sheet.name)
@@ -3737,7 +3737,7 @@ Demonstrates setting odd page headers and footers.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_header_footer.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Header Footer") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3749,7 +3749,7 @@ end
 # 2. Read the generated sheet and print page setup properties
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 margins = reader.page_margins(sheet: sheet.name)
 setup = reader.page_setup(sheet: sheet.name)
@@ -3785,7 +3785,7 @@ Demonstrates enabling printing of row and column headings.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_headings_print.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Print Headings") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3797,7 +3797,7 @@ end
 # 2. Read the generated sheet and print page setup properties
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 margins = reader.page_margins(sheet: sheet.name)
 setup = reader.page_setup(sheet: sheet.name)
@@ -3833,7 +3833,7 @@ Demonstrates setting narrow page margins.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_margins_narrow.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Narrow Margins") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3845,7 +3845,7 @@ end
 # 2. Read the generated sheet and print page setup properties
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 margins = reader.page_margins(sheet: sheet.name)
 setup = reader.page_setup(sheet: sheet.name)
@@ -3881,7 +3881,7 @@ Demonstrates setting wide page margins.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_margins_wide.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Wide Margins") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3893,7 +3893,7 @@ end
 # 2. Read the generated sheet and print page setup properties
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 margins = reader.page_margins(sheet: sheet.name)
 setup = reader.page_setup(sheet: sheet.name)
@@ -3929,7 +3929,7 @@ Demonstrates landscape page setup for printing.
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_orientation_landscape.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Landscape") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3941,7 +3941,7 @@ end
 # 2. Read the generated sheet and print page setup properties
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 margins = reader.page_margins(sheet: sheet.name)
 setup = reader.page_setup(sheet: sheet.name)
@@ -3977,7 +3977,7 @@ Demonstrates setting paper size to A3 (paper size 8).
 
 require "xlsxrb"
 output_path = ARGV[0] || "page_paper_size_a3.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("A3 Sheet") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -3989,7 +3989,7 @@ end
 # 2. Read the generated sheet and print page setup properties
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 margins = reader.page_margins(sheet: sheet.name)
 setup = reader.page_setup(sheet: sheet.name)
@@ -4025,7 +4025,7 @@ Demonstrates outline grouping for rows.
 
 require "xlsxrb"
 output_path = ARGV[0] || "row_grouping.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
   wb.style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
   wb.sheet("Row Grouping") do |s|
@@ -4039,7 +4039,7 @@ end
 
 # 2. Read the generated sheet and print row attributes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   puts "Row #{row.index}: height=#{row.height}, hidden=#{row.hidden}, outline_level=#{row.outline_level}"
@@ -4072,7 +4072,7 @@ Demonstrates setting very tall row heights.
 
 require "xlsxrb"
 output_path = ARGV[0] || "row_height_tall.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Row Height") do |s|
     s.column(0, width: 25)
@@ -4084,7 +4084,7 @@ end
 
 # 2. Read the generated sheet and print row attributes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   puts "Row #{row.index}: height=#{row.height}, hidden=#{row.hidden}, outline_level=#{row.outline_level}"
@@ -4116,7 +4116,7 @@ Demonstrates setting custom row heights.
 
 require "xlsxrb"
 output_path = ARGV[0] || "row_heights.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Heights") do |s|
     s.column(0, width: 25)
@@ -4128,7 +4128,7 @@ end
 
 # 2. Read the generated sheet and print row attributes
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   puts "Row #{row.index}: height=#{row.height}, hidden=#{row.hidden}, outline_level=#{row.outline_level}"
@@ -4164,7 +4164,7 @@ Demonstrates customizing tab colors of individual worksheets.
 
 require "xlsxrb"
 output_path = ARGV[0] || "sheet_tab_colors.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Red Tab") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -4180,7 +4180,7 @@ end
 # 2. Read the generated sheet and print sheet properties
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 workbook.sheet_names.each do |s_name|
   props = reader.sheet_properties(sheet: s_name)
   puts "Sheet: #{s_name}, tab color: #{props[:tab_color].inspect}"
@@ -4212,7 +4212,7 @@ Demonstrates embedded column sparklines in cell ranges.
 
 require "xlsxrb"
 output_path = ARGV[0] || "sparkline_column.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Sparkline") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -4228,7 +4228,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(3).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -4262,7 +4262,7 @@ Demonstrates embedded line sparklines in cell ranges.
 
 require "xlsxrb"
 output_path = ARGV[0] || "sparkline_line.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Sparkline") do |s|
     s.sheet_properties(:fit_to_page, true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
@@ -4281,7 +4281,7 @@ end
 
 # 2. Read the generated sheet and print cell values
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(3).each do |row|
   row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
@@ -4315,7 +4315,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "styles_fonts_fills.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("header") do |style|
     style.bold.size(14).font_color("FFFFFFFF").fill_color("FF4F81BD")
   end
@@ -4334,7 +4334,7 @@ end
 
 # 2. Read the generated sheet and print styling details
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.first(4).each do |row|
   row_cells = row.cells.map do |c|
@@ -4374,7 +4374,7 @@ Demonstrates disabling visible grid lines in spreadsheet view.
 
 require "xlsxrb"
 output_path = ARGV[0] || "view_show_grid_lines.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Hide Grid Lines") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -4386,7 +4386,7 @@ end
 # 2. Read the generated sheet and print view configurations
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 workbook.sheet_names.each do |s_name|
   view = reader.sheet_view(sheet: s_name)
   puts "Sheet '#{s_name}' views zoom scale: #{view[:zoom_scale]}%, show grid lines: #{view[:show_grid_lines]}"
@@ -4419,7 +4419,7 @@ Demonstrates setting custom zoom scale in sheet view (e.g. 150%).
 
 require "xlsxrb"
 output_path = ARGV[0] || "view_zoom_scale.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("Zoom 150") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -4431,7 +4431,7 @@ end
 # 2. Read the generated sheet and print view configurations
 puts "=== Read Validation ==="
 reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 workbook.sheet_names.each do |s_name|
   view = reader.sheet_view(sheet: s_name)
   puts "Sheet '#{s_name}' views zoom scale: #{view[:zoom_scale]}%, show grid lines: #{view[:show_grid_lines]}"
@@ -4466,7 +4466,7 @@ Demonstrates creating workbooks with multiple worksheets.
 
 require "xlsxrb"
 output_path = ARGV[0] || "workbook_three_sheets.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.sheet("First Sheet") { |s| s.row(["First Sheet Data"]) }
   wb.sheet("Second Sheet") { |s| s.row(["Second Sheet Data"]) }
   wb.sheet("Third Sheet") { |s| s.row(["Third Sheet Data"]) }
@@ -4474,7 +4474,7 @@ end
 
 # 2. Read the generated sheet and print the sheets structure
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 puts "Workbook sheets: #{workbook.sheet_names.join(", ")}"
 ```
 

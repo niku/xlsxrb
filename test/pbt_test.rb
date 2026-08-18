@@ -56,7 +56,7 @@ class PbtTest < Test::Unit::TestCase
         begin
           Xlsxrb.write(tmp.path, workbook)
 
-          read_wb = Xlsxrb.read(tmp.path)
+          read_wb = Xlsxrb.read(tmp.path).load
 
           assert_equal sheet_names.size, read_wb.sheets.size
 

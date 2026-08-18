@@ -4,7 +4,7 @@ require "xlsxrb"
 
 output_path = ARGV[0] || "borders.xlsx"
 
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("thin") { |s| s.border_all(style: "thin", color: "FF000000") }
   wb.style("medium") { |s| s.border_all(style: "medium", color: "FF000000") }
   wb.style("thick") { |s| s.border_all(style: "thick", color: "FF000000") }
@@ -43,7 +43,7 @@ end
 
 # Read check
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 sheet.rows.each do |row|
   row_cells = row.cells.map do |c|

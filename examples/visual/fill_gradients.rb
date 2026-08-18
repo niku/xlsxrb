@@ -2,7 +2,7 @@
 
 require "xlsxrb"
 output_path = ARGV[0] || "fill_gradients.xlsx"
-Xlsxrb.generate(output_path) do |wb|
+Xlsxrb.write(output_path) do |wb|
   wb.style("gradient") do |style|
     style.fill_gradient(type: "linear", degree: 45, stops: [
                           { position: 0, color: "FFFFFFFF" },
@@ -18,7 +18,7 @@ end
 
 # 2. Read the generated sheet and print cell fill properties
 puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path)
+workbook = Xlsxrb.read(output_path).load
 sheet = workbook.sheets.first
 row = sheet.rows.first
 row.cells.each do |c|

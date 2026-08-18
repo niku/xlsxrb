@@ -17,10 +17,10 @@ class ContractTest < Test::Unit::TestCase
 
   # ---- Helpers ----
 
-  # Generate an XLSX via streaming (Xlsxrb.generate) and return the tmpfile.
+  # Generate an XLSX via streaming (Xlsxrb.write) and return the tmpfile.
   def generate_streaming(&)
     tmp = Tempfile.new(["contract_stream", ".xlsx"])
-    Xlsxrb.generate(tmp.path, &)
+    Xlsxrb.write(tmp.path, &)
     tmp
   end
 
@@ -239,7 +239,7 @@ class ContractTest < Test::Unit::TestCase
   data(CHART_TYPE_MAP)
   test "chart: type mapping is correct" do |spec|
     tmp = Tempfile.new(["contract_charttype", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("S") do |s|
         s.row(%w[X Y])
         s.row([1, 10])
@@ -270,7 +270,7 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path)
+    wb = Xlsxrb.read(tmp.path).load
     sheet = wb.sheet(0)
     assert_equal("hello", sheet.cell_value("A1"))
     assert_equal(42, sheet.cell_value("B1"))
@@ -289,7 +289,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("B") { |s| s.row(["sheet_b"]) }
     end
 
-    wb = Xlsxrb.read(tmp.path)
+    wb = Xlsxrb.read(tmp.path).load
     assert_equal(2, wb.sheets.size)
     assert_equal("sheet_a", wb.sheet("A").cell_value("A1"))
     assert_equal("sheet_b", wb.sheet("B").cell_value("A1"))
@@ -305,7 +305,7 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path)
+    wb = Xlsxrb.read(tmp.path).load
     sheet = wb.sheet(0)
     assert_equal(100, sheet.rows.size)
     assert_equal(0, sheet.cell_value("A1"))
@@ -1398,7 +1398,7 @@ class ContractTest < Test::Unit::TestCase
 
   test "io: Xlsxrb.read accepts an IO object (StringIO)" do
     tmp = Tempfile.new(["contract_io", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("IOTest") do |s|
         s.row(["io_string", 999])
       end
@@ -1406,7 +1406,7 @@ class ContractTest < Test::Unit::TestCase
 
     raw = File.binread(tmp.path)
     sio = StringIO.new(raw)
-    wb = Xlsxrb.read(sio)
+    wb = Xlsxrb.read(sio).load
     assert_instance_of(Xlsxrb::Elements::Workbook, wb,
                        "Xlsxrb.read(StringIO) should return a Workbook")
     sheet = wb.sheet(0)
@@ -1425,7 +1425,7 @@ class ContractTest < Test::Unit::TestCase
 
   test "foreach: streaming read yields all rows in order" do
     tmp = Tempfile.new(["contract_foreach", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("Seq") do |s|
         s.row([1, "one"])
         s.row([2, "two"])
@@ -1434,7 +1434,7 @@ class ContractTest < Test::Unit::TestCase
     end
 
     collected = []
-    Xlsxrb.foreach(tmp.path) do |sheet|
+    Xlsxrb.read(tmp.path) do |sheet|
       sheet.each do |row|
         assert(row.is_a?(Xlsxrb::StreamRow) || row.is_a?(Xlsxrb::Elements::Row),
                "foreach should yield StreamRow/Row instances inside sheet")
@@ -1444,7 +1444,7 @@ class ContractTest < Test::Unit::TestCase
 
     assert_equal(3, collected.size,
                  "foreach should yield exactly 3 rows [foreach count]. " \
-                 "Check Xlsxrb.foreach streaming mechanics.")
+                 "Check Xlsxrb.read streaming mechanics.")
     assert_equal([1, "one"], collected[0], "Row 1 values mismatch [foreach row 0]")
     assert_equal([2, "two"], collected[1], "Row 2 values mismatch [foreach row 1]")
     assert_equal([3, "three"], collected[2], "Row 3 values mismatch [foreach row 2]")
@@ -1454,14 +1454,14 @@ class ContractTest < Test::Unit::TestCase
 
   test "foreach: without block returns Enumerator" do
     tmp = Tempfile.new(["contract_foreach_enum", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("E") do |s|
         s.row(["alpha"])
         s.row(["beta"])
       end
     end
 
-    enum = Xlsxrb.foreach(tmp.path)
+    enum = Xlsxrb.read(tmp.path)
     assert_respond_to(enum, :each,
                       "foreach without block should return an Enumerator-like object")
     values = enum.first.map { |row| row.cells[0]&.value }
@@ -1473,16 +1473,16 @@ class ContractTest < Test::Unit::TestCase
 
   test "foreach: sheet keyword argument selects the named sheet" do
     tmp = Tempfile.new(["contract_foreach_sheet", ".xlsx"])
-    Xlsxrb.generate(tmp.path) do |w|
+    Xlsxrb.write(tmp.path) do |w|
       w.sheet("First") { |s| s.row(["from_first"]) }
       w.sheet("Second") { |s| s.row(["from_second"]) }
     end
 
     collected = []
-    Xlsxrb.foreach(tmp.path).find { |s| s.name == "Second" }&.each { |row| collected << row.cells[0]&.value }
+    Xlsxrb.read(tmp.path).find { |s| s.name == "Second" }&.each { |row| collected << row.cells[0]&.value }
     assert_equal(["from_second"], collected,
                  "foreach with find should read the named sheet [foreach sheet]. " \
-                 "Check Xlsxrb.foreach streaming integration with Enumerable.")
+                 "Check Xlsxrb.read streaming integration with Enumerable.")
   ensure
     tmp&.close!
   end
@@ -1499,7 +1499,7 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path)
+    wb = Xlsxrb.read(tmp.path).load
     assert_equal("", wb.sheet(0).cell_value("A1"),
                  "Empty string cell should round-trip as empty string [A1]")
     assert_equal("non-empty", wb.sheet(0).cell_value("B1"),
@@ -1516,7 +1516,7 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path)
+    wb = Xlsxrb.read(tmp.path).load
     sheet = wb.sheet(0)
     assert_equal("first", sheet.cell_value("A1"), "A1 should be 'first'")
     assert_nil(sheet.cell_value("B1"), "B1 should be nil (sparse)")
