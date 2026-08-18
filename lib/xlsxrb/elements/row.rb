@@ -75,7 +75,7 @@ module Xlsxrb
       # @return [Enumerator, void]
       # @api public
       #: () { (Elements::Cell) -> void } -> void
-      #: | () -> Enumerator[Elements::Cell, void]
+      #: () -> Enumerator[Elements::Cell, void]
       def each(&)
         return to_enum(:each) unless block_given?
 
@@ -94,7 +94,7 @@ module Xlsxrb
       # @return [Enumerator, void]
       # @api public
       #: () { (Elements::Cell) -> void } -> void
-      #: | () -> Enumerator[Elements::Cell, void]
+      #: () -> Enumerator[Elements::Cell, void]
       def each_cell(&)
         return to_enum(:each_cell) unless block_given?
 

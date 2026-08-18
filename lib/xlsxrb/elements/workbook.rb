@@ -38,7 +38,7 @@ module Xlsxrb
       # @yieldparam sheet [Elements::Worksheet]
       # @return [Enumerator, void]
       #: () { (Elements::Worksheet) -> void } -> void
-      #: | () -> Enumerator[Elements::Worksheet, void]
+      #: () -> Enumerator[Elements::Worksheet, void]
       def each(&)
         sheets.each(&)
       end

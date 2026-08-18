@@ -389,8 +389,8 @@ module Xlsxrb
   # @yieldparam sheet [StreamSheet] The streaming worksheet object.
   # @return [Elements::Workbook, void] Returns Elements::Workbook when no block is given.
   # @api public
-  #: (String | IO source) { (StreamSheet) -> void } -> void
-  #: (String | IO source) -> Elements::Workbook
+  #: (untyped source) { (StreamSheet) -> void } -> void
+  #: (untyped source) -> Elements::Workbook
   def self.read(source, &)
     source = StringIO.new(source) if source.is_a?(String) && (source.start_with?("PK\x03\x04") || source.include?("\x00"))
 
@@ -463,8 +463,8 @@ module Xlsxrb
   #
   # @api public
   #: (Elements::Workbook workbook) -> String
-  #: (String | IO target, Elements::Workbook workbook) -> void
-  #: (String | IO target, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> void
+  #: (untyped target, Elements::Workbook | untyped workbook) -> void
+  #: (untyped target_or_workbook, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
   def self.write(target_or_workbook, workbook_or_nil = nil, strict_excel_mode: true, &block)
     if block_given?
       target = target_or_workbook
@@ -627,7 +627,7 @@ module Xlsxrb
     # @return [Enumerator, void]
     # @api public
     #: () { (StreamRow | Elements::Row) -> void } -> void
-    #: | () -> Enumerator[StreamRow | Elements::Row, void]
+    #: () -> Enumerator[StreamRow | Elements::Row, void]
     def each_row
       return enum_for(:each_row) unless block_given?
 
@@ -647,7 +647,7 @@ module Xlsxrb
     # @return [Enumerator, void]
     # @api public
     #: () { (Elements::Cell) -> void } -> void
-    #: | () -> Enumerator[Elements::Cell, void]
+    #: () -> Enumerator[Elements::Cell, void]
     def each_cell(&)
       return enum_for(:each_cell) unless block_given?
 
@@ -663,7 +663,7 @@ module Xlsxrb
     # @return [Enumerator, void]
     # @api public
     #: () { (StreamRow | Elements::Row) -> void } -> void
-    #: | () -> Enumerator[StreamRow | Elements::Row, void]
+    #: () -> Enumerator[StreamRow | Elements::Row, void]
     def each(&)
       each_row(&)
     end

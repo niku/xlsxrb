@@ -25,7 +25,7 @@ module Xlsxrb
       # @param charts [Array<Hash>] Charts in the sheet.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
-      #: (name: String, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize(name:, rows: [], columns: [], charts: [], unmapped_data: {}, errors: nil)
         @name = name
         @rows = (rows || []).freeze
@@ -48,7 +48,7 @@ module Xlsxrb
       # @return [Enumerator, void]
       # @api public
       #: () { (Elements::Row) -> void } -> void
-      #: | () -> Enumerator[Elements::Row, void]
+      #: () -> Enumerator[Elements::Row, void]
       def each(&)
         return to_enum(:each) unless block_given?
 
@@ -67,7 +67,7 @@ module Xlsxrb
       # @return [Enumerator, void]
       # @api public
       #: () { (Elements::Row) -> void } -> void
-      #: | () -> Enumerator[Elements::Row, void]
+      #: () -> Enumerator[Elements::Row, void]
       def each_row(&)
         return to_enum(:each_row) unless block_given?
 
@@ -81,7 +81,7 @@ module Xlsxrb
       # @return [Enumerator, void]
       # @api public
       #: () { (Elements::Cell) -> void } -> void
-      #: | () -> Enumerator[Elements::Cell, void]
+      #: () -> Enumerator[Elements::Cell, void]
       def each_cell(&)
         return to_enum(:each_cell) unless block_given?
 

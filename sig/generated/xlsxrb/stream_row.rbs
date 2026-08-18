@@ -44,8 +44,9 @@ module Xlsxrb
     # @return [Enumerator, void]
     # @api public
     # : () { (Elements::Cell) -> void } -> void
-    # : | () -> Enumerator[Elements::Cell, void]
+    # : () -> Enumerator[Elements::Cell, void]
     def each_cell: () { (Elements::Cell) -> void } -> void
+                 | () -> Enumerator[Elements::Cell, void]
 
     # Iterate over cells in this streaming row.
     #
@@ -54,8 +55,9 @@ module Xlsxrb
     # @return [Enumerator, void]
     # @api public
     # : () { (Elements::Cell) -> void } -> void
-    # : | () -> Enumerator[Elements::Cell, void]
+    # : () -> Enumerator[Elements::Cell, void]
     def each: () { (Elements::Cell) -> void } -> void
+            | () -> Enumerator[Elements::Cell, void]
 
     # Returns all cells as an Array. Cached on first access.
     #

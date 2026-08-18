@@ -294,10 +294,10 @@ module Xlsxrb
   # @yieldparam sheet [StreamSheet] The streaming worksheet object.
   # @return [Elements::Workbook, void] Returns Elements::Workbook when no block is given.
   # @api public
-  # : (String | IO source) { (StreamSheet) -> void } -> void
-  # : (String | IO source) -> Elements::Workbook
-  def self.read: (String | IO source) { (StreamSheet) -> void } -> void
-               | (String | IO source) -> Elements::Workbook
+  # : (untyped source) { (StreamSheet) -> void } -> void
+  # : (untyped source) -> Elements::Workbook
+  def self.read: (untyped source) { (StreamSheet) -> void } -> void
+               | (untyped source) -> Elements::Workbook
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
   #
@@ -333,11 +333,11 @@ module Xlsxrb
   #
   # @api public
   # : (Elements::Workbook workbook) -> String
-  # : (String | IO target, Elements::Workbook workbook) -> void
-  # : (String | IO target, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> void
+  # : (untyped target, Elements::Workbook | untyped workbook) -> void
+  # : (untyped target_or_workbook, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
   def self.write: (Elements::Workbook workbook) -> String
-                | (String | IO target, Elements::Workbook workbook) -> void
-                | (String | IO target, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> void
+                | (untyped target, Elements::Workbook | untyped workbook) -> void
+                | (untyped target_or_workbook, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
 
   # Modifies an existing XLSX file.
   # Reads the workbook, passes it to the block, and writes the result.
@@ -401,8 +401,9 @@ module Xlsxrb
     # @return [Enumerator, void]
     # @api public
     # : () { (StreamRow | Elements::Row) -> void } -> void
-    # : | () -> Enumerator[StreamRow | Elements::Row, void]
+    # : () -> Enumerator[StreamRow | Elements::Row, void]
     def each_row: () { (StreamRow | Elements::Row) -> void } -> void
+                | () -> Enumerator[StreamRow | Elements::Row, void]
 
     # Iterate over all cells across rows continuously (O(1) memory).
     #
@@ -411,8 +412,9 @@ module Xlsxrb
     # @return [Enumerator, void]
     # @api public
     # : () { (Elements::Cell) -> void } -> void
-    # : | () -> Enumerator[Elements::Cell, void]
+    # : () -> Enumerator[Elements::Cell, void]
     def each_cell: () { (Elements::Cell) -> void } -> void
+                 | () -> Enumerator[Elements::Cell, void]
 
     # Default Enumerable iteration iterates rows in the streaming sheet.
     #
@@ -421,8 +423,9 @@ module Xlsxrb
     # @return [Enumerator, void]
     # @api public
     # : () { (StreamRow | Elements::Row) -> void } -> void
-    # : | () -> Enumerator[StreamRow | Elements::Row, void]
+    # : () -> Enumerator[StreamRow | Elements::Row, void]
     def each: () { (StreamRow | Elements::Row) -> void } -> void
+            | () -> Enumerator[StreamRow | Elements::Row, void]
 
     # Loads this sheet completely into an in-memory Elements::Worksheet,
     # enabling coordinate random access (sheet["A1"]), row lookups (row_at),

@@ -31,8 +31,8 @@ module Xlsxrb
       # @param charts [Array<Hash>] Charts in the sheet.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
-      # : (name: String, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize: (name: String, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      # : (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
       # Iterate over rows in the worksheet.
       #
@@ -46,8 +46,9 @@ module Xlsxrb
       # @return [Enumerator, void]
       # @api public
       # : () { (Elements::Row) -> void } -> void
-      # : | () -> Enumerator[Elements::Row, void]
+      # : () -> Enumerator[Elements::Row, void]
       def each: () { (Elements::Row) -> void } -> void
+              | () -> Enumerator[Elements::Row, void]
 
       # Iterate over rows in the worksheet.
       #
@@ -61,8 +62,9 @@ module Xlsxrb
       # @return [Enumerator, void]
       # @api public
       # : () { (Elements::Row) -> void } -> void
-      # : | () -> Enumerator[Elements::Row, void]
+      # : () -> Enumerator[Elements::Row, void]
       def each_row: () { (Elements::Row) -> void } -> void
+                  | () -> Enumerator[Elements::Row, void]
 
       # Iterate over all cells across rows.
       #
@@ -71,8 +73,9 @@ module Xlsxrb
       # @return [Enumerator, void]
       # @api public
       # : () { (Elements::Cell) -> void } -> void
-      # : | () -> Enumerator[Elements::Cell, void]
+      # : () -> Enumerator[Elements::Cell, void]
       def each_cell: () { (Elements::Cell) -> void } -> void
+                   | () -> Enumerator[Elements::Cell, void]
 
       # Returns whether the worksheet is valid according to OOXML specifications.
       #
