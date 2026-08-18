@@ -1,12 +1,18 @@
-## [Unreleased]
+## [0.1.9] - 2026-08-18
 
 ### Added
-- **Password Protection & Document Encryption ([MS-OFFCRYPTO] / [MS-CFB])**: Full native Pure-Ruby support for reading and writing password-protected Excel spreadsheets without any external C-extension dependencies.
+- **Password Protection & Document Encryption ([MS-OFFCRYPTO] / [MS-CFB])**: Full native Pure-Ruby support for reading, writing, and modifying password-protected Excel spreadsheets without any external C-extension dependencies.
   - **Standard Encryption**: AES-128-ECB and SHA-1 Key Derivation with CryptoAPI 50,000-spin hashing, fully interoperable across Microsoft Excel, LibreOffice, and Google Sheets.
   - **Agile Encryption**: Modern AES-256-CBC, PBKDF2/SHA-512, and HMAC-SHA512 data integrity verification.
   - **Compound File Binary (CFB) Engine**: Pure-Ruby reader and writer for OLE structured storage containers with Mini Stream, FAT/MiniFAT sectors, and Red-Black tree directory management.
-  - **Transparent Public API Integration**: Added `password:` argument to `Xlsxrb.read`, `Xlsxrb.write`, and `Xlsxrb.modify` with clear `Xlsxrb::EncryptedFileError` and `Xlsxrb::InvalidPasswordError` exception handling.
-  - **Bidirectional LibreOffice Interoperability Tests**: Verified both reading LibreOffice-created password-protected spreadsheets and LibreOffice decrypting/rendering `xlsxrb`-encrypted spreadsheets.
+  - **Transparent Public API Integration**: Added `password:` and `encryption_mode:` arguments to `Xlsxrb.read`, `Xlsxrb.write`, and `Xlsxrb.modify`.
+  - **Security & Threat Model Hardening**:
+    - Constant-time hash verification via `OpenSSL.secure_compare` to prevent timing attacks (CWE-208).
+    - CSPRNG-backed salt, IV, and session key generation via `SecureRandom` (CWE-330).
+    - Robust DoS defense: spinCount limit ($\le 10\text{M}$), CFB circular sector chain loop detection in directory/FAT parsing, and `total_size` bounds validation (CWE-400, CWE-835).
+    - Strict exception hierarchy (`EncryptedFileError`, `InvalidPasswordError`, `DecryptionError`).
+  - **Cross-Platform & Interoperability Validation**: Bidirectional validation with Microsoft .NET OpenXML SDK and LibreOffice Calc.
+  - **WebAssembly (ruby.wasm) Support**: Pre-packaged `docs/wasm/ruby.wasm` updated with document encryption support for browser playground.
 
 ## [0.1.8] - 2026-08-18
 
