@@ -6,6 +6,7 @@ require_relative "elements/types"
 require_relative "elements/cell"
 require_relative "elements/row"
 require_relative "elements/column"
+require_relative "elements/coordinate_access"
 require_relative "elements/worksheet"
 require_relative "elements/workbook"
 

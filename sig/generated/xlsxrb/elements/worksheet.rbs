@@ -34,30 +34,6 @@ module Xlsxrb
       # : (name: String, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize: (name: String, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
-      # Returns a Hash mapping Excel cell references (e.g. "A1") to Cell objects.
-      #
-      # @return [Hash<String, Elements::Cell>]
-      # : () -> Hash[String, Elements::Cell]
-      def cells_hash: () -> Hash[String, Elements::Cell]
-
-      # Returns all cells ordered by row and column index.
-      #
-      # @return [Array<Elements::Cell>]
-      # @api public
-      # : () -> Array[Elements::Cell]
-      def cells: () -> Array[Elements::Cell]
-
-      # Access a cell by its Excel-style reference (e.g. "A1").
-      #
-      # @example
-      #   sheet["A1"] #=> #<Elements::Cell value="Hello">
-      #
-      # @param ref [String, Symbol] Cell reference (e.g. "A1" or :A1).
-      # @return [Elements::Cell, nil]
-      # @api public
-      # : (String | Symbol ref) -> Elements::Cell?
-      def []: (String | Symbol ref) -> Elements::Cell?
-
       # Iterate over rows in the worksheet.
       #
       # @example
@@ -103,39 +79,6 @@ module Xlsxrb
       # @return [Boolean]
       # : () -> bool
       def valid?: () -> bool
-
-      # Returns the row at the given 0-based index, or nil.
-      #
-      # @param index [Integer] 0-based row index.
-      # @return [Elements::Row, nil]
-      # @api public
-      # : (Integer index) -> Elements::Row?
-      def row_at: (Integer index) -> Elements::Row?
-
-      # Returns the first row in the sheet, or nil.
-      #
-      # @return [Elements::Row, nil]
-      # @api public
-      # : () -> Elements::Row?
-      def first_row: () -> Elements::Row?
-
-      # Returns the last row in the sheet, or nil.
-      #
-      # @return [Elements::Row, nil]
-      # @api public
-      # : () -> Elements::Row?
-      def last_row: () -> Elements::Row?
-
-      # Returns the raw cell value at the given Excel-style reference (e.g. "A1").
-      #
-      # @example
-      #   sheet.cell_value("A1") #=> "Sales Report"
-      #
-      # @param ref [String] Cell reference (e.g. "A1").
-      # @return [Object, nil]
-      # @api public
-      # : (String ref) -> untyped
-      def cell_value: (String ref) -> untyped
 
       # Returns a new Worksheet with the specified cell updated.
       #
