@@ -27,3 +27,11 @@ Gemfile.lock
 /docs/fonts/
 /docs/zetaoffice/
 /docs/wasm/browser.umd.js
+
+# Microsoft Open Specifications (downloaded on demand, not committed)
+/vendor/docs/MS-*
+/vendor/docs/[MS-*
+
+# Agent local artifacts
+/.agents/
+

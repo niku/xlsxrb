@@ -1,0 +1,28 @@
+# Generated from lib/xlsxrb/ooxml/crypto/standard.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    module Crypto
+      # Implements Microsoft Office Standard Encryption specified in [MS-OFFCRYPTO] Section 2.3.6.
+      class Standard
+        CSP_NAME: untyped
+
+        ITERATION_COUNT: ::Integer
+
+        # Decrypts a Standard-encrypted package.
+        def self.decrypt: (untyped encryption_info_bytes, untyped encrypted_package_bytes, untyped password) -> untyped
+
+        # Encrypts plain zip data into Standard Encryption streams.
+        def self.encrypt: (untyped plain_bytes, untyped password) -> untyped
+
+        private def self.parse_encryption_info: (untyped bytes) -> untyped
+
+        private def self.derive_key: (untyped password, untyped salt, ?untyped block_num) -> untyped
+
+        private def self.aes_ecb_encrypt: (untyped key, untyped data) -> untyped
+
+        private def self.aes_ecb_decrypt: (untyped key, untyped data) -> untyped
+      end
+    end
+  end
+end

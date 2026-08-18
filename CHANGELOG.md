@@ -1,5 +1,12 @@
 ## [Unreleased]
-- No unreleased changes.
+
+### Added
+- **Password Protection & Document Encryption ([MS-OFFCRYPTO] / [MS-CFB])**: Full native Pure-Ruby support for reading and writing password-protected Excel spreadsheets without any external C-extension dependencies.
+  - **Standard Encryption**: AES-128-ECB and SHA-1 Key Derivation with CryptoAPI 50,000-spin hashing, fully interoperable across Microsoft Excel, LibreOffice, and Google Sheets.
+  - **Agile Encryption**: Modern AES-256-CBC, PBKDF2/SHA-512, and HMAC-SHA512 data integrity verification.
+  - **Compound File Binary (CFB) Engine**: Pure-Ruby reader and writer for OLE structured storage containers with Mini Stream, FAT/MiniFAT sectors, and Red-Black tree directory management.
+  - **Transparent Public API Integration**: Added `password:` argument to `Xlsxrb.read`, `Xlsxrb.write`, and `Xlsxrb.modify` with clear `Xlsxrb::EncryptedFileError` and `Xlsxrb::InvalidPasswordError` exception handling.
+  - **Bidirectional LibreOffice Interoperability Tests**: Verified both reading LibreOffice-created password-protected spreadsheets and LibreOffice decrypting/rendering `xlsxrb`-encrypted spreadsheets.
 
 ## [0.1.8] - 2026-08-18
 

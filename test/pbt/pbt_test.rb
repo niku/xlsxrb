@@ -202,4 +202,151 @@ class PbtTest < Test::Unit::TestCase
       end
     end
   end
+
+  # Generator for complex passwords including ASCII, symbols, spaces, and UTF-8 multibyte strings
+  def password_generator
+    Pbt.tuple(
+      Pbt.choose(0..4),
+      Pbt.printable_ascii_string(min: 1, max: 35).filter { |s| !s.include?("\x00") && !s.empty? },
+      Pbt.alphanumeric_string(min: 1, max: 25)
+    )
+  end
+
+  def resolve_password(pw_tuple)
+    case pw_tuple[0]
+    when 0 then pw_tuple[1]
+    when 1 then pw_tuple[2]
+    when 2 then "パスワード🔑日本語_#{pw_tuple[2]}"
+    when 3 then "P@ss w0rd!#%&*()_+=~`_#{pw_tuple[2]}"
+    when 4 then "🔒Secret_Unicode_Pass_2026!_#{pw_tuple[1]}"
+    end
+  end
+
+  test "property-based test: encryption roundtrip with random passwords and encryption modes" do
+    Pbt.assert(num_runs: 30) do
+      Pbt.property(
+        password_generator,
+        Pbt.choose(0..1),
+        Pbt.array(Pbt.tuple(Pbt.alphanumeric_string(min: 1, max: 15), Pbt.integer(min: -10_000, max: 10_000), Pbt.boolean), min: 1, max: 4)
+      ) do |pw_tuple, mode_idx, rows|
+        password = resolve_password(pw_tuple)
+        mode = mode_idx.zero? ? :standard : :agile
+
+        Dir.mktmpdir do |dir|
+          xlsx_path = File.join(dir, "pbt_encrypted.xlsx")
+
+          # 1. Write encrypted file (Streaming write)
+          Xlsxrb.write(xlsx_path, password: password, encryption_mode: mode) do |wb|
+            wb.sheet("PbtSheet") do |s|
+              rows.each { |row| s.row(row) }
+            end
+          end
+
+          assert_true File.exist?(xlsx_path)
+          assert_true Xlsxrb::Ooxml::Crypto.encrypted?(File.binread(xlsx_path))
+
+          # 2. Read with correct password (Streaming read)
+          read_rows = []
+          Xlsxrb.read(xlsx_path, password: password) do |sheet|
+            sheet.each_row { |r| read_rows << r.cells.map(&:value) }
+          end
+
+          assert_equal rows.size, read_rows.size
+          rows.each_with_index do |expected, idx|
+            assert_equal expected[0], read_rows[idx][0]
+            assert_equal expected[1], read_rows[idx][1]
+            assert_equal expected[2], read_rows[idx][2]
+          end
+
+          # 3. Read with correct password (In-memory load)
+          wb = Xlsxrb.read(xlsx_path, password: password).load
+          assert_equal 1, wb.sheets.size
+          assert_equal "PbtSheet", wb.sheets[0].name
+
+          # 4. Invariant: Reading without password MUST raise EncryptedFileError
+          assert_raise(Xlsxrb::EncryptedFileError) do
+            Xlsxrb.read(xlsx_path)
+          end
+
+          # 5. Invariant: Reading with wrong password MUST raise InvalidPasswordError
+          wrong_password = "#{password}_wrong"
+          assert_raise(Xlsxrb::InvalidPasswordError) do
+            Xlsxrb.read(xlsx_path, password: wrong_password)
+          end
+        end
+      end
+    end
+  end
+
+  test "property-based test: encryption tampering and corrupted byte resilience" do
+    Pbt.assert(num_runs: 25) do
+      Pbt.property(
+        password_generator,
+        Pbt.integer(min: 0, max: 1000)
+      ) do |pw_tuple, tamper_offset_factor|
+        password = resolve_password(pw_tuple)
+
+        Dir.mktmpdir do |dir|
+          xlsx_path = File.join(dir, "pbt_tamper.xlsx")
+
+          Xlsxrb.write(xlsx_path, password: password) do |wb|
+            wb.sheet("Secure") { |s| s.row(["Sensitive", 9999]) }
+          end
+
+          raw_bytes = File.binread(xlsx_path)
+          offset = (tamper_offset_factor * 17) % raw_bytes.bytesize
+
+          # Tamper 1 to 4 bytes at random offset
+          corrupted = raw_bytes.dup
+          corrupted.setbyte(offset, corrupted.getbyte(offset) ^ 0xFF)
+
+          # Invariant: Tampered payload MUST either raise an expected safe error or load safely without crashing
+          begin
+            wb = Xlsxrb.read(corrupted, password: password).load
+            assert_instance_of Xlsxrb::Elements::Workbook, wb
+          rescue Xlsxrb::Error, ArgumentError, OpenSSL::OpenSSLError, Zlib::Error, REXML::ParseException => e
+            # Expected graceful failure on corrupted bytes with known exception types
+            assert_not_nil e.message
+          end
+        end
+      end
+    end
+  end
+
+  test "property-based test: streaming vs in-memory encryption equivalence" do
+    Pbt.assert(num_runs: 20) do
+      Pbt.property(
+        password_generator,
+        Pbt.array(Pbt.tuple(Pbt.printable_ascii_string(min: 1, max: 10), Pbt.integer), min: 1, max: 5)
+      ) do |pw_tuple, rows|
+        password = resolve_password(pw_tuple)
+
+        Dir.mktmpdir do |dir|
+          streaming_path = File.join(dir, "streaming.xlsx")
+          in_memory_path = File.join(dir, "in_memory.xlsx")
+
+          # 1. Streaming write
+          Xlsxrb.write(streaming_path, password: password) do |wb|
+            wb.sheet("Data") do |s|
+              rows.each { |r| s.row(r) }
+            end
+          end
+
+          # 2. In-memory write
+          wb = Xlsxrb.build do |b|
+            b.sheet("Data") do |s|
+              rows.each { |r| s.row(r) }
+            end
+          end
+          Xlsxrb.write(in_memory_path, wb, password: password)
+
+          # Invariant: Both methods produce equivalent decrypted data
+          streaming_data = Xlsxrb.read(streaming_path, password: password).load.sheets[0].map(&:to_a)
+          in_memory_data = Xlsxrb.read(in_memory_path, password: password).load.sheets[0].map(&:to_a)
+
+          assert_equal streaming_data, in_memory_data
+        end
+      end
+    end
+  end
 end

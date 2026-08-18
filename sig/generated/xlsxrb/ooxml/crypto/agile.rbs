@@ -1,0 +1,46 @@
+# Generated from lib/xlsxrb/ooxml/crypto/agile.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    module Crypto
+      # Implements Microsoft Office Agile Encryption specified in [MS-OFFCRYPTO] Section 2.3.4.
+      class Agile
+        BLOCK_KEY_VERIFIER_INPUT: untyped
+
+        BLOCK_KEY_VERIFIER_VALUE: untyped
+
+        BLOCK_KEY_KEY: untyped
+
+        BLOCK_KEY_INTEGRITY_KEY: untyped
+
+        BLOCK_KEY_INTEGRITY_VALUE: untyped
+
+        SEGMENT_SIZE: ::Integer
+
+        # Decrypts an encrypted package given the EncryptionInfo stream data and EncryptedPackage stream data.
+        def self.decrypt: (untyped encryption_info_bytes, untyped encrypted_package_bytes, untyped password) -> untyped
+
+        # Encrypts a plain zip payload with the given password into EncryptionInfo and EncryptedPackage streams.
+        def self.encrypt: (untyped plain_bytes, untyped password) -> untyped
+
+        private def self.parse_encryption_info: (untyped bytes) -> untyped
+
+        private def self.digest_for: (untyped name) -> untyped
+
+        private def self.cipher_name_for: (untyped algo, untyped key_bits) -> untyped
+
+        private def self.derive_h_final: (untyped digest, untyped password, untyped salt, untyped spin_count) -> untyped
+
+        private def self.derive_key: (untyped digest, untyped h_final, untyped block_key, untyped key_bytes) -> untyped
+
+        private def self.aes_decrypt: (untyped cipher_name, untyped key, untyped init_vector, untyped data) -> untyped
+
+        private def self.aes_encrypt: (untyped cipher_name, untyped key, untyped init_vector, untyped data) -> untyped
+
+        private def self.aes_decrypt_block: (untyped cipher_name, untyped key, untyped init_vector, untyped data) -> untyped
+
+        private def self.aes_encrypt_block: (untyped cipher_name, untyped key, untyped init_vector, untyped data) -> untyped
+      end
+    end
+  end
+end

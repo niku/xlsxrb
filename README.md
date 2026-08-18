@@ -6,18 +6,18 @@ A Ruby library for reading and writing XLSX files with streaming support.
 
 The Ruby ecosystem already has great XLSX libraries. Each is well-designed for its purpose:
 
-| Library                                                    | Read | Write | Model                 | Write String Storage | Rich Formatting |
-| ---------------------------------------------------------- | ---- | ----- | --------------------- | -------------------- | --------------- |
-| [roo](https://rubygems.org/gems/roo)                       | ✅   | ❌    | Streaming             | N/A (Read-only)      | ⚠️ (Formulas, Basic styles) |
-| [creek](https://rubygems.org/gems/creek)                   | ✅   | ❌    | Streaming             | N/A (Read-only)      | ❌ (Raw cell values) |
-| [xsv](https://rubygems.org/gems/xsv)                       | ✅   | ❌    | Streaming             | N/A (Read-only)      | ❌ (Fast plain text) |
-| [simple_xlsx_reader](https://rubygems.org/gems/simple_xlsx_reader) | ✅ | ❌ | Streaming         | N/A (Read-only)      | ❌ (Plain data & types) |
-| [caxlsx / axlsx](https://rubygems.org/gems/caxlsx)         | ❌   | ✅    | In-Memory             | Inline (opt: SST)    | ✅ (Charts, Styles) |
-| [write_xlsx](https://rubygems.org/gems/write_xlsx)         | ❌   | ✅    | In-Memory             | SST                  | ✅ (Charts, Styles) |
-| [xlsxtream](https://rubygems.org/gems/xlsxtream)           | ❌   | ✅    | Streaming             | Inline (opt: SST)    | ❌ (Plain data only) |
-| [fast_excel](https://rubygems.org/gems/fast_excel)         | ❌   | ✅    | Streaming (C Ext)     | SST (opt: Inline)    | ⚠️ (Basic styles) |
-| [rubyXL](https://rubygems.org/gems/rubyXL)                 | ✅   | ✅    | In-Memory             | Inline / Direct      | ✅ (DOM editing) |
-| **[xlsxrb](https://github.com/niku/xlsxrb)**               | ✅   | ✅    | **Streaming / In-Memory** | **SST**          | ✅ **(Full Features)** |
+| Library                                                    | Read | Write | Model                 | Write String Storage | Rich Formatting | Password Encryption |
+| ---------------------------------------------------------- | ---- | ----- | --------------------- | -------------------- | --------------- | :-----------------: |
+| [roo](https://rubygems.org/gems/roo)                       | ✅   | ❌    | Streaming             | N/A (Read-only)      | ⚠️ (Formulas, Basic styles) | ❌ |
+| [creek](https://rubygems.org/gems/creek)                   | ✅   | ❌    | Streaming             | N/A (Read-only)      | ❌ (Raw cell values) | ❌ |
+| [xsv](https://rubygems.org/gems/xsv)                       | ✅   | ❌    | Streaming             | N/A (Read-only)      | ❌ (Fast plain text) | ❌ |
+| [simple_xlsx_reader](https://rubygems.org/gems/simple_xlsx_reader) | ✅ | ❌ | Streaming         | N/A (Read-only)      | ❌ (Plain data & types) | ❌ |
+| [caxlsx / axlsx](https://rubygems.org/gems/caxlsx)         | ❌   | ✅    | In-Memory             | Inline (opt: SST)    | ✅ (Charts, Styles) | ❌ |
+| [write_xlsx](https://rubygems.org/gems/write_xlsx)         | ❌   | ✅    | In-Memory             | SST                  | ✅ (Charts, Styles) | ❌ |
+| [xlsxtream](https://rubygems.org/gems/xlsxtream)           | ❌   | ✅    | Streaming             | Inline (opt: SST)    | ❌ (Plain data only) | ❌ |
+| [fast_excel](https://rubygems.org/gems/fast_excel)         | ❌   | ✅    | Streaming (C Ext)     | SST (opt: Inline)    | ⚠️ (Basic styles) | ❌ |
+| [rubyXL](https://rubygems.org/gems/rubyXL)                 | ✅   | ✅    | In-Memory             | Inline / Direct      | ✅ (DOM editing) | ❌ |
+| **[xlsxrb](https://github.com/niku/xlsxrb)**               | ✅   | ✅    | **Streaming / In-Memory** | **SST**          | ✅ **(Full Features)** | ✅ **(Standard & Agile)** |
 
 Each of these libraries makes deliberate tradeoffs, and they do so thoughtfully:
 * **Memory & Execution Model (Streaming vs In-Memory)**: Streaming libraries write or read rows sequentially on-the-fly to maintain a constant, low-memory footprint regardless of row count. In-memory libraries build complete document object trees, offering flexible random access and cell updates at the cost of high RAM usage on large sheets.
@@ -195,6 +195,43 @@ Xlsxrb.build do |builder|
   # Set multiple column widths at once using Ranges
   builder["Report"].column("A".."D", width: 15.0)
 end
+```
+
+### Password Protection & Document Encryption ([MS-OFFCRYPTO])
+
+`xlsxrb` natively supports reading and writing password-protected Excel files with zero external C-extension dependencies, fully compliant with **[MS-OFFCRYPTO]** (Standard Encryption & Agile Encryption) and **[MS-CFB]** (Compound File Binary Format):
+
+#### Writing Password-Protected Spreadsheets
+```ruby
+# 1. Streaming write with password protection
+Xlsxrb.write("confidential.xlsx", password: "SecretPassword123") do |writer|
+  writer.sheet("Financials") do |sheet|
+    sheet.row(["Account", "Balance"])
+    sheet.row(["Assets", 5_000_000])
+  end
+end
+
+# 2. In-Memory write with password protection
+wb = Xlsxrb.build do |b|
+  b.sheet("Private") { |s| s.row(["Confidential", 100]) }
+end
+encrypted_binary = Xlsxrb.write(wb, password: "SecretPassword123")
+```
+
+#### Reading Password-Protected Spreadsheets
+```ruby
+# 1. Read directly with password (O(1) constant memory streaming)
+Xlsxrb.read("confidential.xlsx", password: "SecretPassword123") do |sheet|
+  sheet.each_row { |row| puts row.cells.map(&:value) }
+end
+
+# 2. In-Memory load with password
+workbook = Xlsxrb.read("confidential.xlsx", password: "SecretPassword123").load
+puts workbook.sheets.first["A1"].value
+
+# Attempting to read without password or with invalid password raises clear exceptions:
+# Xlsxrb::EncryptedFileError   -> Missing password
+# Xlsxrb::InvalidPasswordError -> Incorrect password
 ```
 
 ### IDE Autocompletion & Ruby LSP Support

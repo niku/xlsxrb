@@ -27,6 +27,15 @@ module Xlsxrb
   class ZipError < Error
   end
 
+  class EncryptedFileError < Error
+  end
+
+  class InvalidPasswordError < EncryptedFileError
+  end
+
+  class DecryptionError < EncryptedFileError
+  end
+
   TRACER: untyped
 
   def self.in_span: (untyped name, ?attributes: untyped) ?{ (?) -> untyped } -> untyped
@@ -290,39 +299,48 @@ module Xlsxrb
   #   puts doc_sheet["A1"].value     # coordinate random access
   #
   # @param source [String, IO] File path, binary content string (starting with PK..), or IO object.
+  # @param password [String, nil] Optional password to decrypt password-protected XLSX files.
   # @yield [sheet] Yields each streaming sheet.
   # @yieldparam sheet [StreamSheet] The streaming worksheet object.
   # @return [Elements::Workbook, void] Returns Elements::Workbook when no block is given.
   # @api public
-  # : (untyped source) { (StreamSheet) -> void } -> void
-  # : (untyped source) -> Elements::Workbook
-  def self.read: (untyped source) { (StreamSheet) -> void } -> void
-               | (untyped source) -> Elements::Workbook
+  # : (untyped source, ?password: String?) { (StreamSheet) -> void } -> void
+  # : (untyped source, ?password: String?) -> Elements::Workbook
+  def self.read: (untyped source, ?password: String?) { (StreamSheet) -> void } -> void
+               | (untyped source, ?password: String?) -> Elements::Workbook
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
   #
-  # @overload write(target, strict_excel_mode: true, &block)
+  # @overload write(target, password: nil, strict_excel_mode: true, &block)
   #   Streaming write: yields a StreamWriter context for high-speed, zero-allocation XLSX generation.
   #   @param target [String, IO] Destination file path or writable IO object.
+  #   @param password [String, nil] Optional password to encrypt the generated XLSX file.
   #   @param strict_excel_mode [Boolean] Whether to enforce Excel specifications.
   #   @yield [stream_writer]
   #   @yieldparam stream_writer [Xlsxrb::StreamWriter]
   #   @return [void]
   #
-  # @overload write(workbook)
+  # @overload write(workbook, password: nil)
   #   In-memory write: exports the workbook to an in-memory binary String.
   #   @param workbook [Elements::Workbook] The workbook to write.
+  #   @param password [String, nil] Optional password to encrypt the binary string.
   #   @return [String] Binary data representing the XLSX file.
   #
-  # @overload write(target, workbook)
+  # @overload write(target, workbook, password: nil)
   #   In-memory write: writes the workbook to a file path or IO stream.
   #   @param target [String, IO] Destination file path or writable IO object.
   #   @param workbook [Elements::Workbook] The workbook to write.
+  #   @param password [String, nil] Optional password to encrypt the output file.
   #   @return [void]
   #
   # @example Streaming write to file
   #   Xlsxrb.write("output.xlsx") do |writer|
   #     writer.sheet("Sheet1") { |s| s.row(["Hello", "World"]) }
+  #   end
+  #
+  # @example Password-protected streaming write
+  #   Xlsxrb.write("protected.xlsx", password: "secret_password") do |writer|
+  #     writer.sheet("Confidential") { |s| s.row(["Private Data", 100]) }
   #   end
   #
   # @example In-memory export to binary string
@@ -332,12 +350,12 @@ module Xlsxrb
   #   Xlsxrb.write("output.xlsx", workbook)
   #
   # @api public
-  # : (Elements::Workbook workbook) -> String
-  # : (untyped target, Elements::Workbook | untyped workbook) -> void
-  # : (untyped target_or_workbook, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
-  def self.write: (Elements::Workbook workbook) -> String
-                | (untyped target, Elements::Workbook | untyped workbook) -> void
-                | (untyped target_or_workbook, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
+  # : (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
+  # : (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
+  # : (untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
+  def self.write: (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
+                | (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
+                | (untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
 
   # Modifies an existing XLSX file.
   # Reads the workbook, passes it to the block, and writes the result.
@@ -354,13 +372,14 @@ module Xlsxrb
   #
   # @param source [String, IO] The source file path or IO object.
   # @param target [String, IO, nil] The target file path or IO object. If nil, overwrites source.
+  # @param password [String, nil] Optional password for reading and writing protected files.
   # @yield [workbook] Yields the parsed workbook.
   # @yieldparam workbook [Elements::Workbook] The parsed workbook.
   # @yieldreturn [Elements::Workbook] The modified workbook.
   # @return [void]
   # @api public
-  # : (untyped source, ?untyped target) ?{ (Elements::Workbook) -> untyped } -> void
-  def self.modify: (untyped source, ?untyped target) ?{ (Elements::Workbook) -> untyped } -> void
+  # : (untyped source, ?untyped target, ?password: String?) ?{ (Elements::Workbook) -> untyped } -> void
+  def self.modify: (untyped source, ?untyped target, ?password: String?) ?{ (Elements::Workbook) -> untyped } -> void
 
   # Represents a sheet being streamed sequentially from an XLSX file.
   # Provides O(1) constant-memory streaming over rows and cells.

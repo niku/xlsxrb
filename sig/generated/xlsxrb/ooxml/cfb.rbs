@@ -1,0 +1,121 @@
+# Generated from lib/xlsxrb/ooxml/cfb.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # Pure-Ruby Compound File Binary (CFB / OLE Structured Storage) implementation for [MS-CFB] / [MS-OFFCRYPTO].
+    module Cfb
+      MAGIC: untyped
+
+      FREESECT: ::Integer
+
+      ENDOFCHAIN: ::Integer
+
+      FATSECT: ::Integer
+
+      DIFATSECT: ::Integer
+
+      NOSTREAM: ::Integer
+
+      OBJ_UNKNOWN: ::Integer
+
+      OBJ_STORAGE: ::Integer
+
+      OBJ_STREAM: ::Integer
+
+      OBJ_ROOT: ::Integer
+
+      MINI_STREAM_CUTOFF: ::Integer
+
+      SECTOR_SIZE: ::Integer
+
+      MINI_SECTOR_SIZE: ::Integer
+
+      # Represents a directory entry in a Compound File.
+      class DirEntry
+        attr_accessor name: untyped
+
+        attr_accessor type: untyped
+
+        attr_accessor color: untyped
+
+        attr_accessor left_sibling_id: untyped
+
+        attr_accessor right_sibling_id: untyped
+
+        attr_accessor child_id: untyped
+
+        attr_accessor clsid: untyped
+
+        attr_accessor state_flags: untyped
+
+        attr_accessor created_time: untyped
+
+        attr_accessor modified_time: untyped
+
+        attr_accessor start_sector: untyped
+
+        attr_accessor size: untyped
+
+        attr_accessor entry_id: untyped
+
+        def initialize: (?name: untyped, ?type: untyped, ?start_sector: untyped, ?size: untyped) -> untyped
+
+        def stream?: () -> untyped
+
+        def root?: () -> untyped
+
+        def storage?: () -> untyped
+      end
+
+      # Reads streams from a Compound File Binary buffer.
+      class Reader
+        attr_reader entries: untyped
+
+        def self.cfb?: (untyped data) -> untyped
+
+        def initialize: (untyped data) -> untyped
+
+        def stream_names: () -> untyped
+
+        def read_stream: (untyped name) -> untyped
+
+        private
+
+        def parse_header: () -> untyped
+
+        def sector_offset: (untyped sector_id) -> untyped
+
+        def read_sector: (untyped sector_id) -> untyped
+
+        def build_fat: () -> untyped
+
+        def load_difat_and_fat: () -> untyped
+
+        def parse_directory: () -> untyped
+
+        def load_mini_stream: () -> untyped
+
+        def read_regular_stream_data: (untyped start_sector, untyped total_size) -> untyped
+
+        def read_mini_stream_data: (untyped start_mini_sector, untyped total_size) -> untyped
+      end
+
+      # Writes named streams into a Compound File Binary (v3, 512-byte sectors) format with Mini Stream support.
+      class Writer
+        def self.write: (untyped streams) -> untyped
+
+        def initialize: (untyped streams) -> untyped
+
+        def build: () -> untyped
+
+        private
+
+        def serialize_dir_entry: (untyped entry) -> untyped
+
+        def insert_entry_to_tree: (untyped entries, untyped root_node, untyped new_node) -> untyped
+
+        def compare_entry_names: (untyped a_name, untyped b_name) -> untyped
+      end
+    end
+  end
+end

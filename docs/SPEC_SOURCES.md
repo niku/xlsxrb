@@ -22,8 +22,11 @@ To address gaps between the official ECMA standard and actual implementations in
    - **Role:** Identifies how Excel actually reads/writes files, including deviations and compatibility behaviors.
    - **Referenced Version:** July 2024 / Version 12.0 (or current release).
 3. **[[MS-OFFCRYPTO]: Office Document Cryptography Structure](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-offcrypto/)**
-   - **Role:** Provides details on encryption, passwords, and hashing algorithms used for document/sheet protection.
+   - **Role:** Provides details on encryption, passwords, and hashing algorithms used for document/sheet protection (Agile Encryption and Standard Encryption).
    - **Referenced Version:** July 2024 / Version 12.0 (or current release).
+4. **[[MS-CFB]: Compound File Binary File Format](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/)**
+   - **Role:** Container format (OLE structured storage) wrapping encrypted Office documents (`EncryptionInfo` and `EncryptedPackage` streams).
+   - **Referenced Version:** July 2024 / Version 14.0 (or current release).
 
 ### ISO/IEC 29500 Note
 ISO/IEC 29500 is contents-wise equivalent to ECMA-376. However, ISO/IEC 29500 requires paid purchase in general, whereas ECMA-376 is freely available. Therefore, we primarily cite ECMA-376 sections.
@@ -40,3 +43,6 @@ When implementing features or fixing bugs that depend on specific behaviors defi
 | Shared Strings | ECMA-376 Part 1 | §18.4 (Shared String Table) | Handling of `<sst>` and `<si>` for cell value reuse |
 | Styles & Formatting | ECMA-376 Part 1 | §18.8 (Styles) | Cell style XF indexes, font, fill, border mappings |
 | Hyperlinks | ECMA-376 Part 1 | §18.3.1.48 (hyperlink) | Worksheet hyperlinks referencing external URLs or internal targets |
+| Document Encryption (Agile) | [MS-OFFCRYPTO] | §2.3.4 (Agile Encryption) | AES-256-CBC, PBKDF2/SHA-512, HMAC-SHA512 data integrity |
+| Document Encryption (Standard) | [MS-OFFCRYPTO] | §2.3.6 (Standard Encryption) | AES-128-ECB, SHA-1 with CryptoAPI 50,000-spin key derivation |
+| Encryption Container | [MS-CFB] | §2 (Compound File Structure) | Mini Stream, FAT/MiniFAT sectors, and Red-Black tree directory |

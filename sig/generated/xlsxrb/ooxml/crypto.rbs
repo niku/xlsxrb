@@ -1,0 +1,17 @@
+# Generated from lib/xlsxrb/ooxml/crypto.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    # High-level encryption and decryption facade for [MS-OFFCRYPTO] Excel document protection.
+    module Crypto
+      # Checks if the binary data is an encrypted Compound File Binary package.
+      def self.encrypted?: (untyped data) -> untyped
+
+      # Decrypts an encrypted XLSX (CFB) package with the given password.
+      def self.decrypt: (untyped cfb_data, untyped password) -> untyped
+
+      # Encrypts a plain ZIP payload with the given password into an encrypted CFB package.
+      def self.encrypt: (untyped plain_zip_data, untyped password, ?mode: untyped) -> untyped
+    end
+  end
+end

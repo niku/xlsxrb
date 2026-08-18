@@ -22,6 +22,7 @@ require_relative "xlsxrb/version"
 require_relative "xlsxrb/ooxml/zip_generator"
 require_relative "xlsxrb/ooxml/writer"
 require_relative "xlsxrb/ooxml/reader"
+require_relative "xlsxrb/ooxml/crypto"
 require_relative "xlsxrb/ooxml"
 require_relative "xlsxrb/elements"
 require_relative "xlsxrb/stream_row"
@@ -42,6 +43,9 @@ module Xlsxrb
   class ParseError < Error; end
   class ValidationError < Error; end
   class ZipError < Error; end
+  class EncryptedFileError < Error; end
+  class InvalidPasswordError < EncryptedFileError; end
+  class DecryptionError < EncryptedFileError; end
 
   TRACER = OpenTelemetry.tracer_provider.tracer("xlsxrb", Xlsxrb::VERSION)
 
@@ -385,14 +389,48 @@ module Xlsxrb
   #   puts doc_sheet["A1"].value     # coordinate random access
   #
   # @param source [String, IO] File path, binary content string (starting with PK..), or IO object.
+  # @param password [String, nil] Optional password to decrypt password-protected XLSX files.
   # @yield [sheet] Yields each streaming sheet.
   # @yieldparam sheet [StreamSheet] The streaming worksheet object.
   # @return [Elements::Workbook, void] Returns Elements::Workbook when no block is given.
   # @api public
-  #: (untyped source) { (StreamSheet) -> void } -> void
-  #: (untyped source) -> Elements::Workbook
-  def self.read(source, &)
-    source = StringIO.new(source) if source.is_a?(String) && (source.start_with?("PK\x03\x04") || source.include?("\x00"))
+  #: (untyped source, ?password: String?) { (StreamSheet) -> void } -> void
+  #: (untyped source, ?password: String?) -> Elements::Workbook
+  def self.read(source, password: nil, &)
+    if source.is_a?(String)
+      if source.start_with?("PK\x03\x04") || source.include?("\x00") || Ooxml::Cfb::Reader.cfb?(source)
+        if Ooxml::Cfb::Reader.cfb?(source)
+          decrypted_zip = Ooxml::Crypto.decrypt(source, password)
+          source = StringIO.new(decrypted_zip)
+        else
+          source = StringIO.new(source)
+        end
+      elsif File.file?(source)
+        first_bytes = begin
+          File.binread(source, 8)
+        rescue StandardError
+          nil
+        end
+        if Ooxml::Cfb::Reader.cfb?(first_bytes)
+          encrypted_data = File.binread(source)
+          decrypted_zip = Ooxml::Crypto.decrypt(encrypted_data, password)
+          source = StringIO.new(decrypted_zip)
+        end
+      end
+    elsif source.respond_to?(:read) && source.respond_to?(:pos) && source.respond_to?(:seek)
+      begin
+        cur_pos = source.pos
+        first_bytes = source.read(8)
+        source.seek(cur_pos)
+        if Ooxml::Cfb::Reader.cfb?(first_bytes)
+          full_data = source.read
+          decrypted_zip = Ooxml::Crypto.decrypt(full_data, password)
+          source = StringIO.new(decrypted_zip)
+        end
+      rescue StandardError
+        # Fall through to standard reader if seeking fails
+      end
+    end
 
     attributes = source.is_a?(String) ? { "filepath" => source } : {}
     Xlsxrb.in_span("Xlsxrb.read", attributes: attributes) do
@@ -431,28 +469,36 @@ module Xlsxrb
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
   #
-  # @overload write(target, strict_excel_mode: true, &block)
+  # @overload write(target, password: nil, strict_excel_mode: true, &block)
   #   Streaming write: yields a StreamWriter context for high-speed, zero-allocation XLSX generation.
   #   @param target [String, IO] Destination file path or writable IO object.
+  #   @param password [String, nil] Optional password to encrypt the generated XLSX file.
   #   @param strict_excel_mode [Boolean] Whether to enforce Excel specifications.
   #   @yield [stream_writer]
   #   @yieldparam stream_writer [Xlsxrb::StreamWriter]
   #   @return [void]
   #
-  # @overload write(workbook)
+  # @overload write(workbook, password: nil)
   #   In-memory write: exports the workbook to an in-memory binary String.
   #   @param workbook [Elements::Workbook] The workbook to write.
+  #   @param password [String, nil] Optional password to encrypt the binary string.
   #   @return [String] Binary data representing the XLSX file.
   #
-  # @overload write(target, workbook)
+  # @overload write(target, workbook, password: nil)
   #   In-memory write: writes the workbook to a file path or IO stream.
   #   @param target [String, IO] Destination file path or writable IO object.
   #   @param workbook [Elements::Workbook] The workbook to write.
+  #   @param password [String, nil] Optional password to encrypt the output file.
   #   @return [void]
   #
   # @example Streaming write to file
   #   Xlsxrb.write("output.xlsx") do |writer|
   #     writer.sheet("Sheet1") { |s| s.row(["Hello", "World"]) }
+  #   end
+  #
+  # @example Password-protected streaming write
+  #   Xlsxrb.write("protected.xlsx", password: "secret_password") do |writer|
+  #     writer.sheet("Confidential") { |s| s.row(["Private Data", 100]) }
   #   end
   #
   # @example In-memory export to binary string
@@ -462,22 +508,41 @@ module Xlsxrb
   #   Xlsxrb.write("output.xlsx", workbook)
   #
   # @api public
-  #: (Elements::Workbook workbook) -> String
-  #: (untyped target, Elements::Workbook | untyped workbook) -> void
-  #: (untyped target_or_workbook, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
-  def self.write(target_or_workbook, workbook_or_nil = nil, strict_excel_mode: true, &block)
+  #: (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
+  #: (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
+  #: (untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
+  def self.write(target_or_workbook, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, &block)
     if block_given?
       target = target_or_workbook
       raise Error, "target is required" if target.nil?
 
       attributes = target.is_a?(String) ? { "filepath" => target } : {}
       return Xlsxrb.in_span("Xlsxrb.write", attributes: attributes) do
-        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode)
-        begin
-          yield stream_writer
-          stream_writer.close
-        ensure
-          stream_writer.cleanup!
+        if password && !password.empty?
+          buf = StringIO.new
+          buf.binmode
+          stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode)
+          begin
+            yield stream_writer
+            stream_writer.close
+            plain_bytes = buf.string.b
+            encrypted_bytes = Ooxml::Crypto.encrypt(plain_bytes, password, mode: encryption_mode)
+            if target.is_a?(String)
+              File.binwrite(target, encrypted_bytes)
+            elsif target.respond_to?(:write)
+              target.write(encrypted_bytes)
+            end
+          ensure
+            stream_writer.cleanup!
+          end
+        else
+          stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode)
+          begin
+            yield stream_writer
+            stream_writer.close
+          ensure
+            stream_writer.cleanup!
+          end
         end
       end
     end
@@ -488,7 +553,7 @@ module Xlsxrb
 
       io = StringIO.new
       io.binmode
-      write(io, wb)
+      write(io, wb, password: password, encryption_mode: encryption_mode)
       return io.string.b
     end
 
@@ -532,19 +597,44 @@ module Xlsxrb
 
       # Extract workbook-level facade metadata
       wb_facade = workbook.unmapped_data[:facade] || {}
-      Ooxml::WorkbookWriter.write(
-        target,
-        sheets: sheet_data,
-        shared_strings: sst,
-        shared_strings_index: sst_index,
-        styles: workbook.styles,
-        defined_names: wb_facade[:defined_names],
-        core_properties: wb_facade[:core_properties],
-        app_properties: wb_facade[:app_properties],
-        custom_properties: wb_facade[:custom_properties],
-        workbook_protection: wb_facade[:workbook_protection],
-        workbook_properties: wb_facade[:workbook_properties]
-      )
+
+      if password && !password.empty?
+        buf = StringIO.new
+        buf.binmode
+        Ooxml::WorkbookWriter.write(
+          buf,
+          sheets: sheet_data,
+          shared_strings: sst,
+          shared_strings_index: sst_index,
+          styles: workbook.styles,
+          defined_names: wb_facade[:defined_names],
+          core_properties: wb_facade[:core_properties],
+          app_properties: wb_facade[:app_properties],
+          custom_properties: wb_facade[:custom_properties],
+          workbook_protection: wb_facade[:workbook_protection],
+          workbook_properties: wb_facade[:workbook_properties]
+        )
+        encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password, mode: encryption_mode)
+        if target.is_a?(String)
+          File.binwrite(target, encrypted_bytes)
+        elsif target.respond_to?(:write)
+          target.write(encrypted_bytes)
+        end
+      else
+        Ooxml::WorkbookWriter.write(
+          target,
+          sheets: sheet_data,
+          shared_strings: sst,
+          shared_strings_index: sst_index,
+          styles: workbook.styles,
+          defined_names: wb_facade[:defined_names],
+          core_properties: wb_facade[:core_properties],
+          app_properties: wb_facade[:app_properties],
+          custom_properties: wb_facade[:custom_properties],
+          workbook_protection: wb_facade[:workbook_protection],
+          workbook_properties: wb_facade[:workbook_properties]
+        )
+      end
     end
   end
 
@@ -563,22 +653,23 @@ module Xlsxrb
   #
   # @param source [String, IO] The source file path or IO object.
   # @param target [String, IO, nil] The target file path or IO object. If nil, overwrites source.
+  # @param password [String, nil] Optional password for reading and writing protected files.
   # @yield [workbook] Yields the parsed workbook.
   # @yieldparam workbook [Elements::Workbook] The parsed workbook.
   # @yieldreturn [Elements::Workbook] The modified workbook.
   # @return [void]
   # @api public
-  #: (untyped source, ?untyped target) ?{ (Elements::Workbook) -> untyped } -> void
-  def self.modify(source, target = nil)
+  #: (untyped source, ?untyped target, ?password: String?) ?{ (Elements::Workbook) -> untyped } -> void
+  def self.modify(source, target = nil, password: nil)
     raise Error, "source is required" if source.nil?
     raise Error, "block is required" unless block_given?
 
-    workbook = read(source).load
+    workbook = read(source, password: password).load
     result_workbook = yield workbook
     result_workbook = workbook unless result_workbook.is_a?(Elements::Workbook)
 
     write_target = target || source
-    write(write_target, result_workbook)
+    write(write_target, result_workbook, password: password)
   end
 
   # Represents a sheet being streamed sequentially from an XLSX file.

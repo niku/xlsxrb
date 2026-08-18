@@ -46,13 +46,15 @@ async Task<ScenarioExecResult> RunScenario(string code, string xlsxPath)
             typeof(Enumerable).Assembly,
             typeof(Console).Assembly,
             typeof(SpreadsheetDocument).Assembly,
-            typeof(OpenXmlValidator).Assembly
+            typeof(OpenXmlValidator).Assembly,
+            typeof(System.Security.Cryptography.Aes).Assembly
         )
         .AddImports(
             "System",
             "System.IO",
             "System.Linq",
             "System.Collections.Generic",
+            "System.Security.Cryptography",
             "DocumentFormat.OpenXml",
             "DocumentFormat.OpenXml.Packaging",
             "DocumentFormat.OpenXml.Spreadsheet",
