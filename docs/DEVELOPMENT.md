@@ -14,17 +14,25 @@ To run the different tiers of our testing strategy:
    ```bash
    bundle exec rake test:contract
    ```
-3. **Interoperability (E2E) Tests:**
+3. **Property-Based Tests (PBT):**
+   ```bash
+   bundle exec rake test:pbt
+   ```
+4. **Memory & Performance Tests:**
+   ```bash
+   bundle exec rake test:perf
+   ```
+5. **Interoperability (E2E) Tests:**
    Requires .NET SDK to be installed (pre-configured in Dev Container).
    ```bash
    bundle exec rake test:e2e
    ```
-4. **Visual Regression Tests (VRT):**
+6. **Visual Regression Tests (VRT):**
    Requires LibreOffice, ImageMagick, and `poppler-utils`.
    ```bash
    bundle exec rake test:visual
    ```
-5. **Run All Tests:**
+7. **Run All Tests:**
    ```bash
    bundle exec rake test
    ```

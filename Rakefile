@@ -121,6 +121,24 @@ namespace :test do
     t.options = "--parallel --n-workers=#{workers}"
   end
 
+  desc "Run property-based tests (PBT)"
+  Rake::TestTask.new(:pbt) do |t|
+    t.libs << "test"
+    t.libs << "lib"
+    t.test_files = FileList["test/pbt/**/*_test.rb"]
+    workers = ENV.fetch("TEST_WORKERS", Etc.nprocessors)
+    t.options = "--parallel --n-workers=#{workers}"
+  end
+
+  desc "Run memory and performance tests"
+  Rake::TestTask.new(:performance) do |t|
+    t.libs << "test"
+    t.libs << "lib"
+    t.test_files = FileList["test/performance/**/*_test.rb"]
+  end
+  desc "Alias for test:performance"
+  task perf: :performance
+
   Rake::TestTask.new(:e2e) do |t|
     t.libs << "test"
     t.libs << "lib"

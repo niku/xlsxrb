@@ -1,5 +1,5 @@
-name: Benchmark
-
+name: Performance
+ 
 on:
   push:
     branches:
@@ -7,9 +7,9 @@ on:
   pull_request:
 
 jobs:
-  benchmark:
+  performance:
     runs-on: ubuntu-latest
-    name: Memory & Performance Benchmark
+    name: Memory & Performance Tests
     steps:
       - uses: actions/checkout@v7
         with:
@@ -19,5 +19,5 @@ jobs:
         with:
           ruby-version: '4.0.5'
           bundler-cache: true
-      - name: Run Benchmark Test
-        run: bundle exec ruby test/benchmark_test.rb
+      - name: Run Performance Tests
+        run: bundle exec rake test:perf

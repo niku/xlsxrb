@@ -299,7 +299,7 @@ To support reliability, compliance with the ECMA-376 specification, and consiste
 * **Visual Regression Testing (VRT)**: Spreadsheets are rendered via a headless LibreOffice Calc engine and compared pixel-by-pixel against visual baselines to catch subtle rendering regressions.
 
 ### Performance & Types
-* **Continuous Benchmarking**: Memory usage and processing speeds are profiled in CI on large datasets to prevent performance regressions and OOM leaks.
+* **Continuous Performance & Memory Validation**: Memory retention and processing throughput are profiled in CI on large datasets to prevent regressions and OOM leaks.
 * **Runtime Type Validation**: Strong dynamic typing using `RBS::Test` to ensure the library's types are perfectly sound at runtime.
 
 For a comprehensive breakdown of our QA matrix, see [docs/QUALITY_ASSURANCE.md](docs/QUALITY_ASSURANCE.md). For details on running tests locally, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).

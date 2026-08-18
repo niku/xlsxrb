@@ -5,6 +5,10 @@ require "pbt"
 require "tempfile"
 
 class PbtTest < Test::Unit::TestCase
+  def setup
+    omit "Skip property-based tests under RBS runtime testing to prevent OOM / slowdown" if defined?(RBS::Test)
+  end
+
   # Valid OOXML sheet names shouldn't contain certain characters like \/?*[]:
   # They also should be 1-31 chars long.
   def sheet_name_generator

@@ -9,7 +9,7 @@ on:
 jobs:
   unit:
     runs-on: ubuntu-latest
-    name: Unit & Contract Tests
+    name: Unit, Contract & PBT Tests
     strategy:
       matrix:
         ruby:
@@ -27,20 +27,41 @@ jobs:
         run: bundle exec rake rubocop
       - name: Run Bundler Audit
         run: bundle exec rake bundle:audit
-      - name: Run Steep Typecheck
-        run: bundle exec rake typecheck
-      - name: Verify RBS is in sync with inline annotations
-        run: |
-          bundle exec rake sig
-          git diff --exit-code sig/
       - name: Run Unit & Contract Tests
-        run: bundle exec rake test:rbs
+        run: bundle exec rake test:unit test:contract
+      - name: Run Property-Based Tests (PBT)
+        run: bundle exec rake test:pbt
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: coverage/
           retention-days: 14
+
+  types:
+    runs-on: ubuntu-latest
+    name: Type Validation (Steep & RBS)
+    strategy:
+      matrix:
+        ruby:
+          - '4.0.5'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - name: Run Steep Typecheck
+        run: bundle exec rake typecheck
+      - name: Verify RBS is in sync with inline annotations
+        run: |
+          bundle exec rake sig
+          git diff --exit-code sig/
+      - name: Run RBS Runtime Type Validation
+        run: bundle exec rake test:rbs
 
   e2e:
     runs-on: ubuntu-latest
