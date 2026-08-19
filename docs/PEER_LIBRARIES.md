@@ -88,25 +88,25 @@ The following benchmarks evaluate processing **1,000,000 cells** (100,000 rows Ã
 
 | Library | Version | Model | String Storage | Time (Median) | Time (Mean) | Peak Memory | GC Count |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **xlsxtream** | 3.1.0 | Streaming | Inline String | **1.19 s** | 1.20 s | **18.2 MB** | 1072.0 |
-| **xlsxrb (Streaming)** | - | Streaming | SST (Shared) | **1.73 s** | 1.65 s | 94.4 MB | 39.0 |
-| **fast_excel** | 0.5.0 | Streaming | SST (Shared) | 1.89 s | 1.89 s | 148.2 MB | 245.0 |
-| **xlsxrb (In-Memory)** | - | In-Memory | SST (Shared) | 3.84 s | 3.83 s | 278.3 MB | 32.0 |
-| **write_xlsx** | 1.15.0 | In-Memory | SST (Shared) | 4.32 s | 4.34 s | 201.2 MB | 33.0 |
-| **caxlsx** | 4.5.0 | In-Memory | Inline String | 5.15 s | 5.12 s | 188.6 MB | 23.0 |
-| **rubyXL** | 3.4.38 | In-Memory | Inline String | 38.81 s | 37.82 s | 2186.8 MB | 103.0 |
+| **xlsxrb (Streaming)** | - | Streaming | SST (Shared) | **0.95 s** | **0.95 s** | 67.6 MB | **34.0** |
+| **xlsxtream** | 3.1.0 | Streaming | Inline String | 1.16 s | 1.17 s | **17.0 MB** | 323.0 |
+| **fast_excel** | 0.5.0 | Streaming | SST (Shared) | 2.02 s | 2.14 s | 148.3 MB | 210.0 |
+| **xlsxrb (In-Memory)** | - | In-Memory | SST (Shared) | 2.42 s | 2.57 s | 209.0 MB | 16.0 |
+| **write_xlsx** | 1.15.0 | In-Memory | SST (Shared) | 4.39 s | 4.42 s | 217.4 MB | 25.0 |
+| **caxlsx** | 4.5.0 | In-Memory | Inline String | 5.28 s | 5.28 s | 177.4 MB | 24.0 |
+| **rubyXL** | 3.4.38 | In-Memory | Inline String | 43.13 s | 43.65 s | 2167.2 MB | 101.0 |
 
 ### Read Performance (1,000,000 cells)
 
 | Library | Version | Model | Time (Median) | Time (Mean) | Peak Memory | GC Count |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **xlsxrb (Streaming)** | - | Streaming | **3.17 s** | 3.22 s | 91.4 MB | 43.0 |
-| **simple_xlsx_reader** | 5.1.0 | Streaming | 4.48 s | 4.45 s | **38.5 MB** | 1669.0 |
-| **xlsxrb (In-Memory)** | - | In-Memory | 5.71 s | 5.89 s | 224.8 MB | 63.0 |
-| **creek** | 2.6.3 | Streaming | 8.14 s | 8.02 s | 834.6 MB | 477.0 |
-| **xsv** | 1.4.1 | Streaming | 14.61 s | 14.50 s | 76.1 MB | 2224.0 |
-| **roo** | 3.0.0 | Streaming | 15.69 s | 13.36 s | 119.7 MB | 441.0 |
-| **rubyXL** | 3.4.38 | In-Memory | 37.13 s | 40.35 s | 2537.6 MB | 146.0 |
+| **xlsxrb (Streaming)** | - | Streaming | **1.73 s** | **1.72 s** | 136.2 MB | **45.0** |
+| **xlsxrb (In-Memory)** | - | In-Memory | 4.33 s | 4.46 s | 304.3 MB | 77.0 |
+| **simple_xlsx_reader** | 5.1.0 | Streaming | 4.38 s | 4.41 s | **32.8 MB** | 918.0 |
+| **creek** | 2.6.3 | Streaming | 7.12 s | 7.05 s | 840.1 MB | 419.0 |
+| **roo** | 3.0.0 | Streaming | 10.95 s | 10.33 s | 123.4 MB | 196.0 |
+| **xsv** | 1.4.1 | Streaming | 14.56 s | 14.59 s | 73.6 MB | 2028.0 |
+| **rubyXL** | 3.4.38 | In-Memory | 30.74 s | 30.78 s | 2289.6 MB | 146.0 |
 
 ---
 

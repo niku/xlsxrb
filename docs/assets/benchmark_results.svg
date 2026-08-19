@@ -46,40 +46,40 @@
     <line x1="380.0" y1="65" x2="380.0" y2="320" class="grid"/>
     <text x="380.0" y="335" font-family="sans-serif" font-size="10" fill="#64748b" text-anchor="middle">40s</text>
     
-    <!-- xlsxtream 3.1.0: 1.19s -->
-    <text x="150" y="85" text-anchor="end" class="label">xlsxtream 3.1.0</text>
-    <rect x="160" y="72" width="6.5" height="18" rx="3" fill="#64748b"/>
-    <text x="174.5" y="85" class="value">1.19 s</text>
+    <!-- xlsxrb (Streaming): 0.95s -->
+    <text x="150" y="85" text-anchor="end" class="label-accent">xlsxrb (Streaming)</text>
+    <rect x="160" y="72" width="5.2" height="18" rx="3" fill="#3b82f6"/>
+    <text x="173.2" y="85" class="value">0.95 s</text>
 
-    <!-- xlsxrb (Streaming): 1.73s -->
-    <text x="150" y="120" text-anchor="end" class="label-accent">xlsxrb (Streaming)</text>
-    <rect x="160" y="107" width="9.5" height="18" rx="3" fill="#3b82f6"/>
-    <text x="177.5" y="120" class="value">1.73 s</text>
+    <!-- xlsxtream 3.1.0: 1.16s -->
+    <text x="150" y="120" text-anchor="end" class="label">xlsxtream 3.1.0</text>
+    <rect x="160" y="107" width="6.4" height="18" rx="3" fill="#64748b"/>
+    <text x="174.4" y="120" class="value">1.16 s</text>
 
-    <!-- fast_excel 0.5.0: 1.89s -->
+    <!-- fast_excel 0.5.0: 2.02s -->
     <text x="150" y="155" text-anchor="end" class="label">fast_excel 0.5.0</text>
-    <rect x="160" y="142" width="10.4" height="18" rx="3" fill="#64748b"/>
-    <text x="178.4" y="155" class="value">1.89 s</text>
+    <rect x="160" y="142" width="11.1" height="18" rx="3" fill="#64748b"/>
+    <text x="179.1" y="155" class="value">2.02 s</text>
 
-    <!-- xlsxrb (In-Memory): 3.84s -->
+    <!-- xlsxrb (In-Memory): 2.42s -->
     <text x="150" y="190" text-anchor="end" class="label-accent">xlsxrb (In-Memory)</text>
-    <rect x="160" y="177" width="21.1" height="18" rx="3" fill="#3b82f6"/>
-    <text x="189.1" y="190" class="value">3.84 s</text>
+    <rect x="160" y="177" width="13.3" height="18" rx="3" fill="#3b82f6"/>
+    <text x="181.3" y="190" class="value">2.42 s</text>
 
-    <!-- write_xlsx 1.15.0: 4.32s -->
+    <!-- write_xlsx 1.15.0: 4.39s -->
     <text x="150" y="225" text-anchor="end" class="label">write_xlsx 1.15.0</text>
-    <rect x="160" y="212" width="23.8" height="18" rx="3" fill="#64748b"/>
-    <text x="191.8" y="225" class="value">4.32 s</text>
+    <rect x="160" y="212" width="24.1" height="18" rx="3" fill="#64748b"/>
+    <text x="192.1" y="225" class="value">4.39 s</text>
 
-    <!-- caxlsx 4.5.0: 5.15s -->
+    <!-- caxlsx 4.5.0: 5.28s -->
     <text x="150" y="260" text-anchor="end" class="label">caxlsx 4.5.0</text>
-    <rect x="160" y="247" width="28.3" height="18" rx="3" fill="#64748b"/>
-    <text x="196.3" y="260" class="value">5.15 s</text>
+    <rect x="160" y="247" width="29.0" height="18" rx="3" fill="#64748b"/>
+    <text x="197.0" y="260" class="value">5.28 s</text>
 
-    <!-- rubyXL 3.4.38: 38.81s -->
+    <!-- rubyXL 3.4.38: 43.13s -->
     <text x="150" y="295" text-anchor="end" class="label">rubyXL 3.4.38</text>
-    <rect x="160" y="282" width="213.5" height="18" rx="3" fill="#64748b"/>
-    <text x="381.5" y="295" class="value">38.81 s</text>
+    <rect x="160" y="282" width="220.0" height="18" rx="3" fill="#64748b"/>
+    <text x="388.0" y="295" class="value">43.13 s</text>
   </g>
 
   <!-- Right: Read Performance -->
@@ -103,42 +103,42 @@
     <line x1="380.0" y1="65" x2="380.0" y2="320" class="grid"/>
     <text x="380.0" y="335" font-family="sans-serif" font-size="10" fill="#64748b" text-anchor="middle">40s</text>
     
-    <!-- xlsxrb (Streaming): 3.17s -->
+    <!-- xlsxrb (Streaming): 1.73s -->
     <text x="150" y="85" text-anchor="end" class="label-accent">xlsxrb (Streaming)</text>
-    <rect x="160" y="72" width="17.4" height="18" rx="3" fill="#3b82f6"/>
-    <text x="185.4" y="85" class="value">3.17 s</text>
+    <rect x="160" y="72" width="9.5" height="18" rx="3" fill="#3b82f6"/>
+    <text x="177.5" y="85" class="value">1.73 s</text>
 
-    <!-- simple_xlsx_reader: 4.48s -->
-    <text x="150" y="120" text-anchor="end" class="label">simple_xlsx_reader</text>
-    <rect x="160" y="107" width="24.6" height="18" rx="3" fill="#64748b"/>
-    <text x="192.6" y="120" class="value">4.48 s</text>
+    <!-- xlsxrb (In-Memory): 4.33s -->
+    <text x="150" y="120" text-anchor="end" class="label-accent">xlsxrb (In-Memory)</text>
+    <rect x="160" y="107" width="23.8" height="18" rx="3" fill="#3b82f6"/>
+    <text x="191.8" y="120" class="value">4.33 s</text>
 
-    <!-- xlsxrb (In-Memory): 5.71s -->
-    <text x="150" y="155" text-anchor="end" class="label-accent">xlsxrb (In-Memory)</text>
-    <rect x="160" y="142" width="31.4" height="18" rx="3" fill="#3b82f6"/>
-    <text x="199.4" y="155" class="value">5.71 s</text>
+    <!-- simple_xlsx_reader: 4.38s -->
+    <text x="150" y="155" text-anchor="end" class="label">simple_xlsx_reader</text>
+    <rect x="160" y="142" width="24.1" height="18" rx="3" fill="#64748b"/>
+    <text x="192.1" y="155" class="value">4.38 s</text>
 
-    <!-- creek 2.6.3: 8.14s -->
+    <!-- creek 2.6.3: 7.12s -->
     <text x="150" y="190" text-anchor="end" class="label">creek 2.6.3</text>
-    <rect x="160" y="177" width="44.8" height="18" rx="3" fill="#64748b"/>
-    <text x="212.8" y="190" class="value">8.14 s</text>
+    <rect x="160" y="177" width="39.2" height="18" rx="3" fill="#64748b"/>
+    <text x="207.2" y="190" class="value">7.12 s</text>
 
-    <!-- xsv 1.4.1: 14.61s -->
-    <text x="150" y="225" text-anchor="end" class="label">xsv 1.4.1</text>
-    <rect x="160" y="212" width="80.4" height="18" rx="3" fill="#64748b"/>
-    <text x="248.4" y="225" class="value">14.61 s</text>
+    <!-- roo 3.0.0: 10.95s -->
+    <text x="150" y="225" text-anchor="end" class="label">roo 3.0.0</text>
+    <rect x="160" y="212" width="60.2" height="18" rx="3" fill="#64748b"/>
+    <text x="228.2" y="225" class="value">10.95 s</text>
 
-    <!-- roo 3.0.0: 15.69s -->
-    <text x="150" y="260" text-anchor="end" class="label">roo 3.0.0</text>
-    <rect x="160" y="247" width="86.3" height="18" rx="3" fill="#64748b"/>
-    <text x="254.3" y="260" class="value">15.69 s</text>
+    <!-- xsv 1.4.1: 14.56s -->
+    <text x="150" y="260" text-anchor="end" class="label">xsv 1.4.1</text>
+    <rect x="160" y="247" width="80.1" height="18" rx="3" fill="#64748b"/>
+    <text x="248.1" y="260" class="value">14.56 s</text>
 
-    <!-- rubyXL 3.4.38: 37.13s -->
+    <!-- rubyXL 3.4.38: 30.74s -->
     <text x="150" y="295" text-anchor="end" class="label">rubyXL 3.4.38</text>
-    <rect x="160" y="282" width="204.2" height="18" rx="3" fill="#64748b"/>
-    <text x="372.2" y="295" class="value">37.13 s</text>
+    <rect x="160" y="282" width="169.1" height="18" rx="3" fill="#64748b"/>
+    <text x="337.1" y="295" class="value">30.74 s</text>
   </g>
 
   <!-- Footer -->
-  <text x="480" y="455" text-anchor="middle" class="footer">Tested on Ruby 3.4+ in isolated subprocesses • Full GC and peak memory metrics in docs/PEER_LIBRARIES.md</text>
+  <text x="480" y="455" text-anchor="middle" class="footer">Tested on Ruby 4.0+ in isolated subprocesses • Full GC and peak memory metrics in docs/PEER_LIBRARIES.md</text>
 </svg>

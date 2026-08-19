@@ -9,6 +9,7 @@ require "bundler/inline"
 puts "Ensuring benchmark peer ecosystem gems are available (bundler/inline)..."
 gemfile(true) do
   source "https://rubygems.org"
+  gem "rubyzip", ">= 2.3.0"
   gem "caxlsx", "4.5.0"
   gem "xlsxtream", "3.1.0"
   gem "fast_excel", "0.5.0", platform: :mri
@@ -187,7 +188,7 @@ RUNNER_SCRIPT = <<~'RUBY'
   when ["xlsxrb_inmemory", "read"]
     require_relative "lib/xlsxrb"
     measure do
-      wb = Xlsxrb.read(filename)
+      wb = Xlsxrb.read(filename).load
       count = 0
       wb.sheets.each do |sheet|
         sheet.rows.each do |row|
@@ -237,6 +238,7 @@ RUNNER_SCRIPT = <<~'RUBY'
       end
     end
   when ["simple_xlsx_reader", "read"]
+    gem "rubyzip", "~> 1.3.0"
     require "simple_xlsx_reader"
     measure do
       doc = SimpleXlsxReader.open(filename)
