@@ -251,6 +251,11 @@ This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering
 <td align="center"><a href="#conditional-formatting">View Code &amp; Detail</a></td>
 </tr>
 <tr>
+<td><strong>Drawing Shapes</strong></td>
+<td align="center"><img src="../../test/visual/baselines/drawing_shapes/page-1.png" width="160" alt="Drawing Shapes"/></td>
+<td align="center"><a href="#drawing-shapes">View Code &amp; Detail</a></td>
+</tr>
+<tr>
 <td><strong>Embedded Images</strong></td>
 <td align="center"><img src="../../test/visual/baselines/embedded_images/page-1.png" width="160" alt="Embedded Images"/></td>
 <td align="center"><a href="#embedded-images">View Code &amp; Detail</a></td>
@@ -361,6 +366,11 @@ This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering
 <td align="center"><a href="#page-paper-size-a3">View Code &amp; Detail</a></td>
 </tr>
 <tr>
+<td><strong>Pivot Table</strong></td>
+<td align="center"><img src="../../test/visual/baselines/pivot_table/page-1.png" width="160" alt="Pivot Table"/></td>
+<td align="center"><a href="#pivot-table">View Code &amp; Detail</a></td>
+</tr>
+<tr>
 <td><strong>Row Grouping</strong></td>
 <td align="center"><img src="../../test/visual/baselines/row_grouping/page-1.png" width="160" alt="Row Grouping"/></td>
 <td align="center"><a href="#row-grouping">View Code &amp; Detail</a></td>
@@ -394,6 +404,11 @@ This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering
 <td><strong>Styles Fonts Fills</strong></td>
 <td align="center"><img src="../../test/visual/baselines/styles_fonts_fills/page-1.png" width="160" alt="Styles Fonts Fills"/></td>
 <td align="center"><a href="#styles-fonts-fills">View Code &amp; Detail</a></td>
+</tr>
+<tr>
+<td><strong>Table Styles</strong></td>
+<td align="center"><img src="../../test/visual/baselines/table_styles/page-1.png" width="160" alt="Table Styles"/></td>
+<td align="center"><a href="#table-styles">View Code &amp; Detail</a></td>
 </tr>
 <tr>
 <td><strong>View Show Grid Lines</strong></td>
@@ -2844,6 +2859,55 @@ Row 0: A1: 90, B1: 45, C1: 72, D1: 88
 
 <hr/>
 
+## Drawing Shapes
+
+Visual demonstration for Drawing Shapes.
+
+### Rendered Output (LibreOffice Calc)
+
+<div><img src="../../test/visual/baselines/drawing_shapes/page-1.png" width="100%" alt="Preview"/></div>
+
+<div><img src="../../test/visual/baselines/drawing_shapes/page-2.png" width="100%" alt="Preview"/></div>
+
+### DSL Code
+
+```ruby
+# frozen_string_literal: true
+
+require "xlsxrb"
+
+output_path = ARGV[0] || "drawing_shapes.xlsx"
+
+Xlsxrb.write(output_path) do |wb|
+  wb.sheet("Shapes") do |sheet|
+    sheet.column(0..7, width: 15)
+    sheet.row(["Diagram with shapes and annotations"])
+    sheet.row([])
+    sheet.shape(preset: "rect", text: "Process Start", from_col: 1, from_row: 2, to_col: 3, to_row: 4)
+    sheet.shape(preset: "rightArrow", text: "Next", from_col: 4, from_row: 3, to_col: 5, to_row: 4)
+    sheet.shape(preset: "roundRect", text: "Processing", from_col: 6, from_row: 2, to_col: 8, to_row: 4)
+  end
+end
+
+puts "=== Read Validation ==="
+workbook = Xlsxrb.read(output_path).load
+sheet = workbook.sheets.first
+sheet.rows.each do |row|
+  row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
+end
+```
+
+### Console Output
+
+```text
+=== Read Validation ===
+Row 0: A1: "Diagram with shapes and annotations"
+Row 1:
+```
+
+<hr/>
+
 ## Embedded Images
 
 Demonstrates embedding raster PNG images in cell ranges.
@@ -4010,6 +4074,71 @@ Print Options: {}
 
 <hr/>
 
+## Pivot Table
+
+Visual demonstration for Pivot Table.
+
+### Rendered Output (LibreOffice Calc)
+
+<div><img src="../../test/visual/baselines/pivot_table/page-1.png" width="100%" alt="Preview"/></div>
+
+<div><img src="../../test/visual/baselines/pivot_table/page-2.png" width="100%" alt="Preview"/></div>
+
+### DSL Code
+
+```ruby
+# frozen_string_literal: true
+
+require "xlsxrb"
+
+output_path = ARGV[0] || "pivot_table.xlsx"
+
+Xlsxrb.write(output_path) do |wb|
+  wb.sheet("SalesData") do |sheet|
+    sheet.column(0..3, width: 18)
+    sheet.row(%w[Region Quarter Sales Rep])
+    sheet.row(["East", "Q1", 1000, "Alice"])
+    sheet.row(["West", "Q1", 1500, "Bob"])
+    sheet.row(["East", "Q2", 1200, "Alice"])
+    sheet.row(["West", "Q2", 1800, "Bob"])
+    sheet.row(["North", "Q1", 800, "Charlie"])
+    sheet.row(["North", "Q2", 950, "Charlie"])
+
+    sheet.pivot_table(
+      "SalesData!A1:D7",
+      row_fields: ["Region"],
+      data_fields: [{ name: "Sales", subtotal: "sum" }],
+      col_fields: ["Quarter"],
+      dest_ref: "F1",
+      name: "RegionalSalesSummary"
+    )
+  end
+end
+
+puts "=== Read Validation ==="
+workbook = Xlsxrb.read(output_path).load
+sheet = workbook.sheets.first
+sheet.rows.each do |row|
+  row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
+end
+```
+
+### Console Output
+
+```text
+=== Read Validation ===
+Row 0: A1: "Region", B1: "Quarter", C1: "Sales", D1: "Rep"
+Row 1: A2: "East", B2: "Q1", C2: 1000, D2: "Alice"
+Row 2: A3: "West", B3: "Q1", C3: 1500, D3: "Bob"
+Row 3: A4: "East", B4: "Q2", C4: 1200, D4: "Alice"
+Row 4: A5: "West", B5: "Q2", C5: 1800, D5: "Bob"
+Row 5: A6: "North", B6: "Q1", C6: 800, D6: "Charlie"
+Row 6: A7: "North", B7: "Q2", C7: 950, D7: "Charlie"
+```
+
+<hr/>
+
 ## Row Grouping
 
 Demonstrates outline grouping for rows.
@@ -4353,6 +4482,60 @@ end
 === Read Validation ===
 Row 0: A1: "Header 1" (font=Calibri, fill=FF4F81BD), B1: "Header 2" (font=Calibri, fill=FF4F81BD)
 Row 1: A2: "Normal Text" (font=, fill=), B2: "Highlighted Text" (font=Calibri, fill=FFFFFF00)
+```
+
+<hr/>
+
+## Table Styles
+
+Visual demonstration for Table Styles.
+
+### Rendered Output (LibreOffice Calc)
+
+<div><img src="../../test/visual/baselines/table_styles/page-1.png" width="100%" alt="Preview"/></div>
+
+<div><img src="../../test/visual/baselines/table_styles/page-2.png" width="100%" alt="Preview"/></div>
+
+### DSL Code
+
+```ruby
+# frozen_string_literal: true
+
+require "xlsxrb"
+
+output_path = ARGV[0] || "table_styles.xlsx"
+
+Xlsxrb.write(output_path) do |wb|
+  wb.sheet("Table Example") do |sheet|
+    sheet.column(0..3, width: 20)
+    sheet.row(%w[ID Name Department Salary])
+    sheet.row([101, "Alice Smith", "Engineering", 120_000])
+    sheet.row([102, "Bob Jones", "Marketing", 95_000])
+    sheet.row([103, "Carol White", "Sales", 110_000])
+    sheet.row([104, "David Brown", "Engineering", 130_000])
+
+    sheet.table("A1:D5", columns: %w[ID Name Department Salary], name: "EmployeeTable", style: "TableStyleMedium9", total_row: false)
+  end
+end
+
+puts "=== Read Validation ==="
+workbook = Xlsxrb.read(output_path).load
+sheet = workbook.sheets.first
+sheet.rows.each do |row|
+  row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
+  puts "Row #{row.index}: #{row_cells.join(", ")}"
+end
+```
+
+### Console Output
+
+```text
+=== Read Validation ===
+Row 0: A1: "ID", B1: "Name", C1: "Department", D1: "Salary"
+Row 1: A2: 101, B2: "Alice Smith", C2: "Engineering", D2: 120000
+Row 2: A3: 102, B3: "Bob Jones", C3: "Marketing", D3: 95000
+Row 3: A4: 103, B4: "Carol White", C4: "Sales", D4: 110000
+Row 4: A5: 104, B5: "David Brown", C5: "Engineering", D5: 130000
 ```
 
 <hr/>
