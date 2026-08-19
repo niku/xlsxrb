@@ -1,3 +1,22 @@
+## [0.1.11] - 2026-08-19
+
+### Performance
+- **Sub-Second Streaming Write (< 1.0s / 1,000,000 cells)**:
+  - Achieved sub-second streaming write performance (**0.97 s** median for 1M cells) while maintaining 100% full SST (Shared String Table) XML deduplication and ISO/IEC 29500 compatibility.
+  - Implemented 1-Pass Direct ZIP streaming pipeline, eliminating all intermediate tempfiles, disk seek-backs, and extra deflate flush cycles.
+  - Added dedicated unstyled fast-path in `WorksheetWriter#write_row_values` with precomputed coordinate and integer lookup tables.
+  - Pre-registered default date/time formatting styles, completely eliminating redundant per-row scan loops.
+  - Streamlined `ZipWriter` instance variable lookups to eliminate per-chunk hash overhead.
+  - Added `alias << row` to `WorksheetProxy` and `StreamWriter` for idiomatic Ruby streaming.
+- **High-Speed Streaming Read (1.61s / 1,000,000 cells)**:
+  - Reduced streaming read execution time from **3.40 s** down to **1.61 s** (over 2x speedup).
+  - Refactored `Elements::Cell` into an optimized lightweight class with `Cell.fast_create`, reducing 1M cell instantiation overhead by 5.2x (0.92s → 0.17s) while maintaining full pattern matching (`deconstruct`, `deconstruct_keys`) and immutability.
+  - Replaced per-byte Ruby scanning in `WorksheetParser.fast_scan_cells_direct` with an Onigmo C-level regular expression scanner (`CELL_FAST_RE`), eliminating 100,000 intermediate XML substring allocations and nested byte loops.
+  - Optimized `StreamRow#cells` to populate cell arrays via direct block traversal, eliminating Enumerator object allocations.
+
+### Documentation
+- Updated benchmark results, performance comparisons, and linear-scale SVG charts across `README.md` and `docs/PEER_LIBRARIES.md`.
+
 ## [0.1.10] - 2026-08-19
 
 ### Added
