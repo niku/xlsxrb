@@ -53,70 +53,63 @@ module Xlsxrb
       def start_entry(path)
         raise "ZipWriter is closed" if @closed
 
-        entry_offset = @bytes_written
-        gp_flag = @seekable ? 0 : 0x0008
-
-        @current_entry = {
-          path: path,
-          offset: entry_offset,
-          deflater: Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS),
-          crc: Zlib.crc32,
-          uncompressed_size: 0,
-          compressed_size: 0,
-          gp_flag: gp_flag,
-          seekable: @seekable
-        }
+        @entry_path = path
+        @entry_offset = @bytes_written
+        @entry_gp_flag = @seekable ? 0 : 0x0008
+        @entry_deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
+        @entry_crc = Zlib.crc32
+        @entry_uncompressed_size = 0
+        @entry_compressed_size = 0
+        @entry_seekable = @seekable
+        @has_current_entry = true
 
         # Write local header (if unseekable, sizes/crc are 0 and bit 3 is set)
-        write_local_header(path, 0, 0, 0, gp_flag: gp_flag)
+        write_local_header(path, 0, 0, 0, gp_flag: @entry_gp_flag)
       end
 
       def write_data(str)
-        raise "No entry started" unless @current_entry
+        raise "No entry started" unless @has_current_entry
+        return if str.empty?
 
-        bytes = str.b
-        return if bytes.empty?
-
-        @current_entry[:crc] = Zlib.crc32(bytes, @current_entry[:crc])
-        @current_entry[:uncompressed_size] += bytes.bytesize
-        compressed = @current_entry[:deflater].deflate(bytes, Zlib::SYNC_FLUSH)
-        @current_entry[:compressed_size] += compressed.bytesize
+        @entry_crc = Zlib.crc32(str, @entry_crc)
+        @entry_uncompressed_size += str.bytesize
+        compressed = @entry_deflater.deflate(str)
+        @entry_compressed_size += compressed.bytesize
         write_bytes(compressed)
       end
 
       def finish_entry
-        raise "No entry started" unless @current_entry
+        raise "No entry started" unless @has_current_entry
 
-        entry = @current_entry
-        @current_entry = nil
+        @has_current_entry = false
 
         # Flush remaining deflate data
-        remaining = entry[:deflater].finish
-        entry[:compressed_size] += remaining.bytesize
+        remaining = @entry_deflater.finish
+        @entry_compressed_size += remaining.bytesize
         write_bytes(remaining)
-        entry[:deflater].close
+        @entry_deflater.close
 
-        final_crc = entry[:crc] & 0xFFFFFFFF
+        final_crc = @entry_crc & 0xFFFFFFFF
 
-        if entry[:seekable]
+        if @entry_seekable
           # Patch the local header if seekable
           current_pos = @io.is_a?(StringIO) ? @io.pos : @io.tell
-          @io.seek(entry[:offset])
-          write_local_header(entry[:path], final_crc, entry[:compressed_size], entry[:uncompressed_size], gp_flag: 0, count_bytes: false)
+          @io.seek(@entry_offset)
+          write_local_header(@entry_path, final_crc, @entry_compressed_size, @entry_uncompressed_size, gp_flag: 0, count_bytes: false)
           @io.seek(current_pos)
         else
           # Write Data Descriptor (signature 0x08074b50 + crc32 + comp_size + uncomp_size)
-          descriptor = [0x08074B50, final_crc, entry[:compressed_size], entry[:uncompressed_size]].pack("VVVV")
+          descriptor = [0x08074B50, final_crc, @entry_compressed_size, @entry_uncompressed_size].pack("VVVV")
           write_bytes(descriptor)
         end
 
         @entries << {
-          path: entry[:path],
+          path: @entry_path,
           crc32: final_crc,
-          compressed_size: entry[:compressed_size],
-          uncompressed_size: entry[:uncompressed_size],
-          offset: entry[:offset],
-          gp_flag: entry[:gp_flag]
+          compressed_size: @entry_compressed_size,
+          uncompressed_size: @entry_uncompressed_size,
+          offset: @entry_offset,
+          gp_flag: @entry_gp_flag
         }
       end
 

@@ -28,6 +28,14 @@ module Xlsxrb
 
       def write_to: (untyped target) -> untyped
 
+      def prepare_sheet_auxiliary: (untyped sheet, untyped _idx) -> untyped
+
+      def write_auxiliary_parts: (untyped zip) -> untyped
+
+      def write_package_metadata: (untyped zip) -> untyped
+
+      def write_package_parts: (untyped zip) -> untyped
+
       private
 
       def build_sheet_rels_from_list: (untyped rels) -> untyped
@@ -50,7 +58,15 @@ module Xlsxrb
 
       def write_dxf_fill: (untyped builder, untyped fill) -> untyped
 
-      def build_shared_strings_xml: () -> untyped
+      INVALID_XML_CHARS_RE: ::Regexp
+
+      ESCAPE_RE: ::Regexp
+
+      ESCAPE_MAP: untyped
+
+      def escape_xml: (untyped value) -> untyped
+
+      def write_shared_strings_xml: (untyped zip) -> untyped
 
       def write_worksheet_xml: (untyped io, untyped sheet, ?drawing_rid: untyped, ?sheet_protection: untyped, ?auto_filter: untyped, ?filter_columns: untyped, ?sort_state: untyped, ?merge_cells: untyped, ?conditional_formats: untyped, ?data_validations: untyped, ?hyperlinks: untyped, ?print_options: untyped, ?page_margins: untyped, ?page_setup: untyped, ?header_footer: untyped, ?row_breaks: untyped, ?col_breaks: untyped, ?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped, ?sheet_properties: untyped, ?tables: untyped, ?table_start_rid: untyped, ?legacy_drawing_rid: untyped, ?sparkline_groups: untyped) -> untyped
 

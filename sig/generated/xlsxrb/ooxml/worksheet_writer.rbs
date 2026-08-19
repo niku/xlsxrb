@@ -9,6 +9,10 @@ module Xlsxrb
 
       DOC_REL_NS: ::String
 
+      COLUMN_LETTERS: untyped
+
+      INTEGER_STRINGS: untyped
+
       def initialize: (untyped io) -> untyped
 
       # Write the worksheet header. Call once before writing rows.

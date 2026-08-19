@@ -34,13 +34,16 @@ module Xlsxrb
     def initialize(target, strict_excel_mode: true)
       @target = target
       @strict_excel_mode = strict_excel_mode
+      @io = target.is_a?(String) ? File.open(target, "wb") : target
+      @owns_io = target.is_a?(String)
+      @zip = Ooxml::ZipWriter.new(@io)
       @sst = []
       @sst_index = {}
       @sheets = []
       @current_sheet = nil
+      @current_sheet_index = 0
       @current_row_index = 0
-      @tempfiles = []
-      @current_tempfile = nil
+      @sheet_entry_started = false
       @current_row_writer = nil
       @current_columns = []
       @current_charts = []
@@ -51,6 +54,8 @@ module Xlsxrb
       @current_data_validations = []
       @current_conditional_formats = []
       @current_tables = []
+      @current_pivot_tables = []
+      @current_sparkline_groups = []
       @current_comments = []
       @current_merge_cells = []
       @current_freeze_pane = nil
@@ -67,9 +72,12 @@ module Xlsxrb
       @current_sheet_view = {}
       @current_row_breaks = []
       @current_col_breaks = []
+      @current_cells = {}
       @styles = {} # { style_name => StyleBuilder }
       @style_writer = Ooxml::Writer.new
       @style_name_to_id = {}
+      style("__xlsxrb_date", number_format: "yyyy-mm-dd")
+      style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss")
       # Workbook-level settings
       @defined_names = []
       @core_properties = {}
@@ -214,11 +222,12 @@ module Xlsxrb
       # @return [void]
       # @api public
       #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-      def row(...)
+      def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.row(...)
+        @writer.row(values, styles: styles, height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level)
       end
+      alias << row
 
       # Configures column width and properties.
       #
@@ -814,10 +823,12 @@ module Xlsxrb
       flush_current_sheet
       name ||= "Sheet#{@sheets.size + 1}"
       @current_sheet = name
+      @current_sheet_index = @sheets.size + 1
       @current_row_index = 0
-      @current_tempfile = Tempfile.new(["xlsxrb_rows", ".xml"])
-      @current_tempfile.binmode
-      @current_row_writer = Ooxml::WorksheetWriter.new(@current_tempfile)
+      @sheet_entry_started = false
+      @current_row_buffer = String.new(capacity: 65_536)
+      @current_sheet_io = StringIO.new(@current_row_buffer)
+      @current_row_writer = Ooxml::WorksheetWriter.new(@current_sheet_io)
       @current_row_writer.instance_variable_set(:@started, true)
 
       @current_columns = []
@@ -856,6 +867,32 @@ module Xlsxrb
       yield self
       flush_current_sheet
       # simplecov:enable
+    end
+
+    def start_sheet_entry
+      return if @sheet_entry_started
+
+      @sheet_entry_started = true
+      @zip.start_entry("xl/worksheets/sheet#{@current_sheet_index}.xml")
+      zip_io = Ooxml::WorkbookWriter::ZipEntryIO.new(@zip)
+
+      row_buf = @current_row_writer.instance_variable_get(:@row_buffer)
+      if row_buf && !row_buf.empty?
+        @current_sheet_io.write(row_buf)
+        row_buf.clear
+      end
+
+      @current_row_writer = Ooxml::WorksheetWriter.new(zip_io)
+      @current_row_writer.start(
+        columns: @current_columns,
+        sheet_properties: @current_sheet_properties.empty? ? nil : @current_sheet_properties,
+        freeze_pane: @current_freeze_pane,
+        split_pane: @current_split_pane,
+        selection: @current_selection,
+        sheet_view: @current_sheet_view.empty? ? nil : @current_sheet_view
+      )
+      @zip.write_data(@current_row_buffer) unless @current_row_buffer.empty?
+      @current_row_buffer.clear
     end
 
     # Appends a row of values to the active sheet.
@@ -907,48 +944,18 @@ module Xlsxrb
         styles = styles_array
       end
 
-      # Auto-detect Date / Time for built-in styles
-      values.each_with_index do |val, idx|
-        cell_style = styles.is_a?(Array) ? styles[idx] : styles
-
-        if val.is_a?(Date) && cell_style.nil?
-          style("__xlsxrb_date", number_format: "yyyy-mm-dd") unless @styles.key?("__xlsxrb_date")
-          styles = [] if styles.nil?
-          styles = Array.new(values.size, styles) unless styles.is_a?(Array)
-          styles[idx] = "__xlsxrb_date"
-        elsif val.is_a?(Time) && cell_style.nil?
-          style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss") unless @styles.key?("__xlsxrb_time")
-          styles = [] if styles.nil?
-          styles = Array.new(values.size, styles) unless styles.is_a?(Array)
-          styles[idx] = "__xlsxrb_time"
-        end
-      end
-
-      has_charts = @current_charts && !@current_charts.empty?
-      row_num = row_index + 1 if has_charts
-
-      max_len = values.size
-      max_len = [max_len, styles.size].max if styles.is_a?(Array)
-      # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
-      raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns" if @strict_excel_mode && max_len > 16_384
-
-      if has_charts || @strict_excel_mode
-        @current_cells ||= {} if has_charts
-        max_len.times do |col_idx|
-          val = col_idx < values.size ? values[col_idx] : nil
+      if @current_charts && !@current_charts.empty?
+        @current_cells ||= {}
+        row_num = row_index + 1
+        values.each_with_index do |val, col_idx|
           next if val.nil?
 
-          raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}" unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula)) || val.is_a?(Elements::RichText) || val.is_a?(Elements::CellError)
-
-          # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
-          raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
-
-          if has_charts
-            addr = "#{Elements::Cell.column_letter(col_idx)}#{row_num}"
-            @current_cells[addr] = val
-          end
+          addr = "#{Elements::Cell.column_letter(col_idx)}#{row_num}"
+          @current_cells[addr] = val
         end
       end
+
+      raise ArgumentError, "Row contains #{values.length} columns, exceeding Excel limit of 16_384 columns" if @strict_excel_mode && values.length > 16_384
 
       attrs = nil
       if height || hidden || outline_level
@@ -960,7 +967,9 @@ module Xlsxrb
       end
 
       @current_row_writer.write_row_values(row_index, values, styles: styles, style_map: @style_name_to_id, sst: @sst, sst_index: @sst_index, attrs: attrs)
+      start_sheet_entry if !@sheet_entry_started && @current_row_buffer.bytesize >= 65_536
     end
+    alias << row
 
     # Sets column formatting and properties for one or multiple columns.
     #
@@ -1542,38 +1551,53 @@ module Xlsxrb
           fills: @style_writer.fills.dup,
           borders: @style_writer.borders.dup,
           xf_entries: @style_writer.xf_entries.dup,
-          num_fmts: @style_writer.num_fmts.dup
+          num_fmts: @style_writer.num_fmts.dup,
+          dxfs: @dxfs || []
         }
 
         resolved_names = resolve_defined_names(@defined_names, @sheets)
 
-        Ooxml::WorkbookWriter.write(
-          @target,
+        wb_writer = Ooxml::WorkbookWriter.new(
           sheets: @sheets,
           shared_strings: @sst,
+          shared_strings_index: @sst_index,
           styles: styles_definition,
           defined_names: resolved_names.empty? ? nil : resolved_names,
           core_properties: @core_properties.empty? ? nil : @core_properties,
           app_properties: @app_properties.empty? ? nil : @app_properties,
           custom_properties: @custom_properties.empty? ? nil : @custom_properties,
-          workbook_protection: @workbook_protection
+          workbook_protection: @workbook_protection,
+          workbook_properties: @workbook_properties
         )
+        wb_writer.write_package_parts(@zip)
+
+        @zip.close
+        @io.close if @owns_io && !@io.closed?
       end
     ensure
       cleanup!
     end
 
-    # Explicitly removes any temporary files created during streaming.
+    # Explicitly cleans up any resources if not already closed.
     #
     # @return [void]
     # @api public
     #: () -> void
     def cleanup!
-      @tempfiles.each do |tmp|
-        tmp.close
-        tmp.unlink
+      if @zip && !@zip.instance_variable_get(:@closed)
+        begin
+          @zip.close
+        rescue StandardError
+          nil
+        end
       end
-      @tempfiles.clear
+      return unless @owns_io && @io && !@io.closed?
+
+      begin
+        @io.close
+      rescue StandardError
+        nil
+      end
     end
 
     private
@@ -1604,43 +1628,106 @@ module Xlsxrb
     def flush_current_sheet
       return unless @current_sheet
 
-      @current_tempfile.close
+      # Normalize conditional formatting rules and record dxfs in @dxfs
+      unless @current_conditional_formats.empty?
+        @dxfs ||= []
+        @current_conditional_formats = @current_conditional_formats.map do |rule|
+          next rule if rule[:format_id]
 
-      sheet_data = { name: @current_sheet, rows_tmp_path: @current_tempfile.path, columns: @current_columns }
+          normalized = rule.dup
+          font = {}
+          font[:color] = normalized.delete(:font_color) if normalized.key?(:font_color)
+          font[:bold] = normalized.delete(:bold) if normalized.key?(:bold)
+          font[:italic] = normalized.delete(:italic) if normalized.key?(:italic)
+          font[:underline] = normalized.delete(:underline) if normalized.key?(:underline)
+
+          fill = {}
+          if normalized.key?(:fill_color)
+            fill[:pattern] = "solid"
+            fill[:fg_color] = normalized.delete(:fill_color)
+          end
+
+          dxf = {}
+          dxf[:font] = font unless font.empty?
+          dxf[:fill] = fill unless fill.empty?
+          next normalized if dxf.empty?
+
+          dxf_id = @dxfs.index(dxf)
+          unless dxf_id
+            @dxfs << dxf
+            dxf_id = @dxfs.size - 1
+          end
+          normalized[:format_id] = dxf_id
+          normalized
+        end
+      end
+
+      start_sheet_entry unless @sheet_entry_started
+
+      sheet_data = {
+        name: @current_sheet,
+        columns: @current_columns,
+        charts: @current_charts,
+        hyperlinks: @current_hyperlinks,
+        auto_filter: @current_auto_filter,
+        filter_columns: @current_filter_columns,
+        sort_state: @current_sort_state,
+        data_validations: @current_data_validations,
+        conditional_formats: @current_conditional_formats,
+        tables: @current_tables,
+        pivot_tables: @current_pivot_tables,
+        sparkline_groups: @current_sparkline_groups,
+        comments: @current_comments,
+        merge_cells: @current_merge_cells,
+        freeze_pane: @current_freeze_pane,
+        split_pane: @current_split_pane,
+        selection: @current_selection,
+        page_margins: @current_page_margins,
+        page_setup: @current_page_setup,
+        header_footer: @current_header_footer,
+        print_options: @current_print_options,
+        sheet_protection: @current_sheet_protection,
+        images: @current_images,
+        shapes: @current_shapes,
+        sheet_properties: @current_sheet_properties,
+        sheet_view: @current_sheet_view,
+        row_breaks: @current_row_breaks,
+        col_breaks: @current_col_breaks
+      }
       sheet_data[:cells] = @current_cells if @current_cells && !@current_cells.empty?
       @current_cells = nil
-      sheet_data[:charts] = @current_charts unless @current_charts.empty?
-      sheet_data[:hyperlinks] = @current_hyperlinks unless @current_hyperlinks.empty?
-      sheet_data[:auto_filter] = @current_auto_filter if @current_auto_filter
-      sheet_data[:filter_columns] = @current_filter_columns unless @current_filter_columns.empty?
-      sheet_data[:sort_state] = @current_sort_state if @current_sort_state
-      sheet_data[:data_validations] = @current_data_validations unless @current_data_validations.empty?
-      sheet_data[:conditional_formats] = @current_conditional_formats unless @current_conditional_formats.empty?
-      sheet_data[:tables] = @current_tables unless @current_tables.empty?
-      sheet_data[:pivot_tables] = @current_pivot_tables unless @current_pivot_tables.empty?
-      sheet_data[:sparkline_groups] = @current_sparkline_groups unless @current_sparkline_groups.empty?
-      sheet_data[:comments] = @current_comments unless @current_comments.empty?
-      sheet_data[:merge_cells] = @current_merge_cells unless @current_merge_cells.empty?
-      sheet_data[:freeze_pane] = @current_freeze_pane if @current_freeze_pane
-      sheet_data[:split_pane] = @current_split_pane if @current_split_pane
-      sheet_data[:selection] = @current_selection if @current_selection
-      sheet_data[:page_margins] = @current_page_margins if @current_page_margins
-      sheet_data[:page_setup] = @current_page_setup unless @current_page_setup.empty?
-      sheet_data[:header_footer] = @current_header_footer unless @current_header_footer.empty?
-      sheet_data[:print_options] = @current_print_options unless @current_print_options.empty?
-      sheet_data[:sheet_protection] = @current_sheet_protection if @current_sheet_protection
-      sheet_data[:images] = @current_images unless @current_images.empty?
-      sheet_data[:shapes] = @current_shapes unless @current_shapes.empty?
-      sheet_data[:sheet_properties] = @current_sheet_properties unless @current_sheet_properties.empty?
-      sheet_data[:sheet_view] = @current_sheet_view unless @current_sheet_view.empty?
-      sheet_data[:row_breaks] = @current_row_breaks unless @current_row_breaks.empty?
-      sheet_data[:col_breaks] = @current_col_breaks unless @current_col_breaks.empty?
+
+      temp_wb_writer = Ooxml::WorkbookWriter.new(sheets: [sheet_data])
+      info = temp_wb_writer.prepare_sheet_auxiliary(sheet_data, @current_sheet_index - 1)
+
+      @current_row_writer.finish(
+        drawing_rid: info[:drawing_rid],
+        sheet_protection: @current_sheet_protection,
+        auto_filter: @current_auto_filter,
+        filter_columns: @current_filter_columns.empty? ? nil : @current_filter_columns,
+        sort_state: @current_sort_state,
+        merge_cells: @current_merge_cells.empty? ? nil : @current_merge_cells,
+        conditional_formats: @current_conditional_formats.empty? ? nil : @current_conditional_formats,
+        data_validations: @current_data_validations.empty? ? nil : @current_data_validations,
+        hyperlinks: info[:enriched_hyperlinks].empty? ? nil : info[:enriched_hyperlinks],
+        print_options: @current_print_options.empty? ? nil : @current_print_options,
+        page_margins: @current_page_margins,
+        page_setup: @current_page_setup.empty? ? nil : @current_page_setup,
+        header_footer: @current_header_footer.empty? ? nil : @current_header_footer,
+        row_breaks: @current_row_breaks.empty? ? nil : @current_row_breaks,
+        col_breaks: @current_col_breaks.empty? ? nil : @current_col_breaks,
+        tables: @current_tables.empty? ? nil : @current_tables,
+        table_start_rid: info[:table_start_rid],
+        legacy_drawing_rid: info[:vml_rid],
+        sparkline_groups: @current_sparkline_groups.empty? ? nil : @current_sparkline_groups
+      )
+
+      @zip.finish_entry
       @sheets << sheet_data
 
-      @tempfiles << @current_tempfile
       @current_sheet = nil
-      @current_tempfile = nil
       @current_row_writer = nil
+      @sheet_entry_started = false
     end
   end
 end

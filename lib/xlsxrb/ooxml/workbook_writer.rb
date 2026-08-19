@@ -67,202 +67,15 @@ module Xlsxrb
         preprocess_conditional_formats!
 
         ZipWriter.open(target) do |zip|
-          zip.add_entry("[Content_Types].xml", build_content_types)
-          zip.add_entry("_rels/.rels", build_root_rels)
-          zip.add_entry("xl/workbook.xml", build_workbook_xml)
-          zip.add_entry("xl/_rels/workbook.xml.rels", build_workbook_rels)
-          zip.add_entry("xl/styles.xml", build_styles_xml)
-          zip.add_entry("xl/sharedStrings.xml", build_shared_strings_xml) unless @shared_strings.empty?
-
-          # Document properties
-          zip.add_entry("docProps/core.xml", build_core_properties_xml) unless @core_properties.empty?
-          zip.add_entry("docProps/app.xml", build_app_properties_xml) unless @app_properties.empty?
-          zip.add_entry("docProps/custom.xml", build_custom_properties_xml) unless @custom_properties.empty?
-
           @sheets.each_with_index do |sheet, idx|
-            sheet_images = sheet[:images] || []
-            sheet_charts = sheet[:charts] || []
-            sheet_shapes = sheet[:shapes] || []
-            sheet_comments = sheet[:comments] || []
+            info = prepare_sheet_auxiliary(sheet, idx)
             sheet_tables = sheet[:tables] || []
-            sheet_hyperlinks = sheet[:hyperlinks] || []
-            has_drawing = sheet_images.any? || sheet_charts.any? || sheet_shapes.any?
-            has_comments = sheet_comments.any?
 
-            # Track relationship IDs for this sheet
-            sheet_rels = []
-            drawing_rid = nil
-            vml_rid = nil
-            table_start_rid = nil
-            hyperlink_rels = []
-
-            # Drawing relationships (images, charts, shapes)
-            if has_drawing
-              @drawing_count += 1
-              drawing_rid_num = sheet_rels.size + 1
-              sheet_rels << { id: "rId#{drawing_rid_num}", type: "#{DOC_REL}/drawing", target: "../drawings/drawing#{@drawing_count}.xml" }
-              drawing_rid = "rId#{drawing_rid_num}"
-
-              drawing_rels_data = []
-              drawing_parts = []
-
-              chart_writer = Xlsxrb::Ooxml::Writer.new
-              chart_writer.add_sheet(sheet[:name]) unless sheet[:name] == "Sheet1"
-
-              # Populate sheet data in chart_writer for chart cache resolution
-              (sheet[:rows] || []).each do |row|
-                cells = row.is_a?(Hash) ? row[:cells] : row.cells
-                (cells || []).each do |cell|
-                  ref = cell.is_a?(Hash) ? cell[:ref] : cell.ref
-                  value = cell.is_a?(Hash) ? cell[:value] : cell.value
-                  chart_writer.set_cell(ref, value, sheet: sheet[:name])
-                end
-              end
-              sheet[:cells]&.each do |ref, value|
-                chart_writer.set_cell(ref, value, sheet: sheet[:name])
-              end
-
-              sheet_images.each do |img|
-                media_idx = @drawing_count # simplified
-                media_path = "xl/media/image#{media_idx}.#{img[:ext] || "png"}"
-                zip.add_binary_entry(media_path, img[:file_data])
-                drawing_rels_data << { type: :image, target: "../media/image#{media_idx}.#{img[:ext] || "png"}" }
-                drawing_parts << { kind: :pic, img: img, rid_index: drawing_rels_data.size }
-              end
-
-              sheet_charts.each do |chart_options|
-                chart_writer.add_chart(**chart_options)
-              end
-
-              processed_charts = chart_writer.charts
-              processed_charts.each do |chart|
-                @chart_count += 1
-                chart_path = "xl/charts/chart#{@chart_count}.xml"
-                zip.add_entry(chart_path, chart_writer.send(:generate_chart_xml, chart))
-                drawing_rels_data << { type: :chart, target: "../charts/chart#{@chart_count}.xml" }
-                drawing_parts << { kind: :chart, chart: chart, rid_index: drawing_rels_data.size }
-              end
-
-              sheet_shapes.each_with_index do |shape, si|
-                drawing_parts << { kind: :sp, shape: shape, id: drawing_parts.size + si + 2 }
-              end
-
-              drawing_xml = chart_writer.send(:generate_drawing_xml, drawing_parts)
-              zip.add_entry("xl/drawings/drawing#{@drawing_count}.xml", drawing_xml)
-              unless drawing_rels_data.empty?
-                drawing_rels_xml = chart_writer.send(:generate_drawing_rels, drawing_rels_data)
-                zip.add_entry("xl/drawings/_rels/drawing#{@drawing_count}.xml.rels", drawing_rels_xml)
-              end
-            end
-
-            # Comment relationships
-            if has_comments
-              @comment_count += 1
-              comment_rid_num = sheet_rels.size + 1
-              sheet_rels << { id: "rId#{comment_rid_num}", type: "#{DOC_REL}/comments", target: "../comments#{@comment_count}.xml" }
-              vml_rid_num = sheet_rels.size + 1
-              sheet_rels << { id: "rId#{vml_rid_num}", type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing", target: "../drawings/vmlDrawing#{@comment_count}.vml" }
-              vml_rid = "rId#{vml_rid_num}"
-
-              # Generate comments XML using Writer's method
-              comment_writer = Xlsxrb::Ooxml::Writer.new
-              sheet_comments.each do |c|
-                comment_writer.add_comment(c[:cell], c[:text], author: c[:author] || "Author")
-              end
-              zip.add_entry("xl/comments#{@comment_count}.xml", comment_writer.send(:generate_comments_xml, comment_writer.comments))
-              zip.add_entry("xl/drawings/vmlDrawing#{@comment_count}.vml", comment_writer.send(:generate_vml_drawing_xml, comment_writer.comments))
-            end
-
-            # Hyperlink relationships (external URLs need rels)
-            sheet_hyperlinks.each_with_index do |link, _hi|
-              next unless link[:url]
-
-              h_rid_num = sheet_rels.size + 1
-              sheet_rels << { id: "rId#{h_rid_num}", type: "#{DOC_REL}/hyperlink", target: link[:url], target_mode: "External" }
-              hyperlink_rels << h_rid_num
-            end
-            # Assign rIds to hyperlinks
-            h_rid_idx = 0
-            enriched_hyperlinks = sheet_hyperlinks.map do |link|
-              if link[:url]
-                rid = hyperlink_rels[h_rid_idx]
-                h_rid_idx += 1
-                link.merge(_rid: rid)
-              else
-                link
-              end
-            end
-
-            # Table relationships
-            unless sheet_tables.empty?
-              table_start_rid = sheet_rels.size + 1
-              sheet_tables.each_with_index do |_tbl, _ti|
-                @table_count += 1
-                t_rid_num = sheet_rels.size + 1
-                sheet_rels << { id: "rId#{t_rid_num}", type: "#{DOC_REL}/table", target: "../tables/table#{@table_count}.xml" }
-              end
-            end
-
-            # Pivot table relationships
-            sheet_pivot_tables = sheet[:pivot_tables] || []
-            pivot_table_start_cache = @pivot_cache_count
-            unless sheet_pivot_tables.empty?
-              pivot_writer = Xlsxrb::Ooxml::Writer.new
-              pivot_writer.add_sheet(sheet[:name])
-              sheet_pivot_tables.each do |pt|
-                pivot_writer.add_pivot_table(
-                  pt[:source_ref],
-                  row_fields: pt[:row_fields],
-                  data_fields: pt[:data_fields],
-                  col_fields: pt[:col_fields] || [],
-                  dest_ref: pt[:dest_ref] || "E1",
-                  name: pt[:name],
-                  field_names: pt[:field_names],
-                  items: pt[:items],
-                  sheet: sheet[:name]
-                )
-
-                @pivot_cache_count += 1
-                @pivot_table_count += 1
-
-                pt_rid_num = sheet_rels.size + 1
-                sheet_rels << { id: "rId#{pt_rid_num}", type: "#{DOC_REL}/pivotTable", target: "../pivotTables/pivotTable#{@pivot_table_count}.xml" }
-              end
-
-              # Generate pivot table XML files
-              pivot_data = pivot_writer.pivot_tables(sheet: sheet[:name])
-              pivot_data.each_with_index do |pt_data, pi|
-                cache_idx = pivot_table_start_cache + pi + 1
-                pt_idx = pivot_table_start_cache + pi + 1
-                zip.add_entry("xl/pivotCache/pivotCacheDefinition#{cache_idx}.xml",
-                              pivot_writer.send(:generate_pivot_cache_definition_xml, pt_data, cache_idx))
-                zip.add_entry("xl/pivotCache/pivotCacheRecords#{cache_idx}.xml",
-                              pivot_writer.send(:generate_pivot_cache_records_xml, pt_data))
-                zip.add_entry("xl/pivotTables/pivotTable#{pt_idx}.xml",
-                              pivot_writer.send(:generate_pivot_table_xml, pt_data, cache_idx))
-                zip.add_entry("xl/pivotCache/_rels/pivotCacheDefinition#{cache_idx}.xml.rels",
-                              pivot_writer.send(:generate_pivot_cache_rels, cache_idx))
-                zip.add_entry("xl/pivotTables/_rels/pivotTable#{pt_idx}.xml.rels",
-                              pivot_writer.send(:generate_pivot_table_rels, cache_idx))
-              end
-            end
-
-            # Build worksheet rels if any
-            zip.add_entry("xl/worksheets/_rels/sheet#{idx + 1}.xml.rels", build_sheet_rels_from_list(sheet_rels)) unless sheet_rels.empty?
-
-            # Generate table XML files
-            table_id_base = @table_count - sheet_tables.size
-            sheet_tables.each_with_index do |tbl, ti|
-              tbl_id = table_id_base + ti + 1
-              zip.add_entry("xl/tables/table#{tbl_id}.xml", build_table_xml(tbl, tbl_id))
-            end
-
-            # Build the worksheet XML with all metadata
             zip.start_entry("xl/worksheets/sheet#{idx + 1}.xml")
             write_worksheet_xml(
               ZipEntryIO.new(zip),
               sheet,
-              drawing_rid: drawing_rid,
+              drawing_rid: info[:drawing_rid],
               sheet_protection: sheet[:sheet_protection],
               auto_filter: sheet[:auto_filter],
               filter_columns: sheet[:filter_columns],
@@ -270,7 +83,7 @@ module Xlsxrb
               merge_cells: sheet[:merge_cells],
               conditional_formats: sheet[:conditional_formats],
               data_validations: sheet[:data_validations],
-              hyperlinks: enriched_hyperlinks.empty? ? nil : enriched_hyperlinks,
+              hyperlinks: info[:enriched_hyperlinks].empty? ? nil : info[:enriched_hyperlinks],
               print_options: sheet[:print_options],
               page_margins: sheet[:page_margins],
               page_setup: sheet[:page_setup],
@@ -283,13 +96,239 @@ module Xlsxrb
               sheet_view: sheet[:sheet_view],
               sheet_properties: sheet[:sheet_properties],
               tables: sheet_tables,
-              table_start_rid: table_start_rid,
-              legacy_drawing_rid: vml_rid,
+              table_start_rid: info[:table_start_rid],
+              legacy_drawing_rid: info[:vml_rid],
               sparkline_groups: sheet[:sparkline_groups]
             )
             zip.finish_entry
           end
+
+          write_package_parts(zip)
         end
+      end
+
+      def prepare_sheet_auxiliary(sheet, _idx)
+        sheet_images = sheet[:images] || []
+        sheet_charts = sheet[:charts] || []
+        sheet_shapes = sheet[:shapes] || []
+        sheet_comments = sheet[:comments] || []
+        sheet_tables = sheet[:tables] || []
+        sheet_hyperlinks = sheet[:hyperlinks] || []
+        has_drawing = sheet_images.any? || sheet_charts.any? || sheet_shapes.any?
+        has_comments = sheet_comments.any?
+
+        sheet_rels = []
+        drawing_rid = nil
+        vml_rid = nil
+        table_start_rid = nil
+        hyperlink_rels = []
+
+        if has_drawing
+          @drawing_count += 1
+          drawing_rid_num = sheet_rels.size + 1
+          sheet_rels << { id: "rId#{drawing_rid_num}", type: "#{DOC_REL}/drawing", target: "../drawings/drawing#{@drawing_count}.xml" }
+          drawing_rid = "rId#{drawing_rid_num}"
+        end
+
+        if has_comments
+          @comment_count += 1
+          comment_rid_num = sheet_rels.size + 1
+          sheet_rels << { id: "rId#{comment_rid_num}", type: "#{DOC_REL}/comments", target: "../comments#{@comment_count}.xml" }
+          vml_rid_num = sheet_rels.size + 1
+          sheet_rels << { id: "rId#{vml_rid_num}", type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing", target: "../drawings/vmlDrawing#{@comment_count}.vml" }
+          vml_rid = "rId#{vml_rid_num}"
+        end
+
+        sheet_hyperlinks.each do |link|
+          next unless link[:url]
+
+          h_rid_num = sheet_rels.size + 1
+          sheet_rels << { id: "rId#{h_rid_num}", type: "#{DOC_REL}/hyperlink", target: link[:url], target_mode: "External" }
+          hyperlink_rels << h_rid_num
+        end
+
+        h_rid_idx = 0
+        enriched_hyperlinks = sheet_hyperlinks.map do |link|
+          if link[:url]
+            rid = hyperlink_rels[h_rid_idx]
+            h_rid_idx += 1
+            link.merge(_rid: rid)
+          else
+            link
+          end
+        end
+
+        unless sheet_tables.empty?
+          table_start_rid = sheet_rels.size + 1
+          sheet_tables.each do
+            @table_count += 1
+            t_rid_num = sheet_rels.size + 1
+            sheet_rels << { id: "rId#{t_rid_num}", type: "#{DOC_REL}/table", target: "../tables/table#{@table_count}.xml" }
+          end
+        end
+
+        sheet_pivot_tables = sheet[:pivot_tables] || []
+        unless sheet_pivot_tables.empty?
+          sheet_pivot_tables.each do
+            @pivot_cache_count += 1
+            @pivot_table_count += 1
+            pt_rid_num = sheet_rels.size + 1
+            sheet_rels << { id: "rId#{pt_rid_num}", type: "#{DOC_REL}/pivotTable", target: "../pivotTables/pivotTable#{@pivot_table_count}.xml" }
+          end
+        end
+
+        sheet[:_prepared_rels] = sheet_rels
+        sheet[:_enriched_hyperlinks] = enriched_hyperlinks
+
+        {
+          drawing_rid: drawing_rid,
+          vml_rid: vml_rid,
+          table_start_rid: table_start_rid,
+          enriched_hyperlinks: enriched_hyperlinks,
+          sheet_rels: sheet_rels
+        }
+      end
+
+      def write_auxiliary_parts(zip)
+        drawing_idx = 0
+        comment_idx = 0
+        table_idx = 0
+        pivot_cache_idx = 0
+        pivot_table_idx = 0
+
+        @sheets.each_with_index do |sheet, idx|
+          sheet_images = sheet[:images] || []
+          sheet_charts = sheet[:charts] || []
+          sheet_shapes = sheet[:shapes] || []
+          sheet_comments = sheet[:comments] || []
+          sheet_tables = sheet[:tables] || []
+          has_drawing = sheet_images.any? || sheet_charts.any? || sheet_shapes.any?
+          has_comments = sheet_comments.any?
+          sheet_rels = sheet[:_prepared_rels] || []
+
+          if has_drawing
+            drawing_idx += 1
+            drawing_rels_data = []
+            drawing_parts = []
+
+            chart_writer = Xlsxrb::Ooxml::Writer.new
+            chart_writer.add_sheet(sheet[:name]) unless sheet[:name] == "Sheet1"
+
+            (sheet[:rows] || []).each do |row|
+              cells = row.is_a?(Hash) ? row[:cells] : row.cells
+              (cells || []).each do |cell|
+                ref = cell.is_a?(Hash) ? cell[:ref] : cell.ref
+                value = cell.is_a?(Hash) ? cell[:value] : cell.value
+                chart_writer.set_cell(ref, value, sheet: sheet[:name])
+              end
+            end
+            sheet[:cells]&.each do |ref, value|
+              chart_writer.set_cell(ref, value, sheet: sheet[:name])
+            end
+
+            sheet_images.each do |img|
+              media_path = "xl/media/image#{drawing_idx}.#{img[:ext] || "png"}"
+              zip.add_binary_entry(media_path, img[:file_data])
+              drawing_rels_data << { type: :image, target: "../media/image#{drawing_idx}.#{img[:ext] || "png"}" }
+              drawing_parts << { kind: :pic, img: img, rid_index: drawing_rels_data.size }
+            end
+
+            sheet_charts.each do |chart_options|
+              chart_writer.add_chart(**chart_options)
+            end
+
+            processed_charts = chart_writer.charts
+            processed_charts.each do |chart|
+              chart_path = "xl/charts/chart#{drawing_rels_data.size + 1}.xml" # simplified
+              zip.add_entry(chart_path, chart_writer.send(:generate_chart_xml, chart))
+              drawing_rels_data << { type: :chart, target: "../charts/chart#{drawing_rels_data.size + 1}.xml" }
+              drawing_parts << { kind: :chart, chart: chart, rid_index: drawing_rels_data.size }
+            end
+
+            sheet_shapes.each_with_index do |shape, si|
+              drawing_parts << { kind: :sp, shape: shape, id: drawing_parts.size + si + 2 }
+            end
+
+            drawing_xml = chart_writer.send(:generate_drawing_xml, drawing_parts)
+            zip.add_entry("xl/drawings/drawing#{drawing_idx}.xml", drawing_xml)
+            unless drawing_rels_data.empty?
+              drawing_rels_xml = chart_writer.send(:generate_drawing_rels, drawing_rels_data)
+              zip.add_entry("xl/drawings/_rels/drawing#{drawing_idx}.xml.rels", drawing_rels_xml)
+            end
+          end
+
+          if has_comments
+            comment_idx += 1
+            comment_writer = Xlsxrb::Ooxml::Writer.new
+            sheet_comments.each do |c|
+              comment_writer.add_comment(c[:cell], c[:text], author: c[:author] || "Author")
+            end
+            zip.add_entry("xl/comments#{comment_idx}.xml", comment_writer.send(:generate_comments_xml, comment_writer.comments))
+            zip.add_entry("xl/drawings/vmlDrawing#{comment_idx}.vml", comment_writer.send(:generate_vml_drawing_xml, comment_writer.comments))
+          end
+
+          sheet_tables.each do |tbl|
+            table_idx += 1
+            zip.add_entry("xl/tables/table#{table_idx}.xml", build_table_xml(tbl, table_idx))
+          end
+
+          sheet_pivot_tables = sheet[:pivot_tables] || []
+          unless sheet_pivot_tables.empty?
+            pivot_writer = Xlsxrb::Ooxml::Writer.new
+            pivot_writer.add_sheet(sheet[:name])
+            sheet_pivot_tables.each do |pt|
+              pivot_writer.add_pivot_table(
+                pt[:source_ref],
+                row_fields: pt[:row_fields],
+                data_fields: pt[:data_fields],
+                col_fields: pt[:col_fields] || [],
+                dest_ref: pt[:dest_ref] || "E1",
+                name: pt[:name],
+                field_names: pt[:field_names],
+                items: pt[:items],
+                sheet: sheet[:name]
+              )
+            end
+
+            pivot_data = pivot_writer.pivot_tables(sheet: sheet[:name])
+            pivot_data.each do |pt_data|
+              pivot_cache_idx += 1
+              pivot_table_idx += 1
+              zip.add_entry("xl/pivotCache/pivotCacheDefinition#{pivot_cache_idx}.xml",
+                            pivot_writer.send(:generate_pivot_cache_definition_xml, pt_data, pivot_cache_idx))
+              zip.add_entry("xl/pivotCache/pivotCacheRecords#{pivot_cache_idx}.xml",
+                            pivot_writer.send(:generate_pivot_cache_records_xml, pt_data))
+              zip.add_entry("xl/pivotTables/pivotTable#{pivot_table_idx}.xml",
+                            pivot_writer.send(:generate_pivot_table_xml, pt_data, pivot_cache_idx))
+              zip.add_entry("xl/pivotCache/_rels/pivotCacheDefinition#{pivot_cache_idx}.xml.rels",
+                            pivot_writer.send(:generate_pivot_cache_rels, pivot_cache_idx))
+              zip.add_entry("xl/pivotTables/_rels/pivotTable#{pivot_table_idx}.xml.rels",
+                            pivot_writer.send(:generate_pivot_table_rels, pivot_cache_idx))
+            end
+          end
+
+          zip.add_entry("xl/worksheets/_rels/sheet#{idx + 1}.xml.rels", build_sheet_rels_from_list(sheet_rels)) unless sheet_rels.empty?
+        end
+      end
+
+      def write_package_metadata(zip)
+        zip.add_entry("[Content_Types].xml", build_content_types)
+        zip.add_entry("_rels/.rels", build_root_rels)
+        zip.add_entry("xl/workbook.xml", build_workbook_xml)
+        zip.add_entry("xl/_rels/workbook.xml.rels", build_workbook_rels)
+        zip.add_entry("xl/styles.xml", build_styles_xml)
+        write_shared_strings_xml(zip) unless @shared_strings.empty?
+
+        # Document properties
+        zip.add_entry("docProps/core.xml", build_core_properties_xml) unless @core_properties.empty?
+        zip.add_entry("docProps/app.xml", build_app_properties_xml) unless @app_properties.empty?
+        zip.add_entry("docProps/custom.xml", build_custom_properties_xml) unless @custom_properties.empty?
+      end
+
+      def write_package_parts(zip)
+        preprocess_conditional_formats!
+        write_auxiliary_parts(zip)
+        write_package_metadata(zip)
       end
 
       private
@@ -765,59 +804,81 @@ module Xlsxrb
         end
       end
 
-      def build_shared_strings_xml
-        io = StringIO.new
-        b = XmlBuilder.new(io)
-        b.declaration
-        b.open_tag("sst", {
-                     xmlns: SSML_NS,
-                     count: @shared_strings.size.to_s,
-                     uniqueCount: @shared_strings.size.to_s
-                   })
+      INVALID_XML_CHARS_RE = /[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/
+      ESCAPE_RE = /[&<>"']/
+      ESCAPE_MAP = { "&" => "&amp;", "<" => "&lt;", ">" => "&gt;", '"' => "&quot;", "'" => "&apos;" }.freeze
+      private_constant :INVALID_XML_CHARS_RE, :ESCAPE_RE, :ESCAPE_MAP
+
+      def escape_xml(value)
+        str = value.to_s
+        str = str.gsub(INVALID_XML_CHARS_RE, "") if str.match?(INVALID_XML_CHARS_RE)
+        str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
+      end
+
+      def write_shared_strings_xml(zip)
+        return if @shared_strings.empty?
+
+        zip.start_entry("xl/sharedStrings.xml")
+        count_str = @shared_strings.size.to_s
+        buf = String.new(capacity: 65_536)
+        buf << '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        buf << '<sst xmlns="' << SSML_NS << '" count="' << count_str << '" uniqueCount="' << count_str << '">'
+
         @shared_strings.each do |str|
           if str.is_a?(Xlsxrb::Elements::RichText)
-            b.open_tag("si")
+            buf << "<si>"
             str.runs.each do |run|
               font = run[:font]
               if font && !font.empty?
-                b.open_tag("r")
-                b.open_tag("rPr")
-                b.empty_tag("b") if font[:bold]
-                b.empty_tag("i") if font[:italic]
-                b.empty_tag("strike") if font[:strike]
+                buf << "<r><rPr>"
+                buf << "<b/>" if font[:bold]
+                buf << "<i/>" if font[:italic]
+                buf << "<strike/>" if font[:strike]
                 if font[:underline]
                   if font[:underline] == true
-                    b.empty_tag("u")
+                    buf << "<u/>"
                   else
-                    b.empty_tag("u", { val: font[:underline] })
+                    buf << '<u val="' << font[:underline].to_s << '"/>'
                   end
                 end
-                b.empty_tag("vertAlign", { val: font[:vert_align] }) if font[:vert_align]
-                b.empty_tag("sz", { val: font[:sz].to_s }) if font[:sz]
+                buf << '<vertAlign val="' << font[:vert_align].to_s << '"/>' if font[:vert_align]
+                buf << '<sz val="' << font[:sz].to_s << '"/>' if font[:sz]
                 if font[:color]
-                  b.empty_tag("color", { rgb: font[:color] })
+                  buf << '<color rgb="' << font[:color].to_s << '"/>'
                 elsif font[:theme]
-                  tc_attrs = { theme: font[:theme].to_s }
-                  tc_attrs[:tint] = font[:tint].to_s if font[:tint]
-                  b.empty_tag("color", tc_attrs)
+                  tint_attr = font[:tint] ? " tint=\"#{font[:tint]}\"" : ""
+                  buf << '<color theme="' << font[:theme].to_s << '"' << tint_attr << "/>"
                 end
-                b.empty_tag("rFont", { val: font[:name] }) if font[:name]
-                b.empty_tag("family", { val: font[:family].to_s }) if font[:family]
-                b.empty_tag("scheme", { val: font[:scheme] }) if font[:scheme]
-                b.close_tag("rPr")
-                b.tag("t") { |_| b.text(run[:text]) }
-                b.close_tag("r")
+                buf << '<rFont val="' << escape_xml(font[:name]) << '"/>' if font[:name]
+                buf << '<family val="' << font[:family].to_s << '"/>' if font[:family]
+                buf << '<scheme val="' << font[:scheme].to_s << '"/>' if font[:scheme]
+                buf << "</rPr><t>"
               else
-                b.tag("r") { |_| b.tag("t") { |_| b.text(run[:text]) } }
+                buf << "<r><t>"
               end
+              buf << escape_xml(run[:text]) << "</t></r>"
             end
-            b.close_tag("si")
+            buf << "</si>"
           else
-            b.tag("si") { |_| b.tag("t") { |_| b.text(str.to_s) } }
+            s = str.to_s
+            needs_space = s.start_with?(" ", "\t", "\n") || s.end_with?(" ", "\t", "\n")
+            if needs_space
+              buf << '<si><t xml:space="preserve">' << escape_xml(s) << "</t></si>"
+            else
+              buf << "<si><t>" << escape_xml(s) << "</t></si>"
+            end
+          end
+
+          if buf.bytesize >= 32_768
+            zip.write_data(buf)
+            buf.clear
           end
         end
-        b.close_tag("sst")
-        io.string
+
+        buf << "</sst>"
+        zip.write_data(buf)
+        buf.clear
+        zip.finish_entry
       end
 
       def write_worksheet_xml(io, sheet, drawing_rid: nil, sheet_protection: nil,

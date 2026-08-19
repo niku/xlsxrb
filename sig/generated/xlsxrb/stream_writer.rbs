@@ -128,6 +128,8 @@ module Xlsxrb
       # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
       def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
 
+      alias << row
+
       # Configures column width and properties.
       #
       # @example Set column A width
@@ -559,6 +561,8 @@ module Xlsxrb
     # : (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
     def internal_sheet_setup: (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
 
+    def start_sheet_entry: () -> untyped
+
     # Appends a row of values to the active sheet.
     #
     # @param values [Array<Object>, Hash] The cell values.
@@ -571,6 +575,8 @@ module Xlsxrb
     # @api public
     # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
     def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+
+    alias << row
 
     # Sets column formatting and properties for one or multiple columns.
     #
@@ -933,7 +939,7 @@ module Xlsxrb
     # : () -> untyped
     def close: () -> untyped
 
-    # Explicitly removes any temporary files created during streaming.
+    # Explicitly cleans up any resources if not already closed.
     #
     # @return [void]
     # @api public

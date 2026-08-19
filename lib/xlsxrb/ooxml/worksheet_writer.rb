@@ -13,6 +13,19 @@ module Xlsxrb
       SSML_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
       DOC_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
+      COLUMN_LETTERS = (0...16_384).map do |index|
+        result = +""
+        i = index
+        loop do
+          result.prepend(("A".ord + (i % 26)).chr)
+          i = (i / 26) - 1
+          break if i.negative?
+        end
+        result.freeze
+      end.freeze
+
+      INTEGER_STRINGS = (0..65_535).map(&:to_s).freeze
+
       def initialize(io)
         @io = io
         @builder = XmlBuilder.new(@io)
@@ -48,8 +61,7 @@ module Xlsxrb
 
         row_num = row_index + 1
         row_num_str = row_num.to_s
-        buf = @row_buffer
-        buf.clear
+        buf = @row_buffer ||= String.new(capacity: 65_536)
         buf << '<row r="' << row_num_str << '"'
         if attrs[:height]
           buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"'
@@ -234,8 +246,10 @@ module Xlsxrb
         end
 
         buf << "</row>"
-        @io.write(buf)
-        buf.clear
+        if buf.bytesize >= 32_768
+          @io.write(buf)
+          buf.clear
+        end
 
         unmapped.each { |node| @builder.write_unmapped(node) }
       end
@@ -245,12 +259,103 @@ module Xlsxrb
         start unless @started
 
         row_num = row_index + 1
-        row_num_str = row_num.to_s
+        row_num_str = row_num < 65_536 ? INTEGER_STRINGS[row_num] : row_num.to_s
+        buf = @row_buffer ||= String.new(capacity: 65_536)
+
+        if styles.nil? && attrs.nil?
+          buf << "<row r=\"#{row_num_str}\">"
+          col_index = 0
+          max_len = values.length
+          while col_index < max_len
+            value = values[col_index]
+            col_ref = COLUMN_LETTERS[col_index] || column_letter(col_index)
+            col_index += 1
+
+            next if value.nil?
+
+            case value
+            when Integer
+              val_str = value >= 0 && value < 65_536 ? INTEGER_STRINGS[value] : value.to_s
+              buf << "<c r=\"#{col_ref}#{row_num_str}\"><v>#{val_str}</v></c>"
+            when Float
+              buf << "<c r=\"#{col_ref}#{row_num_str}\"><v>#{value}</v></c>"
+            when String
+              unless value.start_with?("=")
+                raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.length > 32_767
+
+                idx = (sst_index[value] ||= begin
+                  sst << value
+                  sst.size - 1
+                end)
+                idx_str = idx < 65_536 ? INTEGER_STRINGS[idx] : idx.to_s
+                buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"s\"><v>#{idx_str}</v></c>"
+                next
+              end
+              formula_expr = value[1..]
+              buf << "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f></c>"
+            when true
+              buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"b\"><v>1</v></c>"
+            when false
+              buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"b\"><v>0</v></c>"
+            when Date
+              date_style_id = style_map ? style_map["__xlsxrb_date"] : nil
+              buf << if date_style_id
+                       "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{date_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value)}</v></c>"
+                     else
+                       "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value)}</v></c>"
+                     end
+            when Time
+              time_style_id = style_map ? style_map["__xlsxrb_time"] : nil
+              buf << if time_style_id
+                       "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{time_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value)}</v></c>"
+                     else
+                       "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value)}</v></c>"
+                     end
+            when Xlsxrb::Elements::Formula
+              formula_expr = value.expression
+              formula_expr = formula_expr[1..] if formula_expr.start_with?("=")
+              buf << if value.cached_value
+                       "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>#{value.cached_value}</v></c>"
+                     else
+                       "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f></c>"
+                     end
+            when Hash
+              if value.key?(:formula)
+                formula_expr = value[:formula]
+                formula_expr = formula_expr[1..] if formula_expr.start_with?("=")
+                xml_val = value[:value]
+                buf << if xml_val
+                         "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>#{xml_val}</v></c>"
+                       else
+                         "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f></c>"
+                       end
+              end
+            when Xlsxrb::Elements::CellError
+              buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"e\"><v>#{value.code}</v></c>"
+            when BigDecimal
+              buf << "<c r=\"#{col_ref}#{row_num_str}\"><v>#{value.to_s("F")}</v></c>"
+            else
+              idx = (sst_index[value] ||= begin
+                sst << value
+                sst.size - 1
+              end)
+              idx_str = idx < 65_536 ? INTEGER_STRINGS[idx] : idx.to_s
+              buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"s\"><v>#{idx_str}</v></c>"
+            end
+          end
+
+          buf << "</row>"
+          return unless buf.bytesize >= 32_768
+
+          @io.write(buf)
+          buf.clear
+          return
+        end
+
         is_styles_collection = styles && (styles.is_a?(Array) || styles.is_a?(Hash))
         single_style_id = nil
         single_style_id = style_map[styles] if styles && style_map && !is_styles_collection
 
-        buf = @row_buffer ||= String.new(capacity: 65_536)
         buf << '<row r="' << row_num_str << '"'
         if attrs
           buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"' if attrs[:height]
@@ -278,7 +383,7 @@ module Xlsxrb
             style_id = style_map[style_name] if style_name
           end
 
-          col_ref = column_letter(col_index)
+          col_ref = COLUMN_LETTERS[col_index] || column_letter(col_index)
 
           if value.nil?
             buf << '<c r="' << col_ref << row_num_str << '" s="' << style_id.to_s << '"/>' if style_id
@@ -289,7 +394,12 @@ module Xlsxrb
           # Fast path: unstyled numbers, booleans, and simple strings (majority of cells)
           if style_id.nil? && !value.is_a?(Xlsxrb::Elements::Formula) && !value.is_a?(Hash)
             case value
-            when Integer, Float
+            when Integer
+              val_str = INTEGER_STRINGS[value] || value.to_s
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << val_str << "</v></c>"
+              col_index += 1
+              next
+            when Float
               buf << '<c r="' << col_ref << row_num_str << '"><v>' << value.to_s << "</v></c>"
               col_index += 1
               next
@@ -301,7 +411,8 @@ module Xlsxrb
                   idx = sst.size - 1
                   sst_index[value] = idx
                 end
-                buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx.to_s << "</v></c>"
+                idx_str = INTEGER_STRINGS[idx] || idx.to_s
+                buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx_str << "</v></c>"
                 col_index += 1
                 next
               end
@@ -426,6 +537,8 @@ module Xlsxrb
         end
 
         buf << "</row>"
+        return unless buf.bytesize >= 32_768
+
         @io.write(buf)
         buf.clear
       end
