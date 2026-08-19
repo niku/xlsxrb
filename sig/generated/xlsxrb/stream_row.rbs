@@ -30,12 +30,13 @@ module Xlsxrb
     # @param from [Integer] Byte offset where cells start.
     # @param to [Integer] Byte offset where cells end.
     # @param shared_strings [Array<String>] Shared strings table.
+    # @param prefix [String] XML namespace prefix (e.g. "x:" or "").
     # @param height [Float, Integer, nil] Row height in points.
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom height is set.
     # @param outline_level [Integer, nil] Grouping/outline level.
-    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
 
     # Iterate over cells in this streaming row one by one.
     #

@@ -26,18 +26,20 @@ module Xlsxrb
     # @param from [Integer] Byte offset where cells start.
     # @param to [Integer] Byte offset where cells end.
     # @param shared_strings [Array<String>] Shared strings table.
+    # @param prefix [String] XML namespace prefix (e.g. "x:" or "").
     # @param height [Float, Integer, nil] Row height in points.
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom height is set.
     # @param outline_level [Integer, nil] Grouping/outline level.
-    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-    def initialize(index:, xml_bytes:, from:, to:, shared_strings:, height: nil, hidden: false,
+    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    def initialize(index:, xml_bytes:, from:, to:, shared_strings:, prefix: "", height: nil, hidden: false,
                    custom_height: false, outline_level: nil)
       @index = index
       @xml = xml_bytes
       @from = from
       @to = to
       @shared_strings = shared_strings
+      @prefix = prefix
       @height = height
       @hidden = hidden
       @custom_height = custom_height
@@ -59,7 +61,7 @@ module Xlsxrb
       if @cells
         @cells.each(&)
       else
-        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, { row: @index }, &)
+        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, { row: @index }, @prefix, &)
       end
     end
 

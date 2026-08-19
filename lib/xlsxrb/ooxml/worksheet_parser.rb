@@ -129,30 +129,41 @@ module Xlsxrb
       def self.fast_scan_events(xml_src, shared_strings, part_name, &block)
         xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
 
-        sd_start = xml.index("<sheetData")
+        sd_term = xml.index("sheetData")
+        return unless sd_term
+
+        sd_start = xml.rindex("<", sd_term)
         return unless sd_start
+
+        prefix = xml.byteslice(sd_start + 1, sd_term - (sd_start + 1))
 
         sd_open_end = xml.index(">", sd_start)
         return unless sd_open_end
 
         return if xml.getbyte(sd_open_end - 1) == 47 # self-closing <sheetData/>
 
-        sd_end = xml.index("</sheetData>", sd_open_end)
+        sd_end_tag = "</#{prefix}sheetData>"
+        sd_end = xml.index(sd_end_tag, sd_open_end)
         return unless sd_end
+
+        row_start_pattern = "<#{prefix}row"
+        row_start_len = row_start_pattern.bytesize
+        row_end_tag = "</#{prefix}row>"
+        row_end_len = row_end_tag.bytesize
 
         pos = sd_open_end + 1
 
         while pos < sd_end
-          row_start = xml.index("<row", pos)
+          row_start = xml.index(row_start_pattern, pos)
           break unless row_start && row_start < sd_end
 
-          nb = xml.getbyte(row_start + 4)
+          nb = xml.getbyte(row_start + row_start_len)
           unless [32, 62, 9, 10, 13, 47].include?(nb)
-            pos = row_start + 4
+            pos = row_start + row_start_len
             next
           end
 
-          tag_end = xml.index(">", row_start + 4)
+          tag_end = xml.index(">", row_start + row_start_len)
           break unless tag_end
 
           if xml.getbyte(tag_end - 1) == 47
@@ -168,7 +179,7 @@ module Xlsxrb
 
           attrs = extract_row_attrs(row_tag)
 
-          row_end = xml.index("</row>", tag_end + 1)
+          row_end = xml.index(row_end_tag, tag_end + 1)
           break unless row_end
 
           row_source = { part: part_name, row: row_index }
@@ -178,7 +189,7 @@ module Xlsxrb
                        source: row_source
                      ))
 
-          fast_scan_cells_events(xml, tag_end + 1, row_end, shared_strings, row_source, &block)
+          fast_scan_cells_events(xml, tag_end + 1, row_end, shared_strings, row_source, prefix, &block)
 
           block.call(Event.new(
                        type: :row_end,
@@ -186,7 +197,7 @@ module Xlsxrb
                        source: row_source
                      ))
 
-          pos = row_end + 6
+          pos = row_end + row_end_len
         end
       end
 
@@ -236,20 +247,38 @@ module Xlsxrb
 
       private_class_method :tag_attr
 
-      def self.fast_scan_cells_events(xml, from, to, shared_strings, row_source, &block)
+      def self.fast_scan_cells_events(xml, from, to, shared_strings, row_source, prefix = "", &block)
         pos = from
+        c_start_pattern = "<#{prefix}c"
+        c_start_len = c_start_pattern.bytesize
+        c_end_tag = "</#{prefix}c>"
+        c_end_len = c_end_tag.bytesize
+
+        v_tag_start_str = "<#{prefix}v>"
+        v_tag_start_len = v_tag_start_str.bytesize
+        v_tag_end_str = "</#{prefix}v>"
+        v_tag_end_len = v_tag_end_str.bytesize
+
+        is_tag_start_str = "<#{prefix}is>"
+        is_tag_start_len = is_tag_start_str.bytesize
+        is_tag_end_str = "</#{prefix}is>"
+        is_tag_end_len = is_tag_end_str.bytesize
+
+        f_tag_start_str = "<#{prefix}f"
+        f_tag_end_str = "</#{prefix}f>"
+        f_tag_end_len = f_tag_end_str.bytesize
 
         while pos < to
-          c_start = xml.index("<c", pos)
+          c_start = xml.index(c_start_pattern, pos)
           break unless c_start && c_start < to
 
-          nb = xml.getbyte(c_start + 2)
+          nb = xml.getbyte(c_start + c_start_len)
           unless [32, 62, 9, 10, 13, 47].include?(nb)
-            pos = c_start + 2
+            pos = c_start + c_start_len
             next
           end
 
-          c_tag_end = xml.index(">", c_start + 2)
+          c_tag_end = xml.index(">", c_start + c_start_len)
           break unless c_tag_end
 
           # Extract tag substring for bounded attribute search
@@ -272,7 +301,7 @@ module Xlsxrb
             next
           end
 
-          c_end = xml.index("</c>", c_tag_end + 1)
+          c_end = xml.index(c_end_tag, c_tag_end + 1)
           break unless c_end
 
           # Parse cell content sequentially (bounded to c_end - avoid unbounded scans)
@@ -284,35 +313,27 @@ module Xlsxrb
             tag_pos = xml.index("<", cpos)
             break unless tag_pos && tag_pos < c_end
 
-            tag_char = xml.getbyte(tag_pos + 1)
-            case tag_char
-            when 118 # 'v'
-              if xml.getbyte(tag_pos + 2) == 62 # <v>
-                v_val_start = tag_pos + 3
-                v_end = xml.index("</v>", v_val_start)
-                if v_end
-                  raw_value = xml.byteslice(v_val_start, v_end - v_val_start)
-                  value = resolve_fast_value(raw_value, type, shared_strings)
-                  cpos = v_end + 4
-                else
-                  cpos = tag_pos + 3
-                end
-              elsif xml.getbyte(tag_pos + 2) == 47 && xml.getbyte(tag_pos + 3) == 62 # <v/>
-                cpos = tag_pos + 4
+            if xml.byteslice(tag_pos, v_tag_start_len) == v_tag_start_str
+              v_val_start = tag_pos + v_tag_start_len
+              v_end = xml.index(v_tag_end_str, v_val_start)
+              if v_end
+                raw_value = xml.byteslice(v_val_start, v_end - v_val_start)
+                value = resolve_fast_value(raw_value, type, shared_strings)
+                cpos = v_end + v_tag_end_len
               else
-                cpos = tag_pos + 2
+                cpos = tag_pos + v_tag_start_len
               end
-            when 102 # 'f'
-              f_tag_end = xml.index(">", tag_pos + 2)
+            elsif xml.byteslice(tag_pos, f_tag_start_str.bytesize) == f_tag_start_str
+              f_tag_end = xml.index(">", tag_pos + f_tag_start_str.bytesize)
               if f_tag_end && f_tag_end < c_end
                 if xml.getbyte(f_tag_end - 1) == 47 # self-closing <f ... />
                   cpos = f_tag_end + 1
                 else
-                  f_end = xml.index("</f>", f_tag_end + 1)
+                  f_end = xml.index(f_tag_end_str, f_tag_end + 1)
                   if f_end && f_end <= c_end
                     formula = xml.byteslice(f_tag_end + 1, f_end - f_tag_end - 1).force_encoding("UTF-8")
                     formula = decode_xml_entities(formula) if formula.include?("&")
-                    cpos = f_end + 4
+                    cpos = f_end + f_tag_end_len
                   else
                     cpos = f_tag_end + 1
                   end
@@ -320,17 +341,13 @@ module Xlsxrb
               else
                 cpos = tag_pos + 2
               end
-            when 105 # 'i' - <is>
-              if xml.byteslice(tag_pos, 4) == "<is>"
-                is_end = xml.index("</is>", tag_pos + 4)
-                if is_end && is_end <= c_end
-                  inline_str = extract_inline_text(xml, tag_pos + 4, is_end)
-                  cpos = is_end + 5
-                else
-                  cpos = tag_pos + 4
-                end
+            elsif xml.byteslice(tag_pos, is_tag_start_len) == is_tag_start_str
+              is_end = xml.index(is_tag_end_str, tag_pos + is_tag_start_len)
+              if is_end && is_end <= c_end
+                inline_str = extract_inline_text(xml, tag_pos + is_tag_start_len, is_end)
+                cpos = is_end + is_tag_end_len
               else
-                cpos = tag_pos + 2
+                cpos = tag_pos + is_tag_start_len
               end
             else
               # Skip unknown tag
@@ -348,7 +365,7 @@ module Xlsxrb
                        source: cell_source
                      ))
 
-          pos = c_end + 4
+          pos = c_end + c_end_len
         end
       end
 
@@ -358,21 +375,32 @@ module Xlsxrb
         result = +""
         pos = from
         while pos < to
-          t_start = xml.index("<t", pos)
+          t_start = xml.index("<", pos)
           break unless t_start && t_start < to
 
-          t_tag_end = xml.index(">", t_start)
-          break unless t_tag_end
-          next (pos = t_start + 2) if xml.getbyte(t_tag_end - 1) == 47
+          t_term = xml.index("t", t_start)
+          break unless t_term && t_term < to
 
-          t_end = xml.index("</t>", t_tag_end + 1)
+          t_tag_end = xml.index(">", t_term)
+          break unless t_tag_end && t_tag_end < to
+
+          if xml.getbyte(t_tag_end - 1) == 47 # <t ... />
+            pos = t_tag_end + 1
+            next
+          end
+
+          t_close = xml.index("</", t_tag_end + 1)
+          break unless t_close && t_close <= to
+
+          t_end = xml.index(">", t_close + 2)
           break unless t_end && t_end <= to
 
-          result << xml.byteslice(t_tag_end + 1, t_end - t_tag_end - 1)
-          pos = t_end + 4
+          text_segment = xml.byteslice(t_tag_end + 1, t_close - t_tag_end - 1).force_encoding("UTF-8")
+          text_segment = decode_xml_entities(text_segment) if text_segment.include?("&")
+          result << text_segment
+
+          pos = t_end + 1
         end
-        result.force_encoding("UTF-8")
-        result = decode_xml_entities(result) if result.include?("&")
         result
       end
 
@@ -451,29 +479,40 @@ module Xlsxrb
       def self.fast_scan_rows_direct(xml_src, shared_strings, part_name, &block)
         xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
 
-        sd_start = xml.index("<sheetData")
+        sd_term = xml.index("sheetData")
+        return unless sd_term
+
+        sd_start = xml.rindex("<", sd_term)
         return unless sd_start
+
+        prefix = xml.byteslice(sd_start + 1, sd_term - (sd_start + 1))
 
         sd_open_end = xml.index(">", sd_start)
         return unless sd_open_end
         return if xml.getbyte(sd_open_end - 1) == 47 # self-closing <sheetData/>
 
-        sd_end = xml.index("</sheetData>", sd_open_end)
+        sd_end_tag = "</#{prefix}sheetData>"
+        sd_end = xml.index(sd_end_tag, sd_open_end)
         return unless sd_end
+
+        row_start_pattern = "<#{prefix}row"
+        row_start_len = row_start_pattern.bytesize
+        row_end_tag = "</#{prefix}row>"
+        row_end_len = row_end_tag.bytesize
 
         pos = sd_open_end + 1
 
         while pos < sd_end
-          row_start = xml.index("<row", pos)
+          row_start = xml.index(row_start_pattern, pos)
           break unless row_start && row_start < sd_end
 
-          nb = xml.getbyte(row_start + 4)
+          nb = xml.getbyte(row_start + row_start_len)
           unless [32, 62, 9, 10, 13, 47].include?(nb)
-            pos = row_start + 4
+            pos = row_start + row_start_len
             next
           end
 
-          tag_end = xml.index(">", row_start + 4)
+          tag_end = xml.index(">", row_start + row_start_len)
           break unless tag_end
 
           if xml.getbyte(tag_end - 1) == 47
@@ -483,7 +522,7 @@ module Xlsxrb
 
           row_index = 0
           has_custom_attrs = false
-          ri = row_start + 4
+          ri = row_start + row_start_len
           while ri < tag_end
             rb = xml.getbyte(ri)
             if rb == 114 && xml.getbyte(ri + 1) == 61 && xml.getbyte(ri + 2) == 34 # r="
@@ -512,7 +551,7 @@ module Xlsxrb
                     EMPTY_HASH
                   end
 
-          row_end = xml.index("</row>", tag_end + 1)
+          row_end = xml.index(row_end_tag, tag_end + 1)
           break unless row_end
 
           { part: part_name, row: row_index }
@@ -522,6 +561,7 @@ module Xlsxrb
             from: tag_end + 1,
             to: row_end,
             shared_strings: shared_strings,
+            prefix: prefix,
             height: attrs[:height],
             hidden: attrs[:hidden] || false,
             custom_height: attrs[:custom_height] || false,
@@ -529,33 +569,51 @@ module Xlsxrb
           )
           block.call(row_obj)
 
-          pos = row_end + 6
+          pos = row_end + row_end_len
         end
       end
 
       private_class_method :fast_scan_rows_direct
 
-      def self.fast_parse_cells_direct(xml, from, to, shared_strings, row_source)
+      def self.fast_parse_cells_direct(xml, from, to, shared_strings, row_source, prefix = "")
         cells = []
-        fast_scan_cells_direct(xml, from, to, shared_strings, row_source) { |c| cells << c }
+        fast_scan_cells_direct(xml, from, to, shared_strings, row_source, prefix) { |c| cells << c }
         cells
       end
 
-      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, &block)
+      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, prefix = "", &block)
         pos = from
         cell_count = 0
+        c_start_pattern = "<#{prefix}c"
+        c_start_len = c_start_pattern.bytesize
+        c_end_tag = "</#{prefix}c>"
+        c_end_len = c_end_tag.bytesize
+
+        v_tag_start_str = "<#{prefix}v>"
+        v_tag_start_len = v_tag_start_str.bytesize
+        v_tag_end_str = "</#{prefix}v>"
+        v_tag_end_len = v_tag_end_str.bytesize
+
+        is_tag_start_str = "<#{prefix}is>"
+        is_tag_start_len = is_tag_start_str.bytesize
+        is_tag_end_str = "</#{prefix}is>"
+        is_tag_end_len = is_tag_end_str.bytesize
+
+        f_tag_start_str = "<#{prefix}f"
+        f_tag_end_str = "</#{prefix}f>"
+        f_tag_end_len = f_tag_end_str.bytesize
 
         while pos < to
-          c_start = xml.index("<c", pos)
+          c_start = xml.index(c_start_pattern, pos)
           break unless c_start && c_start < to
 
-          nb = xml.getbyte(c_start + 2)
+          nb = xml.getbyte(c_start + c_start_len)
           unless [32, 62, 9, 10, 13, 47].include?(nb)
-            pos = c_start + 2
+            pos = c_start + c_start_len
             next
           end
 
-          c_tag_end = xml.index(">", c_start + 2)
+          c_tag_end = xml.index(">", c_start + c_start_len)
           break unless c_tag_end
 
           # Zero-allocation attribute scan directly within the tag
@@ -564,7 +622,7 @@ module Xlsxrb
           col_idx = nil
           row_idx = nil
 
-          ai = c_start + 2
+          ai = c_start + c_start_len
           while ai < c_tag_end
             b = xml.getbyte(ai)
             if [32, 9, 10, 13].include?(b)
@@ -646,7 +704,7 @@ module Xlsxrb
             next
           end
 
-          c_end = xml.index("</c>", c_tag_end + 1)
+          c_end = xml.index(c_end_tag, c_tag_end + 1)
           break unless c_end
 
           # Parse cell content sequentially (bounded to c_end - avoid unbounded scans)
@@ -658,48 +716,40 @@ module Xlsxrb
             tag_pos = xml.index("<", cpos)
             break unless tag_pos && tag_pos < c_end
 
-            tag_char = xml.getbyte(tag_pos + 1)
-            case tag_char
-            when 118 # 'v'
-              if xml.getbyte(tag_pos + 2) == 62 # <v>
-                v_val_start = tag_pos + 3
-                v_end = xml.index("</v>", v_val_start)
-                if v_end
-                  if type == "s"
-                    # Zero-allocation integer parse for SST index
-                    s_idx = 0
-                    v_i = v_val_start
-                    while v_i < v_end
-                      s_idx = (s_idx * 10) + (xml.getbyte(v_i) - 48)
-                      v_i += 1
-                    end
-                    value = shared_strings[s_idx] || ""
-                  elsif type == "b"
-                    value = xml.getbyte(v_val_start) == 49 # '1'
-                  else
-                    raw_value = xml.byteslice(v_val_start, v_end - v_val_start)
-                    value = resolve_fast_value(raw_value, type, shared_strings)
+            if xml.byteslice(tag_pos, v_tag_start_len) == v_tag_start_str
+              v_val_start = tag_pos + v_tag_start_len
+              v_end = xml.index(v_tag_end_str, v_val_start)
+              if v_end
+                if type == "s"
+                  # Zero-allocation integer parse for SST index
+                  s_idx = 0
+                  v_i = v_val_start
+                  while v_i < v_end
+                    s_idx = (s_idx * 10) + (xml.getbyte(v_i) - 48)
+                    v_i += 1
                   end
-                  cpos = v_end + 4
+                  value = shared_strings[s_idx] || ""
+                elsif type == "b"
+                  value = xml.getbyte(v_val_start) == 49 # '1'
                 else
-                  cpos = tag_pos + 3
+                  raw_value = xml.byteslice(v_val_start, v_end - v_val_start)
+                  value = resolve_fast_value(raw_value, type, shared_strings)
                 end
-              elsif xml.getbyte(tag_pos + 2) == 47 && xml.getbyte(tag_pos + 3) == 62 # <v/>
-                cpos = tag_pos + 4
+                cpos = v_end + v_tag_end_len
               else
-                cpos = tag_pos + 2
+                cpos = tag_pos + v_tag_start_len
               end
-            when 102 # 'f'
-              f_tag_end = xml.index(">", tag_pos + 2)
+            elsif xml.byteslice(tag_pos, f_tag_start_str.bytesize) == f_tag_start_str
+              f_tag_end = xml.index(">", tag_pos + f_tag_start_str.bytesize)
               if f_tag_end && f_tag_end < c_end
                 if xml.getbyte(f_tag_end - 1) == 47 # self-closing <f ... />
                   cpos = f_tag_end + 1
                 else
-                  f_end = xml.index("</f>", f_tag_end + 1)
+                  f_end = xml.index(f_tag_end_str, f_tag_end + 1)
                   if f_end && f_end <= c_end
                     formula = xml.byteslice(f_tag_end + 1, f_end - f_tag_end - 1).force_encoding("UTF-8")
                     formula = decode_xml_entities(formula) if formula.include?("&")
-                    cpos = f_end + 4
+                    cpos = f_end + f_tag_end_len
                   else
                     cpos = f_tag_end + 1
                   end
@@ -707,17 +757,13 @@ module Xlsxrb
               else
                 cpos = tag_pos + 2
               end
-            when 105 # 'i' - <is>
-              if xml.byteslice(tag_pos, 4) == "<is>"
-                is_end = xml.index("</is>", tag_pos + 4)
-                if is_end && is_end <= c_end
-                  inline_str = extract_inline_text(xml, tag_pos + 4, is_end)
-                  cpos = is_end + 5
-                else
-                  cpos = tag_pos + 4
-                end
+            elsif xml.byteslice(tag_pos, is_tag_start_len) == is_tag_start_str
+              is_end = xml.index(is_tag_end_str, tag_pos + is_tag_start_len)
+              if is_end && is_end <= c_end
+                inline_str = extract_inline_text(xml, tag_pos + is_tag_start_len, is_end)
+                cpos = is_end + is_tag_end_len
               else
-                cpos = tag_pos + 2
+                cpos = tag_pos + is_tag_start_len
               end
             else
               # Skip unknown tag
@@ -726,11 +772,10 @@ module Xlsxrb
             end
           end
 
-          val_to_use = inline_str || value
           cell_obj = Elements::Cell.new(
             row_index: row_idx || row_source[:row],
             column_index: col_idx || cell_count,
-            value: val_to_use,
+            value: inline_str || value,
             formula: formula,
             style_index: style_index,
             errors: Elements::EMPTY_ERRORS
@@ -738,7 +783,7 @@ module Xlsxrb
           cell_count += 1
           block.call(cell_obj)
 
-          pos = c_end + 4
+          pos = c_end + c_end_len
         end
       end
 

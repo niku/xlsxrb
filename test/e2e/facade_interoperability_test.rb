@@ -266,4 +266,105 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  # =====================================================
+  # Table Facade E2E
+  # =====================================================
+
+  test "streaming: table passes SDK validation" do
+    tmp = generate_streaming_xlsx do |w|
+      w.sheet("Employees") do |s|
+        s.row(%w[ID Name Department Salary])
+        s.row([1, "Alice", "Engineering", 120_000])
+        s.row([2, "Bob", "Marketing", 95_000])
+        s.row([3, "Charlie", "Sales", 110_000])
+        s.table("A1:D4", columns: %w[ID Name Department Salary], name: "EmployeesTable", style: "TableStyleMedium9", total_row: false)
+      end
+    end
+
+    assert_openxml_sdk_scenario_passes("facade_table_test", tmp.path)
+  ensure
+    tmp&.close!
+  end
+
+  test "in_memory: table passes SDK validation" do
+    tmp = generate_in_memory_xlsx do |w|
+      w.sheet("Employees") do |s|
+        s.row(%w[ID Name Department Salary])
+        s.row([1, "Alice", "Engineering", 120_000])
+        s.row([2, "Bob", "Marketing", 95_000])
+        s.row([3, "Charlie", "Sales", 110_000])
+        s.table("A1:D4", columns: %w[ID Name Department Salary], name: "EmployeesTable", style: "TableStyleMedium9", total_row: false)
+      end
+    end
+
+    assert_openxml_sdk_scenario_passes("facade_table_test", tmp.path)
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Conditional Formatting Facade E2E
+  # =====================================================
+
+  test "streaming: conditional formatting passes SDK validation" do
+    tmp = generate_streaming_xlsx do |w|
+      w.sheet("CFSheet") do |s|
+        s.row(%w[Item Value])
+        s.row(["A", 10])
+        s.row(["B", 50])
+        s.row(["C", 100])
+        s.conditional_format("B2:B4",
+                             type: :cellIs,
+                             operator: :greaterThan,
+                             formula: ["40"],
+                             dxf: { font: { bold: true, color: "FF006100" } })
+      end
+    end
+
+    assert_openxml_sdk_scenario_passes("facade_conditional_format_test", tmp.path)
+  ensure
+    tmp&.close!
+  end
+
+  test "in_memory: conditional formatting passes SDK validation" do
+    tmp = generate_in_memory_xlsx do |w|
+      w.sheet("CFSheet") do |s|
+        s.row(%w[Item Value])
+        s.row(["A", 10])
+        s.row(["B", 50])
+        s.row(["C", 100])
+        s.conditional_format("B2:B4",
+                             type: :cellIs,
+                             operator: :greaterThan,
+                             formula: ["40"],
+                             dxf: { font: { bold: true, color: "FF006100" } })
+      end
+    end
+
+    assert_openxml_sdk_scenario_passes("facade_conditional_format_test", tmp.path)
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # Streaming Reader on SDK-Generated Fixture E2E
+  # =====================================================
+
+  test "streaming_reader: streams rows from SDK generated fixture" do
+    fixture_path = OpenXmlSdkScenarioRunner.ensure_reader_fixture!("reader_numeric_generated_by_sdk")
+    assert(File.exist?(fixture_path), "SDK fixture reader_numeric_generated_by_sdk missing")
+
+    collected_rows = []
+    Xlsxrb.read(fixture_path) do |sheet|
+      sheet.each do |row|
+        collected_rows << row
+      end
+    end
+
+    assert_operator collected_rows.size, :>=, 1
+    first_row = collected_rows.first
+    assert_not_nil first_row
+    assert_operator first_row.cells.size, :>=, 1
+  end
 end
