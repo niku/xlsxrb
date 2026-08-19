@@ -1696,4 +1696,178 @@ class ContractTest < Test::Unit::TestCase
     assert_equal(:hyperlink, ws_events[5].type)
     assert_equal(["A1", "rId1", "Link", nil, nil], ws_events[5].args)
   end
+
+  # =====================================================
+  # Encryption & Password Protection CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "encryption: agile encryption with password round-trips correctly" do |api_path|
+    tmp = Tempfile.new(["contract_enc", ".xlsx"])
+    begin
+      password = "AgilePassword123!"
+
+      case api_path
+      when :streaming
+        Xlsxrb.write(tmp.path, password: password) do |w|
+          w.sheet("SecureData") do |s|
+            s.row(%w[User SecretCode Amount])
+            s.row(["Alice", "TOP_SECRET_42", 9999.5])
+          end
+        end
+      when :in_memory
+        wb = Xlsxrb.build do |w|
+          w.sheet("SecureData") do |s|
+            s.row(%w[User SecretCode Amount])
+            s.row(["Alice", "TOP_SECRET_42", 9999.5])
+          end
+        end
+        Xlsxrb.write(tmp.path, wb, password: password)
+      end
+
+      # 1. Unencrypted read without password should raise EncryptedFileError
+      assert_raises(Xlsxrb::EncryptedFileError) do
+        Xlsxrb.read(tmp.path).load
+      end
+
+      # 2. Read with wrong password should raise InvalidPasswordError
+      assert_raises(Xlsxrb::InvalidPasswordError) do
+        Xlsxrb.read(tmp.path, password: "wrong_password").load
+      end
+
+      # 3. Read with correct password should succeed
+      wb = Xlsxrb.read(tmp.path, password: password).load
+      assert_equal(1, wb.sheets.size)
+      sheet = wb.sheet(0)
+      assert_equal("SecureData", sheet.name)
+      assert_equal("Alice", sheet.cell_value("A2"))
+      assert_equal("TOP_SECRET_42", sheet.cell_value("B2"))
+      assert_in_delta(9999.5, sheet.cell_value("C2"))
+    ensure
+      tmp.close!
+    end
+  end
+
+  # =====================================================
+  # Streaming Reader & Lazy Row CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "streaming_reader: block iteration and StreamRow coordinate access" do |api_path|
+    _, tmp = generate_and_read(api_path) do |w|
+      w.sheet("StreamSheet") do |s|
+        s.row(%w[ColA ColB ColC])
+        s.row(["Val1", 100, true])
+        s.row(["Val2", 200, false])
+      end
+    end
+
+    rows = []
+    Xlsxrb.read(tmp.path) do |sheet|
+      assert_equal("StreamSheet", sheet.name)
+      sheet.each do |row|
+        rows << row
+      end
+    end
+
+    assert_equal(3, rows.size)
+
+    header_row = rows[0]
+    assert_equal(%w[ColA ColB ColC], header_row.to_a)
+    assert_equal("ColA", header_row[0].value)
+    assert_equal("ColB", header_row[1].value)
+    assert_equal("ColC", header_row[2].value)
+
+    data_row1 = rows[1]
+    assert_equal("Val1", data_row1[0].value)
+    assert_equal(100, data_row1[1].value)
+    assert_equal(true, data_row1[2].value)
+    assert_equal(["Val1", 100, true], data_row1.values)
+  ensure
+    tmp&.close!
+  end
+
+  # =====================================================
+  # DSL Sugar & Modern Helper CONTRACT tests
+  # =====================================================
+
+  data(API_PATHS)
+  test "dsl: column key hash placement in row" do |api_path|
+    _, tmp = generate_and_read(api_path) do |w|
+      w.sheet("HashRow") do |s|
+        s.row({ A: "First", C: "Third", E: 500 })
+      end
+    end
+
+    wb = Xlsxrb.read(tmp.path).load
+    sheet = wb.sheet(0)
+    assert_equal("First", sheet.cell_value("A1"))
+    assert_nil(sheet.cell_value("B1"))
+    assert_equal("Third", sheet.cell_value("C1"))
+    assert_nil(sheet.cell_value("D1"))
+    assert_equal(500, sheet.cell_value("E1"))
+  ensure
+    tmp&.close!
+  end
+
+  data(API_PATHS)
+  test "dsl: rich text constructed via Xlsxrb.rich_text" do |api_path|
+    _, tmp = generate_and_read(api_path) do |w|
+      w.sheet("RichTextSheet") do |s|
+        rt = Xlsxrb.rich_text(
+          { text: "BoldRed", font: { bold: true, color: "FFFF0000" } },
+          { text: " and " },
+          { text: "ItalicBlue", font: { italic: true, color: "FF0000FF" } }
+        )
+        s.row([rt, "Standard"])
+      end
+    end
+
+    wb = Xlsxrb.read(tmp.path).load
+    sheet = wb.sheet(0)
+    rt_cell = sheet["A1"]
+    assert_not_nil(rt_cell)
+    assert_equal("BoldRed and ItalicBlue", rt_cell.value.to_s)
+  ensure
+    tmp&.close!
+  end
+
+  data(API_PATHS)
+  test "dsl: unified properties with core, app, and custom metadata" do |api_path|
+    tmp = case api_path
+          when :streaming
+            generate_streaming do |w|
+              w.properties(
+                core: { title: "Contract Doc", creator: "Tester" },
+                app: { company: "Xlsxrb Inc" },
+                custom: { "Environment" => "Production", "ReleaseNumber" => 12 }
+              )
+              w.sheet("Data") { |s| s.row([1]) }
+            end
+          when :in_memory
+            t = Tempfile.new(["contract_props", ".xlsx"])
+            wb = Xlsxrb.build do |w|
+              w.properties(
+                core: { title: "Contract Doc", creator: "Tester" },
+                app: { company: "Xlsxrb Inc" },
+                custom: { "Environment" => "Production", "ReleaseNumber" => 12 }
+              )
+              w.sheet("Data") { |s| s.row([1]) }
+            end
+            Xlsxrb.write(t.path, wb)
+            t
+          end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    assert(entries.key?("docProps/core.xml"), "docProps/core.xml should exist")
+    assert(entries.key?("docProps/app.xml"), "docProps/app.xml should exist")
+    assert(entries.key?("docProps/custom.xml"), "docProps/custom.xml should exist")
+
+    assert_match(/Contract Doc/, entries["docProps/core.xml"])
+    assert_match(/Xlsxrb Inc/, entries["docProps/app.xml"])
+    assert_match(/Environment/, entries["docProps/custom.xml"])
+    assert_match(/Production/, entries["docProps/custom.xml"])
+  ensure
+    tmp&.close!
+  end
 end
