@@ -295,7 +295,8 @@ task :wasm do
   # B. Copy necessary standard libraries dynamically from host's $LOAD_PATH
   stdlib_files = [
     "date.rb", "delegate.rb", "forwardable.rb", "securerandom.rb",
-    "random/formatter.rb", "set.rb", "tempfile.rb", "tmpdir.rb", "fileutils.rb"
+    "random/formatter.rb", "set.rb", "tempfile.rb", "tmpdir.rb", "fileutils.rb",
+    "pp.rb", "prettyprint.rb"
   ]
   stdlib_files.each do |name|
     path = $LOAD_PATH.find { |p| File.exist?(File.join(p, name)) }
