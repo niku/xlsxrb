@@ -1,0 +1,60 @@
+# Generated from lib/xlsxrb/dsl_helpers.rb with RBS::Inline
+
+module Xlsxrb
+  # Internal helper module for normalizing and validating DSL arguments
+  # shared between {WorksheetBuilder} (in-memory) and {StreamWriter} (streaming).
+  #
+  # @api private
+  module DslHelpers
+    # Normalizes merge cell range string or coordinate components into a canonical range reference (e.g. "A1:C3").
+    #
+    # @param range [String, Hash, nil]
+    # @param row [Integer, nil]
+    # @param col_start [Integer, String, nil]
+    # @param col_end [Integer, String, nil]
+    # @param row_start [Integer, nil]
+    # @param row_end [Integer, nil]
+    # @param strict_excel_mode [Boolean]
+    # @return [String]
+    # : (untyped range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?, ?strict_excel_mode: bool) -> String
+    def self.normalize_merge_range: (untyped range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?, ?strict_excel_mode: bool) -> String
+
+    # Normalizes sheet protection options and hashes plain-text password if supplied.
+    #
+    # @param opts [Hash]
+    # @return [Hash]
+    # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def self.normalize_protection_options: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+
+    # Normalizes column index or letter or Range to an array of 0-based column integers.
+    #
+    # @param index [Integer, String, Symbol, Range, Array]
+    # @return [Array<Integer>]
+    # : (untyped index) -> Array[Integer]
+    def self.normalize_column_indices: (untyped index) -> Array[Integer]
+
+    # Normalizes page margins into a compact hash.
+    #
+    # @param left [Float, nil]
+    # @param right [Float, nil]
+    # @param top [Float, nil]
+    # @param bottom [Float, nil]
+    # @param header [Float, nil]
+    # @param footer [Float, nil]
+    # @return [Hash{Symbol => Float}]
+    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> Hash[Symbol, Float]
+    def self.normalize_page_margins: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> Hash[Symbol, Float]
+
+    # Normalizes table options hash.
+    #
+    # @param ref [String]
+    # @param columns [Array<String>, Array<Hash>]
+    # @param name [String, nil]
+    # @param display_name [String, nil]
+    # @param style [String, nil]
+    # @param opts [Hash]
+    # @return [Hash]
+    # : (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> Hash[Symbol, untyped]
+    def self.normalize_table_options: (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> Hash[Symbol, untyped]
+  end
+end

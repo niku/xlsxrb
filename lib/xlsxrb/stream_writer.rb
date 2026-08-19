@@ -5,6 +5,7 @@
 require "tempfile"
 require_relative "style_builder"
 require_relative "chart_builder"
+require_relative "dsl_helpers"
 require_relative "ooxml/writer"
 require_relative "ooxml/worksheet_writer"
 require_relative "ooxml/workbook_writer"
@@ -984,16 +985,9 @@ module Xlsxrb
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
-      indices = case index
-                when Range, Array
-                  index.map { |i| Elements::Cell.column_index(i) }
-                else
-                  [Elements::Cell.column_index(index)]
-                end
-
       sheet if @current_sheet.nil?
 
-      indices.each do |idx|
+      DslHelpers.normalize_column_indices(index).each do |idx|
         @current_columns << { index: idx, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
       end
     end
@@ -1109,14 +1103,9 @@ module Xlsxrb
     # @return [void]
     # @api public
     #: (untyped ref, columns: untyped, ?name: untyped, ?display_name: untyped, ?style: untyped, **untyped opts) -> void
-    def table(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
+    def table(ref, columns:, name: nil, display_name: nil, style: nil, **)
       sheet if @current_sheet.nil?
-      tbl = { ref: ref, columns: columns }
-      tbl[:name] = name if name
-      tbl[:display_name] = display_name if display_name
-      tbl[:style] = style if style
-      tbl.merge!(opts)
-      @current_tables << tbl
+      @current_tables << DslHelpers.normalize_table_options(ref, columns: columns, name: name, display_name: display_name, style: style, **)
     end
 
     # Adds a Pivot Table.
@@ -1186,28 +1175,13 @@ module Xlsxrb
     #: (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
     def merge(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil)
       sheet if @current_sheet.nil?
-      if range.is_a?(Hash)
-        row = range[:row]
-        row_start = range[:row_start]
-        row_end = range[:row_end]
-        col_start = range[:col_start]
-        col_end = range[:col_end]
-        range = nil
-      end
-
-      if range
-        raise ArgumentError, "Invalid merge range format: '#{range}'. Expected format like 'A1:B2'." if @strict_excel_mode && !range.match?(/^[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?$/)
-
-        @current_merge_cells << range
-      else
-        r_start = row || row_start || 0
-        r_end = row || row_end || 0
-        c_start = Elements::Cell.column_index(col_start || 0)
-        c_end = Elements::Cell.column_index(col_end || 0)
-        start_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_start)}#{r_start + 1}"
-        end_ref = "#{Xlsxrb::Elements::Cell.column_letter(c_end)}#{r_end + 1}"
-        @current_merge_cells << "#{start_ref}:#{end_ref}"
-      end
+      canonical = DslHelpers.normalize_merge_range(
+        range,
+        row: row, col_start: col_start, col_end: col_end,
+        row_start: row_start, row_end: row_end,
+        strict_excel_mode: @strict_excel_mode
+      )
+      @current_merge_cells << canonical unless @current_merge_cells.include?(canonical)
     end
 
     # Freezes window panes at the given row and column.
@@ -1263,7 +1237,9 @@ module Xlsxrb
     #: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
     def page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
       sheet if @current_sheet.nil?
-      @current_page_margins = { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
+      @current_page_margins = DslHelpers.normalize_page_margins(
+        left: left, right: right, top: top, bottom: bottom, header: header, footer: footer
+      )
     end
 
     # Sets page setup configuration.
@@ -1308,17 +1284,7 @@ module Xlsxrb
     #: (**untyped opts) -> void
     def protect_sheet(**opts)
       sheet if @current_sheet.nil?
-      normalized = opts.dup
-      plain_password = normalized[:password]
-      needs_hash = plain_password.is_a?(String) && !plain_password.empty? &&
-                   normalized[:algorithm_name].nil? && normalized[:hash_value].nil? &&
-                   normalized[:salt_value].nil? && normalized[:spin_count].nil? &&
-                   !plain_password.match?(/\A[0-9A-Fa-f]{4}\z/)
-      if needs_hash
-        normalized.delete(:password)
-        normalized.merge!(Xlsxrb::Ooxml::Utils.hash_password(plain_password))
-      end
-      @current_sheet_protection = normalized
+      @current_sheet_protection = DslHelpers.normalize_protection_options(opts)
     end
 
     # Inserts an embedded image into the active sheet.
