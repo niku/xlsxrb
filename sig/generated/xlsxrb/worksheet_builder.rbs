@@ -1,0 +1,349 @@
+# Generated from lib/xlsxrb/worksheet_builder.rb with RBS::Inline
+
+module Xlsxrb
+  # DSL context for building a single in-memory worksheet in {Xlsxrb.build}.
+  #
+  # @api public
+  class WorksheetBuilder
+    # @param name [String] The worksheet name.
+    # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel limits.
+    # : (String name, ?strict_excel_mode: bool) -> void
+    def initialize: (String name, ?strict_excel_mode: bool) -> void
+
+    # Defines or configures a named cell style.
+    #
+    # @example Define a bold header style
+    #   sheet.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF")
+    #
+    # @param name [String, Symbol] The name of the style.
+    # @param opts [Hash] Style options (e.g. bold: true, fill_color: "FF0000").
+    # @yield [style_builder]
+    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
+    # @return [StyleBuilder]
+    # @api public
+    # : (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+    def style: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+
+    # Appends a row of cells to the worksheet.
+    #
+    # @example Add a row with values and array styles
+    #   sheet.row(["ID", "Name", "Total"], styles: [:header, :header, :header])
+    #
+    # @example Add a row with a hash of column keys
+    #   sheet.row({ "A" => "Invoice", "C" => 12345 })
+    #
+    # @param values [Array<Object>, Hash{String, Integer => Object}] The cell values.
+    # @param styles [String, Symbol, Array<String | Symbol>, Hash, nil] Style names or inline styles to apply.
+    # @param height [Float, Integer, nil] The row height in points (0 to 409).
+    # @param hidden [Boolean] Whether the row is hidden.
+    # @param custom_height [Boolean] Whether custom row height is enforced.
+    # @param outline_level [Integer, nil] Grouping/outline hierarchy level.
+    # @return [void]
+    # @raise [ArgumentError] If limits are exceeded when strict_excel_mode is enabled.
+    # @api public
+    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+
+    # Sets column formatting and properties for one or multiple columns.
+    #
+    # @example Set width for column A
+    #   sheet.column("A", width: 20.0)
+    #
+    # @example Set width for a range of columns
+    #   sheet.column("A".."D", width: 15.0)
+    #
+    # @param index [Integer, String, Range, Array] Column index (0-based), letter ("A"), or range ("A".."D").
+    # @param width [Float, Integer, nil] Column width in character units (0 to 255).
+    # @param hidden [Boolean] Whether the column is hidden.
+    # @param custom_width [Boolean] Whether custom width is explicitly set.
+    # @param outline_level [Integer, nil] Grouping/outline level.
+    # @return [void]
+    # @raise [ArgumentError] If width exceeds 255 in strict mode.
+    # @api public
+    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
+    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
+
+    # Adds a chart to the worksheet.
+    #
+    # @param options [Hash] Chart configuration options.
+    # @yield [builder]
+    # @yieldparam builder [Xlsxrb::ChartBuilder]
+    # @return [void]
+    # @api public
+    # : (**untyped options) ?{ (ChartBuilder) -> void } -> void
+    def chart: (**untyped options) ?{ (ChartBuilder) -> void } -> void
+
+    # Adds a hyperlink to a cell.
+    #
+    # @param cell [String, Integer] Cell coordinate (e.g. "A1").
+    # @param url [String, nil] Target external URL.
+    # @param display [String, nil] Optional display text.
+    # @param tooltip [String, nil] Optional hover tooltip text.
+    # @param location [String, nil] Optional internal sheet location (e.g. "Sheet2!A1").
+    # @return [void]
+    # @api public
+    # : (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+    def hyperlink: (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+
+    # Sets an auto-filter range on the sheet.
+    #
+    # @param range [String] The cell range (e.g. "A1:E100").
+    # @return [String]
+    # @api public
+    # : (String range) -> String
+    def auto_filter: (String range) -> String
+
+    # Configures filtering rules on a specific column of an auto-filter.
+    #
+    # @param col_id [Integer] 0-based column index relative to filter range.
+    # @param filter [Hash] Filter criteria (e.g. values, custom filters).
+    # @return [Hash]
+    # @api public
+    # : (Integer col_id, Hash[untyped, untyped] filter) -> Hash[untyped, untyped]
+    def filter_column: (Integer col_id, Hash[untyped, untyped] filter) -> Hash[untyped, untyped]
+
+    # Configures column sort state for the sheet.
+    #
+    # @param ref [String] The sorted range.
+    # @param sort_conditions [Array<Hash>] List of sort condition definitions.
+    # @param opts [Hash] Additional sort state options.
+    # @return [Hash]
+    # @api public
+    # : (String ref, Array[Hash[untyped, untyped]] sort_conditions, **untyped opts) -> Hash[untyped, untyped]
+    def sort_state: (String ref, Array[Hash[untyped, untyped]] sort_conditions, **untyped opts) -> Hash[untyped, untyped]
+
+    # Adds a data validation rule to a cell or range.
+    #
+    # @param sqref [String] Target cell or range reference (e.g. "B2:B100").
+    # @param opts [Hash] Validation configuration (e.g. type: :list, formula1: '"Option1,Option2"').
+    # @return [void]
+    # @api public
+    # : (String sqref, **untyped opts) -> void
+    def validate_data: (String sqref, **untyped opts) -> void
+
+    # Adds a conditional formatting rule to a cell range.
+    #
+    # @param sqref [String] Target cell range reference (e.g. "C2:C50").
+    # @param opts [Hash] Rule options (e.g. type: :cellIs, operator: :greaterThan, formula: "100").
+    # @return [void]
+    # @api public
+    # : (String sqref, **untyped opts) -> void
+    def conditional_format: (String sqref, **untyped opts) -> void
+
+    # Adds an Excel Table (ListObject) to the sheet.
+    #
+    # @param ref [String] The table range (e.g. "A1:D20").
+    # @param columns [Array<String>] Column header names.
+    # @param name [String, nil] Table name identifier.
+    # @param display_name [String, nil] Table display name.
+    # @param style [String, nil] Built-in table style name (e.g. "TableStyleMedium2").
+    # @param opts [Hash] Additional table properties.
+    # @return [void]
+    # @api public
+    # : (String ref, columns: Array[String | Hash[Symbol, untyped]], ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
+    def table: (String ref, columns: Array[String | Hash[Symbol, untyped]], ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
+
+    # Adds a Pivot Table to the sheet.
+    #
+    # @param source_ref [String] Source data range (e.g. "DataSheet!A1:D100").
+    # @param row_fields [Array<Integer, String>] Field names or indices for row headers.
+    # @param data_fields [Array<Hash>] Data aggregation fields.
+    # @param col_fields [Array<Integer, String>] Field names or indices for column headers.
+    # @param dest_ref [String] Top-left destination cell (default "E1").
+    # @param name [String, nil] Pivot table name.
+    # @param field_names [Array<String>, nil] Custom field display names.
+    # @param items [Array, nil] Item configuration.
+    # @return [void]
+    # @api public
+    # : (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?col_fields: Array[String | Integer], ?dest_ref: String, ?name: String?, ?field_names: Array[String]?, ?items: Array[untyped]?, **untyped opts) -> void
+    def pivot_table: (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?col_fields: Array[String | Integer], ?dest_ref: String, ?name: String?, ?field_names: Array[String]?, ?items: Array[untyped]?, **untyped opts) -> void
+
+    # Adds a cell comment / note.
+    #
+    # @param cell [String, Integer] Cell reference (e.g. "B2").
+    # @param text [String] The comment text.
+    # @param author [String] Author name.
+    # @return [void]
+    # @api public
+    # : (String | Integer cell, String text, ?author: ::String) -> void
+    def comment: (String | Integer cell, String text, ?author: ::String) -> void
+
+    # Adds a sparkline group to the sheet.
+    #
+    # @param sparklines [Array<Hash>] List of { data_ref:, location_ref: } items.
+    # @param type [String, nil] "line" (default), "column", or "stacked".
+    # @param opts [Hash] Color and formatting options.
+    # @return [void]
+    # @api public
+    # : (sparklines: Array[String | Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
+    def sparkline_group: (sparklines: Array[String | Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
+
+    # Merges a range of cells into a single cell.
+    #
+    # @example Merge with string range
+    #   sheet.merge("A1:C1")
+    #
+    # @example Merge with row and column bounds
+    #   sheet.merge(row_start: 0, row_end: 2, col_start: "A", col_end: "C")
+    #
+    # @param range [String, Hash, nil] Cell range (e.g. "A1:B2") or hash of coordinates.
+    # @param row [Integer, nil] Single row index.
+    # @param col_start [Integer, String, nil] Starting column.
+    # @param col_end [Integer, String, nil] Ending column.
+    # @param row_start [Integer, nil] Starting row index.
+    # @param row_end [Integer, nil] Ending row index.
+    # @return [void]
+    # @api public
+    # : (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
+    def merge: (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
+
+    # Freezes window panes at the specified row and column.
+    #
+    # @param row [Integer] Number of rows to freeze from top (0-based split position).
+    # @param col [Integer, String] Number of columns to freeze from left (0-based or letter).
+    # @return [void]
+    # @api public
+    # : (?row: Integer, ?col: (Integer | String)) -> void
+    def freeze_pane: (?row: Integer, ?col: Integer | String) -> void
+
+    # Splits window panes without freezing.
+    #
+    # @param x_split [Integer] Horizontal split offset in points.
+    # @param y_split [Integer] Vertical split offset in points.
+    # @param top_left_cell [String, nil] Top-left cell reference in bottom-right pane.
+    # @return [void]
+    # @api public
+    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
+    def split_pane: (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
+
+    # Sets the active cell and selection area for the worksheet.
+    #
+    # @param active_cell [String] Active cell reference (e.g. "A1").
+    # @param sqref [String, nil] Selected range reference (e.g. "A1:D10").
+    # @param pane [String, Symbol, nil] Target pane (:topLeft, :topRight, :bottomLeft, :bottomRight).
+    # @return [void]
+    # @api public
+    # : (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
+    def select_cell: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
+
+    # Sets page margins in inches for printing.
+    #
+    # @param left [Float, nil] Left margin.
+    # @param right [Float, nil] Right margin.
+    # @param top [Float, nil] Top margin.
+    # @param bottom [Float, nil] Bottom margin.
+    # @param header [Float, nil] Header margin.
+    # @param footer [Float, nil] Footer margin.
+    # @return [void]
+    # @api public
+    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
+    def page_margins: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
+
+    # Sets page setup configuration (orientation, paper size, fit to page, scaling).
+    #
+    # @param opts [Hash] Page setup options (e.g. orientation: :landscape, paper_size: 9).
+    # @return [void]
+    # @api public
+    # : (**untyped opts) -> void
+    def page_setup: (**untyped opts) -> void
+
+    # Configures headers and footers for printing.
+    #
+    # @param opts [Hash] Header and footer options (e.g. odd_header: "&CHeader Text").
+    # @return [void]
+    # @api public
+    # : (**untyped opts) -> void
+    def header_footer: (**untyped opts) -> void
+
+    # Sets a print option (e.g. grid_lines: true, headings: true).
+    #
+    # @param name [Symbol] Option name.
+    # @param value [Object] Option value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, untyped value) -> void
+    def print_options: (Symbol name, untyped value) -> void
+
+    # Sets sheet-level protection with optional password hashing.
+    #
+    # @param opts [Hash] Protection options (e.g. password: "secret", select_locked_cells: true).
+    # @return [void]
+    # @api public
+    # : (**untyped opts) -> void
+    def protect_sheet: (**untyped opts) -> void
+
+    # Inserts an embedded image from raw binary data.
+    #
+    # @param file_data [String] Binary image data.
+    # @param ext [String] File extension ("png", "jpeg", etc.).
+    # @param from_col [Integer] Top-left starting column (0-based).
+    # @param from_row [Integer] Top-left starting row (0-based).
+    # @param to_col [Integer] Bottom-right ending column (0-based).
+    # @param to_row [Integer] Bottom-right ending row (0-based).
+    # @param opts [Hash] Additional image anchoring options.
+    # @return [void]
+    # @api public
+    # : (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
+    def image: (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
+
+    # Inserts a drawing shape (e.g. rectangle, callout, arrow).
+    #
+    # @param preset [String] Shape preset name (e.g. "rect", "roundRect").
+    # @param text [String, nil] Shape label text.
+    # @param from_col [Integer] Top-left column.
+    # @param from_row [Integer] Top-left row.
+    # @param to_col [Integer] Bottom-right column.
+    # @param to_row [Integer] Bottom-right row.
+    # @param opts [Hash] Additional shape formatting options.
+    # @return [void]
+    # @api public
+    # : (**untyped opts) -> void
+    def shape: (**untyped opts) -> void
+
+    # Sets a sheet-level property (e.g. tab_color: "FF0000").
+    #
+    # @param name [Symbol] Property name.
+    # @param value [Object] Property value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, untyped value) -> void
+    def sheet_properties: (Symbol name, untyped value) -> void
+
+    # Sets a sheet view display property (e.g. show_grid_lines: true, zoom_scale: 120).
+    #
+    # @param name [Symbol] View property name.
+    # @param value [Object] View property value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, untyped value) -> void
+    def sheet_view: (Symbol name, untyped value) -> void
+
+    # Inserts a horizontal page break before the specified row.
+    #
+    # @param row_num [Integer] 1-based row number.
+    # @return [void]
+    # @api public
+    # : (Integer row_num) -> void
+    def page_break_row: (Integer row_num) -> void
+
+    # Inserts a vertical page break before the specified column.
+    #
+    # @param col_index [Integer, String] Column index (0-based) or letter ("B").
+    # @return [void]
+    # @api public
+    # : (Integer | String col_index) -> void
+    def page_break_col: (Integer | String col_index) -> void
+
+    # Builds and returns the in-memory {Elements::Worksheet}.
+    #
+    # @return [Elements::Worksheet]
+    # @api public
+    # : () -> Elements::Worksheet
+    def build: () -> Elements::Worksheet
+
+    # Internal: returns styles for later processing by WorkbookBuilder
+    # @return [Hash{String => StyleBuilder}]
+    # : Hash[String, StyleBuilder]
+    attr_reader styles: untyped
+  end
+end

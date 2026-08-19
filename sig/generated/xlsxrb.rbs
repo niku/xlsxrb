@@ -1,7 +1,14 @@
 # Generated from lib/xlsxrb.rb with RBS::Inline
 
-# Ruby XLSX read/write library.
+# Modern, streaming-capable, low-memory XLSX reading and writing library for Ruby.
+#
+# Provides high-level facade methods ({Xlsxrb.read}, {Xlsxrb.write}, {Xlsxrb.build}, {Xlsxrb.modify})
+# with full ECMA-376 OpenXML compliance, MS-OFFCRYPTO password protection, and zero core dependencies.
+#
+# @api public
 module Xlsxrb
+  # Base class for all exceptions raised by Xlsxrb.
+  # Predefined cell error constants are exposed on this class for convenience.
   class Error < StandardError
     DIV0: untyped
 
@@ -18,272 +25,93 @@ module Xlsxrb
     VALUE: untyped
   end
 
+  # Raised when parsing malformed or invalid XML structures.
   class ParseError < Error
   end
 
+  # Raised when cell, row, or workbook parameters fail specification validation.
   class ValidationError < Error
   end
 
+  # Raised when ZIP decompression or entry resolution fails.
   class ZipError < Error
   end
 
+  # Base exception for encrypted or password-protected XLSX documents.
   class EncryptedFileError < Error
   end
 
+  # Raised when a password is missing or invalid for an encrypted XLSX file.
   class InvalidPasswordError < EncryptedFileError
   end
 
+  # Raised when encrypted package stream decryption fails.
   class DecryptionError < EncryptedFileError
   end
 
   TRACER: untyped
 
-  def self.in_span: (untyped name, ?attributes: untyped) ?{ (?) -> untyped } -> untyped
-
-  # Helper to easily create RichText objects.
-  # Supports both `Xlsxrb.rich_text({ text: "A" }, { text: "B" })`
-  # and `Xlsxrb.rich_text(text: "Hi", bold: true)`
+  # Executes the block within an OpenTelemetry tracer span if tracing is configured.
   #
-  # @param runs [Array<Hash>] Optional rich text runs.
-  # @param text [String, nil] Simple text.
-  # @param font_props [Hash] Font styling options (e.g., bold: true).
-  # @return [Elements::RichText] The resulting rich text.
-  # @api public
-  # : (*untyped runs, ?text: String?, **untyped font_props) -> untyped
-  def self.rich_text: (*untyped runs, ?text: String?, **untyped font_props) -> untyped
+  # @param name [String] The span name.
+  # @param attributes [Hash, nil] Optional telemetry attributes.
+  # @yield Block to execute inside the tracing span.
+  # @return [Object] The result of the block.
+  # : (String name, ?attributes: Hash[String, untyped]?) { (*untyped) -> untyped } -> untyped
+  def self.in_span: (String name, ?attributes: Hash[String, untyped]?) { (*untyped) -> untyped } -> untyped
 
-  # Builder for block-style chart definitions.
-  # @api public
-  class ChartBuilder
-    # : () -> void
-    def initialize: () -> void
-
-    # : Hash[Symbol, untyped]
-    attr_reader options: untyped
-
-    # @api public
-    # : (untyped value) -> untyped
-    def type: (untyped value) -> untyped
-
-    # @api public
-    # : (untyped value) -> untyped
-    def title: (untyped value) -> untyped
-
-    # @api public
-    # : (?Hash[Symbol, untyped]? value) ?{ (SeriesBuilder) -> void } -> Array[Hash[Symbol, untyped]]
-    def series: (?Hash[Symbol, untyped]? value) ?{ (SeriesBuilder) -> void } -> Array[Hash[Symbol, untyped]]
-
-    # Configures the legend property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def legend: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-    # Configures the plot_area property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def plot_area: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-    # Configures the chart_space property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def chart_space: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-    # Configures the style property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String | Integer) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Integer)
-    def style: (*Hash[Symbol, String | Integer | bool | nil] | String | Integer args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Integer)
-
-    # Configures the data_labels property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def data_labels: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-    # Configures the plot_visible_only property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
-    def plot_visible_only: (*bool | String args, **String | Integer | bool | nil kwargs) -> (bool | String)
-
-    # Configures the display_blanks_as property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
-    def display_blanks_as: (*String args, **String | Integer | bool | nil kwargs) -> String
-
-    # Configures the view3d property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def view3d: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-    # Configures the category_axis property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def category_axis: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-    # Configures the value_axis property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def value_axis: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-    # Configures the show_legend_key property for this chart.
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] the configured property
-    # @api public
-    # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
-    def show_legend_key: (*bool | String args, **String | Integer | bool | nil kwargs) -> (bool | String)
-
-    # Builder for a single series entry in block-style chart definitions.
-    # @api public
-    class SeriesBuilder
-      # : () -> void
-      def initialize: () -> void
-
-      # : Hash[Symbol, untyped]
-      attr_reader options: untyped
-
-      # Configures the categories property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*untyped args, **untyped kwargs) -> untyped
-      def categories: (*untyped args, **untyped kwargs) -> untyped
-
-      # Configures the values property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*untyped args, **untyped kwargs) -> untyped
-      def values: (*untyped args, **untyped kwargs) -> untyped
-
-      # Configures the name property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*untyped args, **untyped kwargs) -> untyped
-      def name: (*untyped args, **untyped kwargs) -> untyped
-
-      # Configures the marker property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*untyped args, **untyped kwargs) -> untyped
-      def marker: (*untyped args, **untyped kwargs) -> untyped
-
-      # Configures the fill property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-      def fill: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-      # Configures the line property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-      def line: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-      # Configures the trendline property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-      def trendline: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-      # Configures the data_labels property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-      def data_labels: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-
-      # Configures the smooth property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
-      def smooth: (*bool | String args, **String | Integer | bool | nil kwargs) -> (bool | String)
-
-      # Configures the shape property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
-      def shape: (*String args, **String | Integer | bool | nil kwargs) -> String
-
-      # Configures the type property for this series.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object] the configured property
-      # @api public
-      # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
-      def type: (*String args, **String | Integer | bool | nil kwargs) -> String
-    end
-  end
-
-  # Creates a Formula object for use in row values.
+  # Helper to construct {Elements::RichText} objects with formatted text runs.
   #
-  # @example Create a basic sum formula
+  # @example Create multi-run rich text
+  #   rt = Xlsxrb.rich_text({ text: "Total: ", font: { bold: true } }, { text: "$100" })
+  #
+  # @example Create simple styled text
+  #   rt = Xlsxrb.rich_text(text: "Important Notice", bold: true, color: "FF0000")
+  #
+  # @param runs [Array<Hash, String>] Optional array of rich text run hashes or string.
+  # @param text [String, nil] Plain text string (convenience parameter).
+  # @param font_props [Hash] Inline font styling options (e.g. bold: true, color: "FF0000").
+  # @return [Elements::RichText] The compiled rich text element.
+  # @api public
+  # : (*(Hash[Symbol, untyped] | String) runs, ?text: String?, **untyped font_props) -> Elements::RichText
+  def self.rich_text: (*Hash[Symbol, untyped] | String runs, ?text: String?, **untyped font_props) -> Elements::RichText
+
+  # Creates an {Elements::Formula} object for use in cell values.
+  #
+  # @example Create a formula without precalculated value
   #   formula = Xlsxrb.formula("SUM(A1:A10)")
   #
   # @example Create a formula with precomputed cached value
   #   formula = Xlsxrb.formula("A1+B1", cached_value: 42)
   #
-  # @param expression [String] The formula text without '=' (e.g. "SUM(A1:A10)").
-  # @param cached_value [Object, nil] Optional cached result. If nil, Excel will calculate on open.
+  # @param expression [String] The formula expression without leading '=' (e.g. "SUM(A1:A10)").
+  # @param cached_value [Object, nil] Optional precomputed value for readers that do not evaluate formulas.
   # @return [Elements::Formula]
   # @api public
-  # : (String expression, ?cached_value: String | Numeric | bool | nil) -> Elements::Formula
+  # : (String expression, ?cached_value: (String | Numeric | bool | nil)) -> Elements::Formula
   def self.formula: (String expression, ?cached_value: String | Numeric | bool | nil) -> Elements::Formula
 
-  # Reads an XLSX file (streaming / lazy-loaded by default) from a file path, IO stream, or binary String.
+  # Reads an XLSX file (streaming and lazy-loaded by default) from a file path, IO stream, or binary String.
   #
   # Sheets and rows are streamed lazily with O(1) constant memory. If a block is given,
-  # yields each StreamSheet sequentially.
+  # yields each {StreamSheet} sequentially. Call {#load} on the returned Workbook or Sheet
+  # to convert to an in-memory representation for coordinate random access (`sheet["A1"]`).
   #
-  # Call #load on the returned Workbook or Sheet to convert to an in-memory representation
-  # for coordinate random access (e.g. sheet["A1"]).
+  # @overload read(source, password: nil, &block)
+  #   Yields each {StreamSheet} sequentially in streaming mode.
+  #   @param source [String, IO, StringIO] File path, binary content string, or readable IO stream.
+  #   @param password [String, nil] Optional password to decrypt password-protected XLSX files.
+  #   @yield [sheet]
+  #   @yieldparam sheet [StreamSheet] The streaming worksheet object.
+  #   @return [void]
   #
-  # @example Streaming read across sheets and rows (O(1) memory)
+  # @overload read(source, password: nil)
+  #   Returns a lazy {Elements::Workbook} object.
+  #   @param source [String, IO, StringIO] File path, binary content string, or readable IO stream.
+  #   @param password [String, nil] Optional password to decrypt password-protected XLSX files.
+  #   @return [Elements::Workbook]
+  #
+  # @example Streaming read across sheets and rows (O(1) constant memory)
   #   Xlsxrb.read("large.xlsx") do |sheet|
   #     puts "Sheet: #{sheet.name}"
   #     sheet.each_row do |row|
@@ -291,18 +119,15 @@ module Xlsxrb
   #     end
   #   end
   #
-  # @example Lazy workbook access and explicit in-memory loading
+  # @example Explicit in-memory loading for coordinate random access
   #   wb = Xlsxrb.read("data.xlsx")
   #   sheet = wb.sheets.first
-  #   sheet.each_row { |row| ... }   # streams with O(1) memory
   #   doc_sheet = sheet.load         # explicitly load into memory
   #   puts doc_sheet["A1"].value     # coordinate random access
   #
-  # @param source [String, IO] File path, binary content string (starting with PK..), or IO object.
-  # @param password [String, nil] Optional password to decrypt password-protected XLSX files.
-  # @yield [sheet] Yields each streaming sheet.
-  # @yieldparam sheet [StreamSheet] The streaming worksheet object.
-  # @return [Elements::Workbook, void] Returns Elements::Workbook when no block is given.
+  # @raise [EncryptedFileError] If the file is encrypted and no password was supplied.
+  # @raise [InvalidPasswordError] If the supplied password is incorrect.
+  # @raise [ParseError] If the spreadsheet XML structure is invalid.
   # @api public
   # : (untyped source, ?password: String?) { (StreamSheet) -> void } -> void
   # : (untyped source, ?password: String?) -> Elements::Workbook
@@ -311,26 +136,29 @@ module Xlsxrb
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
   #
-  # @overload write(target, password: nil, strict_excel_mode: true, &block)
-  #   Streaming write: yields a StreamWriter context for high-speed, zero-allocation XLSX generation.
-  #   @param target [String, IO] Destination file path or writable IO object.
+  # @overload write(target, password: nil, encryption_mode: :standard, strict_excel_mode: true, &block)
+  #   Streaming write: yields a {StreamWriter} context for high-speed, zero-allocation XLSX generation.
+  #   @param target [String, IO, StringIO] Destination file path or writable IO object.
   #   @param password [String, nil] Optional password to encrypt the generated XLSX file.
-  #   @param strict_excel_mode [Boolean] Whether to enforce Excel specifications.
+  #   @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
+  #   @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
   #   @yield [stream_writer]
   #   @yieldparam stream_writer [Xlsxrb::StreamWriter]
   #   @return [void]
   #
-  # @overload write(workbook, password: nil)
+  # @overload write(workbook, password: nil, encryption_mode: :standard)
   #   In-memory write: exports the workbook to an in-memory binary String.
   #   @param workbook [Elements::Workbook] The workbook to write.
   #   @param password [String, nil] Optional password to encrypt the binary string.
+  #   @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
   #   @return [String] Binary data representing the XLSX file.
   #
-  # @overload write(target, workbook, password: nil)
+  # @overload write(target, workbook, password: nil, encryption_mode: :standard)
   #   In-memory write: writes the workbook to a file path or IO stream.
-  #   @param target [String, IO] Destination file path or writable IO object.
+  #   @param target [String, IO, StringIO] Destination file path or writable IO object.
   #   @param workbook [Elements::Workbook] The workbook to write.
   #   @param password [String, nil] Optional password to encrypt the output file.
+  #   @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
   #   @return [void]
   #
   # @example Streaming write to file
@@ -339,15 +167,12 @@ module Xlsxrb
   #   end
   #
   # @example Password-protected streaming write
-  #   Xlsxrb.write("protected.xlsx", password: "secret_password") do |writer|
+  #   Xlsxrb.write("protected.xlsx", password: "SecretPassword123") do |writer|
   #     writer.sheet("Confidential") { |s| s.row(["Private Data", 100]) }
   #   end
   #
-  # @example In-memory export to binary string
+  # @example In-memory export to binary string (for Rails send_data & mailers)
   #   binary_data = Xlsxrb.write(workbook)
-  #
-  # @example In-memory write to file
-  #   Xlsxrb.write("output.xlsx", workbook)
   #
   # @api public
   # : (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
@@ -357,10 +182,10 @@ module Xlsxrb
                 | (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
                 | (untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
 
-  # Modifies an existing XLSX file.
-  # Reads the workbook, passes it to the block, and writes the result.
-  # The block receives an Elements::Workbook and must return a modified one (e.g. via `update_sheet`).
-  # If no target is given, the source is overwritten.
+  # Modifies an existing XLSX file in-memory using an immutable transformation block.
+  #
+  # Reads the workbook, passes it to the block, and writes the resulting workbook.
+  # If no target is specified, the source file is overwritten in-place.
   #
   # @example Modify a template and save to new file
   #   Xlsxrb.modify("template.xlsx", "output.xlsx") do |workbook|
@@ -370,97 +195,20 @@ module Xlsxrb
   #     end
   #   end
   #
-  # @param source [String, IO] The source file path or IO object.
-  # @param target [String, IO, nil] The target file path or IO object. If nil, overwrites source.
-  # @param password [String, nil] Optional password for reading and writing protected files.
-  # @yield [workbook] Yields the parsed workbook.
-  # @yieldparam workbook [Elements::Workbook] The parsed workbook.
+  # @param source [String, IO, StringIO] The source file path or IO object.
+  # @param target [String, IO, StringIO, nil] Target file path or IO object (overwrites source if nil).
+  # @param password [String, nil] Optional password for encrypted files.
+  # @yield [workbook]
+  # @yieldparam workbook [Elements::Workbook] The loaded workbook.
   # @yieldreturn [Elements::Workbook] The modified workbook.
   # @return [void]
   # @api public
   # : (untyped source, ?untyped target, ?password: String?) ?{ (Elements::Workbook) -> untyped } -> void
   def self.modify: (untyped source, ?untyped target, ?password: String?) ?{ (Elements::Workbook) -> untyped } -> void
 
-  # Represents a sheet being streamed sequentially from an XLSX file.
-  # Provides O(1) constant-memory streaming over rows and cells.
+  # Builds an in-memory {Elements::Workbook} using a declarative DSL.
   #
-  # Call #load (or #to_worksheet) to convert this streaming sheet into an
-  # in-memory Elements::Worksheet supporting coordinate random access (sheet["A1"]).
-  #
-  # @example Iterate rows and cells in streaming mode (O(1) memory)
-  #   Xlsxrb.read("large_data.xlsx") do |sheet|
-  #     puts "Processing sheet: #{sheet.name}"
-  #     sheet.each_row do |row|
-  #       row.each_cell do |cell|
-  #         puts "#{cell.ref}: #{cell.value}"
-  #       end
-  #     end
-  #   end
-  #
-  # @example Load into an in-memory Worksheet for coordinate random access
-  #   wb = Xlsxrb.read("data.xlsx")
-  #   doc_sheet = wb.sheet(0).load
-  #   puts doc_sheet["A1"].value
-  #
-  # @api public
-  class StreamSheet
-    attr_reader name: untyped
-
-    # @param name [String] The sheet name.
-    # @param sheet_xml [String] Raw XML content of the sheet.
-    # @param shared_strings [Array<String>] Shared strings table.
-    # @param styles [Hash, nil] Styles table.
-    # : (String name, String sheet_xml, Array[String] shared_strings, ?Hash[untyped, untyped]? styles) -> void
-    def initialize: (String name, String sheet_xml, Array[String] shared_strings, ?Hash[untyped, untyped]? styles) -> void
-
-    # Iterate over rows in this streaming sheet (O(1) memory).
-    #
-    # @yield [row]
-    # @yieldparam row [StreamRow, Elements::Row]
-    # @return [Enumerator, void]
-    # @api public
-    # : () { (StreamRow | Elements::Row) -> void } -> void
-    # : () -> Enumerator[StreamRow | Elements::Row, void]
-    def each_row: () { (StreamRow | Elements::Row) -> void } -> void
-                | () -> Enumerator[StreamRow | Elements::Row, void]
-
-    # Iterate over all cells across rows continuously (O(1) memory).
-    #
-    # @yield [cell]
-    # @yieldparam cell [Elements::Cell]
-    # @return [Enumerator, void]
-    # @api public
-    # : () { (Elements::Cell) -> void } -> void
-    # : () -> Enumerator[Elements::Cell, void]
-    def each_cell: () { (Elements::Cell) -> void } -> void
-                 | () -> Enumerator[Elements::Cell, void]
-
-    # Default Enumerable iteration iterates rows in the streaming sheet.
-    #
-    # @yield [row]
-    # @yieldparam row [StreamRow, Elements::Row]
-    # @return [Enumerator, void]
-    # @api public
-    # : () { (StreamRow | Elements::Row) -> void } -> void
-    # : () -> Enumerator[StreamRow | Elements::Row, void]
-    def each: () { (StreamRow | Elements::Row) -> void } -> void
-            | () -> Enumerator[StreamRow | Elements::Row, void]
-
-    # Loads this sheet completely into an in-memory Elements::Worksheet,
-    # enabling coordinate random access (sheet["A1"]), row lookups (row_at),
-    # and immutable cell updates (update_cell).
-    #
-    # @return [Elements::Worksheet] The fully parsed in-memory worksheet.
-    # @api public
-    # : () -> Elements::Worksheet
-    def load: () -> Elements::Worksheet
-
-    alias to_worksheet load
-  end
-
-  # Builds an in-memory Elements::Workbook using a declarative DSL.
-  #
-  # @example Build in-memory workbook
+  # @example Build an in-memory workbook
   #   workbook = Xlsxrb.build do |builder|
   #     builder.sheet("Overview") do |sheet|
   #       sheet.row(["Title", "Date"])
@@ -468,1243 +216,35 @@ module Xlsxrb
   #     end
   #   end
   #
-  # @param strict_excel_mode [Boolean] Whether to enforce Excel specifications.
+  # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
   # @yield [builder]
   # @yieldparam builder [Xlsxrb::WorkbookBuilder]
-  # @return [Elements::Workbook]
+  # @return [Elements::Workbook] The compiled in-memory workbook.
   # @api public
   # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
   def self.build: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
-  # DSL context for Xlsxrb.build.
-  # @api public
-  class WorkbookBuilder
-    # : (?strict_excel_mode: bool) -> void
-    def initialize: (?strict_excel_mode: bool) -> void
+  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles) -> Elements::Worksheet
+  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles) -> Elements::Worksheet
 
-    # Set a workbook property.
-    #
-    # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
-    #   you may expose end-users to malicious external reference vulnerabilities (e.g., CSV/DDE Injection)
-    #   when they open the generated Excel file. Ensure you fully trust the exported data.
-    #
-    # @param name [Symbol] The property name (e.g. :update_links).
-    # @param value [String, Integer, Boolean] The property value.
-    # @return [void]
-    # @api public
-    # : (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
-    def workbook_property: (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
+  # : (untyped raw_row) -> (Elements::Row | untyped)
+  private def self.build_row_from_raw: (untyped raw_row) -> (Elements::Row | untyped)
 
-    # Add a new sheet.
-    #
-    # @param name [String, nil] The name of the sheet.
-    # @param opts [Hash] Sheet properties.
-    # @yield [sheet_builder]
-    # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
-    # @return [void]
-    # @api public
-    # : (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
-    def sheet: (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
+  # : (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
+  private def self.build_raw_cell: (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
 
-    alias [] sheet
-
-    # Add a defined name.
-    #
-    # @param name [String] The defined name.
-    # @param value [String] The formula or value.
-    # @param sheet [String, nil] Local sheet name.
-    # @param hidden [Boolean] Whether the defined name is hidden.
-    # @return [void]
-    # @api public
-    # : (String name, String value, ?sheet: String?, ?hidden: bool) -> void
-    def defined_name: (String name, String value, ?sheet: String?, ?hidden: bool) -> void
-
-    # Set the print area for a sheet.
-    #
-    # @param range [String] The range string (e.g. "A1:B10").
-    # @param sheet [String, nil] The sheet name.
-    # @return [void]
-    # @api public
-    # : (String range, ?sheet: String?) -> void
-    def print_area: (String range, ?sheet: String?) -> void
-
-    # Set print titles for a sheet.
-    #
-    # @param rows [String, nil] Rows to repeat (e.g. "1:2").
-    # @param cols [String, nil] Columns to repeat (e.g. "A:B").
-    # @param sheet [String, nil] The sheet name.
-    # @return [void]
-    # @api public
-    # : (?rows: String?, ?cols: String?, ?sheet: String?) -> void
-    def print_titles: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
-
-    # Set workbook protection.
-    #
-    # @param opts [Hash] Protection options.
-    # @return [void]
-    # @api public
-    # : (**String | Integer | bool | nil opts) -> void
-    def protect_workbook: (**String | Integer | bool | nil opts) -> void
-
-    # Set a core document property.
-    #
-    # @param name [Symbol] The property name.
-    # @param value [String, Integer, Time] The property value.
-    # @return [void]
-    # @api public
-    # : (Symbol name, String | Integer | Time value) -> void
-    def core_property: (Symbol name, String | Integer | Time value) -> void
-
-    # Set an app document property.
-    #
-    # @param name [Symbol] The property name.
-    # @param value [String, Integer, Time] The property value.
-    # @return [void]
-    # @api public
-    # : (Symbol name, String | Integer | Time value) -> void
-    def app_property: (Symbol name, String | Integer | Time value) -> void
-
-    # Set multiple core and/or app properties.
-    #
-    # @param core [Hash, nil] Core properties.
-    # @param app [Hash, nil] App properties.
-    # @return [void]
-    # @api public
-    # : (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
-    def properties: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
-
-    # Add a custom document property.
-    #
-    # @param name [String] The property name.
-    # @param value [String, Integer, Float, Boolean, Time] The property value.
-    # @param type [Symbol] The type of property (:string, :number, :bool, :date).
-    # @return [void]
-    # @api public
-    # : (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
-    def custom_property: (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
-
-    # Builds and returns the in-memory Elements::Workbook.
-    #
-    # @return [Elements::Workbook]
-    # @api public
-    # : () -> Elements::Workbook
-    def build: () -> Elements::Workbook
-
-    private
-
-    # : (untyped range) -> untyped
-    def absolute_range: (untyped range) -> untyped
-
-    # : (untyped names, untyped sheets) -> untyped
-    def resolve_defined_names: (untyped names, untyped sheets) -> untyped
-
-    # : (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
-    def process_styles: (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
-
-    # : (untyped writer) -> { fonts: untyped, fills: untyped, borders: untyped, xf_entries: untyped, num_fmts: untyped }
-    def extract_styles_from_writer: (untyped writer) -> { fonts: untyped, fills: untyped, borders: untyped, xf_entries: untyped, num_fmts: untyped }
-  end
-
-  # DSL context for a single worksheet in Xlsxrb.build.
-  # @api public
-  class WorksheetBuilder
-    # : (untyped name, ?strict_excel_mode: bool) -> void
-    def initialize: (untyped name, ?strict_excel_mode: bool) -> void
-
-    # Define a named style that can be applied to cells.
-    #
-    # @param name [String] The name of the style.
-    # @param opts [Hash] Style options (e.g. bold: true).
-    # @yield [style_builder]
-    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
-    # @return [StyleBuilder]
-    # @api public
-    # : (String name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
-    def style: (String name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
-
-    # Add a row to the sheet.
-    #
-    # @param values [Array, Hash] The cell values.
-    # @param styles [String, Array<String>, nil] Styles to apply to cells.
-    # @param height [Float, nil] The row height.
-    # @param hidden [Boolean] Whether the row is hidden.
-    # @param custom_height [Boolean] Whether it's a custom height.
-    # @param outline_level [Integer, nil] The outline level.
-    # @note Excel's column limit is 16,384, row limit is 1,048,576, string max length is 32,767.
-    # @return [void]
-    # @api public
-    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-    def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-
-    # Add a column or multiple columns to the sheet.
-    #
-    # @param index [Integer, String, Range, Array] The column index (0-based), letter, or a collection of them.
-    # @param width [Float, nil] The column width.
-    # @param hidden [Boolean] Whether the column is hidden.
-    # @param custom_width [Boolean] Whether it's a custom width.
-    # @param outline_level [Integer, nil] The outline level.
-    # @note Excel's column width max is 255.
-    # @return [void]
-    # @api public
-    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
-    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
-
-    # Add a chart to the sheet.
-    #
-    # @param options [Hash] Chart options.
-    # @yield [builder]
-    # @yieldparam builder [Xlsxrb::ChartBuilder]
-    # @return [void]
-    # @api public
-    # : (**untyped options) ?{ (ChartBuilder) -> void } -> void
-    def chart: (**untyped options) ?{ (ChartBuilder) -> void } -> void
-
-    # Add a hyperlink on a cell.
-    #
-    # @param cell [String] The cell reference (e.g. "A1").
-    # @param url [String, nil] The URL.
-    # @param display [String, nil] The display text.
-    # @param tooltip [String, nil] The tooltip.
-    # @param location [String, nil] The internal location reference.
-    # @return [void]
-    # @api public
-    # : (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
-    def hyperlink: (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
-
-    # Set an auto filter range (e.g. "A1:D10").
-    #
-    # @param range [String] The filter range.
-    # @return [void]
-    # @api public
-    # : (untyped range) -> untyped
-    def auto_filter: (untyped range) -> untyped
-
-    # Add a filter column to the auto filter.
-    #
-    # @param col_id [Integer] 0-based column index within the filter range.
-    # @param filter [Hash] The filter options.
-    # @return [void]
-    # @api public
-    # : (untyped col_id, untyped filter) -> untyped
-    def filter_column: (untyped col_id, untyped filter) -> untyped
-
-    # Set sort state.
-    #
-    # @param ref [String] The sort range.
-    # @param sort_conditions [Array<Hash>] Sort conditions.
-    # @param opts [Hash] Additional options.
-    # @return [void]
-    # @api public
-    # : (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
-    def sort_state: (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
-
-    # Add a data validation rule.
-    #
-    # @param sqref [String] The cell range (e.g. "A1:A100").
-    # @param opts [Hash] Data validation options.
-    # @return [void]
-    # @api public
-    # : (untyped sqref, **untyped opts) -> untyped
-    def validate_data: (untyped sqref, **untyped opts) -> untyped
-
-    # Add a conditional formatting rule.
-    #
-    # @param sqref [String] The cell range.
-    # @param opts [Hash] Conditional format options.
-    # @return [void]
-    # @api public
-    # : (untyped sqref, **untyped opts) -> untyped
-    def conditional_format: (untyped sqref, **untyped opts) -> untyped
-
-    # Add a table to the sheet.
-    #
-    # @param ref [String] The table range.
-    # @param columns [Array<String>] The column names.
-    # @param name [String, nil] The table name.
-    # @param display_name [String, nil] The display name.
-    # @param style [String, nil] The table style.
-    # @param opts [Hash] Additional options.
-    # @return [void]
-    # @api public
-    # : (untyped ref, columns: untyped, ?name: untyped?, ?display_name: untyped?, ?style: untyped?, **untyped opts) -> untyped
-    def table: (untyped ref, columns: untyped, ?name: untyped?, ?display_name: untyped?, ?style: untyped?, **untyped opts) -> untyped
-
-    # Add a pivot table to the sheet.
-    #
-    # @param source_ref [String] data source range (e.g. "Sheet1!A1:C10").
-    # @param row_fields [Array<Integer>] array of 0-based field indices for row axis.
-    # @param data_fields [Array<Hash>] array of { fld:, name:, subtotal: } hashes.
-    # @param col_fields [Array<Integer>] array of 0-based field indices for column axis.
-    # @param dest_ref [String] top-left cell for the pivot table (default "E1").
-    # @param name [String, nil] Pivot table name.
-    # @param field_names [Array<String>, nil] Override field names.
-    # @param items [Array, nil] Items configuration.
-    # @return [void]
-    # @api public
-    # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
-    def pivot_table: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
-
-    # Add a comment on a cell.
-    #
-    # @param cell [String] The cell reference.
-    # @param text [String] The comment text.
-    # @param author [String] The author name.
-    # @return [void]
-    # @api public
-    # : (String | Integer cell, String text, ?author: ::String) -> void
-    def comment: (String | Integer cell, String text, ?author: ::String) -> void
-
-    # Add a sparkline group to the sheet.
-    #
-    # @param sparklines [Array<Hash>] Array of { data_ref:, location_ref: } hashes.
-    # @param type [String, nil] "line" (default), "column", or "stacked".
-    # @param opts [Hash] Additional options.
-    # @return [void]
-    # @api public
-    # : (sparklines: untyped, ?type: untyped, **untyped opts) -> void
-    def sparkline_group: (sparklines: untyped, ?type: untyped, **untyped opts) -> void
-
-    # Merge a range of cells (e.g. "A1:B2"), or by coordinate indices.
-    #
-    # @param range [String, nil] The string range.
-    # @param row [Integer, nil] Single row index.
-    # @param col_start [Integer, nil] Starting column index.
-    # @param col_end [Integer, nil] Ending column index.
-    # @param row_start [Integer, nil] Starting row index.
-    # @param row_end [Integer, nil] Ending row index.
-    # @return [void]
-    # @api public
-    # : (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
-    def merge: (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
-
-    # Freeze panes at the given row and column.
-    #
-    # @param row [Integer] The row index to freeze at (0-based).
-    # @param col [Integer, String] The column index to freeze at (0-based or letter).
-    # @return [void]
-    # @api public
-    # : (?row: Integer, ?col: (Integer | String)) -> void
-    def freeze_pane: (?row: Integer, ?col: Integer | String) -> void
-
-    # Split panes (non-frozen).
-    #
-    # @param x_split [Integer] X coordinate.
-    # @param y_split [Integer] Y coordinate.
-    # @param top_left_cell [String, nil] Top left cell reference.
-    # @return [void]
-    # @api public
-    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
-    def split_pane: (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
-
-    # Set active cell selection.
-    #
-    # @param active_cell [String] The active cell reference.
-    # @param sqref [String, nil] The selected range.
-    # @param pane [String, nil] The pane to select in.
-    # @return [void]
-    # @api public
-    # : (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-    def select_cell: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-
-    # Set page margins (in inches).
-    #
-    # @param left [Float, nil] Left margin.
-    # @param right [Float, nil] Right margin.
-    # @param top [Float, nil] Top margin.
-    # @param bottom [Float, nil] Bottom margin.
-    # @param header [Float, nil] Header margin.
-    # @param footer [Float, nil] Footer margin.
-    # @return [void]
-    # @api public
-    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
-    def page_margins: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
-
-    # Set page setup properties.
-    #
-    # @param opts [Hash] Page setup options.
-    # @return [void]
-    # @api public
-    # : (**untyped opts) -> void
-    def page_setup: (**untyped opts) -> void
-
-    # Set header/footer text.
-    #
-    # @param opts [Hash] Header and footer options.
-    # @return [void]
-    # @api public
-    # : (**untyped opts) -> void
-    def header_footer: (**untyped opts) -> void
-
-    # Set a print option.
-    #
-    # @param name [Symbol] Option name.
-    # @param value [Object] Option value.
-    # @return [void]
-    # @api public
-    # : (Symbol name, untyped value) -> void
-    def print_options: (Symbol name, untyped value) -> void
-
-    # Set sheet protection options.
-    #
-    # @param opts [Hash] Sheet protection options.
-    # @return [void]
-    # @api public
-    # : (**untyped opts) -> void
-    def protect_sheet: (**untyped opts) -> void
-
-    # Insert an image from raw file data.
-    # @api public
-    # : (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
-    def image: (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
-
-    # Add a shape to the sheet.
-    # @api public
-    # : (**untyped opts) -> void
-    def shape: (**untyped opts) -> void
-
-    # Set a sheet-level property (e.g. :tab_color).
-    # @api public
-    # : (Symbol name, untyped value) -> void
-    def sheet_properties: (Symbol name, untyped value) -> void
-
-    # Set a sheet view property (e.g. :show_grid_lines, :zoom_scale).
-    # @api public
-    # : (Symbol name, untyped value) -> void
-    def sheet_view: (Symbol name, untyped value) -> void
-
-    # Add a page break before a row.
-    # @api public
-    # : (Integer row_num) -> void
-    def page_break_row: (Integer row_num) -> void
-
-    # Add a page break before a column.
-    # @api public
-    # : (Integer | String col_index) -> void
-    def page_break_col: (Integer | String col_index) -> void
-
-    # Builds and returns the in-memory Elements::Worksheet.
-    #
-    # @return [Elements::Worksheet]
-    # @api public
-    # : () -> Elements::Worksheet
-    def build: () -> Elements::Worksheet
-
-    # Internal: returns styles for later processing by WorkbookBuilder
-    # : untyped
-    attr_reader styles: untyped
-  end
-
-  # DSL context for Xlsxrb.generate streaming writes.
-  # @api public
-  class StreamWriter
-    attr_reader current_sheet: untyped
-
-    # : (untyped target, ?strict_excel_mode: bool) -> void
-    def initialize: (untyped target, ?strict_excel_mode: bool) -> void
-
-    # Set a workbook property.
-    #
-    # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
-    #   you may expose end-users to malicious external reference vulnerabilities (e.g., CSV/DDE Injection)
-    #   when they open the generated Excel file. Ensure you fully trust the exported data.
-    #
-    # @param name [Symbol] The property name (e.g. :update_links).
-    # @param value [String, Integer, Boolean] The property value.
-    # @return [void]
-    # : (Symbol name, String | Integer | bool value) -> void
-    def workbook_property: (Symbol name, String | Integer | bool value) -> void
-
-    # Define a named style that can be applied to cells.
-    #
-    # @param name [String] The name of the style.
-    # @param opts [Hash] Style options (e.g. bold: true).
-    # @yield [style_builder]
-    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
-    # @return [StyleBuilder]
-    # : (String name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
-    def style: (String name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
-
-    # Proxy object yielded by the `sheet` method to prevent writing to inactive sheets.
-    # @api public
-    class WorksheetProxy
-      def initialize: (untyped writer, untyped sheet_name) -> untyped
-
-      # Define or configure a named cell style.
-      #
-      # @example
-      #   s.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF")
-      #
-      # @param name [String, Symbol] The name of the style.
-      # @param opts [Hash] Style options (e.g. bold: true, fill_color: "FF0000").
-      # @yield [style_builder]
-      # @yieldparam style_builder [Xlsxrb::StyleBuilder]
-      # @return [Xlsxrb::StyleBuilder]
-      # @api public
-      # : (String | Symbol name, **untyped opts) ?{ (Xlsxrb::StyleBuilder) -> void } -> Xlsxrb::StyleBuilder
-      def style: (String | Symbol name, **untyped opts) ?{ (Xlsxrb::StyleBuilder) -> void } -> Xlsxrb::StyleBuilder
-
-      # Merge a range of cells.
-      #
-      # @example Merge with cell reference string
-      #   s.merge("A1:C1")
-      #
-      # @example Merge with coordinates
-      #   s.merge(row: 0, col_start: 0, col_end: 2)
-      #
-      # @param range [String, nil] The cell range (e.g. "A1:B2").
-      # @param row [Integer, nil] 0-based row index.
-      # @param col_start [Integer, String, nil] 0-based start column index or letter.
-      # @param col_end [Integer, String, nil] 0-based end column index or letter.
-      # @param row_start [Integer, nil] 0-based start row index.
-      # @param row_end [Integer, nil] 0-based end row index.
-      # @return [void]
-      # @api public
-      # : (?String? range, ?row: Integer | nil, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer | nil, ?row_end: Integer | nil) -> void
-      def merge: (?String? range, ?row: Integer | nil, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer | nil, ?row_end: Integer | nil) -> void
-
-      # Add a drawing shape to the sheet.
-      #
-      # @example
-      #   s.shape(preset: "ellipse", text: "Circle", from_col: 1, from_row: 1, to_col: 4, to_row: 5)
-      #
-      # @param preset [String] Preset shape type (e.g. "rect", "ellipse").
-      # @param text [String, nil] Shape label text.
-      # @param from_col [Integer] Starting column index (0-based).
-      # @param from_row [Integer] Starting row index (0-based).
-      # @param to_col [Integer] Ending column index (0-based).
-      # @param to_row [Integer] Ending row index (0-based).
-      # @param opts [Hash] Additional shape formatting options.
-      # @return [void]
-      # @api public
-      # : (?preset: String, ?text: String?, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer, ?to_row: Integer, **untyped opts) -> void
-      def shape: (?preset: String, ?text: String?, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer, ?to_row: Integer, **untyped opts) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # : (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
-      def internal_sheet_setup: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
-
-      # Add a row to the active sheet.
-      #
-      # @example Write an array of values
-      #   s.row(["Name", "Age", "City"])
-      #
-      # @example Write with explicit column keys and styles
-      #   s.row({ A: "Header", C: 100 }, styles: { A: :bold })
-      #
-      # @param values [Array, Hash] The cell values (e.g. `[1, 2, 3]` or `{ A: 1, C: 3 }`).
-      # @param styles [String, Symbol, Array, Hash, nil] Style names or hashes to apply.
-      # @param height [Float, Integer, nil] The row height in points (0 - 409).
-      # @param hidden [Boolean] Whether the row is hidden.
-      # @param custom_height [Boolean] Whether to flag as custom height.
-      # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
-      # @return [void]
-      # @api public
-      # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-      def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-
-      # Configure column width and properties.
-      #
-      # @example Set column A width
-      #   s.column(0, width: 25.0)
-      #
-      # @param col_index [Integer, String, Symbol] 0-based column index or letter (e.g. 0 or "A" or :A).
-      # @param width [Float, Integer, nil] Column width in characters.
-      # @param hidden [Boolean] Whether the column is hidden.
-      # @param best_fit [Boolean] Whether the column automatically fits content.
-      # @param custom_width [Boolean] Whether to flag as custom width.
-      # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
-      # @param collapsed [Boolean] Whether the outline group is collapsed.
-      # @return [void]
-      # @api public
-      # : (Integer | String | Symbol col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
-      def column: (Integer | String | Symbol col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
-
-      # Add a chart to the sheet.
-      #
-      # @example
-      #   s.chart(:bar) do |chart_builder|
-      #     chart_builder.title("Quarterly Sales")
-      #     chart_builder.series(values: "Sheet1!$B$2:$B$5", categories: "Sheet1!$A$2:$A$5", name: "Revenue")
-      #   end
-      #
-      # @param type [Symbol, String, nil] The chart type (:bar, :col, :line, :pie, :scatter, :area, :doughnut, :radar).
-      # @param opts [Hash] Additional chart options.
-      # @yield [chart_builder]
-      # @yieldparam chart_builder [Xlsxrb::ChartBuilder]
-      # @return [void]
-      # @api public
-      # : (?Symbol | String? type, **untyped opts) ?{ (Xlsxrb::ChartBuilder) -> void } -> void
-      def chart: (?Symbol | String? type, **untyped opts) ?{ (Xlsxrb::ChartBuilder) -> void } -> void
-
-      # Add a hyperlink to a cell.
-      #
-      # @example Positional URL
-      #   s.hyperlink("A1", "https://example.com", display: "Example")
-      #
-      # @example Keyword location
-      #   s.hyperlink("A1", location: "https://example.com", tooltip: "Go to Example")
-      #
-      # @param cell [String] The cell reference (e.g. "A1").
-      # @param url [String, nil] The target URL or URI.
-      # @param display [String, nil] Display text for the link.
-      # @param tooltip [String, nil] Tooltip text when hovering.
-      # @param location [String, nil] Destination location / URL (keyword alternative).
-      # @return [void]
-      # @api public
-      # : (String cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
-      def hyperlink: (String cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
-
-      # Set the auto-filter range on the sheet.
-      #
-      # @example
-      #   s.auto_filter("A1:D100")
-      #
-      # @param ref [String] The cell range (e.g. "A1:D10").
-      # @return [void]
-      # @api public
-      # : (String ref) -> void
-      def auto_filter: (String ref) -> void
-
-      # Set filter criteria for a column in the auto-filter.
-      #
-      # @example Simple values filter
-      #   s.filter_column(0, ["Active", "Pending"])
-      #
-      # @example Custom filter specification
-      #   s.filter_column(0, { type: :filters, values: ["Data"] })
-      #
-      # @param col_id [Integer] 0-based column index relative to auto-filter range.
-      # @param filter_values [Array<String>, Hash] Values or filter specification hash.
-      # @return [void]
-      # @api public
-      # : (Integer col_id, Array[String] | Hash[Symbol, untyped] filter_values) -> void
-      def filter_column: (Integer col_id, Array[String] | Hash[Symbol, untyped] filter_values) -> void
-
-      # Configure sort state on a range.
-      #
-      # @example
-      #   s.sort_state("A1:A10", [{ ref: "A1:A10", descending: true }])
-      #
-      # @param ref [String] The range to sort.
-      # @param sort_conditions [Array<Hash>, Hash] Sort conditions array or options hash.
-      # @param opts [Hash] Additional sort options.
-      # @return [void]
-      # @api public
-      # : (String ref, Array[Hash[Symbol, untyped]] | Hash[Symbol, untyped] sort_conditions, **untyped opts) -> void
-      def sort_state: (String ref, Array[Hash[Symbol, untyped]] | Hash[Symbol, untyped] sort_conditions, **untyped opts) -> void
-
-      # Add data validation rules to a range.
-      #
-      # @example Dropdown list validation
-      #   s.validate_data("B2:B100", type: "list", formula1: '"High,Medium,Low"')
-      #
-      # @example Integer range validation
-      #   s.validate_data("C2:C100", type: "whole", operator: "between", formula1: 1, formula2: 100)
-      #
-      # @param range [String] The cell range (e.g. "B2:B10").
-      # @param type [String, Symbol] Validation type ("list", "whole", "decimal", "date", "time", "textLength", "custom").
-      # @param opts [Hash] Validation options.
-      # @return [void]
-      # @api public
-      # : (String range, ?type: String | Symbol, **untyped opts) -> void
-      def validate_data: (String range, ?type: String | Symbol, **untyped opts) -> void
-
-      # Add conditional formatting to a range.
-      #
-      # @example Highlight values greater than 100
-      #   s.conditional_format("A1:A10", type: "cellIs", operator: "greaterThan", formula: 100, style: :highlight)
-      #
-      # @param range [String] The cell range (e.g. "A1:A10").
-      # @param type [String, Symbol] Rule type ("cellIs", "colorScale", "dataBar", "expression").
-      # @param opts [Hash] Rule options.
-      # @return [void]
-      # @api public
-      # : (String range, ?type: String | Symbol, **untyped opts) -> void
-      def conditional_format: (String range, ?type: String | Symbol, **untyped opts) -> void
-
-      # Add a formatted Excel Table to the sheet.
-      #
-      # @example
-      #   s.table("A1:C10", columns: ["ID", "Name", "Total"], name: "SalesTable", style: "TableStyleMedium9")
-      #
-      # @param ref [String] The cell range for the table (e.g. "A1:D10").
-      # @param columns [Array<String>, Array<Hash>] Column names or definitions.
-      # @param name [String, nil] Table name.
-      # @param display_name [String, nil] Display name.
-      # @param style [String, nil] Table style name.
-      # @param opts [Hash] Additional options.
-      # @return [void]
-      # @api public
-      # : (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
-      def table: (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # : () -> void
-      def cleanup!: () -> void
-
-      # Add a comment to a cell.
-      #
-      # @example
-      #   s.comment("A1", "Reviewed and approved", author: "Auditor")
-      #
-      # @param cell [String, Integer] The cell reference (e.g. "A1").
-      # @param text [String] The comment text.
-      # @param author [String] The author name.
-      # @return [void]
-      # @api public
-      # : (String | Integer cell, String text, ?author: String) -> void
-      def comment: (String | Integer cell, String text, ?author: String) -> void
-
-      # Add a Pivot Table to the sheet.
-      #
-      # @example
-      #   s.pivot_table("Sheet1!A1:D100", row_fields: ["Category"], data_fields: ["Amount"], dest_ref: "F1")
-      #
-      # @param source_ref [String] Source data range reference (e.g. "Sheet1!A1:D100").
-      # @param row_fields [Array<String>] Field names for rows.
-      # @param data_fields [Array<String>] Field names for data values.
-      # @param col_fields [Array<String>] Field names for columns.
-      # @param dest_ref [String] Target top-left cell reference (default: "E1").
-      # @param name [String, nil] Pivot table name.
-      # @param field_names [Array<String>, nil] Override field names.
-      # @param items [Array, nil] Items configuration.
-      # @param opts [Hash] Additional options.
-      # @return [void]
-      # @api public
-      # : (String source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: String, ?name: String?, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
-      def pivot_table: (String source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: String, ?name: String?, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
-
-      # Add sparklines to the sheet.
-      #
-      # @example
-      #   s.sparkline_group(sparklines: [{ data_ref: "A1:E1", location_ref: "F1" }], type: "line")
-      #
-      # @param sparklines [Array<Hash>] Array of { data_ref:, location_ref: } hashes.
-      # @param type [String, nil] "line" (default), "column", or "stacked".
-      # @param opts [Hash] Additional sparkline options.
-      # @return [void]
-      # @api public
-      # : (sparklines: Array[Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
-      def sparkline_group: (sparklines: Array[Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
-
-      # Set workbook-level properties.
-      #
-      # @param opts [Hash] Workbook property options.
-      # @return [void]
-      # @api public
-      # : (**untyped opts) -> void
-      def workbook_property: (**untyped opts) -> void
-
-      # Set sheet properties (e.g. tab color, page setup flags).
-      #
-      # @example
-      #   s.sheet_properties(:tab_color, "FF0000")
-      #
-      # @param name [Symbol, String] Property name.
-      # @param value [Object] Property value.
-      # @return [void]
-      # @api public
-      # : (Symbol | String name, untyped value) -> void
-      def sheet_properties: (Symbol | String name, untyped value) -> void
-
-      # Add a defined named range or formula.
-      #
-      # @example
-      #   s.defined_name("TaxRate", "0.10")
-      #
-      # @param name [String] The name.
-      # @param formula [String] The formula or range expression.
-      # @param sheet_id [Integer, nil] Optional sheet scope.
-      # @param hidden [Boolean] Whether the name is hidden.
-      # @return [void]
-      # @api public
-      # : (String name, String formula, ?sheet_id: Integer | nil, ?hidden: bool) -> void
-      def defined_name: (String name, String formula, ?sheet_id: Integer | nil, ?hidden: bool) -> void
-
-      # Freeze rows and/or columns for scrolling.
-      #
-      # @example Freeze top row
-      #   s.freeze_pane(row: 1)
-      #
-      # @example Freeze first column and top 2 rows
-      #   s.freeze_pane(row: 2, col: 1)
-      #
-      # @param row [Integer, nil] Number of rows to freeze.
-      # @param col [Integer, nil] Number of columns to freeze.
-      # @return [void]
-      # @api public
-      # : (?row: Integer | nil, ?col: Integer | nil) -> void
-      def freeze_pane: (?row: Integer | nil, ?col: Integer | nil) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Set the print area range for the sheet.
-      #
-      # @example
-      #   s.print_area("A1:G50")
-      #
-      # @param ref [String] Range reference.
-      # @return [void]
-      # @api public
-      # : (String ref) -> void
-      def print_area: (String ref) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Configure repeating title rows and columns for printing.
-      #
-      # @example Repeat top 2 rows on every page
-      #   s.print_titles(rows: "1:2")
-      #
-      # @param rows [String, nil] Row range to repeat (e.g. "1:2").
-      # @param cols [String, nil] Column range to repeat (e.g. "A:B").
-      # @return [void]
-      # @api public
-      # : (?rows: String?, ?cols: String?) -> void
-      def print_titles: (?rows: String?, ?cols: String?) -> void
-
-      # Split sheet view into panes.
-      #
-      # @param x_split [Numeric, nil] Horizontal split position.
-      # @param y_split [Numeric, nil] Vertical split position.
-      # @param top_left_cell [String, nil] Top-left visible cell in bottom-right pane.
-      # @param active_pane [String, nil] Active pane identifier.
-      # @param state [String, nil] Split state.
-      # @return [void]
-      # @api public
-      # : (?x_split: Numeric | nil, ?y_split: Numeric | nil, ?top_left_cell: String?, ?active_pane: String?, ?state: String?) -> void
-      def split_pane: (?x_split: Numeric | nil, ?y_split: Numeric | nil, ?top_left_cell: String?, ?active_pane: String?, ?state: String?) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Protect the workbook structure.
-      #
-      # @param opts [Hash] Protection options.
-      # @return [void]
-      # @api public
-      # : (**untyped opts) -> void
-      def protect_workbook: (**untyped opts) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Set core metadata property.
-      #
-      # @param name [String, Symbol] Property name.
-      # @param value [Object] Property value.
-      # @return [void]
-      # @api public
-      # : (String | Symbol name, untyped value) -> void
-      def core_property: (String | Symbol name, untyped value) -> void
-
-      # Set the active/selected cell on the sheet.
-      #
-      # @example
-      #   s.select_cell("B5")
-      #   s.select_cell("A1", sqref: "A1:A2", pane: "topRight")
-      #
-      # @param active_cell [String] Cell reference (e.g. "A1").
-      # @param sqref [String, nil] Selection range.
-      # @param pane [String, Symbol, nil] Pane identifier.
-      # @return [void]
-      # @api public
-      # : (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-      def select_cell: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-
-      # Configure page margins for printing.
-      #
-      # @example
-      #   s.page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
-      #
-      # @param left [Float, nil] Left margin in inches.
-      # @param right [Float, nil] Right margin in inches.
-      # @param top [Float, nil] Top margin in inches.
-      # @param bottom [Float, nil] Bottom margin in inches.
-      # @param header [Float, nil] Header margin in inches.
-      # @param footer [Float, nil] Footer margin in inches.
-      # @return [void]
-      # @api public
-      # : (?left: Float | nil, ?right: Float | nil, ?top: Float | nil, ?bottom: Float | nil, ?header: Float | nil, ?footer: Float | nil) -> void
-      def page_margins: (?left: Float | nil, ?right: Float | nil, ?top: Float | nil, ?bottom: Float | nil, ?header: Float | nil, ?footer: Float | nil) -> void
-
-      # Configure page orientation, paper size, and print setup.
-      #
-      # @example Landscape A4
-      #   s.page_setup(orientation: "landscape", paper_size: 9)
-      #
-      # @param orientation [String, Symbol, nil] "portrait" or "landscape" (or :portrait, :landscape).
-      # @param paper_size [Integer, nil] Paper size index (e.g. 9 for A4, 1 for Letter).
-      # @param opts [Hash] Additional options (scale, fit_to_width, fit_to_height).
-      # @return [void]
-      # @api public
-      # : (?orientation: (String | Symbol)?, ?paper_size: Integer | nil, **untyped opts) -> void
-      def page_setup: (?orientation: (String | Symbol)?, ?paper_size: Integer | nil, **untyped opts) -> void
-
-      # Configure header and footer text for printing.
-      #
-      # @example
-      #   s.header_footer(odd_header: "&CConfidential", odd_footer: "&RPage &P of &N")
-      #
-      # @param opts [Hash] Header and footer specifications.
-      # @return [void]
-      # @api public
-      # : (**untyped opts) -> void
-      def header_footer: (**untyped opts) -> void
-
-      # Configure print options (e.g. gridlines, headings).
-      #
-      # @example
-      #   s.print_options(:grid_lines, true)
-      #
-      # @param name [Symbol, String] Print option name.
-      # @param value [Object] Print option value.
-      # @return [void]
-      # @api public
-      # : (Symbol | String name, untyped value) -> void
-      def print_options: (Symbol | String name, untyped value) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Set document metadata properties (core, app, custom).
-      #
-      # @example
-      #   s.properties(core: { title: "Report", creator: "App" })
-      #
-      # @param core [Hash, nil] Core properties (title, creator, subject, etc.).
-      # @param app [Hash, nil] App properties (company, manager).
-      # @param custom [Hash, nil] Custom properties.
-      # @return [void]
-      # @api public
-      # : (?core: Hash[untyped, untyped]?, ?app: Hash[untyped, untyped]?, ?custom: Hash[untyped, untyped]?) -> void
-      def properties: (?core: Hash[untyped, untyped]?, ?app: Hash[untyped, untyped]?, ?custom: Hash[untyped, untyped]?) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Set app metadata property.
-      #
-      # @param name [String, Symbol] Property name.
-      # @param value [Object] Property value.
-      # @return [void]
-      # @api public
-      # : (String | Symbol name, untyped value) -> void
-      def app_property: (String | Symbol name, untyped value) -> void
-
-      # Protect the worksheet against modifications.
-      #
-      # @example
-      #   s.protect_sheet(password: "secret", select_locked_cells: true)
-      #
-      # @param opts [Hash] Protection options.
-      # @return [void]
-      # @api public
-      # : (**untyped opts) -> void
-      def protect_sheet: (**untyped opts) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Set custom metadata property.
-      #
-      # @param name [String, Symbol] Property name.
-      # @param value [Object] Property value.
-      # @return [void]
-      # @api public
-      # : (String | Symbol name, untyped value) -> void
-      def custom_property: (String | Symbol name, untyped value) -> void
-
-      # Insert an image into the sheet.
-      #
-      # @example
-      #   s.image(File.read("logo.png"), ext: "png", from_col: 0, from_row: 0, to_col: 2, to_row: 3)
-      #
-      # @param file_data [String] Binary image data or file content.
-      # @param ext [String] Image extension ("png", "jpeg", etc.).
-      # @param from_col [Integer] Starting column index (0-based).
-      # @param from_row [Integer] Starting row index (0-based).
-      # @param to_col [Integer] Ending column index (0-based).
-      # @param to_row [Integer] Ending row index (0-based).
-      # @param opts [Hash] Additional anchor and sizing options.
-      # @return [void]
-      # @api public
-      # : (String file_data, ?ext: String, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer, ?to_row: Integer, **untyped opts) -> void
-      def image: (String file_data, ?ext: String, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer, ?to_row: Integer, **untyped opts) -> void
-
-      # Configure sheet view settings (zoom scale, grid lines visibility).
-      #
-      # @example
-      #   s.sheet_view(:show_grid_lines, false)
-      #   s.sheet_view(:zoom_scale, 120)
-      #
-      # @param name [Symbol, String] View setting name.
-      # @param value [Object] View setting value.
-      # @return [void]
-      # @api public
-      # : (Symbol | String name, untyped value) -> void
-      def sheet_view: (Symbol | String name, untyped value) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Add a horizontal page break after the given row index.
-      #
-      # @example
-      #   s.page_break_row(25)
-      #
-      # @param row_index [Integer] 0-based row index.
-      # @return [void]
-      # @api public
-      # : (Integer row_index) -> void
-      def page_break_row: (Integer row_index) -> void
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Add a vertical page break after the given column index.
-      #
-      # @example
-      #   s.page_break_col(5)
-      #
-      # @param col_index [Integer] 0-based column index.
-      # @return [void]
-      # @api public
-      # : (Integer col_index) -> void
-      def page_break_col: (Integer col_index) -> void
-    end
-
-    # Add a new sheet.
-    #
-    # @param name [String, nil] The name of the sheet.
-    # @param opts [Hash] Sheet properties.
-    # @yield [sheet_builder]
-    # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
-    # @return [void]
-    # : (?String? name, **untyped opts) ?{ (WorksheetProxy) -> void } -> untyped
-    def sheet: (?String? name, **untyped opts) ?{ (WorksheetProxy) -> void } -> untyped
-
-    # Internal: Start or switch to a named sheet (internal helper).
-    # : (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
-    def internal_sheet_setup: (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
-
-    # Add a row of values. values is an Array.
-    # styles:: Hash mapping column indices to style names, or Array of style names for each column
-    # Add a row to the sheet.
-    #
-    # @param values [Array, Hash] The cell values.
-    # @param styles [String, Array<String>, nil] Styles to apply to cells.
-    # @param height [Float, nil] The row height.
-    # @param hidden [Boolean] Whether the row is hidden.
-    # @param custom_height [Boolean] Whether it's a custom height.
-    # @param outline_level [Integer, nil] The outline level.
-    # @note Excel's column limit is 16,384, row limit is 1,048,576, string max length is 32,767.
-    # @return [void]
-    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-    def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-
-    # Set column width for a 0-based column index.
-    # Add a column to the sheet.
-    #
-    # @param index [Integer, String] The column index (0-based) or letter.
-    # @param width [Float, nil] The column width.
-    # @param hidden [Boolean] Whether the column is hidden.
-    # @param custom_width [Boolean] Whether it's a custom width.
-    # @param outline_level [Integer, nil] The outline level.
-    # @note Excel's column width max is 255.
-    # @return [void]
-    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
-    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
-
-    # Add a chart to the current sheet.
-    # : (**untyped options) ?{ (ChartBuilder) -> void } -> void
-    def chart: (**untyped options) ?{ (ChartBuilder) -> void } -> void
-
-    # --- Hyperlinks ---
-    # : (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
-    def hyperlink: (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
-
-    # --- Auto Filter / Sort ---
-    # : (String range) -> void
-    def auto_filter: (String range) -> void
-
-    # : (untyped col_id, untyped filter) -> untyped
-    def filter_column: (untyped col_id, untyped filter) -> untyped
-
-    # : (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
-    def sort_state: (untyped ref, untyped sort_conditions, **untyped opts) -> untyped
-
-    # --- Data Validation ---
-    # : (untyped sqref, **untyped opts) -> void
-    def validate_data: (untyped sqref, **untyped opts) -> void
-
-    # --- Conditional Formatting ---
-    # : (untyped sqref, **untyped opts) -> void
-    def conditional_format: (untyped sqref, **untyped opts) -> void
-
-    # --- Tables ---
-    # : (untyped ref, columns: untyped, ?name: untyped, ?display_name: untyped, ?style: untyped, **untyped opts) -> void
-    def table: (untyped ref, columns: untyped, ?name: untyped, ?display_name: untyped, ?style: untyped, **untyped opts) -> void
-
-    # --- Pivot Tables ---
-    # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
-    def pivot_table: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
-
-    # --- Comments ---
-    # : (String | Integer cell, String text, ?author: ::String) -> void
-    def comment: (String | Integer cell, String text, ?author: ::String) -> void
-
-    # --- Sparklines ---
-    # : (sparklines: untyped, ?type: untyped, **untyped opts) -> void
-    def sparkline_group: (sparklines: untyped, ?type: untyped, **untyped opts) -> void
-
-    # Merge a range of cells (e.g. "A1:B2"), or by coordinate indices.
-    #
-    # @param range [String, nil] The string range.
-    # @param row [Integer, nil] Single row index.
-    # @param col_start [Integer, nil] Starting column index.
-    # @param col_end [Integer, nil] Ending column index.
-    # @param row_start [Integer, nil] Starting row index.
-    # @param row_end [Integer, nil] Ending row index.
-    # @return [void]
-    # : (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
-    def merge: (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
-
-    # Freeze panes at the given row and column.
-    #
-    # @param row [Integer] The row index to freeze at (0-based).
-    # @param col [Integer, String] The column index to freeze at (0-based or letter).
-    # @return [void]
-    # : (?row: Integer, ?col: (Integer | String)) -> void
-    def freeze_pane: (?row: Integer, ?col: Integer | String) -> void
-
-    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
-    def split_pane: (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
-
-    # : (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-    def select_cell: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-
-    # --- Page Setup / Margins / Print ---
-    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
-    def page_margins: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
-
-    # : (**untyped opts) -> void
-    def page_setup: (**untyped opts) -> void
-
-    # : (**untyped opts) -> void
-    def header_footer: (**untyped opts) -> void
-
-    # : (Symbol name, untyped value) -> void
-    def print_options: (Symbol name, untyped value) -> void
-
-    # --- Sheet Protection ---
-    # : (**untyped opts) -> void
-    def protect_sheet: (**untyped opts) -> void
-
-    # --- Images ---
-    # : (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
-    def image: (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
-
-    # --- Shapes ---
-    # : (**untyped opts) -> void
-    def shape: (**untyped opts) -> void
-
-    # --- Sheet Properties ---
-    # : (Symbol name, untyped value) -> void
-    def sheet_properties: (Symbol name, untyped value) -> void
-
-    # : (Symbol name, untyped value) -> void
-    def sheet_view: (Symbol name, untyped value) -> void
-
-    # --- Row / Column Breaks ---
-    # : (Integer row_num) -> void
-    def page_break_row: (Integer row_num) -> void
-
-    # : (Integer col_index) -> void
-    def page_break_col: (Integer col_index) -> void
-
-    # Add a defined name.
-    #
-    # @param name [String] The defined name.
-    # @param value [String] The formula or value.
-    # @param sheet [String, nil] Local sheet name.
-    # @param hidden [Boolean] Whether the defined name is hidden.
-    # @return [void]
-    # : (String name, String value, ?sheet: String?, ?hidden: bool) -> void
-    def defined_name: (String name, String value, ?sheet: String?, ?hidden: bool) -> void
-
-    # Set the print area for the current or named sheet.
-    # : (String range, ?sheet: String?) -> void
-    def print_area: (String range, ?sheet: String?) -> void
-
-    # Set print titles for the current or named sheet.
-    # : (?rows: String?, ?cols: String?, ?sheet: String?) -> void
-    def print_titles: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
-
-    # Set workbook protection.
-    #
-    # @param opts [Hash] Protection options.
-    # @return [void]
-    # : (**String | Integer | bool | nil opts) -> void
-    def protect_workbook: (**String | Integer | bool | nil opts) -> void
-
-    # Set a core document property.
-    #
-    # @param name [Symbol] The property name.
-    # @param value [String, Integer, Time] The property value.
-    # @return [void]
-    # : (Symbol name, String | Integer | Time value) -> void
-    def core_property: (Symbol name, String | Integer | Time value) -> void
-
-    # Set an app document property.
-    #
-    # @param name [Symbol] The property name.
-    # @param value [String, Integer, Time] The property value.
-    # @return [void]
-    # : (Symbol name, String | Integer | Time value) -> void
-    def app_property: (Symbol name, String | Integer | Time value) -> void
-
-    # Set multiple core and/or app properties.
-    #
-    # @param core [Hash, nil] Core properties.
-    # @param app [Hash, nil] App properties.
-    # @return [void]
-    # : (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
-    def properties: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
-
-    # Add a custom document property.
-    #
-    # @param name [String] The property name.
-    # @param value [String, Integer, Float, Boolean, Time] The property value.
-    # @param type [Symbol] The type of property (:string, :number, :bool, :date).
-    # @return [void]
-    # : (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
-    def custom_property: (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
-
-    # : () -> untyped
-    def close: () -> untyped
-
-    # Explicitly remove any remaining tempfiles. Called via ensure block.
-    # : () -> void
-    def cleanup!: () -> void
-
-    private
-
-    # : (untyped range) -> untyped
-    def absolute_range: (untyped range) -> untyped
-
-    # : (untyped names, untyped sheets) -> untyped
-    def resolve_defined_names: (untyped names, untyped sheets) -> untyped
-
-    # : () -> (nil | untyped)
-    def flush_current_sheet: () -> (nil | untyped)
-  end
-
-  private def self.build_worksheet: (untyped name, untyped sheet_xml, untyped shared_strings, untyped _styles) -> untyped
-
-  private def self.build_row_from_raw: (untyped raw_row) -> untyped
-
-  private def self.build_raw_cell: (untyped cell, untyped sst, untyped sst_index) -> untyped
-
-  private def self.build_row_attrs: (untyped row) -> untyped
+  # : (Elements::Row row) -> Hash[Symbol, untyped]
+  private def self.build_row_attrs: (Elements::Row row) -> Hash[Symbol, untyped]
 
   # Builds a raw cell hash from a value for streaming writes.
+  #
+  # @param row_index [Integer] 0-based row index.
+  # @param col_index [Integer] 0-based column index.
+  # @param value [Object] Cell value.
+  # @param sst [Array<String>] Shared strings array.
+  # @param sst_index [Hash{String => Integer}] Shared strings index mapping.
+  # @return [Hash{Symbol => Object}] Raw cell hash.
   # @api public
-  # : (untyped row_index, untyped col_index, untyped value, untyped sst, untyped sst_index) -> untyped
-  def self.build_raw_cell_from_value: (untyped row_index, untyped col_index, untyped value, untyped sst, untyped sst_index) -> untyped
+  # : (Integer row_index, Integer col_index, untyped value, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
+  def self.build_raw_cell_from_value: (Integer row_index, Integer col_index, untyped value, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
 end

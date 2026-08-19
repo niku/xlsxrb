@@ -131,10 +131,10 @@ module Xlsxrb
       # @example
       #   wb.save("output.xlsx")
       #
-      # @param filepath [String, IO] Destination file path or IO stream.
+      # @param filepath [String, IO, StringIO] Destination file path or IO stream.
       # @return [void]
       # @api public
-      #: (untyped filepath) -> void
+      #: (String | IO | StringIO filepath) -> void
       def save(filepath)
         Xlsxrb.write(filepath, self)
       end

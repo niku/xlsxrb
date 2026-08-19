@@ -1,0 +1,145 @@
+# Generated from lib/xlsxrb/workbook_builder.rb with RBS::Inline
+
+module Xlsxrb
+  # DSL context for building an in-memory {Elements::Workbook} in {Xlsxrb.build}.
+  #
+  # @example Build an in-memory workbook with multiple sheets
+  #   workbook = Xlsxrb.build do |builder|
+  #     builder.sheet("Sales") do |sheet|
+  #       sheet.row(["Product", "Revenue"])
+  #       sheet.row(["Widget", 1000])
+  #     end
+  #     builder.core_property(:creator, "Reporting System")
+  #   end
+  #
+  # @api public
+  class WorkbookBuilder
+    # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specifications.
+    # : (?strict_excel_mode: bool) -> void
+    def initialize: (?strict_excel_mode: bool) -> void
+
+    # Sets a workbook-level property.
+    #
+    # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
+    #   you may expose end-users to malicious external reference vulnerabilities (e.g., CSV/DDE Injection)
+    #   when they open the generated Excel file. Ensure you fully trust the exported data.
+    #
+    # @param name [Symbol] Property name (e.g. :update_links).
+    # @param value [String, Integer, Boolean] Property value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
+    def workbook_property: (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
+
+    # Adds a new worksheet to the workbook.
+    #
+    # @param name [String, nil] Sheet name (max 31 chars, no forbidden chars `[ ] * ? / \`).
+    # @param opts [Hash] Sheet properties.
+    # @yield [sheet_builder]
+    # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
+    # @return [Elements::Worksheet]
+    # @raise [ArgumentError] If sheet name violates Excel limits in strict mode.
+    # @api public
+    # : (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
+    def sheet: (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
+
+    alias [] sheet
+
+    # Adds a defined name (named range or formula constant) to the workbook.
+    #
+    # @param name [String] Defined name (e.g. "TaxRate").
+    # @param value [String] Formula expression or range reference (e.g. "Sheet1!$B$2").
+    # @param sheet [String, nil] Optional sheet name for sheet-scoped defined names.
+    # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
+    # @return [void]
+    # @api public
+    # : (String name, String value, ?sheet: String?, ?hidden: bool) -> void
+    def defined_name: (String name, String value, ?sheet: String?, ?hidden: bool) -> void
+
+    # Sets the print area for a sheet.
+    #
+    # @param range [String] Cell range (e.g. "A1:G50").
+    # @param sheet [String, nil] Target sheet name (defaults to latest or "Sheet1").
+    # @return [void]
+    # @api public
+    # : (String range, ?sheet: String?) -> void
+    def print_area: (String range, ?sheet: String?) -> void
+
+    # Sets repeating print titles (rows and/or columns) for pagination.
+    #
+    # @param rows [String, nil] Repeating row range (e.g. "1:2").
+    # @param cols [String, nil] Repeating column range (e.g. "A:B").
+    # @param sheet [String, nil] Target sheet name.
+    # @return [void]
+    # @api public
+    # : (?rows: String?, ?cols: String?, ?sheet: String?) -> void
+    def print_titles: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
+
+    # Sets workbook structure and window protection.
+    #
+    # @param opts [Hash] Protection options (e.g. lock_structure: true, password: "secret").
+    # @return [void]
+    # @api public
+    # : (**String | Integer | bool | nil opts) -> void
+    def protect_workbook: (**String | Integer | bool | nil opts) -> void
+
+    # Sets a Dublin Core document metadata property.
+    #
+    # @param name [Symbol] Core property name (:creator, :title, :subject, :description, etc.).
+    # @param value [String, Integer, Time] Property value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, String | Integer | Time value) -> void
+    def core_property: (Symbol name, String | Integer | Time value) -> void
+
+    # Sets an extended application metadata property.
+    #
+    # @param name [Symbol] Application property name (:company, :manager, :app_version, etc.).
+    # @param value [String, Integer, Time] Property value.
+    # @return [void]
+    # @api public
+    # : (Symbol name, String | Integer | Time value) -> void
+    def app_property: (Symbol name, String | Integer | Time value) -> void
+
+    # Sets multiple core and/or app properties simultaneously.
+    #
+    # @param core [Hash{Symbol => Object}, nil] Core properties map.
+    # @param app [Hash{Symbol => Object}, nil] App properties map.
+    # @return [void]
+    # @api public
+    # : (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
+    def properties: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
+
+    # Adds a custom document property.
+    #
+    # @param name [String] Property name.
+    # @param value [String, Integer, Float, Boolean, Time] Property value.
+    # @param type [Symbol] Value type (:string, :number, :bool, :date).
+    # @return [void]
+    # @api public
+    # : (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
+    def custom_property: (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
+
+    # Builds and returns the compiled {Elements::Workbook}.
+    #
+    # @return [Elements::Workbook]
+    # @raise [ArgumentError] If workbook contains zero sheets in strict mode.
+    # @api public
+    # : () -> Elements::Workbook
+    def build: () -> Elements::Workbook
+
+    private
+
+    # : (untyped range) -> untyped
+    def absolute_range: (untyped range) -> untyped
+
+    # : (untyped names, untyped sheets) -> untyped
+    def resolve_defined_names: (untyped names, untyped sheets) -> untyped
+
+    # : (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
+    def process_styles: (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
+
+    # : (untyped writer) -> { fonts: untyped, fills: untyped, borders: untyped, xf_entries: untyped, num_fmts: untyped }
+    def extract_styles_from_writer: (untyped writer) -> { fonts: untyped, fills: untyped, borders: untyped, xf_entries: untyped, num_fmts: untyped }
+  end
+end
