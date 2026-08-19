@@ -1,0 +1,400 @@
+# Generated from lib/xlsxrb/ooxml/reader/listeners/drawing_listeners.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    class Reader
+      # SAX2 listener for parsing drawing XML to extract image information.
+      class DrawingImagesListener
+        include REXML::SAX2Listener
+
+        attr_reader images: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing drawing XML to extract chart references.
+      class DrawingChartsListener
+        include REXML::SAX2Listener
+
+        attr_reader charts: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing drawing XML to extract shape elements.
+      class DrawingShapesListener
+        include REXML::SAX2Listener
+
+        attr_reader shapes: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def assign_shape_color: (untyped color_value) -> untyped
+
+        def finalize_paragraph_runs: (untyped para) -> untyped
+
+        def merge_paragraph_to_shape: (untyped para, untyped shape) -> untyped
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing chart XML to identify chart type and title.
+      class ChartTypeListener
+        include REXML::SAX2Listener
+
+        attr_reader chart_type: untyped
+
+        attr_reader title: untyped
+
+        attr_reader title_overlay: untyped
+
+        attr_reader title_font: untyped
+
+        attr_reader title_fill_color: untyped
+
+        attr_reader title_no_fill: untyped
+
+        attr_reader title_line_color: untyped
+
+        attr_reader title_line_width: untyped
+
+        attr_reader title_line_dash: untyped
+
+        attr_reader series: untyped
+
+        attr_reader legend: untyped
+
+        attr_reader data_labels: untyped
+
+        attr_reader cat_axis_title: untyped
+
+        attr_reader val_axis_title: untyped
+
+        attr_reader grouping: untyped
+
+        attr_reader bar_dir: untyped
+
+        attr_reader vary_colors: untyped
+
+        attr_reader plot_vis_only: untyped
+
+        attr_reader disp_blanks_as: untyped
+
+        attr_reader style: untyped
+
+        attr_reader auto_title_deleted: untyped
+
+        attr_reader rounded_corners: untyped
+
+        attr_reader cat_axis_tick_lbl_pos: untyped
+
+        attr_reader val_axis_tick_lbl_pos: untyped
+
+        attr_reader cat_axis_major_gridlines: untyped
+
+        attr_reader val_axis_major_gridlines: untyped
+
+        attr_reader cat_axis_minor_gridlines: untyped
+
+        attr_reader val_axis_minor_gridlines: untyped
+
+        attr_reader show_d_lbls_over_max: untyped
+
+        attr_reader cat_axis_delete: untyped
+
+        attr_reader val_axis_delete: untyped
+
+        attr_reader cat_axis_orientation: untyped
+
+        attr_reader val_axis_orientation: untyped
+
+        attr_reader gap_width: untyped
+
+        attr_reader overlap: untyped
+
+        attr_reader view_3d: untyped
+
+        attr_reader gap_depth: untyped
+
+        attr_reader bar_shape: untyped
+
+        attr_reader bubble_3d: untyped
+
+        attr_reader bubble_scale: untyped
+
+        attr_reader show_neg_bubbles: untyped
+
+        attr_reader size_represents: untyped
+
+        attr_reader cat_axis_num_fmt: untyped
+
+        attr_reader val_axis_num_fmt: untyped
+
+        attr_reader cat_axis_major_tick_mark: untyped
+
+        attr_reader cat_axis_minor_tick_mark: untyped
+
+        attr_reader val_axis_major_tick_mark: untyped
+
+        attr_reader val_axis_minor_tick_mark: untyped
+
+        attr_reader cat_axis_crosses: untyped
+
+        attr_reader val_axis_crosses: untyped
+
+        attr_reader cat_axis_crosses_at: untyped
+
+        attr_reader val_axis_crosses_at: untyped
+
+        attr_reader cat_axis_tick_lbl_skip: untyped
+
+        attr_reader cat_axis_tick_mark_skip: untyped
+
+        attr_reader cat_axis_lbl_offset: untyped
+
+        attr_reader cat_axis_auto: untyped
+
+        attr_reader cat_axis_lbl_algn: untyped
+
+        attr_reader cat_axis_no_multi_lvl_lbl: untyped
+
+        attr_reader val_axis_cross_between: untyped
+
+        attr_reader val_axis_major_unit: untyped
+
+        attr_reader val_axis_minor_unit: untyped
+
+        attr_reader val_axis_disp_units: untyped
+
+        attr_reader cat_axis_scaling_max: untyped
+
+        attr_reader cat_axis_scaling_min: untyped
+
+        attr_reader val_axis_scaling_max: untyped
+
+        attr_reader val_axis_scaling_min: untyped
+
+        attr_reader cat_axis_log_base: untyped
+
+        attr_reader val_axis_log_base: untyped
+
+        attr_reader first_slice_ang: untyped
+
+        attr_reader hole_size: untyped
+
+        attr_reader smooth: untyped
+
+        attr_reader marker: untyped
+
+        attr_reader drop_lines: untyped
+
+        attr_reader hi_low_lines: untyped
+
+        attr_reader ser_lines: untyped
+
+        attr_reader up_down_bars: untyped
+
+        attr_reader scatter_style: untyped
+
+        attr_reader radar_style: untyped
+
+        attr_reader cat_axis_pos: untyped
+
+        attr_reader val_axis_pos: untyped
+
+        attr_reader wireframe: untyped
+
+        attr_reader band_fmts: untyped
+
+        attr_reader of_pie_type: untyped
+
+        attr_reader split_type: untyped
+
+        attr_reader split_pos: untyped
+
+        attr_reader cust_split: untyped
+
+        attr_reader second_pie_size: untyped
+
+        attr_reader data_table: untyped
+
+        attr_reader plot_area_fill: untyped
+
+        attr_reader plot_area_no_fill: untyped
+
+        attr_reader plot_area_line_color: untyped
+
+        attr_reader plot_area_line_width: untyped
+
+        attr_reader plot_area_line_dash: untyped
+
+        attr_reader plot_area_layout: untyped
+
+        attr_reader cat_axis_label_rotation: untyped
+
+        attr_reader val_axis_label_rotation: untyped
+
+        attr_reader cat_axis_font: untyped
+
+        attr_reader val_axis_font: untyped
+
+        attr_reader cat_axis_fill: untyped
+
+        attr_reader cat_axis_no_fill: untyped
+
+        attr_reader val_axis_fill: untyped
+
+        attr_reader val_axis_no_fill: untyped
+
+        attr_reader cat_axis_line_color: untyped
+
+        attr_reader cat_axis_line_width: untyped
+
+        attr_reader cat_axis_line_dash: untyped
+
+        attr_reader val_axis_line_color: untyped
+
+        attr_reader val_axis_line_width: untyped
+
+        attr_reader val_axis_line_dash: untyped
+
+        attr_reader floor: untyped
+
+        attr_reader side_wall: untyped
+
+        attr_reader back_wall: untyped
+
+        attr_reader legend_font: untyped
+
+        attr_reader cat_axis_type: untyped
+
+        attr_reader cat_axis_base_time_unit: untyped
+
+        attr_reader cat_axis_major_time_unit: untyped
+
+        attr_reader cat_axis_minor_time_unit: untyped
+
+        attr_reader cat_axis_major_unit: untyped
+
+        attr_reader cat_axis_minor_unit: untyped
+
+        attr_reader cat_axis_title_font: untyped
+
+        attr_reader val_axis_title_font: untyped
+
+        attr_reader cat_axis_title_fill: untyped
+
+        attr_reader cat_axis_title_no_fill: untyped
+
+        attr_reader cat_axis_title_line_color: untyped
+
+        attr_reader cat_axis_title_line_width: untyped
+
+        attr_reader cat_axis_title_line_dash: untyped
+
+        attr_reader val_axis_title_fill: untyped
+
+        attr_reader val_axis_title_no_fill: untyped
+
+        attr_reader val_axis_title_line_color: untyped
+
+        attr_reader val_axis_title_line_width: untyped
+
+        attr_reader val_axis_title_line_dash: untyped
+
+        attr_reader title_layout: untyped
+
+        attr_reader cat_axis_title_layout: untyped
+
+        attr_reader val_axis_title_layout: untyped
+
+        attr_reader title_rotation: untyped
+
+        attr_reader cat_axis_title_rotation: untyped
+
+        attr_reader val_axis_title_rotation: untyped
+
+        attr_reader chart_fill: untyped
+
+        attr_reader chart_no_fill: untyped
+
+        attr_reader chart_line_color: untyped
+
+        attr_reader chart_line_width: untyped
+
+        attr_reader chart_line_dash: untyped
+
+        attr_reader protection: untyped
+
+        attr_reader print_settings: untyped
+
+        attr_reader chart_font: untyped
+
+        CHART_TYPES: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def assign_title_layout_value: (untyped key, untyped value) -> untyped
+
+        def assign_chart_color: (untyped color_value) -> untyped
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing comments XML.
+      class CommentsListener
+        include REXML::SAX2Listener
+
+        attr_reader comments: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+    end
+  end
+end

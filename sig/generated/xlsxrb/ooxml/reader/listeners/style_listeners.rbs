@@ -1,0 +1,80 @@
+# Generated from lib/xlsxrb/ooxml/reader/listeners/style_listeners.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    class Reader
+      # SAX2 listener for parsing styles.xml (numFmts + cellXfs).
+      class StylesListener
+        include REXML::SAX2Listener
+
+        attr_reader num_fmts: untyped
+
+        attr_reader cell_xfs: untyped
+
+        attr_reader cell_style_xfs: untyped
+
+        attr_reader cell_styles: untyped
+
+        attr_reader fonts: untyped
+
+        attr_reader fills: untyped
+
+        attr_reader borders: untyped
+
+        attr_reader dxfs: untyped
+
+        attr_reader indexed_colors: untyped
+
+        attr_reader mru_colors: untyped
+
+        attr_reader table_styles: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def parse_color: (untyped attributes) -> untyped
+
+        def parse_fill_color: (untyped key, untyped attributes) -> untyped
+
+        def parse_font_name: (untyped name, untyped attributes) -> untyped
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener that captures cell style index (s attribute) from worksheet.
+      class CellStyleListener
+        include REXML::SAX2Listener
+
+        attr_reader cell_style_indices: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <phoneticPr> element.
+      class PhoneticPrListener
+        include REXML::SAX2Listener
+
+        attr_reader phonetic_pr: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+    end
+  end
+end

@@ -1,0 +1,442 @@
+# Generated from lib/xlsxrb/ooxml/reader/listeners/feature_listeners.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    class Reader
+      # SAX2 listener for parsing <autoFilter> element.
+      class AutoFilterListener
+        include REXML::SAX2Listener
+
+        attr_reader ref: untyped
+
+        attr_reader filter_columns: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <sortState> element.
+      class SortStateListener
+        include REXML::SAX2Listener
+
+        attr_reader sort_state: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing docProps/app.xml.
+      class AppPropertiesListener
+        include REXML::SAX2Listener
+
+        attr_reader properties: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped _attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing docProps/core.xml.
+      class CorePropertiesListener
+        include REXML::SAX2Listener
+
+        attr_reader properties: untyped
+
+        FIELD_MAP: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped _attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing custom properties (docProps/custom.xml).
+      class CustomPropertiesListener
+        include REXML::SAX2Listener
+
+        attr_reader properties: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <sheetPr> element (tabColor, outlinePr).
+      class SheetPropertiesListener
+        include REXML::SAX2Listener
+
+        attr_reader properties: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <sheetProtection> element.
+      class SheetProtectionListener
+        include REXML::SAX2Listener
+
+        attr_reader protection: untyped
+
+        def initialize: () -> untyped
+
+        BOOL_ATTRS: untyped
+
+        FALSE_ATTRS: untyped
+
+        ATTR_MAP: untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <protectedRanges> element.
+      class ProtectedRangesListener
+        include REXML::SAX2Listener
+
+        attr_reader ranges: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <cellWatches> element.
+      class CellWatchesListener
+        include REXML::SAX2Listener
+
+        attr_reader watches: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <ignoredErrors> element.
+      class IgnoredErrorsListener
+        include REXML::SAX2Listener
+
+        attr_reader errors: untyped
+
+        def initialize: () -> untyped
+
+        IGNORED_ERROR_BOOL_ATTRS: untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <dataConsolidate> element.
+      class DataConsolidateListener
+        include REXML::SAX2Listener
+
+        attr_reader result: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <scenarios> element.
+      class ScenariosListener
+        include REXML::SAX2Listener
+
+        attr_reader result: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <sheetFormatPr> element.
+      class SheetFormatListener
+        include REXML::SAX2Listener
+
+        attr_reader properties: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <sheetViews><sheetView>, <pane>, and <selection>.
+      class SheetViewListener
+        include REXML::SAX2Listener
+
+        attr_reader view: untyped
+
+        attr_reader pane: untyped
+
+        attr_reader selection: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <dataValidations> elements.
+      class DataValidationsListener
+        include REXML::SAX2Listener
+
+        attr_reader validations: untyped
+
+        attr_reader container_options: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+
+        def xml_unescape: (untyped str) -> untyped
+      end
+
+      # SAX2 listener for parsing conditionalFormatting elements.
+      class ConditionalFormattingListener
+        include REXML::SAX2Listener
+
+        attr_reader rules: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def append_cfvo: (untyped cfvo) -> untyped
+
+        def append_cf_color: (untyped color) -> untyped
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing print/page elements from worksheet XML.
+      class PrintPageListener
+        include REXML::SAX2Listener
+
+        attr_reader print_options: untyped
+
+        attr_reader page_margins: untyped
+
+        attr_reader page_setup: untyped
+
+        attr_reader header_footer: untyped
+
+        attr_reader row_breaks: untyped
+
+        attr_reader col_breaks: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing table XML.
+      class TableListener
+        include REXML::SAX2Listener
+
+        attr_reader table: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing calcChain.xml.
+      class CalcChainListener
+        include REXML::SAX2Listener
+
+        attr_reader entries: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing pivotTable XML.
+      class PivotTableListener
+        include REXML::SAX2Listener
+
+        attr_reader pivot_table: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing pivotCacheDefinition XML.
+      class PivotCacheDefinitionListener
+        include REXML::SAX2Listener
+
+        attr_reader cache_definition: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        def characters: (untyped _text) -> untyped
+
+        def end_document: () -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+
+        def xml_unescape: (untyped str) -> untyped
+      end
+
+      # SAX2 listener for parsing pivotCacheRecords XML.
+      class PivotCacheRecordsListener
+        include REXML::SAX2Listener
+
+        attr_reader records: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing externalLink XML.
+      class ExternalLinkListener
+        include REXML::SAX2Listener
+
+        attr_reader sheet_names: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped _local_name, untyped _qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+    end
+  end
+end
