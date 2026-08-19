@@ -1,3 +1,24 @@
+## [0.1.10] - 2026-08-19
+
+### Added
+- **Peer Libraries Ecosystem Guide ([docs/PEER_LIBRARIES.md](docs/PEER_LIBRARIES.md))**: Introduced a respectful overview of the Ruby XLSX ecosystem featuring official self-descriptions, architectural tradeoffs (SST vs. Inline Strings, Streaming vs. In-Memory), and reproducible benchmarks across 9 popular Ruby XLSX gems.
+- **Visual Assets & Screen Previews**:
+  - Embedded interactive WebAssembly Playground live demo preview in `README.md`.
+  - Added real-world Ruby LSP autocompletion and RBS type hint preview in `README.md`.
+  - Created accurate, neutral linear-scale SVG benchmark performance chart.
+- **Enterprise-Grade Test Suite Expansion**:
+  - **ECMA-376 XSD Schema Validation**: Comprehensive XML schema validation suite ensuring strict element ordering and ISO/IEC 29500 compliance.
+  - **Contract Testing Suite**: Comprehensive parity verification between Streaming (`Xlsxrb.write`) and In-Memory (`Xlsxrb.build`) APIs.
+  - **Property-Based Testing (PBT)**: Expanded automated random generation tests for Row/Column invariants, styles, and edge cases.
+  - **Visual Regression Testing (VRT)**: Added new visual baselines for table styles, drawing shapes, and pivot tables.
+  - **E2E Interoperability Suite**: Added tests for namespace-prefixed XML streaming, conditional formatting, and table structures.
+
+### Fixed
+- **WebAssembly (ruby.wasm) Compatibility**: Bundled `pp` and `prettyprint` standard libraries in `ruby.wasm` package to resolve REXML LoadError during browser-based evaluation.
+
+### Changed
+- **Streamlined README**: Refactored README from 363 to 175 lines, focusing on core motivation, clean 4-column feature matrix, concise usage examples, and direct links to specialized documentation.
+
 ## [0.1.9] - 2026-08-18
 
 ### Added
