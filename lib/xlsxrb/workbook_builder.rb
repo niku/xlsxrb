@@ -152,16 +152,18 @@ module Xlsxrb
       @app_properties[name] = value
     end
 
-    # Sets multiple core and/or app properties simultaneously.
+    # Sets multiple core, app, and/or custom properties simultaneously.
     #
     # @param core [Hash{Symbol => Object}, nil] Core properties map.
     # @param app [Hash{Symbol => Object}, nil] App properties map.
+    # @param custom [Hash{String, Symbol => Object}, nil] Custom properties map.
     # @return [void]
     # @api public
-    #: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
-    def properties(core: nil, app: nil)
+    #: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?, ?custom: Hash[String | Symbol, untyped]?) -> void
+    def properties(core: nil, app: nil, custom: nil)
       core&.each { |k, v| core_property(k, v) }
       app&.each { |k, v| app_property(k, v) }
+      custom&.each { |k, v| custom_property(k.to_s, v) }
     end
 
     # Adds a custom document property.

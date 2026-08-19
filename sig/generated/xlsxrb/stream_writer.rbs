@@ -142,8 +142,8 @@ module Xlsxrb
       # @param collapsed [Boolean] Whether the outline group is collapsed.
       # @return [void]
       # @api public
-      # : (Integer | String | Symbol col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
-      def column: (Integer | String | Symbol col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
+      # : (Integer | String | Symbol | Range[Integer | String] | Array[Integer | String] col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
+      def column: (Integer | String | Symbol | Range[Integer | String] | Array[Integer | String] col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
 
       # Adds a chart to the active sheet.
       #
@@ -298,12 +298,12 @@ module Xlsxrb
       #   s.sparkline_group(sparklines: [{ data_ref: "A1:E1", location_ref: "F1" }], type: "line")
       #
       # @param sparklines [Array<Hash>] Array of { data_ref:, location_ref: } hashes.
-      # @param type [String, nil] "line" (default), "column", or "stacked".
+      # @param type [String, Symbol, nil] "line" (default), "column", or "stacked".
       # @param opts [Hash] Additional sparkline options.
       # @return [void]
       # @api public
-      # : (sparklines: Array[Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
-      def sparkline_group: (sparklines: Array[Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
+      # : (sparklines: Array[Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
+      def sparkline_group: (sparklines: Array[Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
 
       # Sets workbook-level properties.
       #
@@ -910,10 +910,11 @@ module Xlsxrb
     #
     # @param core [Hash, nil] Core properties.
     # @param app [Hash, nil] App properties.
+    # @param custom [Hash, nil] Custom properties.
     # @return [void]
     # @api public
-    # : (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
-    def properties: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
+    # : (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?, ?custom: Hash[String | Symbol, untyped]?) -> void
+    def properties: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?, ?custom: Hash[String | Symbol, untyped]?) -> void
 
     # Adds a custom document property.
     #

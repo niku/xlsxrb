@@ -543,6 +543,16 @@ module Xlsxrb
         b.declaration
         b.open_tag("styleSheet", { xmlns: SSML_NS })
 
+        # Number formats
+        num_fmts = @styles&.dig(:num_fmts) || []
+        unless num_fmts.empty?
+          b.tag("numFmts", { count: num_fmts.size.to_s }) do |_|
+            num_fmts.each do |nf|
+              b.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id].to_s, formatCode: nf[:format_code] }) if nf.is_a?(Hash)
+            end
+          end
+        end
+
         # Fonts
         fonts = @styles&.dig(:fonts) || []
         fonts = [{}] if fonts.empty? # At least one default font
@@ -612,16 +622,6 @@ module Xlsxrb
         # cellStyleXfs
         b.tag("cellStyleXfs", { count: "1" }) do |_|
           b.empty_tag("xf", { numFmtId: "0", fontId: "0", fillId: "0", borderId: "0" })
-        end
-
-        # Number formats
-        num_fmts = @styles&.dig(:num_fmts) || []
-        unless num_fmts.empty?
-          b.tag("numFmts", { count: num_fmts.size.to_s }) do |_|
-            num_fmts.each do |nf|
-              b.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id].to_s, formatCode: nf[:format_code] }) if nf.is_a?(Hash)
-            end
-          end
         end
 
         # Cell XFs (formatting)

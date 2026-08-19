@@ -146,7 +146,7 @@ module Xlsxrb
       col_index = 0
       while col_index < max_len
         val = col_index < values.size ? values[col_index] : nil
-        raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}" unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula)) || val.is_a?(Elements::RichText) || (val.is_a?(Array) && val.first.is_a?(Hash) && (val.first.key?(:text) || val.first.key?("text")))
+        raise ArgumentError, "Invalid cell value type or value: #{val.class} for value #{val.inspect}" unless val.nil? || val.is_a?(String) || (val.is_a?(Numeric) && !(val.is_a?(Float) && (val.infinite? || val.nan?))) || val.is_a?(TrueClass) || val.is_a?(FalseClass) || val.is_a?(Date) || val.is_a?(Time) || val.is_a?(Elements::Formula) || (val.is_a?(Hash) && val.key?(:formula)) || val.is_a?(Elements::RichText) || val.is_a?(Elements::CellError) || (val.is_a?(Array) && val.first.is_a?(Hash) && (val.first.key?(:text) || val.first.key?("text")))
         # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
         raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
 
@@ -180,12 +180,16 @@ module Xlsxrb
                              Elements::Cell.new(
                                row_index: row_index,
                                column_index: col_index,
-                               value: nil,
+                               value: val.cached_value,
                                formula: val,
                                style_index: style_name
                              )
                            elsif val.is_a?(Hash) && val.key?(:formula)
-                             f_obj = Elements::Formula.new(val[:formula])
+                             f_obj = Elements::Formula.new(
+                               expression: val[:formula],
+                               cached_value: val[:value],
+                               calculate_always: val[:calculate_always]
+                             )
                              Elements::Cell.new(
                                row_index: row_index,
                                column_index: col_index,
@@ -402,11 +406,11 @@ module Xlsxrb
     # Adds a sparkline group to the sheet.
     #
     # @param sparklines [Array<Hash>] List of { data_ref:, location_ref: } items.
-    # @param type [String, nil] "line" (default), "column", or "stacked".
+    # @param type [String, Symbol, nil] "line" (default), "column", or "stacked".
     # @param opts [Hash] Color and formatting options.
     # @return [void]
     # @api public
-    #: (sparklines: Array[String | Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
+    #: (sparklines: Array[String | Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
     def sparkline_group(sparklines:, type: nil, **opts)
       group = { sparklines: sparklines }
       group[:type] = type if type

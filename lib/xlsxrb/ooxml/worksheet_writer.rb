@@ -131,9 +131,10 @@ module Xlsxrb
             if formula.is_a?(Xlsxrb::Elements::Formula)
               formula_expr = formula.expression
               formula_ca = formula.calculate_always
-              xml_val = formula.cached_value || nil
+              xml_val = formula.cached_value || value || nil
             else
               formula_expr = formula
+              xml_val = value || nil
             end
             formula_expr = formula_expr[1..] if formula_expr.start_with?("=")
           end
@@ -167,6 +168,9 @@ module Xlsxrb
               xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
             when BigDecimal
               xml_val = value.to_s("F")
+            when Xlsxrb::Elements::CellError
+              xml_val = value.code
+              type = "e"
             end
           end
 

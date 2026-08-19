@@ -234,7 +234,7 @@ module Xlsxrb
       # @param collapsed [Boolean] Whether the outline group is collapsed.
       # @return [void]
       # @api public
-      #: (Integer | String | Symbol col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
+      #: (Integer | String | Symbol | Range[Integer | String] | Array[Integer | String] col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
       def column(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -439,11 +439,11 @@ module Xlsxrb
       #   s.sparkline_group(sparklines: [{ data_ref: "A1:E1", location_ref: "F1" }], type: "line")
       #
       # @param sparklines [Array<Hash>] Array of { data_ref:, location_ref: } hashes.
-      # @param type [String, nil] "line" (default), "column", or "stacked".
+      # @param type [String, Symbol, nil] "line" (default), "column", or "stacked".
       # @param opts [Hash] Additional sparkline options.
       # @return [void]
       # @api public
-      #: (sparklines: Array[Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
+      #: (sparklines: Array[Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
       def sparkline_group(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -802,7 +802,7 @@ module Xlsxrb
       raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
 
       internal_sheet_setup(name)
-      opts.each { |k, v| set_sheet_property(k, v) }
+      opts.each { |k, v| sheet_properties(k, v) }
 
       yield WorksheetProxy.new(self, @current_sheet) if block_given?
       @current_sheet
@@ -1498,14 +1498,16 @@ module Xlsxrb
     #
     # @param core [Hash, nil] Core properties.
     # @param app [Hash, nil] App properties.
+    # @param custom [Hash, nil] Custom properties.
     # @return [void]
     # @api public
-    #: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?) -> void
-    def properties(core: nil, app: nil)
+    #: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?, ?custom: Hash[String | Symbol, untyped]?) -> void
+    def properties(core: nil, app: nil, custom: nil)
       # simplecov:disable
       # Edge case / untested delegation block
       core&.each { |k, v| core_property(k, v) }
       app&.each { |k, v| app_property(k, v) }
+      custom&.each { |k, v| custom_property(k.to_s, v) }
       # simplecov:enable
     end
 

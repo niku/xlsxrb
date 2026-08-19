@@ -171,12 +171,12 @@ module Xlsxrb
     # Adds a sparkline group to the sheet.
     #
     # @param sparklines [Array<Hash>] List of { data_ref:, location_ref: } items.
-    # @param type [String, nil] "line" (default), "column", or "stacked".
+    # @param type [String, Symbol, nil] "line" (default), "column", or "stacked".
     # @param opts [Hash] Color and formatting options.
     # @return [void]
     # @api public
-    # : (sparklines: Array[String | Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
-    def sparkline_group: (sparklines: Array[String | Hash[Symbol, untyped]], ?type: String?, **untyped opts) -> void
+    # : (sparklines: Array[String | Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
+    def sparkline_group: (sparklines: Array[String | Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
 
     # Merges a range of cells into a single cell.
     #

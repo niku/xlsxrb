@@ -564,7 +564,7 @@ module Xlsxrb
       result = { ref: ref, style_index: cell.style_index }
 
       case value
-      when String
+      when String, Xlsxrb::Elements::RichText
         idx = sst_index[value] ||= begin
           sst << value
           sst.size - 1
@@ -576,6 +576,9 @@ module Xlsxrb
         result[:type] = "b"
       when Integer, Float
         result[:value] = value
+      when Xlsxrb::Elements::CellError
+        result[:value] = value.code
+        result[:type] = "e"
       when Date
         result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value)
       when Time
@@ -646,7 +649,7 @@ module Xlsxrb
       result[:formula] = value.expression
       result[:formula_ca] = true if value.calculate_always
       result[:value] = value.cached_value if value.cached_value
-    when String
+    when String, Xlsxrb::Elements::RichText
       idx = sst_index[value] ||= begin
         sst << value
         sst.size - 1
@@ -658,6 +661,9 @@ module Xlsxrb
       result[:type] = "b"
     when Integer, Float
       result[:value] = value
+    when Xlsxrb::Elements::CellError
+      result[:value] = value.code
+      result[:type] = "e"
     when Date
       result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value)
     when Time
