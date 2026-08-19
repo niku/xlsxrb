@@ -15,7 +15,9 @@ module Xlsxrb
     #   cell.to_date     # Date value
     #
     # @api public
-    Cell = Data.define(:row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors) do
+    class Cell
+      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors
+
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
       # @param value [Object, nil] The cell's value.
@@ -23,12 +25,66 @@ module Xlsxrb
       # @param style_index [Integer, String, nil] Style identifier.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      #: (row_index: Integer, column_index: Integer, ?value: untyped, ?formula: Elements::Formula?, ?style_index: Integer | String | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil)
+        @row_index = row_index
+        @column_index = column_index
+        @value = value
+        @formula = formula
+        @style_index = style_index
+        @unmapped_data = unmapped_data || EMPTY_HASH
         computed_errors = errors || self.class.validate(row_index, column_index, value)
-        computed_errors = computed_errors.freeze unless computed_errors.frozen?
-        super(row_index: row_index, column_index: column_index, value: value, formula: formula,
-              style_index: style_index, unmapped_data: unmapped_data, errors: computed_errors)
+        @errors = computed_errors.frozen? ? computed_errors : computed_errors.freeze
+      end
+
+      def self.fast_create(row_index, column_index, value, style_index = nil, formula = nil)
+        inst = allocate
+        inst.instance_variable_set(:@row_index, row_index)
+        inst.instance_variable_set(:@column_index, column_index)
+        inst.instance_variable_set(:@value, value)
+        inst.instance_variable_set(:@formula, formula)
+        inst.instance_variable_set(:@style_index, style_index)
+        inst.instance_variable_set(:@unmapped_data, EMPTY_HASH)
+        inst.instance_variable_set(:@errors, EMPTY_ERRORS)
+        inst
+      end
+
+      def ==(other)
+        other.is_a?(Cell) &&
+          row_index == other.row_index &&
+          column_index == other.column_index &&
+          value == other.value &&
+          formula == other.formula &&
+          style_index == other.style_index &&
+          unmapped_data == other.unmapped_data &&
+          errors == other.errors
+      end
+      alias eql? ==
+
+      def hash
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors].hash
+      end
+
+      def deconstruct
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors]
+      end
+
+      def deconstruct_keys(keys)
+        h = { row_index: row_index, column_index: column_index, value: value, formula: formula,
+              style_index: style_index, unmapped_data: unmapped_data, errors: errors }
+        keys ? h.slice(*keys) : h
+      end
+
+      def with(**changes)
+        self.class.new(
+          row_index: changes.fetch(:row_index, row_index),
+          column_index: changes.fetch(:column_index, column_index),
+          value: changes.fetch(:value, value),
+          formula: changes.fetch(:formula, formula),
+          style_index: changes.fetch(:style_index, style_index),
+          unmapped_data: changes.fetch(:unmapped_data, unmapped_data),
+          errors: changes.fetch(:errors, errors)
+        )
       end
 
       # Returns whether the cell is valid according to OOXML specifications.
@@ -57,7 +113,8 @@ module Xlsxrb
       def [](key)
         case key
         when :value then value
-        when :formula then formula
+        when :formula
+          formula.is_a?(Formula) ? formula.expression : formula
         when :style_index then style_index
         when :ref then ref
         when :column_index then column_index
@@ -114,9 +171,8 @@ module Xlsxrb
       def to_date
         return value if value.is_a?(Date)
 
-        # Excel epoch is 1899-12-30
         if value.is_a?(Numeric)
-          Date.new(1899, 12, 30) + value.to_i
+          Ooxml::Utils.serial_to_date(value)
         else
           begin
             Date.parse(value.to_s)
@@ -135,9 +191,7 @@ module Xlsxrb
         return value if value.is_a?(Time)
 
         if value.is_a?(Numeric)
-          days = value.to_f
-          base_time = Time.utc(1899, 12, 30)
-          base_time + (days * 86_400)
+          Ooxml::Utils.serial_to_datetime(value)
         else
           begin
             Time.parse(value.to_s)
@@ -168,7 +222,7 @@ module Xlsxrb
       # @param index [Integer] 0-based column index.
       # @return [String] Excel column letter.
       # @api public
-      #: (Integer index) -> String
+      #: (untyped index) -> String
       def self.column_letter(index)
         raise ArgumentError, "Column index must be a non-negative Integer, got #{index.inspect}" unless index.is_a?(Integer) && index >= 0
 

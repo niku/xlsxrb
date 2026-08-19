@@ -13,27 +13,152 @@ module Xlsxrb
     #   cell.to_date     # Date value
     #
     # @api public
-    class Cell < Data
-      attr_reader row_index(): untyped
+    class Cell
+      attr_reader row_index: untyped
 
-      attr_reader column_index(): untyped
+      attr_reader column_index: untyped
 
-      attr_reader value(): untyped
+      attr_reader value: untyped
 
-      attr_reader formula(): untyped
+      attr_reader formula: untyped
 
-      attr_reader style_index(): untyped
+      attr_reader style_index: untyped
 
-      attr_reader unmapped_data(): untyped
+      attr_reader unmapped_data: untyped
 
-      attr_reader errors(): untyped
+      attr_reader errors: untyped
 
-      def self.new: (untyped row_index, untyped column_index, untyped value, untyped formula, untyped style_index, untyped unmapped_data, untyped errors) -> instance
-                  | (row_index: untyped, column_index: untyped, value: untyped, formula: untyped, style_index: untyped, unmapped_data: untyped, errors: untyped) -> instance
+      # @param row_index [Integer] 0-based row index.
+      # @param column_index [Integer] 0-based column index.
+      # @param value [Object, nil] The cell's value.
+      # @param formula [Elements::Formula, nil] Optional formula.
+      # @param style_index [Integer, String, nil] Style identifier.
+      # @param unmapped_data [Hash] Additional metadata.
+      # @param errors [Array<String>, nil] Validation errors.
+      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
-      def self.members: () -> [ :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors ]
+      def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula) -> untyped
 
-      def members: () -> [ :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors ]
+      def ==: (untyped other) -> untyped
+
+      alias eql? ==
+
+      def hash: () -> untyped
+
+      def deconstruct: () -> untyped
+
+      def deconstruct_keys: (untyped keys) -> untyped
+
+      def with: (**untyped changes) -> untyped
+
+      # Returns whether the cell is valid according to OOXML specifications.
+      #
+      # @return [Boolean]
+      # : () -> bool
+      def valid?: () -> bool
+
+      # Returns the Excel-style reference (e.g. "A1", "B2").
+      #
+      # @return [String]
+      # @api public
+      # : () -> String
+      def ref: () -> String
+
+      # Access cell attributes by Symbol key.
+      #
+      # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type).
+      # @return [Object, nil]
+      # @api public
+      # : (Symbol key) -> untyped
+      def []: (Symbol key) -> untyped
+
+      # Returns the cell value.
+      #
+      # @return [Object, nil]
+      # @api public
+      # : () -> untyped
+      def content: () -> untyped
+
+      # Returns the string representation of the cell value.
+      #
+      # @return [String]
+      # @api public
+      # : () -> String
+      def to_s: () -> String
+
+      # Converts the cell value to Integer.
+      #
+      # @return [Integer]
+      # @api public
+      # : () -> Integer
+      def to_i: () -> Integer
+
+      # Converts the cell value to Float.
+      #
+      # @return [Float]
+      # @api public
+      # : () -> Float
+      def to_f: () -> Float
+
+      # Converts the cell value (numeric serial date or date string) to Date.
+      #
+      # @return [Date, nil]
+      # @api public
+      # : () -> Date?
+      def to_date: () -> Date?
+
+      # Converts the cell value (numeric serial datetime or datetime string) to Time.
+      #
+      # @return [Time, nil]
+      # @api public
+      # : () -> Time?
+      def to_time: () -> Time?
+
+      # Converts a 0-based column index to an Excel letter (0 -> "A", 25 -> "Z", 26 -> "AA").
+      #
+      # @example
+      #   Cell.column_letter(0)  #=> "A"
+      #   Cell.column_letter(26) #=> "AA"
+      #
+      # @param index [Integer] 0-based column index.
+      # @return [String] Excel column letter.
+      # @api public
+      # : (untyped index) -> String
+      def self.column_letter: (untyped index) -> String
+
+      # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
+      #
+      # @example
+      #   Cell.column_index("A")  #=> 0
+      #   Cell.column_index(:AA)  #=> 26
+      #
+      # @param letter [String, Symbol, Integer] Column letter or integer index.
+      # @return [Integer] 0-based column index.
+      # @api public
+      # : (String | Symbol | Integer letter) -> Integer
+      def self.column_index: (String | Symbol | Integer letter) -> Integer
+
+      # Parses an Excel-style reference to [row_index, col_index] (both 0-based).
+      #
+      # @example
+      #   Cell.parse_ref("A1")  #=> [0, 0]
+      #   Cell.parse_ref("C10") #=> [9, 2]
+      #
+      # @param ref [String, nil] Excel cell reference.
+      # @return [Array(Integer, Integer), nil] 0-based [row_index, col_index].
+      # @api public
+      # : (String? ref) -> [Integer, Integer]?
+      def self.parse_ref: (String? ref) -> [ Integer, Integer ]?
+
+      # Validates cell coordinates and value type against OOXML specifications.
+      #
+      # @param row_index [Integer]
+      # @param column_index [Integer]
+      # @param value [Object]
+      # @return [Array<String>] List of errors.
+      # : (untyped row_index, untyped column_index, untyped value) -> Array[String]
+      def self.validate: (untyped row_index, untyped column_index, untyped value) -> Array[String]
     end
   end
 end

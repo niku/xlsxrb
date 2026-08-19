@@ -59,11 +59,25 @@ module Xlsxrb
         def characters: (untyped _text) -> untyped
       end
 
-      def self.fast_scan_rows_direct: (untyped xml_src, untyped shared_strings, untyped part_name) ?{ (?) -> untyped } -> untyped
+      def self.fast_scan_rows_direct: (untyped xml_src, untyped shared_strings, untyped _part_name) ?{ (?) -> untyped } -> untyped
+
+      COL_LETTERS: untyped
+
+      COL_MAP: untyped
+
+      CELL_FAST_RE: ::Regexp
+
+      CELL_GENERIC_RE: ::Regexp
+
+      ATTR_R: ::Regexp
+
+      ATTR_T: ::Regexp
+
+      ATTR_S: ::Regexp
 
       def self.fast_parse_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped prefix) -> untyped
 
-      def self.fast_scan_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped prefix) ?{ (?) -> untyped } -> untyped
+      def self.fast_scan_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped _prefix) ?{ (?) -> untyped } -> untyped
     end
   end
 end

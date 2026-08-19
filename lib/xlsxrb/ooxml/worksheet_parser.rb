@@ -476,7 +476,7 @@ module Xlsxrb
         def characters(_text); end
       end
 
-      def self.fast_scan_rows_direct(xml_src, shared_strings, part_name, &block)
+      def self.fast_scan_rows_direct(xml_src, shared_strings, _part_name, &block)
         xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
 
         sd_term = xml.index("sheetData")
@@ -554,18 +554,17 @@ module Xlsxrb
           row_end = xml.index(row_end_tag, tag_end + 1)
           break unless row_end
 
-          { part: part_name, row: row_index }
-          row_obj = StreamRow.new(
-            index: row_index,
-            xml_bytes: xml,
-            from: tag_end + 1,
-            to: row_end,
-            shared_strings: shared_strings,
-            prefix: prefix,
-            height: attrs[:height],
-            hidden: attrs[:hidden] || false,
-            custom_height: attrs[:custom_height] || false,
-            outline_level: attrs[:outline_level]
+          row_obj = StreamRow.fast_create(
+            row_index,
+            xml,
+            tag_end + 1,
+            row_end,
+            shared_strings,
+            prefix,
+            attrs[:height],
+            attrs[:hidden] || false,
+            attrs[:custom_height] || false,
+            attrs[:outline_level]
           )
           block.call(row_obj)
 
@@ -575,215 +574,123 @@ module Xlsxrb
 
       private_class_method :fast_scan_rows_direct
 
+      COL_LETTERS = (0...16_384).map do |index|
+        result = +""
+        i = index
+        loop do
+          result.prepend(("A".ord + (i % 26)).chr)
+          i = (i / 26) - 1
+          break if i.negative?
+        end
+        result.freeze
+      end.freeze
+
+      COL_MAP = (0...16_384).to_h do |idx|
+        [COL_LETTERS[idx], idx]
+      end.freeze
+
+      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\s+r="([A-Za-z0-9]+)"(?:[^>]*?s="(\d+)")?(?:[^>]*?t="([a-zA-Z]+)")?[^>]*>(?:<(?:[a-zA-Z0-9_]+:)?f[^>]*>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>)?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\s+r="([A-Za-z0-9]+)"(?:[^>]*?s="(\d+)")?[^>]*/>}
+      CELL_GENERIC_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*?)(?:>(?:<(?:[a-zA-Z0-9_]+:)?f[^>]*>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>)?</(?:[a-zA-Z0-9_]+:)?c>|/>)}m
+      ATTR_R = /r="([A-Za-z0-9]+)"/
+      ATTR_T = /t="([a-zA-Z]+)"/
+      ATTR_S = /s="(\d+)"/
+
       def self.fast_parse_cells_direct(xml, from, to, shared_strings, row_source, prefix = "")
         cells = []
         fast_scan_cells_direct(xml, from, to, shared_strings, row_source, prefix) { |c| cells << c }
         cells
       end
 
-      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, prefix = "", &block)
-        pos = from
-        cell_count = 0
-        c_start_pattern = "<#{prefix}c"
-        c_start_len = c_start_pattern.bytesize
-        c_end_tag = "</#{prefix}c>"
-        c_end_len = c_end_tag.bytesize
+      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", &block)
+        chunk = xml.byteslice(from, to - from)
+        row_idx = row_source.is_a?(Hash) ? row_source[:row] : row_source
+        col_idx = 0
+        matched_any = false
 
-        v_tag_start_str = "<#{prefix}v>"
-        v_tag_start_len = v_tag_start_str.bytesize
-        v_tag_end_str = "</#{prefix}v>"
-        v_tag_end_len = v_tag_end_str.bytesize
-
-        is_tag_start_str = "<#{prefix}is>"
-        is_tag_start_len = is_tag_start_str.bytesize
-        is_tag_end_str = "</#{prefix}is>"
-        is_tag_end_len = is_tag_end_str.bytesize
-
-        f_tag_start_str = "<#{prefix}f"
-        f_tag_end_str = "</#{prefix}f>"
-        f_tag_end_len = f_tag_end_str.bytesize
-
-        while pos < to
-          c_start = xml.index(c_start_pattern, pos)
-          break unless c_start && c_start < to
-
-          nb = xml.getbyte(c_start + c_start_len)
-          unless [32, 62, 9, 10, 13, 47].include?(nb)
-            pos = c_start + c_start_len
-            next
-          end
-
-          c_tag_end = xml.index(">", c_start + c_start_len)
-          break unless c_tag_end
-
-          # Zero-allocation attribute scan directly within the tag
-          type = nil
-          style_index = nil
-          col_idx = nil
-          row_idx = nil
-
-          ai = c_start + c_start_len
-          while ai < c_tag_end
-            b = xml.getbyte(ai)
-            if [32, 9, 10, 13].include?(b)
-              ai += 1
-              next
-            end
-
-            if b == 114 && xml.getbyte(ai + 1) == 61 && xml.getbyte(ai + 2) == 34 # r="
-              ai += 3
-              col_idx = 0
-              while ai < c_tag_end
-                cb = xml.getbyte(ai)
-                if cb.between?(65, 90)
-                  col_idx = (col_idx * 26) + (cb - 64)
-                  ai += 1
-                elsif cb.between?(97, 122)
-                  col_idx = (col_idx * 26) + (cb - 96)
-                  ai += 1
-                else
-                  break
-                end
-              end
-              col_idx -= 1
-              row_idx = 0
-              while ai < c_tag_end
-                cb = xml.getbyte(ai)
-                break unless cb.between?(48, 57)
-
-                row_idx = (row_idx * 10) + (cb - 48)
-                ai += 1
-              end
-              row_idx -= 1
-              ai += 1 if xml.getbyte(ai) == 34
-            elsif b == 116 && xml.getbyte(ai + 1) == 61 && xml.getbyte(ai + 2) == 34 # t="
-              ai += 3
-              type_b = xml.getbyte(ai)
-              if type_b == 115 && xml.getbyte(ai + 1) == 34 # "s"
-                type = "s"
-                ai += 2
-              elsif type_b == 98 && xml.getbyte(ai + 1) == 34 # "b"
-                type = "b"
-                ai += 2
-              elsif type_b == 101 && xml.getbyte(ai + 1) == 34 # "e"
-                type = "e"
-                ai += 2
-              else
-                t_end = xml.index('"', ai)
-                type = xml.byteslice(ai, t_end - ai) if t_end
-                ai = t_end ? t_end + 1 : c_tag_end
-              end
-            elsif b == 115 && xml.getbyte(ai + 1) == 61 && xml.getbyte(ai + 2) == 34 # s="
-              ai += 3
-              style_index = 0
-              while ai < c_tag_end
-                cb = xml.getbyte(ai)
-                break unless cb.between?(48, 57)
-
-                style_index = (style_index * 10) + (cb - 48)
-                ai += 1
-              end
-              ai += 1 if xml.getbyte(ai) == 34
-            else
-              ai += 1
-            end
-          end
-
-          # Self-closing <c ... />
-          if xml.getbyte(c_tag_end - 1) == 47
-            cell_obj = Elements::Cell.new(
-              row_index: row_idx || row_source[:row],
-              column_index: col_idx || cell_count,
-              value: nil,
-              style_index: style_index,
-              errors: Elements::EMPTY_ERRORS
-            )
-            cell_count += 1
-            block.call(cell_obj)
-            pos = c_tag_end + 1
-            next
-          end
-
-          c_end = xml.index(c_end_tag, c_tag_end + 1)
-          break unless c_end
-
-          # Parse cell content sequentially (bounded to c_end - avoid unbounded scans)
-          value = nil
-          formula = nil
-          inline_str = nil
-          cpos = c_tag_end + 1
-          while cpos < c_end
-            tag_pos = xml.index("<", cpos)
-            break unless tag_pos && tag_pos < c_end
-
-            if xml.byteslice(tag_pos, v_tag_start_len) == v_tag_start_str
-              v_val_start = tag_pos + v_tag_start_len
-              v_end = xml.index(v_tag_end_str, v_val_start)
-              if v_end
-                if type == "s"
-                  # Zero-allocation integer parse for SST index
-                  s_idx = 0
-                  v_i = v_val_start
-                  while v_i < v_end
-                    s_idx = (s_idx * 10) + (xml.getbyte(v_i) - 48)
-                    v_i += 1
-                  end
-                  value = shared_strings[s_idx] || ""
-                elsif type == "b"
-                  value = xml.getbyte(v_val_start) == 49 # '1'
-                else
-                  raw_value = xml.byteslice(v_val_start, v_end - v_val_start)
-                  value = resolve_fast_value(raw_value, type, shared_strings)
-                end
-                cpos = v_end + v_tag_end_len
-              else
-                cpos = tag_pos + v_tag_start_len
-              end
-            elsif xml.byteslice(tag_pos, f_tag_start_str.bytesize) == f_tag_start_str
-              f_tag_end = xml.index(">", tag_pos + f_tag_start_str.bytesize)
-              if f_tag_end && f_tag_end < c_end
-                if xml.getbyte(f_tag_end - 1) == 47 # self-closing <f ... />
-                  cpos = f_tag_end + 1
-                else
-                  f_end = xml.index(f_tag_end_str, f_tag_end + 1)
-                  if f_end && f_end <= c_end
-                    formula = xml.byteslice(f_tag_end + 1, f_end - f_tag_end - 1).force_encoding("UTF-8")
-                    formula = decode_xml_entities(formula) if formula.include?("&")
-                    cpos = f_end + f_tag_end_len
+        chunk.scan(CELL_FAST_RE) do |r, s, t, f, v, is, self_r, self_s|
+          matched_any = true
+          ref = r || self_r
+          s_val = s || self_s
+          style_idx = s_val&.to_i
+          c_idx = if ref
+                    expected_letter = COL_LETTERS[col_idx]
+                    if expected_letter && ref.start_with?(expected_letter)
+                      col_idx
+                    else
+                      c_len = 0
+                      c_len += 1 while (b = ref.getbyte(c_len)) && (b.between?(65, 90) || b.between?(97, 122))
+                      col_letters = ref.byteslice(0, c_len).upcase
+                      COL_MAP[col_letters] || col_idx
+                    end
                   else
-                    cpos = f_tag_end + 1
+                    col_idx
                   end
+          col_idx = c_idx + 1
+
+          val = if t == "s"
+                  shared_strings[v.to_i] || ""
+                elsif t == "b"
+                  v == "1"
+                elsif %w[inlineStr str e].include?(t)
+                  if is
+                    extract_inline_text(is, 0, is.bytesize)
+                  elsif v
+                    v.include?("&") ? decode_xml_entities(v) : v
+                  else
+                    ""
+                  end
+                elsif v
+                  v.include?(".") ? v.to_f : v.to_i
                 end
-              else
-                cpos = tag_pos + 2
-              end
-            elsif xml.byteslice(tag_pos, is_tag_start_len) == is_tag_start_str
-              is_end = xml.index(is_tag_end_str, tag_pos + is_tag_start_len)
-              if is_end && is_end <= c_end
-                inline_str = extract_inline_text(xml, tag_pos + is_tag_start_len, is_end)
-                cpos = is_end + is_tag_end_len
-              else
-                cpos = tag_pos + is_tag_start_len
-              end
-            else
-              # Skip unknown tag
-              close = xml.index(">", tag_pos + 1)
-              cpos = close ? close + 1 : c_end
-            end
-          end
 
-          cell_obj = Elements::Cell.new(
-            row_index: row_idx || row_source[:row],
-            column_index: col_idx || cell_count,
-            value: inline_str || value,
-            formula: formula,
-            style_index: style_index,
-            errors: Elements::EMPTY_ERRORS
-          )
-          cell_count += 1
-          block.call(cell_obj)
+          formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
+          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr)
+          block.call(cell)
+        end
 
-          pos = c_end + c_end_len
+        return if matched_any || (!chunk.include?("<c") && !chunk.include?(":c"))
+
+        # Fallback for non-standard attribute ordering
+        chunk.scan(CELL_GENERIC_RE) do |attrs, f, v, is|
+          r = attrs[ATTR_R, 1]
+          t = attrs[ATTR_T, 1]
+          s = attrs[ATTR_S, 1]
+
+          c_idx = if r
+                    expected_letter = COL_LETTERS[col_idx]
+                    if expected_letter && r.start_with?(expected_letter)
+                      col_idx
+                    else
+                      c_len = 0
+                      c_len += 1 while (b = r.getbyte(c_len)) && (b.between?(65, 90) || b.between?(97, 122))
+                      col_letters = r.byteslice(0, c_len).upcase
+                      COL_MAP[col_letters] || col_idx
+                    end
+                  else
+                    col_idx
+                  end
+          col_idx = c_idx + 1
+
+          val = if t == "s"
+                  shared_strings[v.to_i] || ""
+                elsif t == "b"
+                  v == "1"
+                elsif %w[inlineStr str e].include?(t)
+                  if is
+                    extract_inline_text(is, 0, is.bytesize)
+                  elsif v
+                    v.include?("&") ? decode_xml_entities(v) : v
+                  else
+                    ""
+                  end
+                elsif v
+                  v.include?(".") ? v.to_f : v.to_i
+                end
+
+          style_idx = s&.to_i
+          formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
+          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr)
+          block.call(cell)
         end
       end
 

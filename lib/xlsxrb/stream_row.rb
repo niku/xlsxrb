@@ -44,8 +44,26 @@ module Xlsxrb
       @hidden = hidden
       @custom_height = custom_height
       @outline_level = outline_level
-      @cells_cache = nil
+      @cells = nil
     end
+
+    # rubocop:disable Style/OptionalBooleanParameter
+    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil)
+      inst = allocate
+      inst.instance_variable_set(:@index, index)
+      inst.instance_variable_set(:@xml, xml_bytes)
+      inst.instance_variable_set(:@from, from)
+      inst.instance_variable_set(:@to, to)
+      inst.instance_variable_set(:@shared_strings, shared_strings)
+      inst.instance_variable_set(:@prefix, prefix)
+      inst.instance_variable_set(:@height, height)
+      inst.instance_variable_set(:@hidden, hidden)
+      inst.instance_variable_set(:@custom_height, custom_height)
+      inst.instance_variable_set(:@outline_level, outline_level)
+      inst.instance_variable_set(:@cells, nil)
+      inst
+    end
+    # rubocop:enable Style/OptionalBooleanParameter
 
     # Iterate over cells in this streaming row one by one.
     #
@@ -55,13 +73,13 @@ module Xlsxrb
     # @api public
     #: () { (Elements::Cell) -> void } -> void
     #: () -> Enumerator[Elements::Cell, void]
-    def each_cell(&)
-      return enum_for(:each_cell) unless block_given?
+    def each_cell(&block)
+      return enum_for(:each_cell) unless block
 
       if @cells
-        @cells.each(&)
+        @cells.each(&block)
       else
-        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, { row: @index }, @prefix, &)
+        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, &block)
       end
     end
 
@@ -83,7 +101,13 @@ module Xlsxrb
     # @api public
     #: () -> Array[Elements::Cell]
     def cells
-      @cells ||= each_cell.to_a.freeze
+      @cells ||= begin
+        arr = []
+        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix) do |c|
+          arr << c
+        end
+        arr.freeze
+      end
     end
 
     # Access a cell by 0-based column index, or access row attributes via Symbol.

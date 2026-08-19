@@ -60,16 +60,10 @@ module Xlsxrb
     # @api public
     #: () { (StreamRow | Elements::Row) -> void } -> void
     #: () -> Enumerator[StreamRow | Elements::Row, void]
-    def each_row
+    def each_row(&)
       return enum_for(:each_row) unless block_given?
 
-      Ooxml::WorksheetParser.each_row(@sheet_xml, shared_strings: @shared_strings) do |row|
-        if row.is_a?(Elements::Row) || row.is_a?(StreamRow)
-          yield row
-        else
-          yield Xlsxrb.send(:build_row_from_raw, row)
-        end
-      end
+      Ooxml::WorksheetParser.each_row(@sheet_xml, shared_strings: @shared_strings, &)
     end
 
     # Iterates over all cells across all rows continuously with O(1) memory.
