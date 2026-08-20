@@ -1,0 +1,83 @@
+# Generated from lib/xlsxrb/ooxml/writer/features_xml.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    class Writer
+      # Mixin containing Table, PivotTable, Document Properties, and External Link XML generation logic.
+      module FeaturesXml
+        # : (untyped pivot_table, untyped cache_id) -> untyped
+        def generate_pivot_table_xml: (untyped pivot_table, untyped cache_id) -> untyped
+
+        # : (untyped pivot_table, untyped _cache_id) -> untyped
+        def generate_pivot_cache_definition_xml: (untyped pivot_table, untyped _cache_id) -> untyped
+
+        # : (untyped pivot_table) -> untyped
+        def generate_pivot_cache_records_xml: (untyped pivot_table) -> untyped
+
+        # : (untyped cache_id) -> untyped
+        def generate_pivot_cache_rels: (untyped cache_id) -> untyped
+
+        # : (untyped cache_id) -> untyped
+        def generate_pivot_table_rels: (untyped cache_id) -> untyped
+
+        # : (untyped ext_link) -> untyped
+        def generate_external_link_xml: (untyped ext_link) -> untyped
+
+        # : (untyped ext_link) -> untyped
+        def generate_external_link_rels: (untyped ext_link) -> untyped
+
+        # : (untyped ct_xml) -> untyped
+        def parse_extra_content_types: (untyped ct_xml) -> untyped
+
+        # : (untyped element, untyped opts) -> ("" | ::String)
+        def build_line_end_xml: (untyped element, untyped opts) -> untyped
+
+        # : (untyped value) -> untyped
+        def xml_escape: (untyped value) -> untyped
+
+        # : (untyped rich_text) -> untyped
+        def rich_text_xml: (untyped rich_text) -> untyped
+
+        # : (untyped cell_ref, untyped value, untyped style_idx, ?untyped? sst, ?ph: untyped?) -> untyped
+        def cell_xml: (untyped cell_ref, untyped value, untyped style_idx, ?untyped sst, ?ph: untyped) -> untyped
+
+        # Returns the numFmtId for dates, registering it on first use.
+        # : () -> untyped
+        def date_num_fmt_id: () -> untyped
+
+        # Returns the numFmtId for datetime, registering it on first use.
+        # : () -> untyped
+        def datetime_num_fmt_id: () -> untyped
+
+        # Maps a numFmtId to a cellXfs index. Index 0 is the default (no format).
+        # : (untyped style_value) -> (nil | untyped)
+        def resolve_style_index: (untyped style_value) -> untyped
+
+        # : (untyped filter) -> untyped
+        def emit_filter_xml: (untyped filter) -> untyped
+
+        # : (untyped parts, untyped rule) -> untyped
+        def emit_cf_rule: (untyped parts, untyped rule) -> untyped
+
+        # Emits a <color> element for CF rules, accepting either a plain RGB string or a hash.
+        # : (untyped color) -> (untyped | ::String)
+        def emit_cf_color_xml: (untyped color) -> untyped
+
+        # : (untyped sheet_cells) -> ("A1" | ::String)
+        def compute_dimension: (untyped sheet_cells) -> untyped
+
+        # : (untyped index) -> untyped
+        def index_to_column_letter: (untyped index) -> untyped
+
+        # : () -> untyped
+        def generate_core_properties_xml: () -> untyped
+
+        # : () -> untyped
+        def generate_app_properties_xml: () -> untyped
+
+        # : () -> untyped
+        def generate_custom_properties_xml: () -> untyped
+      end
+    end
+  end
+end

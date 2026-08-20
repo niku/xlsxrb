@@ -1,0 +1,53 @@
+# Generated from lib/xlsxrb/ooxml/writer/styles_xml.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    class Writer
+      # Mixin containing Stylesheet XML generation logic.
+      module StylesXml
+        # : () -> untyped
+        def generate_styles_xml: () -> untyped
+
+        # : (untyped alignment) -> ::String
+        def emit_alignment_xml: (untyped alignment) -> untyped
+
+        # : (untyped protection) -> ::String
+        def emit_protection_xml: (untyped protection) -> untyped
+
+        # : (untyped source, ?tag: ::String) -> (::String | ::String | ::String | ::String | "")
+        def emit_color_xml: (untyped source, ?tag: untyped) -> untyped
+
+        # : (untyped font) -> untyped
+        def emit_font_xml: (untyped font) -> untyped
+
+        # : (untyped fill) -> (untyped | ::String)
+        def emit_fill_xml: (untyped fill) -> untyped
+
+        # : (untyped tag, untyped fill, untyped prefix) -> (::String | ::String | ::String | ::String | "")
+        def emit_fill_color_xml: (untyped tag, untyped fill, untyped prefix) -> untyped
+
+        # : (untyped gradient) -> untyped
+        def emit_gradient_fill_xml: (untyped gradient) -> untyped
+
+        # : (untyped brk, default_max: untyped) -> ::String
+        def emit_brk_xml: (untyped brk, default_max: untyped) -> untyped
+
+        # : (untyped bdr) -> untyped
+        def emit_border_xml: (untyped bdr) -> untyped
+
+        # : (untyped dxf) -> untyped
+        def emit_dxf_xml: (untyped dxf) -> untyped
+
+        # : (untyped cell_address) -> untyped
+        def validate_cell_address!: (untyped cell_address) -> untyped
+
+        # : (untyped letters) -> untyped
+        def column_letter_to_index: (untyped letters) -> untyped
+
+        # Extracts the column letter(s) from a cell address, e.g. "A" from "A1".
+        # : (untyped cell_address) -> untyped
+        def extract_column_letter: (untyped cell_address) -> untyped
+      end
+    end
+  end
+end

@@ -1,0 +1,79 @@
+# Generated from lib/xlsxrb/ooxml/writer/drawing_xml.rb with RBS::Inline
+
+module Xlsxrb
+  module Ooxml
+    class Writer
+      # Mixin containing DrawingML, Chart, Shape, Comment, and VML XML generation logic.
+      module DrawingXml
+        # : (untyped drawing_parts) -> untyped
+        def generate_drawing_xml: (untyped drawing_parts) -> untyped
+
+        # : (untyped para) -> ::String
+        def paragraph_xml: (untyped para) -> untyped
+
+        # : (untyped tag, untyped font) -> untyped
+        def text_char_props_xml: (untyped tag, untyped font) -> untyped
+
+        # : (untyped tag, untyped col, untyped row, ?col_off: ::Integer, ?row_off: ::Integer) -> ::String
+        def anchor_xml: (untyped tag, untyped col, untyped row, ?col_off: untyped, ?row_off: untyped) -> untyped
+
+        # : (untyped obj) -> ::String
+        def client_data_xml: (untyped obj) -> untyped
+
+        # : (untyped rels_data) -> untyped
+        def generate_drawing_rels: (untyped rels_data) -> untyped
+
+        # : (untyped title_spec, ?overlay: bool) -> untyped
+        def build_chart_title_xml: (untyped title_spec, ?overlay: untyped) -> untyped
+
+        # : (untyped title_spec, untyped chart, untyped prefix) -> untyped
+        def merge_flat_title_styling: (untyped title_spec, untyped chart, untyped prefix) -> untyped
+
+        # : (untyped spec) -> untyped
+        def build_title_sp_pr: (untyped spec) -> untyped
+
+        # : (untyped layout) -> ("" | untyped)
+        def build_title_layout_xml: (untyped layout) -> untyped
+
+        # : (untyped tag, untyped spec) -> ("" | untyped)
+        def gridlines_xml: (untyped tag, untyped spec) -> untyped
+
+        # Resolves a cell reference like "Sheet1!$A$1:$A$5" to an array of values from @sheets.
+        # : (untyped ref) -> (nil | untyped)
+        def resolve_sheet_ref: (untyped ref) -> untyped
+
+        # : (untyped start_cell, untyped end_cell) -> (::Array[untyped] | untyped)
+        def enumerate_cell_range: (untyped start_cell, untyped end_cell) -> untyped
+
+        # : (untyped ref) -> ("" | ::String)
+        def num_cache_xml: (untyped ref) -> untyped
+
+        # : (untyped ref) -> ("" | ::String)
+        def str_cache_xml: (untyped ref) -> untyped
+
+        # : (untyped color, ?alpha: untyped?, ?transforms: untyped?) -> untyped
+        def color_xml: (untyped color, ?alpha: untyped, ?transforms: untyped) -> untyped
+
+        # : (untyped color) -> untyped
+        def normalize_drawing_rgb: (untyped color) -> untyped
+
+        alias srgb_clr_xml color_xml
+
+        # : (untyped rotation, untyped font) -> ("" | ::String)
+        def build_axis_txpr: (untyped rotation, untyped font) -> untyped
+
+        # : (untyped chart) -> untyped
+        def generate_chart_xml: (untyped chart) -> untyped
+
+        # : (untyped sheet_comments) -> untyped
+        def generate_comments_xml: (untyped sheet_comments) -> untyped
+
+        # : (untyped sheet_comments) -> untyped
+        def generate_vml_drawing_xml: (untyped sheet_comments) -> untyped
+
+        # : (untyped cell_ref) -> (::Array[0] | ::Array[untyped])
+        def cell_to_col_row: (untyped cell_ref) -> untyped
+      end
+    end
+  end
+end
