@@ -41,7 +41,7 @@ To run the different tiers of our testing strategy:
 
 ## Development Workflow
 
-High-level API expansion follows the Facade rules documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). In short: if a low-level writer feature is stable, the default expectation is that it should eventually be exposed through the high-level DSL as well, with consistent naming, both streaming and in-memory coverage, backward-compatible options/block forms where practical, and matching Facade-level tests.
+High-level API expansion follows the Facade rules documented in [ARCHITECTURE.md](ARCHITECTURE.md). In short: if a low-level writer feature is stable, the default expectation is that it should eventually be exposed through the high-level DSL as well, with consistent naming, both streaming and in-memory coverage, backward-compatible options/block forms where practical, and matching Facade-level tests.
 
 To ensure systematic progress, reliable round-trip compatibility, and strict adherence to the ECMA-376 specification, we follow this iterative development cycle for each new feature:
 

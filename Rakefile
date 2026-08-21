@@ -462,6 +462,12 @@ task doc: %i[wasm fetch_assets] do
   FileUtils.mkdir_p("doc/docs/visual/files")
   FileUtils.cp_r(Dir.glob("docs/visual/files/*"), "doc/docs/visual/files")
 
+  FileUtils.mkdir_p("doc/docs/assets")
+  FileUtils.cp_r(Dir.glob("docs/assets/*"), "doc/docs/assets")
+
+  # Alias index.html as README_md.html for links referencing README.md
+  FileUtils.cp("doc/index.html", "doc/README_md.html") if File.exist?("doc/index.html")
+
   # --- WebAssembly Playground Integration ---
   puts "Integrating WebAssembly Playground..."
 

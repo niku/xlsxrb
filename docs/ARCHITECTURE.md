@@ -509,6 +509,6 @@ To ensure library robustness and consistency across execution paths, we organize
    - Run via: `bundle exec rake test:e2e`
 
 4. **Visual Examples & VRT (`test/visual/`):**
-   - **Living Documentation:** Compiles visual DSL scripts under `examples/visual/` into the [Visual Examples Gallery](visual/README.md).
+   - **Living Documentation:** Compiles visual DSL scripts under `examples/visual/` into the [Visual Examples Gallery](visual/VisualGallery.md).
    - **Visual Regression Testing:** Renders the generated spreadsheets into PNG files using headless LibreOffice Calc, and calculates pixel differences against reference baselines using ImageMagick.
    - Run via: `bundle exec rake test:visual`
