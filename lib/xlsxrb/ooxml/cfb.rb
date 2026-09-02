@@ -6,7 +6,7 @@ module Xlsxrb
   module Ooxml
     # Pure-Ruby Compound File Binary (CFB / OLE Structured Storage) implementation for [MS-CFB] / [MS-OFFCRYPTO].
     module Cfb
-      MAGIC = "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1".b.freeze
+      MAGIC = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1].pack("C*").freeze
 
       FREESECT   = 0xFFFFFFFF
       ENDOFCHAIN = 0xFFFFFFFE
@@ -372,7 +372,7 @@ module Xlsxrb
             num_minifat_sec = (minifat_bytes.bytesize + sector_size - 1) / sector_size
             num_minifat_sec.times do |s_idx|
               chunk = minifat_bytes[s_idx * sector_size, sector_size] || "".b
-              chunk = chunk.ljust(sector_size, "\xFF".b) if chunk.bytesize < sector_size
+              chunk = chunk.ljust(sector_size, 255.chr(Encoding::BINARY)) if chunk.bytesize < sector_size
               allocated_sectors << chunk
             end
             sector_chains << [first_minifat_sec, num_minifat_sec]
@@ -400,7 +400,7 @@ module Xlsxrb
           fat[dir_sector_id] = ENDOFCHAIN
           fat[fat_sector_id] = FATSECT
 
-          fat_bytes = fat.pack("V*").ljust(sector_size, "\xFF".b)
+          fat_bytes = fat.pack("V*").ljust(sector_size, 255.chr(Encoding::BINARY))
           allocated_sectors << fat_bytes
 
           # Build Header (512 bytes)
