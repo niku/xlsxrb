@@ -5,6 +5,7 @@ require "test_helper"
 class ElementsTest < Test::Unit::TestCase
   cover Xlsxrb::Elements::Cell
   cover Xlsxrb::Elements::Row
+  cover Xlsxrb::Elements::Column
   # --- Cell ---
 
   test "cell creates a valid cell" do
@@ -320,18 +321,30 @@ class ElementsTest < Test::Unit::TestCase
   # --- Column ---
 
   test "column creates a valid column" do
-    col = Xlsxrb::Elements::Column.new(index: 0, width: 15.5)
+    col = Xlsxrb::Elements::Column.new(index: 0, width: 15.5, hidden: true, custom_width: true, outline_level: 2)
     assert(col.valid?)
     assert_equal(0, col.index)
     assert_in_delta(15.5, col.width)
+    assert_equal(true, col.hidden)
+    assert_equal(true, col.custom_width)
+    assert_equal(2, col.outline_level)
   end
 
   test "column with negative index is invalid" do
-    Xlsxrb::Elements::Column.new(index: -1)
+    col = Xlsxrb::Elements::Column.new(index: -1)
+    refute(col.valid?)
+    assert(col.errors.any? { |e| e.include?("index must be a non-negative Integer") && e.include?("-1") })
   end
 
   test "column with too large index is invalid" do
-    Xlsxrb::Elements::Column.new(index: 16_384)
+    col = Xlsxrb::Elements::Column.new(index: 16_384)
+    refute(col.valid?)
+    assert(col.errors.any? { |e| e.include?("index must be < 16384") && e.include?("16384") })
+  end
+
+  test "column validate checks non-integer index" do
+    errs = Xlsxrb::Elements::Column.validate("bad_index")
+    assert(errs.any? { |e| e.include?("index must be a non-negative Integer") })
   end
 
   # --- Worksheet ---
