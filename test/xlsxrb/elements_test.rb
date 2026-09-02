@@ -121,6 +121,26 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(25, Xlsxrb::Elements::Cell.column_index("25"))
   end
 
+  test "cell column_index converts letters, symbols, and integers correctly" do
+    # Integer pass-through
+    assert_equal(0, Xlsxrb::Elements::Cell.column_index(0))
+    assert_equal(26, Xlsxrb::Elements::Cell.column_index(26))
+    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index(-1) }
+
+    # Symbol conversion
+    assert_equal(0, Xlsxrb::Elements::Cell.column_index(:A))
+    assert_equal(25, Xlsxrb::Elements::Cell.column_index(:Z))
+    assert_equal(26, Xlsxrb::Elements::Cell.column_index(:AA))
+
+    # Letter string conversion (both upper and lowercase)
+    assert_equal(0, Xlsxrb::Elements::Cell.column_index("A"))
+    assert_equal(0, Xlsxrb::Elements::Cell.column_index("a"))
+    assert_equal(25, Xlsxrb::Elements::Cell.column_index("z"))
+    assert_equal(26, Xlsxrb::Elements::Cell.column_index("aa"))
+    assert_equal(51, Xlsxrb::Elements::Cell.column_index("AZ"))
+    assert_equal(16_383, Xlsxrb::Elements::Cell.column_index("XFD"))
+  end
+
   test "cell column_index raises ArgumentError for invalid values" do
     assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("-1") }
     assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("!") }
@@ -132,6 +152,20 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal([0, 0], Xlsxrb::Elements::Cell.parse_ref("A1"))
     assert_equal([9, 1], Xlsxrb::Elements::Cell.parse_ref("B10"))
     assert_equal([0, 26], Xlsxrb::Elements::Cell.parse_ref("AA1"))
+  end
+
+  test "cell parse_ref handles lowercase, edge cases, and invalid inputs" do
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref(nil))
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref(""))
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref("123"))
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref("1A"))
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref("A"))
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref("ABC"))
+
+    # Lowercase reference
+    assert_equal([0, 0], Xlsxrb::Elements::Cell.parse_ref("a1"))
+    assert_equal([9, 1], Xlsxrb::Elements::Cell.parse_ref("b10"))
+    assert_equal([99, 26], Xlsxrb::Elements::Cell.parse_ref("aa100"))
   end
 
   test "cell ref round-trips" do
