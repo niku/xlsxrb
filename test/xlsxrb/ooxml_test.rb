@@ -4,6 +4,7 @@ require "test_helper"
 require "stringio"
 
 class OoxmlTest < Test::Unit::TestCase
+  cover Xlsxrb::Ooxml::XmlBuilder
   # --- ZipReader ---
 
   test "zip_reader reads entries from a real XLSX created by ZipWriter" do
@@ -92,12 +93,34 @@ class OoxmlTest < Test::Unit::TestCase
     assert_include(xml, "</root>")
   end
 
-  test "xml_builder escapes special characters" do
+  test "xml_builder escapes special characters in text and attributes" do
     io = StringIO.new
     b = Xlsxrb::Ooxml::XmlBuilder.new(io)
-    b.tag("t") { |_| b.text("a < b & c > d") }
+    attrs = { nil_before: nil, quote: 'He said "Hello" & smiled', nil_middle: nil, valid: "yes", nil_after: nil }
+    b.tag("t", attrs) do |_|
+      b.text("Tom & Jerry's <Great \"Show\">")
+    end
 
-    assert_equal("<t>a &lt; b &amp; c &gt; d</t>", io.string)
+    expected = '<t quote="He said &quot;Hello&quot; &amp; smiled" valid="yes">Tom &amp; Jerry&apos;s &lt;Great &quot;Show&quot;&gt;</t>'
+    assert_equal(expected, io.string)
+    assert_equal(expected, b.to_s)
+  end
+
+  test "xml_builder method chaining with declaration and tags" do
+    io = StringIO.new
+    b = Xlsxrb::Ooxml::XmlBuilder.new(io)
+    ret = b.declaration.open_tag("item", { id: 1 }).text("chained").close_tag("item")
+    assert_same(b, ret)
+    assert_equal(%(<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<item id="1">chained</item>), io.string)
+  end
+
+  test "xml_builder tag without block emits empty_tag and handles raw" do
+    io = StringIO.new
+    b = Xlsxrb::Ooxml::XmlBuilder.new(io)
+    b.tag("col", { min: 1, max: 2 })
+    b.raw("<raw>unescaped & content</raw>")
+
+    assert_equal('<col min="1" max="2"/><raw>unescaped & content</raw>', io.string)
   end
 
   test "xml_builder write_unmapped restores unknown elements" do
@@ -107,6 +130,20 @@ class OoxmlTest < Test::Unit::TestCase
     b.write_unmapped(node)
 
     assert_equal('<custom val="42">data</custom>', io.string)
+
+    # Empty text and empty children produces empty tag
+    io_empty = StringIO.new
+    b_empty = Xlsxrb::Ooxml::XmlBuilder.new(io_empty)
+    b_empty.write_unmapped({ tag: "empty_node", attrs: { "a" => "b" }, children: [], text: "" })
+    assert_equal('<empty_node a="b"/>', io_empty.string)
+
+    # Non-hash or missing tag does nothing
+    io_noop = StringIO.new
+    b_noop = Xlsxrb::Ooxml::XmlBuilder.new(io_noop)
+    b_noop.write_unmapped(nil)
+    b_noop.write_unmapped("invalid")
+    b_noop.write_unmapped({})
+    assert_equal("", io_noop.string)
   end
 
   # --- SharedStringsParser ---
