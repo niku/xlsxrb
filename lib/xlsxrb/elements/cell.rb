@@ -299,7 +299,10 @@ module Xlsxrb
         end
         return nil if i.zero? || i == len
 
-        row = bytes.byteslice(i, len - i).to_i - 1
+        row_part = bytes.byteslice(i, len - i)
+        return nil unless row_part.match?(/\A[1-9]\d*\z/)
+
+        row = row_part.to_i - 1
         [row, col - 1]
       end
 

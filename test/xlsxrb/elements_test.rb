@@ -6,6 +6,7 @@ class ElementsTest < Test::Unit::TestCase
   cover Xlsxrb::Elements::Cell
   cover Xlsxrb::Elements::Row
   cover Xlsxrb::Elements::Column
+  cover Xlsxrb::Elements::Worksheet
   # --- Cell ---
 
   test "cell creates a valid cell" do
@@ -193,6 +194,10 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(Xlsxrb::Elements::Cell.parse_ref("1A"))
     assert_nil(Xlsxrb::Elements::Cell.parse_ref("A"))
     assert_nil(Xlsxrb::Elements::Cell.parse_ref("ABC"))
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref("A0"))
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref("A-1"))
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref("invalid_ref"))
+    assert_nil(Xlsxrb::Elements::Cell.parse_ref("A1_trailing"))
 
     # Lowercase reference
     assert_equal([0, 0], Xlsxrb::Elements::Cell.parse_ref("a1"))
@@ -358,7 +363,48 @@ class ElementsTest < Test::Unit::TestCase
   end
 
   test "worksheet with empty name is invalid" do
-    Xlsxrb::Elements::Worksheet.new(name: "")
+    ws = Xlsxrb::Elements::Worksheet.new(name: "")
+    refute(ws.valid?)
+    assert(ws.errors.any? { |e| e.include?("worksheet name must be a non-empty String") })
+  end
+
+  test "worksheet validate checks name length and forbidden characters" do
+    # Name longer than 31 characters
+    long_name = "A" * 32
+    errs_long = Xlsxrb::Elements::Worksheet.validate(long_name, [])
+    assert(errs_long.any? { |e| e.include?("cannot exceed 31 characters") && e.include?("32") })
+
+    # Exactly 31 characters is valid
+    assert_empty(Xlsxrb::Elements::Worksheet.validate("A" * 31, []))
+
+    # Forbidden characters: \ / ? * [ ]
+    %w[\\ / ? * [ ]].each do |char|
+      errs_char = Xlsxrb::Elements::Worksheet.validate("Sheet#{char}1", [])
+      assert(errs_char.any? { |e| e.include?("cannot contain \\, /, ?, *, [, or ]") }, "Expected error for character: #{char}")
+    end
+
+    # Non-array rows
+    errs_rows = Xlsxrb::Elements::Worksheet.validate("Sheet1", "invalid_rows")
+    assert(errs_rows.any? { |e| e.include?("rows must be an Array") })
+  end
+
+  test "worksheet update_cell creates or modifies cells in rows" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Test")
+
+    # Update cell in brand new row
+    ws = ws.update_cell("B2", value: "first_val", style_index: 3)
+    assert_equal("first_val", ws.cell_value("B2"))
+
+    # Update cell in existing row (new column)
+    ws = ws.update_cell("C2", value: "second_val")
+    assert_equal("second_val", ws.cell_value("C2"))
+
+    # Overwrite existing cell in existing row
+    ws = ws.update_cell("B2", value: "updated_val")
+    assert_equal("updated_val", ws.cell_value("B2"))
+
+    # Invalid ref raises ArgumentError
+    assert_raises(ArgumentError) { ws.update_cell("invalid_ref", value: 1) }
   end
 
   test "worksheet with duplicate row indices is invalid" do
