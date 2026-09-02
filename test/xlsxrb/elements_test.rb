@@ -8,6 +8,7 @@ class ElementsTest < Test::Unit::TestCase
   cover Xlsxrb::Elements::Column
   cover Xlsxrb::Elements::Worksheet
   cover Xlsxrb::Elements::CoordinateAccess
+  cover Xlsxrb::Elements::Workbook
   # --- Cell ---
 
   test "cell creates a valid cell" do
@@ -520,6 +521,55 @@ class ElementsTest < Test::Unit::TestCase
     ws2 = Xlsxrb::Elements::Worksheet.new(name: "B")
     wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2])
     assert_equal(%w[A B], wb.sheet_names)
+  end
+
+  test "workbook validate checks non-array sheets" do
+    errs = Xlsxrb::Elements::Workbook.validate("invalid_sheets")
+    assert(errs.any? { |e| e.include?("sheets must be an Array") })
+  end
+
+  test "workbook sheet lookups, bracket access, and enumeration" do
+    ws1 = Xlsxrb::Elements::Worksheet.new(name: "Sales")
+    ws2 = Xlsxrb::Elements::Worksheet.new(name: "Expenses")
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2])
+
+    # index lookup
+    assert_equal(ws1, wb.sheet(0))
+    assert_equal(ws2, wb.sheet(1))
+    assert_nil(wb.sheet(2))
+
+    # name lookup and bracket alias
+    assert_equal(ws1, wb.sheet("Sales"))
+    assert_equal(ws2, wb["Expenses"])
+    assert_nil(wb.sheet("Missing"))
+    assert_nil(wb[:symbol_not_supported])
+
+    # Enumerable each and each_sheet
+    assert_equal(%w[Sales Expenses], wb.map(&:name))
+    collected = []
+    wb.each_sheet { |s| collected << s.name }
+    assert_equal(%w[Sales Expenses], collected)
+  end
+
+  test "workbook update_sheet modifies matching sheet and validates block" do
+    ws1 = Xlsxrb::Elements::Worksheet.new(name: "OldName")
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1])
+
+    # Successful update
+    updated_wb = wb.update_sheet("OldName") do |sheet|
+      sheet.with(name: "NewName")
+    end
+    assert_equal("NewName", updated_wb.sheet(0).name)
+    assert_equal("OldName", wb.sheet(0).name) # immutability
+
+    # Block missing
+    assert_raises(ArgumentError) { wb.update_sheet("OldName") }
+
+    # Sheet not found
+    assert_raises(ArgumentError) { wb.update_sheet("NonExistent") { |s| s } }
+
+    # Invalid return type from block
+    assert_raises(TypeError) { wb.update_sheet("OldName") { "not_a_worksheet" } }
   end
 
   # --- Formula helper ---
