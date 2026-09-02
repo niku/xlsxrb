@@ -311,9 +311,14 @@ module Xlsxrb
       # @return [Array<String>] List of errors.
       #: (untyped row_index, untyped column_index, untyped value) -> Array[String]
       def self.validate(row_index, column_index, value)
+        valid_value = value.nil? || value.is_a?(String) || value.is_a?(Numeric) ||
+                      value == true || value == false || value.is_a?(Date) || value.is_a?(Time) ||
+                      value.is_a?(Formula) || (value.is_a?(Hash) && value.key?(:formula)) ||
+                      value.is_a?(RichText) || value.is_a?(CellError)
+
         if row_index.is_a?(Integer) && row_index >= 0 && row_index < 1_048_576 &&
            column_index.is_a?(Integer) && column_index >= 0 && column_index < 16_384 &&
-           (value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value == true || value == false || value.is_a?(Date) || value.is_a?(Time) || value.is_a?(Formula) || (value.is_a?(Hash) && value.key?(:formula)) || value.is_a?(RichText) || value.is_a?(CellError))
+           valid_value
           return EMPTY_ERRORS
         end
 
@@ -322,7 +327,7 @@ module Xlsxrb
         errs << "column_index must be a non-negative Integer (got #{column_index.inspect})" if !column_index.is_a?(Integer) || column_index.negative?
         errs << "row_index must be < 1048576 (got #{row_index}, max row is 1048575)" if row_index.is_a?(Integer) && row_index >= 1_048_576
         errs << "column_index must be < 16384 (got #{column_index}, max column is XFD=16383)" if column_index.is_a?(Integer) && column_index >= 16_384
-        errs << "unsupported value type: #{value.class} (#{value.inspect}) — supported types: String, Numeric, true/false, Date, Time, or nil" unless value.nil? || value.is_a?(String) || value.is_a?(Numeric) || value == true || value == false || value.is_a?(Date) || value.is_a?(Time)
+        errs << "unsupported value type: #{value.class} (#{value.inspect}) — supported types: String, Numeric, true/false, Date, Time, Formula, RichText, CellError, or nil" unless valid_value
         errs
       end
     end

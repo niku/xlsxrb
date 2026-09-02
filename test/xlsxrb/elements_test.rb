@@ -102,6 +102,36 @@ class ElementsTest < Test::Unit::TestCase
     assert(cell.errors.any? { |e| e.include?("column_index must be < 16384") && e.include?("16384") })
   end
 
+  test "cell validate edge cases and all supported/unsupported types" do
+    # Non-integer indices
+    errs1 = Xlsxrb::Elements::Cell.validate("0", :zero, "val")
+    assert(errs1.any? { |e| e.include?("row_index must be a non-negative Integer") })
+    assert(errs1.any? { |e| e.include?("column_index must be a non-negative Integer") })
+
+    # Unsupported value type
+    errs2 = Xlsxrb::Elements::Cell.validate(0, 0, Object.new)
+    assert(errs2.any? { |e| e.include?("unsupported value type: Object") })
+
+    # All valid types return empty errors
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, nil))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, "text"))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, 100))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, 12.34))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, true))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, false))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, Date.today))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, Time.now))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, Xlsxrb::Elements::Formula.new(expression: "SUM(A1)")))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, { formula: "SUM(A1)" }))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, Xlsxrb::Elements::RichText.new(runs: [])))
+    assert_empty(Xlsxrb::Elements::Cell.validate(0, 0, Xlsxrb::Elements::CellError.new("#REF!")))
+
+    # Combined: invalid row with supported Formula value should only report row error
+    errs3 = Xlsxrb::Elements::Cell.validate(-1, 0, Xlsxrb::Elements::Formula.new(expression: "A1"))
+    assert_equal(1, errs3.size)
+    assert(errs3.first.include?("row_index must be a non-negative Integer"))
+  end
+
   test "cell column_letter converts index to Excel column" do
     assert_equal("A", Xlsxrb::Elements::Cell.column_letter(0))
     assert_equal("Z", Xlsxrb::Elements::Cell.column_letter(25))
