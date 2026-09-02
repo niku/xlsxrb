@@ -7,6 +7,7 @@ class ElementsTest < Test::Unit::TestCase
   cover Xlsxrb::Elements::Row
   cover Xlsxrb::Elements::Column
   cover Xlsxrb::Elements::Worksheet
+  cover Xlsxrb::Elements::CoordinateAccess
   # --- Cell ---
 
   test "cell creates a valid cell" do
@@ -431,6 +432,54 @@ class ElementsTest < Test::Unit::TestCase
 
     assert_equal(42, ws.cell_value("B1"))
     assert_nil(ws.cell_value("A1"))
+  end
+
+  test "coordinate access methods on worksheet (cells, cells_hash, bracket access, first_row, last_row)" do
+    c1 = Xlsxrb::Elements::Cell.new(row_index: 3, column_index: 1, value: "B4")
+    c2 = Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 0, value: "A2")
+    c3 = Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 2, value: "C2")
+    c4 = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 0, value: "A3")
+    r1 = Xlsxrb::Elements::Row.new(index: 1, cells: [c3, c2]) # col 2 before col 0
+    r2 = Xlsxrb::Elements::Row.new(index: 2, cells: [c4])
+    r3 = Xlsxrb::Elements::Row.new(index: 3, cells: [c1])
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", rows: [r3, r2, r1])
+
+    # first_row and last_row
+    assert_equal(1, ws.first_row.index)
+    assert_equal(3, ws.last_row.index)
+
+    # cells_hash
+    hash = ws.cells_hash
+    assert_equal(c2, hash["A2"])
+    assert_equal(c3, hash["C2"])
+    assert_equal(c4, hash["A3"])
+    assert_equal(c1, hash["B4"])
+    assert_nil(hash["Z99"])
+
+    # cells strictly sorted by [row_index, column_index]
+    assert_equal([c2, c3, c4, c1], ws.cells)
+
+    # [] bracket access with String and Symbol (case insensitive)
+    assert_equal(c2, ws["A2"])
+    assert_equal(c2, ws["a2"])
+    assert_equal(c1, ws[:B4])
+    assert_equal(c1, ws[:b4])
+    assert_nil(ws["Z99"])
+
+    # cell_value edge cases
+    assert_equal("A2", ws.cell_value("A2"))
+    assert_equal("A2", ws.cell_value("a2"))
+    assert_nil(ws.cell_value("A4"))
+    assert_nil(ws.cell_value("B2"))
+    assert_nil(ws.cell_value("invalid_ref"))
+
+    # Empty worksheet
+    empty_ws = Xlsxrb::Elements::Worksheet.new(name: "Empty", rows: [])
+    assert_nil(empty_ws.first_row)
+    assert_nil(empty_ws.last_row)
+    assert_equal({}, empty_ws.cells_hash)
+    assert_equal([], empty_ws.cells)
+    assert_nil(empty_ws["A1"])
   end
 
   # --- Workbook ---
