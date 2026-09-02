@@ -3,6 +3,7 @@
 require "test_helper"
 
 class ElementsTest < Test::Unit::TestCase
+  cover Xlsxrb::Elements::Cell
   # --- Cell ---
 
   test "cell creates a valid cell" do
@@ -12,6 +13,73 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(0, cell.row_index)
     assert_equal(0, cell.column_index)
     assert_equal("A1", cell.ref)
+  end
+
+  test "cell accessors, type conversions, and formula handling" do
+    formula = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A10)")
+    cell = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 3, value: "123.45", formula: formula, style_index: 5)
+
+    assert_equal("123.45", cell.content)
+    assert_equal("123.45", cell.to_s)
+    assert_equal(123, cell.to_i)
+    assert_in_delta(123.45, cell.to_f)
+    assert_equal("123.45", cell[:value])
+    assert_equal("SUM(A1:A10)", cell[:formula])
+    assert_equal(5, cell[:style_index])
+    assert_equal("D3", cell[:ref])
+    assert_equal(3, cell[:column_index])
+    assert_equal(2, cell[:row_index])
+    assert_equal("s", cell[:type])
+
+    # String formula
+    cell_str_f = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: true, formula: "A1+1")
+    assert_equal("A1+1", cell_str_f[:formula])
+    assert_equal("b", cell_str_f[:type])
+
+    # Boolean false and numeric type
+    cell_false = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: false)
+    assert_equal("b", cell_false[:type])
+    cell_num = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42)
+    assert_nil(cell_num[:type])
+    assert_nil(cell_num[:unknown_key])
+
+    # to_date conversions
+    date_val = Date.new(2025, 5, 20)
+    assert_equal(date_val, Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: date_val).to_date)
+    assert_equal(Date.new(2026, 1, 1), Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 46_023).to_date)
+    assert_equal(Date.new(2025, 12, 31), Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "2025-12-31").to_date)
+    assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "invalid-date").to_date)
+
+    # to_time conversions
+    time_val = Time.new(2025, 5, 20, 10, 30, 0, "+00:00")
+    assert_equal(time_val, Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: time_val).to_time)
+    assert_equal(Time.new(2026, 1, 1, 12, 0, 0, "+00:00"), Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 46_023.5).to_time)
+    assert_equal(Time.parse("2025-12-31 15:00:00"), Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "2025-12-31 15:00:00").to_time)
+    assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "invalid-time").to_time)
+  end
+
+  test "cell equality, hashing, with copy, and pattern matching" do
+    c1 = Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1)
+    c2 = Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1)
+    c3 = Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 1, value: 20, formula: "A1", style_index: 1)
+
+    assert_equal(c1, c2)
+    assert(c1.eql?(c2))
+    assert_equal(c1.hash, c2.hash)
+    refute_equal(c1, c3)
+    refute_equal(c1, "not-a-cell")
+
+    # with
+    c1_modified = c1.with(value: 99, style_index: 2)
+    assert_equal(99, c1_modified.value)
+    assert_equal(2, c1_modified.style_index)
+    assert_equal(c1.row_index, c1_modified.row_index)
+    assert_equal(c1.formula, c1_modified.formula)
+
+    # pattern matching (deconstruct & deconstruct_keys)
+    assert_equal([1, 1, 10, "A1", 1, {}, []], c1.deconstruct)
+    assert_equal({ row_index: 1, value: 10 }, c1.deconstruct_keys(%i[row_index value]))
+    assert_equal({ row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1, unmapped_data: {}, errors: [] }, c1.deconstruct_keys(nil))
   end
 
   test "cell with negative row_index is invalid" do
