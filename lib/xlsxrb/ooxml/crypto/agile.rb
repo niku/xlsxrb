@@ -11,11 +11,11 @@ module Xlsxrb
     module Crypto
       # Implements Microsoft Office Agile Encryption specified in [MS-OFFCRYPTO] Section 2.3.4.
       class Agile
-        BLOCK_KEY_VERIFIER_INPUT   = "\xfe\xa7\xd2\x76\x3b\x4b\x9e\x79".b.freeze
-        BLOCK_KEY_VERIFIER_VALUE   = "\xd7\xaa\x0f\x6d\x30\x61\x34\x4e".b.freeze
-        BLOCK_KEY_KEY              = "\x14\x6e\x0b\xe7\xab\xac\xd0\xd6".b.freeze
-        BLOCK_KEY_INTEGRITY_KEY    = "\x5f\xb2\xad\x01\x0c\xb9\xe1\xf6".b.freeze
-        BLOCK_KEY_INTEGRITY_VALUE  = "\xa0\x67\x7f\x02\xb2\x2c\x84\x33".b.freeze
+        BLOCK_KEY_VERIFIER_INPUT   = [0xfe, 0xa7, 0xd2, 0x76, 0x3b, 0x4b, 0x9e, 0x79].pack("C*").freeze
+        BLOCK_KEY_VERIFIER_VALUE   = [0xd7, 0xaa, 0x0f, 0x6d, 0x30, 0x61, 0x34, 0x4e].pack("C*").freeze
+        BLOCK_KEY_KEY              = [0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6].pack("C*").freeze
+        BLOCK_KEY_INTEGRITY_KEY    = [0x5f, 0xb2, 0xad, 0x01, 0x0c, 0xb9, 0xe1, 0xf6].pack("C*").freeze
+        BLOCK_KEY_INTEGRITY_VALUE  = [0xa0, 0x67, 0x7f, 0x02, 0xb2, 0x2c, 0x84, 0x33].pack("C*").freeze
 
         SEGMENT_SIZE = 4096
 
