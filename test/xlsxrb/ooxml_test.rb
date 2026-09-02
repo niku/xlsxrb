@@ -5,6 +5,7 @@ require "stringio"
 
 class OoxmlTest < Test::Unit::TestCase
   cover Xlsxrb::Ooxml::XmlBuilder
+  cover Xlsxrb::Ooxml::XmlParser::BaseListener
   # --- ZipReader ---
 
   test "zip_reader reads entries from a real XLSX created by ZipWriter" do
@@ -144,6 +145,46 @@ class OoxmlTest < Test::Unit::TestCase
     b_noop.write_unmapped("invalid")
     b_noop.write_unmapped({})
     assert_equal("", io_noop.string)
+  end
+
+  # --- XmlParser::BaseListener ---
+
+  test "base_listener captures unknown elements as nested unmapped_data trees" do
+    listener_class = Class.new(Xlsxrb::Ooxml::XmlParser::BaseListener) do
+      def recognized_tag?(_uri, localname, _qname)
+        %w[root known].include?(localname)
+      end
+    end
+
+    xml = <<~XML
+      <root>
+        <known id="1">Known Text</known>
+        <extLst version="1.0">
+          <ext uri="{1234}">
+            <customFeature enabled="true">Feature Value</customFeature>
+          </ext>
+        </extLst>
+      </root>
+    XML
+
+    listener = listener_class.new
+    Xlsxrb::Ooxml::XmlParser.parse(xml, listener)
+
+    unmapped = listener.unmapped_data
+    assert_operator unmapped.size, :>=, 1
+    ext_node = unmapped.find { |n| n[:tag] == "extLst" }
+    assert_not_nil ext_node
+    assert_equal({ "version" => "1.0" }, ext_node[:attrs])
+    assert_equal(1, ext_node[:children].size)
+
+    child = ext_node[:children].first
+    assert_equal("ext", child[:tag])
+    assert_equal({ "uri" => "{1234}" }, child[:attrs])
+    assert_equal(1, child[:children].size)
+
+    grandchild = child[:children].first
+    assert_equal("customFeature", grandchild[:tag])
+    assert_equal("Feature Value", grandchild[:text])
   end
 
   # --- SharedStringsParser ---
