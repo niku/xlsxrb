@@ -4,6 +4,7 @@ require "test_helper"
 
 class ElementsTest < Test::Unit::TestCase
   cover Xlsxrb::Elements::Cell
+  cover Xlsxrb::Elements::Row
   # --- Cell ---
 
   test "cell creates a valid cell" do
@@ -238,7 +239,21 @@ class ElementsTest < Test::Unit::TestCase
   end
 
   test "row with negative index is invalid" do
-    Xlsxrb::Elements::Row.new(index: -1)
+    row = Xlsxrb::Elements::Row.new(index: -1)
+    refute(row.valid?)
+    assert(row.errors.any? { |e| e.include?("index must be a non-negative Integer") })
+  end
+
+  test "row with too large index is invalid" do
+    row = Xlsxrb::Elements::Row.new(index: 1_048_576)
+    refute(row.valid?)
+    assert(row.errors.any? { |e| e.include?("index must be < 1048576") && e.include?("max row is 1048575") })
+  end
+
+  test "row validate checks non-integer index and non-array cells" do
+    errs = Xlsxrb::Elements::Row.validate("invalid", "not-an-array")
+    assert(errs.any? { |e| e.include?("index must be a non-negative Integer") })
+    assert(errs.any? { |e| e.include?("cells must be an Array") })
   end
 
   test "row cell_at returns cell by column index" do
@@ -259,10 +274,47 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal([1, nil, 3], row.values)
   end
 
-  test "row attributes" do
-    row = Xlsxrb::Elements::Row.new(index: 5, height: 25.0, hidden: true)
-    assert_in_delta(25.0, row.height)
-    assert(row.hidden)
+  test "row accessors, enumeration, and conversion to_a" do
+    c1 = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 0, value: "hello")
+    c2 = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 2, value: "world")
+    row = Xlsxrb::Elements::Row.new(index: 2, cells: [c1, c2], height: 30.0, hidden: true, custom_height: true, outline_level: 1)
+
+    assert(row.valid?)
+    assert_equal(c1, row[0])
+    assert_equal(c2, row[1])
+    assert_nil(row[2])
+
+    # cell_at looks up by column_index
+    assert_equal(c1, row.cell_at(0))
+    assert_nil(row.cell_at(1))
+    assert_equal(c2, row.cell_at(2))
+
+    # Symbol accessors
+    assert_equal([c1, c2], row[:cells])
+    assert_equal(2, row[:index])
+    assert_in_delta(30.0, row[:height])
+    assert_equal(true, row[:hidden])
+    assert_equal(true, row[:custom_height])
+    assert_equal(1, row[:outline_level])
+    assert_equal({ height: 30.0, hidden: true, custom_height: true, outline_level: 1 }, row[:attrs])
+
+    # Enumeration
+    assert_kind_of(Enumerator, row.each)
+    assert_kind_of(Enumerator, row.each_cell)
+    assert_equal(%w[hello world], row.map(&:value))
+
+    collected_cells = []
+    row.each_cell { |c| collected_cells << c.value }
+    assert_equal(%w[hello world], collected_cells)
+
+    # to_a and values
+    assert_equal(["hello", nil, "world"], row.to_a)
+    assert_equal(["hello", nil, "world"], row.values)
+
+    # empty row
+    empty_row = Xlsxrb::Elements::Row.new(index: 0, cells: [])
+    assert_equal([], empty_row.to_a)
+    assert_equal([], empty_row.values)
   end
 
   # --- Column ---

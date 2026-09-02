@@ -165,7 +165,7 @@ module Xlsxrb
         if !index.is_a?(Integer) || index.negative?
           errs << "index must be a non-negative Integer (got #{index.inspect})"
         elsif index >= 1_048_576
-          errs << "index must be < 1048576 (got #{index}, max row is 1048576)"
+          errs << "index must be < 1048576 (got #{index}, max row is 1048575)"
         end
         errs << "cells must be an Array (got #{cells.class})" unless cells.is_a?(Array)
         errs
