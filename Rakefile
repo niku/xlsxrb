@@ -571,3 +571,17 @@ desc "Run static type checking with Steep"
 task typecheck: :sig do
   sh "bundle exec steep check"
 end
+
+namespace :mutant do
+  desc "Run mutation testing on pure logic and algorithms (coordinates, serial, validation, crypto)"
+  task :pure do
+    subjects = ENV["MUTANT_SUBJECTS"] || "Xlsxrb::Elements::Cell* Xlsxrb::Ooxml::Utils* Xlsxrb::Ooxml::Crypto*"
+    requires = [
+      "-r ./test/xlsxrb/elements_test.rb",
+      "-r ./test/xlsxrb/ooxml_test.rb",
+      "-r ./test/xlsxrb/ooxml/crypto_test.rb",
+      "-r ./test/xlsxrb/ooxml/cfb_test.rb"
+    ].join(" ")
+    sh "bundle exec mutant run --usage opensource #{requires} -- #{subjects}"
+  end
+end

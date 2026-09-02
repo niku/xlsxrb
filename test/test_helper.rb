@@ -15,6 +15,11 @@ $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "xlsxrb"
 
 require "test-unit"
+begin
+  require "mutant/test_unit/coverage"
+rescue LoadError
+  # Mutant is not installed in all environments
+end
 require "open3"
 require "fileutils"
 

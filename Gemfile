@@ -8,6 +8,8 @@ gemspec
 gem "irb"
 gem "rake", "~> 13.0"
 
+gem "mutant", group: :test
+gem "mutant-test-unit", group: :test
 gem "nokogiri", group: :test
 gem "pbt", group: :test
 gem "rubyzip", group: :test

@@ -1,0 +1,10 @@
+integration:
+  name: test-unit
+
+requires:
+  - test_helper
+  - xlsxrb
+
+includes:
+  - lib
+  - test

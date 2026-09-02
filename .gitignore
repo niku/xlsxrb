@@ -32,6 +32,9 @@ Gemfile.lock
 /vendor/docs/MS-*
 /vendor/docs/[MS-*
 
+# Mutant cache and session state
+/.mutant/
+
 # Agent local artifacts
 /.agents/
 
