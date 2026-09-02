@@ -93,6 +93,78 @@ module Xlsxrb
           Crypto.decrypt(cfb, "pwd")
         end
       end
+
+      def test_standard_decrypt_package_bounds_and_corruption
+        # Valid standard encrypted file
+        plain = "PK\x03\x04test".b
+        valid_cfb = Crypto.encrypt(plain, "password")
+        reader = Cfb::Reader.new(valid_cfb)
+        valid_info = reader.read_stream("EncryptionInfo")
+
+        # Package stream too short (< 8 bytes)
+        cfb_short_pkg = Cfb::Writer.write({
+                                            "EncryptionInfo" => valid_info,
+                                            "EncryptedPackage" => "short".b
+                                          })
+        assert_raise_with_message(Xlsxrb::DecryptionError, /Encrypted package stream is too short/) do
+          Crypto.decrypt(cfb_short_pkg, "password")
+        end
+
+        # Package total_size exceeds 16GB limit
+        huge_size_pkg = [0x500_000_000].pack("Q<") + ("\x00" * 32).b
+        cfb_huge_pkg = Cfb::Writer.write({
+                                           "EncryptionInfo" => valid_info,
+                                           "EncryptedPackage" => huge_size_pkg
+                                         })
+        assert_raise_with_message(Xlsxrb::DecryptionError, /Encrypted package size is invalid or exceeds limits/) do
+          Crypto.decrypt(cfb_huge_pkg, "password")
+        end
+      end
+
+      def test_standard_parse_encryption_info_corrupt_offsets
+        pkg = [4].pack("Q<") + ("\x00" * 32).b
+
+        # Info stream too short (< 40 bytes, but identified as standard encryption minor=2)
+        short_info_bytes = [3, 2].pack("vv") + ("\x00" * 26).b
+        cfb_short_info = Cfb::Writer.write({
+                                             "EncryptionInfo" => short_info_bytes,
+                                             "EncryptedPackage" => pkg
+                                           })
+        assert_raise_with_message(Xlsxrb::DecryptionError, /EncryptionInfo stream too short/) do
+          Crypto.decrypt(cfb_short_info, "password")
+        end
+
+        # Unsupported major/minor version (e.g. major 1, minor 2)
+        bad_ver_info = [1, 2].pack("vv") + ("\x00" * 60).b
+        cfb_bad_ver = Cfb::Writer.write({
+                                          "EncryptionInfo" => bad_ver_info,
+                                          "EncryptedPackage" => pkg
+                                        })
+        assert_raise_with_message(Xlsxrb::DecryptionError, /Unsupported standard encryption version/) do
+          Crypto.decrypt(cfb_bad_ver, "password")
+        end
+
+        # Header offset out of bounds (large header_size)
+        large_header_info = [3, 2, 0].pack("vvV") + [10_000].pack("V") + ("\x00" * 60).b
+        cfb_large_header = Cfb::Writer.write({
+                                               "EncryptionInfo" => large_header_info,
+                                               "EncryptedPackage" => pkg
+                                             })
+        assert_raise_with_message(Xlsxrb::DecryptionError, /EncryptionInfo header offset out of bounds/) do
+          Crypto.decrypt(cfb_large_header, "password")
+        end
+
+        # Salt size > 64 bytes
+        # header_size = 32, verifier_offset = 44. At offset 44, put salt_size = 100
+        salt_overflow_info = [3, 2, 0].pack("vvV") + [32].pack("V") + ("\x00" * 32).b + [100].pack("V") + ("\x00" * 128).b
+        cfb_salt_overflow = Cfb::Writer.write({
+                                                "EncryptionInfo" => salt_overflow_info,
+                                                "EncryptedPackage" => pkg
+                                              })
+        assert_raise_with_message(Xlsxrb::DecryptionError, /Invalid salt size in Standard encryption/) do
+          Crypto.decrypt(cfb_salt_overflow, "password")
+        end
+      end
     end
   end
 end
