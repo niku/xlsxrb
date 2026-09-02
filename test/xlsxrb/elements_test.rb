@@ -9,6 +9,9 @@ class ElementsTest < Test::Unit::TestCase
   cover Xlsxrb::Elements::Worksheet
   cover Xlsxrb::Elements::CoordinateAccess
   cover Xlsxrb::Elements::Workbook
+  cover Xlsxrb::Elements::CellError
+  cover Xlsxrb::Elements::RichText
+  cover Xlsxrb::Elements::Formula
   # --- Cell ---
 
   test "cell creates a valid cell" do
@@ -587,6 +590,36 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("SUM(A1:A10)", f.expression)
     assert_equal("55", f.cached_value)
     assert_nil(f.calculate_always)
+  end
+
+  # --- CellError & RichText ---
+
+  test "cell_error valid error codes, to_s, equality, and validation" do
+    Xlsxrb::Elements::VALID_ERROR_CODES.each do |code|
+      err = Xlsxrb::Elements::CellError.new(code: code)
+      assert_equal(code, err.code)
+      assert_equal(code, err.to_s)
+    end
+
+    err1 = Xlsxrb::Elements::CellError.new(code: "#REF!")
+    err2 = Xlsxrb::Elements::CellError.new(code: "#REF!")
+    err3 = Xlsxrb::Elements::CellError.new(code: "#N/A")
+    assert_equal(err1, err2)
+    refute_equal(err1, err3)
+
+    assert_raises(ArgumentError) { Xlsxrb::Elements::CellError.new(code: "#INVALID!") }
+    assert_raises(ArgumentError) { Xlsxrb::Elements::CellError.new(code: "") }
+  end
+
+  test "rich_text to_s concatenation and runs handling" do
+    rt = Xlsxrb::Elements::RichText.new(runs: [
+                                          { text: "Hello ", font: { bold: true } },
+                                          { text: "World", font: { italic: true } }
+                                        ])
+    assert_equal("Hello World", rt.to_s)
+
+    empty_rt = Xlsxrb::Elements::RichText.new(runs: [])
+    assert_equal("", empty_rt.to_s)
   end
 
   # --- Error message quality ---
