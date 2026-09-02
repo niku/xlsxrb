@@ -91,4 +91,19 @@ class UtilsTest < Test::Unit::TestCase
     assert_raises(ArgumentError) { Xlsxrb::Ooxml::Utils.hash_password("pass", spin_count: -1) }
     assert_raises(ArgumentError) { Xlsxrb::Ooxml::Utils.hash_password("pass", spin_count: "invalid") }
   end
+
+  # --- Constants and Format Definitions ---
+
+  test "format constants and builtin tables are complete and frozen" do
+    assert_equal([14, 15, 16, 17, 18, 19, 20, 21, 22], Xlsxrb::Ooxml::Utils::BUILTIN_DATE_FMT_IDS)
+    assert(Xlsxrb::Ooxml::Utils::BUILTIN_DATE_FMT_IDS.frozen?)
+
+    assert_equal("yyyy\\-mm\\-dd", Xlsxrb::Ooxml::Utils::DEFAULT_DATE_FORMAT)
+    assert_equal("yyyy\\-mm\\-dd\\ hh:mm:ss", Xlsxrb::Ooxml::Utils::DEFAULT_DATETIME_FORMAT)
+
+    assert_equal("General", Xlsxrb::Ooxml::Utils::BUILTIN_NUM_FMT_CODES[0])
+    assert_equal("mm-dd-yy", Xlsxrb::Ooxml::Utils::BUILTIN_NUM_FMT_CODES[14])
+    assert_equal("@", Xlsxrb::Ooxml::Utils::BUILTIN_NUM_FMT_CODES[49])
+    assert(Xlsxrb::Ooxml::Utils::BUILTIN_NUM_FMT_CODES.frozen?)
+  end
 end
