@@ -6,7 +6,10 @@ output_path = ARGV[0] || "table_styles.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Table Example") do |sheet|
-    sheet.column(0..3, width: 20)
+    sheet.column(0, width: 8)
+    sheet.column(1, width: 16)
+    sheet.column(2, width: 16)
+    sheet.column(3, width: 14)
     sheet.row(%w[ID Name Department Salary])
     sheet.row([101, "Alice Smith", "Engineering", 120_000])
     sheet.row([102, "Bob Jones", "Marketing", 95_000])

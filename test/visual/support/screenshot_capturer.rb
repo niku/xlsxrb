@@ -91,6 +91,11 @@ module Xlsxrb
           xlsx: "docs/visual/files/sparkline_line.xlsx",
           png: "test/visual/support/illustrations/sparkline_line_page-2.png",
           actions: []
+        },
+        "sparkline_column" => {
+          xlsx: "docs/visual/files/sparkline_column.xlsx",
+          png: "test/visual/support/illustrations/sparkline_column_page-2.png",
+          actions: []
         }
       }.freeze
 

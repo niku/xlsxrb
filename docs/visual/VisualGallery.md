@@ -1136,8 +1136,8 @@ end
 ```text
 === Read Validation ===
 Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Positive Yen" (Format ID: , Code: nil), B2: 12500 (Format ID: 164, Code: "¥#,##0;[Red]¥-#,##0")
-Row 2: A3: "Negative Yen" (Format ID: , Code: nil), B3: -8000 (Format ID: 164, Code: "¥#,##0;[Red]¥-#,##0")
+Row 1: A2: "Positive Yen" (Format ID: , Code: nil), B2: 12500 (Format ID: 166, Code: "¥#,##0;[Red]¥-#,##0")
+Row 2: A3: "Negative Yen" (Format ID: , Code: nil), B3: -8000 (Format ID: 166, Code: "¥#,##0;[Red]¥-#,##0")
 ```
 
 <hr/>
@@ -1187,8 +1187,8 @@ end
 ```text
 === Read Validation ===
 Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Positive (Green)" (Format ID: , Code: nil), B2: 5000 (Format ID: 164, Code: "[Green]#,##0;[Red]-#,##0")
-Row 2: A3: "Negative (Red)" (Format ID: , Code: nil), B3: -2500 (Format ID: 164, Code: "[Green]#,##0;[Red]-#,##0")
+Row 1: A2: "Positive (Green)" (Format ID: , Code: nil), B2: 5000 (Format ID: 166, Code: "[Green]#,##0;[Red]-#,##0")
+Row 2: A3: "Negative (Red)" (Format ID: , Code: nil), B3: -2500 (Format ID: 166, Code: "[Green]#,##0;[Red]-#,##0")
 ```
 
 <hr/>
@@ -1239,9 +1239,9 @@ end
 ```text
 === Read Validation ===
 Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Half" (Format ID: , Code: nil), B2: 0.5 (Format ID: 164, Code: "# ?/?")
-Row 2: A3: "Third" (Format ID: , Code: nil), B3: 0.3333 (Format ID: 164, Code: "# ?/?")
-Row 3: A4: "Quarter" (Format ID: , Code: nil), B4: 0.75 (Format ID: 164, Code: "# ?/?")
+Row 1: A2: "Half" (Format ID: , Code: nil), B2: 0.5 (Format ID: 166, Code: "# ?/?")
+Row 2: A3: "Third" (Format ID: , Code: nil), B3: 0.3333 (Format ID: 166, Code: "# ?/?")
+Row 3: A4: "Quarter" (Format ID: , Code: nil), B4: 0.75 (Format ID: 166, Code: "# ?/?")
 ```
 
 <hr/>
@@ -1290,7 +1290,7 @@ end
 ```text
 === Read Validation ===
 Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Percent with 2 Decimals" (Format ID: , Code: nil), B2: 0.12345 (Format ID: 164, Code: "0.00%")
+Row 1: A2: "Percent with 2 Decimals" (Format ID: , Code: nil), B2: 0.12345 (Format ID: 166, Code: "0.00%")
 ```
 
 <hr/>
@@ -1340,8 +1340,8 @@ end
 ```text
 === Read Validation ===
 Row 0: A1: "Format" (Format ID: , Code: nil), B1: "Value" (Format ID: , Code: nil)
-Row 1: A2: "Scientific" (Format ID: , Code: nil), B2: 123456789.0 (Format ID: 164, Code: "0.00E+00")
-Row 2: A3: "Small Scientific" (Format ID: , Code: nil), B3: 1.234e-05 (Format ID: 164, Code: "0.00E+00")
+Row 1: A2: "Scientific" (Format ID: , Code: nil), B2: 123456789.0 (Format ID: 166, Code: "0.00E+00")
+Row 2: A3: "Small Scientific" (Format ID: , Code: nil), B3: 1.234e-05 (Format ID: 166, Code: "0.00E+00")
 ```
 
 <hr/>
@@ -2867,8 +2867,6 @@ Visual demonstration for Drawing Shapes.
 
 <div><img src="../../test/visual/baselines/drawing_shapes/page-1.png" width="100%" alt="Preview"/></div>
 
-<div><img src="../../test/visual/baselines/drawing_shapes/page-2.png" width="100%" alt="Preview"/></div>
-
 ### DSL Code
 
 ```ruby
@@ -2880,12 +2878,12 @@ output_path = ARGV[0] || "drawing_shapes.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Shapes") do |sheet|
-    sheet.column(0..7, width: 15)
+    sheet.column(0..4, width: 12)
     sheet.row(["Diagram with shapes and annotations"])
     sheet.row([])
-    sheet.shape(preset: "rect", text: "Process Start", from_col: 1, from_row: 2, to_col: 3, to_row: 4)
-    sheet.shape(preset: "rightArrow", text: "Next", from_col: 4, from_row: 3, to_col: 5, to_row: 4)
-    sheet.shape(preset: "roundRect", text: "Processing", from_col: 6, from_row: 2, to_col: 8, to_row: 4)
+    sheet.shape(preset: "rect", text: "Start", from_col: 0, from_row: 2, to_col: 1, to_row: 4)
+    sheet.shape(preset: "rightArrow", text: "Next", from_col: 1, from_row: 3, to_col: 2, to_row: 4)
+    sheet.shape(preset: "roundRect", text: "Processing", from_col: 2, from_row: 2, to_col: 4, to_row: 4)
   end
 end
 
@@ -4082,8 +4080,6 @@ Visual demonstration for Pivot Table.
 
 <div><img src="../../test/visual/baselines/pivot_table/page-1.png" width="100%" alt="Preview"/></div>
 
-<div><img src="../../test/visual/baselines/pivot_table/page-2.png" width="100%" alt="Preview"/></div>
-
 ### DSL Code
 
 ```ruby
@@ -4095,7 +4091,7 @@ output_path = ARGV[0] || "pivot_table.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("SalesData") do |sheet|
-    sheet.column(0..3, width: 18)
+    sheet.column(0..3, width: 14)
     sheet.row(%w[Region Quarter Sales Rep])
     sheet.row(["East", "Q1", 1000, "Alice"])
     sheet.row(["West", "Q1", 1500, "Bob"])
@@ -4104,12 +4100,22 @@ Xlsxrb.write(output_path) do |wb|
     sheet.row(["North", "Q1", 800, "Charlie"])
     sheet.row(["North", "Q2", 950, "Charlie"])
 
+    sheet.row([])
+    sheet.row([])
+    # Pre-populate summary cells in the pivot table target region (A10:D15) for headless renderers
+    sheet.row(["Sum of Sales", "Quarter", nil, nil])
+    sheet.row(["Region", "Q1", "Q2", "Grand Total"])
+    sheet.row(["East", 1000, 1200, 2200])
+    sheet.row(["North", 800, 950, 1750])
+    sheet.row(["West", 1500, 1800, 3300])
+    sheet.row(["Grand Total", 3300, 3950, 7250])
+
     sheet.pivot_table(
       "SalesData!A1:D7",
       row_fields: ["Region"],
       data_fields: [{ name: "Sales", subtotal: "sum" }],
       col_fields: ["Quarter"],
-      dest_ref: "F1",
+      dest_ref: "A10",
       name: "RegionalSalesSummary"
     )
   end
@@ -4135,6 +4141,14 @@ Row 3: A4: "East", B4: "Q2", C4: 1200, D4: "Alice"
 Row 4: A5: "West", B5: "Q2", C5: 1800, D5: "Bob"
 Row 5: A6: "North", B6: "Q1", C6: 800, D6: "Charlie"
 Row 6: A7: "North", B7: "Q2", C7: 950, D7: "Charlie"
+Row 7: 
+Row 8: 
+Row 9: A10: "Sum of Sales", B10: "Quarter"
+Row 10: A11: "Region", B11: "Q1", C11: "Q2", D11: "Grand Total"
+Row 11: A12: "East", B12: 1000, C12: 1200, D12: 2200
+Row 12: A13: "North", B13: 800, C13: 950, D13: 1750
+Row 13: A14: "West", B14: 1500, C14: 1800, D14: 3300
+Row 14: A15: "Grand Total", B15: 3300, C15: 3950, D15: 7250
 ```
 
 <hr/>
@@ -4494,8 +4508,6 @@ Visual demonstration for Table Styles.
 
 <div><img src="../../test/visual/baselines/table_styles/page-1.png" width="100%" alt="Preview"/></div>
 
-<div><img src="../../test/visual/baselines/table_styles/page-2.png" width="100%" alt="Preview"/></div>
-
 ### DSL Code
 
 ```ruby
@@ -4507,7 +4519,10 @@ output_path = ARGV[0] || "table_styles.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Table Example") do |sheet|
-    sheet.column(0..3, width: 20)
+    sheet.column(0, width: 8)
+    sheet.column(1, width: 16)
+    sheet.column(2, width: 16)
+    sheet.column(3, width: 14)
     sheet.row(%w[ID Name Department Salary])
     sheet.row([101, "Alice Smith", "Engineering", 120_000])
     sheet.row([102, "Bob Jones", "Marketing", 95_000])
@@ -4547,8 +4562,6 @@ Demonstrates disabling visible grid lines in spreadsheet view.
 ### Rendered Output (LibreOffice Calc)
 
 <div><img src="../../test/visual/baselines/view_show_grid_lines/page-1.png" width="100%" alt="Preview"/></div>
-
-<div><img src="../../test/visual/support/illustrations/view_show_grid_lines_page-2.png" width="100%" alt="Preview"/></div>
 
 ### DSL Code
 
@@ -4592,8 +4605,6 @@ Demonstrates setting custom zoom scale in sheet view (e.g. 150%).
 ### Rendered Output (LibreOffice Calc)
 
 <div><img src="../../test/visual/baselines/view_zoom_scale/page-1.png" width="100%" alt="Preview"/></div>
-
-<div><img src="../../test/visual/support/illustrations/view_zoom_scale_page-2.png" width="100%" alt="Preview"/></div>
 
 ### DSL Code
 
