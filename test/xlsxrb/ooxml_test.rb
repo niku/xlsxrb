@@ -7,6 +7,9 @@ class OoxmlTest < Test::Unit::TestCase
   cover Xlsxrb::Ooxml::XmlBuilder
   cover Xlsxrb::Ooxml::XmlParser::BaseListener
   cover Xlsxrb::Ooxml::SharedStringsParser
+  cover Xlsxrb::Ooxml::StylesParser
+  cover Xlsxrb::Ooxml::WorkbookParser
+  cover Xlsxrb::Ooxml::RelationshipsParser
   # --- ZipReader ---
 
   test "zip_reader reads entries from a real XLSX created by ZipWriter" do
@@ -305,15 +308,86 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(0, result[:cell_xfs][0][:num_fmt_id])
   end
 
+  test "styles_parser parses fonts, fills, borders, alignments, and cellStyleXfs" do
+    xml = <<~XML
+      <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <fonts count="1">
+          <font>
+            <b/>
+            <i/>
+            <u val="double"/>
+            <sz val="14.5"/>
+            <color rgb="FFFF0000"/>
+            <name val="Calibri"/>
+          </font>
+        </fonts>
+        <fills count="1">
+          <fill>
+            <patternFill patternType="solid">
+              <fgColor rgb="FF00FF00"/>
+              <bgColor indexed="64"/>
+            </patternFill>
+          </fill>
+        </fills>
+        <borders count="1">
+          <border>
+            <left style="thin"/>
+            <right style="thick"/>
+            <top style="dashed"/>
+            <bottom style="double"/>
+            <diagonal style="medium"/>
+          </border>
+        </borders>
+        <cellStyleXfs count="1">
+          <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+        </cellStyleXfs>
+        <cellXfs count="1">
+          <xf numFmtId="14" fontId="0" fillId="0" borderId="0" applyNumberFormat="1" applyFont="1">
+            <alignment horizontal="center" vertical="top" wrapText="1" textRotation="90"/>
+          </xf>
+        </cellXfs>
+      </styleSheet>
+    XML
+
+    result = Xlsxrb::Ooxml::StylesParser.parse(xml)
+    assert_equal(1, result[:fonts].size)
+    assert_equal(true, result[:fonts][0][:bold])
+    assert_equal(true, result[:fonts][0][:italic])
+    assert_equal("double", result[:fonts][0][:underline])
+    assert_equal(14.5, result[:fonts][0][:sz])
+    assert_equal({ rgb: "FFFF0000" }, result[:fonts][0][:color])
+    assert_equal("Calibri", result[:fonts][0][:name])
+
+    assert_equal(1, result[:fills].size)
+    assert_equal("solid", result[:fills][0][:pattern])
+    assert_equal({ rgb: "FF00FF00" }, result[:fills][0][:fg_color])
+    assert_equal({ indexed: 64 }, result[:fills][0][:bg_color])
+
+    assert_equal(1, result[:borders].size)
+    assert_equal({ style: "thin" }, result[:borders][0][:left])
+    assert_equal({ style: "thick" }, result[:borders][0][:right])
+    assert_equal({ style: "dashed" }, result[:borders][0][:top])
+    assert_equal({ style: "double" }, result[:borders][0][:bottom])
+    assert_equal({ style: "medium" }, result[:borders][0][:diagonal])
+
+    assert_equal(1, result[:cell_style_xfs].size)
+    assert_equal(1, result[:cell_xfs].size)
+    xf = result[:cell_xfs][0]
+    assert_equal(14, xf[:num_fmt_id])
+    assert_equal(true, xf[:apply_number_format])
+    assert_equal(true, xf[:apply_font])
+    assert_equal({ horizontal: "center", vertical: "top", wrap_text: true, text_rotation: 90 }, xf[:alignment])
+  end
+
   test "styles_parser returns empty hash for nil input" do
     assert_equal({}, Xlsxrb::Ooxml::StylesParser.parse(nil))
+    assert_equal({}, Xlsxrb::Ooxml::StylesParser.parse(""))
   end
 
   # --- WorkbookParser ---
 
   test "workbook_parser parses sheet list" do
     xml = <<~XML
-      <?xml version="1.0" encoding="UTF-8"?>
       <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
         <sheets>
           <sheet name="Sheet1" sheetId="1" r:id="rId1"/>
@@ -329,11 +403,29 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("Data", sheets[1][:name])
   end
 
+  test "workbook_parser handles unnormalized names and fallback id attributes" do
+    xml = <<~XML
+      <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:other="http://example.com/rel">
+        <sheets>
+          <sheet name="Tom &amp; Jerry" sheetId="1" id="fallbackId1"/>
+          <sheet name="Plain" sheetId="2" other:id="nsId2"/>
+        </sheets>
+      </workbook>
+    XML
+
+    sheets = Xlsxrb::Ooxml::WorkbookParser.parse(xml)
+    assert_equal("Tom & Jerry", sheets[0][:name])
+    assert_equal("fallbackId1", sheets[0][:r_id])
+    assert_equal("nsId2", sheets[1][:r_id])
+
+    assert_equal([], Xlsxrb::Ooxml::WorkbookParser.parse(""))
+    assert_equal([], Xlsxrb::Ooxml::WorkbookParser.parse(nil))
+  end
+
   # --- RelationshipsParser ---
 
   test "relationships_parser parses relationships" do
     xml = <<~XML
-      <?xml version="1.0" encoding="UTF-8"?>
       <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
         <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
         <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
@@ -343,6 +435,21 @@ class OoxmlTest < Test::Unit::TestCase
     rels = Xlsxrb::Ooxml::RelationshipsParser.parse(xml)
     assert_equal("worksheets/sheet1.xml", rels["rId1"])
     assert_equal("styles.xml", rels["rId2"])
+  end
+
+  test "relationships_parser handles missing attributes and empty inputs" do
+    xml = <<~XML
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="validId" Target="sheet1.xml"/>
+        <Relationship Id="missingTarget"/>
+        <Relationship Target="missingId.xml"/>
+      </Relationships>
+    XML
+
+    rels = Xlsxrb::Ooxml::RelationshipsParser.parse(xml)
+    assert_equal({ "validId" => "sheet1.xml" }, rels)
+    assert_equal({}, Xlsxrb::Ooxml::RelationshipsParser.parse(""))
+    assert_equal({}, Xlsxrb::Ooxml::RelationshipsParser.parse(nil))
   end
 
   # --- WorksheetParser ---
