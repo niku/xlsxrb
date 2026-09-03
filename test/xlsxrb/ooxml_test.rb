@@ -6,6 +6,7 @@ require "stringio"
 class OoxmlTest < Test::Unit::TestCase
   cover Xlsxrb::Ooxml::XmlBuilder
   cover Xlsxrb::Ooxml::XmlParser::BaseListener
+  cover Xlsxrb::Ooxml::SharedStringsParser
   # --- ZipReader ---
 
   test "zip_reader reads entries from a real XLSX created by ZipWriter" do
@@ -217,6 +218,60 @@ class OoxmlTest < Test::Unit::TestCase
 
     strings = Xlsxrb::Ooxml::SharedStringsParser.parse(xml)
     assert_equal(["Hello World"], strings)
+  end
+
+  test "shared_strings_parser decodes XML entities and handles self-closing tags" do
+    xml = <<~XML
+      <sst>
+        <si><t>A &amp; B &lt; C &gt; &quot;D&quot; &apos;E&apos;</t></si>
+        <si/>
+        <si><t/></si>
+        <si></si>
+      </sst>
+    XML
+
+    strings = Xlsxrb::Ooxml::SharedStringsParser.parse(xml)
+    assert_equal(["A & B < C > \"D\" 'E'", "", "", ""], strings)
+  end
+
+  test "shared_strings_parser handles self-closing sst and empty inputs" do
+    assert_equal([], Xlsxrb::Ooxml::SharedStringsParser.parse("<sst/>"))
+    assert_equal([], Xlsxrb::Ooxml::SharedStringsParser.parse("<sst></sst>"))
+    assert_equal([], Xlsxrb::Ooxml::SharedStringsParser.parse(""))
+    assert_equal([], Xlsxrb::Ooxml::SharedStringsParser.parse(nil))
+  end
+
+  test "shared_strings_parser handles rich text with empty t tags and entities" do
+    xml = <<~XML
+      <sst>
+        <si>
+          <r><t>Prefix: </t></r>
+          <r><t/></r>
+          <r><t>Middle &amp; &lt;special&gt; </t></r>
+          <r><t>Suffix</t></r>
+        </si>
+      </sst>
+    XML
+
+    strings = Xlsxrb::Ooxml::SharedStringsParser.parse(xml)
+    assert_equal(["Prefix: Middle & <special> Suffix"], strings)
+  end
+
+  test "shared_strings_parser each_event enumerates events with custom part_name" do
+    xml = "<sst><si><t>Item 0</t></si><si><t>Item 1</t></si></sst>"
+    events = Xlsxrb::Ooxml::SharedStringsParser.each_event(xml, part_name: "custom/sst.xml").to_a
+
+    assert_equal(2, events.size)
+    assert_equal(:sst_item, events[0].type)
+    assert_equal(["Item 0"], events[0].args)
+    assert_equal({ part: "custom/sst.xml", index: 0 }, events[0].source)
+    assert_equal(["Item 1"], events[1].args)
+    assert_equal({ part: "custom/sst.xml", index: 1 }, events[1].source)
+
+    # Nil/empty each_event
+    called = false
+    assert_nil(Xlsxrb::Ooxml::SharedStringsParser.each_event(nil) { |_| called = true })
+    assert_false(called)
   end
 
   # --- StylesParser ---
