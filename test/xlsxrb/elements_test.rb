@@ -23,6 +23,19 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("A1", cell.ref)
   end
 
+  test "cell handles max boundary coordinates (XFD1048576)" do
+    max_cell = Xlsxrb::Elements::Cell.new(row_index: 1_048_575, column_index: 16_383, value: "max")
+    assert(max_cell.valid?)
+    assert_equal("XFD1048576", max_cell.ref)
+    assert_equal([1_048_575, 16_383], Xlsxrb::Elements::Cell.parse_ref("XFD1048576"))
+
+    # Out of boundary
+    over_cell = Xlsxrb::Elements::Cell.new(row_index: 1_048_576, column_index: 16_384, value: "over")
+    refute(over_cell.valid?)
+    assert(over_cell.errors.any? { |e| e.include?("row_index must be < 1048576") })
+    assert(over_cell.errors.any? { |e| e.include?("column_index must be < 16384") })
+  end
+
   test "cell accessors, type conversions, and formula handling" do
     formula = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A10)")
     cell = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 3, value: "123.45", formula: formula, style_index: 5)
