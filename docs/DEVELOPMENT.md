@@ -32,7 +32,11 @@ To run the different tiers of our testing strategy:
    ```bash
    bundle exec rake test:visual
    ```
-7. **Run All Tests:**
+7. **Mutation Testing (Pure Logic & Algorithms):**
+   ```bash
+   bundle exec rake mutant:pure
+   ```
+8. **Run All Tests:**
    ```bash
    bundle exec rake test
    ```

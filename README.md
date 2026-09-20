@@ -166,6 +166,7 @@ Backed by an enterprise-grade QA architecture to guarantee absolute reliability:
 * **Official Microsoft Open XML SDK Validation**: Validates generated OOXML structures against Microsoft's official SDK.
 * **Visual Regression Testing (VRT)**: Headless LibreOffice Calc pixel-by-pixel rendering checks.
 * **Contract & Round-Trip Tests**: Verifies parity between Streaming and In-Memory APIs and round-trip read/write accuracy.
+* **Mutation Testing (Mutant)**: 100% mutant kill rate (1,091/1,091 mutations across 38 subjects) on pure algorithms, predicates, and coordinates ([docs/MUTATION_TESTING.md](docs/MUTATION_TESTING.md)).
 * **Security & DoS Protection**: Formula injection mitigation and ZIP bomb protection.
 
 For full architectural details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/QUALITY_ASSURANCE.md](docs/QUALITY_ASSURANCE.md).
