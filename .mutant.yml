@@ -1,10 +1,8 @@
-integration:
-  name: test-unit
-
+usage: opensource
 requires:
   - test_helper
   - xlsxrb
-
 includes:
   - lib
   - test
+integration: test-unit
