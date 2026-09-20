@@ -600,7 +600,11 @@ namespace :mutant do
       "Xlsxrb::StreamRow#values",
       "Xlsxrb::Elements::Worksheet.valid_name?",
       "Xlsxrb::Elements::Worksheet#valid?",
-      "Xlsxrb::Elements::Worksheet#load"
+      "Xlsxrb::Elements::Worksheet#load",
+      "Xlsxrb::Ooxml::Cfb::Reader.cfb?",
+      "Xlsxrb::Ooxml::Cfb::DirEntry#stream?",
+      "Xlsxrb::Ooxml::Cfb::DirEntry#root?",
+      "Xlsxrb::Ooxml::Cfb::DirEntry#storage?"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [

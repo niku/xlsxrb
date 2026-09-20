@@ -35,6 +35,8 @@ module Xlsxrb
         assert_false Cfb::Reader.cfb?(nil)
         assert_false Cfb::Reader.cfb?("")
         assert_false Cfb::Reader.cfb?("short".b)
+        assert_false Cfb::Reader.cfb?(123)
+        assert_false Cfb::Reader.cfb?(:symbol)
 
         plain_zip = "PK\x03\x04SomeZipData".b
         assert_false Cfb::Reader.cfb?(plain_zip)

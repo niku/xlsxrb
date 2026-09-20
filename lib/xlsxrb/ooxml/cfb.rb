@@ -61,9 +61,12 @@ module Xlsxrb
         attr_reader :entries
 
         def self.cfb?(data)
-          return false if data.nil? || data.bytesize < 8
-
-          data[0, 8] == MAGIC
+          case data
+          when String
+            data.start_with?(MAGIC)
+          else
+            false
+          end
         end
 
         def initialize(data)
