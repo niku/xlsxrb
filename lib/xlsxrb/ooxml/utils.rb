@@ -12,6 +12,7 @@ module Xlsxrb
     module Utils
       # Excel 1900 date system epoch.
       EPOCH_1900 = Date.new(1899, 12, 31) # serial 1 = Jan 1, 1900
+      EPOCH_1900_JD = EPOCH_1900.jd
 
       # Built-in number format codes defined by SpreadsheetML.
       BUILTIN_NUM_FMT_CODES = {
@@ -57,7 +58,7 @@ module Xlsxrb
       class << self
         # Converts a Date to an Excel serial number (1900 system).
         def date_to_serial(date)
-          serial = (date - EPOCH_1900).to_i
+          serial = date.jd - EPOCH_1900_JD
           # Lotus 1-2-3 bug: serial 60 = Feb 29, 1900 (doesn't exist).
           # Dates on or after Mar 1, 1900 (raw serial >= 60) need +1.
           serial += 1 if serial >= 60
@@ -82,13 +83,11 @@ module Xlsxrb
 
         # Converts a fractional Excel serial number to a Time (1900 system, UTC).
         def serial_to_datetime(serial)
-          int_part = serial.to_i
-          frac = serial - int_part
+          int_part, frac = serial.divmod(1)
           date = serial_to_date(int_part)
           total_seconds = (frac * 86_400).round
-          hours = total_seconds / 3600
-          minutes = (total_seconds % 3600) / 60
-          seconds = total_seconds % 60
+          hours, remaining = total_seconds.divmod(3600)
+          minutes, seconds = remaining.divmod(60)
           Time.utc(date.year, date.month, date.day, hours, minutes, seconds)
         end
 

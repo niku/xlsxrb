@@ -7,6 +7,8 @@ module Xlsxrb
       # Excel 1900 date system epoch.
       EPOCH_1900: untyped
 
+      EPOCH_1900_JD: untyped
+
       # Built-in number format codes defined by SpreadsheetML.
       BUILTIN_NUM_FMT_CODES: untyped
 
