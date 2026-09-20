@@ -31,6 +31,8 @@ jobs:
         run: bundle exec rake test:unit test:contract
       - name: Run Property-Based Tests (PBT)
         run: bundle exec rake test:pbt
+      - name: Run Mutation Tests (Pure Logic)
+        run: bundle exec rake mutant:pure
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v7
         with:
