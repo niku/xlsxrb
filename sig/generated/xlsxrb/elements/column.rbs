@@ -9,27 +9,38 @@ module Xlsxrb
     #   col = Elements::Column.new(index: 0, width: 25.0)
     #
     # @api public
-    class Column < Data
-      attr_reader index(): untyped
+    # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
+    class Column
+      # rubocop:enable Style/DataInheritance
+      # @param index [Integer] 0-based column index.
+      # @param width [Float, Integer, nil] Column width in characters.
+      # @param hidden [Boolean] Whether the column is hidden.
+      # @param custom_width [Boolean] Whether custom width flag is set.
+      # @param outline_level [Integer, nil] Grouping/outline level.
+      # @param unmapped_data [Hash] Additional metadata.
+      # @param errors [Array<String>, nil] Validation errors.
+      # : (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
-      attr_reader width(): untyped
+      # Returns whether the column definition is valid according to OOXML specifications.
+      #
+      # @return [Boolean]
+      # : () -> bool
+      def valid?: () -> bool
 
-      attr_reader hidden(): untyped
+      # Returns whether the column index is within valid OOXML range (0..16383).
+      #
+      # @param index [Object]
+      # @return [Boolean]
+      # : (untyped index) -> bool
+      def self.valid_index?: (untyped index) -> bool
 
-      attr_reader custom_width(): untyped
-
-      attr_reader outline_level(): untyped
-
-      attr_reader unmapped_data(): untyped
-
-      attr_reader errors(): untyped
-
-      def self.new: (untyped index, untyped width, untyped hidden, untyped custom_width, untyped outline_level, untyped unmapped_data, untyped errors) -> instance
-                  | (index: untyped, width: untyped, hidden: untyped, custom_width: untyped, outline_level: untyped, unmapped_data: untyped, errors: untyped) -> instance
-
-      def self.members: () -> [ :index, :width, :hidden, :custom_width, :outline_level, :unmapped_data, :errors ]
-
-      def members: () -> [ :index, :width, :hidden, :custom_width, :outline_level, :unmapped_data, :errors ]
+      # Validates column index against OOXML limits.
+      #
+      # @param index [Integer]
+      # @return [Array<String>] List of errors.
+      # : (untyped index) -> Array[String]
+      def self.validate: (untyped index) -> Array[String]
     end
   end
 end

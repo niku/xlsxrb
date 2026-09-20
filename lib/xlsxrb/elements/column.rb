@@ -11,7 +11,9 @@ module Xlsxrb
     #   col = Elements::Column.new(index: 0, width: 25.0)
     #
     # @api public
-    Column = Data.define(:index, :width, :hidden, :custom_width, :outline_level, :unmapped_data, :errors) do
+    # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
+    class Column < Data.define(:index, :width, :hidden, :custom_width, :outline_level, :unmapped_data, :errors)
+      # rubocop:enable Style/DataInheritance
       # @param index [Integer] 0-based column index.
       # @param width [Float, Integer, nil] Column width in characters.
       # @param hidden [Boolean] Whether the column is hidden.
@@ -36,6 +38,20 @@ module Xlsxrb
         errors.empty?
       end
 
+      # Returns whether the column index is within valid OOXML range (0..16383).
+      #
+      # @param index [Object]
+      # @return [Boolean]
+      #: (untyped index) -> bool
+      def self.valid_index?(index)
+        case index
+        when Integer
+          index >= 0 && index < 16_384
+        else
+          false
+        end
+      end
+
       # Validates column index against OOXML limits.
       #
       # @param index [Integer]
@@ -43,8 +59,16 @@ module Xlsxrb
       #: (untyped index) -> Array[String]
       def self.validate(index)
         errs = []
-        errs << "index must be a non-negative Integer (got #{index.inspect})" if !index.is_a?(Integer) || index.negative?
-        errs << "index must be < 16384 (got #{index}, max column is XFD=16383)" if index.is_a?(Integer) && index >= 16_384
+        case index
+        when Integer
+          if index.negative?
+            errs << "index must be a non-negative Integer (got #{index})"
+          elsif index >= 16_384
+            errs << "index must be < 16384 (got #{index}, max column is XFD=16383)"
+          end
+        else
+          errs << "index must be a non-negative Integer (got #{index.inspect})"
+        end
         errs
       end
     end

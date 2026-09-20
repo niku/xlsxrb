@@ -604,7 +604,10 @@ namespace :mutant do
       "Xlsxrb::Ooxml::Cfb::Reader.cfb?",
       "Xlsxrb::Ooxml::Cfb::DirEntry#stream?",
       "Xlsxrb::Ooxml::Cfb::DirEntry#root?",
-      "Xlsxrb::Ooxml::Cfb::DirEntry#storage?"
+      "Xlsxrb::Ooxml::Cfb::DirEntry#storage?",
+      "Xlsxrb::Elements::Column.valid_index?",
+      "Xlsxrb::Elements::Column.validate",
+      "Xlsxrb::Elements::Column#valid?"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [
