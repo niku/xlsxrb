@@ -36,6 +36,12 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_equal("custom_color", b.resolve_color("custom_color"))
     assert_equal("", b.resolve_color(""))
     assert_equal("12345", b.resolve_color(12_345))
+
+    # Pure class method direct calls
+    assert_nil(Xlsxrb::StyleBuilder.resolve_color(nil))
+    assert_equal("FFFF0000", Xlsxrb::StyleBuilder.resolve_color(:red))
+    assert_equal("FF0000FF", Xlsxrb::StyleBuilder.resolve_color(":blue"))
+    assert_equal("FF112233", Xlsxrb::StyleBuilder.resolve_color("FF112233"))
   end
 
   # --- Font properties & chaining ---

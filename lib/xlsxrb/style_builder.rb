@@ -20,7 +20,12 @@ module Xlsxrb
       grey: "FF808080"
     }.freeze
 
-    def resolve_color(color)
+    # Resolves a color symbol, string, or prefix to an aRGB hex string.
+    #
+    # @param color [Symbol, String, Object, nil]
+    # @return [String, nil]
+    #: (untyped color) -> String?
+    def self.resolve_color(color)
       return nil unless color
 
       if color.is_a?(Symbol) || (color.is_a?(String) && color.start_with?(":") && color.length > 1)
@@ -28,6 +33,10 @@ module Xlsxrb
         return COLORS[key] || color.to_s
       end
       color.to_s
+    end
+
+    def resolve_color(color)
+      self.class.resolve_color(color)
     end
 
     #: (?String? name) -> void

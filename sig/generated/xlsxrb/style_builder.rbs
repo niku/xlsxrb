@@ -7,6 +7,13 @@ module Xlsxrb
   class StyleBuilder
     COLORS: untyped
 
+    # Resolves a color symbol, string, or prefix to an aRGB hex string.
+    #
+    # @param color [Symbol, String, Object, nil]
+    # @return [String, nil]
+    # : (untyped color) -> String?
+    def self.resolve_color: (untyped color) -> String?
+
     def resolve_color: (untyped color) -> untyped
 
     # : (?String? name) -> void
