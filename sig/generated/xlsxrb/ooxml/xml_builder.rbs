@@ -35,6 +35,13 @@ module Xlsxrb
 
       def to_s: () -> untyped
 
+      # Escapes XML special characters in a string.
+      #
+      # @param value [Object]
+      # @return [String]
+      # : (untyped value) -> String
+      def self.escape: (untyped value) -> String
+
       private
 
       def write_attrs: (untyped attrs) -> untyped

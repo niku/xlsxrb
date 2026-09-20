@@ -98,6 +98,16 @@ module Xlsxrb
         @io.is_a?(StringIO) ? @io.string : @io.to_s
       end
 
+      # Escapes XML special characters in a string.
+      #
+      # @param value [Object]
+      # @return [String]
+      #: (untyped value) -> String
+      def self.escape(value)
+        str = value.to_s
+        str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
+      end
+
       private
 
       def write_attrs(attrs)
@@ -113,8 +123,7 @@ module Xlsxrb
       end
 
       def escape(value)
-        str = value.to_s
-        str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
+        self.class.escape(value)
       end
     end
   end

@@ -610,7 +610,8 @@ namespace :mutant do
       "Xlsxrb::Elements::Column#valid?",
       "Xlsxrb::Elements::Row.valid_index?",
       "Xlsxrb::Elements::Row#valid?",
-      "Xlsxrb::Elements::Workbook#valid?"
+      "Xlsxrb::Elements::Workbook#valid?",
+      "Xlsxrb::Ooxml::XmlBuilder.escape"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [

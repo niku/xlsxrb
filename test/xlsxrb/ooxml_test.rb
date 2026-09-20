@@ -111,6 +111,17 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(expected, b.to_s)
   end
 
+  test "XmlBuilder.escape correctly escapes XML special characters" do
+    assert_equal("Tom &amp; Jerry", Xlsxrb::Ooxml::XmlBuilder.escape("Tom & Jerry"))
+    assert_equal("&lt;tag&gt;", Xlsxrb::Ooxml::XmlBuilder.escape("<tag>"))
+    assert_equal("&quot;quote&quot; and &apos;single&apos;", Xlsxrb::Ooxml::XmlBuilder.escape('"quote" and \'single\''))
+    plain = "no_special_chars"
+    assert_same(plain, Xlsxrb::Ooxml::XmlBuilder.escape(plain))
+    assert_equal("123", Xlsxrb::Ooxml::XmlBuilder.escape(123))
+    empty = ""
+    assert_same(empty, Xlsxrb::Ooxml::XmlBuilder.escape(empty))
+  end
+
   test "xml_builder method chaining with declaration and tags" do
     io = StringIO.new
     b = Xlsxrb::Ooxml::XmlBuilder.new(io)
