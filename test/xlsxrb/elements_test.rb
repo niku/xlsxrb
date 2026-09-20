@@ -346,8 +346,21 @@ class ElementsTest < Test::Unit::TestCase
 
   test "row validate checks non-integer index and non-array cells" do
     errs = Xlsxrb::Elements::Row.validate("invalid", "not-an-array")
-    assert(errs.any? { |e| e.include?("index must be a non-negative Integer") })
-    assert(errs.any? { |e| e.include?("cells must be an Array") })
+    assert_equal(["index must be a non-negative Integer (got \"invalid\")", "cells must be an Array (got String)"], errs)
+    assert_equal(["index must be a non-negative Integer (got nil)"], Xlsxrb::Elements::Row.validate(nil, []))
+    assert_equal(["index must be a non-negative Integer (got -1)"], Xlsxrb::Elements::Row.validate(-1, []))
+    assert_equal(["index must be < 1048576 (got 1048576, max row is 1048575)"], Xlsxrb::Elements::Row.validate(1_048_576, []))
+    assert_equal([], Xlsxrb::Elements::Row.validate(0, []))
+    assert_equal([], Xlsxrb::Elements::Row.validate(1_048_575, []))
+  end
+
+  test "Row.valid_index? checks OOXML row bounds" do
+    assert_equal(true, Xlsxrb::Elements::Row.valid_index?(0))
+    assert_equal(true, Xlsxrb::Elements::Row.valid_index?(1_048_575))
+    assert_equal(false, Xlsxrb::Elements::Row.valid_index?(-1))
+    assert_equal(false, Xlsxrb::Elements::Row.valid_index?(1_048_576))
+    assert_equal(false, Xlsxrb::Elements::Row.valid_index?("0"))
+    assert_equal(false, Xlsxrb::Elements::Row.valid_index?(nil))
   end
 
   test "row cell_at returns cell by column index" do
@@ -437,7 +450,21 @@ class ElementsTest < Test::Unit::TestCase
 
   test "column validate checks non-integer index" do
     errs = Xlsxrb::Elements::Column.validate("bad_index")
-    assert(errs.any? { |e| e.include?("index must be a non-negative Integer") })
+    assert_equal(["index must be a non-negative Integer (got \"bad_index\")"], errs)
+    assert_equal(["index must be a non-negative Integer (got nil)"], Xlsxrb::Elements::Column.validate(nil))
+    assert_equal(["index must be a non-negative Integer (got -1)"], Xlsxrb::Elements::Column.validate(-1))
+    assert_equal(["index must be < 16384 (got 16384, max column is XFD=16383)"], Xlsxrb::Elements::Column.validate(16_384))
+    assert_equal([], Xlsxrb::Elements::Column.validate(0))
+    assert_equal([], Xlsxrb::Elements::Column.validate(16_383))
+  end
+
+  test "Column.valid_index? checks OOXML column bounds" do
+    assert_equal(true, Xlsxrb::Elements::Column.valid_index?(0))
+    assert_equal(true, Xlsxrb::Elements::Column.valid_index?(16_383))
+    assert_equal(false, Xlsxrb::Elements::Column.valid_index?(-1))
+    assert_equal(false, Xlsxrb::Elements::Column.valid_index?(16_384))
+    assert_equal(false, Xlsxrb::Elements::Column.valid_index?("0"))
+    assert_equal(false, Xlsxrb::Elements::Column.valid_index?(nil))
   end
 
   # --- Worksheet ---
@@ -592,6 +619,7 @@ class ElementsTest < Test::Unit::TestCase
 
   test "workbook with no sheets is invalid" do
     wb = Xlsxrb::Elements::Workbook.new(sheets: [])
+    refute(wb.valid?)
     assert_include(wb.errors, "workbook must have at least one sheet")
   end
 
@@ -599,6 +627,7 @@ class ElementsTest < Test::Unit::TestCase
     ws1 = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
     ws2 = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
     wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2])
+    refute(wb.valid?)
     assert(wb.errors.any? { |e| e.include?("duplicate sheet name") && e.include?("Sheet1") })
   end
 

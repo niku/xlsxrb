@@ -609,7 +609,8 @@ namespace :mutant do
       "Xlsxrb::Elements::Column.validate",
       "Xlsxrb::Elements::Column#valid?",
       "Xlsxrb::Elements::Row.valid_index?",
-      "Xlsxrb::Elements::Row#valid?"
+      "Xlsxrb::Elements::Row#valid?",
+      "Xlsxrb::Elements::Workbook#valid?"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [

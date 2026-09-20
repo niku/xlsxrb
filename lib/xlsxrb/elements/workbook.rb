@@ -12,8 +12,10 @@ module Xlsxrb
     #   workbook.each { |s| puts s.name }
     #
     # @api public
-    Workbook = Data.define(:sheets, :shared_strings, :styles, :unmapped_data, :errors) do
-      include Enumerable
+    # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
+    class Workbook < Data.define(:sheets, :shared_strings, :styles, :unmapped_data, :errors)
+      # rubocop:enable Style/DataInheritance
+      [Enumerable].each { |m| include m }
 
       # @param sheets [Array<Elements::Worksheet>] Worksheets in the workbook.
       # @param shared_strings [Array<String>] Shared strings table.
@@ -42,7 +44,7 @@ module Xlsxrb
       def each(&)
         sheets.each(&)
       end
-      alias_method :each_sheet, :each
+      alias each_sheet each
 
       # Returns whether the workbook is valid according to ECMA-376 rules.
       #
@@ -70,7 +72,7 @@ module Xlsxrb
           sheets.find { |s| s.name == identifier }
         end
       end
-      alias_method :[], :sheet
+      alias [] sheet
 
       # Loads all sheets into memory, returning an Elements::Workbook where every
       # worksheet is a fully-parsed Elements::Worksheet supporting coordinate random access.
@@ -86,7 +88,7 @@ module Xlsxrb
         loaded_sheets = sheets.map { |s| s.respond_to?(:load) ? s.load : s }
         with(sheets: loaded_sheets)
       end
-      alias_method :to_workbook, :load
+      alias to_workbook load
 
       # Returns a new Workbook with the specified sheet updated.
       # Yields the matched worksheet to the block, which must return a new Worksheet.

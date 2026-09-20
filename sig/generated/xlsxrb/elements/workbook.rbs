@@ -10,23 +10,108 @@ module Xlsxrb
     #   workbook.each { |s| puts s.name }
     #
     # @api public
-    class Workbook < Data
-      attr_reader sheets(): untyped
+    # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
+    class Workbook
+      # @param sheets [Array<Elements::Worksheet>] Worksheets in the workbook.
+      # @param shared_strings [Array<String>] Shared strings table.
+      # @param styles [Hash] Styles definition.
+      # @param unmapped_data [Hash] Additional metadata for round-tripping.
+      # @param errors [Array<String>, nil] Validation errors.
+      # : (?sheets: Array[Elements::Worksheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (?sheets: Array[Elements::Worksheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
-      attr_reader shared_strings(): untyped
+      # Iterate over worksheets.
+      #
+      # @example
+      #   workbook.each do |sheet|
+      #     puts sheet.name
+      #   end
+      #
+      # @yield [sheet]
+      # @yieldparam sheet [Elements::Worksheet]
+      # @return [Enumerator, void]
+      # : () { (Elements::Worksheet) -> void } -> void
+      # : () -> Enumerator[Elements::Worksheet, void]
+      def each: () { (Elements::Worksheet) -> void } -> void
+              | () -> Enumerator[Elements::Worksheet, void]
 
-      attr_reader styles(): untyped
+      alias each_sheet each
 
-      attr_reader unmapped_data(): untyped
+      # Returns whether the workbook is valid according to ECMA-376 rules.
+      #
+      # @return [Boolean]
+      # : () -> bool
+      def valid?: () -> bool
 
-      attr_reader errors(): untyped
+      # Returns the worksheet at the given 0-based index or by name.
+      #
+      # @example
+      #   wb.sheet(0)
+      #   wb.sheet("Sales")
+      #
+      # @param identifier [Integer, String] 0-based index or sheet name.
+      # @return [Elements::Worksheet, nil]
+      # @api public
+      # : (?Integer | String identifier) -> Elements::Worksheet?
+      def sheet: (?Integer | String identifier) -> Elements::Worksheet?
 
-      def self.new: (untyped sheets, untyped shared_strings, untyped styles, untyped unmapped_data, untyped errors) -> instance
-                  | (sheets: untyped, shared_strings: untyped, styles: untyped, unmapped_data: untyped, errors: untyped) -> instance
+      alias [] sheet
 
-      def self.members: () -> [ :sheets, :shared_strings, :styles, :unmapped_data, :errors ]
+      # Loads all sheets into memory, returning an Elements::Workbook where every
+      # worksheet is a fully-parsed Elements::Worksheet supporting coordinate random access.
+      #
+      # @example
+      #   wb = Xlsxrb.read("file.xlsx").load
+      #   puts wb["Sheet1"]["A1"].value
+      #
+      # @return [Elements::Workbook]
+      # @api public
+      # : () -> Elements::Workbook
+      def load: () -> Elements::Workbook
 
-      def members: () -> [ :sheets, :shared_strings, :styles, :unmapped_data, :errors ]
+      alias to_workbook load
+
+      # Returns a new Workbook with the specified sheet updated.
+      # Yields the matched worksheet to the block, which must return a new Worksheet.
+      #
+      # @example
+      #   new_wb = wb.update_sheet("Sheet1") do |sheet|
+      #     sheet.update_cell("A1", value: "New Title")
+      #   end
+      #
+      # @param identifier [Integer, String] 0-based index or sheet name.
+      # @yield [sheet]
+      # @yieldparam sheet [Elements::Worksheet] The worksheet to update.
+      # @yieldreturn [Elements::Worksheet] The modified worksheet.
+      # @return [Elements::Workbook] A new Workbook instance.
+      # @api public
+      # : (Integer | String identifier) { (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
+      def update_sheet: (Integer | String identifier) { (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
+
+      # Returns an Array of all worksheet names.
+      #
+      # @return [Array<String>]
+      # @api public
+      # : () -> Array[String]
+      def sheet_names: () -> Array[String]
+
+      # Save the workbook to an XLSX file.
+      #
+      # @example
+      #   wb.save("output.xlsx")
+      #
+      # @param filepath [String, IO, StringIO] Destination file path or IO stream.
+      # @return [void]
+      # @api public
+      # : (String | IO | StringIO filepath) -> void
+      def save: (String | IO | StringIO filepath) -> void
+
+      # Validates workbook structure according to OOXML specifications.
+      #
+      # @param sheets [Array<Elements::Worksheet>]
+      # @return [Array<String>] List of error messages.
+      # : (untyped sheets) -> Array[String]
+      def self.validate: (untyped sheets) -> Array[String]
     end
   end
 end
