@@ -37,6 +37,18 @@ module Xlsxrb
         end
       end
 
+      # Returns little-endian 16-bit unsigned integer as an Array of byte values.
+      #: (Integer value) -> Array[Integer]
+      def self.le16(value)
+        [value].pack("v").bytes
+      end
+
+      # Returns little-endian 32-bit unsigned integer as an Array of byte values.
+      #: (Integer value) -> Array[Integer]
+      def self.le32(value)
+        [value].pack("V").bytes
+      end
+
       private
 
       def write_entries
@@ -144,11 +156,11 @@ module Xlsxrb
       end
 
       def le16(value)
-        [value].pack("v").bytes
+        self.class.le16(value)
       end
 
       def le32(value)
-        [value].pack("V").bytes
+        self.class.le32(value)
       end
 
       def calculate_central_dir_size

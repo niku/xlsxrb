@@ -59,6 +59,12 @@ class ZipGeneratorTest < Test::Unit::TestCase
     # le16 and le32 little-endian byte arrays
     assert_equal([0x34, 0x12], gen.send(:le16, 0x1234))
     assert_equal([0x78, 0x56, 0x34, 0x12], gen.send(:le32, 0x12345678))
+    assert_equal([0x34, 0x12], Xlsxrb::Ooxml::ZipGenerator.le16(0x1234))
+    assert_equal([0x00, 0x00], Xlsxrb::Ooxml::ZipGenerator.le16(0))
+    assert_equal([0xFF, 0xFF], Xlsxrb::Ooxml::ZipGenerator.le16(0xFFFF))
+    assert_equal([0x78, 0x56, 0x34, 0x12], Xlsxrb::Ooxml::ZipGenerator.le32(0x12345678))
+    assert_equal([0x00, 0x00, 0x00, 0x00], Xlsxrb::Ooxml::ZipGenerator.le32(0))
+    assert_equal([0xFF, 0xFF, 0xFF, 0xFF], Xlsxrb::Ooxml::ZipGenerator.le32(0xFFFFFFFF))
 
     # calculate_central_dir_size (46 bytes fixed header + pathname bytesize)
     gen.add_entry("a.txt", "content1")

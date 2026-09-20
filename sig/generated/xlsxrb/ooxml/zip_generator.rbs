@@ -12,6 +12,14 @@ module Xlsxrb
       # Generates the ZIP file.
       def generate: () -> untyped
 
+      # Returns little-endian 16-bit unsigned integer as an Array of byte values.
+      # : (Integer value) -> Array[Integer]
+      def self.le16: (Integer value) -> Array[Integer]
+
+      # Returns little-endian 32-bit unsigned integer as an Array of byte values.
+      # : (Integer value) -> Array[Integer]
+      def self.le32: (Integer value) -> Array[Integer]
+
       private
 
       def write_entries: () -> untyped
