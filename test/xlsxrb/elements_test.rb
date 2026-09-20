@@ -36,6 +36,21 @@ class ElementsTest < Test::Unit::TestCase
     assert(over_cell.errors.any? { |e| e.include?("column_index must be < 16384") })
   end
 
+  test "cell valid_coordinates? checks boundaries and types" do
+    assert_true(Xlsxrb::Elements::Cell.valid_coordinates?(0, 0))
+    assert_true(Xlsxrb::Elements::Cell.valid_coordinates?(1_048_575, 16_383))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(-1, 0))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, -1))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(1_048_576, 0))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, 16_384))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?("0", 0))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, "0"))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(nil, 0))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, nil))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(1.5, 0))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, 1.5))
+  end
+
   test "cell accessors, type conversions, and formula handling" do
     formula = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A10)")
     cell = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 3, value: "123.45", formula: formula, style_index: 5)

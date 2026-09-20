@@ -585,8 +585,11 @@ namespace :mutant do
       "Xlsxrb::Elements::Cell#valid?",
       "Xlsxrb::Elements::Cell.calculate_column_letter",
       "Xlsxrb::Elements::Cell.calculate_column_index",
+      "Xlsxrb::Elements::Cell.valid_coordinates?",
       "Xlsxrb::Ooxml::Utils.serial_to_date",
-      "Xlsxrb::Ooxml::Utils.datetime_to_serial"
+      "Xlsxrb::Ooxml::Utils.date_to_serial",
+      "Xlsxrb::Ooxml::Utils.datetime_to_serial",
+      "Xlsxrb::Ooxml::Utils.serial_to_datetime"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [

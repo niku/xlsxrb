@@ -313,6 +313,17 @@ module Xlsxrb
         [row, col - 1]
       end
 
+      # Returns whether the coordinates are within OOXML limits (row: 0..1,048,575, col: 0..16,383).
+      #
+      # @param row_index [Integer] 0-based row index.
+      # @param column_index [Integer] 0-based column index.
+      # @return [Boolean]
+      #: (untyped row_index, untyped column_index) -> bool
+      def self.valid_coordinates?(row_index, column_index)
+        row_index.instance_of?(Integer) && row_index >= 0 && row_index < 1_048_576 &&
+          column_index.instance_of?(Integer) && column_index >= 0 && column_index < 16_384
+      end
+
       # Validates cell coordinates and value type against OOXML specifications.
       #
       # @param row_index [Integer]
@@ -326,11 +337,7 @@ module Xlsxrb
                       value.is_a?(Formula) || (value.is_a?(Hash) && value.key?(:formula)) ||
                       value.is_a?(RichText) || value.is_a?(CellError)
 
-        if row_index.is_a?(Integer) && row_index >= 0 && row_index < 1_048_576 &&
-           column_index.is_a?(Integer) && column_index >= 0 && column_index < 16_384 &&
-           valid_value
-          return EMPTY_ERRORS
-        end
+        return EMPTY_ERRORS if valid_coordinates?(row_index, column_index) && valid_value
 
         errs = []
         errs << "row_index must be a non-negative Integer (got #{row_index.inspect})" if !row_index.is_a?(Integer) || row_index.negative?

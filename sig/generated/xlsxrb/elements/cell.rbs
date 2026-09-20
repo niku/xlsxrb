@@ -165,6 +165,14 @@ module Xlsxrb
       # : (String? ref) -> [Integer, Integer]?
       def self.parse_ref: (String? ref) -> [ Integer, Integer ]?
 
+      # Returns whether the coordinates are within OOXML limits (row: 0..1,048,575, col: 0..16,383).
+      #
+      # @param row_index [Integer] 0-based row index.
+      # @param column_index [Integer] 0-based column index.
+      # @return [Boolean]
+      # : (untyped row_index, untyped column_index) -> bool
+      def self.valid_coordinates?: (untyped row_index, untyped column_index) -> bool
+
       # Validates cell coordinates and value type against OOXML specifications.
       #
       # @param row_index [Integer]
