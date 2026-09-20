@@ -612,7 +612,8 @@ namespace :mutant do
       "Xlsxrb::Elements::Row#valid?",
       "Xlsxrb::Elements::Workbook#valid?",
       "Xlsxrb::Ooxml::XmlBuilder.escape",
-      "Xlsxrb::Ooxml::ZipGenerator.dos_datetime"
+      "Xlsxrb::Ooxml::ZipGenerator.dos_datetime",
+      "Xlsxrb::DslHelpers.normalize_column_indices"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [
@@ -623,7 +624,8 @@ namespace :mutant do
       "./test/xlsxrb/ooxml/cfb_test.rb",
       "./test/zip_generator_test.rb",
       "./test/xlsxrb/stream_row_test.rb",
-      "./test/xlsxrb/style_builder_test.rb"
+      "./test/xlsxrb/style_builder_test.rb",
+      "./test/xlsxrb/dsl_helpers_test.rb"
     ].select { |f| File.exist?(f) }
     requires = test_files.map { |f| "-r #{f}" }.join(" ")
     sh "bundle exec mutant run --usage opensource #{requires} -- #{subjects}"
