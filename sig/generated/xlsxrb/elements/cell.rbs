@@ -115,6 +115,13 @@ module Xlsxrb
       # : () -> Time?
       def to_time: () -> Time?
 
+      # Pure calculation: converts a 0-based column index to an Excel letter.
+      #
+      # @param index [Integer] 0-based column index.
+      # @return [String] Excel column letter.
+      # : (Integer index) -> String
+      def self.calculate_column_letter: (Integer index) -> String
+
       # Converts a 0-based column index to an Excel letter (0 -> "A", 25 -> "Z", 26 -> "AA").
       #
       # @example
@@ -126,6 +133,13 @@ module Xlsxrb
       # @api public
       # : (untyped index) -> String
       def self.column_letter: (untyped index) -> String
+
+      # Pure calculation: converts an uppercase column letter string to a 0-based index.
+      #
+      # @param letter [String] Uppercase column letter string (e.g. "A", "AA").
+      # @return [Integer] 0-based column index.
+      # : (String letter) -> Integer
+      def self.calculate_column_index: (String letter) -> Integer
 
       # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
       #

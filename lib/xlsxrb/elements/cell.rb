@@ -201,8 +201,12 @@ module Xlsxrb
         end
       end
 
-      # Cache column letters up to Excel's limit (16,384)
-      @column_letters = (0...16_384).map do |index|
+      # Pure calculation: converts a 0-based column index to an Excel letter.
+      #
+      # @param index [Integer] 0-based column index.
+      # @return [String] Excel column letter.
+      #: (Integer index) -> String
+      def self.calculate_column_letter(index)
         result = +""
         i = index
         loop do
@@ -210,8 +214,11 @@ module Xlsxrb
           i = (i / 26) - 1
           break if i.negative?
         end
-        result.freeze
-      end.freeze
+        result
+      end
+
+      # Cache column letters up to Excel's limit (16,384)
+      @column_letters = (0...16_384).map { |index| calculate_column_letter(index).freeze }.freeze
 
       # Converts a 0-based column index to an Excel letter (0 -> "A", 25 -> "Z", 26 -> "AA").
       #
@@ -226,16 +233,16 @@ module Xlsxrb
       def self.column_letter(index)
         raise ArgumentError, "Column index must be a non-negative Integer, got #{index.inspect}" unless index.is_a?(Integer) && index >= 0
 
-        @column_letters[index] || begin
-          result = +""
-          i = index
-          loop do
-            result.prepend(("A".ord + (i % 26)).chr)
-            i = (i / 26) - 1
-            break if i.negative?
-          end
-          result
-        end
+        @column_letters[index] || calculate_column_letter(index)
+      end
+
+      # Pure calculation: converts an uppercase column letter string to a 0-based index.
+      #
+      # @param letter [String] Uppercase column letter string (e.g. "A", "AA").
+      # @return [Integer] 0-based column index.
+      #: (String letter) -> Integer
+      def self.calculate_column_index(letter)
+        letter.bytes.reduce(0) { |acc, b| (acc * 26) + (b - 64) } - 1
       end
 
       # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
@@ -265,7 +272,7 @@ module Xlsxrb
 
         raise ArgumentError, "Invalid column letter: #{letter.inspect}" unless str.match?(/\A[a-zA-Z]+\z/)
 
-        str.upcase.chars.reduce(0) { |acc, c| (acc * 26) + (c.ord - "A".ord + 1) } - 1
+        calculate_column_index(str.upcase)
       end
 
       # Parses an Excel-style reference to [row_index, col_index] (both 0-based).

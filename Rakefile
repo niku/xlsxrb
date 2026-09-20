@@ -583,6 +583,8 @@ namespace :mutant do
       "Xlsxrb::Elements::Cell#to_f",
       "Xlsxrb::Elements::Cell#content",
       "Xlsxrb::Elements::Cell#valid?",
+      "Xlsxrb::Elements::Cell.calculate_column_letter",
+      "Xlsxrb::Elements::Cell.calculate_column_index",
       "Xlsxrb::Ooxml::Utils.serial_to_date",
       "Xlsxrb::Ooxml::Utils.datetime_to_serial"
     ].join(" ")
