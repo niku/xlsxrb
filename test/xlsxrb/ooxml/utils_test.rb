@@ -32,6 +32,10 @@ class UtilsTest < Test::Unit::TestCase
     # Modern date round-trip
     d_modern = Date.new(2026, 9, 2)
     serial_modern = Xlsxrb::Ooxml::Utils.date_to_serial(d_modern)
+    assert_instance_of(Integer, serial_modern)
+    assert_instance_of(Integer, Xlsxrb::Ooxml::Utils.date_to_serial(d1))
+    assert_instance_of(Integer, Xlsxrb::Ooxml::Utils.date_to_serial(d59))
+    assert_instance_of(Integer, Xlsxrb::Ooxml::Utils.date_to_serial(d61))
     assert_equal(d_modern, Xlsxrb::Ooxml::Utils.serial_to_date(serial_modern))
   end
 

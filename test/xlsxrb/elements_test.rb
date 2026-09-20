@@ -43,6 +43,7 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("123.45", cell.content)
     assert_equal("123.45", cell.to_s)
     assert_equal(123, cell.to_i)
+    assert_instance_of(Float, cell.to_f)
     assert_in_delta(123.45, cell.to_f)
     assert_equal("123.45", cell[:value])
     assert_equal("SUM(A1:A10)", cell[:formula])
@@ -159,12 +160,26 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("AA", Xlsxrb::Elements::Cell.column_letter(26))
     assert_equal("AZ", Xlsxrb::Elements::Cell.column_letter(51))
     assert_equal("XFD", Xlsxrb::Elements::Cell.column_letter(16_383))
+    assert_equal("XFE", Xlsxrb::Elements::Cell.column_letter(16_384))
+    assert_equal("ZZZ", Xlsxrb::Elements::Cell.column_letter(18_277))
+
+    # Cached array identity
+    assert_same(Xlsxrb::Elements::Cell.column_letter(0), Xlsxrb::Elements::Cell.column_letter(0))
+    assert_same(Xlsxrb::Elements::Cell.column_letter(25), Xlsxrb::Elements::Cell.column_letter(25))
   end
 
   test "cell column_letter raises ArgumentError for invalid index" do
-    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(-1) }
-    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter("0") }
-    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(1.5) }
+    err_neg = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(-1) }
+    assert_equal("Column index must be a non-negative Integer, got -1", err_neg.message)
+
+    err_str = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter("0") }
+    assert_equal('Column index must be a non-negative Integer, got "0"', err_str.message)
+
+    err_sym = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(:foo) }
+    assert_equal("Column index must be a non-negative Integer, got :foo", err_sym.message)
+
+    err_flt = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(1.5) }
+    assert_equal("Column index must be a non-negative Integer, got 1.5", err_flt.message)
   end
 
   test "cell column_index converts string digits correctly" do
@@ -176,7 +191,8 @@ class ElementsTest < Test::Unit::TestCase
     # Integer pass-through
     assert_equal(0, Xlsxrb::Elements::Cell.column_index(0))
     assert_equal(26, Xlsxrb::Elements::Cell.column_index(26))
-    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index(-1) }
+    err_neg_int = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index(-1) }
+    assert_equal("Column index must be >= 0, got -1", err_neg_int.message)
 
     # Symbol conversion
     assert_equal(0, Xlsxrb::Elements::Cell.column_index(:A))
@@ -193,10 +209,20 @@ class ElementsTest < Test::Unit::TestCase
   end
 
   test "cell column_index raises ArgumentError for invalid values" do
-    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("-1") }
-    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("!") }
-    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("A1") }
-    assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("") }
+    err_neg_str = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("-1") }
+    assert_equal("Column index must be >= 0, got -1", err_neg_str.message)
+
+    err_excl = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("!") }
+    assert_equal('Invalid column letter: "!"', err_excl.message)
+
+    err_mixed = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("A1") }
+    assert_equal('Invalid column letter: "A1"', err_mixed.message)
+
+    err_empty = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("") }
+    assert_equal('Invalid column letter: ""', err_empty.message)
+
+    err_sym = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index(:bad!) }
+    assert_equal("Invalid column letter: :bad!", err_sym.message)
   end
 
   test "cell parse_ref converts A1-style to indices" do
