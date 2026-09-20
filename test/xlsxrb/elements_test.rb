@@ -476,6 +476,19 @@ class ElementsTest < Test::Unit::TestCase
     assert(errs_rows.any? { |e| e.include?("rows must be an Array") })
   end
 
+  test "worksheet valid_name? checks length, forbidden chars, and non-strings" do
+    assert_true(Xlsxrb::Elements::Worksheet.valid_name?("Sheet1"))
+    assert_true(Xlsxrb::Elements::Worksheet.valid_name?("A" * 31))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?("A" * 32))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?(""))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?(nil))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?(123))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?(:Sheet1))
+    %w[\\ / ? * [ ]].each do |char|
+      assert_false(Xlsxrb::Elements::Worksheet.valid_name?("Sheet#{char}1"))
+    end
+  end
+
   test "worksheet update_cell creates or modifies cells in rows" do
     ws = Xlsxrb::Elements::Worksheet.new(name: "Test")
 

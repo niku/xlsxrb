@@ -597,7 +597,10 @@ namespace :mutant do
       "Xlsxrb::StreamRow#valid?",
       "Xlsxrb::StreamRow#unmapped_data",
       "Xlsxrb::StreamRow#errors",
-      "Xlsxrb::StreamRow#values"
+      "Xlsxrb::StreamRow#values",
+      "Xlsxrb::Elements::Worksheet.valid_name?",
+      "Xlsxrb::Elements::Worksheet#valid?",
+      "Xlsxrb::Elements::Worksheet#load"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [

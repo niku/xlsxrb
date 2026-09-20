@@ -197,6 +197,22 @@ module Xlsxrb
       end
       alias to_worksheet load
 
+      FORBIDDEN_NAME_CHARS = %r{[\\/?*\[\]]}
+
+      # Returns whether the worksheet name is valid according to OOXML specifications (1..31 chars, no forbidden chars).
+      #
+      # @param name [Object]
+      # @return [Boolean]
+      #: (untyped name) -> bool
+      def self.valid_name?(name)
+        case name
+        when String
+          !name.empty? && name.size <= 31 && !name.match?(FORBIDDEN_NAME_CHARS)
+        else
+          false
+        end
+      end
+
       # Validates worksheet name and rows against OOXML limits.
       #
       # @param name [String]
@@ -209,7 +225,7 @@ module Xlsxrb
           errs << "worksheet name must be a non-empty String (got #{name.inspect})"
         else
           errs << "worksheet name cannot exceed 31 characters (got #{name.size})" if name.size > 31
-          errs << "worksheet name cannot contain \\, /, ?, *, [, or ]" if name.match?(%r{[\\/?*\[\]]})
+          errs << "worksheet name cannot contain \\, /, ?, *, [, or ]" if name.match?(FORBIDDEN_NAME_CHARS)
         end
         errs << "rows must be an Array (got #{rows.class})" unless rows.is_a?(Array)
         if rows.is_a?(Array)

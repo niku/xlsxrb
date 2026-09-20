@@ -127,6 +127,15 @@ module Xlsxrb
 
       alias to_worksheet load
 
+      FORBIDDEN_NAME_CHARS: ::Regexp
+
+      # Returns whether the worksheet name is valid according to OOXML specifications (1..31 chars, no forbidden chars).
+      #
+      # @param name [Object]
+      # @return [Boolean]
+      # : (untyped name) -> bool
+      def self.valid_name?: (untyped name) -> bool
+
       # Validates worksheet name and rows against OOXML limits.
       #
       # @param name [String]
