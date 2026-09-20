@@ -11,29 +11,109 @@ module Xlsxrb
     #   row.to_a            # array of cell values
     #
     # @api public
-    class Row < Data
-      attr_reader index(): untyped
+    # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
+    class Row
+      # @param index [Integer] 0-based row index.
+      # @param cells [Array<Elements::Cell>] Cells in this row.
+      # @param height [Float, Integer, nil] Row height in points.
+      # @param hidden [Boolean] Whether the row is hidden.
+      # @param custom_height [Boolean] Whether custom height is set.
+      # @param outline_level [Integer, nil] Grouping/outline level.
+      # @param unmapped_data [Hash] Additional metadata.
+      # @param errors [Array<String>, nil] Validation errors.
+      # : (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
-      attr_reader cells(): untyped
+      # Access a cell by 0-based column index, or access row attributes via Symbol.
+      #
+      # @example
+      #   row[0]          #=> Cell at column 0
+      #   row[:height]    #=> 25.0
+      #   row[:cells]     #=> [Cell, Cell, ...]
+      #
+      # @param col_index [Integer, Symbol] Column index or attribute symbol.
+      # @return [Elements::Cell, Object, nil]
+      # @api public
+      # : (Integer | Symbol col_index) -> untyped
+      def []: (Integer | Symbol col_index) -> untyped
 
-      attr_reader height(): untyped
+      # Iterate over cells in this row.
+      #
+      # @example
+      #   row.each do |cell|
+      #     puts cell.value
+      #   end
+      #
+      # @yield [cell]
+      # @yieldparam cell [Elements::Cell]
+      # @return [Enumerator, void]
+      # @api public
+      # : () { (Elements::Cell) -> void } -> void
+      # : () -> Enumerator[Elements::Cell, void]
+      def each: () { (Elements::Cell) -> void } -> void
+              | () -> Enumerator[Elements::Cell, void]
 
-      attr_reader hidden(): untyped
+      # Iterate over cells in this row.
+      #
+      # @example
+      #   row.each_cell do |cell|
+      #     puts "#{cell.ref}: #{cell.value}"
+      #   end
+      #
+      # @yield [cell]
+      # @yieldparam cell [Elements::Cell]
+      # @return [Enumerator, void]
+      # @api public
+      # : () { (Elements::Cell) -> void } -> void
+      # : () -> Enumerator[Elements::Cell, void]
+      def each_cell: () { (Elements::Cell) -> void } -> void
+                   | () -> Enumerator[Elements::Cell, void]
 
-      attr_reader custom_height(): untyped
+      # Convert row cells to an Array of raw values.
+      #
+      # @example
+      #   row.to_a #=> ["ID", "Name", "Total"]
+      #
+      # @return [Array<Object>]
+      # @api public
+      # : () -> Array[untyped]
+      def to_a: () -> Array[untyped]
 
-      attr_reader outline_level(): untyped
+      # Returns whether the row is valid according to OOXML specifications.
+      #
+      # @return [Boolean]
+      # : () -> bool
+      def valid?: () -> bool
 
-      attr_reader unmapped_data(): untyped
+      # Returns the cell at the given 0-based column index, or nil.
+      #
+      # @param column_index [Integer] 0-based column index.
+      # @return [Elements::Cell, nil]
+      # @api public
+      # : (Integer column_index) -> Elements::Cell?
+      def cell_at: (Integer column_index) -> Elements::Cell?
 
-      attr_reader errors(): untyped
+      # Returns cell values as an Array (sparse columns get nil).
+      #
+      # @return [Array<Object>]
+      # @api public
+      # : () -> Array[untyped]
+      def values: () -> Array[untyped]
 
-      def self.new: (untyped index, untyped cells, untyped height, untyped hidden, untyped custom_height, untyped outline_level, untyped unmapped_data, untyped errors) -> instance
-                  | (index: untyped, cells: untyped, height: untyped, hidden: untyped, custom_height: untyped, outline_level: untyped, unmapped_data: untyped, errors: untyped) -> instance
+      # Returns whether the row index is within valid OOXML range (0..1048575).
+      #
+      # @param index [Object]
+      # @return [Boolean]
+      # : (untyped index) -> bool
+      def self.valid_index?: (untyped index) -> bool
 
-      def self.members: () -> [ :index, :cells, :height, :hidden, :custom_height, :outline_level, :unmapped_data, :errors ]
-
-      def members: () -> [ :index, :cells, :height, :hidden, :custom_height, :outline_level, :unmapped_data, :errors ]
+      # Validates row index and cells against OOXML limits.
+      #
+      # @param index [Integer]
+      # @param cells [Array<Elements::Cell>]
+      # @return [Array<String>] List of errors.
+      # : (untyped index, untyped cells) -> Array[String]
+      def self.validate: (untyped index, untyped cells) -> Array[String]
     end
   end
 end

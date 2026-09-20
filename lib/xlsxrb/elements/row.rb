@@ -13,8 +13,10 @@ module Xlsxrb
     #   row.to_a            # array of cell values
     #
     # @api public
-    Row = Data.define(:index, :cells, :height, :hidden, :custom_height, :outline_level, :unmapped_data, :errors) do
-      include Enumerable
+    # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
+    class Row < Data.define(:index, :cells, :height, :hidden, :custom_height, :outline_level, :unmapped_data, :errors)
+      # rubocop:enable Style/DataInheritance
+      [Enumerable].each { |m| include m }
 
       # @param index [Integer] 0-based row index.
       # @param cells [Array<Elements::Cell>] Cells in this row.
@@ -152,6 +154,20 @@ module Xlsxrb
         result
       end
 
+      # Returns whether the row index is within valid OOXML range (0..1048575).
+      #
+      # @param index [Object]
+      # @return [Boolean]
+      #: (untyped index) -> bool
+      def self.valid_index?(index)
+        case index
+        when Integer
+          index >= 0 && index < 1_048_576
+        else
+          false
+        end
+      end
+
       # Validates row index and cells against OOXML limits.
       #
       # @param index [Integer]
@@ -159,16 +175,19 @@ module Xlsxrb
       # @return [Array<String>] List of errors.
       #: (untyped index, untyped cells) -> Array[String]
       def self.validate(index, cells)
-        return EMPTY_ERRORS if index.is_a?(Integer) && index >= 0 && index < 1_048_576 && cells.is_a?(Array)
-
         errs = []
-        if !index.is_a?(Integer) || index.negative?
+        case index
+        when Integer
+          if index.negative?
+            errs << "index must be a non-negative Integer (got #{index})"
+          elsif index >= 1_048_576
+            errs << "index must be < 1048576 (got #{index}, max row is 1048575)"
+          end
+        else
           errs << "index must be a non-negative Integer (got #{index.inspect})"
-        elsif index >= 1_048_576
-          errs << "index must be < 1048576 (got #{index}, max row is 1048575)"
         end
         errs << "cells must be an Array (got #{cells.class})" unless cells.is_a?(Array)
-        errs
+        errs.empty? ? EMPTY_ERRORS : errs
       end
     end
   end
