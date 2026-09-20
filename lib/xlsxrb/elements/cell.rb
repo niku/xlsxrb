@@ -324,6 +324,22 @@ module Xlsxrb
           column_index.instance_of?(Integer) && column_index >= 0 && column_index < 16_384
       end
 
+      # Returns whether the value type is supported by OOXML specifications.
+      #
+      # @param value [Object]
+      # @return [Boolean]
+      #: (untyped value) -> bool
+      def self.valid_value?(value)
+        case value
+        when nil, String, Numeric, true, false, Date, Time, Formula, RichText, CellError
+          true
+        when Hash
+          value.key?(:formula)
+        else
+          false
+        end
+      end
+
       # Validates cell coordinates and value type against OOXML specifications.
       #
       # @param row_index [Integer]
@@ -332,19 +348,15 @@ module Xlsxrb
       # @return [Array<String>] List of errors.
       #: (untyped row_index, untyped column_index, untyped value) -> Array[String]
       def self.validate(row_index, column_index, value)
-        valid_value = value.nil? || value.is_a?(String) || value.is_a?(Numeric) ||
-                      value == true || value == false || value.is_a?(Date) || value.is_a?(Time) ||
-                      value.is_a?(Formula) || (value.is_a?(Hash) && value.key?(:formula)) ||
-                      value.is_a?(RichText) || value.is_a?(CellError)
-
-        return EMPTY_ERRORS if valid_coordinates?(row_index, column_index) && valid_value
+        valid_val = valid_value?(value)
+        return EMPTY_ERRORS if valid_coordinates?(row_index, column_index) && valid_val
 
         errs = []
         errs << "row_index must be a non-negative Integer (got #{row_index.inspect})" if !row_index.is_a?(Integer) || row_index.negative?
         errs << "column_index must be a non-negative Integer (got #{column_index.inspect})" if !column_index.is_a?(Integer) || column_index.negative?
         errs << "row_index must be < 1048576 (got #{row_index}, max row is 1048575)" if row_index.is_a?(Integer) && row_index >= 1_048_576
         errs << "column_index must be < 16384 (got #{column_index}, max column is XFD=16383)" if column_index.is_a?(Integer) && column_index >= 16_384
-        errs << "unsupported value type: #{value.class} (#{value.inspect}) — supported types: String, Numeric, true/false, Date, Time, Formula, RichText, CellError, or nil" unless valid_value
+        errs << "unsupported value type: #{value.class} (#{value.inspect}) — supported types: String, Numeric, true/false, Date, Time, Formula, RichText, CellError, or nil" unless valid_val
         errs
       end
     end

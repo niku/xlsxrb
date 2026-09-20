@@ -173,6 +173,13 @@ module Xlsxrb
       # : (untyped row_index, untyped column_index) -> bool
       def self.valid_coordinates?: (untyped row_index, untyped column_index) -> bool
 
+      # Returns whether the value type is supported by OOXML specifications.
+      #
+      # @param value [Object]
+      # @return [Boolean]
+      # : (untyped value) -> bool
+      def self.valid_value?: (untyped value) -> bool
+
       # Validates cell coordinates and value type against OOXML specifications.
       #
       # @param row_index [Integer]

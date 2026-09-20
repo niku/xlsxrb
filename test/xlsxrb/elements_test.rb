@@ -51,12 +51,41 @@ class ElementsTest < Test::Unit::TestCase
     assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, 1.5))
   end
 
+  test "cell valid_value? checks supported and unsupported value types" do
+    formula = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A10)")
+    rich_text = Xlsxrb::Elements::RichText.new(runs: [{ text: "rich" }])
+    cell_err = Xlsxrb::Elements::CellError.new(code: "#VALUE!")
+
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(nil))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?("test"))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(100))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(100.5))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(true))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(false))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(Date.new(2026, 1, 1)))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(Time.now))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(formula))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?({ formula: "A1" }))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(rich_text))
+    assert_true(Xlsxrb::Elements::Cell.valid_value?(cell_err))
+
+    assert_false(Xlsxrb::Elements::Cell.valid_value?([1, 2, 3]))
+    assert_false(Xlsxrb::Elements::Cell.valid_value?(:symbol))
+    assert_false(Xlsxrb::Elements::Cell.valid_value?(Object.new))
+    assert_false(Xlsxrb::Elements::Cell.valid_value?({ not_formula: 1 }))
+  end
+
   test "cell accessors, type conversions, and formula handling" do
     formula = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A10)")
     cell = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 3, value: "123.45", formula: formula, style_index: 5)
 
     assert_equal("123.45", cell.content)
     assert_equal("123.45", cell.to_s)
+    cell_int = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42)
+    assert_equal("42", cell_int.to_s)
+    assert_instance_of(String, cell_int.to_s)
+    cell_nil = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: nil)
+    assert_equal("", cell_nil.to_s)
     assert_equal(123, cell.to_i)
     assert_instance_of(Float, cell.to_f)
     assert_in_delta(123.45, cell.to_f)
