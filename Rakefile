@@ -573,15 +573,27 @@ task typecheck: :sig do
 end
 
 namespace :mutant do
-  desc "Run mutation testing on pure logic and algorithms (coordinates, serial, validation, crypto)"
+  desc "Run mutation testing on pure logic and algorithms (coordinates, serial, conversion)"
   task :pure do
-    subjects = ENV["MUTANT_SUBJECTS"] || "Xlsxrb::Elements::Cell* Xlsxrb::Ooxml::Utils* Xlsxrb::Ooxml::Crypto*"
-    requires = [
-      "-r ./test/xlsxrb/elements_test.rb",
-      "-r ./test/xlsxrb/ooxml_test.rb",
-      "-r ./test/xlsxrb/ooxml/crypto_test.rb",
-      "-r ./test/xlsxrb/ooxml/cfb_test.rb"
+    default_subjects = [
+      "Xlsxrb::Elements::CoordinateAccess#cells",
+      "Xlsxrb::Elements::CoordinateAccess#[]",
+      "Xlsxrb::Elements::Cell#ref",
+      "Xlsxrb::Elements::Cell#to_i",
+      "Xlsxrb::Elements::Cell#to_f",
+      "Xlsxrb::Elements::Cell#content",
+      "Xlsxrb::Ooxml::Utils.serial_to_date"
     ].join(" ")
+    subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
+    test_files = [
+      "./test/xlsxrb/elements_test.rb",
+      "./test/xlsxrb/ooxml_test.rb",
+      "./test/xlsxrb/ooxml/utils_test.rb",
+      "./test/xlsxrb/ooxml/crypto_test.rb",
+      "./test/xlsxrb/ooxml/cfb_test.rb",
+      "./test/zip_generator_test.rb"
+    ].select { |f| File.exist?(f) }
+    requires = test_files.map { |f| "-r #{f}" }.join(" ")
     sh "bundle exec mutant run --usage opensource #{requires} -- #{subjects}"
   end
 end
