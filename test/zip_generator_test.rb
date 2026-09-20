@@ -37,16 +37,19 @@ class ZipGeneratorTest < Test::Unit::TestCase
     t = Time.new(2026, 9, 3, 1, 15, 30)
     # Expected: time bytes [0xEF, 0x09], date bytes [0x23, 0x5D]
     assert_equal([239, 9, 35, 93], gen.send(:dos_datetime, t))
+    assert_equal([239, 9, 35, 93], Xlsxrb::Ooxml::ZipGenerator.dos_datetime(t))
 
     # Boundary: MS-DOS epoch 1980-01-01 00:00:00
     t_epoch = Time.new(1980, 1, 1, 0, 0, 0)
     # date: (0 << 9) | (1 << 5) | 1 = 33 -> [33, 0]
     # time: 0 -> [0, 0]
     assert_equal([0, 0, 33, 0], gen.send(:dos_datetime, t_epoch))
+    assert_equal([0, 0, 33, 0], Xlsxrb::Ooxml::ZipGenerator.dos_datetime(t_epoch))
 
     # Odd seconds are truncated to 2-second resolution (31 sec -> 15)
     t_odd = Time.new(2026, 9, 3, 1, 15, 31)
     assert_equal([239, 9, 35, 93], gen.send(:dos_datetime, t_odd))
+    assert_equal([239, 9, 35, 93], Xlsxrb::Ooxml::ZipGenerator.dos_datetime(t_odd))
   end
 
   test "crc32, le16, le32, and central directory size calculations" do

@@ -20,6 +20,13 @@ module Xlsxrb
       # : (Integer value) -> Array[Integer]
       def self.le32: (Integer value) -> Array[Integer]
 
+      # Returns MS-DOS format datetime byte array (little-endian 16-bit time + date).
+      #
+      # @param time [Time]
+      # @return [Array<Integer>]
+      # : (Time time) -> Array[Integer]
+      def self.dos_datetime: (Time time) -> Array[Integer]
+
       private
 
       def write_entries: () -> untyped

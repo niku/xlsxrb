@@ -49,6 +49,17 @@ module Xlsxrb
         [value].pack("V").bytes
       end
 
+      # Returns MS-DOS format datetime byte array (little-endian 16-bit time + date).
+      #
+      # @param time [Time]
+      # @return [Array<Integer>]
+      #: (Time time) -> Array[Integer]
+      def self.dos_datetime(time)
+        dos_date = ((time.year - 1980) << 9) + (time.month << 5) + time.day
+        dos_time = (time.hour << 11) + (time.min << 5) + (time.sec / 2)
+        le16(dos_time) + le16(dos_date)
+      end
+
       private
 
       def write_entries
@@ -150,9 +161,7 @@ module Xlsxrb
       end
 
       def dos_datetime(time)
-        dos_date = ((time.year - 1980) << 9) | (time.month << 5) | time.day
-        dos_time = (time.hour << 11) | (time.min << 5) | (time.sec / 2)
-        le16(dos_time) + le16(dos_date)
+        self.class.dos_datetime(time)
       end
 
       def le16(value)
