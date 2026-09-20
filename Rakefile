@@ -591,7 +591,13 @@ namespace :mutant do
       "Xlsxrb::Ooxml::Utils.serial_to_date",
       "Xlsxrb::Ooxml::Utils.date_to_serial",
       "Xlsxrb::Ooxml::Utils.datetime_to_serial",
-      "Xlsxrb::Ooxml::Utils.serial_to_datetime"
+      "Xlsxrb::Ooxml::Utils.serial_to_datetime",
+      "Xlsxrb::Ooxml::ZipGenerator.le16",
+      "Xlsxrb::Ooxml::ZipGenerator.le32",
+      "Xlsxrb::StreamRow#valid?",
+      "Xlsxrb::StreamRow#unmapped_data",
+      "Xlsxrb::StreamRow#errors",
+      "Xlsxrb::StreamRow#values"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [
@@ -600,7 +606,9 @@ namespace :mutant do
       "./test/xlsxrb/ooxml/utils_test.rb",
       "./test/xlsxrb/ooxml/crypto_test.rb",
       "./test/xlsxrb/ooxml/cfb_test.rb",
-      "./test/zip_generator_test.rb"
+      "./test/zip_generator_test.rb",
+      "./test/xlsxrb/stream_row_test.rb",
+      "./test/xlsxrb/style_builder_test.rb"
     ].select { |f| File.exist?(f) }
     requires = test_files.map { |f| "-r #{f}" }.join(" ")
     sh "bundle exec mutant run --usage opensource #{requires} -- #{subjects}"
