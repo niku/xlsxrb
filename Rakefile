@@ -582,7 +582,9 @@ namespace :mutant do
       "Xlsxrb::Elements::Cell#to_i",
       "Xlsxrb::Elements::Cell#to_f",
       "Xlsxrb::Elements::Cell#content",
-      "Xlsxrb::Ooxml::Utils.serial_to_date"
+      "Xlsxrb::Elements::Cell#valid?",
+      "Xlsxrb::Ooxml::Utils.serial_to_date",
+      "Xlsxrb::Ooxml::Utils.datetime_to_serial"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [
