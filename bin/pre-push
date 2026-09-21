@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Git pre-push hook passes refs on stdin; redirect stdin to /dev/null
+# to prevent child test runners from hanging on open pipes.
+exec < /dev/null
+
+echo "Running pre-push checks..."
+
+echo "1/4 Running RuboCop..."
+bundle exec rubocop
+
+echo "2/4 Running Steep Type Check..."
+bundle exec rake typecheck
+
+echo "3/4 Verifying RBS is in sync..."
+bundle exec rake sig
+git diff --exit-code sig/
+
+echo "4/4 Running Unit & Contract Tests..."
+bundle exec rake test:unit test:contract
+
+# Extended checks (RBS runtime validation & Mutation testing) take ~1.5 minutes.
+# Enable via FULL_PRE_PUSH=1 or passing --all
+if [ "${FULL_PRE_PUSH:-0}" = "1" ] || [ "${1:-}" = "--all" ]; then
+  echo "5/6 Running RBS Runtime Type Validation (single worker to avoid hook deadlock)..."
+  TEST_WORKERS=1 bundle exec rake test:rbs
+
+  echo "6/6 Running Mutation Tests (Pure Logic)..."
+  bundle exec rake mutant:pure
+fi
+
+echo "All pre-push checks passed!"
