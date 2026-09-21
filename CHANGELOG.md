@@ -1,3 +1,38 @@
+## [0.1.12] - 2026-09-20
+
+### Added
+- **Mutation Testing Framework (`mutant`)**:
+  - Full-scale integration of mutant test suite targeting the Functional Core (10 classes and modules, 38 subjects).
+  - Achieved **100.00% Kill Rate (1,091 / 1,091 mutations killed, 0 alive)** without exclusions.
+  - Added dedicated root configuration [`.mutant.yml`](.mutant.yml) for streamlined CLI execution (`bundle exec mutant run -- '...'`).
+  - Integrated `bundle exec rake mutant:pure` into GitHub Actions CI pipeline (`main.yml`), guaranteeing mutation-tested quality on every push and pull request.
+  - Added comprehensive architecture and testing guide in [`docs/MUTATION_TESTING.md`](docs/MUTATION_TESTING.md).
+- **Pre-Push Quality Verification Script (`bin/pre-push`)**: Added automated pre-push verification script running RuboCop, Steep type checking, RBS sync validation, Unit & Contract tests, RBS runtime type validation, and pure logic mutation testing, with automatic hook installation in `bin/setup`.
+
+### Changed
+- **Functional Core & Imperative Shell Architecture**:
+  - Purified core business logic and domain entities into deterministic, side-effect-free class methods and predicates:
+    - Extracted coordinate and validation predicates: `Elements::Cell.valid_value?`, `Cell.valid_coordinates?`, `Cell.calculate_column_letter`, `Cell.calculate_column_index`.
+    - Extracted domain validation predicates: `Elements::Row.valid_index?`, `Elements::Column.valid_index?`, `Elements::Worksheet.valid_name?`.
+    - Replaced date/time serial calculations in `Ooxml::Utils` with pure mathematical conversions (Julian Day math for `date_to_serial`, `divmod` arithmetic for `serial_to_datetime`, and rigorous 1900 leap year bug handling).
+    - Extracted binary packing utilities in `Ooxml::ZipGenerator` (`le16`, `le32`, and bitfield arithmetic for `dos_datetime`).
+    - Extracted pure XML character escaping logic in `Ooxml::XmlBuilder.escape`.
+  - Modularized `Ooxml::Writer` into domain-specific mixin modules (`DrawingXml`, `FeaturesXml`, `StylesXml`).
+  - Extracted shared DSL parameter normalization and range expansion into `Xlsxrb::DslHelpers`.
+  - Modularized reader SAX listeners into domain-specific parser components.
+
+### Fixed
+- **Boundary Validation & Error Reporting**:
+  - Strictly validate row number digits in `Elements::Cell.parse_ref` to reject malformed cell coordinate strings (e.g. `A0`, `A01`).
+  - Harmonized supported value type checks and nil/empty handling across `Elements::Cell.validate`.
+  - Corrected maximum row index boundary error messages in `Elements::Row.validate`.
+  - Hardened cryptographic stream boundary checks and corrupted header handling in Standard and Agile encryption modes.
+- **RBS Runtime Type Validation**:
+  - Expanded `Elements::Workbook#initialize`, `#sheet`, and `[]` type annotations to accept `StreamSheet` instances used by streaming readers.
+  - Made update block parameter optional in `Elements::Workbook#update_sheet` to allow testing missing block validation.
+  - Supported `Numeric` types (Float and Integer) in `ChartBuilder` and `SeriesBuilder` kwargs (`width`, etc.).
+  - Handled `RBS::Test::Tester::TypeError` in unit tests verifying block return type validation.
+
 ## [0.1.11] - 2026-08-19
 
 ### Performance
