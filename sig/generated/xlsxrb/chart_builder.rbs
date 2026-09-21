@@ -62,8 +62,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments for legend styling/layout.
     # @return [Object] The configured legend property.
     # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def legend: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+    def legend: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
     # Configures the plot_area property for this chart.
     #
@@ -71,8 +71,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments for plot area configuration.
     # @return [Object] The configured plot_area property.
     # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def plot_area: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+    def plot_area: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
     # Configures the chart_space property for this chart.
     #
@@ -80,8 +80,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object] The configured chart_space property.
     # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def chart_space: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+    def chart_space: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
     # Configures the style index/id for this chart.
     #
@@ -89,8 +89,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object] The configured style property.
     # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String | Integer) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Integer)
-    def style: (*Hash[Symbol, String | Integer | bool | nil] | String | Integer args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Integer)
+    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String | Integer) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String | Integer)
+    def style: (*Hash[Symbol, String | Numeric | bool | nil] | String | Integer args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String | Integer)
 
     # Configures data labels for this chart.
     #
@@ -98,8 +98,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object] The configured data_labels property.
     # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def data_labels: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+    def data_labels: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
     # Configures whether to plot visible cells only.
     #
@@ -107,8 +107,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Boolean, String]
     # @api public
-    # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
-    def plot_visible_only: (*bool | String args, **String | Integer | bool | nil kwargs) -> (bool | String)
+    # : (*(bool | String) args, **String | Numeric | bool | nil kwargs) -> (bool | String)
+    def plot_visible_only: (*bool | String args, **String | Numeric | bool | nil kwargs) -> (bool | String)
 
     # Configures how blank cells are displayed in the chart.
     #
@@ -116,8 +116,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [String]
     # @api public
-    # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
-    def display_blanks_as: (*String args, **String | Integer | bool | nil kwargs) -> String
+    # : (*(String) args, **String | Numeric | bool | nil kwargs) -> String
+    def display_blanks_as: (*String args, **String | Numeric | bool | nil kwargs) -> String
 
     # Configures 3D view properties for 3D charts.
     #
@@ -125,8 +125,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object]
     # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def view3d: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+    def view3d: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
     # Configures the category axis properties for this chart.
     #
@@ -134,8 +134,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object]
     # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def category_axis: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+    def category_axis: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
     # Configures the value axis properties for this chart.
     #
@@ -143,8 +143,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object]
     # @api public
-    # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-    def value_axis: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+    def value_axis: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
     # Configures whether to show the legend key in data labels.
     #
@@ -152,8 +152,8 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Boolean, String]
     # @api public
-    # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
-    def show_legend_key: (*bool | String args, **String | Integer | bool | nil kwargs) -> (bool | String)
+    # : (*(bool | String) args, **String | Numeric | bool | nil kwargs) -> (bool | String)
+    def show_legend_key: (*bool | String args, **String | Numeric | bool | nil kwargs) -> (bool | String)
 
     # Builder for a single series entry in block-style chart definitions.
     #
@@ -208,8 +208,8 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Object]
       # @api public
-      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-      def fill: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+      def fill: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
       # Configures line color/thickness for this series.
       #
@@ -217,8 +217,8 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Object]
       # @api public
-      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-      def line: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+      def line: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
       # Configures trendline for this series.
       #
@@ -226,8 +226,8 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Object]
       # @api public
-      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-      def trendline: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+      def trendline: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
       # Configures data labels for this series.
       #
@@ -235,8 +235,8 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Object]
       # @api public
-      # : (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
-      def data_labels: (*Hash[Symbol, String | Integer | bool | nil] | String args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+      def data_labels: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
       # Configures line smoothing for this series.
       #
@@ -244,8 +244,8 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Boolean, String]
       # @api public
-      # : (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
-      def smooth: (*bool | String args, **String | Integer | bool | nil kwargs) -> (bool | String)
+      # : (*(bool | String) args, **String | Numeric | bool | nil kwargs) -> (bool | String)
+      def smooth: (*bool | String args, **String | Numeric | bool | nil kwargs) -> (bool | String)
 
       # Configures 3D bar/column shape (e.g. "cylinder", "cone", "pyramid").
       #
@@ -253,8 +253,8 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [String]
       # @api public
-      # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
-      def shape: (*String args, **String | Integer | bool | nil kwargs) -> String
+      # : (*(String) args, **String | Numeric | bool | nil kwargs) -> String
+      def shape: (*String args, **String | Numeric | bool | nil kwargs) -> String
 
       # Configures individual series chart type override in combo charts.
       #
@@ -262,8 +262,8 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [String]
       # @api public
-      # : (*(String) args, **String | Integer | bool | nil kwargs) -> String
-      def type: (*String args, **String | Integer | bool | nil kwargs) -> String
+      # : (*(String) args, **String | Numeric | bool | nil kwargs) -> String
+      def type: (*String args, **String | Numeric | bool | nil kwargs) -> String
     end
   end
 end

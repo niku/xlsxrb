@@ -12,13 +12,13 @@ module Xlsxrb
     # @api public
     # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
     class Workbook
-      # @param sheets [Array<Elements::Worksheet>] Worksheets in the workbook.
+      # @param sheets [Array<Elements::Worksheet, StreamSheet>] Worksheets in the workbook.
       # @param shared_strings [Array<String>] Shared strings table.
       # @param styles [Hash] Styles definition.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
-      # : (?sheets: Array[Elements::Worksheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize: (?sheets: Array[Elements::Worksheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      # : (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
       # Iterate over worksheets.
       #
@@ -28,12 +28,12 @@ module Xlsxrb
       #   end
       #
       # @yield [sheet]
-      # @yieldparam sheet [Elements::Worksheet]
+      # @yieldparam sheet [Elements::Worksheet, StreamSheet]
       # @return [Enumerator, void]
-      # : () { (Elements::Worksheet) -> void } -> void
-      # : () -> Enumerator[Elements::Worksheet, void]
-      def each: () { (Elements::Worksheet) -> void } -> void
-              | () -> Enumerator[Elements::Worksheet, void]
+      # : () { (Elements::Worksheet | StreamSheet) -> void } -> void
+      # : () -> Enumerator[Elements::Worksheet | StreamSheet, void]
+      def each: () { (Elements::Worksheet | StreamSheet) -> void } -> void
+              | () -> Enumerator[Elements::Worksheet | StreamSheet, void]
 
       alias each_sheet each
 
@@ -49,11 +49,11 @@ module Xlsxrb
       #   wb.sheet(0)
       #   wb.sheet("Sales")
       #
-      # @param identifier [Integer, String] 0-based index or sheet name.
-      # @return [Elements::Worksheet, nil]
+      # @param identifier [Integer, String, untyped] 0-based index or sheet name.
+      # @return [Elements::Worksheet, StreamSheet, nil]
       # @api public
-      # : (?Integer | String identifier) -> Elements::Worksheet?
-      def sheet: (?Integer | String identifier) -> Elements::Worksheet?
+      # : (?Integer | String | untyped identifier) -> (Elements::Worksheet | StreamSheet)?
+      def sheet: (?Integer | String | untyped identifier) -> (Elements::Worksheet | StreamSheet)?
 
       alias [] sheet
 
@@ -85,8 +85,8 @@ module Xlsxrb
       # @yieldreturn [Elements::Worksheet] The modified worksheet.
       # @return [Elements::Workbook] A new Workbook instance.
       # @api public
-      # : (Integer | String identifier) { (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
-      def update_sheet: (Integer | String identifier) { (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
+      # : (Integer | String identifier) ?{ (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
+      def update_sheet: (Integer | String identifier) ?{ (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
 
       # Returns an Array of all worksheet names.
       #

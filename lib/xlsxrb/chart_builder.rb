@@ -80,7 +80,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments for legend styling/layout.
     # @return [Object] The configured legend property.
     # @api public
-    #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
     def legend(*args, **kwargs)
       @options[:legend] = kwargs.empty? ? args.first : kwargs
     end
@@ -91,7 +91,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments for plot area configuration.
     # @return [Object] The configured plot_area property.
     # @api public
-    #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
     def plot_area(*args, **kwargs)
       @options[:plot_area] = kwargs.empty? ? args.first : kwargs
     end
@@ -102,7 +102,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object] The configured chart_space property.
     # @api public
-    #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
     def chart_space(*args, **kwargs)
       @options[:chart_space] = kwargs.empty? ? args.first : kwargs
     end
@@ -113,7 +113,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object] The configured style property.
     # @api public
-    #: (*(Hash[Symbol, String | Integer | bool | nil] | String | Integer) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String | Integer)
+    #: (*(Hash[Symbol, String | Numeric | bool | nil] | String | Integer) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String | Integer)
     def style(*args, **kwargs)
       @options[:style] = kwargs.empty? ? args.first : kwargs
     end
@@ -124,7 +124,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object] The configured data_labels property.
     # @api public
-    #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
     def data_labels(*args, **kwargs)
       @options[:data_labels] = kwargs.empty? ? args.first : kwargs
     end
@@ -135,7 +135,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Boolean, String]
     # @api public
-    #: (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
+    #: (*(bool | String) args, **String | Numeric | bool | nil kwargs) -> (bool | String)
     def plot_visible_only(*args, **kwargs)
       @options[:plot_visible_only] = kwargs.empty? ? args.first : kwargs
     end
@@ -146,7 +146,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [String]
     # @api public
-    #: (*(String) args, **String | Integer | bool | nil kwargs) -> String
+    #: (*(String) args, **String | Numeric | bool | nil kwargs) -> String
     def display_blanks_as(*args, **kwargs)
       @options[:display_blanks_as] = kwargs.empty? ? args.first : kwargs
     end
@@ -157,7 +157,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object]
     # @api public
-    #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
     def view3d(*args, **kwargs)
       @options[:view3d] = kwargs.empty? ? args.first : kwargs
     end
@@ -168,7 +168,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object]
     # @api public
-    #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
     def category_axis(*args, **kwargs)
       @options[:category_axis] = kwargs.empty? ? args.first : kwargs
     end
@@ -179,7 +179,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Object]
     # @api public
-    #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+    #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
     def value_axis(*args, **kwargs)
       @options[:value_axis] = kwargs.empty? ? args.first : kwargs
     end
@@ -190,7 +190,7 @@ module Xlsxrb
     # @param kwargs [Hash] Keyword arguments.
     # @return [Boolean, String]
     # @api public
-    #: (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
+    #: (*(bool | String) args, **String | Numeric | bool | nil kwargs) -> (bool | String)
     def show_legend_key(*args, **kwargs)
       @options[:show_legend_key] = kwargs.empty? ? args.first : kwargs
     end
@@ -258,7 +258,7 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Object]
       # @api public
-      #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
       def fill(*args, **kwargs)
         @options[:fill] = kwargs.empty? ? args.first : kwargs
       end
@@ -269,7 +269,7 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Object]
       # @api public
-      #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
       def line(*args, **kwargs)
         @options[:line] = kwargs.empty? ? args.first : kwargs
       end
@@ -280,7 +280,7 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Object]
       # @api public
-      #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
       def trendline(*args, **kwargs)
         @options[:trendline] = kwargs.empty? ? args.first : kwargs
       end
@@ -291,7 +291,7 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Object]
       # @api public
-      #: (*(Hash[Symbol, String | Integer | bool | nil] | String) args, **String | Integer | bool | nil kwargs) -> (Hash[Symbol, String | Integer | bool | nil] | String)
+      #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
       def data_labels(*args, **kwargs)
         @options[:data_labels] = kwargs.empty? ? args.first : kwargs
       end
@@ -302,7 +302,7 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [Boolean, String]
       # @api public
-      #: (*(bool | String) args, **String | Integer | bool | nil kwargs) -> (bool | String)
+      #: (*(bool | String) args, **String | Numeric | bool | nil kwargs) -> (bool | String)
       def smooth(*args, **kwargs)
         @options[:smooth] = kwargs.empty? ? args.first : kwargs
       end
@@ -313,7 +313,7 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [String]
       # @api public
-      #: (*(String) args, **String | Integer | bool | nil kwargs) -> String
+      #: (*(String) args, **String | Numeric | bool | nil kwargs) -> String
       def shape(*args, **kwargs)
         @options[:shape] = kwargs.empty? ? args.first : kwargs
       end
@@ -324,7 +324,7 @@ module Xlsxrb
       # @param kwargs [Hash] Keyword arguments.
       # @return [String]
       # @api public
-      #: (*(String) args, **String | Integer | bool | nil kwargs) -> String
+      #: (*(String) args, **String | Numeric | bool | nil kwargs) -> String
       def type(*args, **kwargs)
         @options[:type] = kwargs.empty? ? args.first : kwargs
       end

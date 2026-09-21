@@ -697,7 +697,9 @@ class ElementsTest < Test::Unit::TestCase
     assert_raises(ArgumentError) { wb.update_sheet("NonExistent") { |s| s } }
 
     # Invalid return type from block
-    assert_raises(TypeError) { wb.update_sheet("OldName") { "not_a_worksheet" } }
+    expected_errors = [TypeError]
+    expected_errors << RBS::Test::Tester::TypeError if defined?(RBS::Test::Tester::TypeError)
+    assert_raises(*expected_errors) { wb.update_sheet("OldName") { "not_a_worksheet" } }
   end
 
   # --- Formula helper ---

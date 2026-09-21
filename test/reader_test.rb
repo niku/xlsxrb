@@ -2739,7 +2739,9 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_workbook_protection(lock_structure: true)
     writer.set_cell("A1", "test")
 
-    xlsx_path = Tempfile.new(["xlsxrb-test", ".xlsx"]).path
+    xlsx_tempfile = Tempfile.new(["xlsxrb-test", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
     writer.write(xlsx_path)
 
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
