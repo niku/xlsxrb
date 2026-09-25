@@ -7,6 +7,7 @@
 ### Changed
 - True O(1) memory streaming read via chunked entry inflation in `ZipReader` and `WorksheetParser`, preventing unbounded memory retention on large worksheets.
 - Extracted pure DSL normalizers (`Xlsxrb::DslHelpers`) and fast XML unescape utilities (`Ooxml::XmlBuilder.unescape`).
+- Constrained `rexml` runtime dependency to `~> 3.0` and excluded documentation, build assets, and developer configurations from the gem package.
 
 ### Removed
 - OpenTelemetry runtime dependency and tracer spans.
