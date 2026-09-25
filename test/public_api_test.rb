@@ -717,6 +717,40 @@ class PublicApiTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  test "Xlsxrb.modify appends new strings to sharedStrings.xml preserving existing entries" do
+    tmp = Tempfile.new(["modify_sst", ".xlsx"])
+    begin
+      wb = Xlsxrb.build do |w|
+        w.sheet("Data") do |s|
+          s.row(%w[Existing1 Existing2])
+        end
+      end
+      Xlsxrb.write(tmp.path, wb)
+
+      # Modify with a brand new string value
+      Xlsxrb.modify(tmp.path) do |doc|
+        doc.update_sheet("Data") do |s|
+          s.update_cell("C1", value: "BrandNewString & Co")
+        end
+      end
+
+      reader = Xlsxrb::Ooxml::ZipReader.open(tmp.path)
+      sst_xml = reader.read_entry("xl/sharedStrings.xml")
+      parsed_sst = Xlsxrb::Ooxml::SharedStringsParser.parse(sst_xml)
+      assert_includes(parsed_sst, "Existing1")
+      assert_includes(parsed_sst, "Existing2")
+      assert_includes(parsed_sst, "BrandNewString & Co")
+
+      result = Xlsxrb.read(tmp.path).load
+      assert_equal("Existing1", result.sheet(0).cell_value("A1"))
+      assert_equal("Existing2", result.sheet(0).cell_value("B1"))
+      assert_equal("BrandNewString & Co", result.sheet(0).cell_value("C1"))
+    ensure
+      tmp.close!
+    end
+  end
+
   # 1. Workbook#update_sheet
   test "Workbook#update_sheet creates a new workbook with the updated sheet" do
     wb = Xlsxrb::Elements::Workbook.new(

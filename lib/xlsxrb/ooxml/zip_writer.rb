@@ -109,7 +109,33 @@ module Xlsxrb
           compressed_size: @entry_compressed_size,
           uncompressed_size: @entry_uncompressed_size,
           offset: @entry_offset,
-          gp_flag: @entry_gp_flag
+          gp_flag: @entry_gp_flag,
+          method: 8
+        }
+      end
+
+      # Copies an entry from an existing archive IO without decompressing or recompressing.
+      #: (String path, untyped source_io, data_offset: Integer, compressed_size: Integer, uncompressed_size: Integer, crc32: Integer, ?method: Integer) -> void
+      def copy_raw_entry(path, source_io, data_offset:, compressed_size:, uncompressed_size:, crc32:, method: 8)
+        raise "ZipWriter is closed" if @closed
+
+        offset = @bytes_written
+        write_local_header(path, crc32, compressed_size, uncompressed_size, gp_flag: 0, method: method)
+
+        if compressed_size.positive?
+          source_io.seek(data_offset, IO::SEEK_SET)
+          IO.copy_stream(source_io, @io, compressed_size)
+          @bytes_written += compressed_size
+        end
+
+        @entries << {
+          path: path,
+          crc32: crc32,
+          compressed_size: compressed_size,
+          uncompressed_size: uncompressed_size,
+          offset: offset,
+          gp_flag: 0,
+          method: method
         }
       end
 
@@ -159,7 +185,8 @@ module Xlsxrb
           compressed_size: compressed.bytesize,
           uncompressed_size: content_bytes.bytesize,
           offset: offset,
-          gp_flag: 0
+          gp_flag: 0,
+          method: 8
         }
       end
 
@@ -172,13 +199,13 @@ module Xlsxrb
         end
       end
 
-      def write_local_header(path, crc, compressed_size, uncompressed_size, gp_flag: 0, count_bytes: true)
+      def write_local_header(path, crc, compressed_size, uncompressed_size, gp_flag: 0, count_bytes: true, method: 8)
         name_bytes = path.encode("UTF-8").b
         header = [
           0x04034B50,        # local file header signature
           20,                # version needed (2.0)
           gp_flag,           # general purpose bit flag (0x0008 if data descriptor follows)
-          8,                 # compression method (deflate)
+          method,            # compression method (0 = store, 8 = deflate)
           0,                 # last mod file time
           33,                # last mod file date
           crc,
@@ -206,7 +233,7 @@ module Xlsxrb
             20,                # version made by
             20,                # version needed
             entry[:gp_flag] || 0, # general purpose bit flag
-            8,                 # compression method
+            entry[:method] || 8, # compression method
             0,                 # last mod file time
             33,                # last mod file date
             entry[:crc32],

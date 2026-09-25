@@ -7,6 +7,7 @@ require "time"
 require "openssl"
 require "securerandom"
 require "tempfile"
+require "fileutils"
 begin
   require "bigdecimal"
 rescue LoadError
@@ -155,42 +156,8 @@ module Xlsxrb
   #: (untyped source, ?password: String?) { (StreamSheet) -> void } -> void
   #: (untyped source, ?password: String?) -> Elements::Workbook
   def self.read(source, password: nil, &)
-    if source.is_a?(String)
-      if source.start_with?("PK\x03\x04") || source.include?("\x00") || Ooxml::Cfb::Reader.cfb?(source)
-        if Ooxml::Cfb::Reader.cfb?(source)
-          decrypted_zip = Ooxml::Crypto.decrypt(source, password)
-          source = StringIO.new(decrypted_zip)
-        else
-          source = StringIO.new(source)
-        end
-      elsif File.file?(source)
-        first_bytes = begin
-          File.binread(source, 8)
-        rescue StandardError
-          nil
-        end
-        if Ooxml::Cfb::Reader.cfb?(first_bytes)
-          encrypted_data = File.binread(source)
-          decrypted_zip = Ooxml::Crypto.decrypt(encrypted_data, password)
-          source = StringIO.new(decrypted_zip)
-        end
-      end
-    elsif source.respond_to?(:read) && source.respond_to?(:pos) && source.respond_to?(:seek)
-      begin
-        cur_pos = source.pos
-        first_bytes = source.read(8)
-        source.seek(cur_pos)
-        if Ooxml::Cfb::Reader.cfb?(first_bytes)
-          full_data = source.read
-          decrypted_zip = Ooxml::Crypto.decrypt(full_data, password)
-          source = StringIO.new(decrypted_zip)
-        end
-      rescue StandardError
-        # Fall through to standard reader if seeking fails
-      end
-    end
-
-    zip_reader = Ooxml::ZipReader.open(source)
+    prepared_source = prepare_source_io(source, password)
+    zip_reader = Ooxml::ZipReader.open(prepared_source)
     begin
       shared_strings_xml = zip_reader.read_entry("xl/sharedStrings.xml")
       shared_strings = Ooxml::SharedStringsParser.parse(shared_strings_xml)
@@ -428,12 +395,128 @@ module Xlsxrb
     raise Error, "source is required" if source.nil?
     raise Error, "block is required" unless block_given?
 
-    workbook = read(source, password: password).load
-    result_workbook = yield workbook
-    result_workbook = workbook unless result_workbook.is_a?(Elements::Workbook)
+    prepared_source = prepare_source_io(source, password)
+    in_place = target.nil? || target == source || (source.is_a?(String) && target.is_a?(String) && File.file?(target) && File.identical?(source, target))
+    temp_target_path = nil
 
-    write_target = target || source
-    write(write_target, result_workbook, password: password)
+    begin
+      write_dest = if in_place && source.is_a?(String)
+                     temp_target = Tempfile.new(["xlsxrb_mod", ".xlsx"], File.dirname(source))
+                     temp_target_path = temp_target.path
+                     temp_target.close
+                     temp_target_path
+                   elsif in_place && source.is_a?(StringIO)
+                     StringIO.new
+                   else
+                     target || source
+                   end
+
+      replaced_entries = {}
+      structural_change = false
+
+      Ooxml::ZipReader.open(prepared_source) do |zip_reader|
+        shared_strings_xml = zip_reader.read_entry("xl/sharedStrings.xml")
+        shared_strings = shared_strings_xml ? Ooxml::SharedStringsParser.parse(shared_strings_xml) : []
+        sst_index = {}
+        shared_strings.each_with_index { |s, idx| sst_index[s] ||= idx }
+        initial_sst_size = shared_strings.size
+
+        workbook_xml = zip_reader.read_entry("xl/workbook.xml")
+        workbook_sheets = workbook_xml ? Ooxml::WorkbookParser.parse(workbook_xml) : []
+
+        rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
+        rels = rels_xml ? Ooxml::RelationshipsParser.parse(rels_xml) : {}
+
+        styles_xml = zip_reader.read_entry("xl/styles.xml")
+        styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
+
+        sheet_entry_map = {}
+        loaded_sheets = workbook_sheets.map do |sheet_info|
+          target_path = rels[sheet_info[:r_id]]
+          next nil unless target_path
+
+          sheet_path = target_path.start_with?("/") ? target_path.delete_prefix("/") : "xl/#{target_path}"
+          next nil unless zip_reader.entry?(sheet_path)
+
+          sheet_entry_map[sheet_info[:name]] = sheet_path
+          sheet_xml = zip_reader.read_entry(sheet_path) || ""
+          build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles)
+        end.compact
+
+        original_workbook = Elements::Workbook.new(
+          sheets: loaded_sheets,
+          shared_strings: shared_strings,
+          styles: styles
+        )
+        mutable_shared_strings = shared_strings.dup
+
+        result_workbook = yield original_workbook
+        result_workbook = original_workbook unless result_workbook.is_a?(Elements::Workbook)
+
+        structural_change = result_workbook.sheets.size != original_workbook.sheets.size ||
+                            result_workbook.sheets.map(&:name) != original_workbook.sheets.map(&:name)
+
+        if structural_change
+          write_target = target || source
+          write(write_target, result_workbook, password: password)
+        else
+          result_workbook.sheets.each_with_index do |new_sheet, idx|
+            orig_sheet = original_workbook.sheets[idx]
+            next if new_sheet.equal?(orig_sheet) || new_sheet == orig_sheet
+
+            entry_name = sheet_entry_map[new_sheet.name] || "xl/worksheets/sheet#{idx + 1}.xml"
+            orig_sheet_xml = zip_reader.read_entry(entry_name) || ""
+
+            new_sheet_data = serialize_sheet_data_xml(
+              new_sheet.rows,
+              mutable_shared_strings,
+              sst_index,
+              use_sst: !shared_strings_xml.nil?
+            )
+            updated_sheet_xml = replace_sheet_data(orig_sheet_xml, new_sheet_data)
+            updated_sheet_xml = update_dimension(updated_sheet_xml, new_sheet.rows)
+            replaced_entries[entry_name] = updated_sheet_xml
+          end
+
+          if mutable_shared_strings.size > initial_sst_size && shared_strings_xml
+            new_strings = mutable_shared_strings[initial_sst_size..]
+            replaced_entries["xl/sharedStrings.xml"] = append_to_shared_strings_xml(
+              shared_strings_xml,
+              new_strings
+            )
+          end
+
+          perform_modify_write(
+            write_dest,
+            zip_reader,
+            replaced_entries,
+            password: password
+          )
+        end
+      end
+
+      if in_place && !structural_change
+        if source.is_a?(String) && temp_target_path
+          FileUtils.mv(temp_target_path, source)
+          temp_target_path = nil
+        elsif source.is_a?(StringIO) && write_dest.is_a?(StringIO)
+          source.string = write_dest.string
+        elsif source.respond_to?(:write) && source.respond_to?(:seek) && write_dest.is_a?(StringIO)
+          source.seek(0)
+          source.write(write_dest.string)
+          source.truncate(source.pos) if source.respond_to?(:truncate)
+          source.rewind
+        end
+      end
+    ensure
+      if temp_target_path && File.exist?(temp_target_path)
+        begin
+          File.unlink(temp_target_path)
+        rescue SystemCallError
+          nil
+        end
+      end
+    end
   end
 
   # Builds an in-memory {Elements::Workbook} using a declarative DSL.
@@ -607,6 +690,219 @@ module Xlsxrb
       attrs[:outline_level] = row.outline_level if row.outline_level
       attrs
       # simplecov:enable
+    end
+
+    #: (untyped source, String? password) -> untyped
+    def prepare_source_io(source, password)
+      if source.is_a?(String)
+        if source.start_with?("PK\x03\x04") || source.include?("\x00") || Ooxml::Cfb::Reader.cfb?(source)
+          if Ooxml::Cfb::Reader.cfb?(source)
+            decrypted_zip = Ooxml::Crypto.decrypt(source, password)
+            StringIO.new(decrypted_zip)
+          else
+            StringIO.new(source)
+          end
+        elsif File.file?(source)
+          first_bytes = begin
+            File.binread(source, 8)
+          rescue StandardError
+            nil
+          end
+          if Ooxml::Cfb::Reader.cfb?(first_bytes)
+            encrypted_data = File.binread(source)
+            decrypted_zip = Ooxml::Crypto.decrypt(encrypted_data, password)
+            StringIO.new(decrypted_zip)
+          else
+            source
+          end
+        else
+          source
+        end
+      elsif source.respond_to?(:read) && source.respond_to?(:pos) && source.respond_to?(:seek)
+        begin
+          cur_pos = source.pos
+          first_bytes = source.read(8)
+          source.seek(cur_pos)
+          if Ooxml::Cfb::Reader.cfb?(first_bytes)
+            full_data = source.read
+            decrypted_zip = Ooxml::Crypto.decrypt(full_data, password)
+            StringIO.new(decrypted_zip)
+          else
+            source
+          end
+        rescue StandardError
+          source
+        end
+      else
+        source
+      end
+    end
+
+    #: (untyped dest, Ooxml::ZipReader zip_reader, Hash[String, String] replaced_entries, ?password: String?) -> void
+    def perform_modify_write(dest, zip_reader, replaced_entries, password: nil)
+      write_zip = lambda do |zip_out|
+        Ooxml::ZipWriter.open(zip_out) do |zip_writer|
+          zip_reader.entry_names.each do |name|
+            if replaced_entries.key?(name)
+              zip_writer.add_entry(name, replaced_entries[name])
+            else
+              zip_reader.copy_to_writer(name, zip_writer)
+            end
+          end
+          replaced_entries.each do |name, content|
+            next if zip_reader.entry?(name)
+
+            zip_writer.add_entry(name, content)
+          end
+        end
+      end
+
+      if password && !password.empty?
+        buf = StringIO.new
+        buf.binmode
+        write_zip.call(buf)
+        encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password)
+        if dest.is_a?(String)
+          File.binwrite(dest, encrypted_bytes)
+        elsif dest.respond_to?(:write)
+          dest.write(encrypted_bytes)
+        end
+      else
+        write_zip.call(dest)
+      end
+    end
+
+    #: (String sst_xml, Array[untyped] new_strings) -> String
+    def append_to_shared_strings_xml(sst_xml, new_strings)
+      return sst_xml if new_strings.nil? || new_strings.empty?
+
+      new_si_tags = +""
+      new_strings.each do |str|
+        s = str.to_s
+        needs_space = s.start_with?(" ", "\t", "\n") || s.end_with?(" ", "\t", "\n")
+        space_attr = needs_space ? ' xml:space="preserve"' : ""
+        new_si_tags << "<si><t#{space_attr}>#{Ooxml::XmlBuilder.escape(s)}</t></si>"
+      end
+
+      sst_close = sst_xml.rindex("</sst>")
+      updated_xml = if sst_close
+                      prefix = sst_xml[0...sst_close]
+                      suffix = sst_xml[sst_close..]
+                      "#{prefix}#{new_si_tags}#{suffix}"
+                    else
+                      sst_start = sst_xml.index("<sst")
+                      return sst_xml unless sst_start
+
+                      sst_open_end = sst_xml.index("/>", sst_start)
+                      return sst_xml unless sst_open_end
+
+                      prefix = sst_xml[0...sst_open_end]
+                      suffix = sst_xml[(sst_open_end + 2)..]
+                      "#{prefix}>#{new_si_tags}</sst#{suffix}"
+                    end
+
+      updated_xml.sub(/<sst\b([^>]*)>/) do
+        attrs = Regexp.last_match(1)
+        if attrs =~ /\bcount="(\d+)"/
+          old_count = Regexp.last_match(1).to_i
+          new_count = old_count + new_strings.size
+          attrs = attrs.sub(/\bcount="\d+"/, "count=\"#{new_count}\"")
+        else
+          attrs = "#{attrs} count=\"#{new_strings.size}\""
+        end
+        if attrs =~ /\buniqueCount="(\d+)"/
+          old_ucount = Regexp.last_match(1).to_i
+          new_ucount = old_ucount + new_strings.size
+          attrs = attrs.sub(/\buniqueCount="\d+"/, "uniqueCount=\"#{new_ucount}\"")
+        else
+          attrs = "#{attrs} uniqueCount=\"#{new_strings.size}\""
+        end
+        "<sst#{attrs}>"
+      end
+    end
+
+    #: (String sheet_xml, String new_sheet_data_xml) -> String
+    def replace_sheet_data(sheet_xml, new_sheet_data_xml)
+      sheet_data_start = sheet_xml.index("<sheetData")
+      return sheet_xml unless sheet_data_start
+
+      open_tag_end = sheet_xml.index(">", sheet_data_start)
+      return sheet_xml unless open_tag_end
+
+      prefix = sheet_xml[0...sheet_data_start]
+      suffix = if sheet_xml.getbyte(open_tag_end - 1) == 47
+                 sheet_xml[(open_tag_end + 1)..]
+               else
+                 close_tag_start = sheet_xml.index("</sheetData>", open_tag_end)
+                 return sheet_xml unless close_tag_start
+
+                 sheet_xml[(close_tag_start + 12)..]
+               end
+
+      "#{prefix}#{new_sheet_data_xml}#{suffix}"
+    end
+
+    #: (String sheet_xml, Array[Elements::Row] rows) -> String
+    def update_dimension(sheet_xml, rows)
+      return sheet_xml if rows.empty?
+
+      min_row = rows.first.index
+      max_row = rows.last.index
+      min_col = rows.map { |r| r.cells.first&.column_index }.compact.min || 0
+      max_col = rows.map { |r| r.cells.last&.column_index }.compact.max || 0
+      min_col_letter = Elements::Cell.column_letter(min_col)
+      max_col_letter = Elements::Cell.column_letter(max_col)
+      dim_ref = if min_row == max_row && min_col == max_col
+                  "#{min_col_letter}#{min_row + 1}"
+                else
+                  "#{min_col_letter}#{min_row + 1}:#{max_col_letter}#{max_row + 1}"
+                end
+
+      sheet_xml.sub(/<dimension\b([^>]*)\bref="[^"]*"/, "<dimension\\1ref=\"#{dim_ref}\"")
+    end
+
+    #: (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool) -> String
+    def serialize_sheet_data_xml(rows, shared_strings, sst_index, use_sst: true)
+      io = StringIO.new
+      io.write("<sheetData>")
+      ws = Ooxml::WorksheetWriter.new(io)
+      ws.instance_variable_set(:@started, true)
+
+      rows.each do |row|
+        attrs = {}
+        attrs[:height] = row.height if row.height
+        attrs[:hidden] = true if row.hidden
+        attrs[:custom_height] = true if row.custom_height
+        attrs[:outline_level] = row.outline_level if row.outline_level
+
+        if use_sst
+          row.cells.each do |cell|
+            val = cell.value
+            next unless val.is_a?(String) || val.is_a?(Elements::RichText)
+            next if val.is_a?(String) && val.start_with?("=")
+            next if sst_index.key?(val)
+
+            shared_strings << val
+            sst_index[val] = shared_strings.size - 1
+          end
+        end
+
+        ws.write_row(
+          row.index,
+          row.cells,
+          attrs: attrs,
+          unmapped: row.unmapped_data || [],
+          sst_index: use_sst ? sst_index : nil
+        )
+      end
+
+      buf = ws.instance_variable_get(:@row_buffer)
+      if buf && !buf.empty?
+        io.write(buf)
+        buf.clear
+      end
+      io.write("</sheetData>")
+      io.string
     end
   end
 

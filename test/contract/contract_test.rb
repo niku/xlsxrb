@@ -1870,4 +1870,61 @@ class ContractTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  # =====================================================
+  # Template Modification CONTRACT tests (Non-destructive)
+  # =====================================================
+
+  def test_modify_preserves_untouched_media_and_binaries_verbatim
+    source_file = Tempfile.new(["template_source", ".xlsx"])
+    target_file = Tempfile.new(["template_target", ".xlsx"])
+
+    media_bytes = MINIMAL_PNG
+    vba_bytes = "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1VBA_PROJECT_BINARY_PAYLOAD".b
+    drawing_xml = '<?xml version="1.0" encoding="UTF-8"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"/>'
+
+    wb = Xlsxrb.build do |w|
+      w.sheet("Sheet1") do |s|
+        s.row(["Original Title", 100])
+      end
+      w.sheet("Sheet2") do |s|
+        s.row(["Untouched Sheet Data", 200])
+      end
+    end
+
+    buf = StringIO.new
+    Xlsxrb.write(buf, wb)
+    reader = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(buf.string))
+
+    Xlsxrb::Ooxml::ZipWriter.open(source_file.path) do |w|
+      reader.entry_names.each do |name|
+        reader.copy_to_writer(name, w)
+      end
+      w.add_binary_entry("xl/media/image1.png", media_bytes)
+      w.add_binary_entry("xl/vbaProject.bin", vba_bytes)
+      w.add_entry("xl/drawings/drawing1.xml", drawing_xml)
+    end
+
+    Xlsxrb.modify(source_file.path, target_file.path) do |workbook|
+      workbook.update_sheet("Sheet1") do |sheet|
+        sheet.update_cell("A1", value: "Updated Title")
+      end
+    end
+
+    target_reader = Xlsxrb::Ooxml::ZipReader.open(target_file.path)
+    entries = target_reader.read_all
+
+    assert_equal(media_bytes, entries["xl/media/image1.png"].b, "xl/media/image1.png should be identical")
+    assert_equal(vba_bytes, entries["xl/vbaProject.bin"].b, "xl/vbaProject.bin should be identical")
+    assert_equal(drawing_xml, entries["xl/drawings/drawing1.xml"], "xl/drawings/drawing1.xml should be identical")
+
+    result_wb = Xlsxrb.read(target_file.path).load
+    assert_equal("Updated Title", result_wb.sheet("Sheet1").cell_value("A1"))
+    assert_equal(100, result_wb.sheet("Sheet1").cell_value("B1"))
+    assert_equal("Untouched Sheet Data", result_wb.sheet("Sheet2").cell_value("A1"))
+    assert_equal(200, result_wb.sheet("Sheet2").cell_value("B1"))
+  ensure
+    source_file.close!
+    target_file.close!
+  end
 end

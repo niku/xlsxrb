@@ -110,6 +110,34 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("Hello World!", reader.read_entry("stream.txt"))
   end
 
+  test "zip_writer copy_raw_entry and zip_reader copy_to_writer preserves payload and metadata" do
+    io1 = StringIO.new
+    binary_data = "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR".b * 20
+    Xlsxrb::Ooxml::ZipWriter.open(io1) do |w|
+      w.add_entry("text.txt", "Original text content")
+      w.add_binary_entry("image.png", binary_data)
+    end
+
+    reader1 = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(io1.string))
+    io2 = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io2) do |w|
+      reader1.copy_to_writer("text.txt", w)
+      reader1.copy_to_writer("image.png", w)
+    end
+
+    reader2 = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(io2.string))
+    assert_equal("Original text content", reader2.read_entry("text.txt"))
+    assert_equal(binary_data, reader2.read_entry("image.png").b)
+
+    # Validate catalog metadata parity
+    e1 = reader1.entry_catalog["image.png"]
+    e2 = reader2.entry_catalog["image.png"]
+    assert_equal(e1.crc32, e2.crc32)
+    assert_equal(e1.compressed_size, e2.compressed_size)
+    assert_equal(e1.uncompressed_size, e2.uncompressed_size)
+    assert_equal(e1.method, e2.method)
+  end
+
   # --- XmlBuilder ---
 
   test "xml_builder builds XML with tags and attributes" do

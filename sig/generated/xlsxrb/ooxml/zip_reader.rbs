@@ -103,6 +103,10 @@ module Xlsxrb
       # : () -> Array[String]
       def entry_names: () -> Array[String]
 
+      # Copies the specified entry to a ZipWriter directly without decompression.
+      # : (String entry_name, ZipWriter writer, ?target_path: String?) -> void
+      def copy_to_writer: (String entry_name, ZipWriter writer, ?target_path: String?) -> void
+
       # Closes the archive reader and cleans up any temporary resources.
       # : () -> void
       def close: () -> void

@@ -23,6 +23,10 @@ module Xlsxrb
 
       def finish_entry: () -> untyped
 
+      # Copies an entry from an existing archive IO without decompressing or recompressing.
+      # : (String path, untyped source_io, data_offset: Integer, compressed_size: Integer, uncompressed_size: Integer, crc32: Integer, ?method: Integer) -> void
+      def copy_raw_entry: (String path, untyped source_io, data_offset: Integer, compressed_size: Integer, uncompressed_size: Integer, crc32: Integer, ?method: Integer) -> void
+
       def close: () -> untyped
 
       private
@@ -35,7 +39,7 @@ module Xlsxrb
 
       def deflate: (untyped content) -> untyped
 
-      def write_local_header: (untyped path, untyped crc, untyped compressed_size, untyped uncompressed_size, ?gp_flag: untyped, ?count_bytes: untyped) -> untyped
+      def write_local_header: (untyped path, untyped crc, untyped compressed_size, untyped uncompressed_size, ?gp_flag: untyped, ?count_bytes: untyped, ?method: untyped) -> untyped
 
       def write_central_directory: () -> untyped
 

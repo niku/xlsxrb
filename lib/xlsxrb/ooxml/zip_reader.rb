@@ -287,6 +287,29 @@ module Xlsxrb
         catalog.keys
       end
 
+      # Copies the specified entry to a ZipWriter directly without decompression.
+      #: (String entry_name, ZipWriter writer, ?target_path: String?) -> void
+      def copy_to_writer(entry_name, writer, target_path: nil)
+        entry = catalog[entry_name]
+        raise ArgumentError, "Entry not found in archive: #{entry_name}" unless entry
+
+        if entry.compressed_size.zero? && entry.uncompressed_size.positive?
+          data = read_entry(entry_name)
+          writer.add_binary_entry(target_path || entry_name, data || "")
+          return
+        end
+
+        writer.copy_raw_entry(
+          target_path || entry_name,
+          io,
+          data_offset: entry.data_offset,
+          compressed_size: entry.compressed_size,
+          uncompressed_size: entry.uncompressed_size,
+          crc32: entry.crc32,
+          method: entry.method
+        )
+      end
+
       # Closes the archive reader and cleans up any temporary resources.
       #: () -> void
       def close

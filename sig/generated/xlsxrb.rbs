@@ -225,6 +225,24 @@ module Xlsxrb
   # : (Elements::Row row) -> Hash[Symbol, untyped]
   private def self.build_row_attrs: (Elements::Row row) -> Hash[Symbol, untyped]
 
+  # : (untyped source, String? password) -> untyped
+  private def self.prepare_source_io: (untyped source, String? password) -> untyped
+
+  # : (untyped dest, Ooxml::ZipReader zip_reader, Hash[String, String] replaced_entries, ?password: String?) -> void
+  private def self.perform_modify_write: (untyped dest, Ooxml::ZipReader zip_reader, Hash[String, String] replaced_entries, ?password: String?) -> void
+
+  # : (String sst_xml, Array[untyped] new_strings) -> String
+  private def self.append_to_shared_strings_xml: (String sst_xml, Array[untyped] new_strings) -> String
+
+  # : (String sheet_xml, String new_sheet_data_xml) -> String
+  private def self.replace_sheet_data: (String sheet_xml, String new_sheet_data_xml) -> String
+
+  # : (String sheet_xml, Array[Elements::Row] rows) -> String
+  private def self.update_dimension: (String sheet_xml, Array[Elements::Row] rows) -> String
+
+  # : (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool) -> String
+  private def self.serialize_sheet_data_xml: (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool) -> String
+
   # Builds a raw cell hash from a value for streaming writes.
   #
   # @param row_index [Integer] 0-based row index.
