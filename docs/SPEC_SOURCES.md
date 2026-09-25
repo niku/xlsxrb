@@ -3,8 +3,8 @@
 This document defines the specification reference policy for `xlsxrb`.
 
 ## Canonical Specification (Normative)
-The primary reference for this library is **ECMA-376 (Office Open XML File Formats)**.
-Specifically, `xlsxrb` targets the **Transitional** version of the specification (Part 4) to ensure maximum compatibility with existing applications such as Microsoft Excel, LibreOffice, and Google Sheets.
+The primary reference for this library is ECMA-376 (Office Open XML File Formats).
+Specifically, `xlsxrb` targets the Transitional version of the specification (Part 4) to ensure maximum compatibility with existing applications such as Microsoft Excel, LibreOffice, and Google Sheets.
 
 Local copies of the ECMA-376 specifications are located in the `vendor/docs/` directory:
 - [Part 1: Fundamentals And Markup Language Reference](file:///workspaces/xlsxrb/vendor/docs/ECMA-376-Part1/Ecma%20Office%20Open%20XML%20Part%201%20-%20Fundamentals%20And%20Markup%20Language%20Reference.pdf)
@@ -15,18 +15,18 @@ Local copies of the ECMA-376 specifications are located in the `vendor/docs/` di
 ## Supplementary Specifications (Excel Real-world Behavior)
 To address gaps between the official ECMA standard and actual implementations in Microsoft Excel, the following Microsoft Open Specifications are used. Note that these files are not bundled in the repository to avoid licensing/redistribution issues; instead, they are referenced via online links and versioned here:
 
-1. **[[MS-XLSX]: Excel Extensions to OOXML SpreadsheetML Structure](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-xlsx/)**
-   - **Role:** Explains Excel-specific extensions, default attributes, and schema extensions.
-   - **Referenced Version:** July 2024 / Version 12.0 (or current release).
-2. **[[MS-OI29500]: Office Implementation Information for ISO/IEC 29500](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oi29500/)**
-   - **Role:** Identifies how Excel actually reads/writes files, including deviations and compatibility behaviors.
-   - **Referenced Version:** July 2024 / Version 12.0 (or current release).
-3. **[[MS-OFFCRYPTO]: Office Document Cryptography Structure](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-offcrypto/)**
-   - **Role:** Provides details on encryption, passwords, and hashing algorithms used for document/sheet protection (Agile Encryption and Standard Encryption).
-   - **Referenced Version:** July 2024 / Version 12.0 (or current release).
-4. **[[MS-CFB]: Compound File Binary File Format](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/)**
-   - **Role:** Container format (OLE structured storage) wrapping encrypted Office documents (`EncryptionInfo` and `EncryptedPackage` streams).
-   - **Referenced Version:** July 2024 / Version 14.0 (or current release).
+1. [[MS-XLSX]: Excel Extensions to OOXML SpreadsheetML Structure](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-xlsx/)
+   - Role: Explains Excel-specific extensions, default attributes, and schema extensions.
+   - Referenced Version: July 2024 / Version 12.0 (or current release).
+2. [[MS-OI29500]: Office Implementation Information for ISO/IEC 29500](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oi29500/)
+   - Role: Identifies how Excel actually reads/writes files, including deviations and compatibility behaviors.
+   - Referenced Version: July 2024 / Version 12.0 (or current release).
+3. [[MS-OFFCRYPTO]: Office Document Cryptography Structure](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-offcrypto/)
+   - Role: Provides details on encryption, passwords, and hashing algorithms used for document/sheet protection (Agile Encryption and Standard Encryption).
+   - Referenced Version: July 2024 / Version 12.0 (or current release).
+4. [[MS-CFB]: Compound File Binary File Format](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/)
+   - Role: Container format (OLE structured storage) wrapping encrypted Office documents (`EncryptionInfo` and `EncryptedPackage` streams).
+   - Referenced Version: July 2024 / Version 14.0 (or current release).
 
 ### ISO/IEC 29500 Note
 ISO/IEC 29500 is contents-wise equivalent to ECMA-376. However, ISO/IEC 29500 requires paid purchase in general, whereas ECMA-376 is freely available. Therefore, we primarily cite ECMA-376 sections.

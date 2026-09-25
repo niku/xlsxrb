@@ -4,7 +4,7 @@ Xlsxrb uses a multi-layered architecture to separate low-level OpenXML specifica
 
 ## Dependency Constraints
 
-Xlsxrb uses **only** the Ruby standard library and Bundled Gems:
+Xlsxrb uses only the Ruby standard library and bundled gems:
 
 | Library | Purpose |
 | :--- | :--- |
@@ -14,30 +14,30 @@ Xlsxrb uses **only** the Ruby standard library and Bundled Gems:
 | `date` (stdlib) | Excel serial-number ↔ `Date` / `Time` conversion |
 | `openssl`, `securerandom` (stdlib) | Password hashing for sheet/workbook protection |
 
-**No third-party gems** (e.g. Nokogiri, rubyzip) are permitted as runtime dependencies.
+No third-party gems (e.g. Nokogiri, rubyzip) are permitted as runtime dependencies.
 
 ---
 
 ## Coding Policies
 
 ### 🚫 The `method_missing` Policy
-As a strict rule, **we do not accept dynamic method definitions using `method_missing`** anywhere in the codebase. All user-facing API methods and internal delegations must be explicitly defined in the code. This ensures:
-1. **Type Safety & Static Analysis**: RBS and Steep can completely validate arguments and structures.
-2. **Developer Experience**: IDE autocompletion, jump-to-definition, and YARD documentation work perfectly.
-3. **Traceability**: If a method exists, you can `grep` for it.
+All user-facing API methods and internal delegations must be explicitly defined in the code without dynamic method definitions using `method_missing`. This ensures:
+1. Type Safety & Static Analysis: RBS and Steep can completely validate arguments and structures.
+2. Developer Experience: IDE autocompletion, jump-to-definition, and YARD documentation work cleanly.
+3. Traceability: If a method exists, you can `grep` for it.
 
 Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mappings (e.g. `ChartBuilder`, `SeriesBuilder`) would traditionally benefit from dynamic delegation to avoid boilerplate, we explicitly generate and write out those delegations in the source code.
 
-### 1. **`Xlsxrb` Module is the ONLY Entrypoint:**
-   The `Xlsxrb` module provides the top-level methods: `read`, `write`, `build`, and `modify`. Users should **never** instantiate internal classes (like `Xlsxrb::Ooxml::WorkbookWriter`) directly.
+### 1. `Xlsxrb` Module Entrypoint
+   The `Xlsxrb` module provides the top-level methods: `read`, `write`, `build`, and `modify`. Users should not instantiate internal classes (like `Xlsxrb::Ooxml::WorkbookWriter`) directly.
 
-2. **The `@api public` Contract (SemVer Guarantee):**
+2. The `@api public` Contract (SemVer Guarantee):
    Any module, class, or method tagged with `# @api public` in its YARD documentation is guaranteed to follow Semantic Versioning.
    - Patch versions (0.1.x -> 0.1.y) will not break these APIs.
    - Minor versions (0.x.0 -> 0.y.0) will not break these APIs once 1.0.0 is released (during 0.x.x, it is a best-effort promise).
    - Major versions (1.x -> 2.x) are the only time breaking changes to `@api public` components are permitted.
 
-3. **Block-Yielded Objects are Public APIs:**
+3. Block-Yielded Objects are Public APIs:
    All builder objects yielded into blocks (e.g., `writer` in `Xlsxrb.write { |writer| }`, `sheet` in `writer.sheet { |sheet| }`, `chart` in `sheet.chart { |chart| }`) are explicitly marked as `@api public`. Their exposed methods constitute the DSL and are strictly protected by the SemVer contract.
 
 ---
@@ -84,61 +84,61 @@ The library is structured into three distinct layers:
 
 ### 1. Low-Level Infrastructure (The "OOXML" Layer)
 
-**Namespace:** `Xlsxrb::Ooxml`
+Namespace: `Xlsxrb::Ooxml`
 
-**Responsibility:**
+Responsibility:
 This layer directly handles ZIP extraction, XML parsing (via SAX), and XML generation. It adheres strictly to the ECMA-376 OpenXML specification.
 
-* **`Xlsxrb::Ooxml::ZipReader`**: Reads a `.xlsx` ZIP archive entry-by-entry. Accepts a file path or `IO` object. Yields `(entry_name, io)` pairs without loading the entire archive into memory.
-* **`Xlsxrb::Ooxml::ZipWriter`**: Streams ZIP local-file-headers and a central directory to a file path or `IO`. Each entry is compressed with `Zlib::Deflate` in a single pass.
-* **`Xlsxrb::Ooxml::XmlParser`**: Thin wrapper around `REXML::Parsers::SAX2Parser`. Converts SAX2 events into a Hash/Array tree. Unknown elements are collected as opaque `{ tag:, attrs:, children: }` hashes (see *unmapped_data* below).
-* **`Xlsxrb::Ooxml::XmlBuilder`**: Emits well-formed XML strings via `<<` to a writable IO, supporting streaming generation without building a DOM.
-* **Part-specific parsers/writers**: `WorksheetParser`, `SharedStringsParser`, `StylesParser`, `WorkbookParser`, etc., each encapsulating the SAX event handling for one OpenXML part.
+* `Xlsxrb::Ooxml::ZipReader`: Reads a `.xlsx` ZIP archive entry-by-entry. Accepts a file path or `IO` object. Yields `(entry_name, io)` pairs without loading the entire archive into memory.
+* `Xlsxrb::Ooxml::ZipWriter`: Streams ZIP local-file-headers and a central directory to a file path or `IO`. Each entry is compressed with `Zlib::Deflate` in a single pass.
+* `Xlsxrb::Ooxml::XmlParser`: Thin wrapper around `REXML::Parsers::SAX2Parser`. Converts SAX2 events into a Hash/Array tree. Unknown elements are collected as opaque `{ tag:, attrs:, children: }` hashes (see *unmapped_data* below).
+* `Xlsxrb::Ooxml::XmlBuilder`: Emits well-formed XML strings via `<<` to a writable IO, supporting streaming generation without building a DOM.
+* Part-specific parsers/writers: `WorksheetParser`, `SharedStringsParser`, `StylesParser`, `WorkbookParser`, etc., each encapsulating the SAX event handling for one OpenXML part.
 
 ### 2. High-Level Domain Model (The "Elements" Layer) & Streaming Row Layer
 
-**Namespace:** `Xlsxrb::Elements` and `Xlsxrb::StreamRow`
+Namespace: `Xlsxrb::Elements` and `Xlsxrb::StreamRow`
 
-**Responsibility:**
+Responsibility:
 This layer provides idiomatic, easy-to-use Ruby objects representing Excel concepts. It utilizes Ruby 3.2+ `Data` classes for immutability and precise structural definition. All domain models are encapsulated here to keep the top-level namespace clean.
 
-**Core Objects:**
-* **`Xlsxrb::Elements::Workbook`**: Represents the entire file structure (`Data` class). Contains `sheets` (Array of Worksheet), shared styles metadata, and `unmapped_data`.
-* **`Xlsxrb::Elements::Worksheet`**: Represents a single sheet (`Data` class). Contains `name`, `rows` (Array of Row), `columns` (Array of Column), and sheet-level properties.
-* **`Xlsxrb::Elements::Row`**: Represents one in-memory row (`Data` class). Contains `index` (0-based), `cells` (Array of Cell), and row-level attributes.
-* **`Xlsxrb::StreamRow`**: Represents a streaming row with lazy cell parsing. Provides `row.each_cell` / `row.each` for $O(1)$ constant memory streaming, caching cells on-demand if indexed or converted to an array.
-* **`Xlsxrb::Elements::Column`**: Represents column formatting (`Data` class). Contains `index` (0-based), `width`, and column-level attributes.
-* **`Xlsxrb::Elements::Cell`**: Represents a single cell (`Data` class). Contains `row_index`, `column_index` (both 0-based), `value` (Ruby native type), `formula`, `style`, and `unmapped_data`.
+Core objects:
+* `Xlsxrb::Elements::Workbook`: Represents the entire file structure (`Data` class). Contains `sheets` (Array of Worksheet), shared styles metadata, and `unmapped_data`.
+* `Xlsxrb::Elements::Worksheet`: Represents a single sheet (`Data` class). Contains `name`, `rows` (Array of Row), `columns` (Array of Column), and sheet-level properties.
+* `Xlsxrb::Elements::Row`: Represents one in-memory row (`Data` class). Contains `index` (0-based), `cells` (Array of Cell), and row-level attributes.
+* `Xlsxrb::StreamRow`: Represents a streaming row with lazy cell parsing. Provides `row.each_cell` / `row.each` for $O(1)$ constant memory streaming, caching cells on-demand if indexed or converted to an array.
+* `Xlsxrb::Elements::Column`: Represents column formatting (`Data` class). Contains `index` (0-based), `width`, and column-level attributes.
+* `Xlsxrb::Elements::Cell`: Represents a single cell (`Data` class). Contains `row_index`, `column_index` (both 0-based), `value` (Ruby native type), `formula`, `style`, and `unmapped_data`.
 
-**Design Principles:**
-* **Zero-based Indexing:** To maintain consistency with Ruby's core language (Arrays/Enumerable), all indices (rows, columns, and worksheets) are **0-based**. For Excel-style coordination, use string references like `cell("A1")`.
-* **Fail-safe Design (Lazy Validation):** Exceptions are not raised during XML parsing. Each class has an `errors` property (Array of String) and a `valid?` method that returns `errors.empty?`.
-* **Forward Compatibility:** All classes have an `unmapped_data` property (Hash) to ensure that any unknown XML attributes or elements are retained, preserving file integrity during round-trips.
+Design principles:
+* Zero-based indexing: To maintain consistency with Ruby's core language (Arrays/Enumerable), all indices (rows, columns, and worksheets) are 0-based. For Excel-style coordination, use string references like `cell("A1")`.
+* Fail-safe design (lazy validation): Exceptions are not raised during XML parsing. Each class has an `errors` property (Array of String) and a `valid?` method that returns `errors.empty?`.
+* Forward compatibility: All classes have an `unmapped_data` property (Hash) to ensure that any unknown XML attributes or elements are retained, preserving file integrity during round-trips.
 
 ### 3. The Facade / Entrypoint Layer
 
-**Namespace:** `Xlsxrb`
+Namespace: `Xlsxrb`
 
-**Responsibility:**
+Responsibility:
 Acts as the primary bridge, offering symmetric In-Memory and Streaming APIs.
 
 | Method | Type | Description |
 | :--- | :--- | :--- |
-| **`Xlsxrb.read(source, &block)`** | **Streaming** | Streams sheets (`StreamSheet`) and rows (`StreamRow`) with $O(1)$ constant memory. |
-| **`Xlsxrb.write(target, &block)`** | **Streaming** | Streams rows directly to file/IO with minimal memory. |
-| **`Xlsxrb.read(source)`** | In-Memory | Loads from file path, IO, or raw binary string into a `Workbook`. |
-| **`Xlsxrb.write(target, wb)`** / **`Xlsxrb.write(wb)`** | In-Memory | Saves `Workbook` to file/IO, or returns raw binary string (single argument). |
-| **`Xlsxrb.build(&block)`** | In-Memory | Builds an immutable `Workbook` using DSL. |
-| **`Xlsxrb.modify(source, target, &block)`** | In-Memory | Updates cells/sheets of an existing workbook. |
+| `Xlsxrb.read(source, &block)` | Streaming | Streams sheets (`StreamSheet`) and rows (`StreamRow`) with $O(1)$ constant memory. |
+| `Xlsxrb.write(target, &block)` | Streaming | Streams rows directly to file/IO with minimal memory. |
+| `Xlsxrb.read(source)` | In-Memory | Loads from file path, IO, or raw binary string into a `Workbook`. |
+| `Xlsxrb.write(target, wb)` / `Xlsxrb.write(wb)` | In-Memory | Saves `Workbook` to file/IO, or returns raw binary string (single argument). |
+| `Xlsxrb.build(&block)` | In-Memory | Builds an immutable `Workbook` using DSL. |
+| `Xlsxrb.modify(source, target, &block)` | In-Memory | Updates cells/sheets of an existing workbook. |
 
 ### Facade Expansion Policy
 
-The long-term API goal is that **all spreadsheet features implemented in the low-level `Ooxml::Writer` layer should be available through the high-level Facade DSL** as well.
+The long-term API goal is that all spreadsheet features implemented in the low-level `Ooxml::Writer` layer should be available through the high-level Facade DSL as well.
 
 This applies to both:
 
-* **In-Memory DSL** (`Xlsxrb.build` -> `WorkbookBuilder` / `WorksheetBuilder`)
-* **Streaming DSL** (`Xlsxrb.write` -> `StreamWriter`)
+* In-Memory DSL (`Xlsxrb.build` -> `WorkbookBuilder` / `WorksheetBuilder`)
+* Streaming DSL (`Xlsxrb.write` -> `StreamWriter`)
 
 The Facade should not expose only a hand-picked subset forever. If a feature is stable and supported in the low-level writer, the default expectation is that it should eventually gain a high-level entry point.
 
@@ -150,8 +150,8 @@ When adding a new high-level feature, follow these API rules unless there is a c
 
 Each DSL feature should prefer the same dual entry style now used by chart and style configuration:
 
-* **Options form** for short, common cases
-* **Block form** for larger or nested configuration
+* Options form for short, common cases
+* Block form for larger or nested configuration
 
 Examples:
 
@@ -187,9 +187,9 @@ Do not introduce one-off verbs for similar concepts unless the low-level feature
 
 Each feature should appear in the builder scope that matches its OOXML ownership:
 
-* **Workbook scope**: workbook-wide metadata, protection, named ranges, shared resources
-* **Worksheet scope**: tables, charts, panes, filters, print settings, validations, comments, shapes
-* **Row / Cell / Range scope**: formatting or behavior tied to a specific row, cell, or range
+* Workbook scope: workbook-wide metadata, protection, named ranges, shared resources
+* Worksheet scope: tables, charts, panes, filters, print settings, validations, comments, shapes
+* Row / Cell / Range scope: formatting or behavior tied to a specific row, cell, or range
 
 If a low-level feature is workbook-scoped, do not force it into a worksheet-only API just because it is convenient.
 
@@ -312,7 +312,7 @@ Ooxml::WorksheetParser     ── yields StreamRow to caller's block
 caller's block receives StreamRow, streams cells via each_cell with O(1) memory
 ```
 
-Key memory invariant: only **one Row / Cell** (plus the shared-string table) is parsed at any time.
+Key memory invariant: only one Row / Cell (plus the shared-string table) is parsed at any time.
 
 ### `Xlsxrb.write(target, &block)` — Streaming Write
 
@@ -345,20 +345,20 @@ An event contains:
 - `source`: a Hash providing context for error reporting (e.g., `{ part: "xl/worksheets/sheet1.xml", row: 0, cell: "A1" }`).
 
 #### Event Vocabulary:
-1. **Worksheet Events:**
+1. Worksheet events:
    - `:row_start` - `args: [row_index, attrs]`
    - `:cell` - `args: [ref, type, style_index, value, formula]`
    - `:row_end` - `args: []`
    - `:column` - `args: [min, max, width, hidden, custom_width, outline_level]`
    - `:hyperlink` - `args: [ref, rid, display, tooltip, location]`
-2. **Shared Strings (SST) Events:**
+2. Shared strings (SST) events:
    - `:sst_item` - `args: [string_value]`
 
 The streaming parser `each_row` (or `parse`) consumes the event stream and folds it into raw row hashes, maintaining a minimal state machine and constant memory footprint.
 
 ### ZIP Streaming
 
-`Ooxml::ZipReader` scans local file headers sequentially using `Zlib::Inflate`. It does **not** seek to the central directory — this allows reading from non-seekable IO (pipes, HTTP streams).
+`Ooxml::ZipReader` scans local file headers sequentially using `Zlib::Inflate`. It does not seek to the central directory — this allows reading from non-seekable IO (pipes, HTTP streams).
 
 `Ooxml::ZipWriter` writes local file headers immediately, accumulates a central directory index in memory (entry names + offsets only), and writes the central directory + EOCD at `#close`.
 
@@ -368,10 +368,10 @@ The streaming parser `each_row` (or `parse`) consumes the event stream and folds
 
 When the Ooxml layer encounters an XML element or attribute not in its recognized set:
 
-1. **Capture**: The element is stored as a Hash `{ tag: String, attrs: Hash, children: Array, text: String? }`.
-2. **Attach**: The Hash is pushed onto the nearest recognized parent's `unmapped_children` array.
-3. **Surface**: The Elements layer receives these as the `unmapped_data` field — a Hash keyed by parent-context (e.g. `{ row: [...], cell: [...], worksheet: [...] }`).
-4. **Restore**: During write-back (`Ooxml::WorksheetWriter`), `unmapped_data` entries are re-serialized to XML in their original order using `XmlBuilder`, preserving any future spec extensions or vendor-specific markup.
+1. Capture: The element is stored as a Hash `{ tag: String, attrs: Hash, children: Array, text: String? }`.
+2. Attach: The Hash is pushed onto the nearest recognized parent's `unmapped_children` array.
+3. Surface: The Elements layer receives these as the `unmapped_data` field — a Hash keyed by parent-context (e.g. `{ row: [...], cell: [...], worksheet: [...] }`).
+4. Restore: During write-back (`Ooxml::WorksheetWriter`), `unmapped_data` entries are re-serialized to XML in their original order using `XmlBuilder`, preserving any future spec extensions or vendor-specific markup.
 
 This ensures that reading then writing an XLSX file does not silently discard unknown content.
 
@@ -381,8 +381,8 @@ This ensures that reading then writing an XLSX file does not silently discard un
 
 ### Ooxml Layer (parse-time)
 
-* **Never raises** on unexpected XML content. Unrecognized elements → `unmapped_data`. Malformed attribute values → stored as-is (raw strings).
-* **Raises** only on structural corruption that prevents further parsing (e.g., truncated ZIP, invalid UTF-8, ZIP local header CRC mismatch).
+* Never raises on unexpected XML content. Unrecognized elements → `unmapped_data`. Malformed attribute values → stored as-is (raw strings).
+* Raises only on structural corruption that prevents further parsing (e.g., truncated ZIP, invalid UTF-8, ZIP local header CRC mismatch).
 
 ### Elements Layer (model-time)
 
@@ -392,7 +392,7 @@ This ensures that reading then writing an XLSX file does not silently discard un
   - `Row`: index ≥ 0, cells array consistency
   - `Worksheet`: name present, unique row indices
   - `Workbook`: at least one sheet, unique sheet names
-* Invalid objects **are still created** — the caller decides how to handle `valid? == false`.
+* Invalid objects are still created — the caller decides how to handle `valid? == false`.
 
 ### Facade Layer
 
@@ -403,11 +403,11 @@ This ensures that reading then writing an XLSX file does not silently discard un
 
 ## Benefits of this Approach
 
-* **Rubyish Interface:** Methods like `foreach` and `generate` follow Ruby's standard library conventions (e.g., `CSV.foreach`).
-* **Clean Namespace:** Users only interact with the `Xlsxrb` module. Internal models are safely isolated within `Elements`.
-* **Safety & LSP Support:** `Data` objects provide clear property definitions for editor autocomplete.
-* **Constant Memory Streaming:** Both read and write paths support row-at-a-time processing suitable for millions of rows.
-* **Future-Proofing:** The `unmapped_data` mechanism and layered design accommodate future features without rewriting the underlying XML logic.
+* Rubyish interface: Methods like `foreach` and `generate` follow Ruby's standard library conventions (e.g., `CSV.foreach`).
+* Clean namespace: Users only interact with the `Xlsxrb` module. Internal models are safely isolated within `Elements`.
+* Safety and LSP support: `Data` objects provide clear property definitions for editor autocomplete.
+* Constant memory streaming: Both read and write paths support row-at-a-time processing suitable for millions of rows.
+* Future-proofing: The `unmapped_data` mechanism and layered design accommodate future features without rewriting the underlying XML logic.
 
 ---
 
@@ -494,21 +494,21 @@ Backward compatibility must be verified before merging any Facade DSL expansion.
 
 To ensure library robustness and consistency across execution paths, we organize tests into four distinct layers:
 
-1. **Unit Tests (`test/xlsxrb/`):**
+1. Unit tests (`test/xlsxrb/`):
    - Focus on isolated components (such as parsers and writers) without external system dependencies.
-   - Includes **Round-trip testing** to verify that generated XML can be successfully parsed back by the reader.
+   - Includes round-trip testing to verify that generated XML can be successfully parsed back by the reader.
    - Run via: `bundle exec rake test:unit`
 
-2. **Contract Tests (`test/contract/`):**
+2. Contract tests (`test/contract/`):
    - Ensures semantic parity between the Streaming and In-Memory API paths.
    - Operates by executing identical data scenarios on both APIs and asserting that they serialize to equivalent structures.
    - Run via: `bundle exec rake test:contract`
 
-3. **Interop (E2E) Tests (`test/e2e/`):**
-   - Exercises real-world interoperability by validating generated files using the official .NET-based **Open XML SDK** validator, and reading spreadsheets dynamically created by the SDK.
+3. Interop (E2E) tests (`test/e2e/`):
+   - Exercises real-world interoperability by validating generated files using the official .NET-based Open XML SDK validator, and reading spreadsheets dynamically created by the SDK.
    - Run via: `bundle exec rake test:e2e`
 
-4. **Visual Examples & VRT (`test/visual/`):**
-   - **Living Documentation:** Compiles visual DSL scripts under `examples/visual/` into the [Visual Examples Gallery](visual/VisualGallery.md).
-   - **Visual Regression Testing:** Renders the generated spreadsheets into PNG files using headless LibreOffice Calc, and calculates pixel differences against reference baselines using ImageMagick.
+4. Visual examples and VRT (`test/visual/`):
+   - Living documentation: Compiles visual DSL scripts under `examples/visual/` into the [Visual Examples Gallery](visual/VisualGallery.md).
+   - Visual regression testing: Renders the generated spreadsheets into PNG files using headless LibreOffice Calc, and calculates pixel differences against reference baselines using ImageMagick.
    - Run via: `bundle exec rake test:visual`
