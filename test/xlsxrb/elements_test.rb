@@ -37,18 +37,41 @@ class ElementsTest < Test::Unit::TestCase
   end
 
   test "cell valid_coordinates? checks boundaries and types" do
+    # Valid lower and upper boundaries
     assert_true(Xlsxrb::Elements::Cell.valid_coordinates?(0, 0))
+    assert_true(Xlsxrb::Elements::Cell.valid_coordinates?(0, 16_383))
+    assert_true(Xlsxrb::Elements::Cell.valid_coordinates?(1_048_575, 0))
     assert_true(Xlsxrb::Elements::Cell.valid_coordinates?(1_048_575, 16_383))
+    assert_true(Xlsxrb::Elements::Cell.valid_coordinates?(100, 100))
+
+    # Negative boundaries
     assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(-1, 0))
     assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, -1))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(-1, -1))
+
+    # Upper boundary limit violations
     assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(1_048_576, 0))
     assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, 16_384))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(1_048_576, 16_384))
+
+    # Non-integer types for row_index
     assert_false(Xlsxrb::Elements::Cell.valid_coordinates?("0", 0))
-    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, "0"))
     assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(nil, 0))
-    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, nil))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0.0, 0))
     assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(1.5, 0))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(:zero, 0))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?([], 0))
+
+    # Non-integer types for column_index
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, "0"))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, nil))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, 0.0))
     assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, 1.5))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, :zero))
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(0, []))
+
+    # Both non-integer
+    assert_false(Xlsxrb::Elements::Cell.valid_coordinates?(nil, nil))
   end
 
   test "cell valid_value? checks supported and unsupported value types" do
