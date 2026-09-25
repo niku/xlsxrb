@@ -49,17 +49,6 @@ module Xlsxrb
   class DecryptionError < EncryptedFileError
   end
 
-  TRACER: untyped
-
-  # Executes the block within an OpenTelemetry tracer span if tracing is configured.
-  #
-  # @param name [String] The span name.
-  # @param attributes [Hash, nil] Optional telemetry attributes.
-  # @yield Block to execute inside the tracing span.
-  # @return [Object] The result of the block.
-  # : (String name, ?attributes: Hash[String, untyped]?) { (*untyped) -> untyped } -> untyped
-  def self.in_span: (String name, ?attributes: Hash[String, untyped]?) { (*untyped) -> untyped } -> untyped
-
   # Helper to construct {Elements::RichText} objects with formatted text runs.
   #
   # @example Create multi-run rich text

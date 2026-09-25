@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Removed
+- OpenTelemetry runtime dependency and tracer spans.
+
 ## [0.1.12] - 2026-09-20
 
 ### Added

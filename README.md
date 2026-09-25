@@ -29,7 +29,7 @@ Maintaining a gem that supports both reading and writing across streaming and in
 
 ### Design Principles
 
-- Minimal Dependencies: No third-party runtime gems for core logic. Built on the Ruby standard library and bundled gems (`zlib`, `rexml`, etc.). The only runtime dependency is `opentelemetry-api` (a no-op when unconfigured).
+- Zero Runtime Dependencies: Built strictly on the Ruby standard library and bundled gems (`zlib`, `rexml`, etc.) with zero third-party runtime dependencies.
 - Streaming Support: Constant $O(1)$ memory streaming for reading and writing spreadsheets.
 - OpenXML Interoperability: Compliant with ISO/IEC 29500 (ECMA-376) and validated against the Microsoft [Open XML SDK](https://github.com/dotnet/Open-XML-SDK).
 - AI-Assisted Maintenance: Uses AI coding agents for automated quality assurance and verification workflows. Operational guidelines are defined in [AGENTS.md](AGENTS.md).

@@ -17,7 +17,6 @@ rescue LoadError
   Object.const_set(:BigDecimal, Class.new)
   # simplecov:enable
 end
-require "opentelemetry"
 require_relative "xlsxrb/version"
 require_relative "xlsxrb/ooxml/zip_generator"
 require_relative "xlsxrb/ooxml/writer"
@@ -70,28 +69,6 @@ module Xlsxrb
 
   # Raised when encrypted package stream decryption fails.
   class DecryptionError < EncryptedFileError; end
-
-  TRACER = OpenTelemetry.tracer_provider.tracer("xlsxrb", Xlsxrb::VERSION)
-
-  # Executes the block within an OpenTelemetry tracer span if tracing is configured.
-  #
-  # @param name [String] The span name.
-  # @param attributes [Hash, nil] Optional telemetry attributes.
-  # @yield Block to execute inside the tracing span.
-  # @return [Object] The result of the block.
-  #: (String name, ?attributes: Hash[String, untyped]?) { (*untyped) -> untyped } -> untyped
-  def self.in_span(name, attributes: nil, &)
-    if defined?(Ractor) && Ractor.current != Ractor.main
-      # simplecov:disable
-      # Test suite runs in the main Ractor. This branch is for multi-threaded usage via Ractors.
-      yield
-      # simplecov:enable
-    elsif attributes
-      TRACER.in_span(name, attributes: attributes, &)
-    else
-      TRACER.in_span(name, &)
-    end
-  end
 
   # Helper to construct {Elements::RichText} objects with formatted text runs.
   #
@@ -213,38 +190,35 @@ module Xlsxrb
       end
     end
 
-    attributes = source.is_a?(String) ? { "filepath" => source } : {}
-    Xlsxrb.in_span("Xlsxrb.read", attributes: attributes) do
-      entries = Ooxml::ZipReader.open(source, &:read_all)
-      shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
-      workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
-      rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
-      styles = Ooxml::StylesParser.parse(entries["xl/styles.xml"])
+    entries = Ooxml::ZipReader.open(source, &:read_all)
+    shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
+    workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
+    rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
+    styles = Ooxml::StylesParser.parse(entries["xl/styles.xml"])
 
-      sheets = workbook_sheets.map do |sheet_info|
-        target = rels[sheet_info[:r_id]]
-        next nil unless target
+    sheets = workbook_sheets.map do |sheet_info|
+      target = rels[sheet_info[:r_id]]
+      next nil unless target
 
-        sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
-        sheet_xml = entries[sheet_path]
-        next nil if sheet_xml.nil? || sheet_xml.empty?
+      sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
+      sheet_xml = entries[sheet_path]
+      next nil if sheet_xml.nil? || sheet_xml.empty?
 
-        StreamSheet.new(
-          sheet_info[:name],
-          sheet_xml,
-          shared_strings,
-          styles
-        )
-      end.compact
+      StreamSheet.new(
+        sheet_info[:name],
+        sheet_xml,
+        shared_strings,
+        styles
+      )
+    end.compact
 
-      wb = Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
+    wb = Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
 
-      if block_given?
-        sheets.each(&)
-        nil
-      else
-        wb
-      end
+    if block_given?
+      sheets.each(&)
+      nil
+    else
+      wb
     end
   end
 
@@ -297,35 +271,33 @@ module Xlsxrb
       target = target_or_workbook
       raise Error, "target is required" if target.nil?
 
-      attributes = target.is_a?(String) ? { "filepath" => target } : {}
-      return Xlsxrb.in_span("Xlsxrb.write", attributes: attributes) do
-        if password && !password.empty?
-          buf = StringIO.new
-          buf.binmode
-          stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode)
-          begin
-            yield stream_writer
-            stream_writer.close
-            plain_bytes = buf.string.b
-            encrypted_bytes = Ooxml::Crypto.encrypt(plain_bytes, password, mode: encryption_mode)
-            if target.is_a?(String)
-              File.binwrite(target, encrypted_bytes)
-            elsif target.respond_to?(:write)
-              target.write(encrypted_bytes)
-            end
-          ensure
-            stream_writer.cleanup!
+      if password && !password.empty?
+        buf = StringIO.new
+        buf.binmode
+        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode)
+        begin
+          yield stream_writer
+          stream_writer.close
+          plain_bytes = buf.string.b
+          encrypted_bytes = Ooxml::Crypto.encrypt(plain_bytes, password, mode: encryption_mode)
+          if target.is_a?(String)
+            File.binwrite(target, encrypted_bytes)
+          elsif target.respond_to?(:write)
+            target.write(encrypted_bytes)
           end
-        else
-          stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode)
-          begin
-            yield stream_writer
-            stream_writer.close
-          ensure
-            stream_writer.cleanup!
-          end
+        ensure
+          stream_writer.cleanup!
+        end
+      else
+        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode)
+        begin
+          yield stream_writer
+          stream_writer.close
+        ensure
+          stream_writer.cleanup!
         end
       end
+      return
     end
 
     if workbook_or_nil.nil?
@@ -343,79 +315,76 @@ module Xlsxrb
     raise Error, "target is required" if target.nil?
     raise Error, "workbook must be an Elements::Workbook" unless workbook.is_a?(Elements::Workbook)
 
-    attributes = target.is_a?(String) ? { "filepath" => target } : {}
-    Xlsxrb.in_span("Xlsxrb.write", attributes: attributes) do
-      sst = []
-      sst_index = {}
+    sst = []
+    sst_index = {}
 
-      # Collect shared strings and build index without allocating new Hashes
-      sheet_data = workbook.sheets.map do |raw_ws|
-        ws = raw_ws.respond_to?(:load) ? raw_ws.load : raw_ws
-        ws.rows.each do |row|
-          row.cells.each do |cell|
-            val = cell.value
-            if (val.is_a?(String) || val.is_a?(Elements::RichText)) && !sst_index.key?(val)
-              sst << val
-              sst_index[val] = sst.size - 1
-            end
+    # Collect shared strings and build index without allocating new Hashes
+    sheet_data = workbook.sheets.map do |raw_ws|
+      ws = raw_ws.respond_to?(:load) ? raw_ws.load : raw_ws
+      ws.rows.each do |row|
+        row.cells.each do |cell|
+          val = cell.value
+          if (val.is_a?(String) || val.is_a?(Elements::RichText)) && !sst_index.key?(val)
+            sst << val
+            sst_index[val] = sst.size - 1
           end
         end
-        columns = ws.columns.map do |col|
-          # simplecov:disable
-          # Edge case / untested delegation block
-          { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width, outline_level: col.outline_level }
-          # simplecov:enable
-        end
-        sd = { name: ws.name, rows: ws.rows, columns: columns }
-        sd[:charts] = ws.charts unless ws.charts.empty?
-
-        # Extract facade metadata from unmapped_data
-        facade = ws.unmapped_data[:facade]
-        facade&.each { |key, val| sd[key] = val }
-
-        sd
       end
-
-      # Extract workbook-level facade metadata
-      wb_facade = workbook.unmapped_data[:facade] || {}
-
-      if password && !password.empty?
-        buf = StringIO.new
-        buf.binmode
-        Ooxml::WorkbookWriter.write(
-          buf,
-          sheets: sheet_data,
-          shared_strings: sst,
-          shared_strings_index: sst_index,
-          styles: workbook.styles,
-          defined_names: wb_facade[:defined_names],
-          core_properties: wb_facade[:core_properties],
-          app_properties: wb_facade[:app_properties],
-          custom_properties: wb_facade[:custom_properties],
-          workbook_protection: wb_facade[:workbook_protection],
-          workbook_properties: wb_facade[:workbook_properties]
-        )
-        encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password, mode: encryption_mode)
-        if target.is_a?(String)
-          File.binwrite(target, encrypted_bytes)
-        elsif target.respond_to?(:write)
-          target.write(encrypted_bytes)
-        end
-      else
-        Ooxml::WorkbookWriter.write(
-          target,
-          sheets: sheet_data,
-          shared_strings: sst,
-          shared_strings_index: sst_index,
-          styles: workbook.styles,
-          defined_names: wb_facade[:defined_names],
-          core_properties: wb_facade[:core_properties],
-          app_properties: wb_facade[:app_properties],
-          custom_properties: wb_facade[:custom_properties],
-          workbook_protection: wb_facade[:workbook_protection],
-          workbook_properties: wb_facade[:workbook_properties]
-        )
+      columns = ws.columns.map do |col|
+        # simplecov:disable
+        # Edge case / untested delegation block
+        { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width, outline_level: col.outline_level }
+        # simplecov:enable
       end
+      sd = { name: ws.name, rows: ws.rows, columns: columns }
+      sd[:charts] = ws.charts unless ws.charts.empty?
+
+      # Extract facade metadata from unmapped_data
+      facade = ws.unmapped_data[:facade]
+      facade&.each { |key, val| sd[key] = val }
+
+      sd
+    end
+
+    # Extract workbook-level facade metadata
+    wb_facade = workbook.unmapped_data[:facade] || {}
+
+    if password && !password.empty?
+      buf = StringIO.new
+      buf.binmode
+      Ooxml::WorkbookWriter.write(
+        buf,
+        sheets: sheet_data,
+        shared_strings: sst,
+        shared_strings_index: sst_index,
+        styles: workbook.styles,
+        defined_names: wb_facade[:defined_names],
+        core_properties: wb_facade[:core_properties],
+        app_properties: wb_facade[:app_properties],
+        custom_properties: wb_facade[:custom_properties],
+        workbook_protection: wb_facade[:workbook_protection],
+        workbook_properties: wb_facade[:workbook_properties]
+      )
+      encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password, mode: encryption_mode)
+      if target.is_a?(String)
+        File.binwrite(target, encrypted_bytes)
+      elsif target.respond_to?(:write)
+        target.write(encrypted_bytes)
+      end
+    else
+      Ooxml::WorkbookWriter.write(
+        target,
+        sheets: sheet_data,
+        shared_strings: sst,
+        shared_strings_index: sst_index,
+        styles: workbook.styles,
+        defined_names: wb_facade[:defined_names],
+        core_properties: wb_facade[:core_properties],
+        app_properties: wb_facade[:app_properties],
+        custom_properties: wb_facade[:custom_properties],
+        workbook_protection: wb_facade[:workbook_protection],
+        workbook_properties: wb_facade[:workbook_properties]
+      )
     end
   end
 
@@ -472,11 +441,9 @@ module Xlsxrb
   def self.build(strict_excel_mode: true)
     raise Error, "block is required" unless block_given?
 
-    Xlsxrb.in_span("Xlsxrb.build") do
-      builder = WorkbookBuilder.new(strict_excel_mode: strict_excel_mode)
-      yield builder
-      builder.build
-    end
+    builder = WorkbookBuilder.new(strict_excel_mode: strict_excel_mode)
+    yield builder
+    builder.build
   end
 
   class << self

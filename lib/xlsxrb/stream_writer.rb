@@ -1509,37 +1509,35 @@ module Xlsxrb
     def close
       raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @strict_excel_mode && @sheets.empty? && @current_sheet.nil?
 
-      Xlsxrb.in_span("StreamWriter#close") do
-        flush_current_sheet
+      flush_current_sheet
 
-        styles_definition = {
-          fonts: @style_writer.fonts.dup,
-          fills: @style_writer.fills.dup,
-          borders: @style_writer.borders.dup,
-          xf_entries: @style_writer.xf_entries.dup,
-          num_fmts: @style_writer.num_fmts.dup,
-          dxfs: @dxfs || []
-        }
+      styles_definition = {
+        fonts: @style_writer.fonts.dup,
+        fills: @style_writer.fills.dup,
+        borders: @style_writer.borders.dup,
+        xf_entries: @style_writer.xf_entries.dup,
+        num_fmts: @style_writer.num_fmts.dup,
+        dxfs: @dxfs || []
+      }
 
-        resolved_names = resolve_defined_names(@defined_names, @sheets)
+      resolved_names = resolve_defined_names(@defined_names, @sheets)
 
-        wb_writer = Ooxml::WorkbookWriter.new(
-          sheets: @sheets,
-          shared_strings: @sst,
-          shared_strings_index: @sst_index,
-          styles: styles_definition,
-          defined_names: resolved_names.empty? ? nil : resolved_names,
-          core_properties: @core_properties.empty? ? nil : @core_properties,
-          app_properties: @app_properties.empty? ? nil : @app_properties,
-          custom_properties: @custom_properties.empty? ? nil : @custom_properties,
-          workbook_protection: @workbook_protection,
-          workbook_properties: @workbook_properties
-        )
-        wb_writer.write_package_parts(@zip)
+      wb_writer = Ooxml::WorkbookWriter.new(
+        sheets: @sheets,
+        shared_strings: @sst,
+        shared_strings_index: @sst_index,
+        styles: styles_definition,
+        defined_names: resolved_names.empty? ? nil : resolved_names,
+        core_properties: @core_properties.empty? ? nil : @core_properties,
+        app_properties: @app_properties.empty? ? nil : @app_properties,
+        custom_properties: @custom_properties.empty? ? nil : @custom_properties,
+        workbook_protection: @workbook_protection,
+        workbook_properties: @workbook_properties
+      )
+      wb_writer.write_package_parts(@zip)
 
-        @zip.close
-        @io.close if @owns_io && !@io.closed?
-      end
+      @zip.close
+      @io.close if @owns_io && !@io.closed?
     ensure
       cleanup!
     end

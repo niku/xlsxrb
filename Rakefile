@@ -251,23 +251,6 @@ task :wasm do
   time_rb_path = $LOAD_PATH.lazy.map { |p| File.join(p, "time.rb") }.find { |f| File.exist?(f) }
   FileUtils.cp(time_rb_path, bundle_assets_dir) if time_rb_path
 
-  File.write(File.join(bundle_assets_dir, "opentelemetry.rb"), <<~RUBY)
-    # frozen_string_literal: true
-    module OpenTelemetry
-      def self.tracer_provider
-        @tracer_provider ||= Class.new {
-          def tracer(*args)
-            Class.new {
-              def in_span(*args)
-                yield Class.new { def record_exception(*args); end; def status=(*args); end }.new
-              end
-            }.new
-          end
-        }.new
-      end
-    end
-  RUBY
-
   # Gateway for REXML
   File.write(File.join(bundle_assets_dir, "rexml.rb"), "# frozen_string_literal: true\nrequire \"rexml/rexml\"\n")
 
