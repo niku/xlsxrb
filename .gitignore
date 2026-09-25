@@ -35,6 +35,3 @@ Gemfile.lock
 # Mutant cache and session state
 /.mutant/
 
-# Agent local artifacts
-/.agents/
-

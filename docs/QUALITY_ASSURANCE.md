@@ -24,3 +24,21 @@ Below is an overview of the verification mechanisms, their execution contexts, t
 | Ecosystem Benchmarks | `ruby benchmark.rb` | ⭕ | - | - | Performance Comparison | Multi-Gem Isolated Profiling (1M cells) | Throughput and allocation comparison against competing libraries. |
 | Visual Regression Testing (VRT) | `rake test:visual` | - | ⭕ | - | Visual Accuracy (UI/UX) | Headless Rendering / Pixel Diff | Visual bugs like "cell background colors dropping" or "chart layouts breaking" after code changes. |
 
+## Autonomous QA Maintenance (Why QA Agents?)
+
+While this QA matrix verifies multiple quality attributes, maintaining these verification layers introduces ongoing costs:
+- Refactoring pure algorithms may pass all unit tests but leave surviving mutants in `rake mutant:pure` due to unasserted edge cases.
+- Minor XML structural adjustments may trigger Nokogiri schema errors due to ECMA-376 `xs:sequence` definitions.
+- Updating method signatures requires re-syncing inline RBS annotations (`rake sig`) and clearing Steep diagnostics.
+
+To address this overhead and operationalize our AI-Assisted Maintenance principle, xlsxrb defines specialized agent roles and workflows ([docs/QA_AGENTS.md](QA_AGENTS.md)):
+
+| Agent Role | Targeted Quality Attribute | Automated Remediation Strategy |
+| :--- | :--- | :--- |
+| Test Rigor Agent | Test Suite Rigor / Detection Power (`rake mutant:pure`) | Analyzes AST diffs of surviving mutants and adds boundary assertions until 100% kill rate is reached. |
+| Type Safety Agent | Type Safety (Static & Dynamic) (`rake typecheck`, `sig/`) | Resolves type errors, updates signatures, and runs `rake sig` to align implementation with RBS definitions. |
+| Specification Compliance Agent | Specification Conformance / Interoperability (`test/xsd_validation_test.rb`) | Identifies schema sequence violations and updates XML builders to follow ECMA-376 Part 4. |
+| Memory Stability Agent | Resource Efficiency / Memory Stability (`rake test:perf`) | Profiles memory with MemoryProfiler to identify retention issues and preserve flat $O(1)$ streaming. |
+
+These workflows allow contributors and AI agents alike to address test diagnostics systematically, keeping verification layers intact as the codebase evolves.
+
