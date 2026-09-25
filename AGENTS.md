@@ -43,4 +43,4 @@ When modifying specific parts of the codebase, the following verification standa
    - Verification: `bundle exec rake test:perf`
    - Requirement: Retained memory must remain constant (< 5MB across 10,000+ rows).
 
-Detailed procedural playbooks are documented in `.agents/skills/` and [docs/QA_AGENTS.md](docs/QA_AGENTS.md).
+Detailed procedural playbooks are documented in `.agents/skills/` and [docs/QA_AGENTS.md](docs/QA_AGENTS.md). For local environment setup (Dev Container) and test command references, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
