@@ -60,7 +60,7 @@
   - Embedded interactive WebAssembly Playground live demo preview in `README.md`.
   - Added real-world Ruby LSP autocompletion and RBS type hint preview in `README.md`.
   - Created accurate, neutral linear-scale SVG benchmark performance chart.
-- **Enterprise-Grade Test Suite Expansion**:
+- **Multi-Layered Test Suite Expansion**:
   - **ECMA-376 XSD Schema Validation**: Comprehensive XML schema validation suite ensuring strict element ordering and ISO/IEC 29500 compliance.
   - **Contract Testing Suite**: Comprehensive parity verification between Streaming (`Xlsxrb.write`) and In-Memory (`Xlsxrb.build`) APIs.
   - **Property-Based Testing (PBT)**: Expanded automated random generation tests for Row/Column invariants, styles, and edge cases.

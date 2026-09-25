@@ -1,6 +1,6 @@
 # Quality Assurance (QA) & Testing Architecture
 
-`xlsxrb` is designed to be an enterprise-grade, highly reliable, and highly performant library for reading and writing Excel spreadsheets. To achieve and maintain this standard, we have implemented a comprehensive Quality Assurance matrix that covers everything from static code analysis and dynamic runtime validation to performance benchmarking and visual regression testing.
+`xlsxrb` is designed to be a robust, highly reliable, and performant library for reading and writing Excel spreadsheets. To achieve and maintain this standard, we have implemented a comprehensive Quality Assurance matrix that covers everything from static code analysis and dynamic runtime validation to performance benchmarking and visual regression testing.
 
 Below is an overview of the inspection mechanisms, when they run, the quality attributes they guarantee, and the specific bugs they prevent.
 

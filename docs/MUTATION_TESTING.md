@@ -1,6 +1,6 @@
 # Mutation Testing in xlsxrb
 
-To ensure enterprise-grade reliability and avoid "shallow test coverage" (where line coverage is high but assertions are missing or weak), `xlsxrb` adopts **Mutation Testing** via [`mbj/mutant`](https://github.com/mbj/mutant) with `test-unit` integration.
+To ensure high reliability and avoid "shallow test coverage" (where line coverage is high but assertions are missing or weak), `xlsxrb` adopts **Mutation Testing** via [`mbj/mutant`](https://github.com/mbj/mutant) with `test-unit` integration.
 
 As of the current release, the test suite achieves **100.00% kill rate (1,091 / 1,091 mutations killed, 0 alive)** across all 38 pure functional subjects.
 

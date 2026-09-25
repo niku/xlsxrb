@@ -162,7 +162,7 @@ To reproduce locally: `ruby benchmark.rb 100000 10`
 
 ## Quality Assurance & Testing
 
-Backed by an enterprise-grade QA architecture to guarantee absolute reliability:
+Backed by a rigorous, multi-layered QA architecture to guarantee high reliability:
 * **Official Microsoft Open XML SDK Validation**: Validates generated OOXML structures against Microsoft's official SDK.
 * **Visual Regression Testing (VRT)**: Headless LibreOffice Calc pixel-by-pixel rendering checks.
 * **Contract & Round-Trip Tests**: Verifies parity between Streaming and In-Memory APIs and round-trip read/write accuracy.
