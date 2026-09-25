@@ -4,7 +4,7 @@ A Ruby library for reading and writing XLSX files with streaming support.
 
 ## Motivation
 
-The Ruby ecosystem already has great XLSX libraries, each designed for specific tradeoffs:
+The Ruby ecosystem has several XLSX libraries designed for specific tradeoffs:
 
 | Library | Read | Write | Streaming | In-Memory |
 | :--- | :---: | :---: | :---: | :---: |
@@ -19,21 +19,21 @@ The Ruby ecosystem already has great XLSX libraries, each designed for specific 
 | [rubyXL](https://rubygems.org/gems/rubyXL) | ✅ | ✅ | ❌ | ✅ |
 | [xlsxrb](https://github.com/niku/xlsxrb) | ✅ | ✅ | ✅ | ✅ |
 
-Each of these libraries makes deliberate architectural choices:
+These libraries make different architectural tradeoffs:
 * Streaming Model: Writes or reads rows sequentially on-the-fly to maintain a constant $O(1)$, low-memory footprint regardless of dataset size.
 * In-Memory Model: Builds a complete document object model, offering flexible random access, cell updates, and document templates at the cost of memory usage on large spreadsheets.
 
-Traditionally, maintaining an all-in-one gem that offers both reading and writing across both streaming and in-memory models, alongside rich OOXML features, high performance, and strict compatibility, presents an inherent open-source challenge: the cumulative maintenance overhead often exceeds the capacity of individual human maintainers.
+Maintaining a gem that supports both reading and writing across streaming and in-memory models, alongside OOXML features and specification compatibility, involves significant ongoing maintenance overhead.
 
-`xlsxrb` is built on a modern premise: Advanced Agentic AI (AI Coders) can sustainably handle this maintenance demand. By utilizing AI agents to automate end-to-end testing, visual regression testing, specification compliance verification, and documentation updates, `xlsxrb` delivers a fast, specification-compliant, and fully-featured XLSX library built for long-term sustainability.
+`xlsxrb` addresses this through automated workflows: AI coding agents handle routine maintenance tasks such as end-to-end testing, visual regression testing, schema compliance checks, and documentation synchronization, enabling sustainable maintenance of both streaming and in-memory architectures.
 
 ### Design Principles
 
-- Minimal Dependencies: Zero core logic dependencies. Built purely on the Ruby standard library and bundled gems (`zlib`, `rexml`, etc.). The only runtime dependency is `opentelemetry-api` (zero-overhead no-op when unconfigured).
-- Streaming Support: True $O(1)$ constant memory streaming for both reading and writing massive spreadsheets.
-- Strict OpenXML Interoperability: Fully compliant with ISO/IEC 29500 (ECMA-376) and validated continuously against the official Microsoft [Open XML SDK](https://github.com/dotnet/Open-XML-SDK).
-- AI-Assisted Sustainability: Leveraging AI coding agents for automated quality assurance, E2E validation, and continuous feature expansion.
-- Modern Ruby: Built for Ruby 4.0 or higher.
+- Minimal Dependencies: No third-party runtime gems for core logic. Built on the Ruby standard library and bundled gems (`zlib`, `rexml`, etc.). The only runtime dependency is `opentelemetry-api` (a no-op when unconfigured).
+- Streaming Support: Constant $O(1)$ memory streaming for reading and writing spreadsheets.
+- OpenXML Interoperability: Compliant with ISO/IEC 29500 (ECMA-376) and validated against the Microsoft [Open XML SDK](https://github.com/dotnet/Open-XML-SDK).
+- AI-Assisted Maintenance: Uses AI coding agents for automated quality assurance and verification workflows.
+- Ruby 4.0+: Requires Ruby 4.0 or higher.
 
 ## Installation
 
@@ -142,7 +142,7 @@ Includes a native Ruby LSP Add-on and full RBS signatures for zero-configuration
 
 ## Feature Support & ECMA-376 Compliance
 
-`xlsxrb` supports nearly all major business spreadsheet features:
+`xlsxrb` supports standard spreadsheet features:
 * Layout & Structure: Formulas, Hyperlinks, Merge Cells, Freeze/Split Panes, Page Setup, Auto Filters, Data Validations, Sheet/Workbook Protection.
 * Styling & Media: Rich Text, Cell Styles & Fills, Conditional Formatting (color scales, data bars), Embedded Images, Charts (Line, Bar, Pie, Radar, Scatter).
 
@@ -162,8 +162,8 @@ To reproduce locally: `ruby benchmark.rb 100000 10`
 
 ## Quality Assurance & Testing
 
-Backed by a rigorous, multi-layered QA architecture to guarantee high reliability:
-* Official Microsoft Open XML SDK Validation: Validates generated OOXML structures against Microsoft's official SDK.
+Verified by a multi-layered QA architecture:
+* Microsoft Open XML SDK Validation: Validates generated OOXML structures against Microsoft's official SDK.
 * Visual Regression Testing (VRT): Headless LibreOffice Calc pixel-by-pixel rendering checks.
 * Contract & Round-Trip Tests: Verifies parity between Streaming and In-Memory APIs and round-trip read/write accuracy.
 * Mutation Testing (Mutant): 100% mutant kill rate (1,091/1,091 mutations across 38 subjects) on pure algorithms, predicates, and coordinates ([docs/MUTATION_TESTING.md](docs/MUTATION_TESTING.md)).

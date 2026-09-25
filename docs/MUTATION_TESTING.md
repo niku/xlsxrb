@@ -1,6 +1,6 @@
 # Mutation Testing in xlsxrb
 
-To ensure high reliability and avoid "shallow test coverage" (where line coverage is high but assertions are missing or weak), `xlsxrb` adopts mutation testing via [`mbj/mutant`](https://github.com/mbj/mutant) with `test-unit` integration.
+To verify test assertion strength and avoid tests that execute code without asserting behavior, `xlsxrb` adopts mutation testing via [`mbj/mutant`](https://github.com/mbj/mutant) with `test-unit` integration.
 
 As of the current release, the test suite achieves 100.00% kill rate (1,091 / 1,091 mutations killed, 0 alive) across all 38 pure functional subjects.
 
@@ -10,7 +10,7 @@ Standard code coverage measures whether lines of code were executed during tests
 
 ### Targeted Scope: Functional Core, Pure Predicates & Byte Encoding
 
-Running mutation testing across the entire codebase (which includes heavy file I/O, ZIP streaming, and large XML parsing) is computationally expensive and prone to creating brittle tests for streaming writers. Therefore, `xlsxrb` follows the functional core / imperative shell architecture, focusing mutation testing strictly on pure functions, boundary predicates, coordinate conversions, and binary encoders:
+Running mutation testing across the entire codebase (which includes heavy file I/O, ZIP streaming, and large XML parsing) is computationally expensive and prone to creating brittle tests for streaming writers. Therefore, `xlsxrb` follows the functional core / imperative shell architecture, focusing mutation testing on pure functions, boundary predicates, coordinate conversions, and binary encoders:
 
 1. Coordinates & Cell Conversions (`Xlsxrb::Elements::Cell`, `CoordinateAccess`):
    - Column letters to 0-based indices (`"A"` ↔ `0`, `"Z"` ↔ `25`, `"AA"` ↔ `26`, up to `"XFD"` ↔ `16383`).

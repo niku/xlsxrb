@@ -4,7 +4,7 @@ This document defines the specification reference policy for `xlsxrb`.
 
 ## Canonical Specification (Normative)
 The primary reference for this library is ECMA-376 (Office Open XML File Formats).
-Specifically, `xlsxrb` targets the Transitional version of the specification (Part 4) to ensure maximum compatibility with existing applications such as Microsoft Excel, LibreOffice, and Google Sheets.
+Specifically, `xlsxrb` targets the Transitional version of the specification (Part 4) for compatibility with applications such as Microsoft Excel, LibreOffice, and Google Sheets.
 
 Local copies of the ECMA-376 specifications are located in the `vendor/docs/` directory:
 - [Part 1: Fundamentals And Markup Language Reference](file:///workspaces/xlsxrb/vendor/docs/ECMA-376-Part1/Ecma%20Office%20Open%20XML%20Part%201%20-%20Fundamentals%20And%20Markup%20Language%20Reference.pdf)

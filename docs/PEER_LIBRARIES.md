@@ -1,8 +1,8 @@
 # Ruby XLSX Ecosystem & Peer Libraries
 
-The Ruby ecosystem is fortunate to have a rich set of mature, well-engineered XLSX libraries. Each library represents deliberate architectural choices tailored for specific problem spaces.
+The Ruby ecosystem includes several XLSX libraries, each designed with specific architectural tradeoffs for different problem spaces.
 
-This document provides a respectful overview of the peer libraries in the Ruby ecosystem, explains the underlying engineering tradeoffs (such as Streaming vs. In-Memory and Shared String Tables vs. Inline Strings), and shares comprehensive benchmark measurements.
+This document provides an overview of peer libraries in the Ruby ecosystem, explains architectural tradeoffs (such as Streaming vs. In-Memory and Shared String Tables vs. Inline Strings), and shares benchmark measurements.
 
 ---
 
@@ -16,8 +16,8 @@ This document provides a respectful overview of the peer libraries in the Ruby e
 | [simple_xlsx_reader](https://rubygems.org/gems/simple_xlsx_reader) | `R` | *"Read xlsx data the Ruby way"* — parses sheets into Ruby primitives with low memory. | Memory-conscious tabular data extraction directly into Ruby types. |
 | [caxlsx / axlsx](https://rubygems.org/gems/caxlsx) | `W` | *"Excel OOXML (xlsx) with charts, styles, images and autowidth columns"* with full schema validation. | Generating rich, styled business reports with charts, images, and visual design. |
 | [write_xlsx](https://rubygems.org/gems/write_xlsx) | `W` | Pure Ruby port of Perl's `Excel::Writer::XLSX` to create files in modern Excel 2007+ format. | Creating complex spreadsheets requiring exact Excel feature parity. |
-| [xlsxtream](https://rubygems.org/gems/xlsxtream) | `W` | *"A streaming XLSX spreadsheet writer"* allowing very efficient writing of CSV-style data. | Ultra-fast, low-memory streaming exports of massive tabular datasets. |
-| [fast_excel](https://rubygems.org/gems/fast_excel) | `W` | *"Ultra Fast Excel Writer"* — C-extension wrapper for `libxlsxwriter` with constant memory mode. | Maximum-throughput spreadsheet generation when C-extensions are available. |
+| [xlsxtream](https://rubygems.org/gems/xlsxtream) | `W` | *"A streaming XLSX spreadsheet writer"* allowing very efficient writing of CSV-style data. | Low-memory streaming exports of tabular datasets. |
+| [fast_excel](https://rubygems.org/gems/fast_excel) | `W` | *"Ultra Fast Excel Writer"* — C-extension wrapper for `libxlsxwriter` with constant memory mode. | High-throughput spreadsheet generation when C-extensions are available. |
 | [rubyXL](https://rubygems.org/gems/rubyXL) | `RW` | *"Allows the parsing, creation, and manipulation of Microsoft Excel (.xlsx/.xlsm) Documents."* | Full document DOM inspection, in-memory cell modification, and template editing. |
 | [xlsxrb](https://github.com/niku/xlsxrb) | `RW` | Pure Ruby library unifying streaming read/write ($O(1)$ memory) and in-memory manipulation with native encryption. | Unified reading, writing, template modification, and password encryption in pure Ruby. |
 
@@ -44,9 +44,9 @@ Spreadsheet libraries must balance multiple competing dimensions: memory consump
 ```
 
 * Streaming Model (`xlsxrb`, `xlsxtream`, `simple_xlsx_reader`, `roo`, `creek`, `xsv`):
-  Rows and cells are processed sequentially and flushed/discarded immediately. This keeps memory usage completely flat and predictable, regardless of whether the file has 10 rows or 1,000,000 rows. However, random access (e.g., modifying `cell("A1")` after writing row 100) is not possible.
+  Rows and cells are processed sequentially and flushed/discarded immediately. This keeps memory usage constant and predictable, regardless of whether the file has 10 rows or 1,000,000 rows. However, random access (e.g., modifying `cell("A1")` after writing row 100) is not possible.
 * In-Memory Model (`xlsxrb`, `caxlsx`, `write_xlsx`, `rubyXL`):
-  The entire workbook structure is parsed into Ruby objects, providing complete flexibility to inspect, modify, insert, or reorder cells and worksheets. The tradeoff is that memory consumption scales with the number of cells.
+  The entire workbook structure is parsed into Ruby objects, providing flexibility to inspect, modify, insert, or reorder cells and worksheets. The tradeoff is that memory consumption scales with the number of cells.
 
 ---
 

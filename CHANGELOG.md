@@ -6,7 +6,7 @@
   - Achieved 100.00% Kill Rate (1,091 / 1,091 mutations killed, 0 alive) without exclusions.
   - Added dedicated root configuration [`.mutant.yml`](.mutant.yml) for streamlined CLI execution (`bundle exec mutant run -- '...'`).
   - Integrated `bundle exec rake mutant:pure` into GitHub Actions CI pipeline (`main.yml`), guaranteeing mutation-tested quality on every push and pull request.
-  - Added comprehensive architecture and testing guide in [`docs/MUTATION_TESTING.md`](docs/MUTATION_TESTING.md).
+  - Added architecture and testing guide in [`docs/MUTATION_TESTING.md`](docs/MUTATION_TESTING.md).
 - Pre-Push Quality Verification Script (`bin/pre-push`): Added automated pre-push verification script running RuboCop, Steep type checking, RBS sync validation, Unit & Contract tests, RBS runtime type validation, and pure logic mutation testing, with automatic hook installation in `bin/setup`.
 
 ### Changed
@@ -14,7 +14,7 @@
   - Purified core business logic and domain entities into deterministic, side-effect-free class methods and predicates:
     - Extracted coordinate and validation predicates: `Elements::Cell.valid_value?`, `Cell.valid_coordinates?`, `Cell.calculate_column_letter`, `Cell.calculate_column_index`.
     - Extracted domain validation predicates: `Elements::Row.valid_index?`, `Elements::Column.valid_index?`, `Elements::Worksheet.valid_name?`.
-    - Replaced date/time serial calculations in `Ooxml::Utils` with pure mathematical conversions (Julian Day math for `date_to_serial`, `divmod` arithmetic for `serial_to_datetime`, and rigorous 1900 leap year bug handling).
+    - Replaced date/time serial calculations in `Ooxml::Utils` with pure mathematical conversions (Julian Day math for `date_to_serial`, `divmod` arithmetic for `serial_to_datetime`, and 1900 leap year bug handling).
     - Extracted binary packing utilities in `Ooxml::ZipGenerator` (`le16`, `le32`, and bitfield arithmetic for `dos_datetime`).
     - Extracted pure XML character escaping logic in `Ooxml::XmlBuilder.escape`.
   - Modularized `Ooxml::Writer` into domain-specific mixin modules (`DrawingXml`, `FeaturesXml`, `StylesXml`).
@@ -61,8 +61,8 @@
   - Added real-world Ruby LSP autocompletion and RBS type hint preview in `README.md`.
   - Created accurate, neutral linear-scale SVG benchmark performance chart.
 - Multi-Layered Test Suite Expansion:
-  - ECMA-376 XSD Schema Validation: Comprehensive XML schema validation suite ensuring strict element ordering and ISO/IEC 29500 compliance.
-  - Contract Testing Suite: Comprehensive parity verification between Streaming (`Xlsxrb.write`) and In-Memory (`Xlsxrb.build`) APIs.
+  - ECMA-376 XSD Schema Validation: XML schema validation suite ensuring strict element ordering and ISO/IEC 29500 compliance.
+  - Contract Testing Suite: Parity verification between Streaming (`Xlsxrb.write`) and In-Memory (`Xlsxrb.build`) APIs.
   - Property-Based Testing (PBT): Expanded automated random generation tests for Row/Column invariants, styles, and edge cases.
   - Visual Regression Testing (VRT): Added new visual baselines for table styles, drawing shapes, and pivot tables.
   - E2E Interoperability Suite: Added tests for namespace-prefixed XML streaming, conditional formatting, and table structures.
@@ -84,7 +84,7 @@
   - Security & Threat Model Hardening:
     - Constant-time hash verification via `OpenSSL.secure_compare` to prevent timing attacks (CWE-208).
     - CSPRNG-backed salt, IV, and session key generation via `SecureRandom` (CWE-330).
-    - Robust DoS defense: spinCount limit ($\le 10\text{M}$), CFB circular sector chain loop detection in directory/FAT parsing, and `total_size` bounds validation (CWE-400, CWE-835).
+    - DoS defense: spinCount limit ($\le 10\text{M}$), CFB circular sector chain loop detection in directory/FAT parsing, and `total_size` bounds validation (CWE-400, CWE-835).
     - Strict exception hierarchy (`EncryptedFileError`, `InvalidPasswordError`, `DecryptionError`).
   - Cross-Platform & Interoperability Validation: Bidirectional validation with Microsoft .NET OpenXML SDK and LibreOffice Calc.
   - WebAssembly (ruby.wasm) Support: Pre-packaged `docs/wasm/ruby.wasm` updated with document encryption support for browser playground.
@@ -104,7 +104,7 @@
 
 ### Added
 - Bundled native Ruby LSP Add-on (`RubyLsp::Xlsxrb::Addon`) for zero-configuration, context-aware method autocompletion and rich markdown documentation in VS Code and LSP-enabled editors for block arguments (`wb.`, `s.`, `sheet.`, `stream_writer.`, `stream_sheet.`).
-- Comprehensive YARD documentation (`@param`, `@return`, `@example`) across all public APIs, builders, proxies, and elements.
+- YARD documentation (`@param`, `@return`, `@example`) across all public APIs, builders, proxies, and elements.
 
 ### Developer Experience
 - Enhanced `rbs-inline` type signatures across all facade methods and builder objects with automated RBS generation.
@@ -142,7 +142,7 @@
 - Full `RBS::Test` runtime type validation enabled for the entire test suite.
 - Extensive Excel limit warnings documented via YARD tags.
 - Formal SemVer API contract with `@api public` tags for user-facing methods.
-- Comprehensive mutation testing (Mutant) and test coverage (SimpleCov) integrations.
+- Mutation testing (Mutant) and test coverage (SimpleCov) integrations.
 
 ### Changed
 - Replaced `method_missing` with statically defined, fully typed methods in `WorksheetProxy`, `ChartBuilder`, and `SeriesBuilder`.

@@ -1,6 +1,6 @@
 # Xlsxrb Architecture
 
-Xlsxrb uses a multi-layered architecture to separate low-level OpenXML specification details from a high-level, idiomatic Ruby API. This separation of concerns ensures the library is both robust against the complex OpenXML spec and user-friendly for Ruby developers.
+Xlsxrb uses a multi-layered architecture to separate low-level OpenXML specification details from an idiomatic Ruby API. This separation of concerns handles OpenXML details while providing an accessible interface for Ruby developers.
 
 ## Dependency Constraints
 
@@ -38,7 +38,7 @@ Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mapp
    - Major versions (1.x -> 2.x) are the only time breaking changes to `@api public` components are permitted.
 
 3. Block-Yielded Objects are Public APIs:
-   All builder objects yielded into blocks (e.g., `writer` in `Xlsxrb.write { |writer| }`, `sheet` in `writer.sheet { |sheet| }`, `chart` in `sheet.chart { |chart| }`) are explicitly marked as `@api public`. Their exposed methods constitute the DSL and are strictly protected by the SemVer contract.
+   All builder objects yielded into blocks (e.g., `writer` in `Xlsxrb.write { |writer| }`, `sheet` in `writer.sheet { |sheet| }`, `chart` in `sheet.chart { |chart| }`) are explicitly marked as `@api public`. Their exposed methods constitute the DSL and are covered by the SemVer contract.
 
 ---
 
@@ -87,7 +87,7 @@ The library is structured into three distinct layers:
 Namespace: `Xlsxrb::Ooxml`
 
 Responsibility:
-This layer directly handles ZIP extraction, XML parsing (via SAX), and XML generation. It adheres strictly to the ECMA-376 OpenXML specification.
+This layer directly handles ZIP extraction, XML parsing (via SAX), and XML generation. It follows the ECMA-376 OpenXML specification.
 
 * `Xlsxrb::Ooxml::ZipReader`: Reads a `.xlsx` ZIP archive entry-by-entry. Accepts a file path or `IO` object. Yields `(entry_name, io)` pairs without loading the entire archive into memory.
 * `Xlsxrb::Ooxml::ZipWriter`: Streams ZIP local-file-headers and a central directory to a file path or `IO`. Each entry is compressed with `Zlib::Deflate` in a single pass.
@@ -100,7 +100,7 @@ This layer directly handles ZIP extraction, XML parsing (via SAX), and XML gener
 Namespace: `Xlsxrb::Elements` and `Xlsxrb::StreamRow`
 
 Responsibility:
-This layer provides idiomatic, easy-to-use Ruby objects representing Excel concepts. It utilizes Ruby 3.2+ `Data` classes for immutability and precise structural definition. All domain models are encapsulated here to keep the top-level namespace clean.
+This layer provides Ruby objects representing Excel concepts, using Ruby 3.2+ `Data` classes for immutability. All domain models are encapsulated here to keep the top-level namespace clean.
 
 Core objects:
 * `Xlsxrb::Elements::Workbook`: Represents the entire file structure (`Data` class). Contains `sheets` (Array of Worksheet), shared styles metadata, and `unmapped_data`.
@@ -492,7 +492,7 @@ Backward compatibility must be verified before merging any Facade DSL expansion.
 
 ## Testing Strategy
 
-To ensure library robustness and consistency across execution paths, we organize tests into four distinct layers:
+Tests are organized into four layers:
 
 1. Unit tests (`test/xlsxrb/`):
    - Focus on isolated components (such as parsers and writers) without external system dependencies.
