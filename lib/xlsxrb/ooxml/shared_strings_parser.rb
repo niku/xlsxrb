@@ -3,14 +3,13 @@
 # rbs_inline: enabled
 
 require_relative "xml_parser"
+require_relative "xml_builder"
 
 module Xlsxrb
   module Ooxml
     # SAX-based parser for xl/sharedStrings.xml.
     # Returns an Array of strings (index = SST index).
     class SharedStringsParser
-      XML_ENTITIES = { "&amp;" => "&", "&lt;" => "<", "&gt;" => ">", "&quot;" => '"', "&apos;" => "'" }.freeze
-
       # Parses all shared strings and returns an Array of strings.
       def self.parse(xml_string, _part_name: "xl/sharedStrings.xml")
         return [] if xml_string.nil? || xml_string.empty?
@@ -89,7 +88,7 @@ module Xlsxrb
                     str = extract_multi_t(xml, si_open_end + 1, si_end)
                   else
                     raw_str = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding("UTF-8")
-                    str = raw_str.include?("&") ? raw_str.gsub(/&(?:amp|lt|gt|quot|apos);/, XML_ENTITIES) : raw_str
+                    str = XmlBuilder.unescape(raw_str)
                   end
                 else
                   str = ""
@@ -128,8 +127,7 @@ module Xlsxrb
           break unless t_end && t_end <= to
 
           raw_chunk = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding("UTF-8")
-          raw_chunk = raw_chunk.gsub(/&(?:amp|lt|gt|quot|apos);/, XML_ENTITIES) if raw_chunk.include?("&")
-          buf << raw_chunk
+          buf << XmlBuilder.unescape(raw_chunk)
           pos = t_end + 4
         end
         buf

@@ -117,4 +117,108 @@ class DslHelpersTest < Test::Unit::TestCase
     refute(min_tbl.key?(:display_name))
     refute(min_tbl.key?(:style))
   end
+
+  # --- absolute_range ---
+
+  test "absolute_range converts range and single cell to absolute references" do
+    assert_equal("$A$1:$B$2", Xlsxrb::DslHelpers.absolute_range("A1:B2"))
+    assert_equal("$A$1", Xlsxrb::DslHelpers.absolute_range("A1"))
+    assert_equal("$AA$10:$ZZ$99", Xlsxrb::DslHelpers.absolute_range("AA10:ZZ99"))
+
+    # Idempotent on already absolute references
+    assert_equal("$A$1:$B$2", Xlsxrb::DslHelpers.absolute_range("$A$1:$B$2"))
+    assert_equal("$A$1", Xlsxrb::DslHelpers.absolute_range("$A$1"))
+    assert_equal("$A$1", Xlsxrb::DslHelpers.absolute_range("$A1"))
+    assert_equal("$A$1", Xlsxrb::DslHelpers.absolute_range("A$1"))
+  end
+
+  # --- normalize_row_values ---
+
+  test "normalize_row_values returns array as-is without allocations" do
+    arr = [1, "two", 3.0]
+    assert_same(arr, Xlsxrb::DslHelpers.normalize_row_values(arr))
+    assert_nil(Xlsxrb::DslHelpers.normalize_row_values(nil))
+  end
+
+  test "normalize_row_values converts column-keyed hash to sparse array" do
+    assert_equal([], Xlsxrb::DslHelpers.normalize_row_values({}))
+    assert_equal([10, nil, 30], Xlsxrb::DslHelpers.normalize_row_values({ "A" => 10, "C" => 30 }))
+    assert_equal(["x", nil, "y"], Xlsxrb::DslHelpers.normalize_row_values({ 0 => "x", 2 => "y" }))
+    assert_equal([42], Xlsxrb::DslHelpers.normalize_row_values({ A: 42 }))
+
+    # Hash subclass support
+    subclass_hash = Class.new(Hash).new
+    subclass_hash["B"] = 99
+    assert_equal([nil, 99], Xlsxrb::DslHelpers.normalize_row_values(subclass_hash))
+  end
+
+  # --- normalize_row_styles ---
+
+  test "normalize_row_styles returns non-hash values as-is without allocations" do
+    arr = %i[s1 s2]
+    assert_same(arr, Xlsxrb::DslHelpers.normalize_row_styles(arr))
+    assert_nil(Xlsxrb::DslHelpers.normalize_row_styles(nil))
+    assert_equal(:bold, Xlsxrb::DslHelpers.normalize_row_styles(:bold))
+  end
+
+  test "normalize_row_styles converts hash with ranges and arrays to sparse array" do
+    assert_equal([], Xlsxrb::DslHelpers.normalize_row_styles({}))
+    assert_equal([:header], Xlsxrb::DslHelpers.normalize_row_styles({ "A" => :header }))
+    assert_equal([:s1, :s1, :s1, nil, :s2], Xlsxrb::DslHelpers.normalize_row_styles({ 0..2 => :s1, 4 => :s2 }))
+    assert_equal([nil, :s3, nil, :s3], Xlsxrb::DslHelpers.normalize_row_styles({ [1, 3] => :s3 }))
+
+    # Column letter array / range requiring column_index conversion
+    assert_equal([nil, :s_b, nil, :s_b], Xlsxrb::DslHelpers.normalize_row_styles({ %w[B D] => :s_b }))
+    assert_equal(%i[s_ab s_ab], Xlsxrb::DslHelpers.normalize_row_styles({ ("A".."B") => :s_ab }))
+
+    # Hash, Range, and Array subclass support
+    subclass_hash = Class.new(Hash).new
+    subclass_hash["A"] = :h1
+    assert_equal([:h1], Xlsxrb::DslHelpers.normalize_row_styles(subclass_hash))
+
+    subclass_range = Class.new(Range).new(0, 1)
+    assert_equal(%i[r1 r1], Xlsxrb::DslHelpers.normalize_row_styles({ subclass_range => :r1 }))
+
+    subclass_array = Class.new(Array).new
+    subclass_array << 0
+    assert_equal([:a1], Xlsxrb::DslHelpers.normalize_row_styles({ subclass_array => :a1 }))
+  end
+
+  # --- validate_row_bounds! ---
+
+  test "validate_row_bounds! validates limits under strict mode" do
+    # Valid boundaries
+    assert_nil(Xlsxrb::DslHelpers.validate_row_bounds!(0, 20.0))
+    assert_nil(Xlsxrb::DslHelpers.validate_row_bounds!(0, 20.0, strict_excel_mode: true))
+    assert_nil(Xlsxrb::DslHelpers.validate_row_bounds!(1_048_575, 409, strict_excel_mode: true))
+    assert_nil(Xlsxrb::DslHelpers.validate_row_bounds!(1_048_575, 0, strict_excel_mode: true))
+    assert_nil(Xlsxrb::DslHelpers.validate_row_bounds!(0, nil, strict_excel_mode: true))
+
+    # Row index exceeds Excel limit (boundary and strictly greater, with and without default param)
+    err = assert_raises(ArgumentError) do
+      Xlsxrb::DslHelpers.validate_row_bounds!(1_048_576, 20.0)
+    end
+    assert_equal("Row index 1048576 exceeds Excel limit of 1,048,576 rows", err.message)
+
+    err = assert_raises(ArgumentError) do
+      Xlsxrb::DslHelpers.validate_row_bounds!(1_048_577, 20.0, strict_excel_mode: true)
+    end
+    assert_equal("Row index 1048577 exceeds Excel limit of 1,048,576 rows", err.message)
+
+    # Row height negative
+    err = assert_raises(ArgumentError) do
+      Xlsxrb::DslHelpers.validate_row_bounds!(0, -0.1, strict_excel_mode: true)
+    end
+    assert_equal("Row height -0.1 must be between 0 and 409 points (Excel limitation)", err.message)
+
+    # Row height exceeds 409
+    err = assert_raises(ArgumentError) do
+      Xlsxrb::DslHelpers.validate_row_bounds!(0, 409.1, strict_excel_mode: true)
+    end
+    assert_equal("Row height 409.1 must be between 0 and 409 points (Excel limitation)", err.message)
+
+    # Lenient mode bypasses all checks
+    assert_nil(Xlsxrb::DslHelpers.validate_row_bounds!(2_000_000, 1000, strict_excel_mode: false))
+    assert_nil(Xlsxrb::DslHelpers.validate_row_bounds!(2_000_000, -10, strict_excel_mode: false))
+  end
 end

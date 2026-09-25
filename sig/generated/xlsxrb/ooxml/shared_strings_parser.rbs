@@ -5,8 +5,6 @@ module Xlsxrb
     # SAX-based parser for xl/sharedStrings.xml.
     # Returns an Array of strings (index = SST index).
     class SharedStringsParser
-      XML_ENTITIES: untyped
-
       # Parses all shared strings and returns an Array of strings.
       def self.parse: (untyped xml_string, ?_part_name: untyped) -> untyped
 

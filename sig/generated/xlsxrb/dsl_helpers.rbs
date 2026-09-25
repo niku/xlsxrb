@@ -56,5 +56,37 @@ module Xlsxrb
     # @return [Hash]
     # : (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> Hash[Symbol, untyped]
     def self.normalize_table_options: (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> Hash[Symbol, untyped]
+
+    # Converts a cell range (e.g. "A1:B2" or "A1") to an absolute reference format (e.g. "$A$1:$B$2" or "$A$1").
+    #
+    # @param range [String]
+    # @return [String]
+    # : (String range) -> String
+    def self.absolute_range: (String range) -> String
+
+    # Normalizes row values: if given a column-keyed Hash, converts to a sparse Array.
+    # If already an Array or other non-Hash enumerable, returns as-is without allocations.
+    #
+    # @param values [Array<Object>, Hash{String, Integer, Symbol => Object}, nil]
+    # @return [Array<Object>, nil]
+    # : (untyped values) -> untyped
+    def self.normalize_row_values: (untyped values) -> untyped
+
+    # Normalizes row styles: if given a Hash of column-keyed styles (including Ranges/Arrays),
+    # expands to a sparse Array of styles. If already an Array or nil, returns as-is without allocations.
+    #
+    # @param styles [untyped]
+    # @return [untyped]
+    # : (untyped styles) -> untyped
+    def self.normalize_row_styles: (untyped styles) -> untyped
+
+    # Validates row index and height against Excel limits in strict mode.
+    #
+    # @param row_index [Integer]
+    # @param height [Float, Integer, nil]
+    # @param strict_excel_mode [Boolean]
+    # @return [void]
+    # : (Integer row_index, Float | Integer | nil height, ?strict_excel_mode: bool) -> void
+    def self.validate_row_bounds!: (Integer row_index, Float | Integer | nil height, ?strict_excel_mode: bool) -> void
   end
 end

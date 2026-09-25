@@ -6,6 +6,7 @@ require_relative "zip_generator"
 require_relative "writer/drawing_xml"
 require_relative "writer/features_xml"
 require_relative "writer/styles_xml"
+require_relative "../dsl_helpers"
 
 module Xlsxrb
   module Ooxml
@@ -3008,7 +3009,7 @@ module Xlsxrb
       # Converts a range like "A1:D20" to absolute "$A$1:$D$20".
       # : (untyped range) -> untyped
       def absolute_range(range)
-        range.split(":").map { |part| absolute_cell(part) }.join(":")
+        DslHelpers.absolute_range(range)
       end
 
       # Converts "A1" to "$A$1".

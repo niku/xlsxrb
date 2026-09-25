@@ -210,7 +210,7 @@ module Xlsxrb
 
     #: (untyped range) -> untyped
     def absolute_range(range)
-      range.gsub(/([A-Z]+)(\d+)/, '$\1$\2')
+      DslHelpers.absolute_range(range)
     end
 
     #: (untyped names, untyped sheets) -> untyped

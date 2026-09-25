@@ -98,6 +98,16 @@ module Xlsxrb
         @io.is_a?(StringIO) ? @io.string : @io.to_s
       end
 
+      UNESCAPE_MAP = {
+        "&amp;" => "&",
+        "&lt;" => "<",
+        "&gt;" => ">",
+        "&quot;" => '"',
+        "&apos;" => "'"
+      }.freeze
+
+      UNESCAPE_RE = /&(?:amp|lt|gt|quot|apos);/
+
       # Escapes XML special characters in a string.
       #
       # @param value [Object]
@@ -106,6 +116,16 @@ module Xlsxrb
       def self.escape(value)
         str = value.to_s
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
+      end
+
+      # Unescapes predefined XML entities in a string in a single pass.
+      #
+      # @param value [Object]
+      # @return [String]
+      #: (untyped value) -> String
+      def self.unescape(value)
+        str = value.to_s
+        str.include?("&") ? str.gsub(UNESCAPE_RE, UNESCAPE_MAP) : str
       end
 
       private

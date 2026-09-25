@@ -911,39 +911,11 @@ module Xlsxrb
       sheet if @current_sheet.nil?
 
       row_index = @current_row_index
-      # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
-      if @strict_excel_mode
-        raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows" if row_index >= 1_048_576
-        raise ArgumentError, "Row height #{height} must be between 0 and 409 points (Excel limitation)" if height && (height.negative? || height > 409)
-      end
+      DslHelpers.validate_row_bounds!(row_index, height, strict_excel_mode: @strict_excel_mode)
       @current_row_index += 1
 
-      if values.is_a?(Hash)
-        max_col = values.keys.map { |k| Elements::Cell.column_index(k) }.max || -1
-        cells_array = Array.new(max_col + 1)
-        values.each do |k, v|
-          idx = Elements::Cell.column_index(k)
-          cells_array[idx] = v
-        end
-        values = cells_array
-      end
-
-      if styles.is_a?(Hash)
-        expanded_styles = {}
-        styles.each do |k, v|
-          if k.is_a?(Range) || k.is_a?(Array)
-            k.each { |idx| expanded_styles[Elements::Cell.column_index(idx)] = v }
-          else
-            expanded_styles[Elements::Cell.column_index(k)] = v
-          end
-        end
-        max_col_style = expanded_styles.keys.max || -1
-        styles_array = Array.new(max_col_style + 1)
-        expanded_styles.each do |idx, v|
-          styles_array[idx] = v
-        end
-        styles = styles_array
-      end
+      values = DslHelpers.normalize_row_values(values)
+      styles = DslHelpers.normalize_row_styles(styles)
 
       if @current_charts && !@current_charts.empty?
         @current_cells ||= {}
@@ -1568,10 +1540,7 @@ module Xlsxrb
 
     #: (untyped range) -> untyped
     def absolute_range(range)
-      # simplecov:disable
-      # Edge case / untested delegation block
-      range.gsub(/([A-Z]+)(\d+)/, '$\1$\2')
-      # simplecov:enable
+      DslHelpers.absolute_range(range)
     end
 
     #: (untyped names, untyped sheets) -> untyped

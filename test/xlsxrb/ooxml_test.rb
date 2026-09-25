@@ -122,6 +122,21 @@ class OoxmlTest < Test::Unit::TestCase
     assert_same(empty, Xlsxrb::Ooxml::XmlBuilder.escape(empty))
   end
 
+  test "XmlBuilder.unescape correctly unescapes XML entities" do
+    assert_equal("Tom & Jerry", Xlsxrb::Ooxml::XmlBuilder.unescape("Tom &amp; Jerry"))
+    assert_equal("<tag>", Xlsxrb::Ooxml::XmlBuilder.unescape("&lt;tag&gt;"))
+    assert_equal('"quote" and \'single\'', Xlsxrb::Ooxml::XmlBuilder.unescape("&quot;quote&quot; and &apos;single&apos;"))
+    plain = "no_special_chars"
+    assert_same(plain, Xlsxrb::Ooxml::XmlBuilder.unescape(plain))
+    assert_equal("123", Xlsxrb::Ooxml::XmlBuilder.unescape(123))
+    empty = ""
+    assert_same(empty, Xlsxrb::Ooxml::XmlBuilder.unescape(empty))
+    assert_equal("&unknown;", Xlsxrb::Ooxml::XmlBuilder.unescape("&unknown;"))
+
+    # WorksheetParser.decode_xml_entities delegation
+    assert_equal("Tom & Jerry", Xlsxrb::Ooxml::WorksheetParser.decode_xml_entities("Tom &amp; Jerry"))
+  end
+
   test "xml_builder method chaining with declaration and tags" do
     io = StringIO.new
     b = Xlsxrb::Ooxml::XmlBuilder.new(io)

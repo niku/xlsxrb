@@ -14,7 +14,7 @@ The Test Rigor Agent is responsible for upholding Test Suite Rigor and Fault Det
 - Identify surviving mutants (`alive > 0`) using `bundle exec mutant run` or `bundle exec rake mutant:pure`.
 - Analyze mutation diffs (AST alterations, inverted conditionals, boundary value adjustments, nil replacements).
 - Add targeted, meaningful assertions in `test/` verifying the precise boundary behavior or invariant.
-- Iterate autonomously until a 100.00% kill rate (0 alive) is restored across all 38 pure functional subjects.
+- Iterate autonomously until a 100.00% kill rate (0 alive) is restored across all 43 pure functional subjects.
 
 ## Native Commands
 
@@ -23,7 +23,7 @@ The Test Rigor Agent is responsible for upholding Test Suite Rigor and Fault Det
 bundle exec mutant run --usage opensource -r ./test/xlsxrb/elements_test.rb -- "Xlsxrb::Elements::Cell.valid_value?"
 bundle exec mutant run --usage opensource -r ./test/xlsxrb/elements_test.rb -- "Xlsxrb::Elements::Cell#to_i"
 
-# Test all 38 pure subjects (~28s)
+# Test all 43 pure subjects (~45s)
 bundle exec rake mutant:pure
 ```
 

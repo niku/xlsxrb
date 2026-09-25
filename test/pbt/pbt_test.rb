@@ -836,4 +836,49 @@ class PbtTest < Test::Unit::TestCase
       end
     end
   end
+
+  # --- PBT for Pure Functions ---
+
+  test "XmlBuilder escape and unescape roundtrip property" do
+    Pbt.assert(num_runs: 100) do
+      Pbt.property(Pbt.ascii_string) do |str|
+        escaped = Xlsxrb::Ooxml::XmlBuilder.escape(str)
+        unescaped = Xlsxrb::Ooxml::XmlBuilder.unescape(escaped)
+        assert_equal str, unescaped
+      end
+    end
+  end
+
+  test "DslHelpers.absolute_range idempotency property" do
+    col_idx_gen = Pbt.integer(min: 0, max: 25)
+    row_generator = Pbt.integer(min: 1, max: 1_048_576)
+
+    Pbt.assert(num_runs: 100) do
+      Pbt.property(col_idx_gen, row_generator, col_idx_gen, row_generator) do |c1_idx, r1, c2_idx, r2|
+        c1 = ("A".ord + c1_idx).chr
+        c2 = ("A".ord + c2_idx).chr
+        range = "#{c1}#{r1}:#{c2}#{r2}"
+        once = Xlsxrb::DslHelpers.absolute_range(range)
+        twice = Xlsxrb::DslHelpers.absolute_range(once)
+        assert_equal once, twice
+        assert_equal "$#{c1}$#{r1}:$#{c2}$#{r2}", once
+      end
+    end
+  end
+
+  test "DslHelpers.normalize_row_values length invariance property" do
+    pairs_gen = Pbt.array(Pbt.tuple(Pbt.choose(0..30), Pbt.integer), max: 10)
+
+    Pbt.assert(num_runs: 50) do
+      Pbt.property(pairs_gen) do |pairs|
+        h = pairs.to_h
+        normalized = Xlsxrb::DslHelpers.normalize_row_values(h)
+        expected_size = h.empty? ? 0 : h.keys.max + 1
+        assert_equal expected_size, normalized.size
+        h.each do |k, v|
+          assert_equal v, normalized[k]
+        end
+      end
+    end
+  end
 end

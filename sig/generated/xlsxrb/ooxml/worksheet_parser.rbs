@@ -37,12 +37,11 @@ module Xlsxrb
 
       def self.resolve_fast_value: (untyped raw, untyped type, untyped shared_strings) -> untyped
 
-      XML_ENTITIES: untyped
-
       # SECURITY NOTE: Decodes only standard predefined XML entities in a single pass.
       # This completely prevents "Billion Laughs" attacks (exponential entity expansion)
       # because it avoids recursive expansion and ignores custom entities entirely.
-      def self.decode_xml_entities: (untyped str) -> untyped
+      # : (String str) -> String
+      def self.decode_xml_entities: (String str) -> String
 
       # Parses <cols> section for column definitions.
       class ColumnsListener

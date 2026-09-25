@@ -3,6 +3,7 @@
 # rbs_inline: enabled
 
 require_relative "xml_parser"
+require_relative "xml_builder"
 
 module Xlsxrb
   module Ooxml
@@ -428,16 +429,13 @@ module Xlsxrb
 
       private_class_method :resolve_fast_value
 
-      XML_ENTITIES = { "&amp;" => "&", "&lt;" => "<", "&gt;" => ">", "&quot;" => '"', "&apos;" => "'" }.freeze
-
       # SECURITY NOTE: Decodes only standard predefined XML entities in a single pass.
       # This completely prevents "Billion Laughs" attacks (exponential entity expansion)
       # because it avoids recursive expansion and ignores custom entities entirely.
+      #: (String str) -> String
       def self.decode_xml_entities(str)
-        str.gsub(/&(?:amp|lt|gt|quot|apos);/, XML_ENTITIES)
+        XmlBuilder.unescape(str)
       end
-
-      private_class_method :decode_xml_entities
 
       # Parses <cols> section for column definitions.
       class ColumnsListener

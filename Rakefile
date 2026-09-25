@@ -595,8 +595,13 @@ namespace :mutant do
       "Xlsxrb::Elements::Row#valid?",
       "Xlsxrb::Elements::Workbook#valid?",
       "Xlsxrb::Ooxml::XmlBuilder.escape",
+      "Xlsxrb::Ooxml::XmlBuilder.unescape",
       "Xlsxrb::Ooxml::ZipGenerator.dos_datetime",
-      "Xlsxrb::DslHelpers.normalize_column_indices"
+      "Xlsxrb::DslHelpers.normalize_column_indices",
+      "Xlsxrb::DslHelpers.absolute_range",
+      "Xlsxrb::DslHelpers.normalize_row_values",
+      "Xlsxrb::DslHelpers.normalize_row_styles",
+      "Xlsxrb::DslHelpers.validate_row_bounds!"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [

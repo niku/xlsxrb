@@ -112,5 +112,64 @@ module Xlsxrb
       tbl.merge!(opts)
       tbl
     end
+
+    # Converts a cell range (e.g. "A1:B2" or "A1") to an absolute reference format (e.g. "$A$1:$B$2" or "$A$1").
+    #
+    # @param range [String]
+    # @return [String]
+    #: (String range) -> String
+    def self.absolute_range(range)
+      range.gsub(/(?:\$)?([A-Z]+)(?:\$)?(\d+)\b/, '$\1$\2')
+    end
+
+    # Normalizes row values: if given a column-keyed Hash, converts to a sparse Array.
+    # If already an Array or other non-Hash enumerable, returns as-is without allocations.
+    #
+    # @param values [Array<Object>, Hash{String, Integer, Symbol => Object}, nil]
+    # @return [Array<Object>, nil]
+    #: (untyped values) -> untyped
+    def self.normalize_row_values(values)
+      return values unless values.is_a?(Hash)
+
+      cells_array = []
+      values.each do |k, v|
+        cells_array[Elements::Cell.column_index(k)] = v
+      end
+      cells_array
+    end
+
+    # Normalizes row styles: if given a Hash of column-keyed styles (including Ranges/Arrays),
+    # expands to a sparse Array of styles. If already an Array or nil, returns as-is without allocations.
+    #
+    # @param styles [untyped]
+    # @return [untyped]
+    #: (untyped styles) -> untyped
+    def self.normalize_row_styles(styles)
+      return styles unless styles.is_a?(Hash)
+
+      styles_array = []
+      styles.each do |k, v|
+        if k.is_a?(Range) || k.is_a?(Array)
+          k.each { |idx| styles_array[Elements::Cell.column_index(idx)] = v }
+        else
+          styles_array[Elements::Cell.column_index(k)] = v
+        end
+      end
+      styles_array
+    end
+
+    # Validates row index and height against Excel limits in strict mode.
+    #
+    # @param row_index [Integer]
+    # @param height [Float, Integer, nil]
+    # @param strict_excel_mode [Boolean]
+    # @return [void]
+    #: (Integer row_index, Float | Integer | nil height, ?strict_excel_mode: bool) -> void
+    def self.validate_row_bounds!(row_index, height, strict_excel_mode: true)
+      return unless strict_excel_mode
+
+      raise ArgumentError, "Row index #{row_index} exceeds Excel limit of 1,048,576 rows" if row_index >= 1_048_576
+      raise ArgumentError, "Row height #{height} must be between 0 and 409 points (Excel limitation)" if height && (height.negative? || height > 409)
+    end
   end
 end

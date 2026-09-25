@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Changed
+- Extracted pure DSL normalizers (`Xlsxrb::DslHelpers`) and fast XML unescape utilities (`Ooxml::XmlBuilder.unescape`).
+
 ### Removed
 - OpenTelemetry runtime dependency and tracer spans.
 

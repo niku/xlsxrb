@@ -35,12 +35,23 @@ module Xlsxrb
 
       def to_s: () -> untyped
 
+      UNESCAPE_MAP: untyped
+
+      UNESCAPE_RE: ::Regexp
+
       # Escapes XML special characters in a string.
       #
       # @param value [Object]
       # @return [String]
       # : (untyped value) -> String
       def self.escape: (untyped value) -> String
+
+      # Unescapes predefined XML entities in a string in a single pass.
+      #
+      # @param value [Object]
+      # @return [String]
+      # : (untyped value) -> String
+      def self.unescape: (untyped value) -> String
 
       private
 
