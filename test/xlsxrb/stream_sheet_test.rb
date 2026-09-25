@@ -56,4 +56,43 @@ class StreamSheetTest < Test::Unit::TestCase
     # to_worksheet alias
     assert_equal(ws["A1"].value, sheet.to_worksheet["A1"].value)
   end
+
+  test "stream_sheet feature accessors: merged_cells, auto_filter, data_validations, conditional_formats" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData/>
+        <autoFilter ref="A1:E100"/>
+        <mergeCells count="2">
+          <mergeCell ref="A1:B2"/>
+          <mergeCell ref="C3:D4"/>
+        </mergeCells>
+        <conditionalFormatting sqref="B2:B20">
+          <cfRule type="cellIs" operator="greaterThan">
+            <formula>50</formula>
+          </cfRule>
+        </conditionalFormatting>
+        <dataValidations count="1">
+          <dataValidation type="list" sqref="C2:C50" allowBlank="1">
+            <formula1>"Option1,Option2"</formula1>
+          </dataValidation>
+        </dataValidations>
+      </worksheet>
+    XML
+
+    sheet = Xlsxrb::StreamSheet.new("Features", xml.b, [])
+
+    assert_equal(["A1:B2", "C3:D4"], sheet.merged_cells)
+    assert_equal("A1:E100", sheet.auto_filter)
+
+    assert_equal(1, sheet.data_validations.size)
+    assert_equal("C2:C50", sheet.data_validations.first[:sqref])
+    assert_equal("list", sheet.data_validations.first[:type])
+    assert_equal(true, sheet.data_validations.first[:allow_blank])
+
+    assert_equal(1, sheet.conditional_formats.size)
+    assert_equal("B2:B20", sheet.conditional_formats.first[:sqref])
+    assert_equal("cellIs", sheet.conditional_formats.first[:type])
+    assert_equal("greaterThan", sheet.conditional_formats.first[:operator])
+    assert_equal(["50"], sheet.conditional_formats.first[:formulas])
+  end
 end

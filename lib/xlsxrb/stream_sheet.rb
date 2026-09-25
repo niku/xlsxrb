@@ -115,5 +115,57 @@ module Xlsxrb
       Xlsxrb.send(:build_worksheet, @name, @sheet_xml, @shared_strings, @styles)
     end
     alias to_worksheet load
+
+    # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.
+    #
+    # @return [Array<String>]
+    # @api public
+    #: () -> Array[String]
+    def merged_cells
+      @merged_cells ||= begin
+        listener = Ooxml::Reader::MergeCellsListener.new
+        Ooxml::XmlParser.parse(@sheet_xml, listener)
+        listener.ranges
+      end
+    end
+
+    # Returns the auto-filter range (e.g. "A1:E100") for this worksheet, or nil if none.
+    #
+    # @return [String, nil]
+    # @api public
+    #: () -> String?
+    def auto_filter
+      @auto_filter ||= begin
+        listener = Ooxml::Reader::AutoFilterListener.new
+        Ooxml::XmlParser.parse(@sheet_xml, listener)
+        listener.ref
+      end
+    end
+
+    # Returns data validation rules configured for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def data_validations
+      @data_validations ||= begin
+        listener = Ooxml::Reader::DataValidationsListener.new
+        Ooxml::XmlParser.parse(@sheet_xml, listener)
+        listener.validations
+      end
+    end
+
+    # Returns conditional formatting rules configured for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def conditional_formats
+      @conditional_formats ||= begin
+        listener = Ooxml::Reader::ConditionalFormattingListener.new
+        Ooxml::XmlParser.parse(@sheet_xml, listener)
+        listener.rules
+      end
+    end
   end
 end

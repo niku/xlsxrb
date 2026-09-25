@@ -96,5 +96,33 @@ module Xlsxrb
     def load: () -> Elements::Worksheet
 
     alias to_worksheet load
+
+    # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.
+    #
+    # @return [Array<String>]
+    # @api public
+    # : () -> Array[String]
+    def merged_cells: () -> Array[String]
+
+    # Returns the auto-filter range (e.g. "A1:E100") for this worksheet, or nil if none.
+    #
+    # @return [String, nil]
+    # @api public
+    # : () -> String?
+    def auto_filter: () -> String?
+
+    # Returns data validation rules configured for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Array[Hash[Symbol, untyped]]
+    def data_validations: () -> Array[Hash[Symbol, untyped]]
+
+    # Returns conditional formatting rules configured for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Array[Hash[Symbol, untyped]]
+    def conditional_formats: () -> Array[Hash[Symbol, untyped]]
   end
 end

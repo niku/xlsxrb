@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Added
+- StreamSheet structural metadata accessors: Expose `merged_cells`, `auto_filter`, `data_validations`, and `conditional_formats` on `StreamSheet`.
+
 ### Changed
 - Extracted pure DSL normalizers (`Xlsxrb::DslHelpers`) and fast XML unescape utilities (`Ooxml::XmlBuilder.unescape`).
 
