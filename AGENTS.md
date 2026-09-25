@@ -12,7 +12,7 @@ Guidelines for LLM-powered coding assistants (Claude, Cursor, Copilot, Gemini, A
 - Minimal Surface Area:
   Do not introduce new files, scripts, tasks, or dependencies unless their necessity is explicitly justified. Use existing tools and tasks (`bundle exec rake test:unit`, `rake typecheck`, `rake mutant:pure`, `bin/pre-push`, etc.).
 - Pre-Push Verification:
-  Ensure the entire verification suite passes before submitting changes: `bin/pre-push --all`.
+  Ensure the verification suite passes before pushing or completing a task: `bin/pre-push --all`. For intermediate commits or non-logic tasks, run lightweight verification (`bin/pre-push` or component rake tasks) to maintain fast feedback loops.
 - Changelog Policy:
   Maintain `CHANGELOG.md` following [Keep a Changelog](https://keepachangelog.com/) conventions.
   - When introducing user-facing changes (features, deprecations, breaking changes, notable bug fixes, performance improvements, or dependency changes), add concise entries under the `## [Unreleased]` section.

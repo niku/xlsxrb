@@ -46,9 +46,14 @@ To run the different tiers of our testing strategy:
    Runs RuboCop, Steep type checks, RBS sync verification, and Unit & Contract tests matching CI requirements:
    ```bash
    bin/pre-push
-   # Or run extended verification including runtime type validation and pure logic mutation testing:
+   # Or run extended verification including runtime type validation and mutation testing:
    bin/pre-push --all
+   # Scope change detection to the last commit:
+   bin/pre-push --all --last
+   # Force all extended checks without change-based skipping:
+   bin/pre-push --all --force
    ```
+
 
 ---
 

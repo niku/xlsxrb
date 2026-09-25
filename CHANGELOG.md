@@ -3,6 +3,7 @@
 ### Added
 - Non-destructive template modification: Support modifying existing XLSX templates while preserving unmapped parts, media, charts, drawings, and VBA macros via `Xlsxrb.modify`.
 - StreamSheet structural metadata accessors: Expose `merged_cells`, `auto_filter`, `data_validations`, and `conditional_formats` on `StreamSheet`.
+- Pre-Push Smart Change Detection: Optimized `bin/pre-push --all` to automatically skip runtime RBS validation and pure logic mutation testing when unrelated files are modified, adding `--last` and `--force` controls.
 
 ### Changed
 - True O(1) memory streaming read via chunked entry inflation in `ZipReader` and `WorksheetParser`, preventing unbounded memory retention on large worksheets.
