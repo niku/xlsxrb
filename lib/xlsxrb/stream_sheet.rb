@@ -36,15 +36,20 @@ module Xlsxrb
     # Initializes a streaming worksheet context.
     #
     # @param name [String] The sheet name.
-    # @param sheet_xml [String] Raw XML content of the worksheet.
+    # @param sheet_source [String, Proc, IO, nil] Raw XML content or chunk supplier/stream.
     # @param shared_strings [Array<String>] Shared strings table.
     # @param styles [Hash, nil] Optional parsed styles hash.
-    #: (String name, String sheet_xml, Array[String] shared_strings, ?Hash[untyped, untyped]? styles) -> void
-    def initialize(name, sheet_xml, shared_strings, styles = nil)
+    # @param zip_reader [Ooxml::ZipReader, nil] Optional ZipReader context.
+    # @param entry_name [String, nil] Archive entry name for this sheet.
+    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> void
+    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil)
       @name = name
-      @sheet_xml = sheet_xml
+      @sheet_source = sheet_source
       @shared_strings = shared_strings
       @styles = styles
+      @zip_reader = zip_reader
+      @entry_name = entry_name
+      @sheet_xml = sheet_source if sheet_source.is_a?(String)
     end
 
     # Iterates over rows in this streaming worksheet with O(1) memory.
@@ -63,7 +68,13 @@ module Xlsxrb
     def each_row(&)
       return enum_for(:each_row) unless block_given?
 
-      Ooxml::WorksheetParser.each_row(@sheet_xml, shared_strings: @shared_strings, &)
+      source = if @sheet_source
+                 @sheet_source
+               elsif @zip_reader && @entry_name
+                 ->(&blk) { @zip_reader.each_entry_chunk(@entry_name, &blk) }
+               end
+
+      Ooxml::WorksheetParser.each_row(source, shared_strings: @shared_strings, &)
     end
 
     # Iterates over all cells across all rows continuously with O(1) memory.
@@ -112,7 +123,7 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, @sheet_xml, @shared_strings, @styles)
+      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles)
     end
     alias to_worksheet load
 
@@ -124,7 +135,7 @@ module Xlsxrb
     def merged_cells
       @merged_cells ||= begin
         listener = Ooxml::Reader::MergeCellsListener.new
-        Ooxml::XmlParser.parse(@sheet_xml, listener)
+        Ooxml::XmlParser.parse(raw_sheet_xml, listener)
         listener.ranges
       end
     end
@@ -137,7 +148,7 @@ module Xlsxrb
     def auto_filter
       @auto_filter ||= begin
         listener = Ooxml::Reader::AutoFilterListener.new
-        Ooxml::XmlParser.parse(@sheet_xml, listener)
+        Ooxml::XmlParser.parse(raw_sheet_xml, listener)
         listener.ref
       end
     end
@@ -150,7 +161,7 @@ module Xlsxrb
     def data_validations
       @data_validations ||= begin
         listener = Ooxml::Reader::DataValidationsListener.new
-        Ooxml::XmlParser.parse(@sheet_xml, listener)
+        Ooxml::XmlParser.parse(raw_sheet_xml, listener)
         listener.validations
       end
     end
@@ -163,9 +174,34 @@ module Xlsxrb
     def conditional_formats
       @conditional_formats ||= begin
         listener = Ooxml::Reader::ConditionalFormattingListener.new
-        Ooxml::XmlParser.parse(@sheet_xml, listener)
+        Ooxml::XmlParser.parse(raw_sheet_xml, listener)
         listener.rules
       end
+    end
+
+    # Closes any underlying reader resources.
+    #: () -> void
+    def close
+      @zip_reader&.close
+      nil
+    end
+
+    private
+
+    # Returns the full raw XML string for this worksheet, loaded on demand.
+    #: () -> String
+    def raw_sheet_xml
+      @raw_sheet_xml ||= if @sheet_source.is_a?(String)
+                           @sheet_source
+                         elsif @zip_reader && @entry_name
+                           @zip_reader.read_entry(@entry_name) || ""
+                         elsif @sheet_source.respond_to?(:call)
+                           buf = +""
+                           @sheet_source.call { |c| buf << c }
+                           buf
+                         else
+                           ""
+                         end
     end
   end
 end

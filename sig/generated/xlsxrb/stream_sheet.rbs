@@ -32,11 +32,13 @@ module Xlsxrb
     # Initializes a streaming worksheet context.
     #
     # @param name [String] The sheet name.
-    # @param sheet_xml [String] Raw XML content of the worksheet.
+    # @param sheet_source [String, Proc, IO, nil] Raw XML content or chunk supplier/stream.
     # @param shared_strings [Array<String>] Shared strings table.
     # @param styles [Hash, nil] Optional parsed styles hash.
-    # : (String name, String sheet_xml, Array[String] shared_strings, ?Hash[untyped, untyped]? styles) -> void
-    def initialize: (String name, String sheet_xml, Array[String] shared_strings, ?Hash[untyped, untyped]? styles) -> void
+    # @param zip_reader [Ooxml::ZipReader, nil] Optional ZipReader context.
+    # @param entry_name [String, nil] Archive entry name for this sheet.
+    # : (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> void
+    def initialize: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> void
 
     # Iterates over rows in this streaming worksheet with O(1) memory.
     #
@@ -124,5 +126,15 @@ module Xlsxrb
     # @api public
     # : () -> Array[Hash[Symbol, untyped]]
     def conditional_formats: () -> Array[Hash[Symbol, untyped]]
+
+    # Closes any underlying reader resources.
+    # : () -> void
+    def close: () -> void
+
+    private
+
+    # Returns the full raw XML string for this worksheet, loaded on demand.
+    # : () -> String
+    def raw_sheet_xml: () -> String
   end
 end

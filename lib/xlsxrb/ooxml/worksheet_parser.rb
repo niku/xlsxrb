@@ -26,11 +26,15 @@ module Xlsxrb
       end
 
       # Streaming parse: yields one raw row hash at a time.
-      def self.each_row(xml_string, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", &block)
-        return enum_for(:each_row, xml_string, shared_strings: shared_strings, part_name: part_name) unless block
-        return if xml_string.nil? || xml_string.empty?
+      def self.each_row(xml_source, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", &block)
+        return enum_for(:each_row, xml_source, shared_strings: shared_strings, part_name: part_name) unless block
+        return if xml_source.nil? || (xml_source.respond_to?(:empty?) && xml_source.empty?)
 
-        fast_scan_rows_direct(xml_string, shared_strings, part_name, &block)
+        if xml_source.is_a?(String)
+          fast_scan_rows_direct(xml_source, shared_strings, part_name, &block)
+        else
+          scan_rows_stream(xml_source, shared_strings, part_name, &block)
+        end
       end
 
       # Parses column definitions (<cols>) from a worksheet.
@@ -571,6 +575,167 @@ module Xlsxrb
       end
 
       private_class_method :fast_scan_rows_direct
+
+      def self.scan_rows_stream(source, shared_strings, _part_name, &block)
+        buffer = +""
+        buffer.force_encoding(Encoding::BINARY)
+        in_sheet_data = false
+        prefix = ""
+        row_start_pattern = "<row"
+        row_start_len = 4
+        row_end_tag = "</row>"
+        row_end_len = 6
+        sd_end_tag = "</sheetData>"
+
+        push_chunk = lambda do |chunk|
+          return if in_sheet_data == :closed
+          return if chunk.nil? || chunk.empty?
+
+          buffer << chunk.b
+
+          unless in_sheet_data
+            sd_term = buffer.index("sheetData")
+            if sd_term.nil?
+              buffer.slice!(0...(buffer.bytesize - 32)) if buffer.bytesize > 64
+              return
+            end
+
+            sd_start = buffer.rindex("<", sd_term)
+            if sd_start.nil?
+              buffer.slice!(0...sd_term)
+              return
+            end
+
+            sd_open_end = buffer.index(">", sd_term)
+            return if sd_open_end.nil?
+
+            if buffer.getbyte(sd_open_end - 1) == 47
+              in_sheet_data = :closed
+              buffer.clear
+              return
+            end
+
+            prefix = buffer.byteslice(sd_start + 1, sd_term - (sd_start + 1))
+            row_start_pattern = "<#{prefix}row"
+            row_start_len = row_start_pattern.bytesize
+            row_end_tag = "</#{prefix}row>"
+            row_end_len = row_end_tag.bytesize
+            sd_end_tag = "</#{prefix}sheetData>"
+
+            buffer.slice!(0..sd_open_end)
+            in_sheet_data = true
+          end
+
+          pos = 0
+          last_consumed_pos = 0
+
+          loop do
+            sd_end_pos = buffer.index(sd_end_tag, pos)
+            row_start = buffer.index(row_start_pattern, pos)
+
+            if sd_end_pos && (row_start.nil? || sd_end_pos < row_start)
+              in_sheet_data = :closed
+              buffer.clear
+              return
+            end
+
+            break if row_start.nil?
+
+            next_pos = row_start + row_start_len
+            break if next_pos >= buffer.bytesize
+
+            nb = buffer.getbyte(next_pos)
+            unless [32, 62, 9, 10, 13, 47].include?(nb)
+              pos = next_pos
+              next
+            end
+
+            tag_end = buffer.index(">", next_pos)
+            break if tag_end.nil?
+
+            if buffer.getbyte(tag_end - 1) == 47
+              pos = tag_end + 1
+              last_consumed_pos = pos
+              next
+            end
+
+            row_end = buffer.index(row_end_tag, tag_end + 1)
+            if row_end.nil?
+              raise ArgumentError, "Malformed XML: row size exceeds maximum buffer limit" if buffer.bytesize > 50 * 1024 * 1024
+
+              break
+            end
+
+            row_index = 0
+            has_custom_attrs = false
+            ri = row_start + row_start_len
+            while ri < tag_end
+              rb = buffer.getbyte(ri)
+              if rb == 114 && buffer.getbyte(ri + 1) == 61 && buffer.getbyte(ri + 2) == 34 # r="
+                ri += 3
+                while ri < tag_end
+                  cb = buffer.getbyte(ri)
+                  break unless cb.between?(48, 57)
+
+                  row_index = (row_index * 10) + (cb - 48)
+                  ri += 1
+                end
+                row_index -= 1
+              elsif [104, 99, 111].include?(rb)
+                has_custom_attrs = true
+                ri += 1
+              else
+                ri += 1
+              end
+            end
+
+            attrs = if has_custom_attrs
+                      row_tag = buffer.byteslice(row_start, tag_end - row_start)
+                      extract_row_attrs(row_tag)
+                    else
+                      EMPTY_HASH
+                    end
+
+            cells_xml = buffer.byteslice(tag_end + 1, row_end - (tag_end + 1))
+            row_obj = StreamRow.fast_create(
+              row_index,
+              cells_xml,
+              0,
+              cells_xml.bytesize,
+              shared_strings,
+              prefix,
+              attrs[:height],
+              attrs[:hidden] || false,
+              attrs[:custom_height] || false,
+              attrs[:outline_level]
+            )
+            block.call(row_obj)
+
+            pos = row_end + row_end_len
+            last_consumed_pos = pos
+          end
+
+          buffer.slice!(0...last_consumed_pos) if last_consumed_pos.positive?
+        end
+
+        if source.respond_to?(:each_chunk)
+          source.each_chunk(65_536, &push_chunk)
+        elsif source.respond_to?(:read)
+          while (chunk = source.read(65_536))
+            break if chunk.empty?
+
+            push_chunk.call(chunk)
+          end
+        elsif source.respond_to?(:call)
+          source.call(&push_chunk)
+        elsif source.respond_to?(:each)
+          source.each(&push_chunk)
+        else
+          raise ArgumentError, "Unsupported stream source: #{source.class}"
+        end
+      end
+
+      private_class_method :scan_rows_stream
 
       COL_LETTERS = (0...16_384).map do |index|
         result = +""

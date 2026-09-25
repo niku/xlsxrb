@@ -4,6 +4,7 @@
 - StreamSheet structural metadata accessors: Expose `merged_cells`, `auto_filter`, `data_validations`, and `conditional_formats` on `StreamSheet`.
 
 ### Changed
+- True O(1) memory streaming read via chunked entry inflation in `ZipReader` and `WorksheetParser`, preventing unbounded memory retention on large worksheets.
 - Extracted pure DSL normalizers (`Xlsxrb::DslHelpers`) and fast XML unescape utilities (`Ooxml::XmlBuilder.unescape`).
 
 ### Removed

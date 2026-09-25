@@ -86,9 +86,20 @@ module Xlsxrb
       #: () -> Elements::Workbook
       def load
         loaded_sheets = sheets.map { |s| s.respond_to?(:load) ? s.load : s }
+        close
         with(sheets: loaded_sheets)
       end
       alias to_workbook load
+
+      # Closes any streaming resources associated with worksheets.
+      #
+      # @return [void]
+      # @api public
+      #: () -> void
+      def close
+        sheets.each { |s| s.close if s.respond_to?(:close) }
+        nil
+      end
 
       # Returns a new Workbook with the specified sheet updated.
       # Yields the matched worksheet to the block, which must return a new Worksheet.

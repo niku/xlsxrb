@@ -53,6 +53,37 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(%w[one.txt two.txt], names.sort)
   end
 
+  test "zip_reader each_entry_chunk streams entry uncompressed chunks" do
+    io = StringIO.new
+    content = "A" * 150_000
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      w.add_entry("large.txt", content)
+    end
+    io.rewind
+
+    reader = Xlsxrb::Ooxml::ZipReader.new(io)
+    assert_equal(true, reader.entry?("large.txt"))
+    assert_equal(false, reader.entry?("missing.txt"))
+    assert_equal(["large.txt"], reader.entry_names)
+
+    chunks = []
+    reader.each_entry_chunk("large.txt", chunk_size: 32_768) do |chunk|
+      chunks << chunk
+    end
+    assert_operator chunks.size, :>, 1
+    assert_equal(content, chunks.join)
+
+    # Test open_entry_io
+    stream = reader.open_entry_io("large.txt")
+    part1 = stream.read(5000)
+    part2 = stream.read(10_000)
+    rest = stream.read
+    stream.close
+    assert_equal("A" * 5000, part1)
+    assert_equal("A" * 10_000, part2)
+    assert_equal("A" * (150_000 - 15_000), rest)
+  end
+
   # --- ZipWriter ---
 
   test "zip_writer creates valid ZIP with entries" do
@@ -524,6 +555,27 @@ class OoxmlTest < Test::Unit::TestCase
     end
 
     assert_equal([0, 1, 2], collected)
+  end
+
+  test "worksheet_parser streaming each_row works with IO stream and chunks" do
+    xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1"><c r="A1"><v>10</v></c></row>
+          <row r="2"><c r="A2"><v>20</v></c></row>
+          <row r="3"><c r="A3"><v>30</v></c></row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    io = StringIO.new(xml)
+    collected = []
+    Xlsxrb::Ooxml::WorksheetParser.each_row(io, shared_strings: []) do |row|
+      collected << [row[:index], row[0].value]
+    end
+
+    assert_equal([[0, 10], [1, 20], [2, 30]], collected)
   end
 
   test "worksheet_parser parses columns" do

@@ -16,7 +16,7 @@ module Xlsxrb
       def self.parse: (untyped xml_string, ?shared_strings: untyped) -> untyped
 
       # Streaming parse: yields one raw row hash at a time.
-      def self.each_row: (untyped xml_string, ?shared_strings: untyped, ?part_name: untyped) ?{ (?) -> untyped } -> untyped
+      def self.each_row: (untyped xml_source, ?shared_strings: untyped, ?part_name: untyped) ?{ (?) -> untyped } -> untyped
 
       # Parses column definitions (<cols>) from a worksheet.
       def self.parse_columns: (untyped xml_string, ?part_name: untyped) -> untyped
@@ -59,6 +59,8 @@ module Xlsxrb
       end
 
       def self.fast_scan_rows_direct: (untyped xml_src, untyped shared_strings, untyped _part_name) ?{ (?) -> untyped } -> untyped
+
+      def self.scan_rows_stream: (untyped source, untyped shared_strings, untyped _part_name) ?{ (?) -> untyped } -> untyped
 
       COL_LETTERS: untyped
 

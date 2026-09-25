@@ -190,35 +190,49 @@ module Xlsxrb
       end
     end
 
-    entries = Ooxml::ZipReader.open(source, &:read_all)
-    shared_strings = Ooxml::SharedStringsParser.parse(entries["xl/sharedStrings.xml"])
-    workbook_sheets = Ooxml::WorkbookParser.parse(entries["xl/workbook.xml"])
-    rels = Ooxml::RelationshipsParser.parse(entries["xl/_rels/workbook.xml.rels"])
-    styles = Ooxml::StylesParser.parse(entries["xl/styles.xml"])
+    zip_reader = Ooxml::ZipReader.open(source)
+    begin
+      shared_strings_xml = zip_reader.read_entry("xl/sharedStrings.xml")
+      shared_strings = Ooxml::SharedStringsParser.parse(shared_strings_xml)
 
-    sheets = workbook_sheets.map do |sheet_info|
-      target = rels[sheet_info[:r_id]]
-      next nil unless target
+      workbook_xml = zip_reader.read_entry("xl/workbook.xml")
+      workbook_sheets = Ooxml::WorkbookParser.parse(workbook_xml)
 
-      sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
-      sheet_xml = entries[sheet_path]
-      next nil if sheet_xml.nil? || sheet_xml.empty?
+      rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
+      rels = Ooxml::RelationshipsParser.parse(rels_xml)
 
-      StreamSheet.new(
-        sheet_info[:name],
-        sheet_xml,
-        shared_strings,
-        styles
-      )
-    end.compact
+      styles_xml = zip_reader.read_entry("xl/styles.xml")
+      styles = Ooxml::StylesParser.parse(styles_xml)
 
-    wb = Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
+      sheets = workbook_sheets.map do |sheet_info|
+        target = rels[sheet_info[:r_id]]
+        next nil unless target
 
-    if block_given?
-      sheets.each(&)
-      nil
-    else
-      wb
+        sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
+        next nil unless zip_reader.entry?(sheet_path)
+
+        chunk_supplier = ->(&blk) { zip_reader.each_entry_chunk(sheet_path, &blk) }
+
+        StreamSheet.new(
+          sheet_info[:name],
+          chunk_supplier,
+          shared_strings,
+          styles,
+          zip_reader: zip_reader,
+          entry_name: sheet_path
+        )
+      end.compact
+
+      wb = Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
+
+      if block_given?
+        sheets.each(&)
+        nil
+      else
+        wb
+      end
+    ensure
+      zip_reader.close if block_given?
     end
   end
 

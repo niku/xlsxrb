@@ -3,7 +3,7 @@
 module Xlsxrb
   module Ooxml
     # Reads ZIP archives using only stdlib (zlib).
-    # Scans local file headers sequentially — works with non-seekable IO.
+    # Supports streaming entry decompression with bounded memory consumption.
     class ZipReader
       LOCAL_HEADER_SIG: untyped
 
@@ -11,29 +11,113 @@ module Xlsxrb
 
       attr_accessor max_uncompressed_size: untyped
 
+      # Metadata record for a single archive entry.
+      class Entry
+        attr_reader name: untyped
+
+        attr_reader method: untyped
+
+        attr_reader compressed_size: untyped
+
+        attr_reader uncompressed_size: untyped
+
+        attr_reader crc32: untyped
+
+        attr_reader local_header_offset: untyped
+
+        attr_reader data_offset: untyped
+
+        # : (name: String, method: Integer, compressed_size: Integer, uncompressed_size: Integer, crc32: Integer, local_header_offset: Integer, data_offset: Integer) -> void
+        def initialize: (name: String, method: Integer, compressed_size: Integer, uncompressed_size: Integer, crc32: Integer, local_header_offset: Integer, data_offset: Integer) -> void
+      end
+
+      # IO-like stream wrapper that decompresses entry chunks on demand without full buffering.
+      class EntryStreamIO
+        DEFAULT_CHUNK_SIZE: ::Integer
+
+        attr_reader data_offset: untyped
+
+        attr_reader compressed_size: untyped
+
+        attr_reader compression_method: untyped
+
+        # : (untyped io, Integer data_offset, Integer compressed_size, Integer compression_method, ?max_uncompressed_size: Integer?) -> void
+        def initialize: (untyped io, Integer data_offset, Integer compressed_size, Integer compression_method, ?max_uncompressed_size: Integer?) -> void
+
+        # : (?Integer? length) -> String?
+        def read: (?Integer? length) -> String?
+
+        # : (?Integer chunk_size) ?{ (String) -> void } -> (void | Enumerator[String, void])
+        def each_chunk: (?untyped chunk_size) ?{ (?) -> untyped } -> untyped
+
+        # : () -> void
+        def close: () -> void
+
+        # : () -> bool
+        def closed?: () -> bool
+
+        # : () -> bool
+        def eof?: () -> bool
+
+        private
+
+        def fetch_chunk: (untyped chunk_size) -> untyped
+      end
+
       # Opens a ZIP from a file path or IO and yields the reader.
       # : (untyped source, ?max_uncompressed_size: Integer) ?{ (ZipReader) -> untyped } -> (ZipReader | untyped)
       def self.open: (untyped source, ?max_uncompressed_size: Integer) ?{ (ZipReader) -> untyped } -> (ZipReader | untyped)
 
-      # : (untyped io, ?max_uncompressed_size: Integer) -> void
-      def initialize: (untyped io, ?max_uncompressed_size: Integer) -> void
+      # : (untyped io, ?max_uncompressed_size: Integer, ?should_close_io: bool) -> void
+      def initialize: (untyped io, ?max_uncompressed_size: Integer, ?should_close_io: bool) -> void
 
       # Returns a Hash { entry_name => raw_bytes } for all entries.
-      def read_all: () -> untyped
+      # : () -> Hash[String, String?]
+      def read_all: () -> Hash[String, String?]
 
       # Returns raw bytes for a single entry, or nil if not found.
-      def read_entry: (untyped name) -> untyped
+      # : (String name) -> String?
+      def read_entry: (String name) -> String?
 
       # Yields (entry_name, data_string) for each file in the archive.
+      # : () ?{ (String, String?) -> void } -> (void | Enumerator[[String, String?], void])
       def each_entry: () ?{ (?) -> untyped } -> untyped
+
+      # Opens an EntryStreamIO for an entry by name.
+      # : (String entry_name) -> EntryStreamIO
+      def open_entry_io: (String entry_name) -> EntryStreamIO
+
+      # Yields inflated binary chunks directly from the compressed stream.
+      # : (String entry_name, ?chunk_size: Integer) ?{ (String) -> void } -> (void | Enumerator[String, void])
+      def each_entry_chunk: (untyped entry_name, ?chunk_size: untyped) ?{ (?) -> untyped } -> untyped
+
+      # Returns true if the archive contains the specified entry.
+      # : (String name) -> bool
+      def entry?: (String name) -> bool
+
+      # Returns entry metadata catalog.
+      # : () -> Hash[String, Entry]
+      def entry_catalog: () -> Hash[String, Entry]
+
+      # Returns array of all entry names.
+      # : () -> Array[String]
+      def entry_names: () -> Array[String]
+
+      # Closes the archive reader and cleans up any temporary resources.
+      # : () -> void
+      def close: () -> void
 
       private
 
-      def entries: () -> untyped
+      def io: () -> untyped
 
-      def parse_entries: () -> untyped
+      def catalog: () -> untyped
 
-      def parse_from_central_directory: (untyped io) -> untyped
+      def parse_catalog: () -> untyped
+
+      def parse_catalog_from_central_directory: (untyped io) -> untyped
+
+      def parse_catalog_from_local_headers: (untyped io) -> untyped
 
       def find_data_descriptor_stream: (untyped io, untyped method) -> untyped
 

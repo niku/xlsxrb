@@ -34,4 +34,26 @@ class PerformanceTest < Test::Unit::TestCase
 
     FileUtils.rm_f(filename)
   end
+
+  def test_streaming_read_large_dataset_flat_memory
+    filename = "test_50k_rows.xlsx"
+    Xlsxrb.write(filename) do |wb|
+      wb.sheet("Data") do |sheet|
+        50_000.times { |i| sheet.row(["Row #{i}", i, "Status #{i}", 99.9]) }
+      end
+    end
+
+    report = MemoryProfiler.report do
+      Xlsxrb.read(filename) do |sheet|
+        sheet.each do |row|
+          # Just iterate
+        end
+      end
+    end
+
+    # Retained memory remains flat O(1) regardless of row count
+    assert_operator report.total_retained_memsize, :<, 1_000_000
+
+    FileUtils.rm_f(filename)
+  end
 end
