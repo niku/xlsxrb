@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.1.13] - 2026-09-25
+
 ### Added
 - Non-destructive template modification: Support modifying existing XLSX templates while preserving unmapped parts, media, charts, drawings, and VBA macros via `Xlsxrb.modify`.
 - StreamSheet structural metadata accessors: Expose `merged_cells`, `auto_filter`, `data_validations`, and `conditional_formats` on `StreamSheet`.
