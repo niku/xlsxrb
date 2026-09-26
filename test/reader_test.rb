@@ -64,6 +64,26 @@ class ReaderTest < Test::Unit::TestCase
     end
   end
 
+  test "preserves seeded shared_strings on Elements::Workbook when written" do
+    Dir.mktmpdir do |dir|
+      file = File.join(dir, "seeded_sst.xlsx")
+      wb = Xlsxrb::Elements::Workbook.new(
+        sheets: [
+          Xlsxrb::Elements::Worksheet.new(
+            name: "S",
+            rows: [Xlsxrb::Elements::Row.new(index: 0, cells: [Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Beta")])]
+          )
+        ],
+        shared_strings: %w[Alpha Beta]
+      )
+      Xlsxrb.write(file, wb)
+
+      entries = Xlsxrb::Ooxml::ZipReader.open(file, &:read_all)
+      sst_xml = entries["xl/sharedStrings.xml"]
+      assert_operator sst_xml.index("Alpha"), :<, sst_xml.index("Beta")
+    end
+  end
+
   test "round-trips cells with multi-letter column references" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

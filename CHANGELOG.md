@@ -4,6 +4,7 @@
 - Row and column styles persistence: Expose `style_index` on `Row`, `Column`, and `StreamRow`, and persist row and column styles (`<row s="..." customFormat="1">` and `<col style="..."/>`) during serialization and round-trip parsing.
 - Styles metadata persistence: Support border colors, cell alignment, and protection attributes in stylesheet generation and round-trip parsing.
 - Dual format support for `num_fmts`: Support both `Hash` (`{ 164 => "format" }`) and `Array` (`[{ num_fmt_id: 164, format_code: "format" }]`) structures for custom number formats in `WorkbookWriter`.
+- Initial shared strings table seeding: Support pre-seeding `sst` in `Xlsxrb.write` when `workbook.shared_strings` is provided.
 
 ### Fixed
 - Fixed missing `dcterms:created` and `dcterms:modified` serialization in `WorkbookWriter` core properties (`docProps/core.xml`).

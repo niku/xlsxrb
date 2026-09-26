@@ -299,6 +299,15 @@ module Xlsxrb
     sst = []
     sst_index = {}
 
+    if workbook.shared_strings && !workbook.shared_strings.empty?
+      workbook.shared_strings.each do |val|
+        if (val.is_a?(String) || val.is_a?(Elements::RichText)) && !sst_index.key?(val)
+          sst << val
+          sst_index[val] = sst.size - 1
+        end
+      end
+    end
+
     # Collect shared strings and build index without allocating new Hashes
     sheet_data = workbook.sheets.map do |raw_ws|
       ws = raw_ws.respond_to?(:load) ? raw_ws.load : raw_ws
