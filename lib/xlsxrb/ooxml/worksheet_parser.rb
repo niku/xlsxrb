@@ -13,6 +13,8 @@ module Xlsxrb
     class WorksheetParser
       EMPTY_ARRAY = [].freeze
       EMPTY_HASH = {}.freeze
+      TAG_DELIM_BYTES = [32, 62, 9, 10, 13, 47].freeze
+      ROW_ATTR_START_BYTES = [104, 99, 111, 115].freeze
 
       # Parses all rows from a worksheet XML string.
       # Returns an Array of raw row hashes:
@@ -152,7 +154,7 @@ module Xlsxrb
           break unless row_start && row_start < sd_end
 
           nb = xml.getbyte(row_start + row_start_len)
-          unless [32, 62, 9, 10, 13, 47].include?(nb)
+          unless TAG_DELIM_BYTES.include?(nb)
             pos = row_start + row_start_len
             next
           end
@@ -273,7 +275,7 @@ module Xlsxrb
           break unless c_start && c_start < to
 
           nb = xml.getbyte(c_start + c_start_len)
-          unless [32, 62, 9, 10, 13, 47].include?(nb)
+          unless TAG_DELIM_BYTES.include?(nb)
             pos = c_start + c_start_len
             next
           end
@@ -505,7 +507,7 @@ module Xlsxrb
           break unless row_start && row_start < sd_end
 
           nb = xml.getbyte(row_start + row_start_len)
-          unless [32, 62, 9, 10, 13, 47].include?(nb)
+          unless TAG_DELIM_BYTES.include?(nb)
             pos = row_start + row_start_len
             next
           end
@@ -534,7 +536,7 @@ module Xlsxrb
 
               end
               row_index -= 1
-            elsif [104, 99, 111, 115].include?(rb) # 'h', 'c', 'o', 's' for ht, customHeight, hidden, outlineLevel, s
+            elsif ROW_ATTR_START_BYTES.include?(rb) # 'h', 'c', 'o', 's' for ht, customHeight, hidden, outlineLevel, s
               has_custom_attrs = true
               ri += 1
             else
@@ -625,9 +627,9 @@ module Xlsxrb
 
           pos = 0
           last_consumed_pos = 0
+          sd_end_pos = buffer.index(sd_end_tag)
 
           loop do
-            sd_end_pos = buffer.index(sd_end_tag, pos)
             row_start = buffer.index(row_start_pattern, pos)
 
             if sd_end_pos && (row_start.nil? || sd_end_pos < row_start)
@@ -642,7 +644,7 @@ module Xlsxrb
             break if next_pos >= buffer.bytesize
 
             nb = buffer.getbyte(next_pos)
-            unless [32, 62, 9, 10, 13, 47].include?(nb)
+            unless TAG_DELIM_BYTES.include?(nb)
               pos = next_pos
               next
             end
@@ -678,7 +680,7 @@ module Xlsxrb
                   ri += 1
                 end
                 row_index -= 1
-              elsif [104, 99, 111, 115].include?(rb)
+              elsif ROW_ATTR_START_BYTES.include?(rb)
                 has_custom_attrs = true
                 ri += 1
               else
@@ -716,20 +718,32 @@ module Xlsxrb
           buffer.slice!(0...last_consumed_pos) if last_consumed_pos.positive?
         end
 
-        if source.respond_to?(:each_chunk)
-          source.each_chunk(65_536, &push_chunk)
-        elsif source.respond_to?(:read)
-          while (chunk = source.read(65_536))
-            break if chunk.empty?
+        catch(:done) do
+          if source.respond_to?(:each_chunk)
+            source.each_chunk(65_536) do |chunk|
+              push_chunk.call(chunk)
+              throw :done if in_sheet_data == :closed
+            end
+          elsif source.respond_to?(:read)
+            while (chunk = source.read(65_536))
+              break if chunk.empty?
 
-            push_chunk.call(chunk)
+              push_chunk.call(chunk)
+              break if in_sheet_data == :closed
+            end
+          elsif source.respond_to?(:call)
+            source.call do |chunk|
+              push_chunk.call(chunk)
+              throw :done if in_sheet_data == :closed
+            end
+          elsif source.respond_to?(:each)
+            source.each do |chunk|
+              push_chunk.call(chunk)
+              break if in_sheet_data == :closed
+            end
+          else
+            raise ArgumentError, "Unsupported stream source: #{source.class}"
           end
-        elsif source.respond_to?(:call)
-          source.call(&push_chunk)
-        elsif source.respond_to?(:each)
-          source.each(&push_chunk)
-        else
-          raise ArgumentError, "Unsupported stream source: #{source.class}"
         end
       end
 

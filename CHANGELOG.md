@@ -6,6 +6,9 @@
 - Dual format support for `num_fmts`: Support both `Hash` (`{ 164 => "format" }`) and `Array` (`[{ num_fmt_id: 164, format_code: "format" }]`) structures for custom number formats in `WorkbookWriter`.
 - Initial shared strings table seeding: Support pre-seeding `sst` in `Xlsxrb.write` when `workbook.shared_strings` is provided.
 
+### Changed
+- Optimize chunked streaming read performance: Hoist `</sheetData>` tag lookup outside row iteration, eliminate byte delimiter array allocations, and terminate entry inflation early once worksheet rows are fully parsed, restoring streaming read throughput faster than in-memory read while preserving $O(1)$ memory consumption.
+
 ### Fixed
 - Fixed missing `dcterms:created` and `dcterms:modified` serialization in `WorkbookWriter` core properties (`docProps/core.xml`).
 - Prevent `Encoding::CompatibilityError` in `Xlsxrb.read` and `Cfb::Reader.cfb?` when inspecting raw string buffers in UTF-8 encoding.

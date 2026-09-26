@@ -10,6 +10,10 @@ module Xlsxrb
 
       EMPTY_HASH: untyped
 
+      TAG_DELIM_BYTES: untyped
+
+      ROW_ATTR_START_BYTES: untyped
+
       # Parses all rows from a worksheet XML string.
       # Returns an Array of raw row hashes:
       #   { index:, cells: [{ ref:, type:, style_index:, value:, formula: }], attrs:, unmapped: }
