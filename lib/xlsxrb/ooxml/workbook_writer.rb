@@ -596,13 +596,13 @@ module Xlsxrb
         b.tag("fonts", { count: fonts.size.to_s }) do |_|
           fonts.each do |font_props|
             b.tag("font") do |_|
-              b.empty_tag("sz", { val: (font_props[:sz] || 11).to_s }) if font_props[:sz] || fonts == [{}]
               b.empty_tag("b") if font_props[:bold]
               b.empty_tag("i") if font_props[:italic]
               b.empty_tag("strike") if font_props[:strike]
               if font_props[:underline]
                 b.empty_tag("u", font_props[:underline] == "single" ? {} : { val: font_props[:underline] })
               end
+              b.empty_tag("sz", { val: (font_props[:sz] || 11).to_s }) if font_props[:sz] || fonts == [{}]
               b.empty_tag("color", { rgb: font_props[:color] }) if font_props[:color]
               b.empty_tag("name", { val: font_props[:name] || "Calibri" })
             end
@@ -646,7 +646,16 @@ module Xlsxrb
                 side_data = border_props[side]
                 if side_data
                   b.tag(side.to_s, { style: side_data[:style] }) do |_|
-                    b.empty_tag("color", { rgb: side_data[:color] }) if side_data[:color]
+                    c = side_data[:color]
+                    if c.is_a?(Hash)
+                      c_attrs = {}
+                      c_attrs[:rgb] = c[:rgb] if c[:rgb]
+                      c_attrs[:theme] = c[:theme].to_s if c[:theme]
+                      c_attrs[:tint] = c[:tint].to_s if c[:tint]
+                      b.empty_tag("color", c_attrs) unless c_attrs.empty?
+                    elsif c
+                      b.empty_tag("color", { rgb: c })
+                    end
                   end
                 else
                   b.empty_tag(side.to_s)
@@ -662,7 +671,7 @@ module Xlsxrb
         end
 
         # Cell XFs (formatting)
-        xf_entries = @styles&.dig(:xf_entries) || []
+        xf_entries = @styles&.dig(:cell_xfs) || @styles&.dig(:xf_entries) || []
         xf_count = [xf_entries.size, 1].max
         b.tag("cellXfs", { count: xf_count.to_s }) do |_|
           xf_entries.each do |xf|

@@ -110,4 +110,46 @@ class StyleTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  test "round-trip stylesheet metadata: border colors, alignment, and protection" do
+    Dir.mktmpdir do |dir|
+      filepath = File.join(dir, "styles_metadata.xlsx")
+      styles = {
+        borders: [
+          {
+            left: { style: "thin", color: { rgb: "FFFF0000" } },
+            diagonal_up: true,
+            diagonal_down: true
+          }
+        ],
+        cell_xfs: [
+          {
+            font_id: 0,
+            fill_id: 0,
+            border_id: 0,
+            alignment: { indent: 2, shrink_to_fit: true },
+            protection: { locked: true, hidden: false }
+          }
+        ]
+      }
+
+      wb = Xlsxrb::Elements::Workbook.new(
+        sheets: [Xlsxrb::Elements::Worksheet.new(name: "S", rows: [Xlsxrb::Elements::Row.new(index: 0)])],
+        styles: styles
+      )
+      Xlsxrb.write(filepath, wb)
+
+      parsed = Xlsxrb.read(filepath).load
+      border = parsed.styles[:borders]&.first
+      assert_equal("FFFF0000", border&.dig(:left, :color, :rgb))
+      assert_equal(true, border&.dig(:diagonal_up))
+      assert_equal(true, border&.dig(:diagonal_down))
+
+      xf = parsed.styles[:cell_xfs]&.first
+      assert_equal(2, xf&.dig(:alignment, :indent))
+      assert_equal(true, xf&.dig(:alignment, :shrink_to_fit))
+      assert_equal(true, xf&.dig(:protection, :locked))
+      assert_equal(false, xf&.dig(:protection, :hidden))
+    end
+  end
 end

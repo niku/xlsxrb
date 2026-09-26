@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Added
+- Styles metadata persistence: Support border colors, cell alignment, and protection attributes in stylesheet generation and round-trip parsing.
+
 ## [0.1.13] - 2026-09-25
 
 ### Added

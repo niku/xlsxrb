@@ -35,6 +35,8 @@ module Xlsxrb
 
         def handle_alignment: (untyped attrs) -> untyped
 
+        def handle_protection: (untyped attrs) -> untyped
+
         def finalize_xf: () -> untyped
 
         def extract_color: (untyped attrs) -> untyped

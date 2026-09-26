@@ -37,6 +37,7 @@ module Xlsxrb
           @current_fill = nil
           @current_fill_pattern = nil
           @current_border = nil
+          @current_border_side = nil
           @current_xf = nil
           @in_cell_xfs = false
           @in_cell_style_xfs = false
@@ -70,7 +71,11 @@ module Xlsxrb
           when "fgColor", "bgColor"
             handle_fill_color(localname, attrs) if @current_fill
           when "border"
-            @current_border = {} if parent_context?("borders")
+            if parent_context?("borders")
+              @current_border = {}
+              @current_border[:diagonal_up] = true if attrs["diagonalUp"] == "1"
+              @current_border[:diagonal_down] = true if attrs["diagonalDown"] == "1"
+            end
           when "left", "right", "top", "bottom", "diagonal"
             handle_border_side(localname, attrs)
           when "cellXfs"
@@ -81,6 +86,8 @@ module Xlsxrb
             handle_xf(attrs)
           when "alignment"
             handle_alignment(attrs)
+          when "protection"
+            handle_protection(attrs)
           end
         end
 
@@ -103,6 +110,8 @@ module Xlsxrb
               @result[:borders] << @current_border
               @current_border = nil
             end
+          when "left", "right", "top", "bottom", "diagonal"
+            @current_border_side = nil
           when "cellXfs"
             @in_cell_xfs = false
           when "cellStyleXfs"
@@ -124,10 +133,14 @@ module Xlsxrb
         end
 
         def handle_color(attrs)
-          return unless @current_font
-
-          color = extract_color(attrs)
-          @current_font[:color] = color unless color.empty?
+          if @current_font
+            color = extract_color(attrs)
+            @current_font[:color] = color unless color.empty?
+          elsif @current_border && @current_border_side
+            color = extract_color(attrs)
+            @current_border[@current_border_side] ||= {}
+            @current_border[@current_border_side][:color] = color unless color.empty?
+          end
         end
 
         def handle_fill_color(localname, attrs)
@@ -141,8 +154,10 @@ module Xlsxrb
         def handle_border_side(side, attrs)
           return unless @current_border
 
+          @current_border_side = side.to_sym
           style = attrs["style"]
-          @current_border[side.to_sym] = { style: style } if style
+          @current_border[@current_border_side] ||= {}
+          @current_border[@current_border_side][:style] = style if style
         end
 
         def handle_xf(attrs)
@@ -168,7 +183,18 @@ module Xlsxrb
           alignment[:vertical] = attrs["vertical"] if attrs["vertical"]
           alignment[:wrap_text] = true if attrs["wrapText"] == "1"
           alignment[:text_rotation] = attrs["textRotation"]&.to_i if attrs["textRotation"]
+          alignment[:indent] = attrs["indent"]&.to_i if attrs["indent"]
+          alignment[:shrink_to_fit] = true if attrs["shrinkToFit"] == "1"
           @current_xf[:alignment] = alignment unless alignment.empty?
+        end
+
+        def handle_protection(attrs)
+          return unless @current_xf
+
+          protection = {}
+          protection[:locked] = attrs["locked"] == "1" unless attrs["locked"].nil?
+          protection[:hidden] = attrs["hidden"] == "1" unless attrs["hidden"].nil?
+          @current_xf[:protection] = protection unless protection.empty?
         end
 
         def finalize_xf
