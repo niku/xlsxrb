@@ -1031,7 +1031,18 @@ module Xlsxrb
         b.tag("cp:keywords") { |_| b.text(@core_properties[:keywords]) } if @core_properties[:keywords]
         b.tag("dc:description") { |_| b.text(@core_properties[:description]) } if @core_properties[:description]
         b.tag("cp:lastModifiedBy") { |_| b.text(@core_properties[:last_modified_by]) } if @core_properties[:last_modified_by]
+        b.tag("cp:revision") { |_| b.text(@core_properties[:revision]) } if @core_properties[:revision]
+        if @core_properties[:created]
+          created_val = @core_properties[:created].respond_to?(:iso8601) ? @core_properties[:created].iso8601 : @core_properties[:created]
+          b.tag("dcterms:created", { "xsi:type": "dcterms:W3CDTF" }) { |_| b.text(created_val) }
+        end
+        if @core_properties[:modified]
+          modified_val = @core_properties[:modified].respond_to?(:iso8601) ? @core_properties[:modified].iso8601 : @core_properties[:modified]
+          b.tag("dcterms:modified", { "xsi:type": "dcterms:W3CDTF" }) { |_| b.text(modified_val) }
+        end
         b.tag("cp:category") { |_| b.text(@core_properties[:category]) } if @core_properties[:category]
+        b.tag("cp:contentStatus") { |_| b.text(@core_properties[:content_status]) } if @core_properties[:content_status]
+        b.tag("dc:language") { |_| b.text(@core_properties[:language]) } if @core_properties[:language]
         b.close_tag("cp:coreProperties")
         io.string
       end

@@ -4,6 +4,9 @@
 - Row and column styles persistence: Expose `style_index` on `Row`, `Column`, and `StreamRow`, and persist row and column styles (`<row s="..." customFormat="1">` and `<col style="..."/>`) during serialization and round-trip parsing.
 - Styles metadata persistence: Support border colors, cell alignment, and protection attributes in stylesheet generation and round-trip parsing.
 
+### Fixed
+- Fixed missing `dcterms:created` and `dcterms:modified` serialization in `WorkbookWriter` core properties (`docProps/core.xml`).
+
 ## [0.1.13] - 2026-09-25
 
 ### Added

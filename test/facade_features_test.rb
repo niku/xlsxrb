@@ -756,19 +756,37 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # =====================================================
 
   test "core_property in build API" do
+    created_time = "2026-09-26T12:00:00Z"
+    modified_time = "2026-09-26T13:30:00Z"
     workbook = Xlsxrb.build do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
       w.core_property(:creator, "Test Author")
       w.core_property(:title, "Test Title")
+      w.core_property(:created, created_time)
+      w.core_property(:modified, modified_time)
+      w.core_property(:last_modified_by, "Modifier")
+      w.core_property(:category, "Reports")
     end
 
     tmp = Tempfile.new(["facade_coreprop_build", ".xlsx"])
     Xlsxrb.write(tmp.path, workbook)
 
+    # Verify raw XML
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    core_xml = entries["docProps/core.xml"]
+    assert_match(%r{<dcterms:created xsi:type="dcterms:W3CDTF">#{created_time}</dcterms:created>}, core_xml)
+    assert_match(%r{<dcterms:modified xsi:type="dcterms:W3CDTF">#{modified_time}</dcterms:modified>}, core_xml)
+    assert_match(%r{<cp:lastModifiedBy>Modifier</cp:lastModifiedBy>}, core_xml)
+    assert_match(%r{<cp:category>Reports</cp:category>}, core_xml)
+
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
     props = reader.core_properties
     assert_equal("Test Author", props[:creator])
     assert_equal("Test Title", props[:title])
+    assert_equal(created_time, props[:created])
+    assert_equal(modified_time, props[:modified])
+    assert_equal("Modifier", props[:last_modified_by])
+    assert_equal("Reports", props[:category])
   ensure
     tmp&.close!
   end

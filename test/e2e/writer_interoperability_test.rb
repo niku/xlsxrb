@@ -262,6 +262,25 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "workbook writer output stores core properties with created and modified dates" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-workbook-coreprops", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    wb = Xlsxrb.build do |w|
+      w.sheet("Sheet1") { |s| s.row(["A"]) }
+      w.core_property(:title, "My Workbook")
+      w.core_property(:creator, "Test User")
+      w.core_property(:created, "2024-01-15T00:00:00Z")
+      w.core_property(:modified, "2024-01-16T12:00:00Z")
+    end
+    Xlsxrb.write(xlsx_path, wb)
+
+    assert_openxml_sdk_scenario_passes("writer_core_properties_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer output stores app properties correctly" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
