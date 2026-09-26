@@ -581,11 +581,26 @@ module Xlsxrb
         b.open_tag("styleSheet", { xmlns: SSML_NS })
 
         # Number formats
-        num_fmts = @styles&.dig(:num_fmts) || []
+        raw_num_fmts = @styles&.dig(:num_fmts) || []
+        num_fmts = if raw_num_fmts.is_a?(Hash)
+                     raw_num_fmts.map { |k, v| { num_fmt_id: k.to_i, format_code: v.to_s } }
+                   elsif raw_num_fmts.is_a?(Array)
+                     raw_num_fmts.map do |nf|
+                       if nf.is_a?(Hash)
+                         id = (nf[:num_fmt_id] || nf[:id]).to_i
+                         code = (nf[:format_code] || nf[:code] || nf[:format]).to_s
+                         { num_fmt_id: id, format_code: code }
+                       elsif nf.is_a?(Array) && nf.size == 2
+                         { num_fmt_id: nf[0].to_i, format_code: nf[1].to_s }
+                       end
+                     end.compact
+                   else
+                     []
+                   end
         unless num_fmts.empty?
           b.tag("numFmts", { count: num_fmts.size.to_s }) do |_|
             num_fmts.each do |nf|
-              b.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id].to_s, formatCode: nf[:format_code] }) if nf.is_a?(Hash)
+              b.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id].to_s, formatCode: nf[:format_code] })
             end
           end
         end

@@ -60,4 +60,35 @@ class RowColumnStylesTest < Test::Unit::TestCase
       assert_equal("FFFF0000", border&.dig(:left, :color, :rgb))
     end
   end
+
+  def test_workbook_writer_num_fmts_hash_and_array_support
+    Dir.mktmpdir do |dir|
+      # Test with Hash format (as returned by Reader)
+      filepath_hash = File.join(dir, "hash_styles.xlsx")
+      wb_hash = Xlsxrb::Elements::Workbook.new(
+        sheets: [Xlsxrb::Elements::Worksheet.new(name: "S", rows: [Xlsxrb::Elements::Row.new(index: 0)])],
+        styles: { num_fmts: { 164 => "#,##0.00" } }
+      )
+      Xlsxrb.write(filepath_hash, wb_hash)
+
+      entries = Xlsxrb::Ooxml::ZipReader.open(filepath_hash, &:read_all)
+      styles_xml = entries["xl/styles.xml"]
+      assert_match(%r{<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0\.00"/></numFmts>}, styles_xml)
+
+      parsed = Xlsxrb.read(filepath_hash).load
+      assert_equal("#,##0.00", parsed.styles.dig(:num_fmts, 164))
+
+      # Test with Array format
+      filepath_arr = File.join(dir, "arr_styles.xlsx")
+      wb_arr = Xlsxrb::Elements::Workbook.new(
+        sheets: [Xlsxrb::Elements::Worksheet.new(name: "S", rows: [Xlsxrb::Elements::Row.new(index: 0)])],
+        styles: { num_fmts: [{ num_fmt_id: 165, format_code: "$#,##0" }] }
+      )
+      Xlsxrb.write(filepath_arr, wb_arr)
+
+      entries_arr = Xlsxrb::Ooxml::ZipReader.open(filepath_arr, &:read_all)
+      styles_xml_arr = entries_arr["xl/styles.xml"]
+      assert_match(%r{<numFmts count="1"><numFmt numFmtId="165" formatCode="\$#,##0"/></numFmts>}, styles_xml_arr)
+    end
+  end
 end
