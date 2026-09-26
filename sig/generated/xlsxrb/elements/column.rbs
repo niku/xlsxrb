@@ -28,6 +28,12 @@ module Xlsxrb
       # : () -> bool
       def valid?: () -> bool
 
+      # Returns style_index if present in unmapped_data.
+      #
+      # @return [Integer, nil]
+      # : () -> Integer?
+      def style_index: () -> Integer?
+
       # Returns whether the column index is within valid OOXML range (0..16383).
       #
       # @param index [Object]

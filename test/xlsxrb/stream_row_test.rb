@@ -70,4 +70,31 @@ class StreamRowTest < Test::Unit::TestCase
     assert_equal([], row.values)
     assert_nil(row.cell_at(0))
   end
+
+  test "stream_row unmapped_data returns hash with style_index when present and EMPTY_HASH when nil" do
+    row_without_style = Xlsxrb::StreamRow.new(
+      index: 0,
+      xml_bytes: "".b,
+      from: 0,
+      to: 0,
+      shared_strings: [],
+      style_index: nil
+    )
+    assert_same(Xlsxrb::Elements::EMPTY_HASH, row_without_style.unmapped_data)
+    assert_equal({}, row_without_style.unmapped_data)
+
+    row_with_style = Xlsxrb::StreamRow.new(
+      index: 0,
+      xml_bytes: "".b,
+      from: 0,
+      to: 0,
+      shared_strings: [],
+      style_index: 3
+    )
+    assert_equal({ style_index: 3 }, row_with_style.unmapped_data)
+    assert_equal(3, row_with_style.unmapped_data[:style_index])
+    assert_equal(3, row_with_style.style_index)
+    assert_equal(3, row_with_style[:style_index])
+    assert_equal({ height: nil, hidden: false, custom_height: false, outline_level: nil, style_index: 3 }, row_with_style[:attrs])
+  end
 end

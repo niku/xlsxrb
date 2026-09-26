@@ -314,7 +314,8 @@ module Xlsxrb
       columns = ws.columns.map do |col|
         # simplecov:disable
         # Edge case / untested delegation block
-        { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width, outline_level: col.outline_level }
+        style_idx = col.unmapped_data&.[](:style_index) || col.unmapped_data&.[](:style) || (col.respond_to?(:style_index) && col.style_index)
+        { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width, outline_level: col.outline_level, style_index: style_idx }
         # simplecov:enable
       end
       sd = { name: ws.name, rows: ws.rows, columns: columns }
@@ -556,12 +557,15 @@ module Xlsxrb
       rows = raw_rows.map { |rr| build_row_from_raw(rr) }
       columns = raw_columns.map do |rc|
         # Columns from OOXML are 1-based min/max ranges; convert to 0-based
+        col_unmapped = {}
+        col_unmapped[:style_index] = rc[:style_index] if rc[:style_index]
         Elements::Column.new(
           index: (rc[:min] || 1) - 1,
           width: rc[:width],
           hidden: rc[:hidden] || false,
           custom_width: rc[:custom_width] || false,
-          outline_level: rc[:outline_level]
+          outline_level: rc[:outline_level],
+          unmapped_data: col_unmapped
         )
       end
 
@@ -609,6 +613,8 @@ module Xlsxrb
           # simplecov:enable
         end
       end
+      row_unmapped = {}
+      row_unmapped[:style_index] = attrs[:style_index] if attrs[:style_index]
       Elements::Row.new(
         index: raw_row[:index],
         cells: cells,
@@ -616,6 +622,7 @@ module Xlsxrb
         hidden: attrs[:hidden] || false,
         custom_height: attrs[:custom_height] || false,
         outline_level: attrs[:outline_level],
+        unmapped_data: row_unmapped,
         errors: row_errors
       )
     end

@@ -19,7 +19,7 @@ module Xlsxrb
   class StreamRow
     [Enumerable].each { |m| include m }
 
-    attr_reader :index, :height, :hidden, :custom_height, :outline_level
+    attr_reader :index, :height, :hidden, :custom_height, :outline_level, :style_index
 
     # @param index [Integer] 0-based row index.
     # @param xml_bytes [String] Raw ASCII-8BIT XML bytes.
@@ -31,9 +31,10 @@ module Xlsxrb
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom height is set.
     # @param outline_level [Integer, nil] Grouping/outline level.
-    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
+    # @param style_index [Integer, nil] Style index.
+    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil) -> void
     def initialize(index:, xml_bytes:, from:, to:, shared_strings:, prefix: "", height: nil, hidden: false,
-                   custom_height: false, outline_level: nil)
+                   custom_height: false, outline_level: nil, style_index: nil)
       @index = index
       @xml = xml_bytes
       @from = from
@@ -44,11 +45,12 @@ module Xlsxrb
       @hidden = hidden
       @custom_height = custom_height
       @outline_level = outline_level
+      @style_index = style_index
       @cells = nil
     end
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil)
+    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil)
       inst = allocate
       inst.instance_variable_set(:@index, index)
       inst.instance_variable_set(:@xml, xml_bytes)
@@ -60,6 +62,7 @@ module Xlsxrb
       inst.instance_variable_set(:@hidden, hidden)
       inst.instance_variable_set(:@custom_height, custom_height)
       inst.instance_variable_set(:@outline_level, outline_level)
+      inst.instance_variable_set(:@style_index, style_index)
       inst.instance_variable_set(:@cells, nil)
       inst
     end
@@ -126,7 +129,11 @@ module Xlsxrb
         when :hidden then hidden
         when :custom_height then custom_height
         when :outline_level then outline_level
-        when :attrs then { height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level }
+        when :style_index then style_index
+        when :attrs
+          h = { height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level }
+          h[:style_index] = style_index if style_index
+          h
         end
       else
         cells[col_index]
@@ -183,7 +190,7 @@ module Xlsxrb
     # @api public
     #: () -> Hash[untyped, untyped]
     def unmapped_data
-      Elements::EMPTY_HASH
+      @style_index ? { style_index: @style_index } : Elements::EMPTY_HASH
     end
 
     # Validation errors for compatibility with Elements::Row.

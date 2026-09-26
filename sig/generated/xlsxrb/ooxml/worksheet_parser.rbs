@@ -19,7 +19,7 @@ module Xlsxrb
       def self.each_row: (untyped xml_source, ?shared_strings: untyped, ?part_name: untyped) ?{ (?) -> untyped } -> untyped
 
       # Parses column definitions (<cols>) from a worksheet.
-      def self.parse_columns: (untyped xml_string, ?part_name: untyped) -> untyped
+      def self.parse_columns: (untyped xml_string, ?untyped _part_name) -> untyped
 
       # Yields Event objects for columns, rows, cells, and hyperlinks.
       def self.each_event: (untyped xml_string, ?shared_strings: untyped, ?part_name: untyped) ?{ (?) -> untyped } -> untyped

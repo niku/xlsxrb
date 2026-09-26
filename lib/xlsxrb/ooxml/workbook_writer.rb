@@ -923,6 +923,8 @@ module Xlsxrb
               attrs[:hidden] = true if row.hidden
               attrs[:custom_height] = true if row.custom_height
               attrs[:outline_level] = row.outline_level if row.outline_level
+              style_idx = row.unmapped_data&.[](:style_index) || (row.respond_to?(:style_index) && row.style_index)
+              attrs[:style_index] = style_idx if style_idx
               ws.write_row(row.index, row.cells, attrs: attrs, unmapped: row.unmapped_data || [], sst_index: @shared_strings_index)
             end
           end

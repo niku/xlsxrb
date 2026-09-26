@@ -38,24 +38,13 @@ module Xlsxrb
       end
 
       # Parses column definitions (<cols>) from a worksheet.
-      def self.parse_columns(xml_string, part_name: "xl/worksheets/sheet1.xml")
+      def self.parse_columns(xml_string, _part_name = "xl/worksheets/sheet1.xml")
         return [] if xml_string.nil? || xml_string.empty?
+        return [] unless xml_string.include?("<cols")
 
-        columns = []
-        each_event(xml_string, part_name: part_name) do |event|
-          next unless event.type == :column
-
-          min, max, width, hidden, custom_width, outline_level = event.args
-          columns << {
-            min: min,
-            max: max,
-            width: width,
-            hidden: hidden,
-            custom_width: custom_width,
-            outline_level: outline_level
-          }
-        end
-        columns
+        listener = ColumnsListener.new
+        XmlParser.parse(xml_string, listener)
+        listener.columns
       end
 
       # Yields Event objects for columns, rows, cells, and hyperlinks.
@@ -231,6 +220,12 @@ module Xlsxrb
         if ol_val
           attrs = {} if attrs.equal?(EMPTY_HASH)
           attrs[:outline_level] = ol_val.to_i
+        end
+
+        s_val = tag_attr(row_tag, ' s="')
+        if s_val
+          attrs = {} if attrs.equal?(EMPTY_HASH)
+          attrs[:style_index] = s_val.to_i
         end
 
         attrs
@@ -465,7 +460,8 @@ module Xlsxrb
               width: attrs["width"]&.to_f,
               hidden: attrs["hidden"] == "1",
               custom_width: attrs["customWidth"] == "1",
-              outline_level: attrs["outlineLevel"]&.to_i
+              outline_level: attrs["outlineLevel"]&.to_i,
+              style_index: attrs["style"]&.to_i
             }
             @columns << col
           end
@@ -538,7 +534,7 @@ module Xlsxrb
 
               end
               row_index -= 1
-            elsif [104, 99, 111].include?(rb) # 'h', 'c', 'o' for ht, customHeight, hidden, outlineLevel
+            elsif [104, 99, 111, 115].include?(rb) # 'h', 'c', 'o', 's' for ht, customHeight, hidden, outlineLevel, s
               has_custom_attrs = true
               ri += 1
             else
@@ -566,7 +562,8 @@ module Xlsxrb
             attrs[:height],
             attrs[:hidden] || false,
             attrs[:custom_height] || false,
-            attrs[:outline_level]
+            attrs[:outline_level],
+            attrs[:style_index]
           )
           block.call(row_obj)
 
@@ -681,7 +678,7 @@ module Xlsxrb
                   ri += 1
                 end
                 row_index -= 1
-              elsif [104, 99, 111].include?(rb)
+              elsif [104, 99, 111, 115].include?(rb)
                 has_custom_attrs = true
                 ri += 1
               else
@@ -707,7 +704,8 @@ module Xlsxrb
               attrs[:height],
               attrs[:hidden] || false,
               attrs[:custom_height] || false,
-              attrs[:outline_level]
+              attrs[:outline_level],
+              attrs[:style_index]
             )
             block.call(row_obj)
 

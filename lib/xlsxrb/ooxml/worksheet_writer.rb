@@ -63,6 +63,7 @@ module Xlsxrb
         row_num_str = row_num.to_s
         buf = @row_buffer ||= String.new(capacity: 65_536)
         buf << '<row r="' << row_num_str << '"'
+        buf << ' s="' << attrs[:style_index].to_s << '" customFormat="1"' if attrs[:style_index]
         if attrs[:height]
           buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"'
         elsif attrs[:custom_height]
@@ -1106,6 +1107,8 @@ module Xlsxrb
           attrs[:hidden] = "1" if col[:hidden]
           attrs[:customWidth] = "1" if col[:custom_width] || col[:width]
           attrs[:outlineLevel] = col[:outline_level].to_s if col[:outline_level]
+          style_id = col[:style_index] || col[:style]
+          attrs[:style] = style_id.to_s if style_id
           @builder.empty_tag("col", attrs)
         end
         @builder.close_tag("cols")

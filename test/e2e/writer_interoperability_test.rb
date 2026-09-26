@@ -532,6 +532,57 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "writer output stores row and column styles with border colors, alignment, and protection" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-writer-row-col-styles", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    styles = {
+      fonts: [{ name: "Calibri", sz: 11 }, { name: "Arial", sz: 14, bold: true }],
+      fills: [{ pattern: "none" }, { pattern: "gray125" }, { pattern: "solid", fg_color: "FFFFFF00" }],
+      borders: [{ left: { style: "thin", color: "FFFF0000" } }],
+      cell_xfs: [
+        { font_id: 0, fill_id: 0, border_id: 0 },
+        {
+          font_id: 1,
+          fill_id: 2,
+          border_id: 0,
+          alignment: { horizontal: "center", vertical: "center", wrap_text: true },
+          protection: { locked: true, hidden: false }
+        }
+      ]
+    }
+
+    wb = Xlsxrb::Elements::Workbook.new(
+      sheets: [
+        Xlsxrb::Elements::Worksheet.new(
+          name: "StyledSheet",
+          rows: [
+            Xlsxrb::Elements::Row.new(
+              index: 0,
+              cells: [Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Hello")],
+              unmapped_data: { style_index: 1 }
+            )
+          ],
+          columns: [
+            Xlsxrb::Elements::Column.new(
+              index: 0,
+              width: 20.0,
+              unmapped_data: { style_index: 1 }
+            )
+          ]
+        )
+      ],
+      styles: styles
+    )
+
+    Xlsxrb.write(xlsx_path, wb)
+
+    assert_openxml_sdk_scenario_passes("writer_row_column_styles_test", xlsx_path)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
   test "writer output stores tables and shared strings correctly" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

@@ -58,11 +58,23 @@ module Xlsxrb
           when :hidden then hidden
           when :custom_height then custom_height
           when :outline_level then outline_level
-          when :attrs then { height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level }
+          when :style_index then style_index
+          when :attrs
+            h = { height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level }
+            h[:style_index] = style_index if style_index
+            h
           end
         else
           cells[col_index]
         end
+      end
+
+      # Returns style_index if present in unmapped_data.
+      #
+      # @return [Integer, nil]
+      #: () -> Integer?
+      def style_index
+        unmapped_data[:style_index]
       end
 
       # Iterate over cells in this row.

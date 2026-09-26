@@ -447,6 +447,18 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal([], empty_row.values)
   end
 
+  test "row style_index and attrs with style_index" do
+    row_without_style = Xlsxrb::Elements::Row.new(index: 0)
+    assert_nil(row_without_style.style_index)
+    assert_nil(row_without_style[:style_index])
+    assert_equal({ height: nil, hidden: false, custom_height: false, outline_level: nil }, row_without_style[:attrs])
+
+    row_with_style = Xlsxrb::Elements::Row.new(index: 1, unmapped_data: { style_index: 4 })
+    assert_equal(4, row_with_style.style_index)
+    assert_equal(4, row_with_style[:style_index])
+    assert_equal({ height: nil, hidden: false, custom_height: false, outline_level: nil, style_index: 4 }, row_with_style[:attrs])
+  end
+
   # --- Column ---
 
   test "column creates a valid column" do
@@ -457,6 +469,17 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(true, col.hidden)
     assert_equal(true, col.custom_width)
     assert_equal(2, col.outline_level)
+  end
+
+  test "column style_index returns style from unmapped_data" do
+    col1 = Xlsxrb::Elements::Column.new(index: 0)
+    assert_nil(col1.style_index)
+
+    col2 = Xlsxrb::Elements::Column.new(index: 1, unmapped_data: { style_index: 2 })
+    assert_equal(2, col2.style_index)
+
+    col3 = Xlsxrb::Elements::Column.new(index: 2, unmapped_data: { style: 5 })
+    assert_equal(5, col3.style_index)
   end
 
   test "column with negative index is invalid" do

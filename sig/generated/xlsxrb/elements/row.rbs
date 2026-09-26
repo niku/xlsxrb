@@ -37,6 +37,12 @@ module Xlsxrb
       # : (Integer | Symbol col_index) -> untyped
       def []: (Integer | Symbol col_index) -> untyped
 
+      # Returns style_index if present in unmapped_data.
+      #
+      # @return [Integer, nil]
+      # : () -> Integer?
+      def style_index: () -> Integer?
+
       # Iterate over cells in this row.
       #
       # @example

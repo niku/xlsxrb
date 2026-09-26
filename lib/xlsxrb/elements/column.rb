@@ -38,6 +38,14 @@ module Xlsxrb
         errors.empty?
       end
 
+      # Returns style_index if present in unmapped_data.
+      #
+      # @return [Integer, nil]
+      #: () -> Integer?
+      def style_index
+        unmapped_data[:style_index] || unmapped_data[:style]
+      end
+
       # Returns whether the column index is within valid OOXML range (0..16383).
       #
       # @param index [Object]
