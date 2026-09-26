@@ -702,12 +702,13 @@ module Xlsxrb
     #: (untyped source, String? password) -> untyped
     def prepare_source_io(source, password)
       if source.is_a?(String)
-        if source.start_with?("PK\x03\x04") || source.include?("\x00") || Ooxml::Cfb::Reader.cfb?(source)
-          if Ooxml::Cfb::Reader.cfb?(source)
-            decrypted_zip = Ooxml::Crypto.decrypt(source, password)
+        bin_source = source.encoding == Encoding::BINARY ? source : source.b
+        if bin_source.start_with?("PK\x03\x04".b) || bin_source.include?("\x00".b) || Ooxml::Cfb::Reader.cfb?(bin_source)
+          if Ooxml::Cfb::Reader.cfb?(bin_source)
+            decrypted_zip = Ooxml::Crypto.decrypt(bin_source, password)
             StringIO.new(decrypted_zip)
           else
-            StringIO.new(source)
+            StringIO.new(bin_source)
           end
         elsif File.file?(source)
           first_bytes = begin

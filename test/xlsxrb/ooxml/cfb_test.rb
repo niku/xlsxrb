@@ -37,6 +37,8 @@ module Xlsxrb
         assert_false Cfb::Reader.cfb?("short".b)
         assert_false Cfb::Reader.cfb?(123)
         assert_false Cfb::Reader.cfb?(:symbol)
+        assert_false Cfb::Reader.cfb?("日本語テキスト".encode(Encoding::UTF_8))
+        assert_false Cfb::Reader.cfb?((+"\xFF\xFEabc").force_encoding(Encoding::UTF_8))
 
         plain_zip = "PK\x03\x04SomeZipData".b
         assert_false Cfb::Reader.cfb?(plain_zip)

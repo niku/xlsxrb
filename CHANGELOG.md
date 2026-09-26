@@ -7,6 +7,7 @@
 
 ### Fixed
 - Fixed missing `dcterms:created` and `dcterms:modified` serialization in `WorkbookWriter` core properties (`docProps/core.xml`).
+- Prevent `Encoding::CompatibilityError` in `Xlsxrb.read` and `Cfb::Reader.cfb?` when inspecting raw string buffers in UTF-8 encoding.
 
 ## [0.1.13] - 2026-09-25
 

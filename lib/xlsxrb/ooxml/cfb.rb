@@ -63,7 +63,7 @@ module Xlsxrb
         def self.cfb?(data)
           case data
           when String
-            data.start_with?(MAGIC)
+            data.b.start_with?(MAGIC)
           else
             false
           end
