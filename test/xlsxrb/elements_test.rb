@@ -655,6 +655,57 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(empty_ws["A1"])
   end
 
+  test "worksheet handles first-class conditional_formatting and data_validations" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
+    assert_equal([], ws.conditional_formatting)
+    assert_equal([], ws.conditional_formats)
+    assert_equal([], ws.data_validations)
+    assert_predicate(ws.conditional_formatting, :frozen?)
+    assert_predicate(ws.data_validations, :frozen?)
+
+    cf_rule = [{ sqref: "A1:A10", type: "cellIs", operator: "greaterThan", formula: "100" }]
+    dv_rule = [{ sqref: "B1:B10", type: "whole", operator: "between", formula1: "1", formula2: "10" }]
+
+    ws_with_rules = Xlsxrb::Elements::Worksheet.new(
+      name: "Sheet1",
+      conditional_formatting: cf_rule,
+      data_validations: dv_rule
+    )
+    assert_equal(cf_rule, ws_with_rules.conditional_formatting)
+    assert_equal(cf_rule, ws_with_rules.conditional_formats)
+    assert_equal(dv_rule, ws_with_rules.data_validations)
+
+    # with
+    new_cf = [{ sqref: "C1:C10", type: "containsText" }]
+    ws_updated = ws_with_rules.with(conditional_formatting: new_cf)
+    assert_equal(new_cf, ws_updated.conditional_formatting)
+    assert_equal(dv_rule, ws_updated.data_validations)
+
+    ws_updated_alias = ws_with_rules.with(conditional_formats: new_cf)
+    assert_equal(new_cf, ws_updated_alias.conditional_formatting)
+
+    new_dv = [{ sqref: "D1:D10", type: "list", formula1: '"A,B,C"' }]
+    ws_updated_dv = ws_with_rules.with(data_validations: new_dv)
+    assert_equal(cf_rule, ws_updated_dv.conditional_formatting)
+    assert_equal(new_dv, ws_updated_dv.data_validations)
+
+    # deconstruct_keys
+    keys = ws_with_rules.deconstruct_keys(nil)
+    assert_equal(cf_rule, keys[:conditional_formatting])
+    assert_equal(cf_rule, keys[:conditional_formats])
+    assert_equal(dv_rule, keys[:data_validations])
+
+    # == and hash
+    same_ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", conditional_formatting: cf_rule, data_validations: dv_rule)
+    diff_cf_ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", conditional_formatting: new_cf, data_validations: dv_rule)
+    diff_dv_ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", conditional_formatting: cf_rule, data_validations: new_dv)
+
+    assert_equal(ws_with_rules, same_ws)
+    assert_equal(ws_with_rules.hash, same_ws.hash)
+    refute_equal(ws_with_rules, diff_cf_ws)
+    refute_equal(ws_with_rules, diff_dv_ws)
+  end
+
   # --- Workbook ---
 
   test "workbook creates a valid workbook" do

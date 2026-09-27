@@ -333,10 +333,12 @@ module Xlsxrb
       end
       sd = { name: ws.name, rows: ws.rows, columns: columns }
       sd[:charts] = ws.charts unless ws.charts.empty?
+      sd[:conditional_formats] = ws.conditional_formatting unless ws.conditional_formatting.empty?
+      sd[:data_validations] = ws.data_validations unless ws.data_validations.empty?
 
       # Extract facade metadata from unmapped_data
       facade = ws.unmapped_data[:facade]
-      facade&.each { |key, val| sd[key] = val }
+      facade&.each { |key, val| sd[key] ||= val }
 
       sd
     end
@@ -583,7 +585,29 @@ module Xlsxrb
         )
       end
 
-      Elements::Worksheet.new(name: name, rows: rows, columns: columns)
+      cfs = if sheet_xml.include?("<conditionalFormatting")
+              listener = Ooxml::Reader::ConditionalFormattingListener.new
+              Ooxml::XmlParser.parse(sheet_xml, listener)
+              listener.rules
+            else
+              []
+            end
+
+      dvs = if sheet_xml.include?("<dataValidation")
+              listener = Ooxml::Reader::DataValidationsListener.new
+              Ooxml::XmlParser.parse(sheet_xml, listener)
+              listener.validations
+            else
+              []
+            end
+
+      Elements::Worksheet.new(
+        name: name,
+        rows: rows,
+        columns: columns,
+        conditional_formatting: cfs,
+        data_validations: dvs
+      )
     end
 
     #: (untyped raw_row) -> (Elements::Row | untyped)

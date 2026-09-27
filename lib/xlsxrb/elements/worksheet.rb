@@ -17,20 +17,27 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :unmapped_data, :errors
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors
+      alias conditional_formats conditional_formatting
 
       # @param name [String] The worksheet name (max 31 characters).
       # @param rows [Array<Elements::Row>] Rows in the sheet.
       # @param columns [Array<Elements::Column>] Column definitions.
       # @param charts [Array<Hash>] Charts in the sheet.
+      # @param conditional_formatting [Array<Hash>, nil] Conditional formatting rules.
+      # @param data_validations [Array<Hash>] Data validation rules.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], unmapped_data: {}, errors: nil)
+      # @param conditional_formats [Array<Hash>, nil] Alias for conditional_formatting.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
         @charts = (charts || []).freeze
+        cf = conditional_formatting || conditional_formats || []
+        @conditional_formatting = cf.freeze
+        @data_validations = (data_validations || []).freeze
         @unmapped_data = (unmapped_data || {}).freeze
         computed_errors = errors || self.class.validate(@name, @rows)
         @errors = computed_errors.freeze
@@ -154,6 +161,14 @@ module Xlsxrb
         new_rows = changes.key?(:rows) ? changes[:rows] : rows
         new_cols = changes.key?(:columns) ? changes[:columns] : columns
         new_charts = changes.key?(:charts) ? changes[:charts] : charts
+        new_cf = if changes.key?(:conditional_formatting)
+                   changes[:conditional_formatting]
+                 elsif changes.key?(:conditional_formats)
+                   changes[:conditional_formats]
+                 else
+                   conditional_formatting
+                 end
+        new_dv = changes.key?(:data_validations) ? changes[:data_validations] : data_validations
         new_unmapped = changes.key?(:unmapped_data) ? changes[:unmapped_data] : unmapped_data
         new_errors = changes.key?(:errors) ? changes[:errors] : errors
 
@@ -162,6 +177,8 @@ module Xlsxrb
           rows: new_rows,
           columns: new_cols,
           charts: new_charts,
+          conditional_formatting: new_cf,
+          data_validations: new_dv,
           unmapped_data: new_unmapped,
           errors: new_errors
         )
@@ -170,7 +187,17 @@ module Xlsxrb
       # Support pattern matching.
       #: (Array[Symbol]?) -> Hash[Symbol, untyped]
       def deconstruct_keys(_keys)
-        { name: name, rows: rows, columns: columns, charts: charts, unmapped_data: unmapped_data, errors: errors }
+        {
+          name: name,
+          rows: rows,
+          columns: columns,
+          charts: charts,
+          conditional_formatting: conditional_formatting,
+          conditional_formats: conditional_formatting,
+          data_validations: data_validations,
+          unmapped_data: unmapped_data,
+          errors: errors
+        }
       end
 
       # Compare worksheets for equality.
@@ -178,13 +205,14 @@ module Xlsxrb
       def ==(other)
         return false unless other.is_a?(Worksheet)
 
-        name == other.name && rows == other.rows && columns == other.columns && charts == other.charts
+        name == other.name && rows == other.rows && columns == other.columns && charts == other.charts &&
+          conditional_formatting == other.conditional_formatting && data_validations == other.data_validations
       end
       alias eql? ==
 
       #: () -> Integer
       def hash
-        [self.class, name, rows, columns, charts].hash
+        [self.class, name, rows, columns, charts, conditional_formatting, data_validations].hash
       end
 
       # Returns self when load is called on an already in-memory Worksheet.

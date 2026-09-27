@@ -2325,4 +2325,29 @@ class PublicApiTest < Test::Unit::TestCase
       assert File.exist?(f.path)
     end
   end
+
+  test "first-class conditional_formatting and data_validations in Worksheet roundtrip" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("Sheet1") do |s|
+        s.row([50, 5])
+        s.conditional_format("A1:A10", type: :cellIs, operator: :greaterThan, formula: "100")
+        s.validate_data("B1:B10", type: :whole, operator: :between, formula1: "1", formula2: "10")
+      end
+    end
+
+    ws = wb.sheet(0)
+    assert_equal 1, ws.conditional_formatting.size
+    assert_equal 1, ws.data_validations.size
+    assert_equal ws.conditional_formatting, ws.conditional_formats
+
+    Tempfile.create(["cf_dv_test", ".xlsx"]) do |f|
+      Xlsxrb.write(f.path, wb)
+      reloaded_wb = Xlsxrb.read(f.path).load
+      reloaded_ws = reloaded_wb.sheet(0)
+      assert_equal 1, reloaded_ws.conditional_formatting.size
+      assert_equal 1, reloaded_ws.data_validations.size
+      assert_equal "A1:A10", reloaded_ws.conditional_formatting.first[:sqref]
+      assert_equal "B1:B10", reloaded_ws.data_validations.first[:sqref]
+    end
+  end
 end

@@ -21,18 +21,27 @@ module Xlsxrb
 
       attr_reader charts: untyped
 
+      attr_reader conditional_formatting: untyped
+
+      attr_reader data_validations: untyped
+
       attr_reader unmapped_data: untyped
 
       attr_reader errors: untyped
+
+      alias conditional_formats conditional_formatting
 
       # @param name [String] The worksheet name (max 31 characters).
       # @param rows [Array<Elements::Row>] Rows in the sheet.
       # @param columns [Array<Elements::Column>] Column definitions.
       # @param charts [Array<Hash>] Charts in the sheet.
+      # @param conditional_formatting [Array<Hash>, nil] Conditional formatting rules.
+      # @param data_validations [Array<Hash>] Data validation rules.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
-      # : (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      # @param conditional_formats [Array<Hash>, nil] Alias for conditional_formatting.
+      # : (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?) -> void
+      def initialize: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?) -> void
 
       # Iterate over rows in the worksheet.
       #

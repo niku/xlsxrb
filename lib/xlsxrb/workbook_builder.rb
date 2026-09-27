@@ -285,6 +285,8 @@ module Xlsxrb
           rows: new_rows,
           columns: sheet.columns,
           charts: sheet.charts,
+          conditional_formatting: sheet.conditional_formatting,
+          data_validations: sheet.data_validations,
           unmapped_data: sheet.unmapped_data,
           errors: sheet.errors
         )

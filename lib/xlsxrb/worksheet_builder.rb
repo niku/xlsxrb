@@ -617,6 +617,8 @@ module Xlsxrb
 
       Elements::Worksheet.new(
         name: @name, rows: @rows, columns: @columns, charts: @charts,
+        conditional_formatting: @conditional_formats,
+        data_validations: @data_validations,
         unmapped_data: facade_meta.empty? ? {} : { facade: facade_meta }
       )
     end
