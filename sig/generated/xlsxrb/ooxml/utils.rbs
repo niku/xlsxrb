@@ -9,6 +9,11 @@ module Xlsxrb
 
       EPOCH_1900_JD: untyped
 
+      # Excel 1904 date system epoch.
+      EPOCH_1904: untyped
+
+      EPOCH_1904_JD: untyped
+
       # Built-in number format codes defined by SpreadsheetML.
       BUILTIN_NUM_FMT_CODES: untyped
 
@@ -21,17 +26,21 @@ module Xlsxrb
       # Default date-time format code used by Writer for Time cells.
       DEFAULT_DATETIME_FORMAT: ::String
 
-      # Converts a Date to an Excel serial number (1900 system).
-      def self.date_to_serial: (untyped date) -> untyped
+      # Converts a Date to an Excel serial number (1900 or 1904 system).
+      # : (Date date, ?date1904: bool) -> untyped
+      def self.date_to_serial: (Date date, ?date1904: bool) -> untyped
 
-      # Converts an Excel serial number (1900 system) to a Date.
-      def self.serial_to_date: (untyped serial) -> untyped
+      # Converts an Excel serial number (1900 or 1904 system) to a Date.
+      # : (Numeric serial, ?date1904: bool) -> Date
+      def self.serial_to_date: (Numeric serial, ?date1904: bool) -> Date
 
-      # Converts a Time to a fractional Excel serial number (1900 system).
-      def self.datetime_to_serial: (untyped time) -> untyped
+      # Converts a Time to a fractional Excel serial number (1900 or 1904 system).
+      # : (Time time, ?date1904: bool) -> Float
+      def self.datetime_to_serial: (Time time, ?date1904: bool) -> Float
 
-      # Converts a fractional Excel serial number to a Time (1900 system, UTC).
-      def self.serial_to_datetime: (untyped serial) -> untyped
+      # Converts a fractional Excel serial number to a Time (1900 or 1904 system, UTC).
+      # : (Numeric serial, ?date1904: bool) -> Time
+      def self.serial_to_datetime: (Numeric serial, ?date1904: bool) -> Time
 
       # Hashes a plain-text password for use with sheet/workbook protection.
       # Returns { algorithm_name:, hash_value:, salt_value:, spin_count: }.

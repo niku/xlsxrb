@@ -432,6 +432,8 @@ module Xlsxrb
       # : (untyped name, untyped value) -> untyped
       def set_workbook_property: (untyped name, untyped value) -> untyped
 
+      alias workbook_property set_workbook_property
+
       # Returns workbook properties hash.
       # : () -> untyped
       def workbook_properties: () -> untyped

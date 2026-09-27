@@ -66,6 +66,73 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal(t_detail, Xlsxrb::Ooxml::Utils.serial_to_datetime(serial_detail))
   end
 
+  test "converts date in 1904 date system" do
+    # Serial 0 = Jan 1, 1904
+    d0 = Date.new(1904, 1, 1)
+    assert_equal(0, Xlsxrb::Ooxml::Utils.date_to_serial(d0, date1904: true))
+    assert_equal(d0, Xlsxrb::Ooxml::Utils.serial_to_date(0, date1904: true))
+
+    # Serial 1 = Jan 2, 1904
+    d1 = Date.new(1904, 1, 2)
+    assert_equal(1, Xlsxrb::Ooxml::Utils.date_to_serial(d1, date1904: true))
+    assert_equal(d1, Xlsxrb::Ooxml::Utils.serial_to_date(1, date1904: true))
+
+    # Serial 59 = Feb 29, 1904 (1904 is a real leap year)
+    d59 = Date.new(1904, 2, 29)
+    assert_equal(59, Xlsxrb::Ooxml::Utils.date_to_serial(d59, date1904: true))
+    assert_equal(d59, Xlsxrb::Ooxml::Utils.serial_to_date(59, date1904: true))
+
+    # Serial 60 = Mar 1, 1904 (no skipped serial in 1904 system)
+    d60 = Date.new(1904, 3, 1)
+    assert_equal(60, Xlsxrb::Ooxml::Utils.date_to_serial(d60, date1904: true))
+    assert_equal(d60, Xlsxrb::Ooxml::Utils.serial_to_date(60, date1904: true))
+
+    # Serial 61 = Mar 2, 1904
+    d61 = Date.new(1904, 3, 2)
+    assert_equal(61, Xlsxrb::Ooxml::Utils.date_to_serial(d61, date1904: true))
+    assert_equal(d61, Xlsxrb::Ooxml::Utils.serial_to_date(61, date1904: true))
+
+    # Difference between 1900 and 1904 system is exactly 1,462 days
+    d_modern = Date.new(2026, 9, 27)
+    s1900 = Xlsxrb::Ooxml::Utils.date_to_serial(d_modern, date1904: false)
+    s1900_default = Xlsxrb::Ooxml::Utils.date_to_serial(d_modern)
+    s1904 = Xlsxrb::Ooxml::Utils.date_to_serial(d_modern, date1904: true)
+    assert_equal(s1900_default, s1900)
+    assert_equal(1462, s1900 - s1904)
+    assert_equal(d_modern, Xlsxrb::Ooxml::Utils.serial_to_date(s1904, date1904: true))
+    assert_equal(d_modern, Xlsxrb::Ooxml::Utils.serial_to_date(s1900, date1904: false))
+    assert_equal(d_modern, Xlsxrb::Ooxml::Utils.serial_to_date(s1900))
+
+    # Pre-1904 boundary
+    d_pre = Date.new(1903, 12, 31)
+    assert_equal(-1, Xlsxrb::Ooxml::Utils.date_to_serial(d_pre, date1904: true))
+    assert_equal(d_pre, Xlsxrb::Ooxml::Utils.serial_to_date(-1, date1904: true))
+  end
+
+  test "converts datetime in 1904 date system" do
+    # Midnight Jan 1, 1904
+    t0 = Time.utc(1904, 1, 1, 0, 0, 0)
+    assert_equal(0.0, Xlsxrb::Ooxml::Utils.datetime_to_serial(t0, date1904: true))
+    assert_equal(t0, Xlsxrb::Ooxml::Utils.serial_to_datetime(0.0, date1904: true))
+
+    # Noon Jan 1, 1904
+    t_noon = Time.utc(1904, 1, 1, 12, 0, 0)
+    s_noon = Xlsxrb::Ooxml::Utils.datetime_to_serial(t_noon, date1904: true)
+    assert_in_delta(0.5, s_noon, 1e-6)
+    assert_equal(t_noon, Xlsxrb::Ooxml::Utils.serial_to_datetime(s_noon, date1904: true))
+
+    # Modern datetime round-trip and 1,462-day offset
+    t_modern = Time.utc(2026, 9, 27, 14, 30, 45)
+    s1904 = Xlsxrb::Ooxml::Utils.datetime_to_serial(t_modern, date1904: true)
+    s1900 = Xlsxrb::Ooxml::Utils.datetime_to_serial(t_modern, date1904: false)
+    s1900_default = Xlsxrb::Ooxml::Utils.datetime_to_serial(t_modern)
+    assert_equal(s1900_default, s1900)
+    assert_in_delta(1462.0, s1900 - s1904, 1e-6)
+    assert_equal(t_modern, Xlsxrb::Ooxml::Utils.serial_to_datetime(s1904, date1904: true))
+    assert_equal(t_modern, Xlsxrb::Ooxml::Utils.serial_to_datetime(s1900, date1904: false))
+    assert_equal(t_modern, Xlsxrb::Ooxml::Utils.serial_to_datetime(s1900))
+  end
+
   # --- hash_password ---
 
   test "hash_password generates ECMA-376 compliant password hash structure" do

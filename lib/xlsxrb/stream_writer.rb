@@ -829,7 +829,8 @@ module Xlsxrb
       @sheet_entry_started = false
       @current_row_buffer = String.new(capacity: 65_536)
       @current_sheet_io = StringIO.new(@current_row_buffer)
-      @current_row_writer = Ooxml::WorksheetWriter.new(@current_sheet_io)
+      date1904 = @workbook_properties&.[](:date1904) ? true : false
+      @current_row_writer = Ooxml::WorksheetWriter.new(@current_sheet_io, date1904: date1904)
       @current_row_writer.instance_variable_set(:@started, true)
 
       @current_columns = []
@@ -883,7 +884,8 @@ module Xlsxrb
         row_buf.clear
       end
 
-      @current_row_writer = Ooxml::WorksheetWriter.new(zip_io)
+      date1904 = @workbook_properties&.[](:date1904) ? true : false
+      @current_row_writer = Ooxml::WorksheetWriter.new(zip_io, date1904: date1904)
       @current_row_writer.start(
         columns: @current_columns,
         sheet_properties: @current_sheet_properties.empty? ? nil : @current_sheet_properties,

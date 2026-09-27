@@ -14,6 +14,10 @@ module Xlsxrb
       EPOCH_1900 = Date.new(1899, 12, 31) # serial 1 = Jan 1, 1900
       EPOCH_1900_JD = EPOCH_1900.jd
 
+      # Excel 1904 date system epoch.
+      EPOCH_1904 = Date.new(1904, 1, 1) # serial 0 = Jan 1, 1904
+      EPOCH_1904_JD = EPOCH_1904.jd
+
       # Built-in number format codes defined by SpreadsheetML.
       BUILTIN_NUM_FMT_CODES = {
         0 => "General",
@@ -56,35 +60,47 @@ module Xlsxrb
       DEFAULT_DATETIME_FORMAT = "yyyy\\-mm\\-dd\\ hh:mm:ss"
 
       class << self
-        # Converts a Date to an Excel serial number (1900 system).
-        def date_to_serial(date)
-          serial = date.jd - EPOCH_1900_JD
-          # Lotus 1-2-3 bug: serial 60 = Feb 29, 1900 (doesn't exist).
-          # Dates on or after Mar 1, 1900 (raw serial >= 60) need +1.
-          serial += 1 if serial >= 60
-          serial
+        # Converts a Date to an Excel serial number (1900 or 1904 system).
+        #: (Date date, ?date1904: bool) -> untyped
+        def date_to_serial(date, date1904: false)
+          if date1904
+            date.jd - EPOCH_1904_JD
+          else
+            serial = date.jd - EPOCH_1900_JD
+            # Lotus 1-2-3 bug: serial 60 = Feb 29, 1900 (doesn't exist).
+            # Dates on or after Mar 1, 1900 (raw serial >= 60) need +1.
+            serial += 1 if serial >= 60
+            serial
+          end
         end
 
-        # Converts an Excel serial number (1900 system) to a Date.
-        def serial_to_date(serial)
-          # Adjust for Lotus 1-2-3 bug.
-          serial -= 1 if serial > 60
-          EPOCH_1900 + serial
+        # Converts an Excel serial number (1900 or 1904 system) to a Date.
+        #: (Numeric serial, ?date1904: bool) -> Date
+        def serial_to_date(serial, date1904: false)
+          if date1904
+            EPOCH_1904 + serial
+          else
+            # Adjust for Lotus 1-2-3 bug.
+            serial -= 1 if serial > 60
+            EPOCH_1900 + serial
+          end
         end
 
-        # Converts a Time to a fractional Excel serial number (1900 system).
-        def datetime_to_serial(time)
+        # Converts a Time to a fractional Excel serial number (1900 or 1904 system).
+        #: (Time time, ?date1904: bool) -> Float
+        def datetime_to_serial(time, date1904: false)
           date = time.to_date
-          day_serial = date_to_serial(date)
+          day_serial = date_to_serial(date, date1904: date1904)
           # Fractional part: seconds since midnight / seconds per day
           seconds_since_midnight = (time.hour * 3600) + (time.min * 60) + time.sec
           day_serial + (seconds_since_midnight.to_f / 86_400)
         end
 
-        # Converts a fractional Excel serial number to a Time (1900 system, UTC).
-        def serial_to_datetime(serial)
+        # Converts a fractional Excel serial number to a Time (1900 or 1904 system, UTC).
+        #: (Numeric serial, ?date1904: bool) -> Time
+        def serial_to_datetime(serial, date1904: false)
           int_part, frac = serial.divmod(1)
-          date = serial_to_date(int_part)
+          date = serial_to_date(int_part, date1904: date1904)
           total_seconds = (frac * 86_400).round
           hours, remaining = total_seconds.divmod(3600)
           minutes, seconds = remaining.divmod(60)

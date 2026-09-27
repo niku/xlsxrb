@@ -21,10 +21,10 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
       val2 = sheet.rows.first.cells[1].value
       val3 = sheet.rows.first.cells[2].value
 
-      # Xlsxrb serializes to 1900 system (utils hardcodes 1900 epoch and leap year bug)
-      assert_equal 1462, val1
-      assert_equal 1463, val2
-      assert_equal 0, val3
+      # In 1904 date system, Jan 1 1904 is day 0, Jan 2 1904 is day 1, and Dec 31 1899 is -1461
+      assert_equal 0, val1
+      assert_equal 1, val2
+      assert_equal(-1461, val3)
     ensure
       tmp.close
       tmp.unlink

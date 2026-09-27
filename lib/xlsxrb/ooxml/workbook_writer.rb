@@ -913,7 +913,8 @@ module Xlsxrb
                               sheet_view: nil, sheet_properties: nil,
                               tables: nil, table_start_rid: nil,
                               legacy_drawing_rid: nil, sparkline_groups: nil)
-        ws = WorksheetWriter.new(io)
+        date1904 = @workbook_properties&.[](:date1904) ? true : false
+        ws = WorksheetWriter.new(io, date1904: date1904)
         ws.start(
           columns: sheet[:columns] || [],
           sheet_properties: sheet_properties,

@@ -26,8 +26,9 @@ module Xlsxrb
 
       INTEGER_STRINGS = (0..65_535).map(&:to_s).freeze
 
-      def initialize(io)
+      def initialize(io, date1904: false)
         @io = io
+        @date1904 = date1904 ? true : false
         @builder = XmlBuilder.new(@io)
         @row_buffer = String.new(capacity: 65_536)
         @started = false
@@ -118,7 +119,7 @@ module Xlsxrb
               buf << '<c r="' << col_ref << '"/>'
               next
             when Date
-              serial = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+              serial = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)
               buf << '<c r="' << col_ref << '"><v>' << serial.to_s << "</v></c>"
               next
             end
@@ -176,9 +177,9 @@ module Xlsxrb
               xml_val = "0"
               type = "b"
             when Date
-              xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+              xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)
             when Time
-              xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+              xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
             when BigDecimal
               xml_val = value.to_s("F")
             when Xlsxrb::Elements::CellError
@@ -301,16 +302,16 @@ module Xlsxrb
             when Date
               date_style_id = style_map ? style_map["__xlsxrb_date"] : nil
               buf << if date_style_id
-                       "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{date_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value)}</v></c>"
+                       "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{date_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)}</v></c>"
                      else
-                       "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value)}</v></c>"
+                       "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)}</v></c>"
                      end
             when Time
               time_style_id = style_map ? style_map["__xlsxrb_time"] : nil
               buf << if time_style_id
-                       "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{time_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value)}</v></c>"
+                       "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{time_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)}</v></c>"
                      else
-                       "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value)}</v></c>"
+                       "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)}</v></c>"
                      end
             when Xlsxrb::Elements::Formula
               formula_expr = value.expression
@@ -426,11 +427,11 @@ module Xlsxrb
               col_index += 1
               next
             when Date
-              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value).to_s << "</v></c>"
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904).to_s << "</v></c>"
               col_index += 1
               next
             when Time
-              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value).to_s << "</v></c>"
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904).to_s << "</v></c>"
               col_index += 1
               next
             end
@@ -503,9 +504,9 @@ module Xlsxrb
             xml_val = "0"
             type = "b"
           when Date
-            xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+            xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)
           when Time
-            xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+            xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
           when BigDecimal
             xml_val = value.to_s("F")
           when Xlsxrb::Elements::CellError

@@ -163,7 +163,9 @@ module Xlsxrb
       shared_strings = Ooxml::SharedStringsParser.parse(shared_strings_xml)
 
       workbook_xml = zip_reader.read_entry("xl/workbook.xml")
-      workbook_sheets = Ooxml::WorkbookParser.parse(workbook_xml)
+      wb_parsed = Ooxml::WorkbookParser.parse_with_properties(workbook_xml)
+      workbook_sheets = wb_parsed[:sheets]
+      is_date1904 = wb_parsed[:date1904]
 
       rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
       rels = Ooxml::RelationshipsParser.parse(rels_xml)
@@ -190,7 +192,9 @@ module Xlsxrb
         )
       end.compact
 
-      wb = Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles)
+      wb_unmapped = {}
+      wb_unmapped[:workbook_properties] = { date1904: true } if is_date1904
+      wb = Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles, unmapped_data: wb_unmapped)
 
       if block_given?
         sheets.each(&)
@@ -339,6 +343,7 @@ module Xlsxrb
 
     # Extract workbook-level facade metadata
     wb_facade = workbook.unmapped_data[:facade] || {}
+    wb_properties = workbook.unmapped_data[:workbook_properties] || wb_facade[:workbook_properties]
 
     if password && !password.empty?
       buf = StringIO.new
@@ -354,7 +359,7 @@ module Xlsxrb
         app_properties: wb_facade[:app_properties],
         custom_properties: wb_facade[:custom_properties],
         workbook_protection: wb_facade[:workbook_protection],
-        workbook_properties: wb_facade[:workbook_properties]
+        workbook_properties: wb_properties
       )
       encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password, mode: encryption_mode)
       if target.is_a?(String)
@@ -374,7 +379,7 @@ module Xlsxrb
         app_properties: wb_facade[:app_properties],
         custom_properties: wb_facade[:custom_properties],
         workbook_protection: wb_facade[:workbook_protection],
-        workbook_properties: wb_facade[:workbook_properties]
+        workbook_properties: wb_properties
       )
     end
   end
@@ -636,8 +641,8 @@ module Xlsxrb
       )
     end
 
-    #: (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
-    def build_raw_cell(cell, sst, sst_index)
+    #: (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]
+    def build_raw_cell(cell, sst, sst_index, date1904: false)
       # simplecov:disable
       # Edge case / untested delegation block
       ref = cell.ref
@@ -661,9 +666,9 @@ module Xlsxrb
         result[:value] = value.code
         result[:type] = "e"
       when Date
-        result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+        result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: date1904)
       when Time
-        result[:value] = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+        result[:value] = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: date1904)
       # simplecov:enable
       when NilClass
         # empty cell
@@ -878,11 +883,11 @@ module Xlsxrb
       sheet_xml.sub(/<dimension\b([^>]*)\bref="[^"]*"/, "<dimension\\1ref=\"#{dim_ref}\"")
     end
 
-    #: (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool) -> String
-    def serialize_sheet_data_xml(rows, shared_strings, sst_index, use_sst: true)
+    #: (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool, ?date1904: bool) -> String
+    def serialize_sheet_data_xml(rows, shared_strings, sst_index, use_sst: true, date1904: false)
       io = StringIO.new
       io.write("<sheetData>")
-      ws = Ooxml::WorksheetWriter.new(io)
+      ws = Ooxml::WorksheetWriter.new(io, date1904: date1904)
       ws.instance_variable_set(:@started, true)
 
       rows.each do |row|
@@ -932,8 +937,8 @@ module Xlsxrb
   # @param sst_index [Hash{String => Integer}] Shared strings index mapping.
   # @return [Hash{Symbol => Object}] Raw cell hash.
   # @api public
-  #: (Integer row_index, Integer col_index, untyped value, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
-  def self.build_raw_cell_from_value(row_index, col_index, value, sst, sst_index)
+  #: (Integer row_index, Integer col_index, untyped value, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]
+  def self.build_raw_cell_from_value(row_index, col_index, value, sst, sst_index, date1904: false)
     # simplecov:disable
     # Edge case / untested delegation block
     ref = "#{Elements::Cell.column_letter(col_index)}#{row_index + 1}"
@@ -960,9 +965,9 @@ module Xlsxrb
       result[:value] = value.code
       result[:type] = "e"
     when Date
-      result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+      result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: date1904)
     when Time
-      result[:value] = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+      result[:value] = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: date1904)
     # simplecov:enable
     when NilClass
       # empty cell

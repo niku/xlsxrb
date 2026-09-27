@@ -219,8 +219,8 @@ module Xlsxrb
   # : (untyped raw_row) -> (Elements::Row | untyped)
   private def self.build_row_from_raw: (untyped raw_row) -> (Elements::Row | untyped)
 
-  # : (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
-  private def self.build_raw_cell: (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
+  # : (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]
+  private def self.build_raw_cell: (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]
 
   # : (Elements::Row row) -> Hash[Symbol, untyped]
   private def self.build_row_attrs: (Elements::Row row) -> Hash[Symbol, untyped]
@@ -240,8 +240,8 @@ module Xlsxrb
   # : (String sheet_xml, Array[Elements::Row] rows) -> String
   private def self.update_dimension: (String sheet_xml, Array[Elements::Row] rows) -> String
 
-  # : (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool) -> String
-  private def self.serialize_sheet_data_xml: (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool) -> String
+  # : (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool, ?date1904: bool) -> String
+  private def self.serialize_sheet_data_xml: (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool, ?date1904: bool) -> String
 
   # Builds a raw cell hash from a value for streaming writes.
   #
@@ -252,6 +252,6 @@ module Xlsxrb
   # @param sst_index [Hash{String => Integer}] Shared strings index mapping.
   # @return [Hash{Symbol => Object}] Raw cell hash.
   # @api public
-  # : (Integer row_index, Integer col_index, untyped value, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
-  def self.build_raw_cell_from_value: (Integer row_index, Integer col_index, untyped value, Array[String] sst, Hash[String, Integer] sst_index) -> Hash[Symbol, untyped]
+  # : (Integer row_index, Integer col_index, untyped value, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]
+  def self.build_raw_cell_from_value: (Integer row_index, Integer col_index, untyped value, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]
 end

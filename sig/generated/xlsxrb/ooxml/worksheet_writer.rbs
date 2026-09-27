@@ -13,7 +13,7 @@ module Xlsxrb
 
       INTEGER_STRINGS: untyped
 
-      def initialize: (untyped io) -> untyped
+      def initialize: (untyped io, ?date1904: untyped) -> untyped
 
       # Write the worksheet header. Call once before writing rows.
       # Options for pre-sheetData elements:

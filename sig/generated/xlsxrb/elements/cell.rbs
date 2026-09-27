@@ -105,15 +105,16 @@ module Xlsxrb
       #
       # @return [Date, nil]
       # @api public
-      # : () -> Date?
-      def to_date: () -> Date?
+      # : (?date1904: bool) -> Date?
+      def to_date: (?date1904: bool) -> Date?
 
       # Converts the cell value (numeric serial datetime or datetime string) to Time.
       #
+      # @param date1904 [Boolean] Whether to use the 1904 date system.
       # @return [Time, nil]
       # @api public
-      # : () -> Time?
-      def to_time: () -> Time?
+      # : (?date1904: bool) -> Time?
+      def to_time: (?date1904: bool) -> Time?
 
       # Pure calculation: converts a 0-based column index to an Excel letter.
       #

@@ -393,11 +393,13 @@ module Xlsxrb
           when true, false
             %(<c r="#{cell_ref}" t="b"#{s_attr}#{ph_attr}><v>#{value ? 1 : 0}</v></c>)
           when Time
-            serial = Xlsxrb::Ooxml::Utils.datetime_to_serial(value)
+            date1904 = @workbook_properties&.[](:date1904) ? true : false
+            serial = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: date1904)
             dt_attr = s_attr.empty? && (dt_style = resolve_style_index(datetime_num_fmt_id)) ? %( s="#{dt_style}") : s_attr
             %(<c r="#{cell_ref}"#{dt_attr}#{ph_attr}><v>#{serial}</v></c>)
           when Date
-            serial = Xlsxrb::Ooxml::Utils.date_to_serial(value)
+            date1904 = @workbook_properties&.[](:date1904) ? true : false
+            serial = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: date1904)
             ds_attr = s_attr.empty? && (date_style = resolve_style_index(date_num_fmt_id)) ? %( s="#{date_style}") : s_attr
             %(<c r="#{cell_ref}"#{ds_attr}#{ph_attr}><v>#{serial}</v></c>)
           when Numeric

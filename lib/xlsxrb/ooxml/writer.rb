@@ -997,6 +997,7 @@ module Xlsxrb
       def set_workbook_property(name, value)
         @workbook_properties[name] = value
       end
+      alias workbook_property set_workbook_property
 
       # Returns workbook properties hash.
       # : () -> untyped

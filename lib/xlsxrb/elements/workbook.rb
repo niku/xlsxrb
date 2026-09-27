@@ -54,6 +54,16 @@ module Xlsxrb
         errors.empty?
       end
 
+      # Returns whether the workbook uses the 1904 date system.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def date1904?
+        props = unmapped_data[:workbook_properties] || unmapped_data.dig(:facade, :workbook_properties)
+        props&.[](:date1904) ? true : false
+      end
+
       # Returns the worksheet at the given 0-based index or by name.
       #
       # @example

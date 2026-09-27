@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Date1904 calendar system arithmetic: Support the 1904 date system (1904-01-01 base epoch) across serial date conversions, `Cell#to_date`, `Cell#to_time`, `Elements::Workbook#date1904?`, `Ooxml::Reader`, `Ooxml::WorksheetWriter`, `Ooxml::WorkbookWriter`, and `StreamWriter`.
 - Row and column styles persistence: Expose `style_index` on `Row`, `Column`, and `StreamRow`, and persist row and column styles (`<row s="..." customFormat="1">` and `<col style="..."/>`) during serialization and round-trip parsing.
 - Styles metadata persistence: Support border colors, cell alignment, and protection attributes in stylesheet generation and round-trip parsing.
 - Dual format support for `num_fmts`: Support both `Hash` (`{ 164 => "format" }`) and `Array` (`[{ num_fmt_id: 164, format_code: "format" }]`) structures for custom number formats in `WorkbookWriter`.

@@ -7,11 +7,15 @@ module Xlsxrb
     class WorkbookParser
       def self.parse: (untyped xml_string) -> untyped
 
-      # SAX listener for workbook.xml sheets.
+      def self.parse_with_properties: (untyped xml_string) -> untyped
+
+      # SAX listener for workbook.xml sheets and properties.
       class Listener
         include REXML::SAX2Listener
 
         attr_reader sheets: untyped
+
+        attr_reader date1904: untyped
 
         def initialize: () -> untyped
 

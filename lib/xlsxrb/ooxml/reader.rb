@@ -1227,6 +1227,7 @@ module Xlsxrb
       end
 
       def resolve_date_cells(raw_cells, cell_style_map, styles)
+        is_date1904 = workbook_properties&.[](:date1904) || false
         raw_cells.each do |cell_ref, value|
           next unless value.is_a?(Numeric)
 
@@ -1240,9 +1241,9 @@ module Xlsxrb
           next unless date_format?(fmt_id, styles[:num_fmts])
 
           raw_cells[cell_ref] = if value.is_a?(Float) && (value % 1).positive?
-                                  Xlsxrb::Ooxml::Utils.serial_to_datetime(value)
+                                  Xlsxrb::Ooxml::Utils.serial_to_datetime(value, date1904: is_date1904)
                                 else
-                                  Xlsxrb::Ooxml::Utils.serial_to_date(value.to_i)
+                                  Xlsxrb::Ooxml::Utils.serial_to_date(value.to_i, date1904: is_date1904)
                                 end
         end
         raw_cells

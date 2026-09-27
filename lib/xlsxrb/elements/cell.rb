@@ -167,12 +167,12 @@ module Xlsxrb
       #
       # @return [Date, nil]
       # @api public
-      #: () -> Date?
-      def to_date
+      #: (?date1904: bool) -> Date?
+      def to_date(date1904: false)
         return value if value.is_a?(Date)
 
         if value.is_a?(Numeric)
-          Ooxml::Utils.serial_to_date(value)
+          Ooxml::Utils.serial_to_date(value, date1904: date1904)
         else
           begin
             Date.parse(value.to_s)
@@ -184,14 +184,15 @@ module Xlsxrb
 
       # Converts the cell value (numeric serial datetime or datetime string) to Time.
       #
+      # @param date1904 [Boolean] Whether to use the 1904 date system.
       # @return [Time, nil]
       # @api public
-      #: () -> Time?
-      def to_time
+      #: (?date1904: bool) -> Time?
+      def to_time(date1904: false)
         return value if value.is_a?(Time)
 
         if value.is_a?(Numeric)
-          Ooxml::Utils.serial_to_datetime(value)
+          Ooxml::Utils.serial_to_datetime(value, date1904: date1904)
         else
           begin
             Time.parse(value.to_s)
