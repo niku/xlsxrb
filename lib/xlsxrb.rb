@@ -84,7 +84,7 @@ module Xlsxrb
   # @param font_props [Hash] Inline font styling options (e.g. bold: true, color: "FF0000").
   # @return [Elements::RichText] The compiled rich text element.
   # @api public
-  #: (*(Hash[Symbol, untyped] | String) runs, ?text: String?, **untyped font_props) -> Elements::RichText
+  #: (*(Hash[Symbol, untyped] | Elements::RichTextRun | String) runs, ?text: String?, **untyped font_props) -> Elements::RichText
   def self.rich_text(*runs, text: nil, **font_props)
     if text
       runs = [{ text: text, font: font_props }]

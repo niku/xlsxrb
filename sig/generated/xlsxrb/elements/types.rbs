@@ -62,6 +62,25 @@ module Xlsxrb
       def members: () -> [ :code ]
     end
 
+    # Represents a formatted text run within a rich text string.
+    #
+    # @example
+    #   run = Elements::RichTextRun.new(text: "Hello", font: { bold: true })
+    #
+    # @api public
+    class RichTextRun < Data
+      attr_reader text(): untyped
+
+      attr_reader font(): untyped
+
+      def self.new: (untyped text, untyped font) -> instance
+                  | (text: untyped, font: untyped) -> instance
+
+      def self.members: () -> [ :text, :font ]
+
+      def members: () -> [ :text, :font ]
+    end
+
     # Represents a rich text string with multiple formatting runs.
     #
     # @example

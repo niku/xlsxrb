@@ -846,6 +846,29 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("", empty_rt.to_s)
   end
 
+  test "rich_text_run initialization, attributes, to_s, and bracket access" do
+    run = Xlsxrb::Elements::RichTextRun.new(text: "Hello", font: { bold: true })
+    assert_equal("Hello", run.text)
+    assert_equal({ bold: true }, run.font)
+    assert_equal("Hello", run[:text])
+    assert_equal({ bold: true }, run[:font])
+    assert_nil(run[:unknown])
+    assert_equal("Hello", run.to_s)
+
+    # empty run
+    empty_run = Xlsxrb::Elements::RichTextRun.new
+    assert_equal("", empty_run.text)
+    assert_nil(empty_run.font)
+
+    # combined in RichText
+    rt = Xlsxrb::Elements::RichText.new(runs: [run, { text: " World" }])
+    assert_equal("Hello World", rt.to_s)
+
+    # Xlsxrb.rich_text helper accepting RichTextRun
+    rt2 = Xlsxrb.rich_text(run, { text: " World" })
+    assert_equal("Hello World", rt2.to_s)
+  end
+
   # --- Error message quality ---
 
   test "cell error message includes actual value for unsupported type" do

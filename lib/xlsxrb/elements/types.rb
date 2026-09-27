@@ -53,6 +53,43 @@ module Xlsxrb
       end
     end
 
+    # Represents a formatted text run within a rich text string.
+    #
+    # @example
+    #   run = Elements::RichTextRun.new(text: "Hello", font: { bold: true })
+    #
+    # @api public
+    RichTextRun = Data.define(:text, :font) do
+      # @param text [String] Plain text for this run.
+      # @param font [Hash, nil] Optional font styling properties.
+      #: (?text: String, ?font: Hash[Symbol, untyped]?) -> void
+      def initialize(text: "", font: nil)
+        super
+      end
+
+      # Supports hash-like key access for backwards compatibility.
+      #
+      # @param key [Symbol]
+      # @return [Object, nil]
+      # @api public
+      #: (Symbol key) -> untyped
+      def [](key)
+        case key
+        when :text then text
+        when :font then font
+        end
+      end
+
+      # Returns the plain text of this run.
+      #
+      # @return [String]
+      # @api public
+      #: () -> String
+      def to_s
+        text
+      end
+    end
+
     # Represents a rich text string with multiple formatting runs.
     #
     # @example
@@ -66,7 +103,7 @@ module Xlsxrb
       # @api public
       #: () -> String
       def to_s
-        runs.map { |r| r[:text] }.join
+        runs.map { |r| r[:text] || r.to_s }.join
       end
     end
   end
