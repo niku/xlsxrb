@@ -195,7 +195,14 @@ module Xlsxrb
 
       wb_unmapped = {}
       wb_unmapped[:workbook_properties] = { date1904: true } if is_date1904
-      wb = Elements::Workbook.new(sheets: sheets, shared_strings: shared_strings, styles: styles, unmapped_data: wb_unmapped)
+      defined_names = wb_parsed[:defined_names] || []
+      wb = Elements::Workbook.new(
+        sheets: sheets,
+        shared_strings: shared_strings,
+        styles: styles,
+        unmapped_data: wb_unmapped,
+        defined_names: defined_names
+      )
 
       if block_given?
         sheets.each(&)
@@ -440,7 +447,8 @@ module Xlsxrb
         initial_sst_size = shared_strings.size
 
         workbook_xml = zip_reader.read_entry("xl/workbook.xml")
-        workbook_sheets = workbook_xml ? Ooxml::WorkbookParser.parse(workbook_xml) : []
+        wb_parsed = workbook_xml ? Ooxml::WorkbookParser.parse_with_properties(workbook_xml) : { sheets: [], date1904: false, defined_names: [] }
+        workbook_sheets = wb_parsed[:sheets]
 
         rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
         rels = rels_xml ? Ooxml::RelationshipsParser.parse(rels_xml) : {}
@@ -464,7 +472,8 @@ module Xlsxrb
         original_workbook = Elements::Workbook.new(
           sheets: loaded_sheets,
           shared_strings: shared_strings,
-          styles: styles
+          styles: styles,
+          defined_names: wb_parsed[:defined_names] || []
         )
         mutable_shared_strings = shared_strings.dup
 

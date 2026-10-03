@@ -197,7 +197,8 @@ module Xlsxrb
 
       # Store workbook-level metadata in unmapped_data
       wb_meta = {}
-      wb_meta[:defined_names] = resolve_defined_names(@defined_names, processed_sheets) unless @defined_names.empty?
+      dns = resolve_defined_names(@defined_names, processed_sheets)
+      wb_meta[:defined_names] = dns unless dns.empty?
       wb_meta[:core_properties] = @core_properties unless @core_properties.empty?
       wb_meta[:app_properties] = @app_properties unless @app_properties.empty?
       wb_meta[:custom_properties] = @custom_properties unless @custom_properties.empty?
@@ -207,7 +208,8 @@ module Xlsxrb
       Elements::Workbook.new(
         sheets: processed_sheets,
         styles: styles_definition,
-        unmapped_data: wb_meta.empty? ? {} : { facade: wb_meta }
+        unmapped_data: wb_meta.empty? ? {} : { facade: wb_meta },
+        defined_names: dns
       )
     end
 

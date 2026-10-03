@@ -13,7 +13,7 @@ module Xlsxrb
     #
     # @api public
     # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
-    class Workbook < Data.define(:sheets, :shared_strings, :styles, :unmapped_data, :errors)
+    class Workbook < Data.define(:sheets, :shared_strings, :styles, :unmapped_data, :errors, :defined_names)
       # rubocop:enable Style/DataInheritance
       [Enumerable].each { |m| include m }
 
@@ -22,11 +22,13 @@ module Xlsxrb
       # @param styles [Hash] Styles definition.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
-      #: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize(sheets: [], shared_strings: [], styles: {}, unmapped_data: {}, errors: nil)
+      # @param defined_names [Array<Hash>, nil] Defined names list.
+      #: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[Hash[Symbol, untyped]]?) -> void
+      def initialize(sheets: [], shared_strings: [], styles: {}, unmapped_data: {}, errors: nil, defined_names: nil)
+        dns = defined_names || unmapped_data[:defined_names] || unmapped_data.dig(:facade, :defined_names) || []
         computed_errors = errors || self.class.validate(sheets)
         super(sheets: sheets.freeze, shared_strings: shared_strings.freeze, styles: styles,
-              unmapped_data: unmapped_data, errors: computed_errors.freeze)
+              unmapped_data: unmapped_data, errors: computed_errors.freeze, defined_names: dns.freeze)
       end
 
       # Iterate over worksheets.
@@ -62,6 +64,31 @@ module Xlsxrb
       def date1904?
         props = unmapped_data[:workbook_properties] || unmapped_data.dig(:facade, :workbook_properties)
         props&.[](:date1904) ? true : false
+      end
+
+      # Returns the defined name matching name (and optionally sheet), or nil.
+      #
+      # @example
+      #   wb.defined_name("SalesTotal")
+      #   wb.defined_name("Print_Area", sheet: "Sheet1")
+      #
+      # @param name [String] The defined name.
+      # @param sheet [String, Integer, nil] Optional sheet name or 0-based index.
+      # @return [Hash[Symbol, untyped], nil]
+      # @api public
+      #: (String name, ?sheet: (String | Integer)?) -> Hash[Symbol, untyped]?
+      def defined_name(name, sheet: nil)
+        sheet_idx = case sheet
+                    when Integer then sheet
+                    when String then sheets.find_index { |s| s.name == sheet }
+                    end
+
+        if sheet_idx
+          defined_names.find { |dn| dn[:name] == name && dn[:local_sheet_id] == sheet_idx }
+        else
+          defined_names.find { |dn| dn[:name] == name && dn[:local_sheet_id].nil? } ||
+            defined_names.find { |dn| dn[:name] == name }
+        end
       end
 
       # Returns the worksheet at the given 0-based index or by name.

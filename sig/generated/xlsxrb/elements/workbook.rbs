@@ -17,8 +17,9 @@ module Xlsxrb
       # @param styles [Hash] Styles definition.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
-      # : (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      # @param defined_names [Array<Hash>, nil] Defined names list.
+      # : (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[Hash[Symbol, untyped]]?) -> void
+      def initialize: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[Hash[Symbol, untyped]]?) -> void
 
       # Iterate over worksheets.
       #
@@ -49,6 +50,19 @@ module Xlsxrb
       # @api public
       # : () -> bool
       def date1904?: () -> bool
+
+      # Returns the defined name matching name (and optionally sheet), or nil.
+      #
+      # @example
+      #   wb.defined_name("SalesTotal")
+      #   wb.defined_name("Print_Area", sheet: "Sheet1")
+      #
+      # @param name [String] The defined name.
+      # @param sheet [String, Integer, nil] Optional sheet name or 0-based index.
+      # @return [Hash[Symbol, untyped], nil]
+      # @api public
+      # : (String name, ?sheet: (String | Integer)?) -> Hash[Symbol, untyped]?
+      def defined_name: (String name, ?sheet: (String | Integer)?) -> Hash[Symbol, untyped]?
 
       # Returns the worksheet at the given 0-based index or by name.
       #

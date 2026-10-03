@@ -520,6 +520,17 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("HiddenName", dns[2][:name])
     assert_equal(true, dns[2][:hidden])
     assert_equal("42", dns[2][:value])
+
+    wb = Xlsxrb.read(xlsx_path)
+    assert_equal(3, wb.defined_names.size)
+    assert_equal("Sheet1!$A$1:$B$10", wb.defined_name("MyRange")[:value])
+    assert_equal("Data!$C$1", wb.defined_name("LocalName", sheet: "Data")[:value])
+    assert_equal("42", wb.defined_name("HiddenName")[:value])
+    assert_true(wb.defined_name("HiddenName")[:hidden])
+
+    loaded_wb = wb.load
+    assert_equal(3, loaded_wb.defined_names.size)
+    assert_equal("Sheet1!$A$1:$B$10", loaded_wb.defined_name("MyRange")[:value])
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

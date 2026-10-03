@@ -779,6 +779,33 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(%w[A B], wb.sheet_names)
   end
 
+  test "workbook defined_names and defined_name lookup" do
+    ws1 = Xlsxrb::Elements::Worksheet.new(name: "Summary")
+    ws2 = Xlsxrb::Elements::Worksheet.new(name: "Details")
+    dns = [
+      { name: "TotalRevenue", value: "Summary!$B$10", local_sheet_id: nil },
+      { name: "LocalRate", value: "Details!$A$1", local_sheet_id: 1 }
+    ]
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2], defined_names: dns)
+
+    assert_equal(dns, wb.defined_names)
+    assert_equal("Summary!$B$10", wb.defined_name("TotalRevenue")[:value])
+    assert_nil(wb.defined_name("NonExistent"))
+
+    # Sheet-specific lookup
+    assert_equal("Details!$A$1", wb.defined_name("LocalRate", sheet: "Details")[:value])
+    assert_equal("Details!$A$1", wb.defined_name("LocalRate", sheet: 1)[:value])
+    assert_nil(wb.defined_name("LocalRate", sheet: "Summary"))
+
+    # Fallback to unmapped_data if defined_names not passed explicitly
+    wb_unmapped = Xlsxrb::Elements::Workbook.new(sheets: [ws1], unmapped_data: { defined_names: dns })
+    assert_equal(dns, wb_unmapped.defined_names)
+
+    # load preserves defined_names
+    loaded = wb.load
+    assert_equal(dns, loaded.defined_names)
+  end
+
   test "workbook validate checks non-array sheets" do
     errs = Xlsxrb::Elements::Workbook.validate("invalid_sheets")
     assert(errs.any? { |e| e.include?("sheets must be an Array") })
