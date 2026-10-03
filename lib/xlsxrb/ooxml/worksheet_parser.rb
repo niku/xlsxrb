@@ -819,6 +819,7 @@ module Xlsxrb
                 end
 
           formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
+          formula_expr = nil if formula_expr && formula_expr.empty?
           cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr)
           block.call(cell)
         end
@@ -864,6 +865,7 @@ module Xlsxrb
 
           style_idx = s&.to_i
           formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
+          formula_expr = nil if formula_expr && formula_expr.empty?
           cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr)
           block.call(cell)
         end

@@ -10,6 +10,7 @@
 - Initial shared strings table seeding: Support pre-seeding `sst` in `Xlsxrb.write` when `workbook.shared_strings` is provided.
 - Sheet visibility state: Support worksheet visibility state (`state`, `hidden?`, `visible?`) across `StreamSheet`, `Elements::Worksheet`, `WorkbookParser`, `WorkbookBuilder`, and `WorkbookWriter`, preserving `:visible`, `:hidden`, and `:very_hidden` visibility in streaming read, in-memory representations, and XML serialization.
 - Workbook defined names: Parse `<definedNames>` in `WorkbookParser` and expose `defined_names` array and `defined_name(name, sheet: nil)` lookup on `Elements::Workbook`, supporting global and sheet-scoped named ranges and formula constants.
+- Cell formula query and expression methods: Expose `formula?` predicate and `formula_expression` string accessor on `Elements::Cell`, and normalize empty formula expressions to `nil` in streaming and DOM cell parsing.
 
 ### Changed
 - Optimize chunked streaming read performance: Hoist `</sheetData>` tag lookup outside row iteration, eliminate byte delimiter array allocations, and terminate entry inflation early once worksheet rows are fully parsed, restoring streaming read throughput faster than in-memory read while preserving $O(1)$ memory consumption.

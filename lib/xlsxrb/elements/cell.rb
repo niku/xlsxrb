@@ -104,6 +104,32 @@ module Xlsxrb
         "#{self.class.column_letter(column_index)}#{row_index + 1}"
       end
 
+      # Returns whether the cell contains a formula.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def formula?
+        if formula.is_a?(Formula)
+          !formula.expression.nil? && !formula.expression.empty?
+        else
+          !formula.nil? && !formula.to_s.empty?
+        end
+      end
+
+      # Returns the formula expression string without leading '=', or nil.
+      #
+      # @return [String, nil]
+      # @api public
+      #: () -> String?
+      def formula_expression
+        expr = formula.is_a?(Formula) ? formula.expression : formula
+        return nil if expr.nil?
+
+        str = expr.to_s
+        str.empty? ? nil : str
+      end
+
       # Access cell attributes by Symbol key.
       #
       # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type).

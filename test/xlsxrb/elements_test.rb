@@ -147,6 +147,25 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "invalid-time").to_time)
   end
 
+  test "cell formula predicate and expression methods" do
+    cell_no_f = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42)
+    assert_false(cell_no_f.formula?)
+    assert_nil(cell_no_f.formula_expression)
+
+    cell_str_f = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, formula: "SUM(A1:A10)")
+    assert_true(cell_str_f.formula?)
+    assert_equal("SUM(A1:A10)", cell_str_f.formula_expression)
+
+    f_obj = Xlsxrb::Elements::Formula.new(expression: "B1*2", cached_value: 100)
+    cell_obj_f = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 100, formula: f_obj)
+    assert_true(cell_obj_f.formula?)
+    assert_equal("B1*2", cell_obj_f.formula_expression)
+
+    cell_empty_f = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, formula: "")
+    assert_false(cell_empty_f.formula?)
+    assert_nil(cell_empty_f.formula_expression)
+  end
+
   test "cell equality, hashing, with copy, and pattern matching" do
     c1 = Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1)
     c2 = Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1)
