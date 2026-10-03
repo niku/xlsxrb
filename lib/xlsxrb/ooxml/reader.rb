@@ -89,18 +89,7 @@ module Xlsxrb
         return {} if worksheet_xml.nil? || worksheet_xml.empty?
 
         # Parse hyperlink elements from worksheet.
-        links = []
-        WorksheetParser.each_event(worksheet_xml, part_name: entry_path) do |event|
-          next unless event.type == :hyperlink
-
-          ref, rid, display, tooltip, location = event.args
-          link = { ref: ref }
-          link[:rid] = rid if rid
-          link[:display] = display if display
-          link[:tooltip] = tooltip if tooltip
-          link[:location] = location if location
-          links << link
-        end
+        links = WorksheetParser.parse_hyperlinks(worksheet_xml)
 
         # Parse rels to resolve rId -> URL.
         rels_path = entry_path.sub(%r{([^/]+)$}, '_rels/\1.rels')

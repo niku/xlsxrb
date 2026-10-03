@@ -28,6 +28,8 @@ module Xlsxrb
 
       attr_reader errors: untyped
 
+      attr_reader hyperlink: untyped
+
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
       # @param value [Object, nil] The cell's value.
@@ -35,8 +37,9 @@ module Xlsxrb
       # @param style_index [Integer, String, nil] Style identifier.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      # @param hyperlink [Hash, String, nil] Optional hyperlink metadata or URL.
+      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?) -> void
+      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?) -> void
 
       def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula) -> untyped
 
@@ -78,6 +81,22 @@ module Xlsxrb
       # @api public
       # : () -> String?
       def formula_expression: () -> String?
+
+      # Returns whether the cell contains a hyperlink.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def link?: () -> bool
+
+      alias hyperlink? link?
+
+      # Returns the hyperlink target URL or location string, or nil.
+      #
+      # @return [String, nil]
+      # @api public
+      # : () -> String?
+      def url: () -> String?
 
       # Access cell attributes by Symbol key.
       #

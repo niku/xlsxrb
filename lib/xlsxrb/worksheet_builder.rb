@@ -617,12 +617,39 @@ module Xlsxrb
       facade_meta[:row_breaks] = @row_breaks unless @row_breaks.empty?
       facade_meta[:col_breaks] = @col_breaks unless @col_breaks.empty?
 
+      hl_hash = {}
+      @hyperlinks.each do |h|
+        ref = h[:cell].to_s.upcase
+        entry = {}
+        entry[:url] = h[:url] if h[:url]
+        entry[:display] = h[:display] if h[:display]
+        entry[:tooltip] = h[:tooltip] if h[:tooltip]
+        entry[:location] = h[:location] if h[:location]
+        hl_hash[ref] = entry unless entry.empty?
+      end
+
+      rows = if hl_hash.empty?
+               @rows
+             else
+               @rows.map do |row|
+                 new_cells = row.cells.map do |cell|
+                   if (hl = hl_hash[cell.ref])
+                     cell.with(hyperlink: hl)
+                   else
+                     cell
+                   end
+                 end
+                 row.with(cells: new_cells)
+               end
+             end
+
       Elements::Worksheet.new(
-        name: @name, rows: @rows, columns: @columns, charts: @charts,
+        name: @name, rows: rows, columns: @columns, charts: @charts,
         conditional_formatting: @conditional_formats,
         data_validations: @data_validations,
         unmapped_data: facade_meta.empty? ? {} : { facade: facade_meta },
-        state: @state
+        state: @state,
+        hyperlinks: hl_hash
       )
     end
 

@@ -285,6 +285,25 @@ class ReaderTest < Test::Unit::TestCase
       "C1" => { location: "Sheet1!D1" }
     }
     assert_equal(expected, reader.hyperlinks)
+
+    # Also verify via Xlsxrb.read (StreamSheet and loaded Elements::Worksheet)
+    wb = Xlsxrb.read(xlsx_path)
+    sheet = wb.sheets.first
+    assert_equal(expected, sheet.hyperlinks)
+    assert_equal(expected["A1"], sheet.hyperlink("A1"))
+    assert_equal(expected["B1"], sheet.hyperlink("B1"))
+    assert_nil(sheet.hyperlink("D1"))
+
+    doc = sheet.load
+    assert_equal(expected, doc.hyperlinks)
+    assert_true(doc["A1"].link?)
+    assert_true(doc["A1"].hyperlink?)
+    assert_equal("https://example.com", doc["A1"].url)
+    assert_equal(expected["A1"], doc["A1"].hyperlink)
+    assert_true(doc["B1"].link?)
+    assert_equal("https://example.com/page", doc["B1"].url)
+    assert_true(doc["C1"].link?)
+    assert_equal("Sheet1!D1", doc["C1"].url)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

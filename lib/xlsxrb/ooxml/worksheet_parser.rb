@@ -71,19 +71,37 @@ module Xlsxrb
         fast_scan_events(xml_string, shared_strings, part_name, &block)
 
         # 3. Parse and yield hyperlink events
-        return unless xml_string.include?("hyperlink")
+        parse_hyperlinks(xml_string).each do |hl|
+          block.call(Event.new(
+                       type: :hyperlink,
+                       args: [hl[:ref], hl[:rid], hl[:display], hl[:tooltip], hl[:location]],
+                       source: { part: part_name, cell: hl[:ref] }
+                     ))
+        end
+      end
+
+      # Parses all hyperlink elements from worksheet XML.
+      #
+      # @param xml_string [String, nil]
+      # @return [Array<Hash[Symbol, untyped]>]
+      # @api public
+      #: (String?) -> Array[Hash[Symbol, untyped]]
+      def self.parse_hyperlinks(xml_string)
+        return [] if xml_string.nil? || xml_string.empty?
+        return [] unless xml_string.include?("hyperlink")
 
         xml = xml_string.b
         hpos_term = xml.index("hyperlinks")
-        return unless hpos_term
+        return [] unless hpos_term
 
         hpos = xml.rindex("<", hpos_term)
-        return unless hpos
+        return [] unless hpos
 
         h_end_term = xml.index("/hyperlinks", hpos)
         h_end = h_end_term ? xml.index(">", h_end_term) : xml.size
         h_end ||= xml.size
 
+        links = []
         pos = hpos
         while pos < h_end
           hl_start_term = xml.index("hyperlink", pos)
@@ -103,14 +121,16 @@ module Xlsxrb
           location = tag_attr(hl_tag, ' location="')
 
           if ref
-            block.call(Event.new(
-                         type: :hyperlink,
-                         args: [ref, rid, display, tooltip, location],
-                         source: { part: part_name, cell: ref }
-                       ))
+            entry = { ref: ref }
+            entry[:rid] = rid if rid
+            entry[:display] = display if display
+            entry[:tooltip] = tooltip if tooltip
+            entry[:location] = location if location
+            links << entry
           end
           pos = hl_tag_end + 1
         end
+        links
       end
 
       # ---- Fast string-scanning event parser (byte-level) ----

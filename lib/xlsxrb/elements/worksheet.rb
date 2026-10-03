@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks
       alias conditional_formats conditional_formatting
 
       # @param name [String] The worksheet name (max 31 characters).
@@ -30,8 +30,9 @@ module Xlsxrb
       # @param errors [Array<String>, nil] Validation errors.
       # @param conditional_formats [Array<Hash>, nil] Alias for conditional_formatting.
       # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible)
+      # @param hyperlinks [Hash{String => Hash}] Hyperlink mappings by cell reference.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {})
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -43,6 +44,7 @@ module Xlsxrb
         computed_errors = errors || self.class.validate(@name, @rows)
         @errors = computed_errors.freeze
         @state = state ? state.to_sym : :visible
+        @hyperlinks = (hyperlinks || {}).freeze
       end
 
       # Iterate over rows in the worksheet.
@@ -123,6 +125,22 @@ module Xlsxrb
         @state == :visible
       end
 
+      # Returns hyperlink metadata for the given cell reference, or nil.
+      #
+      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+      # @param col [Integer, nil] Optional 0-based column index if ref_or_row is a row index.
+      # @return [Hash, nil]
+      # @api public
+      #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+      def hyperlink(ref_or_row, col = nil)
+        ref = if col
+                "#{Cell.column_letter(col)}#{ref_or_row.to_i + 1}"
+              else
+                ref_or_row.to_s.upcase
+              end
+        @hyperlinks[ref]
+      end
+
       # Returns a new Worksheet with the specified cell updated.
       #
       # @example
@@ -132,10 +150,11 @@ module Xlsxrb
       # @param value [Object] The new cell value.
       # @param style_index [Integer, String, nil] Optional new style index.
       # @param formula [Elements::Formula, nil] Optional new formula.
+      # @param hyperlink [Hash, String, nil] Optional new hyperlink.
       # @return [Worksheet] A new Worksheet instance.
       # @api public
-      #: (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?) -> Elements::Worksheet
-      def update_cell(ref, value: nil, style_index: nil, formula: nil)
+      #: (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
+      def update_cell(ref, value: nil, style_index: nil, formula: nil, hyperlink: nil)
         parsed = Cell.parse_ref(ref)
         raise ArgumentError, "invalid cell reference: #{ref}" unless parsed
 
@@ -148,10 +167,11 @@ module Xlsxrb
                        existing_cell.with(
                          value: value || existing_cell.value,
                          style_index: style_index || existing_cell.style_index,
-                         formula: formula || existing_cell.formula
+                         formula: formula || existing_cell.formula,
+                         hyperlink: hyperlink || existing_cell.hyperlink
                        )
                      else
-                       Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula)
+                       Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula, hyperlink: hyperlink)
                      end
 
           # Replace cell in the existing row
@@ -163,11 +183,12 @@ module Xlsxrb
           new_rows = rows.map { |r| r.index == row_idx ? new_row : r }
         else
           # Row doesn't exist, create it
-          new_cell = Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula)
+          new_cell = Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula, hyperlink: hyperlink)
           new_row = Row.new(index: row_idx, cells: [new_cell])
           new_rows = (rows + [new_row]).sort_by!(&:index)
         end
-        with(rows: new_rows)
+        new_hyperlinks = hyperlink ? hyperlinks.merge(ref.upcase => hyperlink) : hyperlinks
+        with(rows: new_rows, hyperlinks: new_hyperlinks)
       end
 
       # Returns a new Worksheet with attributes replaced (Data-like behavior).
@@ -192,6 +213,7 @@ module Xlsxrb
         new_unmapped = changes.key?(:unmapped_data) ? changes[:unmapped_data] : unmapped_data
         new_errors = changes.key?(:errors) ? changes[:errors] : errors
         new_state = changes.key?(:state) ? changes[:state] : state
+        new_hyperlinks = changes.key?(:hyperlinks) ? changes[:hyperlinks] : hyperlinks
 
         self.class.new(
           name: new_name,
@@ -202,7 +224,8 @@ module Xlsxrb
           data_validations: new_dv,
           unmapped_data: new_unmapped,
           errors: new_errors,
-          state: new_state
+          state: new_state,
+          hyperlinks: new_hyperlinks
         )
       end
 
@@ -219,7 +242,8 @@ module Xlsxrb
           data_validations: data_validations,
           unmapped_data: unmapped_data,
           errors: errors,
-          state: state
+          state: state,
+          hyperlinks: hyperlinks
         }
       end
 
@@ -230,13 +254,13 @@ module Xlsxrb
 
         name == other.name && rows == other.rows && columns == other.columns && charts == other.charts &&
           conditional_formatting == other.conditional_formatting && data_validations == other.data_validations &&
-          state == other.state
+          state == other.state && hyperlinks == other.hyperlinks
       end
       alias eql? ==
 
       #: () -> Integer
       def hash
-        [self.class, name, rows, columns, charts, conditional_formatting, data_validations, state].hash
+        [self.class, name, rows, columns, charts, conditional_formatting, data_validations, state, hyperlinks].hash
       end
 
       # Returns self when load is called on an already in-memory Worksheet.

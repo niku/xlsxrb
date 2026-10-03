@@ -466,7 +466,7 @@ module Xlsxrb
 
           sheet_entry_map[sheet_info[:name]] = sheet_path
           sheet_xml = zip_reader.read_entry(sheet_path) || ""
-          build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles, state: sheet_info[:state] || :visible)
+          build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles, state: sheet_info[:state] || :visible, zip_reader: zip_reader, entry_name: sheet_path)
         end.compact
 
         original_workbook = Elements::Workbook.new(
@@ -573,14 +573,15 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, _styles, state: :visible)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, _styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil)
       return Elements::Worksheet.new(name: name, state: state) if sheet_xml.nil? || sheet_xml.empty?
 
+      sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
       raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings)
       raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
 
-      rows = raw_rows.map { |rr| build_row_from_raw(rr) }
+      rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks) }
       columns = raw_columns.map do |rc|
         # Columns from OOXML are 1-based min/max ranges; convert to 0-based
         col_unmapped = {}
@@ -617,41 +618,80 @@ module Xlsxrb
         columns: columns,
         conditional_formatting: cfs,
         data_validations: dvs,
-        state: state
+        state: state,
+        hyperlinks: sheet_hyperlinks
       )
     end
 
-    #: (untyped raw_row) -> (Elements::Row | untyped)
-    def build_row_from_raw(raw_row)
+    #: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
+    def resolve_hyperlinks(sheet_xml, zip_reader: nil, entry_name: nil, rels_xml: nil)
+      return {} if sheet_xml.nil? || !sheet_xml.include?("hyperlink")
+
+      links = Ooxml::WorksheetParser.parse_hyperlinks(sheet_xml)
+      return {} if links.empty?
+
+      rid_to_url = {}
+      if rels_xml && !rels_xml.empty?
+        rid_to_url = Ooxml::RelationshipsParser.parse(rels_xml)
+      elsif zip_reader && entry_name
+        rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+        rels_content = zip_reader.read_entry(rels_path)
+        rid_to_url = Ooxml::RelationshipsParser.parse(rels_content) if rels_content && !rels_content.empty?
+      end
+
+      result = {}
+      links.each do |link|
+        entry = {}
+        if link[:rid]
+          url = rid_to_url[link[:rid]]
+          entry[:url] = url if url
+        end
+        entry[:display] = link[:display] if link[:display]
+        entry[:tooltip] = link[:tooltip] if link[:tooltip]
+        entry[:location] = link[:location] if link[:location]
+        result[link[:ref]] = entry unless entry.empty?
+      end
+      result
+    end
+
+    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks) -> (Elements::Row | untyped)
+    def build_row_from_raw(raw_row, hyperlinks = {})
       return raw_row if raw_row.is_a?(Elements::Row)
 
       raw_cells = raw_row[:cells]
-      cells = if raw_cells.empty? || raw_cells.first.is_a?(Elements::Cell)
-                raw_cells
-              else
-                raw_cells.map do |rc|
-                  parsed = Elements::Cell.parse_ref(rc[:ref]) if rc[:ref]
-                  row_idx = parsed ? parsed[0] : raw_row[:index]
-                  col_idx = parsed ? parsed[1] : 0
+      cells = raw_cells.map do |rc|
+        if rc.is_a?(Elements::Cell)
+          if hyperlinks && !hyperlinks.empty? && (hl = hyperlinks[rc.ref])
+            rc.with(hyperlink: hl)
+          else
+            rc
+          end
+        else
+          parsed = Elements::Cell.parse_ref(rc[:ref]) if rc[:ref]
+          row_idx = parsed ? parsed[0] : raw_row[:index]
+          col_idx = parsed ? parsed[1] : 0
+          ref = rc[:ref] || "#{Elements::Cell.column_letter(col_idx)}#{row_idx + 1}"
+          hl = hyperlinks ? hyperlinks[ref] : nil
 
-                  val = rc[:value]
-                  cell_errors = Elements::Cell.validate(row_idx, col_idx, val)
-                  if !cell_errors.empty? && rc[:source]
-                    cell_errors = cell_errors.map do |err|
-                      "#{err} (at #{rc[:source][:part]} row #{rc[:source][:row] + 1} cell #{rc[:ref] || "unknown"})"
-                    end
-                  end
+          val = rc[:value]
+          cell_errors = Elements::Cell.validate(row_idx, col_idx, val)
+          if !cell_errors.empty? && rc[:source]
+            cell_errors = cell_errors.map do |err|
+              "#{err} (at #{rc[:source][:part]} row #{rc[:source][:row] + 1} cell #{rc[:ref] || "unknown"})"
+            end
+          end
 
-                  Elements::Cell.new(
-                    row_index: row_idx,
-                    column_index: col_idx,
-                    value: val,
-                    formula: rc[:formula],
-                    style_index: rc[:style_index],
-                    errors: cell_errors
-                  )
-                end
-              end
+          Elements::Cell.new(
+            row_index: row_idx,
+            column_index: col_idx,
+            value: val,
+            formula: rc[:formula],
+            style_index: rc[:style_index],
+            hyperlink: hl,
+            errors: cell_errors
+          )
+        end
+      end
       attrs = raw_row[:attrs] || {}
       row_errors = Elements::Row.validate(raw_row[:index], cells)
       if !row_errors.empty? && raw_row[:source]

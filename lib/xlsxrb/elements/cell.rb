@@ -16,7 +16,7 @@ module Xlsxrb
     #
     # @api public
     class Cell
-      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors
+      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors, :hyperlink
 
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
@@ -25,8 +25,9 @@ module Xlsxrb
       # @param style_index [Integer, String, nil] Style identifier.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil)
+      # @param hyperlink [Hash, String, nil] Optional hyperlink metadata or URL.
+      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?) -> void
+      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil)
         @row_index = row_index
         @column_index = column_index
         @value = value
@@ -35,6 +36,7 @@ module Xlsxrb
         @unmapped_data = unmapped_data || EMPTY_HASH
         computed_errors = errors || self.class.validate(row_index, column_index, value)
         @errors = computed_errors.frozen? ? computed_errors : computed_errors.freeze
+        @hyperlink = hyperlink
       end
 
       def self.fast_create(row_index, column_index, value, style_index = nil, formula = nil)
@@ -46,6 +48,7 @@ module Xlsxrb
         inst.instance_variable_set(:@style_index, style_index)
         inst.instance_variable_set(:@unmapped_data, EMPTY_HASH)
         inst.instance_variable_set(:@errors, EMPTY_ERRORS)
+        inst.instance_variable_set(:@hyperlink, nil)
         inst
       end
 
@@ -57,21 +60,22 @@ module Xlsxrb
           formula == other.formula &&
           style_index == other.style_index &&
           unmapped_data == other.unmapped_data &&
-          errors == other.errors
+          errors == other.errors &&
+          hyperlink == other.hyperlink
       end
       alias eql? ==
 
       def hash
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors].hash
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink].hash
       end
 
       def deconstruct
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors]
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink]
       end
 
       def deconstruct_keys(keys)
         h = { row_index: row_index, column_index: column_index, value: value, formula: formula,
-              style_index: style_index, unmapped_data: unmapped_data, errors: errors }
+              style_index: style_index, unmapped_data: unmapped_data, errors: errors, hyperlink: hyperlink }
         keys ? h.slice(*keys) : h
       end
 
@@ -83,7 +87,8 @@ module Xlsxrb
           formula: changes.fetch(:formula, formula),
           style_index: changes.fetch(:style_index, style_index),
           unmapped_data: changes.fetch(:unmapped_data, unmapped_data),
-          errors: changes.fetch(:errors, errors)
+          errors: changes.fetch(:errors, errors),
+          hyperlink: changes.fetch(:hyperlink, hyperlink)
         )
       end
 
@@ -130,6 +135,35 @@ module Xlsxrb
         str.empty? ? nil : str
       end
 
+      # Returns whether the cell contains a hyperlink.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def link?
+        case hyperlink
+        when nil then false
+        when Hash, String then !hyperlink.empty?
+        else true
+        end
+      end
+      alias hyperlink? link?
+
+      # Returns the hyperlink target URL or location string, or nil.
+      #
+      # @return [String, nil]
+      # @api public
+      #: () -> String?
+      def url
+        case hyperlink
+        when Hash
+          u = hyperlink[:url] || hyperlink[:location]
+          u&.to_s
+        when String
+          hyperlink.empty? ? nil : hyperlink
+        end
+      end
+
       # Access cell attributes by Symbol key.
       #
       # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type).
@@ -145,6 +179,7 @@ module Xlsxrb
         when :ref then ref
         when :column_index then column_index
         when :row_index then row_index
+        when :hyperlink then hyperlink
         when :type
           case value
           when String then "s"

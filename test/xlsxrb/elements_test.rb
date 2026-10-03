@@ -185,9 +185,55 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(c1.formula, c1_modified.formula)
 
     # pattern matching (deconstruct & deconstruct_keys)
-    assert_equal([1, 1, 10, "A1", 1, {}, []], c1.deconstruct)
+    assert_equal([1, 1, 10, "A1", 1, {}, [], nil], c1.deconstruct)
     assert_equal({ row_index: 1, value: 10 }, c1.deconstruct_keys(%i[row_index value]))
-    assert_equal({ row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1, unmapped_data: {}, errors: [] }, c1.deconstruct_keys(nil))
+    assert_equal({ row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1, unmapped_data: {}, errors: [], hyperlink: nil }, c1.deconstruct_keys(nil))
+  end
+
+  test "cell hyperlink predicate and url accessor" do
+    cell_no_link = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Text")
+    assert_false(cell_no_link.link?)
+    assert_false(cell_no_link.hyperlink?)
+    assert_nil(cell_no_link.url)
+    assert_nil(cell_no_link.hyperlink)
+    assert_nil(cell_no_link[:hyperlink])
+
+    cell_link = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Google", hyperlink: { url: "https://google.com", tooltip: "Search" })
+    assert_true(cell_link.link?)
+    assert_true(cell_link.hyperlink?)
+    assert_equal("https://google.com", cell_link.url)
+    assert_equal({ url: "https://google.com", tooltip: "Search" }, cell_link.hyperlink)
+    assert_equal({ url: "https://google.com", tooltip: "Search" }, cell_link[:hyperlink])
+
+    cell_loc = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: { location: "Sheet2!A1" })
+    assert_true(cell_loc.link?)
+    assert_equal("Sheet2!A1", cell_loc.url)
+
+    cell_str = cell_no_link.with(hyperlink: "https://ruby-lang.org")
+    assert_true(cell_str.link?)
+    assert_equal("https://ruby-lang.org", cell_str.url)
+
+    assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").link?)
+    assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: {}).link?)
+    assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").url)
+  end
+
+  test "worksheet hyperlinks and hyperlink coordinate lookup" do
+    links = { "A1" => { url: "https://example.com" }, "B2" => { location: "Sheet2!A1" } }
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", hyperlinks: links)
+
+    assert_equal(links, ws.hyperlinks)
+    assert_equal({ url: "https://example.com" }, ws.hyperlink("A1"))
+    assert_equal({ url: "https://example.com" }, ws.hyperlink(:A1))
+    assert_equal({ url: "https://example.com" }, ws.hyperlink(0, 0))
+    assert_equal({ location: "Sheet2!A1" }, ws.hyperlink("B2"))
+    assert_equal({ location: "Sheet2!A1" }, ws.hyperlink(1, 1))
+    assert_nil(ws.hyperlink("C3"))
+
+    updated = ws.update_cell("C3", value: "Test", hyperlink: { url: "https://updated.com" })
+    assert_equal({ url: "https://updated.com" }, updated.hyperlink("C3"))
+    assert_true(updated["C3"].link?)
+    assert_equal("https://updated.com", updated["C3"].url)
   end
 
   test "cell with negative row_index is invalid" do

@@ -124,4 +124,34 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(:very_hidden, very_hidden_sheet.load.state)
     assert_true(very_hidden_sheet.load.hidden?)
   end
+
+  test "stream_sheet hyperlinks and hyperlink lookup" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1"><v>Link</v></c>
+          </row>
+        </sheetData>
+        <hyperlinks>
+          <hyperlink ref="A1" location="Sheet2!A1" display="Go to Sheet2" tooltip="Click"/>
+          <hyperlink ref="B2" location="Sheet1!C3"/>
+        </hyperlinks>
+      </worksheet>
+    XML
+
+    sheet = Xlsxrb::StreamSheet.new("Links", xml.b, [])
+    assert_equal(2, sheet.hyperlinks.size)
+    assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, sheet.hyperlink("A1"))
+    assert_equal({ location: "Sheet1!C3" }, sheet.hyperlink("B2"))
+    assert_nil(sheet.hyperlink("C3"))
+
+    ws = sheet.load
+    assert_equal(2, ws.hyperlinks.size)
+    assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, ws.hyperlink("A1"))
+    assert_true(ws["A1"].link?)
+    assert_true(ws["A1"].hyperlink?)
+    assert_equal("Sheet2!A1", ws["A1"].url)
+    assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, ws["A1"].hyperlink)
+  end
 end

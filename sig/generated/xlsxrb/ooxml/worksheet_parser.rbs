@@ -28,6 +28,14 @@ module Xlsxrb
       # Yields Event objects for columns, rows, cells, and hyperlinks.
       def self.each_event: (untyped xml_string, ?shared_strings: untyped, ?part_name: untyped) ?{ (?) -> untyped } -> untyped
 
+      # Parses all hyperlink elements from worksheet XML.
+      #
+      # @param xml_string [String, nil]
+      # @return [Array<Hash[Symbol, untyped]>]
+      # @api public
+      # : (String?) -> Array[Hash[Symbol, untyped]]
+      def self.parse_hyperlinks: (String?) -> Array[Hash[Symbol, untyped]]
+
       def self.fast_scan_events: (untyped xml_src, untyped shared_strings, untyped part_name) ?{ (?) -> untyped } -> untyped
 
       def self.extract_row_attrs: (untyped row_tag) -> untyped

@@ -148,9 +148,34 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state)
+      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks)
     end
     alias to_worksheet load
+
+    # Returns hyperlinks configured for this worksheet as a Hash of cell references to hyperlink hashes.
+    #
+    # @return [Hash<String, Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Hash[String, Hash[Symbol, untyped]]
+    def hyperlinks
+      @hyperlinks ||= Xlsxrb.send(:resolve_hyperlinks, raw_sheet_xml, zip_reader: @zip_reader, entry_name: @entry_name)
+    end
+
+    # Returns hyperlink metadata for a specific cell reference, or nil.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [Hash, nil]
+    # @api public
+    #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+    def hyperlink(ref_or_row, col = nil)
+      ref = if col
+              "#{Elements::Cell.column_letter(col)}#{ref_or_row.to_i + 1}"
+            else
+              ref_or_row.to_s.upcase
+            end
+      hyperlinks[ref]
+    end
 
     # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.
     #

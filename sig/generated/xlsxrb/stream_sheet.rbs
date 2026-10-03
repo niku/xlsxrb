@@ -119,6 +119,22 @@ module Xlsxrb
 
     alias to_worksheet load
 
+    # Returns hyperlinks configured for this worksheet as a Hash of cell references to hyperlink hashes.
+    #
+    # @return [Hash<String, Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Hash[String, Hash[Symbol, untyped]]
+    def hyperlinks: () -> Hash[String, Hash[Symbol, untyped]]
+
+    # Returns hyperlink metadata for a specific cell reference, or nil.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [Hash, nil]
+    # @api public
+    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+    def hyperlink: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+
     # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.
     #
     # @return [Array<String>]
