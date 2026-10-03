@@ -16,7 +16,7 @@ module Xlsxrb
     #
     # @api public
     class Cell
-      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors, :hyperlink
+      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors, :hyperlink, :comment
 
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
@@ -26,8 +26,9 @@ module Xlsxrb
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
       # @param hyperlink [Hash, String, nil] Optional hyperlink metadata or URL.
-      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?) -> void
-      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil)
+      # @param comment [Hash, String, nil] Optional cell comment or note.
+      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> void
+      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil, comment: nil)
         @row_index = row_index
         @column_index = column_index
         @value = value
@@ -37,6 +38,7 @@ module Xlsxrb
         computed_errors = errors || self.class.validate(row_index, column_index, value)
         @errors = computed_errors.frozen? ? computed_errors : computed_errors.freeze
         @hyperlink = hyperlink
+        @comment = comment
       end
 
       def self.fast_create(row_index, column_index, value, style_index = nil, formula = nil)
@@ -49,6 +51,7 @@ module Xlsxrb
         inst.instance_variable_set(:@unmapped_data, EMPTY_HASH)
         inst.instance_variable_set(:@errors, EMPTY_ERRORS)
         inst.instance_variable_set(:@hyperlink, nil)
+        inst.instance_variable_set(:@comment, nil)
         inst
       end
 
@@ -61,21 +64,22 @@ module Xlsxrb
           style_index == other.style_index &&
           unmapped_data == other.unmapped_data &&
           errors == other.errors &&
-          hyperlink == other.hyperlink
+          hyperlink == other.hyperlink &&
+          comment == other.comment
       end
       alias eql? ==
 
       def hash
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink].hash
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment].hash
       end
 
       def deconstruct
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink]
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment]
       end
 
       def deconstruct_keys(keys)
         h = { row_index: row_index, column_index: column_index, value: value, formula: formula,
-              style_index: style_index, unmapped_data: unmapped_data, errors: errors, hyperlink: hyperlink }
+              style_index: style_index, unmapped_data: unmapped_data, errors: errors, hyperlink: hyperlink, comment: comment }
         keys ? h.slice(*keys) : h
       end
 
@@ -88,7 +92,8 @@ module Xlsxrb
           style_index: changes.fetch(:style_index, style_index),
           unmapped_data: changes.fetch(:unmapped_data, unmapped_data),
           errors: changes.fetch(:errors, errors),
-          hyperlink: changes.fetch(:hyperlink, hyperlink)
+          hyperlink: changes.fetch(:hyperlink, hyperlink),
+          comment: changes.fetch(:comment, comment)
         )
       end
 
@@ -164,6 +169,34 @@ module Xlsxrb
         end
       end
 
+      # Returns whether the cell contains a comment or note.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def comment?
+        case comment
+        when nil then false
+        when Hash, String then !comment.empty?
+        else true
+        end
+      end
+
+      # Returns the plain text of the cell comment or note, or nil.
+      #
+      # @return [String, nil]
+      # @api public
+      #: () -> String?
+      def comment_text
+        case comment
+        when Hash
+          txt = comment[:text]
+          txt&.to_s
+        when String
+          comment.empty? ? nil : comment
+        end
+      end
+
       # Access cell attributes by Symbol key.
       #
       # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type).
@@ -180,6 +213,7 @@ module Xlsxrb
         when :column_index then column_index
         when :row_index then row_index
         when :hyperlink then hyperlink
+        when :comment then comment
         when :type
           case value
           when String then "s"

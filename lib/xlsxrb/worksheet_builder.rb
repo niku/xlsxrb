@@ -628,13 +628,21 @@ module Xlsxrb
         hl_hash[ref] = entry unless entry.empty?
       end
 
-      rows = if hl_hash.empty?
+      cm_hash = {}
+      @comments.each do |c|
+        ref = (c[:ref] || c[:cell]).to_s.upcase
+        cm_hash[ref] = c
+      end
+
+      rows = if hl_hash.empty? && cm_hash.empty?
                @rows
              else
                @rows.map do |row|
                  new_cells = row.cells.map do |cell|
-                   if (hl = hl_hash[cell.ref])
-                     cell.with(hyperlink: hl)
+                   hl = hl_hash[cell.ref]
+                   cm = cm_hash[cell.ref]
+                   if hl || cm
+                     cell.with(hyperlink: hl || cell.hyperlink, comment: cm || cell.comment)
                    else
                      cell
                    end
@@ -649,7 +657,8 @@ module Xlsxrb
         data_validations: @data_validations,
         unmapped_data: facade_meta.empty? ? {} : { facade: facade_meta },
         state: @state,
-        hyperlinks: hl_hash
+        hyperlinks: hl_hash,
+        comments: @comments
       )
     end
 

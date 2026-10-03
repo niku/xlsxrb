@@ -2666,6 +2666,8 @@ class ReaderTest < Test::Unit::TestCase
 
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", "hello")
+    writer.set_cell("B1", "no note")
+    writer.set_cell("B2", "world")
     writer.add_comment("A1", "Test note", author: "Me")
     writer.add_comment("B2", "Second note", author: "You")
     writer.write(xlsx_path)
@@ -2679,6 +2681,24 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("B2", comments[1][:ref])
     assert_equal("You", comments[1][:author])
     assert_equal("Second note", comments[1][:text])
+
+    # Also verify via Xlsxrb.read (StreamSheet and loaded Elements::Worksheet)
+    wb = Xlsxrb.read(xlsx_path)
+    sheet = wb.sheets.first
+    assert_equal(2, sheet.comments.size)
+    assert_equal("Test note", sheet.comment("A1")[:text])
+    assert_equal("Second note", sheet.comment("B2")[:text])
+    assert_nil(sheet.comment("C3"))
+
+    doc = sheet.load
+    assert_equal(2, doc.comments.size)
+    assert_equal("Test note", doc.comment("A1")[:text])
+    assert_true(doc["A1"].comment?)
+    assert_equal("Test note", doc["A1"].comment_text)
+    assert_equal("Me", doc["A1"].comment[:author])
+    assert_true(doc["B2"].comment?)
+    assert_equal("Second note", doc["B2"].comment_text)
+    assert_false(doc["B1"].comment?)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

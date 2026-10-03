@@ -185,9 +185,9 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(c1.formula, c1_modified.formula)
 
     # pattern matching (deconstruct & deconstruct_keys)
-    assert_equal([1, 1, 10, "A1", 1, {}, [], nil], c1.deconstruct)
+    assert_equal([1, 1, 10, "A1", 1, {}, [], nil, nil], c1.deconstruct)
     assert_equal({ row_index: 1, value: 10 }, c1.deconstruct_keys(%i[row_index value]))
-    assert_equal({ row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1, unmapped_data: {}, errors: [], hyperlink: nil }, c1.deconstruct_keys(nil))
+    assert_equal({ row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1, unmapped_data: {}, errors: [], hyperlink: nil, comment: nil }, c1.deconstruct_keys(nil))
   end
 
   test "cell hyperlink predicate and url accessor" do
@@ -218,6 +218,28 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").url)
   end
 
+  test "cell comment predicate and text accessor" do
+    cell_no_comment = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Text")
+    assert_false(cell_no_comment.comment?)
+    assert_nil(cell_no_comment.comment)
+    assert_nil(cell_no_comment.comment_text)
+    assert_nil(cell_no_comment[:comment])
+
+    cell_comment = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Text", comment: { author: "Author", text: "Important Note" })
+    assert_true(cell_comment.comment?)
+    assert_equal("Important Note", cell_comment.comment_text)
+    assert_equal({ author: "Author", text: "Important Note" }, cell_comment.comment)
+    assert_equal({ author: "Author", text: "Important Note" }, cell_comment[:comment])
+
+    cell_str = cell_no_comment.with(comment: "Inline note")
+    assert_true(cell_str.comment?)
+    assert_equal("Inline note", cell_str.comment_text)
+
+    assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, comment: "").comment?)
+    assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, comment: {}).comment?)
+    assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, comment: "").comment_text)
+  end
+
   test "worksheet hyperlinks and hyperlink coordinate lookup" do
     links = { "A1" => { url: "https://example.com" }, "B2" => { location: "Sheet2!A1" } }
     ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", hyperlinks: links)
@@ -234,6 +256,24 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal({ url: "https://updated.com" }, updated.hyperlink("C3"))
     assert_true(updated["C3"].link?)
     assert_equal("https://updated.com", updated["C3"].url)
+  end
+
+  test "worksheet comments and comment coordinate lookup" do
+    comments = [{ ref: "A1", author: "Tester", text: "Hello" }, { ref: "B2", author: "Reviewer", text: "Check this" }]
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", comments: comments)
+
+    assert_equal(comments, ws.comments)
+    assert_equal({ ref: "A1", author: "Tester", text: "Hello" }, ws.comment("A1"))
+    assert_equal({ ref: "A1", author: "Tester", text: "Hello" }, ws.comment(:A1))
+    assert_equal({ ref: "A1", author: "Tester", text: "Hello" }, ws.comment(0, 0))
+    assert_equal({ ref: "B2", author: "Reviewer", text: "Check this" }, ws.comment("B2"))
+    assert_equal({ ref: "B2", author: "Reviewer", text: "Check this" }, ws.comment(1, 1))
+    assert_nil(ws.comment("C3"))
+
+    updated = ws.update_cell("C3", value: "Test", comment: { author: "Me", text: "New comment" })
+    assert_equal({ ref: "C3", author: "Me", text: "New comment" }, updated.comment("C3"))
+    assert_true(updated["C3"].comment?)
+    assert_equal("New comment", updated["C3"].comment_text)
   end
 
   test "cell with negative row_index is invalid" do

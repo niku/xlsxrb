@@ -573,15 +573,16 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, _styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, _styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil)
       return Elements::Worksheet.new(name: name, state: state) if sheet_xml.nil? || sheet_xml.empty?
 
       sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
+      sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
       raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings)
       raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
 
-      rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks) }
+      rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks, sheet_comments) }
       columns = raw_columns.map do |rc|
         # Columns from OOXML are 1-based min/max ranges; convert to 0-based
         col_unmapped = {}
@@ -619,7 +620,8 @@ module Xlsxrb
         conditional_formatting: cfs,
         data_validations: dvs,
         state: state,
-        hyperlinks: sheet_hyperlinks
+        hyperlinks: sheet_hyperlinks,
+        comments: sheet_comments
       )
     end
 
@@ -654,15 +656,62 @@ module Xlsxrb
       result
     end
 
-    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks) -> (Elements::Row | untyped)
-    def build_row_from_raw(raw_row, hyperlinks = {})
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
+    def resolve_comments(zip_reader: nil, entry_name: nil)
+      return [] unless zip_reader && entry_name
+
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = Ooxml::Reader::RelsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      rel = listener.relationships.find { |r| r[:type]&.end_with?("/comments") }
+      return [] unless rel
+
+      base_dir = File.dirname(entry_name)
+      target = rel[:target]
+      comments_path = if target.start_with?("/")
+                        target.delete_prefix("/")
+                      elsif target.start_with?("..")
+                        parts = base_dir.split("/") + target.split("/")
+                        resolved = []
+                        parts.each { |p| p == ".." ? resolved.pop : resolved << p }
+                        resolved.join("/")
+                      else
+                        "#{base_dir}/#{target}"
+                      end
+
+      xml = zip_reader.read_entry(comments_path)
+      return [] if xml.nil? || xml.empty?
+
+      c_parser = REXML::Parsers::SAX2Parser.new(xml)
+      c_listener = Ooxml::Reader::CommentsListener.new
+      c_parser.listen(c_listener)
+      c_parser.parse
+      c_listener.comments
+    end
+
+    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments) -> (Elements::Row | untyped)
+    def build_row_from_raw(raw_row, hyperlinks = {}, comments = [])
       return raw_row if raw_row.is_a?(Elements::Row)
+
+      comments_map = if comments.is_a?(Hash)
+                       comments
+                     else
+                       comments.each_with_object({}) { |c, acc| (r = c[:ref] || c[:cell]) && (acc[r.to_s.upcase] = c) }
+                     end
 
       raw_cells = raw_row[:cells]
       cells = raw_cells.map do |rc|
         if rc.is_a?(Elements::Cell)
-          if hyperlinks && !hyperlinks.empty? && (hl = hyperlinks[rc.ref])
-            rc.with(hyperlink: hl)
+          hl = hyperlinks && !hyperlinks.empty? ? hyperlinks[rc.ref] : nil
+          cm = comments_map && !comments_map.empty? ? comments_map[rc.ref] : nil
+          if hl || cm
+            rc.with(hyperlink: hl || rc.hyperlink, comment: cm || rc.comment)
           else
             rc
           end
@@ -672,6 +721,7 @@ module Xlsxrb
           col_idx = parsed ? parsed[1] : 0
           ref = rc[:ref] || "#{Elements::Cell.column_letter(col_idx)}#{row_idx + 1}"
           hl = hyperlinks ? hyperlinks[ref] : nil
+          cm = comments_map ? comments_map[ref] : nil
 
           val = rc[:value]
           cell_errors = Elements::Cell.validate(row_idx, col_idx, val)
@@ -688,6 +738,7 @@ module Xlsxrb
             formula: rc[:formula],
             style_index: rc[:style_index],
             hyperlink: hl,
+            comment: cm,
             errors: cell_errors
           )
         end

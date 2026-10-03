@@ -30,6 +30,8 @@ module Xlsxrb
 
       attr_reader hyperlink: untyped
 
+      attr_reader comment: untyped
+
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
       # @param value [Object, nil] The cell's value.
@@ -38,8 +40,9 @@ module Xlsxrb
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
       # @param hyperlink [Hash, String, nil] Optional hyperlink metadata or URL.
-      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?) -> void
-      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?) -> void
+      # @param comment [Hash, String, nil] Optional cell comment or note.
+      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> void
+      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> void
 
       def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula) -> untyped
 
@@ -97,6 +100,20 @@ module Xlsxrb
       # @api public
       # : () -> String?
       def url: () -> String?
+
+      # Returns whether the cell contains a comment or note.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def comment?: () -> bool
+
+      # Returns the plain text of the cell comment or note, or nil.
+      #
+      # @return [String, nil]
+      # @api public
+      # : () -> String?
+      def comment_text: () -> String?
 
       # Access cell attributes by Symbol key.
       #

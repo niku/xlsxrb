@@ -148,7 +148,7 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks)
+      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments)
     end
     alias to_worksheet load
 
@@ -175,6 +175,43 @@ module Xlsxrb
               ref_or_row.to_s.upcase
             end
       hyperlinks[ref]
+    end
+
+    # Returns comments configured for this worksheet as an Array of comment hashes.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def comments
+      @comments ||= Xlsxrb.send(:resolve_comments, zip_reader: @zip_reader, entry_name: @entry_name)
+    end
+
+    # Returns comment metadata for a specific cell reference, or nil.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [Hash, nil]
+    # @api public
+    #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+    def comment(ref_or_row, col = nil)
+      ref = if col
+              "#{Elements::Cell.column_letter(col)}#{ref_or_row.to_i + 1}"
+            else
+              ref_or_row.to_s.upcase
+            end
+      comments_by_ref[ref]
+    end
+
+    # Returns comments indexed by cell reference.
+    #
+    # @return [Hash<String, Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Hash[String, Hash[Symbol, untyped]]
+    def comments_by_ref
+      @comments_by_ref ||= comments.each_with_object({}) do |c, acc|
+        r = c[:ref] || c[:cell]
+        acc[r.to_s.upcase] = c if r
+      end
     end
 
     # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.

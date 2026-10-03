@@ -154,4 +154,15 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal("Sheet2!A1", ws["A1"].url)
     assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, ws["A1"].hyperlink)
   end
+
+  test "stream_sheet comments without zip_reader returns empty and nil lookup" do
+    sheet = Xlsxrb::StreamSheet.new("NoComments", "<worksheet><sheetData/></worksheet>".b, [])
+    assert_equal([], sheet.comments)
+    assert_nil(sheet.comment("A1"))
+    assert_equal({}, sheet.comments_by_ref)
+
+    ws = sheet.load
+    assert_equal([], ws.comments)
+    assert_nil(ws.comment("A1"))
+  end
 end

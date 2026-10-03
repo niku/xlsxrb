@@ -33,6 +33,8 @@ module Xlsxrb
 
       attr_reader hyperlinks: untyped
 
+      attr_reader comments: untyped
+
       alias conditional_formats conditional_formatting
 
       # @param name [String] The worksheet name (max 31 characters).
@@ -46,8 +48,9 @@ module Xlsxrb
       # @param conditional_formats [Array<Hash>, nil] Alias for conditional_formatting.
       # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
       # @param hyperlinks [Hash{String => Hash}] Hyperlink mappings by cell reference.
-      # : (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]) -> void
-      def initialize: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]) -> void
+      # @param comments [Array<Hash>] Comments and notes in the sheet.
+      # : (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]]) -> void
+      def initialize: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]]) -> void
 
       # Iterate over rows in the worksheet.
       #
@@ -121,6 +124,22 @@ module Xlsxrb
       # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
       def hyperlink: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
 
+      # Returns comment metadata for the given cell reference, or nil.
+      #
+      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+      # @param col [Integer, nil] Optional 0-based column index if ref_or_row is a row index.
+      # @return [Hash, nil]
+      # @api public
+      # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+      def comment: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+
+      # Returns comments indexed by cell reference.
+      #
+      # @return [Hash<String, Hash[Symbol, untyped]>]
+      # @api public
+      # : () -> Hash[String, Hash[Symbol, untyped]]
+      def comments_by_ref: () -> Hash[String, Hash[Symbol, untyped]]
+
       # Returns a new Worksheet with the specified cell updated.
       #
       # @example
@@ -131,10 +150,11 @@ module Xlsxrb
       # @param style_index [Integer, String, nil] Optional new style index.
       # @param formula [Elements::Formula, nil] Optional new formula.
       # @param hyperlink [Hash, String, nil] Optional new hyperlink.
+      # @param comment [Hash, String, nil] Optional new comment.
       # @return [Worksheet] A new Worksheet instance.
       # @api public
-      # : (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
-      def update_cell: (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
+      # : (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
+      def update_cell: (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
 
       # Returns a new Worksheet with attributes replaced (Data-like behavior).
       #

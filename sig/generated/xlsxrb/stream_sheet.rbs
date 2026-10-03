@@ -135,6 +135,29 @@ module Xlsxrb
     # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
     def hyperlink: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
 
+    # Returns comments configured for this worksheet as an Array of comment hashes.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Array[Hash[Symbol, untyped]]
+    def comments: () -> Array[Hash[Symbol, untyped]]
+
+    # Returns comment metadata for a specific cell reference, or nil.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [Hash, nil]
+    # @api public
+    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+    def comment: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+
+    # Returns comments indexed by cell reference.
+    #
+    # @return [Hash<String, Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Hash[String, Hash[Symbol, untyped]]
+    def comments_by_ref: () -> Hash[String, Hash[Symbol, untyped]]
+
     # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.
     #
     # @return [Array<String>]

@@ -12,6 +12,7 @@
 - Workbook defined names: Parse `<definedNames>` in `WorkbookParser` and expose `defined_names` array and `defined_name(name, sheet: nil)` lookup on `Elements::Workbook`, supporting global and sheet-scoped named ranges and formula constants.
 - Cell formula query and expression methods: Expose `formula?` predicate and `formula_expression` string accessor on `Elements::Cell`, and normalize empty formula expressions to `nil` in streaming and DOM cell parsing.
 - Worksheet and cell hyperlinks: Parse and expose hyperlink metadata across `StreamSheet#hyperlinks`, `Elements::Worksheet#hyperlinks`, and `Elements::Cell#hyperlink`, `#link?`, and `#url`, supporting external targets and internal sheet references in streaming read, DOM models, and builders.
+- Worksheet and cell comments: Parse and expose comment and note metadata across `StreamSheet#comments`, `StreamSheet#comment`, `Elements::Worksheet#comments`, and `Elements::Cell#comment`, `#comment?`, and `#comment_text`, supporting comment annotations and coordinate lookups in streaming read, DOM models, and builders.
 
 ### Changed
 - Optimize chunked streaming read performance: Hoist `</sheetData>` tag lookup outside row iteration, eliminate byte delimiter array allocations, and terminate entry inflation early once worksheet rows are fully parsed, restoring streaming read throughput faster than in-memory read while preserving $O(1)$ memory consumption.
