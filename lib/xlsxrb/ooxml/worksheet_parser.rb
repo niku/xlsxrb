@@ -19,23 +19,23 @@ module Xlsxrb
       # Parses all rows from a worksheet XML string.
       # Returns an Array of raw row hashes:
       #   { index:, cells: [{ ref:, type:, style_index:, value:, formula: }], attrs:, unmapped: }
-      def self.parse(xml_string, shared_strings: [])
+      def self.parse(xml_string, shared_strings: [], styles: nil)
         return [] if xml_string.nil? || xml_string.empty?
 
         rows = []
-        each_row(xml_string, shared_strings: shared_strings) { |row| rows << row }
+        each_row(xml_string, shared_strings: shared_strings, styles: styles) { |row| rows << row }
         rows
       end
 
       # Streaming parse: yields one raw row hash at a time.
-      def self.each_row(xml_source, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", &block)
-        return enum_for(:each_row, xml_source, shared_strings: shared_strings, part_name: part_name) unless block
+      def self.each_row(xml_source, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", styles: nil, &block)
+        return enum_for(:each_row, xml_source, shared_strings: shared_strings, part_name: part_name, styles: styles) unless block
         return if xml_source.nil? || (xml_source.respond_to?(:empty?) && xml_source.empty?)
 
         if xml_source.is_a?(String)
-          fast_scan_rows_direct(xml_source, shared_strings, part_name, &block)
+          fast_scan_rows_direct(xml_source, shared_strings, part_name, styles, &block)
         else
-          scan_rows_stream(xml_source, shared_strings, part_name, &block)
+          scan_rows_stream(xml_source, shared_strings, part_name, styles, &block)
         end
       end
 
@@ -496,7 +496,7 @@ module Xlsxrb
         def characters(_text); end
       end
 
-      def self.fast_scan_rows_direct(xml_src, shared_strings, _part_name, &block)
+      def self.fast_scan_rows_direct(xml_src, shared_strings, _part_name, styles = nil, &block)
         xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
 
         sd_term = xml.index("sheetData")
@@ -585,7 +585,8 @@ module Xlsxrb
             attrs[:hidden] || false,
             attrs[:custom_height] || false,
             attrs[:outline_level],
-            attrs[:style_index]
+            attrs[:style_index],
+            styles
           )
           block.call(row_obj)
 
@@ -595,7 +596,7 @@ module Xlsxrb
 
       private_class_method :fast_scan_rows_direct
 
-      def self.scan_rows_stream(source, shared_strings, _part_name, &block)
+      def self.scan_rows_stream(source, shared_strings, _part_name, styles = nil, &block)
         buffer = +""
         buffer.force_encoding(Encoding::BINARY)
         in_sheet_data = false
@@ -727,7 +728,8 @@ module Xlsxrb
               attrs[:hidden] || false,
               attrs[:custom_height] || false,
               attrs[:outline_level],
-              attrs[:style_index]
+              attrs[:style_index],
+              styles
             )
             block.call(row_obj)
 
@@ -796,7 +798,7 @@ module Xlsxrb
         cells
       end
 
-      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", &block)
+      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", styles = nil, &block)
         chunk = xml.byteslice(from, to - from)
         row_idx = row_source.is_a?(Hash) ? row_source[:row] : row_source
         col_idx = 0
@@ -838,9 +840,16 @@ module Xlsxrb
                   v.include?(".") ? v.to_f : v.to_i
                 end
 
+          raw_val = if is
+                      extract_inline_text(is, 0, is.bytesize)
+                    elsif v
+                      v.include?("&") ? decode_xml_entities(v) : v
+                    end
+
           formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
           formula_expr = nil if formula_expr && formula_expr.empty?
-          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr)
+          fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
+          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code)
           block.call(cell)
         end
 
@@ -883,10 +892,17 @@ module Xlsxrb
                   v.include?(".") ? v.to_f : v.to_i
                 end
 
+          raw_val = if is
+                      extract_inline_text(is, 0, is.bytesize)
+                    elsif v
+                      v.include?("&") ? decode_xml_entities(v) : v
+                    end
+
           style_idx = s&.to_i
           formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
           formula_expr = nil if formula_expr && formula_expr.empty?
-          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr)
+          fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
+          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code)
           block.call(cell)
         end
       end

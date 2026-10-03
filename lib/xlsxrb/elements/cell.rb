@@ -16,7 +16,7 @@ module Xlsxrb
     #
     # @api public
     class Cell
-      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors, :hyperlink, :comment
+      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors, :hyperlink, :comment, :raw_value, :format_code
 
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
@@ -27,8 +27,10 @@ module Xlsxrb
       # @param errors [Array<String>, nil] Validation errors.
       # @param hyperlink [Hash, String, nil] Optional hyperlink metadata or URL.
       # @param comment [Hash, String, nil] Optional cell comment or note.
-      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> void
-      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil, comment: nil)
+      # @param raw_value [String, nil] Optional unparsed raw string value.
+      # @param format_code [String, nil] Optional OpenXML number/date format code.
+      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?) -> void
+      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil, comment: nil, raw_value: nil, format_code: nil)
         @row_index = row_index
         @column_index = column_index
         @value = value
@@ -39,9 +41,11 @@ module Xlsxrb
         @errors = computed_errors.frozen? ? computed_errors : computed_errors.freeze
         @hyperlink = hyperlink
         @comment = comment
+        @raw_value = raw_value
+        @format_code = format_code
       end
 
-      def self.fast_create(row_index, column_index, value, style_index = nil, formula = nil)
+      def self.fast_create(row_index, column_index, value, style_index = nil, formula = nil, raw_value = nil, format_code = nil)
         inst = allocate
         inst.instance_variable_set(:@row_index, row_index)
         inst.instance_variable_set(:@column_index, column_index)
@@ -52,6 +56,8 @@ module Xlsxrb
         inst.instance_variable_set(:@errors, EMPTY_ERRORS)
         inst.instance_variable_set(:@hyperlink, nil)
         inst.instance_variable_set(:@comment, nil)
+        inst.instance_variable_set(:@raw_value, raw_value)
+        inst.instance_variable_set(:@format_code, format_code)
         inst
       end
 
@@ -65,21 +71,24 @@ module Xlsxrb
           unmapped_data == other.unmapped_data &&
           errors == other.errors &&
           hyperlink == other.hyperlink &&
-          comment == other.comment
+          comment == other.comment &&
+          raw_value == other.raw_value &&
+          format_code == other.format_code
       end
       alias eql? ==
 
       def hash
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment].hash
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment, raw_value, format_code].hash
       end
 
       def deconstruct
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment]
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment, raw_value, format_code]
       end
 
       def deconstruct_keys(keys)
         h = { row_index: row_index, column_index: column_index, value: value, formula: formula,
-              style_index: style_index, unmapped_data: unmapped_data, errors: errors, hyperlink: hyperlink, comment: comment }
+              style_index: style_index, unmapped_data: unmapped_data, errors: errors, hyperlink: hyperlink,
+              comment: comment, raw_value: raw_value, format_code: format_code }
         keys ? h.slice(*keys) : h
       end
 
@@ -93,7 +102,9 @@ module Xlsxrb
           unmapped_data: changes.fetch(:unmapped_data, unmapped_data),
           errors: changes.fetch(:errors, errors),
           hyperlink: changes.fetch(:hyperlink, hyperlink),
-          comment: changes.fetch(:comment, comment)
+          comment: changes.fetch(:comment, comment),
+          raw_value: changes.fetch(:raw_value, raw_value),
+          format_code: changes.fetch(:format_code, format_code)
         )
       end
 
@@ -197,9 +208,21 @@ module Xlsxrb
         end
       end
 
+      # Returns the formatted string representation of the cell value according to its format code.
+      #
+      # @param custom_format_code [String, nil] Optional format code override.
+      # @return [String, nil]
+      # @api public
+      #: (?String? custom_format_code) -> String?
+      def formatted_value(custom_format_code = nil)
+        return nil if value.nil?
+
+        NumberFormatter.format(value, custom_format_code || format_code)
+      end
+
       # Access cell attributes by Symbol key.
       #
-      # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type).
+      # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type, :raw_value, :format_code, :formatted_value).
       # @return [Object, nil]
       # @api public
       #: (Symbol key) -> untyped
@@ -214,6 +237,9 @@ module Xlsxrb
         when :row_index then row_index
         when :hyperlink then hyperlink
         when :comment then comment
+        when :raw_value then raw_value
+        when :format_code then format_code
+        when :formatted_value then formatted_value
         when :type
           case value
           when String then "s"

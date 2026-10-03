@@ -165,4 +165,55 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal([], ws.comments)
     assert_nil(ws.comment("A1"))
   end
+
+  test "stream_sheet cell and formatted_value lookups and raw_values on StreamRow" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1" s="1"><v>1042</v></c>
+            <c r="B1"><f>A1*2</f><v>2084</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    styles = {
+      cell_xfs: [
+        { num_fmt_id: 0 },
+        { num_fmt_id: 4 } # #,##0.00
+      ]
+    }
+
+    sheet = Xlsxrb::StreamSheet.new("Data", xml.b, [], styles, zip_reader: nil)
+    assert_equal(styles, sheet.styles)
+
+    cell_a1 = sheet.cell("A1")
+    assert_not_nil(cell_a1)
+    assert_equal("1042", cell_a1.raw_value)
+    assert_equal("#,##0.00", cell_a1.format_code)
+    assert_equal("1,042.00", cell_a1.formatted_value)
+
+    assert_equal("1,042.00", sheet.formatted_value("A1"))
+    assert_equal("1,042.00", sheet.formatted_value(0, 0))
+    assert_equal("2084", sheet.formatted_value("B1"))
+    assert_nil(sheet.formatted_value("C1"))
+
+    row = sheet.each_row.first
+    assert_equal([1042, 2084], row.values)
+    assert_equal(%w[1042 2084], row.raw_values)
+    assert_equal(["1,042.00", "2084"], row.formatted_values)
+    assert_equal([nil, "A1*2"], row.formulas)
+    assert_equal(row.raw_values, row[:raw_values])
+    assert_equal(row.formatted_values, row[:formatted_values])
+    assert_equal(row.formulas, row[:formulas])
+
+    # load into in-memory Worksheet
+    ws = sheet.load
+    assert_equal(styles, ws.styles)
+    assert_equal("1,042.00", ws["A1"].formatted_value)
+    assert_equal("1,042.00", ws.formatted_value("A1"))
+    assert_equal(%w[1042 2084], ws.rows.first.raw_values)
+    assert_equal(["1,042.00", "2084"], ws.rows.first.formatted_values)
+  end
 end

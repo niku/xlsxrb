@@ -185,9 +185,9 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(c1.formula, c1_modified.formula)
 
     # pattern matching (deconstruct & deconstruct_keys)
-    assert_equal([1, 1, 10, "A1", 1, {}, [], nil, nil], c1.deconstruct)
+    assert_equal([1, 1, 10, "A1", 1, {}, [], nil, nil, nil, nil], c1.deconstruct)
     assert_equal({ row_index: 1, value: 10 }, c1.deconstruct_keys(%i[row_index value]))
-    assert_equal({ row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1, unmapped_data: {}, errors: [], hyperlink: nil, comment: nil }, c1.deconstruct_keys(nil))
+    assert_equal({ row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1, unmapped_data: {}, errors: [], hyperlink: nil, comment: nil, raw_value: nil, format_code: nil }, c1.deconstruct_keys(nil))
   end
 
   test "cell hyperlink predicate and url accessor" do
@@ -1118,5 +1118,68 @@ class ElementsTest < Test::Unit::TestCase
     cell = row.cells.first
     assert_false(cell.valid?)
     assert_match(%r{at xl/worksheets/sheet1.xml row 1 cell A1}, cell.errors.first)
+  end
+
+  test "cell raw_value, format_code, and formatted_value" do
+    c_empty = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: nil)
+    assert_nil(c_empty.formatted_value)
+    assert_nil(c_empty.raw_value)
+    assert_nil(c_empty.format_code)
+    assert_nil(c_empty[:raw_value])
+    assert_nil(c_empty[:format_code])
+    assert_nil(c_empty[:formatted_value])
+
+    c_num = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 1042, raw_value: "1042", format_code: "#,##0.00")
+    assert_equal("1042", c_num.raw_value)
+    assert_equal("#,##0.00", c_num.format_code)
+    assert_equal("1,042.00", c_num.formatted_value)
+    assert_equal("1,042.00", c_num[:formatted_value])
+    assert_equal("1042", c_num[:raw_value])
+    assert_equal("#,##0.00", c_num[:format_code])
+    assert_equal("$1,042.00", c_num.formatted_value("\"$\"#,##0.00"))
+
+    c_date = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: Date.new(2014, 6, 1), format_code: "yyyy-mm-dd")
+    assert_equal("2014-06-01", c_date.formatted_value)
+    assert_equal("06-01-14", c_date.formatted_value("mm-dd-yy"))
+
+    c_bool = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 2, value: true)
+    assert_equal("TRUE", c_bool.formatted_value)
+
+    c_err = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 3, value: Xlsxrb::Error::DIV0)
+    assert_equal("#DIV/0!", c_err.formatted_value)
+  end
+
+  test "row raw_values, formatted_values, and formulas" do
+    c1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 1042, raw_value: "1042", format_code: "#,##0")
+    c2 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 2, value: 50, raw_value: "50", formula: "A1*2")
+    row = Xlsxrb::Elements::Row.new(index: 0, cells: [c1, c2])
+
+    assert_equal([1042, nil, 50], row.values)
+    assert_equal(["1042", nil, "50"], row.raw_values)
+    assert_equal(["1,042", nil, "50"], row.formatted_values)
+    assert_equal([nil, nil, "A1*2"], row.formulas)
+    assert_equal(row.values, row[:values])
+    assert_equal(row.raw_values, row[:raw_values])
+    assert_equal(row.formatted_values, row[:formatted_values])
+    assert_equal(row.formulas, row[:formulas])
+  end
+
+  test "worksheet and workbook cell and formatted_value lookups" do
+    c1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 20.51, format_code: "\"$\"#,##0.00")
+    row = Xlsxrb::Elements::Row.new(index: 0, cells: [c1])
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Data", rows: [row])
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
+
+    assert_equal(c1, ws.cell(0, 0))
+    assert_equal(c1, ws.cell("A1"))
+    assert_nil(ws.cell(1, 0))
+    assert_nil(ws.cell("B2"))
+    assert_equal("$20.51", ws.formatted_value(0, 0))
+    assert_equal("$20.51", ws.formatted_value("A1"))
+    assert_nil(ws.formatted_value(1, 0))
+
+    assert_equal("$20.51", wb.formatted_value(0, 0, 0))
+    assert_equal("$20.51", wb.formatted_value("Data", "A1"))
+    assert_nil(wb.formatted_value("NonExistent", "A1"))
   end
 end

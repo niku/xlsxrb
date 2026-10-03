@@ -32,6 +32,10 @@ module Xlsxrb
 
       attr_reader comment: untyped
 
+      attr_reader raw_value: untyped
+
+      attr_reader format_code: untyped
+
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
       # @param value [Object, nil] The cell's value.
@@ -41,10 +45,12 @@ module Xlsxrb
       # @param errors [Array<String>, nil] Validation errors.
       # @param hyperlink [Hash, String, nil] Optional hyperlink metadata or URL.
       # @param comment [Hash, String, nil] Optional cell comment or note.
-      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> void
-      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> void
+      # @param raw_value [String, nil] Optional unparsed raw string value.
+      # @param format_code [String, nil] Optional OpenXML number/date format code.
+      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?) -> void
+      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?) -> void
 
-      def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula) -> untyped
+      def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula, ?untyped raw_value, ?untyped format_code) -> untyped
 
       def ==: (untyped other) -> untyped
 
@@ -115,9 +121,17 @@ module Xlsxrb
       # : () -> String?
       def comment_text: () -> String?
 
+      # Returns the formatted string representation of the cell value according to its format code.
+      #
+      # @param custom_format_code [String, nil] Optional format code override.
+      # @return [String, nil]
+      # @api public
+      # : (?String? custom_format_code) -> String?
+      def formatted_value: (?String? custom_format_code) -> String?
+
       # Access cell attributes by Symbol key.
       #
-      # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type).
+      # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type, :raw_value, :format_code, :formatted_value).
       # @return [Object, nil]
       # @api public
       # : (Symbol key) -> untyped

@@ -38,11 +38,12 @@ module Xlsxrb
     # @param custom_height [Boolean] Whether custom height is set.
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
-    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil) -> void
-    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil) -> void
+    # @param styles [Hash, nil] Optional styles hash.
+    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?) -> void
+    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?) -> void
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index) -> untyped
+    def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index, ?untyped styles) -> untyped
 
     # Iterate over cells in this streaming row one by one.
     #
@@ -102,6 +103,27 @@ module Xlsxrb
     # @api public
     # : () -> Array[untyped]
     def values: () -> Array[untyped]
+
+    # Convert row cells to an Array of raw string values (sparse columns get nil).
+    #
+    # @return [Array<String, nil>]
+    # @api public
+    # : () -> Array[String?]
+    def raw_values: () -> Array[String?]
+
+    # Convert row cells to an Array of formatted string representations (sparse columns get nil).
+    #
+    # @return [Array<String, nil>]
+    # @api public
+    # : () -> Array[String?]
+    def formatted_values: () -> Array[String?]
+
+    # Convert row cells to an Array of formula expressions without leading '=' (sparse columns get nil).
+    #
+    # @return [Array<String, nil>]
+    # @api public
+    # : () -> Array[String?]
+    def formulas: () -> Array[String?]
 
     # Returns whether the row is valid according to OOXML specifications.
     #

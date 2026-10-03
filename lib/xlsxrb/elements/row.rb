@@ -53,6 +53,10 @@ module Xlsxrb
         when Symbol
           case col_index
           when :cells then cells
+          when :values then values
+          when :raw_values then raw_values
+          when :formatted_values then formatted_values
+          when :formulas then formulas
           when :index then index
           when :height then height
           when :hidden then hidden
@@ -163,6 +167,48 @@ module Xlsxrb
         max_col = cells.max_by(&:column_index).column_index
         result = Array.new(max_col + 1)
         cells.each { |c| result[c.column_index] = c.value }
+        result
+      end
+
+      # Returns unparsed raw cell values as an Array (sparse columns get nil).
+      #
+      # @return [Array<String, nil>]
+      # @api public
+      #: () -> Array[String?]
+      def raw_values
+        return [] if cells.empty?
+
+        max_col = cells.max_by(&:column_index).column_index
+        result = Array.new(max_col + 1)
+        cells.each { |c| result[c.column_index] = c.raw_value }
+        result
+      end
+
+      # Returns formatted string representations of cell values as an Array (sparse columns get nil).
+      #
+      # @return [Array<String, nil>]
+      # @api public
+      #: () -> Array[String?]
+      def formatted_values
+        return [] if cells.empty?
+
+        max_col = cells.max_by(&:column_index).column_index
+        result = Array.new(max_col + 1)
+        cells.each { |c| result[c.column_index] = c.formatted_value }
+        result
+      end
+
+      # Returns formula expressions without leading '=' as an Array (sparse columns get nil).
+      #
+      # @return [Array<String, nil>]
+      # @api public
+      #: () -> Array[String?]
+      def formulas
+        return [] if cells.empty?
+
+        max_col = cells.max_by(&:column_index).column_index
+        result = Array.new(max_col + 1)
+        cells.each { |c| result[c.column_index] = c.formula_expression }
         result
       end
 

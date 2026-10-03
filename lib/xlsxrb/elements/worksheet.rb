@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :styles
       alias conditional_formats conditional_formatting
 
       # @param name [String] The worksheet name (max 31 characters).
@@ -32,8 +32,9 @@ module Xlsxrb
       # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
       # @param hyperlinks [Hash{String => Hash}] Hyperlink mappings by cell reference.
       # @param comments [Array<Hash>] Comments and notes in the sheet.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]]) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [])
+      # @param styles [Hash, nil] Optional parsed styles hash.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -47,6 +48,7 @@ module Xlsxrb
         @state = state ? state.to_sym : :visible
         @hyperlinks = (hyperlinks || {}).freeze
         @comments = (comments || []).freeze
+        @styles = styles
       end
 
       # Iterate over rows in the worksheet.
@@ -171,6 +173,33 @@ module Xlsxrb
         end
       end
 
+      # Access a cell by reference or 0-based coordinates.
+      #
+      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+      # @param col [Integer, nil] Optional 0-based column index.
+      # @return [Elements::Cell, nil]
+      # @api public
+      #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Elements::Cell?
+      def cell(ref_or_row, col = nil)
+        if col
+          row = row_at(ref_or_row.to_i)
+          row&.cell_at(col.to_i)
+        else
+          self[ref_or_row]
+        end
+      end
+
+      # Returns the formatted string representation of a cell's value.
+      #
+      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+      # @param col [Integer, nil] Optional 0-based column index.
+      # @return [String, nil]
+      # @api public
+      #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> String?
+      def formatted_value(ref_or_row, col = nil)
+        cell(ref_or_row, col)&.formatted_value
+      end
+
       # Returns a new Worksheet with the specified cell updated.
       #
       # @example
@@ -253,6 +282,7 @@ module Xlsxrb
         new_state = changes.key?(:state) ? changes[:state] : state
         new_hyperlinks = changes.key?(:hyperlinks) ? changes[:hyperlinks] : hyperlinks
         new_comments = changes.key?(:comments) ? changes[:comments] : comments
+        new_styles = changes.key?(:styles) ? changes[:styles] : styles
 
         self.class.new(
           name: new_name,
@@ -265,7 +295,8 @@ module Xlsxrb
           errors: new_errors,
           state: new_state,
           hyperlinks: new_hyperlinks,
-          comments: new_comments
+          comments: new_comments,
+          styles: new_styles
         )
       end
 
@@ -284,7 +315,8 @@ module Xlsxrb
           errors: errors,
           state: state,
           hyperlinks: hyperlinks,
-          comments: comments
+          comments: comments,
+          styles: styles
         }
       end
 

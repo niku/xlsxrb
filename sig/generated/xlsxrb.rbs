@@ -80,6 +80,16 @@ module Xlsxrb
   # : (String expression, ?cached_value: (String | Numeric | bool | nil)) -> Elements::Formula
   def self.formula: (String expression, ?cached_value: String | Numeric | bool | nil) -> Elements::Formula
 
+  # Formats a cell value according to an Excel format code string.
+  #
+  # @param value [Object, nil] Value to format.
+  # @param format_code [String, nil] Excel format code string.
+  # @param date1904 [Boolean] Whether the 1904 date system is active.
+  # @return [String] Formatted string representation.
+  # @api public
+  # : (untyped value, ?String? format_code, ?date1904: bool) -> String
+  def self.format: (untyped value, ?String? format_code, ?date1904: bool) -> String
+
   # Reads an XLSX file (streaming and lazy-loaded by default) from a file path, IO stream, or binary String.
   #
   # Sheets and rows are streamed lazily with O(1) constant memory. If a block is given,
@@ -213,8 +223,8 @@ module Xlsxrb
   # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
   def self.build: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
-  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
-  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
+  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
+  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
 
   # : (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
   private def self.resolve_hyperlinks: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
@@ -222,8 +232,8 @@ module Xlsxrb
   # : (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
   private def self.resolve_comments: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
 
-  # : (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments) -> (Elements::Row | untyped)
-  private def self.build_row_from_raw: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]] comments) -> (Elements::Row | untyped)
+  # : (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles) -> (Elements::Row | untyped)
+  private def self.build_row_from_raw: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]] comments, ?Hash[untyped, untyped]? styles) -> (Elements::Row | untyped)
 
   # : (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]
   private def self.build_raw_cell: (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]

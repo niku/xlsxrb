@@ -1,0 +1,51 @@
+# Generated from lib/xlsxrb/number_formatter.rb with RBS::Inline
+
+module Xlsxrb
+  # Formats cell values according to OpenXML formatCode strings.
+  # Evaluates and converts numeric, currency, percentage, date/time, scientific,
+  # and accounting format patterns into string representations.
+  #
+  # @api public
+  module NumberFormatter
+    # Built-in date and time format code strings.
+    DATE_PATTERNS: untyped
+
+    # Formats a cell value according to an Excel format code string.
+    #
+    # @param value [Object, nil] The cell's raw or typed value.
+    # @param format_code [String, nil] Excel format code pattern.
+    # @param date1904 [Boolean] Whether the 1904 date system is active.
+    # @return [String] Formatted string representation.
+    # @api public
+    # : (untyped value, ?String? format_code, ?date1904: bool) -> String
+    def self.format: (untyped value, ?String? format_code, ?date1904: bool) -> String
+
+    # Resolves the format code string for a given style index from a styles definition hash.
+    #
+    # @param style_index [Integer, nil] 0-based style index in cellXfs.
+    # @param styles [Hash, nil] Parsed styles hash.
+    # @return [String, nil] Format code string, or nil if not found.
+    # @api public
+    # : (Integer? style_index, Hash[untyped, untyped]? styles) -> String?
+    def self.format_code_for: (Integer? style_index, Hash[untyped, untyped]? styles) -> String?
+
+    # Checks whether a format code string represents a date or time pattern.
+    #
+    # @param format_code [String, nil]
+    # @return [Boolean]
+    # : (String? format_code) -> bool
+    def self.date_format?: (String? format_code) -> bool
+
+    private def self.default_format: (untyped value) -> untyped
+
+    private def self.split_sections: (untyped code) -> untyped
+
+    private def self.format_number: (untyped value, untyped code) -> untyped
+
+    private def self.format_single_number: (untyped num, untyped pattern, untyped is_neg) -> untyped
+
+    private def self.format_datetime: (untyped datetime, untyped format_code) -> untyped
+
+    private def self.excel_to_strftime: (untyped format_code) -> untyped
+  end
+end

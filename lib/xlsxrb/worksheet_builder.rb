@@ -151,6 +151,10 @@ module Xlsxrb
           col_index += 1
           next
         end
+        sb = @styles[style_name]
+        fmt_code = if sb&.num_fmt_id
+                     sb.num_fmt_id.is_a?(String) ? sb.num_fmt_id : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[sb.num_fmt_id]
+                   end
         # If value is a Formula object or Hash with :formula, store it as the cell's formula
         cells[col_index] = if val.is_a?(Elements::Formula)
                              Elements::Cell.new(
@@ -158,7 +162,9 @@ module Xlsxrb
                                column_index: col_index,
                                value: val.cached_value,
                                formula: val,
-                               style_index: style_name
+                               style_index: style_name,
+                               raw_value: val.cached_value&.to_s,
+                               format_code: fmt_code
                              )
                            elsif val.is_a?(Hash) && val.key?(:formula)
                              f_obj = Elements::Formula.new(
@@ -171,14 +177,18 @@ module Xlsxrb
                                column_index: col_index,
                                value: val[:value],
                                formula: f_obj,
-                               style_index: style_name
+                               style_index: style_name,
+                               raw_value: val[:value]&.to_s,
+                               format_code: fmt_code
                              )
                            else
                              Elements::Cell.new(
                                row_index: row_index,
                                column_index: col_index,
                                value: val,
-                               style_index: style_name
+                               style_index: style_name,
+                               raw_value: val&.to_s,
+                               format_code: fmt_code
                              )
                            end
         col_index += 1

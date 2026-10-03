@@ -34,6 +34,11 @@ module Xlsxrb
     # : Symbol
     attr_reader state: untyped
 
+    # @return [Hash, nil] The parsed styles definition hash.
+    # @api public
+    # : Hash[untyped, untyped]?
+    attr_reader styles: untyped
+
     # Initializes a streaming worksheet context.
     #
     # @param name [String] The sheet name.
@@ -157,6 +162,24 @@ module Xlsxrb
     # @api public
     # : () -> Hash[String, Hash[Symbol, untyped]]
     def comments_by_ref: () -> Hash[String, Hash[Symbol, untyped]]
+
+    # Access a cell by reference or 0-based coordinates.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [Elements::Cell, nil]
+    # @api public
+    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Elements::Cell?
+    def cell: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Elements::Cell?
+
+    # Returns the formatted string representation of a cell's value.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [String, nil]
+    # @api public
+    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> String?
+    def formatted_value: (String | Symbol | Integer ref_or_row, ?Integer? col) -> String?
 
     # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.
     #

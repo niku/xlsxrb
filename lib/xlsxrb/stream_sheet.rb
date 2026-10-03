@@ -38,6 +38,11 @@ module Xlsxrb
     #: Symbol
     attr_reader :state
 
+    # @return [Hash, nil] The parsed styles definition hash.
+    # @api public
+    #: Hash[untyped, untyped]?
+    attr_reader :styles
+
     # Initializes a streaming worksheet context.
     #
     # @param name [String] The sheet name.
@@ -99,7 +104,7 @@ module Xlsxrb
                  ->(&blk) { @zip_reader.each_entry_chunk(@entry_name, &blk) }
                end
 
-      Ooxml::WorksheetParser.each_row(source, shared_strings: @shared_strings, &)
+      Ooxml::WorksheetParser.each_row(source, shared_strings: @shared_strings, styles: @styles, &)
     end
 
     # Iterates over all cells across all rows continuously with O(1) memory.
@@ -212,6 +217,42 @@ module Xlsxrb
         r = c[:ref] || c[:cell]
         acc[r.to_s.upcase] = c if r
       end
+    end
+
+    # Access a cell by reference or 0-based coordinates.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [Elements::Cell, nil]
+    # @api public
+    #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Elements::Cell?
+    def cell(ref_or_row, col = nil)
+      target_row, target_col = if col
+                                 [ref_or_row.to_i, col.to_i]
+                               else
+                                 parsed = Elements::Cell.parse_ref(ref_or_row.to_s)
+                                 return nil unless parsed
+
+                                 parsed
+                               end
+
+      each_row do |row|
+        next if row.index < target_row
+        return row.cell_at(target_col) if row.index == target_row
+        break if row.index > target_row
+      end
+      nil
+    end
+
+    # Returns the formatted string representation of a cell's value.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [String, nil]
+    # @api public
+    #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> String?
+    def formatted_value(ref_or_row, col = nil)
+      cell(ref_or_row, col)&.formatted_value
     end
 
     # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.

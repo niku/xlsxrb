@@ -111,6 +111,19 @@ module Xlsxrb
       end
       alias [] sheet
 
+      # Returns the formatted string representation of a cell's value in the specified sheet.
+      #
+      # @param sheet_identifier [Integer, String, untyped] 0-based index or sheet name.
+      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+      # @param col [Integer, nil] Optional 0-based column index.
+      # @return [String, nil]
+      # @api public
+      #: (Integer | String | untyped sheet_identifier, String | Symbol | Integer ref_or_row, ?Integer? col) -> String?
+      def formatted_value(sheet_identifier, ref_or_row, col = nil)
+        target_sheet = sheet(sheet_identifier)
+        target_sheet&.formatted_value(ref_or_row, col)
+      end
+
       # Loads all sheets into memory, returning an Elements::Workbook where every
       # worksheet is a fully-parsed Elements::Worksheet supporting coordinate random access.
       #

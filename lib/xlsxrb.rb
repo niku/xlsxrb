@@ -32,6 +32,7 @@ require_relative "xlsxrb/chart_builder"
 require_relative "xlsxrb/dsl_helpers"
 require_relative "xlsxrb/worksheet_builder"
 require_relative "xlsxrb/workbook_builder"
+require_relative "xlsxrb/number_formatter"
 require_relative "xlsxrb/stream_writer"
 
 # Modern, streaming-capable, low-memory XLSX reading and writing library for Ruby.
@@ -113,6 +114,18 @@ module Xlsxrb
       cached_value: cached_value,
       calculate_always: cached_value.nil? || nil
     )
+  end
+
+  # Formats a cell value according to an Excel format code string.
+  #
+  # @param value [Object, nil] Value to format.
+  # @param format_code [String, nil] Excel format code string.
+  # @param date1904 [Boolean] Whether the 1904 date system is active.
+  # @return [String] Formatted string representation.
+  # @api public
+  #: (untyped value, ?String? format_code, ?date1904: bool) -> String
+  def self.format(value, format_code = nil, date1904: false)
+    NumberFormatter.format(value, format_code, date1904: date1904)
   end
 
   # Reads an XLSX file (streaming and lazy-loaded by default) from a file path, IO stream, or binary String.
@@ -573,16 +586,16 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, _styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil)
-      return Elements::Worksheet.new(name: name, state: state) if sheet_xml.nil? || sheet_xml.empty?
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil)
+      return Elements::Worksheet.new(name: name, state: state, styles: styles) if sheet_xml.nil? || sheet_xml.empty?
 
       sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
       sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
-      raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings)
+      raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings, styles: styles)
       raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
 
-      rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks, sheet_comments) }
+      rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks, sheet_comments, styles) }
       columns = raw_columns.map do |rc|
         # Columns from OOXML are 1-based min/max ranges; convert to 0-based
         col_unmapped = {}
@@ -621,7 +634,8 @@ module Xlsxrb
         data_validations: dvs,
         state: state,
         hyperlinks: sheet_hyperlinks,
-        comments: sheet_comments
+        comments: sheet_comments,
+        styles: styles
       )
     end
 
@@ -695,8 +709,8 @@ module Xlsxrb
       c_listener.comments
     end
 
-    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments) -> (Elements::Row | untyped)
-    def build_row_from_raw(raw_row, hyperlinks = {}, comments = [])
+    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles) -> (Elements::Row | untyped)
+    def build_row_from_raw(raw_row, hyperlinks = {}, comments = [], styles = nil)
       return raw_row if raw_row.is_a?(Elements::Row)
 
       comments_map = if comments.is_a?(Hash)
@@ -710,8 +724,9 @@ module Xlsxrb
         if rc.is_a?(Elements::Cell)
           hl = hyperlinks && !hyperlinks.empty? ? hyperlinks[rc.ref] : nil
           cm = comments_map && !comments_map.empty? ? comments_map[rc.ref] : nil
-          if hl || cm
-            rc.with(hyperlink: hl || rc.hyperlink, comment: cm || rc.comment)
+          fmt = rc.format_code || (NumberFormatter.format_code_for(rc.style_index, styles) if styles && rc.style_index)
+          if hl || cm || (fmt && rc.format_code != fmt)
+            rc.with(hyperlink: hl || rc.hyperlink, comment: cm || rc.comment, format_code: fmt || rc.format_code)
           else
             rc
           end
@@ -722,8 +737,10 @@ module Xlsxrb
           ref = rc[:ref] || "#{Elements::Cell.column_letter(col_idx)}#{row_idx + 1}"
           hl = hyperlinks ? hyperlinks[ref] : nil
           cm = comments_map ? comments_map[ref] : nil
+          fmt = rc[:format_code] || (NumberFormatter.format_code_for(rc[:style_index], styles) if styles && rc[:style_index])
 
           val = rc[:value]
+          raw_val = rc[:raw_value] || val&.to_s
           cell_errors = Elements::Cell.validate(row_idx, col_idx, val)
           if !cell_errors.empty? && rc[:source]
             cell_errors = cell_errors.map do |err|
@@ -739,6 +756,8 @@ module Xlsxrb
             style_index: rc[:style_index],
             hyperlink: hl,
             comment: cm,
+            raw_value: raw_val,
+            format_code: fmt,
             errors: cell_errors
           )
         end

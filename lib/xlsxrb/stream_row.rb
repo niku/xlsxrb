@@ -32,9 +32,10 @@ module Xlsxrb
     # @param custom_height [Boolean] Whether custom height is set.
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
-    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil) -> void
+    # @param styles [Hash, nil] Optional styles hash.
+    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?) -> void
     def initialize(index:, xml_bytes:, from:, to:, shared_strings:, prefix: "", height: nil, hidden: false,
-                   custom_height: false, outline_level: nil, style_index: nil)
+                   custom_height: false, outline_level: nil, style_index: nil, styles: nil)
       @index = index
       @xml = xml_bytes
       @from = from
@@ -46,11 +47,12 @@ module Xlsxrb
       @custom_height = custom_height
       @outline_level = outline_level
       @style_index = style_index
+      @styles = styles
       @cells = nil
     end
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil)
+    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil)
       inst = allocate
       inst.instance_variable_set(:@index, index)
       inst.instance_variable_set(:@xml, xml_bytes)
@@ -63,6 +65,7 @@ module Xlsxrb
       inst.instance_variable_set(:@custom_height, custom_height)
       inst.instance_variable_set(:@outline_level, outline_level)
       inst.instance_variable_set(:@style_index, style_index)
+      inst.instance_variable_set(:@styles, styles)
       inst.instance_variable_set(:@cells, nil)
       inst
     end
@@ -82,7 +85,7 @@ module Xlsxrb
       if @cells
         @cells.each(&block)
       else
-        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, &block)
+        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, &block)
       end
     end
 
@@ -106,7 +109,7 @@ module Xlsxrb
     def cells
       @cells ||= begin
         arr = []
-        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix) do |c|
+        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles) do |c|
           arr << c
         end
         arr.freeze
@@ -124,6 +127,10 @@ module Xlsxrb
       when Symbol
         case col_index
         when :cells then cells
+        when :values then values
+        when :raw_values then raw_values
+        when :formatted_values then formatted_values
+        when :formulas then formulas
         when :index then index
         when :height then height
         when :hidden then hidden
@@ -173,6 +180,54 @@ module Xlsxrb
     #: () -> Array[untyped]
     def values
       to_a
+    end
+
+    # Convert row cells to an Array of raw string values (sparse columns get nil).
+    #
+    # @return [Array<String, nil>]
+    # @api public
+    #: () -> Array[String?]
+    def raw_values
+      return [] if cells.empty?
+
+      max_col = cells.map(&:column_index).max || 0
+      arr = Array.new(max_col + 1)
+      cells.each do |cell|
+        arr[cell.column_index] = cell.raw_value
+      end
+      arr
+    end
+
+    # Convert row cells to an Array of formatted string representations (sparse columns get nil).
+    #
+    # @return [Array<String, nil>]
+    # @api public
+    #: () -> Array[String?]
+    def formatted_values
+      return [] if cells.empty?
+
+      max_col = cells.map(&:column_index).max || 0
+      arr = Array.new(max_col + 1)
+      cells.each do |cell|
+        arr[cell.column_index] = cell.formatted_value
+      end
+      arr
+    end
+
+    # Convert row cells to an Array of formula expressions without leading '=' (sparse columns get nil).
+    #
+    # @return [Array<String, nil>]
+    # @api public
+    #: () -> Array[String?]
+    def formulas
+      return [] if cells.empty?
+
+      max_col = cells.map(&:column_index).max || 0
+      arr = Array.new(max_col + 1)
+      cells.each do |cell|
+        arr[cell.column_index] = cell.formula_expression
+      end
+      arr
     end
 
     # Returns whether the row is valid according to OOXML specifications.
