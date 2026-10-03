@@ -63,7 +63,12 @@ module Xlsxrb
       raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)" if name.match?(%r{[\[\]*?/\\]})
       raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
 
-      sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode)
+      state = opts.delete(:state)
+      hidden = opts.delete(:hidden)
+      state ||= :hidden if hidden
+      state ||= :visible
+
+      sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state)
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
       yield sheet_builder if block_given?
       @sheet_builders << sheet_builder

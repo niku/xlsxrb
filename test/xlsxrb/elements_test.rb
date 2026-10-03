@@ -706,6 +706,37 @@ class ElementsTest < Test::Unit::TestCase
     refute_equal(ws_with_rules, diff_dv_ws)
   end
 
+  test "worksheet handles visibility state and hidden/visible predicates" do
+    ws_default = Xlsxrb::Elements::Worksheet.new(name: "VisibleSheet")
+    assert_equal(:visible, ws_default.state)
+    assert_true(ws_default.visible?)
+    assert_false(ws_default.hidden?)
+
+    ws_hidden = Xlsxrb::Elements::Worksheet.new(name: "HiddenSheet", state: :hidden)
+    assert_equal(:hidden, ws_hidden.state)
+    assert_false(ws_hidden.visible?)
+    assert_true(ws_hidden.hidden?)
+
+    ws_very_hidden = Xlsxrb::Elements::Worksheet.new(name: "VeryHiddenSheet", state: :very_hidden)
+    assert_equal(:very_hidden, ws_very_hidden.state)
+    assert_false(ws_very_hidden.visible?)
+    assert_true(ws_very_hidden.hidden?)
+
+    # with
+    ws_toggled = ws_default.with(state: :hidden)
+    assert_equal(:hidden, ws_toggled.state)
+    assert_true(ws_toggled.hidden?)
+
+    # deconstruct_keys
+    assert_equal(:hidden, ws_hidden.deconstruct_keys(nil)[:state])
+
+    # == and hash
+    refute_equal(ws_default, ws_default.with(state: :hidden))
+    same_hidden = Xlsxrb::Elements::Worksheet.new(name: "HiddenSheet", state: :hidden)
+    assert_equal(ws_hidden, same_hidden)
+    assert_equal(ws_hidden.hash, same_hidden.hash)
+  end
+
   # --- Workbook ---
 
   test "workbook creates a valid workbook" do

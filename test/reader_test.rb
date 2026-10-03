@@ -472,6 +472,22 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(:visible, states["Sheet1"])
     assert_equal(:hidden, states["Hidden"])
     assert_equal(:very_hidden, states["VeryHidden"])
+
+    wb = Xlsxrb.read(xlsx_path)
+    assert_equal(:visible, wb["Sheet1"].state)
+    assert_true(wb["Sheet1"].visible?)
+    assert_false(wb["Sheet1"].hidden?)
+    assert_equal(:hidden, wb["Hidden"].state)
+    assert_false(wb["Hidden"].visible?)
+    assert_true(wb["Hidden"].hidden?)
+    assert_equal(:very_hidden, wb["VeryHidden"].state)
+    assert_true(wb["VeryHidden"].hidden?)
+
+    loaded_wb = wb.load
+    assert_equal(:hidden, loaded_wb["Hidden"].state)
+    assert_true(loaded_wb["Hidden"].hidden?)
+    assert_equal(:very_hidden, loaded_wb["VeryHidden"].state)
+    assert_true(loaded_wb["VeryHidden"].hidden?)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

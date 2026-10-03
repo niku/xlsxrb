@@ -495,11 +495,17 @@ module Xlsxrb
 
         b.open_tag("sheets")
         @sheets.each_with_index do |sheet, idx|
-          b.empty_tag("sheet", {
-                        name: sheet[:name],
-                        sheetId: (idx + 1).to_s,
-                        "r:id": "rId#{idx + 1}"
-                      })
+          s_name = sheet.respond_to?(:name) ? sheet.name : sheet[:name]
+          sheet_attrs = {
+            name: s_name,
+            sheetId: (idx + 1).to_s,
+            "r:id": "rId#{idx + 1}"
+          }
+          state = sheet.respond_to?(:state) ? sheet.state : sheet[:state]
+          if state && state.to_sym != :visible
+            sheet_attrs[:state] = state.to_sym == :very_hidden ? "veryHidden" : "hidden"
+          end
+          b.empty_tag("sheet", sheet_attrs)
         end
         b.close_tag("sheets")
 

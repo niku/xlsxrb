@@ -33,6 +33,11 @@ module Xlsxrb
     #: String
     attr_reader :name
 
+    # @return [Symbol] The sheet visibility state (:visible, :hidden, or :very_hidden).
+    # @api public
+    #: Symbol
+    attr_reader :state
+
     # Initializes a streaming worksheet context.
     #
     # @param name [String] The sheet name.
@@ -41,15 +46,35 @@ module Xlsxrb
     # @param styles [Hash, nil] Optional parsed styles hash.
     # @param zip_reader [Ooxml::ZipReader, nil] Optional ZipReader context.
     # @param entry_name [String, nil] Archive entry name for this sheet.
-    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> void
-    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil)
+    # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
+    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol) -> void
+    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible)
       @name = name
       @sheet_source = sheet_source
       @shared_strings = shared_strings
       @styles = styles
       @zip_reader = zip_reader
       @entry_name = entry_name
+      @state = state ? state.to_sym : :visible
       @sheet_xml = sheet_source if sheet_source.is_a?(String)
+    end
+
+    # Returns whether the sheet is hidden (:hidden or :very_hidden).
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def hidden?
+      @state == :hidden || @state == :very_hidden
+    end
+
+    # Returns whether the sheet is visible.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def visible?
+      @state == :visible
     end
 
     # Iterates over rows in this streaming worksheet with O(1) memory.
@@ -123,7 +148,7 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles)
+      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state)
     end
     alias to_worksheet load
 

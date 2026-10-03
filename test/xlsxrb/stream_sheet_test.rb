@@ -95,4 +95,33 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal("greaterThan", sheet.conditional_formats.first[:operator])
     assert_equal(["50"], sheet.conditional_formats.first[:formulas])
   end
+
+  test "stream_sheet visibility state and propagation to in-memory Worksheet on load" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData/>
+      </worksheet>
+    XML
+
+    default_sheet = Xlsxrb::StreamSheet.new("Visible", xml.b, [])
+    assert_equal(:visible, default_sheet.state)
+    assert_true(default_sheet.visible?)
+    assert_false(default_sheet.hidden?)
+    assert_equal(:visible, default_sheet.load.state)
+    assert_true(default_sheet.load.visible?)
+
+    hidden_sheet = Xlsxrb::StreamSheet.new("Hidden", xml.b, [], state: :hidden)
+    assert_equal(:hidden, hidden_sheet.state)
+    assert_false(hidden_sheet.visible?)
+    assert_true(hidden_sheet.hidden?)
+    assert_equal(:hidden, hidden_sheet.load.state)
+    assert_true(hidden_sheet.load.hidden?)
+
+    very_hidden_sheet = Xlsxrb::StreamSheet.new("VeryHidden", xml.b, [], state: :very_hidden)
+    assert_equal(:very_hidden, very_hidden_sheet.state)
+    assert_false(very_hidden_sheet.visible?)
+    assert_true(very_hidden_sheet.hidden?)
+    assert_equal(:very_hidden, very_hidden_sheet.load.state)
+    assert_true(very_hidden_sheet.load.hidden?)
+  end
 end

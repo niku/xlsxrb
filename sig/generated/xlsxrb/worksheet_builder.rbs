@@ -7,8 +7,9 @@ module Xlsxrb
   class WorksheetBuilder
     # @param name [String] The worksheet name.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel limits.
-    # : (String name, ?strict_excel_mode: bool) -> void
-    def initialize: (String name, ?strict_excel_mode: bool) -> void
+    # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
+    # : (String name, ?strict_excel_mode: bool, ?state: Symbol) -> void
+    def initialize: (String name, ?strict_excel_mode: bool, ?state: Symbol) -> void
 
     # Defines or configures a named cell style.
     #

@@ -188,7 +188,8 @@ module Xlsxrb
           shared_strings,
           styles,
           zip_reader: zip_reader,
-          entry_name: sheet_path
+          entry_name: sheet_path,
+          state: sheet_info[:state] || :visible
         )
       end.compact
 
@@ -457,7 +458,7 @@ module Xlsxrb
 
           sheet_entry_map[sheet_info[:name]] = sheet_path
           sheet_xml = zip_reader.read_entry(sheet_path) || ""
-          build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles)
+          build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles, state: sheet_info[:state] || :visible)
         end.compact
 
         original_workbook = Elements::Workbook.new(
@@ -563,9 +564,9 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, _styles)
-      return Elements::Worksheet.new(name: name) if sheet_xml.nil? || sheet_xml.empty?
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, _styles, state: :visible)
+      return Elements::Worksheet.new(name: name, state: state) if sheet_xml.nil? || sheet_xml.empty?
 
       raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings)
       raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
@@ -606,7 +607,8 @@ module Xlsxrb
         rows: rows,
         columns: columns,
         conditional_formatting: cfs,
-        data_validations: dvs
+        data_validations: dvs,
+        state: state
       )
     end
 

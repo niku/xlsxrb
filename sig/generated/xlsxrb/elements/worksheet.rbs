@@ -29,6 +29,8 @@ module Xlsxrb
 
       attr_reader errors: untyped
 
+      attr_reader state: untyped
+
       alias conditional_formats conditional_formatting
 
       # @param name [String] The worksheet name (max 31 characters).
@@ -40,8 +42,9 @@ module Xlsxrb
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
       # @param conditional_formats [Array<Hash>, nil] Alias for conditional_formatting.
-      # : (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?) -> void
-      def initialize: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?) -> void
+      # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
+      # : (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol) -> void
+      def initialize: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol) -> void
 
       # Iterate over rows in the worksheet.
       #
@@ -91,6 +94,20 @@ module Xlsxrb
       # @return [Boolean]
       # : () -> bool
       def valid?: () -> bool
+
+      # Returns whether the worksheet is hidden (:hidden or :very_hidden).
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def hidden?: () -> bool
+
+      # Returns whether the worksheet is visible.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def visible?: () -> bool
 
       # Returns a new Worksheet with the specified cell updated.
       #

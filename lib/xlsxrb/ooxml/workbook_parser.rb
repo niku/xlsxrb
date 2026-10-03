@@ -37,11 +37,18 @@ module Xlsxrb
           when "sheet"
             name_attr = attrs["name"]
             name_attr = REXML::Text.unnormalize(name_attr) if name_attr
+            raw_state = attrs["state"]
+            state_sym = case raw_state
+                        when "hidden" then :hidden
+                        when "veryHidden" then :very_hidden
+                        else :visible
+                        end
 
             @sheets << {
               name: name_attr,
               sheet_id: attrs["sheetId"]&.to_i,
-              r_id: attrs["r:id"] || attrs["id"] || attrs.find { |k, _| k.end_with?(":id") }&.last
+              r_id: attrs["r:id"] || attrs["id"] || attrs.find { |k, _| k.end_with?(":id") }&.last,
+              state: state_sym
             }
           when "workbookPr"
             d1904 = attrs["date1904"]

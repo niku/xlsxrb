@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state
       alias conditional_formats conditional_formatting
 
       # @param name [String] The worksheet name (max 31 characters).
@@ -29,8 +29,9 @@ module Xlsxrb
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
       # @param conditional_formats [Array<Hash>, nil] Alias for conditional_formatting.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil)
+      # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -41,6 +42,7 @@ module Xlsxrb
         @unmapped_data = (unmapped_data || {}).freeze
         computed_errors = errors || self.class.validate(@name, @rows)
         @errors = computed_errors.freeze
+        @state = state ? state.to_sym : :visible
       end
 
       # Iterate over rows in the worksheet.
@@ -101,6 +103,24 @@ module Xlsxrb
       #: () -> bool
       def valid?
         errors.empty?
+      end
+
+      # Returns whether the worksheet is hidden (:hidden or :very_hidden).
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def hidden?
+        @state == :hidden || @state == :very_hidden
+      end
+
+      # Returns whether the worksheet is visible.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def visible?
+        @state == :visible
       end
 
       # Returns a new Worksheet with the specified cell updated.
@@ -171,6 +191,7 @@ module Xlsxrb
         new_dv = changes.key?(:data_validations) ? changes[:data_validations] : data_validations
         new_unmapped = changes.key?(:unmapped_data) ? changes[:unmapped_data] : unmapped_data
         new_errors = changes.key?(:errors) ? changes[:errors] : errors
+        new_state = changes.key?(:state) ? changes[:state] : state
 
         self.class.new(
           name: new_name,
@@ -180,7 +201,8 @@ module Xlsxrb
           conditional_formatting: new_cf,
           data_validations: new_dv,
           unmapped_data: new_unmapped,
-          errors: new_errors
+          errors: new_errors,
+          state: new_state
         )
       end
 
@@ -196,7 +218,8 @@ module Xlsxrb
           conditional_formats: conditional_formatting,
           data_validations: data_validations,
           unmapped_data: unmapped_data,
-          errors: errors
+          errors: errors,
+          state: state
         }
       end
 
@@ -206,13 +229,14 @@ module Xlsxrb
         return false unless other.is_a?(Worksheet)
 
         name == other.name && rows == other.rows && columns == other.columns && charts == other.charts &&
-          conditional_formatting == other.conditional_formatting && data_validations == other.data_validations
+          conditional_formatting == other.conditional_formatting && data_validations == other.data_validations &&
+          state == other.state
       end
       alias eql? ==
 
       #: () -> Integer
       def hash
-        [self.class, name, rows, columns, charts, conditional_formatting, data_validations].hash
+        [self.class, name, rows, columns, charts, conditional_formatting, data_validations, state].hash
       end
 
       # Returns self when load is called on an already in-memory Worksheet.

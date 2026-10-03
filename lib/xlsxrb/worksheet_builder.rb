@@ -11,10 +11,12 @@ module Xlsxrb
   class WorksheetBuilder
     # @param name [String] The worksheet name.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel limits.
-    #: (String name, ?strict_excel_mode: bool) -> void
-    def initialize(name, strict_excel_mode: true)
+    # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
+    #: (String name, ?strict_excel_mode: bool, ?state: Symbol) -> void
+    def initialize(name, strict_excel_mode: true, state: :visible)
       @name = name
       @strict_excel_mode = strict_excel_mode
+      @state = state ? state.to_sym : :visible
       @rows = []
       @columns = []
       @charts = []
@@ -619,7 +621,8 @@ module Xlsxrb
         name: @name, rows: @rows, columns: @columns, charts: @charts,
         conditional_formatting: @conditional_formats,
         data_validations: @data_validations,
-        unmapped_data: facade_meta.empty? ? {} : { facade: facade_meta }
+        unmapped_data: facade_meta.empty? ? {} : { facade: facade_meta },
+        state: @state
       )
     end
 

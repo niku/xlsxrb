@@ -213,8 +213,8 @@ module Xlsxrb
   # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
   def self.build: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
-  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles) -> Elements::Worksheet
-  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles) -> Elements::Worksheet
+  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol) -> Elements::Worksheet
+  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped _styles, ?state: Symbol) -> Elements::Worksheet
 
   # : (untyped raw_row) -> (Elements::Row | untyped)
   private def self.build_row_from_raw: (untyped raw_row) -> (Elements::Row | untyped)
