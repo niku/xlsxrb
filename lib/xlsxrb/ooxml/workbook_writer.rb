@@ -259,7 +259,7 @@ module Xlsxrb
             comment_idx += 1
             comment_writer = Xlsxrb::Ooxml::Writer.new
             sheet_comments.each do |c|
-              comment_writer.add_comment(c[:cell], c[:text], author: c[:author] || "Author")
+              comment_writer.add_comment(c[:cell] || c[:ref], c[:text], author: c[:author] || "Author")
             end
             zip.add_entry("xl/comments#{comment_idx}.xml", comment_writer.send(:generate_comments_xml, comment_writer.comments))
             zip.add_entry("xl/drawings/vmlDrawing#{comment_idx}.vml", comment_writer.send(:generate_vml_drawing_xml, comment_writer.comments))
@@ -514,9 +514,16 @@ module Xlsxrb
           b.open_tag("definedNames")
           @defined_names.each do |dn|
             dn_attrs = { name: dn[:name] }
-            dn_attrs[:localSheetId] = dn[:local_sheet_id].to_s if dn[:local_sheet_id]
+            local_id = dn[:local_sheet_id]
+            if !local_id && dn[:sheet]
+              target_name = dn[:sheet].to_s
+              matched_idx = @sheets.find_index { |s| (s.respond_to?(:name) ? s.name : s[:name]) == target_name }
+              local_id = matched_idx if matched_idx
+            end
+            dn_attrs[:localSheetId] = local_id.to_s if local_id
             dn_attrs[:hidden] = "1" if dn[:hidden]
-            b.tag("definedName", dn_attrs) { |_| b.text(dn[:value]) }
+            val = dn[:value] || (dn[:sheet] && dn[:range] ? "'#{dn[:sheet]}'!#{dn[:range]}" : dn[:range])
+            b.tag("definedName", dn_attrs) { |_| b.text(val) }
           end
           b.close_tag("definedNames")
         end

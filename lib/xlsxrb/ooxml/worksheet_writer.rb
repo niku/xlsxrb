@@ -947,7 +947,8 @@ module Xlsxrb
       def write_hyperlinks(links)
         @builder.open_tag("hyperlinks")
         links.each_with_index do |link, idx|
-          h_attrs = { ref: link[:cell] }
+          cell_ref = link[:cell] || link[:ref]
+          h_attrs = { ref: cell_ref }
           h_attrs[:"r:id"] = "rId#{link[:_rid] || (idx + 1)}" if link[:url]
           h_attrs[:location] = link[:location] if link[:location]
           h_attrs[:display] = link[:display] if link[:display]

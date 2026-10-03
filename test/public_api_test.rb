@@ -203,6 +203,31 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
+  test "Xlsxrb.write serializes first-class state, defined_names, comments, and hyperlinks from DOM models" do
+    ws = Xlsxrb::Elements::Worksheet.new(
+      name: "HiddenSheet",
+      state: :hidden,
+      comments: [{ cell: "A1", text: "Note on A1", author: "Tester" }],
+      hyperlinks: { "B1" => { ref: "B1", url: "https://example.com" } }
+    )
+    wb = Xlsxrb::Elements::Workbook.new(
+      sheets: [ws],
+      defined_names: [{ name: "MyConstant", sheet: "HiddenSheet", range: "A1" }]
+    )
+    binary = Xlsxrb.write(wb)
+    read_wb = Xlsxrb.read(binary).load
+    sheet = read_wb.sheets.first
+
+    assert_equal(:hidden, sheet.state)
+    assert(sheet.hidden?)
+    assert_equal(1, read_wb.defined_names.size)
+    assert_equal("MyConstant", read_wb.defined_names.first[:name])
+    assert_equal("'HiddenSheet'!A1", read_wb.defined_names.first[:value])
+    assert_not_nil(read_wb.defined_name("MyConstant", sheet: "HiddenSheet"))
+    assert_equal("Note on A1", sheet.comment("A1")[:text])
+    assert_equal("https://example.com", sheet.hyperlink("B1")[:url])
+  end
+
   # --- Streaming read via Xlsxrb.read(&block) ---
 
   test "Xlsxrb.read with block yields rows one at a time" do

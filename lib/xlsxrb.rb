@@ -361,12 +361,19 @@ module Xlsxrb
       facade = ws.unmapped_data[:facade]
       facade&.each { |key, val| sd[key] ||= val }
 
+      sd[:state] ||= ws.state if ws.respond_to?(:state) && ws.state && ws.state != :visible
+      sd[:comments] ||= ws.comments if ws.respond_to?(:comments) && !ws.comments.empty?
+      if ws.respond_to?(:hyperlinks) && !ws.hyperlinks.empty?
+        sd[:hyperlinks] ||= ws.hyperlinks.is_a?(Hash) ? ws.hyperlinks.values : ws.hyperlinks
+      end
+
       sd
     end
 
     # Extract workbook-level facade metadata
     wb_facade = workbook.unmapped_data[:facade] || {}
     wb_properties = workbook.unmapped_data[:workbook_properties] || wb_facade[:workbook_properties]
+    defined_names = wb_facade[:defined_names] || (workbook.respond_to?(:defined_names) && !workbook.defined_names.empty? ? workbook.defined_names : nil)
 
     if password && !password.empty?
       buf = StringIO.new
@@ -377,7 +384,7 @@ module Xlsxrb
         shared_strings: sst,
         shared_strings_index: sst_index,
         styles: workbook.styles,
-        defined_names: wb_facade[:defined_names],
+        defined_names: defined_names,
         core_properties: wb_facade[:core_properties],
         app_properties: wb_facade[:app_properties],
         custom_properties: wb_facade[:custom_properties],
@@ -397,7 +404,7 @@ module Xlsxrb
         shared_strings: sst,
         shared_strings_index: sst_index,
         styles: workbook.styles,
-        defined_names: wb_facade[:defined_names],
+        defined_names: defined_names,
         core_properties: wb_facade[:core_properties],
         app_properties: wb_facade[:app_properties],
         custom_properties: wb_facade[:custom_properties],
