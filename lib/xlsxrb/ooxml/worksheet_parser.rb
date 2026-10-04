@@ -28,8 +28,8 @@ module Xlsxrb
       end
 
       # Streaming parse: yields one raw row hash at a time.
-      def self.each_row(xml_source, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", styles: nil, date1904: false, trim_empty_rows: false, &block)
-        return enum_for(:each_row, xml_source, shared_strings: shared_strings, part_name: part_name, styles: styles, date1904: date1904, trim_empty_rows: trim_empty_rows) unless block
+      def self.each_row(xml_source, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", styles: nil, date1904: false, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, &block)
+        return enum_for(:each_row, xml_source, shared_strings: shared_strings, part_name: part_name, styles: styles, date1904: date1904, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) unless block
         return if xml_source.nil? || (xml_source.respond_to?(:empty?) && xml_source.empty?)
 
         row_consumer = if trim_empty_rows
@@ -47,10 +47,26 @@ module Xlsxrb
                          block
                        end
 
+        if pad_empty_rows
+          current_expected_idx = 0
+          inner_consumer = row_consumer
+          row_consumer = lambda do |row|
+            while current_expected_idx < row.index
+              empty_row = StreamRow.fast_create(
+                current_expected_idx, "".b, 0, 0, shared_strings, "", nil, false, false, nil, nil, styles, date1904, false, pad_empty_cells
+              )
+              inner_consumer.call(empty_row)
+              current_expected_idx += 1
+            end
+            inner_consumer.call(row)
+            current_expected_idx = row.index + 1
+          end
+        end
+
         if xml_source.is_a?(String)
-          fast_scan_rows_direct(xml_source, shared_strings, part_name, styles, date1904, &row_consumer)
+          fast_scan_rows_direct(xml_source, shared_strings, part_name, styles, date1904, pad_empty_cells, &row_consumer)
         else
-          scan_rows_stream(xml_source, shared_strings, part_name, styles, date1904, &row_consumer)
+          scan_rows_stream(xml_source, shared_strings, part_name, styles, date1904, pad_empty_cells, &row_consumer)
         end
       end
 
@@ -517,7 +533,7 @@ module Xlsxrb
       end
 
       # rubocop:disable Style/OptionalBooleanParameter
-      def self.fast_scan_rows_direct(xml_src, shared_strings, _part_name, styles = nil, date1904 = false, &block)
+      def self.fast_scan_rows_direct(xml_src, shared_strings, _part_name, styles = nil, date1904 = false, pad_empty_cells = false, &block)
         # rubocop:enable Style/OptionalBooleanParameter
         xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
 
@@ -610,7 +626,8 @@ module Xlsxrb
             attrs[:style_index],
             styles,
             date1904,
-            attrs[:collapsed] || false
+            attrs[:collapsed] || false,
+            pad_empty_cells
           )
           block.call(row_obj)
 
@@ -621,7 +638,7 @@ module Xlsxrb
       private_class_method :fast_scan_rows_direct
 
       # rubocop:disable Style/OptionalBooleanParameter
-      def self.scan_rows_stream(source, shared_strings, _part_name, styles = nil, date1904 = false, &block)
+      def self.scan_rows_stream(source, shared_strings, _part_name, styles = nil, date1904 = false, pad_empty_cells = false, &block)
         # rubocop:enable Style/OptionalBooleanParameter
         buffer = +""
         buffer.force_encoding(Encoding::BINARY)
@@ -757,7 +774,8 @@ module Xlsxrb
               attrs[:style_index],
               styles,
               date1904,
-              attrs[:collapsed] || false
+              attrs[:collapsed] || false,
+              pad_empty_cells
             )
             block.call(row_obj)
 

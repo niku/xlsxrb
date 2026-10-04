@@ -29,6 +29,8 @@ module Xlsxrb
 
     attr_reader style_index: untyped
 
+    attr_reader pad_empty_cells: untyped
+
     # @param index [Integer] 0-based row index.
     # @param xml_bytes [String] Raw ASCII-8BIT XML bytes.
     # @param from [Integer] Byte offset where cells start.
@@ -42,11 +44,12 @@ module Xlsxrb
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
-    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
-    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
+    # @param pad_empty_cells [Boolean] Whether missing cells in this row are padded.
+    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?pad_empty_cells: bool) -> void
+    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?pad_empty_cells: bool) -> void
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index, ?untyped styles, ?untyped date1904, ?untyped collapsed) -> untyped
+    def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index, ?untyped styles, ?untyped date1904, ?untyped collapsed, ?untyped pad_empty_cells) -> untyped
 
     # Returns whether the row is hidden.
     #
@@ -82,6 +85,13 @@ module Xlsxrb
     # @api public
     # : () -> bool
     def date1904?: () -> bool
+
+    # Returns whether missing cells in this row are padded.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def pad_empty_cells?: () -> bool
 
     # Iterate over cells in this streaming row one by one.
     #
@@ -127,6 +137,14 @@ module Xlsxrb
     # @api public
     # : (Integer col_index) -> Elements::Cell?
     def cell_at: (Integer col_index) -> Elements::Cell?
+
+    # Convert row cells to a coordinate-keyed Hash (e.g. {"A1" => "value", "B1" => 123}).
+    #
+    # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+    # @return [Hash{String => Object}]
+    # @api public
+    # : (?type_cast: bool) -> Hash[String, untyped]
+    def to_h: (?type_cast: bool) -> Hash[String, untyped]
 
     # Convert row cells to an Array of raw values (sparse columns get nil).
     #

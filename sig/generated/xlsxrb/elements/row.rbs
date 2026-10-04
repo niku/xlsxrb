@@ -38,6 +38,21 @@ module Xlsxrb
       # : (Integer | Symbol col_index) -> untyped
       def []: (Integer | Symbol col_index) -> untyped
 
+      # Returns a new Row with missing cells padded up to the maximum column index.
+      #
+      # @return [Elements::Row]
+      # @api public
+      # : () -> Elements::Row
+      def pad_empty_cells: () -> Elements::Row
+
+      # Returns a coordinate-keyed Hash of cell values (e.g. {"A1" => "value", "B1" => 123}).
+      #
+      # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+      # @return [Hash{String => Object}]
+      # @api public
+      # : (?type_cast: bool) -> Hash[String, untyped]
+      def cells_hash: (?type_cast: bool) -> Hash[String, untyped]
+
       # Returns whether the row is hidden.
       #
       # @return [Boolean]

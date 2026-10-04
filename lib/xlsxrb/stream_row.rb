@@ -19,7 +19,7 @@ module Xlsxrb
   class StreamRow
     [Enumerable].each { |m| include m }
 
-    attr_reader :index, :height, :hidden, :custom_height, :collapsed, :outline_level, :style_index
+    attr_reader :index, :height, :hidden, :custom_height, :collapsed, :outline_level, :style_index, :pad_empty_cells
 
     # @param index [Integer] 0-based row index.
     # @param xml_bytes [String] Raw ASCII-8BIT XML bytes.
@@ -34,9 +34,10 @@ module Xlsxrb
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
-    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
+    # @param pad_empty_cells [Boolean] Whether missing cells in this row are padded.
+    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?pad_empty_cells: bool) -> void
     def initialize(index:, xml_bytes:, from:, to:, shared_strings:, prefix: "", height: nil, hidden: false,
-                   custom_height: false, collapsed: false, outline_level: nil, style_index: nil, styles: nil, date1904: false)
+                   custom_height: false, collapsed: false, outline_level: nil, style_index: nil, styles: nil, date1904: false, pad_empty_cells: false)
       @index = index
       @xml = xml_bytes
       @from = from
@@ -51,11 +52,12 @@ module Xlsxrb
       @style_index = style_index
       @styles = styles
       @date1904 = date1904 ? true : false
+      @pad_empty_cells = pad_empty_cells ? true : false
       @cells = nil
     end
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil, date1904 = false, collapsed = false)
+    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil, date1904 = false, collapsed = false, pad_empty_cells = false)
       inst = allocate
       inst.instance_variable_set(:@index, index)
       inst.instance_variable_set(:@xml, xml_bytes)
@@ -71,6 +73,7 @@ module Xlsxrb
       inst.instance_variable_set(:@style_index, style_index)
       inst.instance_variable_set(:@styles, styles)
       inst.instance_variable_set(:@date1904, date1904 ? true : false)
+      inst.instance_variable_set(:@pad_empty_cells, pad_empty_cells ? true : false)
       inst.instance_variable_set(:@cells, nil)
       inst
     end
@@ -130,6 +133,15 @@ module Xlsxrb
       @date1904 ? true : false
     end
 
+    # Returns whether missing cells in this row are padded.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def pad_empty_cells?
+      @pad_empty_cells ? true : false
+    end
+
     # Iterate over cells in this streaming row one by one.
     #
     # @yield [cell]
@@ -141,8 +153,8 @@ module Xlsxrb
     def each_cell(&block)
       return enum_for(:each_cell) unless block
 
-      if @cells
-        @cells.each(&block)
+      if @cells || @pad_empty_cells
+        cells.each(&block)
       else
         Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, @date1904, &block)
       end
@@ -170,6 +182,18 @@ module Xlsxrb
         arr = []
         Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, @date1904) do |c|
           arr << c
+        end
+        if @pad_empty_cells && !arr.empty?
+          max_col = arr.map(&:column_index).max || 0
+          if arr.size < max_col + 1
+            cell_map = {}
+            arr.each { |c| cell_map[c.column_index] = c }
+            padded = Array.new(max_col + 1)
+            (0..max_col).each do |c_idx|
+              padded[c_idx] = cell_map[c_idx] || Elements::Cell.fast_create(@index, c_idx, nil, nil, nil, nil, nil, @date1904)
+            end
+            arr = padded
+          end
         end
         arr.freeze
       end
@@ -201,6 +225,8 @@ module Xlsxrb
         when :hidden? then hidden?
         when :collapsed? then collapsed?
         when :custom_height? then custom_height?
+        when :pad_empty_cells then @pad_empty_cells
+        when :pad_empty_cells? then pad_empty_cells?
         when :attributes then attributes
         when :attrs
           h = { height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level }
@@ -220,6 +246,38 @@ module Xlsxrb
     #: (Integer col_index) -> Elements::Cell?
     def cell_at(col_index)
       cells.find { |c| c.column_index == col_index }
+    end
+
+    # Convert row cells to a coordinate-keyed Hash (e.g. {"A1" => "value", "B1" => 123}).
+    #
+    # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+    # @return [Hash{String => Object}]
+    # @api public
+    #: (?type_cast: bool) -> Hash[String, untyped]
+    def to_h(type_cast: false)
+      result = {}
+      each_cell do |c|
+        val = c.value
+        if type_cast && val.is_a?(Numeric)
+          fmt_type = if c.style_index && @styles
+                       NumberFormatter.format_type_for(c.style_index, @styles)
+                     elsif c.format_code
+                       NumberFormatter.format_type(c.format_code)
+                     end
+          begin
+            case fmt_type
+            when :date
+              val = Ooxml::Utils.serial_to_date(val, date1904: @date1904)
+            when :datetime, :time
+              val = Ooxml::Utils.serial_to_datetime(val, date1904: @date1904)
+            end
+          rescue StandardError
+            # Keep val numeric on failure
+          end
+        end
+        result[c.ref] = val
+      end
+      result
     end
 
     # Convert row cells to an Array of raw values (sparse columns get nil).

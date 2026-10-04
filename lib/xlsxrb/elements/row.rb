@@ -69,6 +69,7 @@ module Xlsxrb
           when :collapsed? then collapsed?
           when :custom_height? then custom_height?
           when :attributes then attributes
+          when :cells_hash then cells_hash
           when :attrs
             h = { height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level }
             h[:style_index] = style_index if style_index
@@ -77,6 +78,65 @@ module Xlsxrb
         else
           cells[col_index]
         end
+      end
+
+      # Returns a new Row with missing cells padded up to the maximum column index.
+      #
+      # @return [Elements::Row]
+      # @api public
+      #: () -> Elements::Row
+      def pad_empty_cells
+        return self if cells.empty?
+
+        max_col = cells.map(&:column_index).max || 0
+        return self if cells.size == max_col + 1
+
+        is_d1904 = cells.first ? cells.first.date1904? : false
+        cell_map = {}
+        cells.each { |c| cell_map[c.column_index] = c }
+        padded = Array.new(max_col + 1)
+        (0..max_col).each do |c_idx|
+          padded[c_idx] = cell_map[c_idx] || Cell.fast_create(index, c_idx, nil, nil, nil, nil, nil, is_d1904)
+        end
+        Row.new(
+          index: index,
+          cells: padded,
+          height: height,
+          hidden: hidden,
+          custom_height: custom_height,
+          collapsed: collapsed,
+          outline_level: outline_level,
+          unmapped_data: unmapped_data,
+          errors: errors
+        )
+      end
+
+      # Returns a coordinate-keyed Hash of cell values (e.g. {"A1" => "value", "B1" => 123}).
+      #
+      # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+      # @return [Hash{String => Object}]
+      # @api public
+      #: (?type_cast: bool) -> Hash[String, untyped]
+      def cells_hash(type_cast: false)
+        result = {}
+        cells.each do |c|
+          val = c.value
+          if type_cast && val.is_a?(Numeric) && c.format_code
+            fmt_type = NumberFormatter.format_type(c.format_code)
+            begin
+              case fmt_type
+              when :date
+                val = Ooxml::Utils.serial_to_date(val, date1904: c.date1904?)
+              when :datetime, :time
+                val = Ooxml::Utils.serial_to_datetime(val, date1904: c.date1904?)
+              end
+            rescue StandardError
+              # Keep val numeric on failure
+            end
+          end
+          result[c.ref] = val
+        end
+        result
       end
 
       # Returns whether the row is hidden.

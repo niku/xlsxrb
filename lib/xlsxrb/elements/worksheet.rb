@@ -36,8 +36,10 @@ module Xlsxrb
       # @param styles [Hash, nil] Optional parsed styles hash.
       # @param dimension [String, nil] Sheet dimension reference string (e.g. "A1:Z50000").
       # @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during iteration.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false)
+      # @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
+      # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -55,6 +57,8 @@ module Xlsxrb
         @date1904 = date1904 ? true : false
         @dimension = dimension
         @trim_empty_rows = trim_empty_rows ? true : false
+        @pad_empty_rows = pad_empty_rows ? true : false
+        @pad_empty_cells = pad_empty_cells ? true : false
       end
 
       # Returns whether trailing empty rows are omitted during iteration.
@@ -66,6 +70,26 @@ module Xlsxrb
         @trim_empty_rows ? true : false
       end
       alias trim_empty_rows trim_empty_rows?
+
+      # Returns whether skipped rows are padded during iteration.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def pad_empty_rows?
+        @pad_empty_rows ? true : false
+      end
+      alias pad_empty_rows pad_empty_rows?
+
+      # Returns whether missing cells within rows are padded during iteration.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def pad_empty_cells?
+        @pad_empty_cells ? true : false
+      end
+      alias pad_empty_cells pad_empty_cells?
 
       # Returns whether the worksheet uses the 1904 date system.
       #
@@ -93,16 +117,27 @@ module Xlsxrb
       #     puts row.to_a.inspect
       #   end
       #
-      # @yield [row]
-      # @yieldparam row [Elements::Row]
-      # @return [Enumerator, void]
+      # @overload each(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &block)
+      #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
+      #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers.
+      #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows.
+      #   @yield [row]
+      #   @yieldparam row [Elements::Row]
+      #   @return [void]
+      #
+      # @overload each(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil)
+      #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
+      #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers.
+      #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows.
+      #   @return [Enumerator<Elements::Row, void>]
+      #
       # @api public
-      #: () { (Elements::Row) -> void } -> void
-      #: () -> Enumerator[Elements::Row, void]
-      def each(&)
-        return to_enum(:each) unless block_given?
+      #: (?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) { (Elements::Row) -> void } -> void
+      #: (?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) -> Enumerator[Elements::Row, void]
+      def each(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &)
+        return to_enum(:each, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) unless block_given?
 
-        rows.each(&)
+        each_row(trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells, &)
       end
 
       # Iterate over rows in the worksheet.
@@ -112,71 +147,102 @@ module Xlsxrb
       #     puts "Row #{row.index}: #{row.to_a.inspect}"
       #   end
       #
-      # @overload each_row(trim_empty_rows: nil, &block)
+      # @overload each_row(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &block)
       #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
+      #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers.
+      #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows.
       #   @yield [row]
       #   @yieldparam row [Elements::Row]
       #   @return [void]
       #
-      # @overload each_row(trim_empty_rows: nil)
+      # @overload each_row(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil)
       #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
-      #   @return [Enumerator, void]
+      #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers.
+      #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows.
+      #   @return [Enumerator<Elements::Row, void>]
       #
       # @api public
-      #: (?trim_empty_rows: bool?) { (Elements::Row) -> void } -> void
-      #: (?trim_empty_rows: bool?) -> Enumerator[Elements::Row, void]
-      def each_row(trim_empty_rows: nil, &block)
-        return to_enum(:each_row, trim_empty_rows: trim_empty_rows) unless block
+      #: (?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) { (Elements::Row) -> void } -> void
+      #: (?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) -> Enumerator[Elements::Row, void]
+      def each_row(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &block)
+        return to_enum(:each_row, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) unless block
 
         trim = if trim_empty_rows.nil?
                  @trim_empty_rows
                else
                  (trim_empty_rows ? true : false)
                end
+        pad_rows = if pad_empty_rows.nil?
+                     @pad_empty_rows
+                   else
+                     (pad_empty_rows ? true : false)
+                   end
+        pad_cells = if pad_empty_cells.nil?
+                      @pad_empty_cells
+                    else
+                      (pad_empty_cells ? true : false)
+                    end
 
-        if trim
-          pending_empty = []
-          rows.each do |row|
-            if row.empty?
-              pending_empty << row
-            else
-              pending_empty.each(&block)
-              pending_empty.clear
-              block.call(row)
+        row_consumer = if trim
+                         pending_empty = []
+                         lambda do |row|
+                           if row.empty?
+                             pending_empty << row
+                           else
+                             pending_empty.each(&block)
+                             pending_empty.clear
+                             block.call(row)
+                           end
+                         end
+                       else
+                         block
+                       end
+
+        if pad_rows
+          current_expected_idx = 0
+          inner_consumer = row_consumer
+          row_consumer = lambda do |row|
+            while current_expected_idx < row.index
+              empty_row = Row.new(index: current_expected_idx)
+              inner_consumer.call(pad_cells ? empty_row.pad_empty_cells : empty_row)
+              current_expected_idx += 1
             end
+            inner_consumer.call(row)
+            current_expected_idx = row.index + 1
           end
-        else
-          rows.each(&block)
+        end
+
+        rows.each do |row|
+          row_to_yield = pad_cells ? row.pad_empty_cells : row
+          row_consumer.call(row_to_yield)
         end
       end
 
       # Iterates over row values as Arrays.
       #
-      # @overload each_row_values(type_cast: false, trim_empty_rows: nil, &block)
+      # @overload each_row_values(type_cast: false, trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &block)
       #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
       #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
+      #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers.
+      #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows.
       #   @yield [values]
       #   @yieldparam values [Array<Object>] Row values array.
       #   @return [void]
       #
-      # @overload each_row_values(type_cast: false, trim_empty_rows: nil)
+      # @overload each_row_values(type_cast: false, trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil)
       #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
       #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
+      #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers.
+      #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows.
       #   @return [Enumerator<Array<Object>, void>]
       #
       # @api public
-      #: (?type_cast: bool, ?trim_empty_rows: bool?) { (Array[untyped]) -> void } -> void
-      #: (?type_cast: bool, ?trim_empty_rows: bool?) -> Enumerator[Array[untyped], void]
-      def each_row_values(type_cast: false, trim_empty_rows: nil, &block)
-        return to_enum(:each_row_values, type_cast: type_cast, trim_empty_rows: trim_empty_rows) unless block
+      #: (?type_cast: bool, ?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) { (Array[untyped]) -> void } -> void
+      #: (?type_cast: bool, ?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) -> Enumerator[Array[untyped], void]
+      def each_row_values(type_cast: false, trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &block)
+        return to_enum(:each_row_values, type_cast: type_cast, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) unless block
 
-        trim = if trim_empty_rows.nil?
-                 @trim_empty_rows
-               else
-                 (trim_empty_rows ? true : false)
-               end
-
-        each_row(trim_empty_rows: trim) do |row|
+        each_row(trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) do |row|
           block.call(row.values(type_cast: type_cast))
         end
       end

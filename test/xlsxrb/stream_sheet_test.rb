@@ -521,4 +521,86 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_false(rows[1].collapsed?)
     assert_false(rows[1].hidden?)
   end
+
+  test "stream_sheet and elements worksheet configurable sparse vs padded row and cell iteration" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1"><v>10</v></c>
+            <c r="C1"><v>30</v></c>
+          </row>
+          <row r="3">
+            <c r="B3" t="s"><v>0</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    # 1. Default (sparse)
+    sheet = Xlsxrb::StreamSheet.new("Sparse", xml.b, ["Hello"])
+    assert_false(sheet.pad_empty_rows?)
+    assert_false(sheet.pad_empty_cells?)
+
+    rows = sheet.each_row.to_a
+    assert_equal(2, rows.size)
+    assert_equal(0, rows[0].index)
+    assert_equal(2, rows[1].index)
+    assert_equal(2, rows[0].cells.size)
+    assert_equal({ "A1" => 10, "C1" => 30 }, rows[0].to_h)
+    assert_equal({ "B3" => "Hello" }, rows[1].to_h)
+
+    # 2. Padded rows only
+    padded_rows = sheet.each_row(pad_empty_rows: true).to_a
+    assert_equal(3, padded_rows.size)
+    assert_equal(0, padded_rows[0].index)
+    assert_equal(1, padded_rows[1].index)
+    assert_equal(2, padded_rows[2].index)
+    assert_true(padded_rows[1].empty?)
+    assert_equal([], padded_rows[1].cells)
+
+    # 3. Padded cells only
+    sheet_padded_cells = Xlsxrb::StreamSheet.new("PaddedCells", xml.b, ["Hello"], pad_empty_cells: true)
+    assert_true(sheet_padded_cells.pad_empty_cells?)
+    p_rows = sheet_padded_cells.each_row.to_a
+    assert_equal(2, p_rows.size)
+    assert_equal(3, p_rows[0].cells.size) # A1, B1 (nil), C1
+    assert_equal(10, p_rows[0].cells[0].value)
+    assert_nil(p_rows[0].cells[1].value)
+    assert_equal(30, p_rows[0].cells[2].value)
+    assert_equal(2, p_rows[1].cells.size) # A3 (nil), B3
+    assert_nil(p_rows[1].cells[0].value)
+    assert_equal("Hello", p_rows[1].cells[1].value)
+
+    # 4. Both padded rows and padded cells
+    both_rows = sheet.each_row(pad_empty_rows: true, pad_empty_cells: true).to_a
+    assert_equal(3, both_rows.size)
+    assert_equal(3, both_rows[0].cells.size)
+    assert_equal(0, both_rows[1].cells.size)
+    assert_equal(2, both_rows[2].cells.size)
+
+    # 5. elements Worksheet load inherits and respects padding
+    ws = sheet_padded_cells.load
+    assert_true(ws.pad_empty_cells?)
+    assert_false(ws.pad_empty_rows?)
+
+    ws_both = ws.each_row(pad_empty_rows: true, pad_empty_cells: true).to_a
+    assert_equal(3, ws_both.size)
+    assert_equal(0, ws_both[0].index)
+    assert_equal(1, ws_both[1].index)
+    assert_equal(2, ws_both[2].index)
+    assert_equal(3, ws_both[0].cells.size)
+    assert_equal(10, ws_both[0][0].value)
+    assert_nil(ws_both[0][1].value)
+    assert_equal(30, ws_both[0][2].value)
+    assert_equal({ "A1" => 10, "C1" => 30 }, ws.rows[0].cells_hash)
+    assert_equal({ "A1" => 10, "C1" => 30 }, ws.rows[0][:cells_hash])
+
+    # 6. each_row_values with padding
+    vals = sheet.each_row_values(pad_empty_rows: true).to_a
+    assert_equal(3, vals.size)
+    assert_equal([10, nil, 30], vals[0])
+    assert_equal([], vals[1])
+    assert_equal([nil, "Hello"], vals[2])
+  end
 end

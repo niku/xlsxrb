@@ -54,8 +54,10 @@ module Xlsxrb
     # @param date1904 [Boolean] Whether the 1904 date system is active.
     # @param dimension [String, nil] Sheet dimension reference string (e.g. "A1:Z50000").
     # @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during iteration.
-    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool) -> void
-    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible, date1904: false, dimension: nil, trim_empty_rows: false)
+    # @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
+    # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
+    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> void
+    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false)
       @name = name
       @sheet_source = sheet_source
       @shared_strings = shared_strings
@@ -68,6 +70,8 @@ module Xlsxrb
       @dimension_checked = !dimension.nil?
       @sheet_xml = sheet_source if sheet_source.is_a?(String)
       @trim_empty_rows = trim_empty_rows ? true : false
+      @pad_empty_rows = pad_empty_rows ? true : false
+      @pad_empty_cells = pad_empty_cells ? true : false
     end
 
     # Returns whether trailing empty rows are omitted during iteration.
@@ -79,6 +83,26 @@ module Xlsxrb
       @trim_empty_rows ? true : false
     end
     alias trim_empty_rows trim_empty_rows?
+
+    # Returns whether skipped rows are padded during iteration.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def pad_empty_rows?
+      @pad_empty_rows ? true : false
+    end
+    alias pad_empty_rows pad_empty_rows?
+
+    # Returns whether missing cells within rows are padded during iteration.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def pad_empty_cells?
+      @pad_empty_cells ? true : false
+    end
+    alias pad_empty_cells pad_empty_cells?
 
     # Returns the dimension reference string (e.g. "A1:Z50000"), or nil if not present.
     #
@@ -162,27 +186,41 @@ module Xlsxrb
     # @overload each_row(&block)
     #   @yield [row]
     #   @yieldparam row [StreamRow, Elements::Row] The current row.
-    # @overload each_row(trim_empty_rows: nil, &block)
+    # @overload each_row(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &block)
     #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows (defaults to sheet setting).
+    #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers (defaults to sheet setting).
+    #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows (defaults to sheet setting).
     #   @yield [row]
     #   @yieldparam row [StreamRow, Elements::Row] The current row.
     #   @return [void]
     #
-    # @overload each_row(trim_empty_rows: nil)
+    # @overload each_row(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil)
     #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows (defaults to sheet setting).
+    #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers (defaults to sheet setting).
+    #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows (defaults to sheet setting).
     #   @return [Enumerator<StreamRow | Elements::Row, void>]
     #
     # @api public
-    #: (?trim_empty_rows: bool?) { (StreamRow | Elements::Row) -> void } -> void
-    #: (?trim_empty_rows: bool?) -> Enumerator[StreamRow | Elements::Row, void]
-    def each_row(trim_empty_rows: nil, &)
-      return enum_for(:each_row, trim_empty_rows: trim_empty_rows) unless block_given?
+    #: (?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) { (StreamRow | Elements::Row) -> void } -> void
+    #: (?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) -> Enumerator[StreamRow | Elements::Row, void]
+    def each_row(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &)
+      return enum_for(:each_row, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) unless block_given?
 
       trim = if trim_empty_rows.nil?
                @trim_empty_rows
              else
                (trim_empty_rows ? true : false)
              end
+      pad_rows = if pad_empty_rows.nil?
+                   @pad_empty_rows
+                 else
+                   (pad_empty_rows ? true : false)
+                 end
+      pad_cells = if pad_empty_cells.nil?
+                    @pad_empty_cells
+                  else
+                    (pad_empty_cells ? true : false)
+                  end
 
       source = if @sheet_source
                  @sheet_source
@@ -190,7 +228,7 @@ module Xlsxrb
                  ->(&blk) { @zip_reader.each_entry_chunk(@entry_name, &blk) }
                end
 
-      Ooxml::WorksheetParser.each_row(source, shared_strings: @shared_strings, styles: @styles, date1904: @date1904, trim_empty_rows: trim, &)
+      Ooxml::WorksheetParser.each_row(source, shared_strings: @shared_strings, styles: @styles, date1904: @date1904, trim_empty_rows: trim, pad_empty_rows: pad_rows, pad_empty_cells: pad_cells, &)
     end
 
     # Iterates over all cells across all rows continuously with O(1) memory.
@@ -216,52 +254,54 @@ module Xlsxrb
 
     # Iterates over row values directly as Arrays without wrapping cells in Elements::Cell objects.
     #
-    # @overload each_row_values(type_cast: false, trim_empty_rows: nil, &block)
+    # @overload each_row_values(type_cast: false, trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &block)
     #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
     #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows (defaults to sheet setting).
+    #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers (defaults to sheet setting).
+    #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows (defaults to sheet setting).
     #   @yield [values]
     #   @yieldparam values [Array<Object>] Row values array.
     #   @return [void]
     #
-    # @overload each_row_values(type_cast: false, trim_empty_rows: nil)
+    # @overload each_row_values(type_cast: false, trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil)
     #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
     #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows (defaults to sheet setting).
+    #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers (defaults to sheet setting).
+    #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows (defaults to sheet setting).
     #   @return [Enumerator<Array<Object>, void>]
     #
     # @api public
-    #: (?type_cast: bool, ?trim_empty_rows: bool?) { (Array[untyped]) -> void } -> void
-    #: (?type_cast: bool, ?trim_empty_rows: bool?) -> Enumerator[Array[untyped], void]
-    def each_row_values(type_cast: false, trim_empty_rows: nil, &block)
-      return enum_for(:each_row_values, type_cast: type_cast, trim_empty_rows: trim_empty_rows) unless block
+    #: (?type_cast: bool, ?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) { (Array[untyped]) -> void } -> void
+    #: (?type_cast: bool, ?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) -> Enumerator[Array[untyped], void]
+    def each_row_values(type_cast: false, trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &block)
+      return enum_for(:each_row_values, type_cast: type_cast, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) unless block
 
-      trim = if trim_empty_rows.nil?
-               @trim_empty_rows
-             else
-               (trim_empty_rows ? true : false)
-             end
-
-      each_row(trim_empty_rows: trim) do |row|
+      each_row(trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) do |row|
         block.call(row.values(type_cast: type_cast))
       end
     end
 
     # Default Enumerable iteration delegates to {#each_row}.
     #
-    # @overload each(trim_empty_rows: nil, &block)
+    # @overload each(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &block)
     #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
+    #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers.
+    #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows.
     #   @yield [row]
     #   @yieldparam row [StreamRow, Elements::Row]
     #   @return [void]
     #
-    # @overload each(trim_empty_rows: nil)
+    # @overload each(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil)
     #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
+    #   @param pad_empty_rows [Boolean, nil] Whether to yield empty rows for skipped row numbers.
+    #   @param pad_empty_cells [Boolean, nil] Whether to pad missing cells within rows.
     #   @return [Enumerator<StreamRow | Elements::Row, void>]
     #
     # @api public
-    #: (?trim_empty_rows: bool?) { (StreamRow | Elements::Row) -> void } -> void
-    #: (?trim_empty_rows: bool?) -> Enumerator[StreamRow | Elements::Row, void]
-    def each(trim_empty_rows: nil, &)
-      each_row(trim_empty_rows: trim_empty_rows, &)
+    #: (?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) { (StreamRow | Elements::Row) -> void } -> void
+    #: (?trim_empty_rows: bool?, ?pad_empty_rows: bool?, ?pad_empty_cells: bool?) -> Enumerator[StreamRow | Elements::Row, void]
+    def each(trim_empty_rows: nil, pad_empty_rows: nil, pad_empty_cells: nil, &)
+      each_row(trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells, &)
     end
 
     # Loads this sheet completely into an in-memory {Elements::Worksheet},
@@ -272,7 +312,7 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, date1904: @date1904, dimension: dimension, trim_empty_rows: @trim_empty_rows)
+      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, date1904: @date1904, dimension: dimension, trim_empty_rows: @trim_empty_rows, pad_empty_rows: @pad_empty_rows, pad_empty_cells: @pad_empty_cells)
     end
     alias to_worksheet load
 
