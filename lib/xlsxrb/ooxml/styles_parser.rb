@@ -3,18 +3,22 @@
 # rbs_inline: enabled
 
 require_relative "xml_parser"
+require_relative "../elements/styles"
 
 module Xlsxrb
   module Ooxml
     # SAX-based parser for xl/styles.xml.
-    # Returns a Hash with :num_fmts, :fonts, :fills, :borders, :cell_xfs, :cell_style_xfs.
+    # Returns an Elements::Styles (Hash) with :num_fmts, :fonts, :fills, :borders, :cell_xfs, :cell_style_xfs.
     class StylesParser
+      #: (String? xml_string) -> Elements::Styles
       def self.parse(xml_string)
-        return {} if xml_string.nil? || xml_string.empty?
+        return Elements::Styles.new if xml_string.nil? || xml_string.empty?
 
         listener = Listener.new
         XmlParser.parse(xml_string, listener)
-        listener.result
+        styles = Elements::Styles.new(listener.result)
+        styles.precompute!
+        styles
       end
 
       # SAX listener for parsing styles.xml content.

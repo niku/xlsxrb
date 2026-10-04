@@ -3,9 +3,10 @@
 module Xlsxrb
   module Ooxml
     # SAX-based parser for xl/styles.xml.
-    # Returns a Hash with :num_fmts, :fonts, :fills, :borders, :cell_xfs, :cell_style_xfs.
+    # Returns an Elements::Styles (Hash) with :num_fmts, :fonts, :fills, :borders, :cell_xfs, :cell_style_xfs.
     class StylesParser
-      def self.parse: (untyped xml_string) -> untyped
+      # : (String? xml_string) -> Elements::Styles
+      def self.parse: (String? xml_string) -> Elements::Styles
 
       # SAX listener for parsing styles.xml content.
       class Listener

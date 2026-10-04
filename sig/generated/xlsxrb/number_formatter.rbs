@@ -26,15 +26,92 @@ module Xlsxrb
     # @param styles [Hash, nil] Parsed styles hash.
     # @return [String, nil] Format code string, or nil if not found.
     # @api public
-    # : (Integer? style_index, Hash[untyped, untyped]? styles) -> String?
-    def self.format_code_for: (Integer? style_index, Hash[untyped, untyped]? styles) -> String?
+    # : (Integer? style_index, untyped styles) -> String?
+    def self.format_code_for: (Integer? style_index, untyped styles) -> String?
 
-    # Checks whether a format code string represents a date or time pattern.
+    # Returns the classified format category for a format code string.
+    #
+    # @param format_code [String, nil] Format code string.
+    # @return [Symbol, nil] :date, :datetime, :time, :number, :text, :general, or nil.
+    # @api public
+    # : (String? format_code) -> Symbol?
+    def self.format_type: (String? format_code) -> Symbol?
+
+    # Checks whether a format code string represents a date, datetime, or time pattern.
     #
     # @param format_code [String, nil]
     # @return [Boolean]
     # : (String? format_code) -> bool
     def self.date_format?: (String? format_code) -> bool
+
+    # Checks whether a format code string represents a date-only pattern.
+    #
+    # @param format_code [String, nil]
+    # @return [Boolean]
+    # @api public
+    # : (String? format_code) -> bool
+    def self.date_only_format?: (String? format_code) -> bool
+
+    # Checks whether a format code string represents a datetime pattern.
+    #
+    # @param format_code [String, nil]
+    # @return [Boolean]
+    # @api public
+    # : (String? format_code) -> bool
+    def self.datetime_format?: (String? format_code) -> bool
+
+    # Checks whether a format code string represents a time-only pattern.
+    #
+    # @param format_code [String, nil]
+    # @return [Boolean]
+    # @api public
+    # : (String? format_code) -> bool
+    def self.time_format?: (String? format_code) -> bool
+
+    # Returns the format category Symbol for a style index and styles definition.
+    #
+    # @param style_index [Integer, nil]
+    # @param styles [untyped]
+    # @return [Symbol, nil]
+    # @api public
+    # : (Integer? style_index, untyped styles) -> Symbol?
+    def self.format_type_for: (Integer? style_index, untyped styles) -> Symbol?
+
+    # Checks whether a style index represents a date, datetime, or time format.
+    #
+    # @param style_index [Integer, nil]
+    # @param styles [untyped]
+    # @return [Boolean]
+    # @api public
+    # : (Integer? style_index, untyped styles) -> bool
+    def self.date_format_for?: (Integer? style_index, untyped styles) -> bool
+
+    # Checks whether a style index represents a datetime format.
+    #
+    # @param style_index [Integer, nil]
+    # @param styles [untyped]
+    # @return [Boolean]
+    # @api public
+    # : (Integer? style_index, untyped styles) -> bool
+    def self.datetime_format_for?: (Integer? style_index, untyped styles) -> bool
+
+    # Checks whether a style index represents a time format.
+    #
+    # @param style_index [Integer, nil]
+    # @param styles [untyped]
+    # @return [Boolean]
+    # @api public
+    # : (Integer? style_index, untyped styles) -> bool
+    def self.time_format_for?: (Integer? style_index, untyped styles) -> bool
+
+    # Checks whether a style index represents a date-only format.
+    #
+    # @param style_index [Integer, nil]
+    # @param styles [untyped]
+    # @return [Boolean]
+    # @api public
+    # : (Integer? style_index, untyped styles) -> bool
+    def self.date_only_format_for?: (Integer? style_index, untyped styles) -> bool
 
     private def self.default_format: (untyped value) -> untyped
 

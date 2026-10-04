@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Precomputed number format classifications in Styles: Add `Xlsxrb::Elements::Styles` (subclass of `Hash`) with precomputed $O(1)$ format classification lookups (`number_format`, `format_type`, `date_format?`, `datetime_format?`, `time_format?`, `date_only_format?`), update `StylesParser.parse` to return `Elements::Styles`, and add classification helper methods to `Xlsxrb::NumberFormatter`.
 - Worksheet dimension and coordinate bounds: Expose `dimension`, `first_row`, `first_column` (aliased `first_col`), `last_row`, and `last_column` (aliased `last_col`) on `StreamSheet` and `Elements::Worksheet` (and `Elements::CoordinateAccess`), lazily extracting `<dimension ref="..."/>` in $O(1)$ memory without scanning the full sheet.
 - Date1904 propagation to streaming sheets and rows: Propagate the workbook's 1904 date system flag to `StreamSheet` and `StreamRow`, expose `date1904?` on `StreamSheet`, `StreamRow`, `Elements::Worksheet`, and `Elements::Cell`, and default `Cell#to_date` and `Cell#to_time` to the cell's `date1904` setting.
 - `Elements::RichTextRun`: Add `RichTextRun` data class representing formatted text runs within `RichText`, supporting hash-like bracket access and seamless integration with `Xlsxrb.rich_text`.

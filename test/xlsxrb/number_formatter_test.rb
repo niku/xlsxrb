@@ -142,4 +142,168 @@ class NumberFormatterTest < Test::Unit::TestCase
     assert_nil(Xlsxrb::NumberFormatter.format_code_for(10, styles))
     assert_nil(Xlsxrb::NumberFormatter.format_code_for(0, nil))
   end
+
+  test "format_type classification and boolean predicates" do
+    assert_nil(Xlsxrb::NumberFormatter.format_type(nil))
+    assert_equal(:general, Xlsxrb::NumberFormatter.format_type(""))
+    assert_equal(:general, Xlsxrb::NumberFormatter.format_type("General"))
+    assert_equal(:text, Xlsxrb::NumberFormatter.format_type("@"))
+
+    # Dates
+    %w[mm-dd-yy d-mmm-yy d-mmm mmm-yy yyyy-mm-dd yyyy\\-mm\\-dd m/d/yyyy [$-409]dd-mmm-yyyy].each do |code|
+      assert_equal(:date, Xlsxrb::NumberFormatter.format_type(code), "Expected :date for #{code}")
+      assert_true(Xlsxrb::NumberFormatter.date_format?(code))
+      assert_true(Xlsxrb::NumberFormatter.date_only_format?(code))
+      assert_false(Xlsxrb::NumberFormatter.datetime_format?(code))
+      assert_false(Xlsxrb::NumberFormatter.time_format?(code))
+    end
+
+    # Datetimes
+    ["m/d/yy h:mm", "yyyy-mm-dd hh:mm:ss", "yyyy\\-mm\\-dd\\ hh:mm:ss"].each do |code|
+      assert_equal(:datetime, Xlsxrb::NumberFormatter.format_type(code), "Expected :datetime for #{code}")
+      assert_true(Xlsxrb::NumberFormatter.date_format?(code))
+      assert_false(Xlsxrb::NumberFormatter.date_only_format?(code))
+      assert_true(Xlsxrb::NumberFormatter.datetime_format?(code))
+      assert_false(Xlsxrb::NumberFormatter.time_format?(code))
+    end
+
+    # Times
+    ["h:mm AM/PM", "h:mm:ss AM/PM", "h:mm", "h:mm:ss", "mm:ss", "[h]:mm:ss", "mmss.0"].each do |code|
+      assert_equal(:time, Xlsxrb::NumberFormatter.format_type(code), "Expected :time for #{code}")
+      assert_true(Xlsxrb::NumberFormatter.date_format?(code))
+      assert_false(Xlsxrb::NumberFormatter.date_only_format?(code))
+      assert_false(Xlsxrb::NumberFormatter.datetime_format?(code))
+      assert_true(Xlsxrb::NumberFormatter.time_format?(code))
+    end
+
+    # Numbers
+    ["0", "0.00", "#,##0.00", "0%", "0.00E+00", "$#,##0.00", "[Red]#,##0"].each do |code|
+      assert_equal(:number, Xlsxrb::NumberFormatter.format_type(code), "Expected :number for #{code}")
+      assert_false(Xlsxrb::NumberFormatter.date_format?(code))
+      assert_false(Xlsxrb::NumberFormatter.datetime_format?(code))
+      assert_false(Xlsxrb::NumberFormatter.time_format?(code))
+    end
+  end
+
+  test "Elements::Styles precomputed number format classifications" do
+    raw_styles = {
+      cell_xfs: [
+        { num_fmt_id: 0 },
+        { num_fmt_id: 14 },
+        { num_fmt_id: 20 },
+        { num_fmt_id: 22 },
+        { num_fmt_id: 165 },
+        { num_fmt_id: 166 },
+        { num_fmt_id: 0, xf_id: 0 }
+      ],
+      cell_style_xfs: [
+        { num_fmt_id: 15 }
+      ],
+      num_fmts: {
+        165 => "yyyy\\-mm\\-dd",
+        166 => "[h]:mm:ss"
+      }
+    }
+
+    styles = Xlsxrb::Elements::Styles.new(raw_styles)
+    styles.precompute!
+
+    assert_true(styles.is_a?(Hash))
+    assert_equal(7, styles[:cell_xfs].size)
+
+    # Style 0: General
+    assert_equal("General", styles.number_format(0))
+    assert_equal(:general, styles.format_type(0))
+    assert_false(styles.date_format?(0))
+
+    # Style 1: Builtin 14 (mm-dd-yy)
+    assert_equal("mm-dd-yy", styles.number_format(1))
+    assert_equal(:date, styles.format_type(1))
+    assert_true(styles.date_format?(1))
+    assert_true(styles.date_only_format?(1))
+    assert_false(styles.datetime_format?(1))
+    assert_false(styles.time_format?(1))
+
+    # Style 2: Builtin 20 (h:mm)
+    assert_equal("h:mm", styles.number_format(2))
+    assert_equal(:time, styles.format_type(2))
+    assert_true(styles.date_format?(2))
+    assert_false(styles.date_only_format?(2))
+    assert_false(styles.datetime_format?(2))
+    assert_true(styles.time_format?(2))
+
+    # Style 3: Builtin 22 (m/d/yy h:mm)
+    assert_equal("m/d/yy h:mm", styles.number_format(3))
+    assert_equal(:datetime, styles.format_type(3))
+    assert_true(styles.date_format?(3))
+    assert_false(styles.date_only_format?(3))
+    assert_true(styles.datetime_format?(3))
+    assert_false(styles.time_format?(3))
+
+    # Style 4: Custom Date (yyyy-mm-dd)
+    assert_equal("yyyy\\-mm\\-dd", styles.number_format(4))
+    assert_equal(:date, styles.format_type(4))
+    assert_true(styles.date_format?(4))
+    assert_true(styles.date_only_format?(4))
+
+    # Style 5: Custom Time ([h]:mm:ss)
+    assert_equal("[h]:mm:ss", styles.number_format(5))
+    assert_equal(:time, styles.format_type(5))
+    assert_true(styles.date_format?(5))
+    assert_true(styles.time_format?(5))
+
+    # Style 6: Inherited from cell_style_xfs (Builtin 15 = d-mmm-yy)
+    assert_equal("d-mmm-yy", styles.number_format(6))
+    assert_equal(:date, styles.format_type(6))
+    assert_true(styles.date_format?(6))
+
+    # Out-of-bounds & invalid style indices
+    assert_nil(styles.number_format(999))
+    assert_nil(styles.format_type(999))
+    assert_false(styles.date_format?(999))
+    assert_false(styles.datetime_format?(999))
+    assert_false(styles.time_format?(999))
+    assert_nil(styles.number_format(nil))
+    assert_false(styles.date_format?(nil))
+    assert_nil(styles.number_format(-1))
+    assert_false(styles.date_format?(-1))
+
+    # NumberFormatter delegates to Elements::Styles methods
+    assert_equal("mm-dd-yy", Xlsxrb::NumberFormatter.format_code_for(1, styles))
+    assert_equal(:date, Xlsxrb::NumberFormatter.format_type_for(1, styles))
+    assert_true(Xlsxrb::NumberFormatter.date_format_for?(1, styles))
+    assert_true(Xlsxrb::NumberFormatter.date_only_format_for?(1, styles))
+    assert_false(Xlsxrb::NumberFormatter.datetime_format_for?(1, styles))
+    assert_false(Xlsxrb::NumberFormatter.time_format_for?(1, styles))
+
+    assert_true(Xlsxrb::NumberFormatter.datetime_format_for?(3, styles))
+    assert_true(Xlsxrb::NumberFormatter.time_format_for?(2, styles))
+  end
+
+  test "Ooxml::StylesParser.parse returns Elements::Styles with precomputed classifications" do
+    xml = <<~XML
+      <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <numFmts count="1">
+          <numFmt numFmtId="164" formatCode="yyyy-mm-dd"/>
+        </numFmts>
+        <cellXfs count="2">
+          <xf numFmtId="0"/>
+          <xf numFmtId="164"/>
+        </cellXfs>
+      </styleSheet>
+    XML
+
+    parsed = Xlsxrb::Ooxml::StylesParser.parse(xml)
+    assert_instance_of(Xlsxrb::Elements::Styles, parsed)
+    assert_equal(2, parsed[:cell_xfs].size)
+    assert_false(parsed.date_format?(0))
+    assert_true(parsed.date_format?(1))
+    assert_equal("yyyy-mm-dd", parsed.number_format(1))
+    assert_equal(:date, parsed.format_type(1))
+
+    # Empty XML returns empty Elements::Styles
+    empty_parsed = Xlsxrb::Ooxml::StylesParser.parse("")
+    assert_instance_of(Xlsxrb::Elements::Styles, empty_parsed)
+    assert_nil(empty_parsed.number_format(0))
+  end
 end

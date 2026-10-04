@@ -1,0 +1,75 @@
+# Generated from lib/xlsxrb/elements/styles.rb with RBS::Inline
+
+module Xlsxrb
+  module Elements
+    # Represents the workbook stylesheet definitions (fonts, fills, borders, cellXfs, and numFmts).
+    # Inherits from Hash for backward compatibility with existing styles hash structures,
+    # while providing precomputed O(1) number format classifications.
+    #
+    # @api public
+    class Styles < Hash[untyped, untyped]
+      # Initializes the styles container, optionally wrapping an existing styles hash.
+      #
+      # @param initial_hash [Hash, nil] Initial styles dictionary.
+      # : (?Hash[untyped, untyped]? initial_hash) -> void
+      def initialize: (?Hash[untyped, untyped]? initial_hash) -> void
+
+      # Returns the format code string for a given style index.
+      #
+      # @param style_index [Integer, nil]
+      # @return [String, nil]
+      # @api public
+      # : (Integer? style_index) -> String?
+      def number_format: (Integer? style_index) -> String?
+
+      alias format_code number_format
+
+      # Returns the classified format category (:date, :datetime, :time, :number, :text, :general) for a style index.
+      #
+      # @param style_index [Integer, nil]
+      # @return [Symbol, nil]
+      # @api public
+      # : (Integer? style_index) -> Symbol?
+      def format_type: (Integer? style_index) -> Symbol?
+
+      # Returns whether the style index represents a date, datetime, or time pattern.
+      #
+      # @param style_index [Integer, nil]
+      # @return [Boolean]
+      # @api public
+      # : (Integer? style_index) -> bool
+      def date_format?: (Integer? style_index) -> bool
+
+      # Returns whether the style index represents a datetime pattern.
+      #
+      # @param style_index [Integer, nil]
+      # @return [Boolean]
+      # @api public
+      # : (Integer? style_index) -> bool
+      def datetime_format?: (Integer? style_index) -> bool
+
+      # Returns whether the style index represents a time pattern.
+      #
+      # @param style_index [Integer, nil]
+      # @return [Boolean]
+      # @api public
+      # : (Integer? style_index) -> bool
+      def time_format?: (Integer? style_index) -> bool
+
+      # Returns whether the style index represents a date-only pattern.
+      #
+      # @param style_index [Integer, nil]
+      # @return [Boolean]
+      # @api public
+      # : (Integer? style_index) -> bool
+      def date_only_format?: (Integer? style_index) -> bool
+
+      # Precomputes format code and type classification lookups for all cellXfs.
+      #
+      # @return [self]
+      # @api public
+      # : () -> self
+      def precompute!: () -> self
+    end
+  end
+end

@@ -62,9 +62,10 @@ module Xlsxrb
       # @param styles [Hash, nil] Parsed styles hash.
       # @return [String, nil] Format code string, or nil if not found.
       # @api public
-      #: (Integer? style_index, Hash[untyped, untyped]? styles) -> String?
+      #: (Integer? style_index, untyped styles) -> String?
       def format_code_for(style_index, styles)
         return nil unless style_index && styles
+        return styles.number_format(style_index) if styles.respond_to?(:number_format)
 
         cell_xfs = styles[:cell_xfs]
         return nil unless cell_xfs.is_a?(Array) && style_index < cell_xfs.size
@@ -84,17 +85,158 @@ module Xlsxrb
         num_fmts[num_fmt_id] || Ooxml::Utils::BUILTIN_NUM_FMT_CODES[num_fmt_id]
       end
 
-      # Checks whether a format code string represents a date or time pattern.
+      # Returns the classified format category for a format code string.
+      #
+      # @param format_code [String, nil] Format code string.
+      # @return [Symbol, nil] :date, :datetime, :time, :number, :text, :general, or nil.
+      # @api public
+      #: (String? format_code) -> Symbol?
+      def format_type(format_code)
+        return nil if format_code.nil?
+
+        code = format_code.to_s.strip
+        return :general if code.empty? || code.casecmp("general").zero?
+        return :text if code == "@"
+
+        case code
+        when "mm-dd-yy", "d-mmm-yy", "d-mmm", "mmm-yy", "yyyy\\-mm\\-dd", "yyyy-mm-dd", "m/d/yy", "m/d/yyyy"
+          return :date
+        when "m/d/yy h:mm", "m/d/yyyy h:mm", "yyyy\\-mm\\-dd\\ hh:mm:ss", "yyyy-mm-dd hh:mm:ss"
+          return :datetime
+        when "h:mm AM/PM", "h:mm:ss AM/PM", "h:mm", "h:mm:ss", "mm:ss", "[h]:mm:ss", "mmss.0"
+          return :time
+        end
+
+        stripped = code.gsub(/"[^"]*"/, "")
+                       .gsub(/\\[.]/, "")
+                       .gsub(/\[(?!h\]|m\]|s\]|hh\]|mm\]|ss\])[^\]]*\]/i, "")
+
+        has_date = stripped.match?(/[ydYD]/) || (stripped.match?(/[mM]/) && !stripped.match?(/[hsHS]/))
+        has_time = stripped.match?(/[hsHS]/)
+
+        if has_date && has_time
+          :datetime
+        elsif has_date
+          :date
+        elsif has_time
+          :time
+        elsif stripped.include?("@")
+          :text
+        else
+          :number
+        end
+      end
+
+      # Checks whether a format code string represents a date, datetime, or time pattern.
       #
       # @param format_code [String, nil]
       # @return [Boolean]
       #: (String? format_code) -> bool
       def date_format?(format_code)
         return false if format_code.nil? || format_code.empty?
-        return true if DATE_PATTERNS.include?(format_code)
 
-        stripped = format_code.gsub(/"[^"]*"/, "").gsub(/\[[^\]]*\]/, "").gsub(/\\[.]/, "")
-        stripped.match?(/[ymdhsYMDHS]/)
+        type = format_type(format_code)
+        %i[date datetime time].include?(type)
+      end
+
+      # Checks whether a format code string represents a date-only pattern.
+      #
+      # @param format_code [String, nil]
+      # @return [Boolean]
+      # @api public
+      #: (String? format_code) -> bool
+      def date_only_format?(format_code)
+        format_type(format_code) == :date
+      end
+
+      # Checks whether a format code string represents a datetime pattern.
+      #
+      # @param format_code [String, nil]
+      # @return [Boolean]
+      # @api public
+      #: (String? format_code) -> bool
+      def datetime_format?(format_code)
+        format_type(format_code) == :datetime
+      end
+
+      # Checks whether a format code string represents a time-only pattern.
+      #
+      # @param format_code [String, nil]
+      # @return [Boolean]
+      # @api public
+      #: (String? format_code) -> bool
+      def time_format?(format_code)
+        format_type(format_code) == :time
+      end
+
+      # Returns the format category Symbol for a style index and styles definition.
+      #
+      # @param style_index [Integer, nil]
+      # @param styles [untyped]
+      # @return [Symbol, nil]
+      # @api public
+      #: (Integer? style_index, untyped styles) -> Symbol?
+      def format_type_for(style_index, styles)
+        return styles.format_type(style_index) if styles.respond_to?(:format_type)
+
+        code = format_code_for(style_index, styles)
+        format_type(code)
+      end
+
+      # Checks whether a style index represents a date, datetime, or time format.
+      #
+      # @param style_index [Integer, nil]
+      # @param styles [untyped]
+      # @return [Boolean]
+      # @api public
+      #: (Integer? style_index, untyped styles) -> bool
+      def date_format_for?(style_index, styles)
+        return styles.date_format?(style_index) if styles.respond_to?(:date_format?)
+
+        code = format_code_for(style_index, styles)
+        date_format?(code)
+      end
+
+      # Checks whether a style index represents a datetime format.
+      #
+      # @param style_index [Integer, nil]
+      # @param styles [untyped]
+      # @return [Boolean]
+      # @api public
+      #: (Integer? style_index, untyped styles) -> bool
+      def datetime_format_for?(style_index, styles)
+        return styles.datetime_format?(style_index) if styles.respond_to?(:datetime_format?)
+
+        code = format_code_for(style_index, styles)
+        datetime_format?(code)
+      end
+
+      # Checks whether a style index represents a time format.
+      #
+      # @param style_index [Integer, nil]
+      # @param styles [untyped]
+      # @return [Boolean]
+      # @api public
+      #: (Integer? style_index, untyped styles) -> bool
+      def time_format_for?(style_index, styles)
+        return styles.time_format?(style_index) if styles.respond_to?(:time_format?)
+
+        code = format_code_for(style_index, styles)
+        time_format?(code)
+      end
+
+      # Checks whether a style index represents a date-only format.
+      #
+      # @param style_index [Integer, nil]
+      # @param styles [untyped]
+      # @return [Boolean]
+      # @api public
+      #: (Integer? style_index, untyped styles) -> bool
+      def date_only_format_for?(style_index, styles)
+        return styles.date_only_format?(style_index) if styles.respond_to?(:date_only_format?)
+
+        code = format_code_for(style_index, styles)
+        date_only_format?(code)
       end
 
       private
