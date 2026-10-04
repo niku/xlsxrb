@@ -23,12 +23,18 @@ module Xlsxrb
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
       # @param defined_names [Array<Hash>, nil] Defined names list.
-      #: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[Hash[Symbol, untyped]]?) -> void
-      def initialize(sheets: [], shared_strings: [], styles: {}, unmapped_data: {}, errors: nil, defined_names: nil)
+      # @param date1904 [Boolean] Whether the workbook uses the 1904 date system.
+      #: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[Hash[Symbol, untyped]]?, ?date1904: bool) -> void
+      def initialize(sheets: [], shared_strings: [], styles: {}, unmapped_data: {}, errors: nil, defined_names: nil, date1904: false)
         dns = defined_names || unmapped_data[:defined_names] || unmapped_data.dig(:facade, :defined_names) || []
         computed_errors = errors || self.class.validate(sheets)
+        unmapped = unmapped_data
+        if date1904 && !unmapped.dig(:workbook_properties, :date1904) && !unmapped.dig(:facade, :workbook_properties, :date1904)
+          unmapped = unmapped.dup
+          unmapped[:workbook_properties] = (unmapped[:workbook_properties] || {}).merge(date1904: true)
+        end
         super(sheets: sheets.freeze, shared_strings: shared_strings.freeze, styles: styles,
-              unmapped_data: unmapped_data, errors: computed_errors.freeze, defined_names: dns.freeze)
+              unmapped_data: unmapped, errors: computed_errors.freeze, defined_names: dns.freeze)
       end
 
       # Iterate over worksheets.

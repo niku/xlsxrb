@@ -42,6 +42,7 @@ class DateTimeStyleTest < Test::Unit::TestCase
     # Verify workbook.xml contains date1904="1"
     reader = Xlsxrb::Ooxml::Reader.new(temp.path)
     assert_equal(true, reader.workbook_properties[:date1904])
+    assert_true(reader.date1904?)
 
     # Verify resolved date and datetime cells match expected values
     resolved_cells = reader.cells(sheet: "Dates1904")
@@ -75,7 +76,7 @@ class DateTimeStyleTest < Test::Unit::TestCase
     wb = Xlsxrb::Elements::Workbook.new(
       sheets: [ws],
       styles: styles,
-      unmapped_data: { workbook_properties: { date1904: true } }
+      date1904: true
     )
     assert_true(wb.date1904?)
 
@@ -87,8 +88,14 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert_true(wb_read.date1904?)
     assert_equal(target_date, wb_read["Sheet1"]["A1"].to_date(date1904: wb_read.date1904?))
 
+    # Verify read_buffer reads back in-memory binary string
+    wb_buf = Xlsxrb.read_buffer(File.binread(temp.path)).load
+    assert_true(wb_buf.date1904?)
+    assert_equal(target_date, wb_buf["Sheet1"]["A1"].to_date(date1904: wb_buf.date1904?))
+
     reader = Xlsxrb::Ooxml::Reader.new(temp.path)
     assert_equal(true, reader.workbook_properties[:date1904])
+    assert_true(reader.date1904?)
     assert_equal(target_date, reader.cells(sheet: "Sheet1")["A1"])
   end
 

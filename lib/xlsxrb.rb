@@ -235,6 +235,7 @@ module Xlsxrb
 
   class << self
     alias stream read
+    alias read_buffer read
   end
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.

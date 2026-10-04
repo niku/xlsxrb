@@ -543,6 +543,14 @@ module Xlsxrb
         parse_workbook_metadata[:workbook_properties]
       end
 
+      # Returns whether the workbook uses the 1904 date system.
+      #
+      # @return [Boolean]
+      #: () -> bool
+      def date1904?
+        workbook_properties&.[](:date1904) ? true : false
+      end
+
       # Returns the workbook conformance class ("transitional" or "strict"), or nil if not set.
       def conformance
         parse_workbook_metadata[:conformance]
