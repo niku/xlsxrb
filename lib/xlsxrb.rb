@@ -34,6 +34,7 @@ require_relative "xlsxrb/worksheet_builder"
 require_relative "xlsxrb/workbook_builder"
 require_relative "xlsxrb/number_formatter"
 require_relative "xlsxrb/stream_writer"
+require_relative "xlsxrb/utils"
 
 # Modern, streaming-capable, low-memory XLSX reading and writing library for Ruby.
 #
