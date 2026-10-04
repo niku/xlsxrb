@@ -56,14 +56,12 @@ module Xlsxrb
     #
     # @param index [Integer, String, Range, Array] Column index (0-based), letter ("A"), or range ("A".."D").
     # @param width [Float, Integer, nil] Column width in character units (0 to 255).
-    # @param hidden [Boolean] Whether the column is hidden.
-    # @param custom_width [Boolean] Whether custom width is explicitly set.
-    # @param outline_level [Integer, nil] Grouping/outline level.
+    # @param style [Integer, Symbol, String, nil] Column style format or index.
     # @return [void]
     # @raise [ArgumentError] If width exceeds 255 in strict mode.
     # @api public
-    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
-    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
+    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String)?) -> void
+    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String)?) -> void
 
     # Adds a chart to the worksheet.
     #

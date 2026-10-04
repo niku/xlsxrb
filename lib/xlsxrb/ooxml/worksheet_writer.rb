@@ -35,6 +35,11 @@ module Xlsxrb
         @finished = false
       end
 
+      def set_column_style(col_index, style_id)
+        @column_styles ||= {}
+        @column_styles[col_index] = style_id
+      end
+
       # Write the worksheet header. Call once before writing rows.
       # Options for pre-sheetData elements:
       #   sheet_properties: Hash of sheet-level properties (:tab_color, etc.)
@@ -48,6 +53,25 @@ module Xlsxrb
         @started = true
         @builder.declaration
         @builder.open_tag("worksheet", { xmlns: SSML_NS, "xmlns:r": DOC_REL_NS })
+
+        @column_styles ||= {}
+        if columns && !columns.empty?
+          columns.each do |col|
+            if col.is_a?(Elements::Column)
+              s = col.style_index
+              min = col.index
+              max = col.index
+            else
+              s = col[:style_index] || col[:style]
+              min = col[:index] || col[:min] || 0
+              max = col[:index] || col[:max] || col[:min] || 0
+            end
+            next unless s
+
+            (min..max).each { |i| @column_styles[i] = s }
+          end
+        end
+        @column_styles = nil if @column_styles.empty?
 
         write_sheet_properties(sheet_properties) if sheet_properties && !sheet_properties.empty?
         write_sheet_views(freeze_pane: freeze_pane, split_pane: split_pane, selection: selection, sheet_view: sheet_view) if freeze_pane || split_pane || selection || (sheet_view && !sheet_view.empty?)
@@ -80,24 +104,30 @@ module Xlsxrb
             value = cell.value
             style_id = cell.style_index
             col_ref = cell.ref || "#{column_letter(cell.column_index)}#{row_num_str}"
+            col_idx = cell.column_index
             formula = cell.formula
             formula_ca = false
             cell_type_val = nil
           elsif cell.is_a?(Hash)
             value = cell[:value]
             style_id = cell[:style_index]
-            col_ref = cell[:ref] || "#{column_letter(cell[:column_index])}#{row_num_str}"
+            col_idx = cell[:column_index]
+            col_ref = cell[:ref] || (col_idx ? "#{column_letter(col_idx)}#{row_num_str}" : nil)
             formula = cell[:formula]
             formula_ca = cell[:formula_ca]
             cell_type_val = cell[:type]
           else
             value = cell
             style_id = nil
+            col_idx = nil
             col_ref = nil
             formula = nil
             formula_ca = false
             cell_type_val = nil
           end
+
+          col_style = @column_styles && col_idx ? @column_styles[col_idx] : nil
+          style_id ||= attrs[:style_index] || col_style
 
           # Fast path for common unstyled cells
           if !formula && !style_id && !cell_type_val
@@ -265,7 +295,7 @@ module Xlsxrb
         row_num_str = row_num < 65_536 ? INTEGER_STRINGS[row_num] : row_num.to_s
         buf = @row_buffer ||= String.new(capacity: 65_536)
 
-        if styles.nil? && attrs.nil?
+        if styles.nil? && attrs.nil? && @column_styles.nil?
           buf << "<row r=\"#{row_num_str}\">"
           col_index = 0
           max_len = values.length
@@ -374,17 +404,34 @@ module Xlsxrb
           max_len = [max_len, styles_len].max
         end
 
+        row_style = attrs ? attrs[:style_index] : nil
+        row_style_id = row_style && style_map ? (style_map[row_style] || style_map[row_style.to_s] || row_style) : row_style
+
         col_index = 0
         while col_index < max_len
           value = col_index < values.length ? values[col_index] : nil
           style_id = single_style_id
-          if is_styles_collection && style_map
+          if is_styles_collection
             style_name = if styles.is_a?(Array)
                            col_index < styles.length ? styles[col_index] : nil
                          else
                            styles[col_index]
                          end
-            style_id = style_map[style_name] if style_name
+            style_id = if style_map && style_name
+                         style_map[style_name] || style_map[style_name.to_s] || style_name
+                       else
+                         style_name
+                       end
+          end
+
+          if style_id.nil?
+            col_style = @column_styles ? @column_styles[col_index] : nil
+            col_style_id = if col_style && style_map
+                             style_map[col_style] || style_map[col_style.to_s] || col_style
+                           else
+                             col_style
+                           end
+            style_id = row_style_id || col_style_id
           end
 
           col_ref = COLUMN_LETTERS[col_index] || column_letter(col_index)
@@ -480,7 +527,7 @@ module Xlsxrb
             if value.start_with?("=") && value.length > 1
               formula_expr = value
               xml_val = nil
-            else
+            elsif sst_index
               idx = sst_index[value]
               unless idx
                 sst << value
@@ -489,16 +536,24 @@ module Xlsxrb
               end
               xml_val = idx
               type = "s"
+            else
+              xml_val = value
+              type = "inlineStr"
             end
           when Xlsxrb::Elements::RichText
-            idx = sst_index[value]
-            unless idx
-              sst << value
-              idx = sst.size - 1
-              sst_index[value] = idx
+            if sst_index
+              idx = sst_index[value]
+              unless idx
+                sst << value
+                idx = sst.size - 1
+                sst_index[value] = idx
+              end
+              xml_val = idx
+              type = "s"
+            else
+              xml_val = value
+              type = "inlineStr"
             end
-            xml_val = idx
-            type = "s"
           when true
             xml_val = "1"
             type = "b"
@@ -533,6 +588,8 @@ module Xlsxrb
             else
               buf << "<v>0</v></c>"
             end
+          elsif type == "inlineStr"
+            buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
           else
             buf << "><v>" << xml_val.to_s << "</v></c>"
           end
@@ -1127,7 +1184,10 @@ module Xlsxrb
         # For formula cells with cached values, don't infer type from value
         type = formula ? cell[:type] : (cell[:type] || cell_type(value))
         attrs[:t] = type if type
-        attrs[:s] = cell[:style_index].to_s if cell[:style_index]
+        col_idx = cell[:column_index]
+        col_style = @column_styles && col_idx ? @column_styles[col_idx] : nil
+        style_id = cell[:style_index] || col_style
+        attrs[:s] = style_id.to_s if style_id
 
         if value.nil? && formula.nil?
           @builder.empty_tag("c", attrs)

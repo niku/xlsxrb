@@ -217,23 +217,23 @@ module Xlsxrb
     #
     # @param index [Integer, String, Range, Array] Column index (0-based), letter ("A"), or range ("A".."D").
     # @param width [Float, Integer, nil] Column width in character units (0 to 255).
-    # @param hidden [Boolean] Whether the column is hidden.
-    # @param custom_width [Boolean] Whether custom width is explicitly set.
-    # @param outline_level [Integer, nil] Grouping/outline level.
+    # @param style [Integer, Symbol, String, nil] Column style format or index.
     # @return [void]
     # @raise [ArgumentError] If width exceeds 255 in strict mode.
     # @api public
-    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
-    def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
+    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String)?) -> void
+    def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil, style: nil)
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
       DslHelpers.normalize_column_indices(index).each do |idx|
+        unmapped = style ? { style_index: style } : {}
         @columns << Elements::Column.new(
           index: idx,
           width: width,
           hidden: hidden,
           custom_width: custom_width || !width.nil?,
-          outline_level: outline_level
+          outline_level: outline_level,
+          unmapped_data: unmapped
         )
       end
     end

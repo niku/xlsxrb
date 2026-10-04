@@ -885,6 +885,16 @@ module Xlsxrb
         row_buf.clear
       end
 
+      if @current_columns && !@current_columns.empty? && @style_name_to_id
+        @current_columns.each do |col|
+          s = col[:style] || col[:style_index]
+          if s.is_a?(Symbol) || s.is_a?(String)
+            resolved = @style_name_to_id[s] || @style_name_to_id[s.to_s]
+            col[:style] = resolved if resolved
+          end
+        end
+      end
+
       date1904 = @workbook_properties&.[](:date1904) ? true : false
       @current_row_writer = Ooxml::WorksheetWriter.new(zip_io, date1904: date1904)
       @current_row_writer.start(
@@ -953,18 +963,27 @@ module Xlsxrb
     # @param index [Integer, String, Range, Array] Column index (0-based) or letter ("A".."D").
     # @param width [Float, Integer, nil] Column width in character units (0 - 255).
     # @param hidden [Boolean] Whether the column is hidden.
-    # @param custom_width [Boolean] Whether custom width is set.
-    # @param outline_level [Integer, nil] Grouping/outline level.
+    # @param style [Integer, Symbol, String, nil] Column style format or index.
     # @return [void]
     # @api public
-    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil) -> void
-    def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil)
+    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String)?) -> void
+    def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil, style: nil)
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
       sheet if @current_sheet.nil?
 
+      style_id = if @style_name_to_id && style
+                   @style_name_to_id[style] || @style_name_to_id[style.to_s] || style
+                 else
+                   style
+                 end
       DslHelpers.normalize_column_indices(index).each do |idx|
-        @current_columns << { index: idx, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
+        entry = { index: idx, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
+        if style_id
+          entry[:style] = style_id
+          @current_row_writer&.set_column_style(idx, style_id)
+        end
+        @current_columns << entry
       end
     end
 
