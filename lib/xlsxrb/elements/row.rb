@@ -14,7 +14,7 @@ module Xlsxrb
     #
     # @api public
     # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
-    class Row < Data.define(:index, :cells, :height, :hidden, :custom_height, :outline_level, :unmapped_data, :errors)
+    class Row < Data.define(:index, :cells, :height, :hidden, :custom_height, :collapsed, :outline_level, :unmapped_data, :errors)
       # rubocop:enable Style/DataInheritance
       [Enumerable].each { |m| include m }
 
@@ -23,17 +23,18 @@ module Xlsxrb
       # @param height [Float, Integer, nil] Row height in points.
       # @param hidden [Boolean] Whether the row is hidden.
       # @param custom_height [Boolean] Whether custom height is set.
+      # @param collapsed [Boolean] Whether the row is collapsed.
       # @param outline_level [Integer, nil] Grouping/outline level.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      #: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize(index:, cells: EMPTY_CELLS, height: nil, hidden: false, custom_height: false, outline_level: nil,
-                     unmapped_data: EMPTY_HASH, errors: nil)
+      #: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize(index:, cells: EMPTY_CELLS, height: nil, hidden: false, custom_height: false, collapsed: false,
+                     outline_level: nil, unmapped_data: EMPTY_HASH, errors: nil)
         computed_errors = errors || self.class.validate(index, cells)
         computed_errors = computed_errors.freeze unless computed_errors.frozen?
         cells = cells.freeze unless cells.frozen?
         super(index: index, cells: cells, height: height, hidden: hidden,
-              custom_height: custom_height, outline_level: outline_level,
+              custom_height: custom_height, collapsed: collapsed, outline_level: outline_level,
               unmapped_data: unmapped_data, errors: computed_errors)
       end
 
@@ -61,16 +62,66 @@ module Xlsxrb
           when :height then height
           when :hidden then hidden
           when :custom_height then custom_height
+          when :collapsed then collapsed
           when :outline_level then outline_level
           when :style_index then style_index
+          when :hidden? then hidden?
+          when :collapsed? then collapsed?
+          when :custom_height? then custom_height?
+          when :attributes then attributes
           when :attrs
-            h = { height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level }
+            h = { height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level }
             h[:style_index] = style_index if style_index
             h
           end
         else
           cells[col_index]
         end
+      end
+
+      # Returns whether the row is hidden.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def hidden?
+        hidden == true
+      end
+
+      # Returns whether the row is collapsed.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def collapsed?
+        collapsed == true
+      end
+
+      # Returns whether custom height is set.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def custom_height?
+        custom_height == true
+      end
+
+      # Returns a frozen Hash of row attributes.
+      #
+      # @return [Hash{Symbol => Object}]
+      # @api public
+      #: () -> Hash[Symbol, untyped]
+      def attributes
+        h = {
+          index: index,
+          height: height,
+          hidden: hidden,
+          custom_height: custom_height,
+          collapsed: collapsed,
+          outline_level: outline_level
+        }
+        h[:style_index] = style_index if style_index
+        h.freeze
       end
 
       # Returns style_index if present in unmapped_data.

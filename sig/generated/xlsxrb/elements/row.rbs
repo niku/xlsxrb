@@ -18,11 +18,12 @@ module Xlsxrb
       # @param height [Float, Integer, nil] Row height in points.
       # @param hidden [Boolean] Whether the row is hidden.
       # @param custom_height [Boolean] Whether custom height is set.
+      # @param collapsed [Boolean] Whether the row is collapsed.
       # @param outline_level [Integer, nil] Grouping/outline level.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      # : (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      # : (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
       # Access a cell by 0-based column index, or access row attributes via Symbol.
       #
@@ -36,6 +37,34 @@ module Xlsxrb
       # @api public
       # : (Integer | Symbol col_index) -> untyped
       def []: (Integer | Symbol col_index) -> untyped
+
+      # Returns whether the row is hidden.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def hidden?: () -> bool
+
+      # Returns whether the row is collapsed.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def collapsed?: () -> bool
+
+      # Returns whether custom height is set.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def custom_height?: () -> bool
+
+      # Returns a frozen Hash of row attributes.
+      #
+      # @return [Hash{Symbol => Object}]
+      # @api public
+      # : () -> Hash[Symbol, untyped]
+      def attributes: () -> Hash[Symbol, untyped]
 
       # Returns style_index if present in unmapped_data.
       #

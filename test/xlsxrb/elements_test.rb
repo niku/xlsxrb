@@ -512,7 +512,7 @@ class ElementsTest < Test::Unit::TestCase
   test "row accessors, enumeration, and conversion to_a" do
     c1 = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 0, value: "hello")
     c2 = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 2, value: "world")
-    row = Xlsxrb::Elements::Row.new(index: 2, cells: [c1, c2], height: 30.0, hidden: true, custom_height: true, outline_level: 1)
+    row = Xlsxrb::Elements::Row.new(index: 2, cells: [c1, c2], height: 30.0, hidden: true, custom_height: true, collapsed: true, outline_level: 1)
 
     assert(row.valid?)
     assert_equal(c1, row[0])
@@ -524,14 +524,51 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(row.cell_at(1))
     assert_equal(c2, row.cell_at(2))
 
-    # Symbol accessors
+    # Symbol accessors & predicates
     assert_equal([c1, c2], row[:cells])
     assert_equal(2, row[:index])
     assert_in_delta(30.0, row[:height])
     assert_equal(true, row[:hidden])
+    assert_equal(true, row.hidden)
+    assert_equal(true, row.hidden?)
+    assert_equal(true, row[:hidden?])
     assert_equal(true, row[:custom_height])
+    assert_equal(true, row.custom_height)
+    assert_equal(true, row.custom_height?)
+    assert_equal(true, row[:custom_height?])
+    assert_equal(true, row[:collapsed])
+    assert_equal(true, row.collapsed)
+    assert_equal(true, row.collapsed?)
+    assert_equal(true, row[:collapsed?])
     assert_equal(1, row[:outline_level])
-    assert_equal({ height: 30.0, hidden: true, custom_height: true, outline_level: 1 }, row[:attrs])
+    assert_equal(1, row.outline_level)
+    assert_equal({ height: 30.0, hidden: true, custom_height: true, collapsed: true, outline_level: 1 }, row[:attrs])
+
+    expected_attrs = {
+      index: 2,
+      height: 30.0,
+      hidden: true,
+      custom_height: true,
+      collapsed: true,
+      outline_level: 1
+    }
+    assert_equal(expected_attrs, row.attributes)
+    assert_equal(expected_attrs, row[:attributes])
+    assert(row.attributes.frozen?)
+
+    # Defaults and false predicates
+    default_row = Xlsxrb::Elements::Row.new(index: 0)
+    assert_equal(false, default_row.hidden)
+    assert_equal(false, default_row.hidden?)
+    assert_equal(false, default_row[:hidden?])
+    assert_equal(false, default_row.custom_height)
+    assert_equal(false, default_row.custom_height?)
+    assert_equal(false, default_row[:custom_height?])
+    assert_equal(false, default_row.collapsed)
+    assert_equal(false, default_row.collapsed?)
+    assert_equal(false, default_row[:collapsed?])
+    assert_equal({ index: 0, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil }, default_row.attributes)
+    assert(default_row.attributes.frozen?)
 
     # Enumeration
     assert_kind_of(Enumerator, row.each)
@@ -556,12 +593,14 @@ class ElementsTest < Test::Unit::TestCase
     row_without_style = Xlsxrb::Elements::Row.new(index: 0)
     assert_nil(row_without_style.style_index)
     assert_nil(row_without_style[:style_index])
-    assert_equal({ height: nil, hidden: false, custom_height: false, outline_level: nil }, row_without_style[:attrs])
+    assert_equal({ height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil }, row_without_style[:attrs])
 
     row_with_style = Xlsxrb::Elements::Row.new(index: 1, unmapped_data: { style_index: 4 })
     assert_equal(4, row_with_style.style_index)
     assert_equal(4, row_with_style[:style_index])
-    assert_equal({ height: nil, hidden: false, custom_height: false, outline_level: nil, style_index: 4 }, row_with_style[:attrs])
+    assert_equal({ height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style_index: 4 }, row_with_style[:attrs])
+    assert_equal({ index: 1, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style_index: 4 }, row_with_style.attributes)
+    assert(row_with_style.attributes.frozen?)
   end
 
   # --- Column ---

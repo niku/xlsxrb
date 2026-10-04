@@ -83,11 +83,12 @@ module Xlsxrb
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom row height is enforced.
     # @param outline_level [Integer, nil] Grouping/outline hierarchy level.
+    # @param collapsed [Boolean] Whether the row is collapsed.
     # @return [void]
     # @raise [ArgumentError] If limits are exceeded when strict_excel_mode is enabled.
     # @api public
-    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
+    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
       row_index = @rows.size
       DslHelpers.validate_row_bounds!(row_index, height, strict_excel_mode: @strict_excel_mode)
 
@@ -201,6 +202,7 @@ module Xlsxrb
         height: height,
         hidden: hidden,
         custom_height: custom_height || !height.nil?,
+        collapsed: collapsed,
         outline_level: outline_level
       )
     end

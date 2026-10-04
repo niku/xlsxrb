@@ -451,4 +451,74 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal([], sheet.each_row.to_a)
     assert_equal([], sheet.each_row_values.to_a)
   end
+
+  test "stream_sheet parses row metadata attributes collapsed, hidden, customHeight, outlineLevel" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1" ht="28.5" customHeight="1" hidden="true" collapsed="true" outlineLevel="2">
+            <c r="A1"><v>100</v></c>
+          </row>
+          <row r="2" collapsed="1" hidden="1">
+            <c r="A2"><v>200</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    sheet = Xlsxrb::StreamSheet.new("MetaSheet", xml.b, [])
+    rows = sheet.each_row.to_a
+    assert_equal(2, rows.size)
+
+    r1 = rows[0]
+    assert_equal(0, r1.index)
+    assert_in_delta(28.5, r1.height)
+    assert_true(r1.custom_height?)
+    assert_true(r1.hidden?)
+    assert_true(r1.collapsed?)
+    assert_equal(2, r1.outline_level)
+    assert_equal(true, r1[:collapsed])
+    assert_equal(true, r1[:collapsed?])
+    assert_equal(true, r1[:hidden?])
+    assert_equal(true, r1[:custom_height?])
+
+    r2 = rows[1]
+    assert_equal(1, r2.index)
+    assert_nil(r2.height)
+    assert_false(r2.custom_height?)
+    assert_true(r2.hidden?)
+    assert_true(r2.collapsed?)
+    assert_nil(r2.outline_level)
+
+    # Test conversion to Elements::Worksheet
+    ws = sheet.load
+    ws_rows = ws.rows
+    assert_equal(2, ws_rows.size)
+    assert_true(ws_rows[0].collapsed?)
+    assert_true(ws_rows[0].hidden?)
+    assert_in_delta(28.5, ws_rows[0].height)
+    assert_true(ws_rows[1].collapsed?)
+  end
+
+  test "StreamWriter and Elements::Worksheet roundtrip row collapsed metadata" do
+    buffer = StringIO.new
+    Xlsxrb.write(buffer) do |wb|
+      wb.sheet("CollapsedSheet") do |s|
+        s.row(["Header"], collapsed: true, hidden: true, height: 35.0, outline_level: 1)
+        s.row(["Data"], collapsed: false)
+      end
+    end
+
+    buffer.rewind
+    wb = Xlsxrb.read(buffer)
+    sheet = wb.sheets.first
+    rows = sheet.each_row.to_a
+    assert_equal(2, rows.size)
+    assert_true(rows[0].collapsed?)
+    assert_true(rows[0].hidden?)
+    assert_in_delta(35.0, rows[0].height)
+    assert_equal(1, rows[0].outline_level)
+    assert_false(rows[1].collapsed?)
+    assert_false(rows[1].hidden?)
+  end
 end

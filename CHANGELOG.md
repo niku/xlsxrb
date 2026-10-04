@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Row XML metadata accessors and serialization: Expose row XML metadata (`collapsed`, `collapsed?`, `hidden?`, `custom_height?`, `attributes`) on `StreamRow` and `Elements::Row`, support `collapsed:` in `StreamWriter#row` and `WorksheetBuilder#row`, and serialize `collapsed="1"` in `WorksheetWriter`.
 - Format classification helpers: Add `Elements::Styles#format_code_for` and `#classification_for` aliases, allow `NumberFormatter` format predicates (`date_format?`, `time_format?`, etc.) to resolve built-in formats by `num_fmt_id`, and expose `format_type`, `date_format?`, and `time_format?` on `Elements::Cell`.
 - Date1904 accessor and read_buffer alias: Expose `Ooxml::Reader#date1904?`, add `date1904:` keyword argument to `Elements::Workbook#initialize`, and alias `Xlsxrb.read_buffer` to `Xlsxrb.read` for in-memory buffer reading.
 - Coordinate utilities module: Add `Xlsxrb::Utils` exposing public coordinate helpers (`ref_to_row_col`, `row_col_to_ref`, `col_name_to_index`, `col_index_to_name`, `split_coordinate`).

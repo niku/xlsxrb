@@ -19,7 +19,7 @@ module Xlsxrb
   class StreamRow
     [Enumerable].each { |m| include m }
 
-    attr_reader :index, :height, :hidden, :custom_height, :outline_level, :style_index
+    attr_reader :index, :height, :hidden, :custom_height, :collapsed, :outline_level, :style_index
 
     # @param index [Integer] 0-based row index.
     # @param xml_bytes [String] Raw ASCII-8BIT XML bytes.
@@ -30,12 +30,13 @@ module Xlsxrb
     # @param height [Float, Integer, nil] Row height in points.
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom height is set.
+    # @param collapsed [Boolean] Whether the row is collapsed.
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
-    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
+    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
     def initialize(index:, xml_bytes:, from:, to:, shared_strings:, prefix: "", height: nil, hidden: false,
-                   custom_height: false, outline_level: nil, style_index: nil, styles: nil, date1904: false)
+                   custom_height: false, collapsed: false, outline_level: nil, style_index: nil, styles: nil, date1904: false)
       @index = index
       @xml = xml_bytes
       @from = from
@@ -45,6 +46,7 @@ module Xlsxrb
       @height = height
       @hidden = hidden
       @custom_height = custom_height
+      @collapsed = collapsed
       @outline_level = outline_level
       @style_index = style_index
       @styles = styles
@@ -53,7 +55,7 @@ module Xlsxrb
     end
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil, date1904 = false)
+    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil, date1904 = false, collapsed = false)
       inst = allocate
       inst.instance_variable_set(:@index, index)
       inst.instance_variable_set(:@xml, xml_bytes)
@@ -64,6 +66,7 @@ module Xlsxrb
       inst.instance_variable_set(:@height, height)
       inst.instance_variable_set(:@hidden, hidden)
       inst.instance_variable_set(:@custom_height, custom_height)
+      inst.instance_variable_set(:@collapsed, collapsed)
       inst.instance_variable_set(:@outline_level, outline_level)
       inst.instance_variable_set(:@style_index, style_index)
       inst.instance_variable_set(:@styles, styles)
@@ -72,6 +75,51 @@ module Xlsxrb
       inst
     end
     # rubocop:enable Style/OptionalBooleanParameter
+
+    # Returns whether the row is hidden.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def hidden?
+      @hidden == true
+    end
+
+    # Returns whether the row is collapsed.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def collapsed?
+      @collapsed == true
+    end
+
+    # Returns whether custom height is set.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def custom_height?
+      @custom_height == true
+    end
+
+    # Returns a frozen Hash of row attributes.
+    #
+    # @return [Hash{Symbol => Object}]
+    # @api public
+    #: () -> Hash[Symbol, untyped]
+    def attributes
+      h = {
+        index: @index,
+        height: @height,
+        hidden: @hidden,
+        custom_height: @custom_height,
+        collapsed: @collapsed,
+        outline_level: @outline_level
+      }
+      h[:style_index] = @style_index if @style_index
+      h.freeze
+    end
 
     # Returns whether the row uses the 1904 date system.
     #
@@ -146,11 +194,16 @@ module Xlsxrb
         when :height then height
         when :hidden then hidden
         when :custom_height then custom_height
+        when :collapsed then collapsed
         when :outline_level then outline_level
         when :style_index then style_index
         when :date1904 then date1904?
+        when :hidden? then hidden?
+        when :collapsed? then collapsed?
+        when :custom_height? then custom_height?
+        when :attributes then attributes
         when :attrs
-          h = { height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level }
+          h = { height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level }
           h[:style_index] = style_index if style_index
           h
         end

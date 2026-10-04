@@ -23,6 +23,8 @@ module Xlsxrb
 
     attr_reader custom_height: untyped
 
+    attr_reader collapsed: untyped
+
     attr_reader outline_level: untyped
 
     attr_reader style_index: untyped
@@ -36,14 +38,43 @@ module Xlsxrb
     # @param height [Float, Integer, nil] Row height in points.
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom height is set.
+    # @param collapsed [Boolean] Whether the row is collapsed.
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
-    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
-    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
+    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
+    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index, ?untyped styles, ?untyped date1904) -> untyped
+    def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index, ?untyped styles, ?untyped date1904, ?untyped collapsed) -> untyped
+
+    # Returns whether the row is hidden.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def hidden?: () -> bool
+
+    # Returns whether the row is collapsed.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def collapsed?: () -> bool
+
+    # Returns whether custom height is set.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def custom_height?: () -> bool
+
+    # Returns a frozen Hash of row attributes.
+    #
+    # @return [Hash{Symbol => Object}]
+    # @api public
+    # : () -> Hash[Symbol, untyped]
+    def attributes: () -> Hash[Symbol, untyped]
 
     # Returns whether the row uses the 1904 date system.
     #

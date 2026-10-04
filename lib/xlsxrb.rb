@@ -802,6 +802,7 @@ module Xlsxrb
         height: attrs[:height],
         hidden: attrs[:hidden] || false,
         custom_height: attrs[:custom_height] || false,
+        collapsed: attrs[:collapsed] || false,
         outline_level: attrs[:outline_level],
         unmapped_data: row_unmapped,
         errors: row_errors
@@ -875,6 +876,7 @@ module Xlsxrb
       attrs[:height] = row.height if row.height
       attrs[:hidden] = true if row.hidden
       attrs[:custom_height] = true if row.custom_height
+      attrs[:collapsed] = true if row.collapsed
       attrs[:outline_level] = row.outline_level if row.outline_level
       attrs
       # simplecov:enable

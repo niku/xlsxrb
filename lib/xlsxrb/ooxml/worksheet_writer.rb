@@ -71,6 +71,7 @@ module Xlsxrb
           buf << ' customHeight="1"'
         end
         buf << ' hidden="1"' if attrs[:hidden]
+        buf << ' collapsed="1"' if attrs[:collapsed]
         buf << ' outlineLevel="' << attrs[:outline_level].to_s << '"' if attrs[:outline_level]
         buf << ">"
 
@@ -362,6 +363,7 @@ module Xlsxrb
         if attrs
           buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"' if attrs[:height]
           buf << ' hidden="1"' if attrs[:hidden]
+          buf << ' collapsed="1"' if attrs[:collapsed]
           buf << ' outlineLevel="' << attrs[:outline_level].to_s << '"' if attrs[:outline_level]
         end
         buf << ">"

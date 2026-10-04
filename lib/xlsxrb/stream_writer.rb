@@ -220,13 +220,14 @@ module Xlsxrb
       # @param hidden [Boolean] Whether the row is hidden.
       # @param custom_height [Boolean] Whether to flag as custom height.
       # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
+      # @param collapsed [Boolean] Whether the row is collapsed.
       # @return [void]
       # @api public
-      #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-      def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
+      #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+      def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.row(values, styles: styles, height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level)
+        @writer.row(values, styles: styles, height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level)
       end
       alias << row
 
@@ -908,8 +909,8 @@ module Xlsxrb
     # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
     # @return [void]
     # @api public
-    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil) -> void
-    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, outline_level: nil)
+    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
       sheet if @current_sheet.nil?
 
       row_index = @current_row_index
@@ -933,11 +934,12 @@ module Xlsxrb
       raise ArgumentError, "Row contains #{values.length} columns, exceeding Excel limit of 16_384 columns" if @strict_excel_mode && values.length > 16_384
 
       attrs = nil
-      if height || hidden || outline_level
+      if height || hidden || outline_level || collapsed
         attrs = {}
         attrs[:height] = height if height
         attrs[:hidden] = true if hidden
         attrs[:custom_height] = custom_height || !height.nil?
+        attrs[:collapsed] = true if collapsed
         attrs[:outline_level] = outline_level if outline_level
       end
 

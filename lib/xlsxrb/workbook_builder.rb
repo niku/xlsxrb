@@ -282,6 +282,7 @@ module Xlsxrb
             height: row.height,
             hidden: row.hidden,
             custom_height: row.custom_height,
+            collapsed: row.collapsed,
             outline_level: row.outline_level,
             unmapped_data: row.unmapped_data,
             errors: row.errors

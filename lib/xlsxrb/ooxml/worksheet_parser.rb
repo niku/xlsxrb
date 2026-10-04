@@ -243,14 +243,19 @@ module Xlsxrb
           attrs[:height] = ht_val.to_f
         end
 
-        if row_tag.include?('hidden="1"')
+        if row_tag.include?('hidden="1"') || row_tag.include?('hidden="true"')
           attrs = {} if attrs.equal?(EMPTY_HASH)
           attrs[:hidden] = true
         end
 
-        if row_tag.include?('customHeight="1"')
+        if row_tag.include?('customHeight="1"') || row_tag.include?('customHeight="true"')
           attrs = {} if attrs.equal?(EMPTY_HASH)
           attrs[:custom_height] = true
+        end
+
+        if row_tag.include?('collapsed="1"') || row_tag.include?('collapsed="true"')
+          attrs = {} if attrs.equal?(EMPTY_HASH)
+          attrs[:collapsed] = true
         end
 
         ol_val = tag_attr(row_tag, ' outlineLevel="')
@@ -604,7 +609,8 @@ module Xlsxrb
             attrs[:outline_level],
             attrs[:style_index],
             styles,
-            date1904
+            date1904,
+            attrs[:collapsed] || false
           )
           block.call(row_obj)
 
@@ -750,7 +756,8 @@ module Xlsxrb
               attrs[:outline_level],
               attrs[:style_index],
               styles,
-              date1904
+              date1904,
+              attrs[:collapsed] || false
             )
             block.call(row_obj)
 

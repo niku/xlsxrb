@@ -292,11 +292,11 @@ module Xlsxrb
 
           attrs = {}
           ht = attributes["ht"]
-          attrs[:height] = ht.to_f if ht && attributes["customHeight"] == "1"
-          attrs[:hidden] = true if attributes["hidden"] == "1"
+          attrs[:height] = ht.to_f if ht && %w[1 true].include?(attributes["customHeight"])
+          attrs[:hidden] = true if %w[1 true].include?(attributes["hidden"])
           ol = attributes["outlineLevel"]
           attrs[:outline_level] = ol.to_i if ol && ol != "0"
-          attrs[:collapsed] = true if attributes["collapsed"] == "1"
+          attrs[:collapsed] = true if %w[1 true].include?(attributes["collapsed"])
           s = attributes["s"]
           attrs[:style] = s.to_i if s
           attrs[:thick_top] = true if attributes["thickTop"] == "1"

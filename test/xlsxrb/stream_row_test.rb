@@ -30,14 +30,28 @@ class StreamRowTest < Test::Unit::TestCase
     assert_equal({}, row.unmapped_data)
     assert_match(/index=0/, row.inspect)
 
-    # Symbol bracket access
+    # Symbol bracket access & predicates
     assert_equal(row.cells, row[:cells])
     assert_equal(0, row[:index])
     assert_equal(22.5, row[:height])
     assert_equal(true, row[:hidden])
+    assert_equal(true, row.hidden)
+    assert_equal(true, row.hidden?)
+    assert_equal(true, row[:hidden?])
     assert_equal(true, row[:custom_height])
+    assert_equal(true, row.custom_height)
+    assert_equal(true, row.custom_height?)
+    assert_equal(true, row[:custom_height?])
+    assert_equal(false, row[:collapsed])
+    assert_equal(false, row.collapsed)
+    assert_equal(false, row.collapsed?)
+    assert_equal(false, row[:collapsed?])
     assert_equal(1, row[:outline_level])
-    assert_equal({ height: 22.5, hidden: true, custom_height: true, outline_level: 1 }, row[:attrs])
+    assert_equal(1, row.outline_level)
+    assert_equal({ height: 22.5, hidden: true, custom_height: true, collapsed: false, outline_level: 1 }, row[:attrs])
+    assert_equal({ index: 0, height: 22.5, hidden: true, custom_height: true, collapsed: false, outline_level: 1 }, row.attributes)
+    assert_equal(row.attributes, row[:attributes])
+    assert(row.attributes.frozen?)
 
     # Integer bracket access
     assert_equal(42, row[0].value)
@@ -95,7 +109,35 @@ class StreamRowTest < Test::Unit::TestCase
     assert_equal(3, row_with_style.unmapped_data[:style_index])
     assert_equal(3, row_with_style.style_index)
     assert_equal(3, row_with_style[:style_index])
-    assert_equal({ height: nil, hidden: false, custom_height: false, outline_level: nil, style_index: 3 }, row_with_style[:attrs])
+    assert_equal({ height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style_index: 3 }, row_with_style[:attrs])
+    assert_equal({ index: 0, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style_index: 3 }, row_with_style.attributes)
+    assert(row_with_style.attributes.frozen?)
+  end
+
+  test "stream_row collapsed row attributes and fast_create" do
+    row = Xlsxrb::StreamRow.fast_create(
+      3, "".b, 0, 0, [], "", 18.0, false, true, 2, 5, nil, false, true
+    )
+    assert_equal(3, row.index)
+    assert_equal(18.0, row.height)
+    assert_equal(false, row.hidden?)
+    assert_equal(true, row.custom_height?)
+    assert_equal(true, row.collapsed?)
+    assert_equal(true, row[:collapsed?])
+    assert_equal(true, row[:collapsed])
+    assert_equal(2, row.outline_level)
+    assert_equal(5, row.style_index)
+    expected_attrs = {
+      index: 3,
+      height: 18.0,
+      hidden: false,
+      custom_height: true,
+      collapsed: true,
+      outline_level: 2,
+      style_index: 5
+    }
+    assert_equal(expected_attrs, row.attributes)
+    assert_equal(expected_attrs, row[:attributes])
   end
 
   test "stream_row parses shared formula cells and retains values" do
