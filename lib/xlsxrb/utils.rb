@@ -3,6 +3,7 @@
 # rbs_inline: enabled
 
 require_relative "elements/cell"
+require_relative "ooxml/utils"
 
 module Xlsxrb
   # Public coordinate conversion and reference parsing utilities.
@@ -84,6 +85,74 @@ module Xlsxrb
 
       row_idx, col_idx = coords
       [Elements::Cell.column_letter(col_idx), row_idx + 1]
+    end
+
+    # Converts a Date or Time to an Excel numeric serial number (1900 or 1904 system).
+    #
+    # @example
+    #   Xlsxrb::Utils.date_to_serial(Date.new(2026, 1, 1)) #=> 46023
+    #
+    # @param date_or_time [Date, Time] Date or Time instance.
+    # @param date1904 [Boolean] Whether to use the 1904 date system.
+    # @return [Integer, Float] Serial number.
+    # @api public
+    #: (Date | Time date_or_time, ?date1904: bool) -> (Integer | Float)
+    def self.date_to_serial(date_or_time, date1904: false)
+      if date_or_time.is_a?(Time)
+        Ooxml::Utils.datetime_to_serial(date_or_time, date1904: date1904)
+      else
+        Ooxml::Utils.date_to_serial(date_or_time, date1904: date1904)
+      end
+    end
+
+    # Converts an Excel serial number to a Date.
+    #
+    # @example
+    #   Xlsxrb::Utils.serial_to_date(46023) #=> #<Date: 2026-01-01>
+    #
+    # @param serial [Numeric] Excel serial number.
+    # @param date1904 [Boolean] Whether to use the 1904 date system.
+    # @return [Date]
+    # @api public
+    #: (Numeric serial, ?date1904: bool) -> Date
+    def self.serial_to_date(serial, date1904: false)
+      Ooxml::Utils.serial_to_date(serial, date1904: date1904)
+    end
+
+    # Converts a Time or Date to a fractional Excel serial number.
+    #
+    # @example
+    #   Xlsxrb::Utils.datetime_to_serial(Time.utc(2026, 1, 1, 12, 0, 0)) #=> 46023.5
+    #
+    # @param time [Time, Date] Time or Date instance.
+    # @param date1904 [Boolean] Whether to use the 1904 date system.
+    # @return [Float] Fractional serial number.
+    # @api public
+    #: (Time | Date time, ?date1904: bool) -> Float
+    def self.datetime_to_serial(time, date1904: false)
+      if time.is_a?(Time)
+        Ooxml::Utils.datetime_to_serial(time, date1904: date1904)
+      else
+        Ooxml::Utils.date_to_serial(time, date1904: date1904).to_f
+      end
+    end
+
+    # Converts an Excel serial number to a Time (UTC).
+    #
+    # @example
+    #   Xlsxrb::Utils.serial_to_time(46023.5) #=> 2026-01-01 12:00:00 UTC
+    #
+    # @param serial [Numeric] Excel serial number.
+    # @param date1904 [Boolean] Whether to use the 1904 date system.
+    # @return [Time]
+    # @api public
+    #: (Numeric serial, ?date1904: bool) -> Time
+    def self.serial_to_time(serial, date1904: false)
+      Ooxml::Utils.serial_to_datetime(serial, date1904: date1904)
+    end
+
+    class << self
+      alias serial_to_datetime serial_to_time
     end
   end
 end

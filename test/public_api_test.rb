@@ -2401,4 +2401,26 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal "B1:B10", reloaded_ws.data_validations.first[:sqref]
     end
   end
+
+  test "Xlsxrb top-level date and time serial conversion utilities" do
+    d = Date.new(2026, 1, 1)
+    s = Xlsxrb.date_to_serial(d)
+    assert_equal(46_023, s)
+    assert_equal(d, Xlsxrb.serial_to_date(s))
+
+    t = Time.utc(2026, 1, 1, 12, 0, 0)
+    st = Xlsxrb.datetime_to_serial(t)
+    assert_in_delta(46_023.5, st, 1e-6)
+    assert_equal(t, Xlsxrb.serial_to_time(st))
+    assert_equal(t, Xlsxrb.serial_to_datetime(st))
+
+    # 1904 date system
+    s04 = Xlsxrb.date_to_serial(d, date1904: true)
+    assert_equal(44_561, s04)
+    assert_equal(d, Xlsxrb.serial_to_date(s04, date1904: true))
+
+    st04 = Xlsxrb.datetime_to_serial(t, date1904: true)
+    assert_in_delta(44_561.5, st04, 1e-6)
+    assert_equal(t, Xlsxrb.serial_to_time(st04, date1904: true))
+  end
 end

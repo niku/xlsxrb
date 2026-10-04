@@ -129,6 +129,66 @@ module Xlsxrb
     NumberFormatter.format(value, format_code, date1904: date1904)
   end
 
+  # Converts a Date or Time to an Excel numeric serial number (1900 or 1904 system).
+  #
+  # @example
+  #   Xlsxrb.date_to_serial(Date.new(2026, 1, 1)) #=> 46023
+  #
+  # @param date_or_time [Date, Time] Date or Time instance.
+  # @param date1904 [Boolean] Whether to use the 1904 date system.
+  # @return [Integer, Float] Serial number.
+  # @api public
+  #: (Date | Time date_or_time, ?date1904: bool) -> (Integer | Float)
+  def self.date_to_serial(date_or_time, date1904: false)
+    Utils.date_to_serial(date_or_time, date1904: date1904)
+  end
+
+  # Converts an Excel serial number to a Date.
+  #
+  # @example
+  #   Xlsxrb.serial_to_date(46023) #=> #<Date: 2026-01-01>
+  #
+  # @param serial [Numeric] Excel serial number.
+  # @param date1904 [Boolean] Whether to use the 1904 date system.
+  # @return [Date]
+  # @api public
+  #: (Numeric serial, ?date1904: bool) -> Date
+  def self.serial_to_date(serial, date1904: false)
+    Utils.serial_to_date(serial, date1904: date1904)
+  end
+
+  # Converts a Time or Date to a fractional Excel serial number.
+  #
+  # @example
+  #   Xlsxrb.datetime_to_serial(Time.utc(2026, 1, 1, 12, 0, 0)) #=> 46023.5
+  #
+  # @param time [Time, Date] Time or Date instance.
+  # @param date1904 [Boolean] Whether to use the 1904 date system.
+  # @return [Float] Fractional serial number.
+  # @api public
+  #: (Time | Date time, ?date1904: bool) -> Float
+  def self.datetime_to_serial(time, date1904: false)
+    Utils.datetime_to_serial(time, date1904: date1904)
+  end
+
+  # Converts an Excel serial number to a Time (UTC).
+  #
+  # @example
+  #   Xlsxrb.serial_to_time(46023.5) #=> 2026-01-01 12:00:00 UTC
+  #
+  # @param serial [Numeric] Excel serial number.
+  # @param date1904 [Boolean] Whether to use the 1904 date system.
+  # @return [Time]
+  # @api public
+  #: (Numeric serial, ?date1904: bool) -> Time
+  def self.serial_to_time(serial, date1904: false)
+    Utils.serial_to_time(serial, date1904: date1904)
+  end
+
+  class << self
+    alias serial_to_datetime serial_to_time
+  end
+
   # Reads an XLSX file (streaming and lazy-loaded by default) from a file path, IO stream, or binary String.
   #
   # Sheets and rows are streamed lazily with O(1) constant memory. If a block is given,

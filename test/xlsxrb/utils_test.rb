@@ -48,4 +48,35 @@ class UtilsTest < Test::Unit::TestCase
     assert_nil(Xlsxrb::Utils.split_coordinate(nil))
     assert_nil(Xlsxrb::Utils.split_coordinate("invalid"))
   end
+
+  test "date_to_serial and serial_to_date convert dates across 1900 and 1904 systems" do
+    d = Date.new(2026, 1, 1)
+    s1900 = Xlsxrb::Utils.date_to_serial(d)
+    assert_equal(46_023, s1900)
+    assert_equal(d, Xlsxrb::Utils.serial_to_date(s1900))
+
+    s1904 = Xlsxrb::Utils.date_to_serial(d, date1904: true)
+    assert_equal(44_561, s1904)
+    assert_equal(d, Xlsxrb::Utils.serial_to_date(s1904, date1904: true))
+
+    # date_to_serial with Time instance
+    t = Time.utc(2026, 1, 1, 12, 0, 0)
+    assert_in_delta(46_023.5, Xlsxrb::Utils.date_to_serial(t), 1e-6)
+  end
+
+  test "datetime_to_serial and serial_to_time convert times across 1900 and 1904 systems" do
+    t = Time.utc(2026, 1, 1, 12, 0, 0)
+    s1900 = Xlsxrb::Utils.datetime_to_serial(t)
+    assert_in_delta(46_023.5, s1900, 1e-6)
+    assert_equal(t, Xlsxrb::Utils.serial_to_time(s1900))
+    assert_equal(t, Xlsxrb::Utils.serial_to_datetime(s1900))
+
+    s1904 = Xlsxrb::Utils.datetime_to_serial(t, date1904: true)
+    assert_in_delta(44_561.5, s1904, 1e-6)
+    assert_equal(t, Xlsxrb::Utils.serial_to_time(s1904, date1904: true))
+
+    # datetime_to_serial with Date instance
+    d = Date.new(2026, 1, 1)
+    assert_in_delta(46_023.0, Xlsxrb::Utils.datetime_to_serial(d), 1e-6)
+  end
 end
