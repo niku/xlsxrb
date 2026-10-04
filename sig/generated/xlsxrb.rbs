@@ -233,14 +233,20 @@ module Xlsxrb
   # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
   def self.build: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
-  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Worksheet
-  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Worksheet
+  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Worksheet
+  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Worksheet
 
   # : (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
   private def self.resolve_hyperlinks: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
 
+  # : (String base_dir, String target) -> String
+  private def self.resolve_relative_path: (String base_dir, String target) -> String
+
   # : (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
   private def self.resolve_comments: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
+
+  # : (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::Image]
+  private def self.resolve_images: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::Image]
 
   # : (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool) -> (Elements::Row | untyped)
   private def self.build_row_from_raw: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]] comments, ?Hash[untyped, untyped]? styles, ?date1904: bool) -> (Elements::Row | untyped)

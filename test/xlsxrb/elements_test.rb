@@ -12,6 +12,7 @@ class ElementsTest < Test::Unit::TestCase
   cover Xlsxrb::Elements::CellError
   cover Xlsxrb::Elements::RichText
   cover Xlsxrb::Elements::Formula
+  cover Xlsxrb::Elements::Image
   # --- Cell ---
 
   test "cell creates a valid cell" do
@@ -1312,5 +1313,130 @@ class ElementsTest < Test::Unit::TestCase
     assert_true(ws_trimmed.trim_empty_rows?)
     assert_equal(3, ws_trimmed.each_row.to_a.size)
     assert_equal(5, ws_trimmed.each_row(trim_empty_rows: false).to_a.size)
+  end
+
+  test "image element properties and methods" do
+    data = "PNG_SAMPLE_DATA".b
+    img = Xlsxrb::Elements::Image.new(
+      filename: "logo.png",
+      name: "Company Logo",
+      data: data,
+      from_col: 1,
+      from_row: 2,
+      to_col: 4,
+      to_row: 6,
+      cx: 150_000,
+      cy: 200_000
+    )
+
+    assert_equal("logo.png", img.filename)
+    assert_equal("Company Logo", img.name)
+    assert_equal("image/png", img.content_type)
+    assert_equal(data, img.data)
+    assert_equal(1, img.from_col)
+    assert_equal(2, img.from_row)
+    assert_equal(4, img.to_col)
+    assert_equal(6, img.to_row)
+    assert_equal(150_000, img.cx)
+    assert_equal(200_000, img.cy)
+    assert_equal("B3", img.cell_ref)
+    assert_equal("B3", img.cell)
+    assert_equal("B3", img.ref)
+    assert_equal("E7", img.to_cell_ref)
+    assert_true(img.two_cell_anchor?)
+    assert_false(img.one_cell_anchor?)
+    assert_equal(15, img.bytesize)
+
+    # 1-cell anchor
+    img_1cell = Xlsxrb::Elements::Image.new(
+      filename: "icon.jpg",
+      from_col: 0,
+      from_row: 0
+    )
+    assert_equal("image/jpeg", img_1cell.content_type)
+    assert_equal("A1", img_1cell.cell_ref)
+    assert_nil(img_1cell.to_cell_ref)
+    assert_true(img_1cell.one_cell_anchor?)
+    assert_false(img_1cell.two_cell_anchor?)
+    assert_equal(0, img_1cell.bytesize)
+
+    # write_to file
+    temp = Tempfile.new(["xlsxrb-image-test", ".png"])
+    temp.close
+    begin
+      bytes_written = img.write_to(temp.path)
+      assert_equal(15, bytes_written)
+      assert_equal(data, File.binread(temp.path))
+
+      # write_to with no data raises Error
+      assert_raise(Xlsxrb::Error) { img_1cell.write_to(temp.path) }
+    ensure
+      temp.unlink
+    end
+  end
+
+  test "image extraction from streaming and in-memory worksheets and workbook" do
+    xlsx_tempfile = Tempfile.new(["xlsxrb-img-reader", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+
+    png_bytes = "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDAT\x08\xd7c\xf8\xcf\xc0\x00\x00\x00\x02\x00\x01\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82".b
+
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", "img test")
+    writer.insert_image(
+      png_bytes,
+      ext: "png",
+      from_col: 1,
+      from_row: 2,
+      to_col: 6,
+      to_row: 12,
+      name: "RoundTrip Pic"
+    )
+    writer.write(xlsx_path)
+
+    wb = Xlsxrb.read(xlsx_path)
+    sheet = wb.sheets.first
+
+    # 1. StreamSheet access
+    imgs = sheet.images
+    assert_equal(1, imgs.size)
+    img = imgs.first
+    assert_equal("RoundTrip Pic", img.name)
+    assert_equal(png_bytes, img.data)
+    assert_equal("B3", img.cell_ref)
+    assert_equal("G13", img.to_cell_ref)
+    assert_equal("image/png", img.content_type)
+    assert_equal("image1.png", img.filename)
+
+    # images_at coordinate lookups
+    assert_equal([img], sheet.images_at("B3"))
+    assert_equal([img], sheet.images_at("b3"))
+    assert_equal([img], sheet.images_at(:b3))
+    assert_equal([img], sheet.images_at(2, 1))
+    assert_equal([], sheet.images_at("A1"))
+
+    # with_images method
+    assert_same(sheet, sheet.with_images)
+    yielded = nil
+    sheet.with_images { |s| yielded = s }
+    assert_same(sheet, yielded)
+
+    # 2. Workbook level access
+    wb_imgs = wb.images
+    assert_equal(1, wb_imgs.size)
+    assert_equal(img, wb_imgs.first)
+    assert_equal([img], wb.images_at(0, "B3"))
+    assert_equal([img], wb.images_at("Sheet1", "B3"))
+    assert_equal([], wb.images_at("NonExistent", "B3"))
+
+    # 3. Elements::Worksheet access after load
+    ws = sheet.load
+    assert_equal(1, ws.images.size)
+    assert_equal([img], ws.images_at("B3"))
+    assert_equal([], ws.images_at("A1"))
+    assert_same(ws, ws.with_images)
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 end

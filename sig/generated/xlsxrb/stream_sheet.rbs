@@ -52,8 +52,9 @@ module Xlsxrb
     # @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during iteration.
     # @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
     # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
-    # : (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> void
-    def initialize: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> void
+    # @param images [Array<Elements::Image>, nil] Optional preloaded images array.
+    # : (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?images: Array[Elements::Image]?) -> void
+    def initialize: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?images: Array[Elements::Image]?) -> void
 
     # Returns whether trailing empty rows are omitted during iteration.
     #
@@ -278,6 +279,33 @@ module Xlsxrb
     # @api public
     # : () -> Hash[String, Hash[Symbol, untyped]]
     def comments_by_ref: () -> Hash[String, Hash[Symbol, untyped]]
+
+    # Returns all embedded images in this worksheet.
+    #
+    # @return [Array<Elements::Image>]
+    # @api public
+    # : () -> Array[Elements::Image]
+    def images: () -> Array[Elements::Image]
+
+    # Returns all images anchored at a specific cell reference or 0-based coordinate.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [Array<Elements::Image>]
+    # @api public
+    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Elements::Image]
+    def images_at: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Elements::Image]
+
+    # Loads and returns images for this worksheet, optionally yielding self for block syntax.
+    #
+    # @yield [sheet]
+    # @yieldparam sheet [StreamSheet]
+    # @return [StreamSheet, void]
+    # @api public
+    # : () { (StreamSheet) -> void } -> void
+    # : () -> StreamSheet
+    def with_images: () { (StreamSheet) -> void } -> void
+                   | () -> StreamSheet
 
     # Access a cell by reference or 0-based coordinates.
     #

@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Embedded drawing and image extraction: Add `Elements::Image` representing anchored embedded images, expose `images`, `images_at`, and `with_images` across `StreamSheet` and `Elements::Worksheet`, and expose `images` and `images_at` across `Elements::Workbook`.
 - Configurable sparse vs padded row and cell iteration: Add `pad_empty_rows` and `pad_empty_cells` options to `Xlsxrb.read`, `Xlsxrb.build_worksheet`, `StreamSheet`, `WorksheetParser.each_row`, and `Elements::Worksheet` to pad skipped rows or missing cells up to the maximum column, and add `StreamRow#to_h` and `Elements::Row#cells_hash` for coordinate-keyed row maps.
 - Row XML metadata accessors and serialization: Expose row XML metadata (`collapsed`, `collapsed?`, `hidden?`, `custom_height?`, `attributes`) on `StreamRow` and `Elements::Row`, support `collapsed:` in `StreamWriter#row` and `WorksheetBuilder#row`, and serialize `collapsed="1"` in `WorksheetWriter`.
 - Format classification helpers: Add `Elements::Styles#format_code_for` and `#classification_for` aliases, allow `NumberFormatter` format predicates (`date_format?`, `time_format?`, etc.) to resolve built-in formats by `num_fmt_id`, and expose `format_type`, `date_format?`, and `time_format?` on `Elements::Cell`.

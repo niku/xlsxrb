@@ -56,8 +56,9 @@ module Xlsxrb
     # @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during iteration.
     # @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
     # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
-    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> void
-    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false)
+    # @param images [Array<Elements::Image>, nil] Optional preloaded images array.
+    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?images: Array[Elements::Image]?) -> void
+    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, images: nil)
       @name = name
       @sheet_source = sheet_source
       @shared_strings = shared_strings
@@ -72,6 +73,7 @@ module Xlsxrb
       @trim_empty_rows = trim_empty_rows ? true : false
       @pad_empty_rows = pad_empty_rows ? true : false
       @pad_empty_cells = pad_empty_cells ? true : false
+      @images = images
     end
 
     # Returns whether trailing empty rows are omitted during iteration.
@@ -312,7 +314,7 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, date1904: @date1904, dimension: dimension, trim_empty_rows: @trim_empty_rows, pad_empty_rows: @pad_empty_rows, pad_empty_cells: @pad_empty_cells)
+      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, images: images, date1904: @date1904, dimension: dimension, trim_empty_rows: @trim_empty_rows, pad_empty_rows: @pad_empty_rows, pad_empty_cells: @pad_empty_cells)
     end
     alias to_worksheet load
 
@@ -375,6 +377,49 @@ module Xlsxrb
       @comments_by_ref ||= comments.each_with_object({}) do |c, acc|
         r = c[:ref] || c[:cell]
         acc[r.to_s.upcase] = c if r
+      end
+    end
+
+    # Returns all embedded images in this worksheet.
+    #
+    # @return [Array<Elements::Image>]
+    # @api public
+    #: () -> Array[Elements::Image]
+    def images
+      @images ||= Xlsxrb.send(:resolve_images, zip_reader: @zip_reader, entry_name: @entry_name)
+    end
+
+    # Returns all images anchored at a specific cell reference or 0-based coordinate.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [Array<Elements::Image>]
+    # @api public
+    #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Elements::Image]
+    def images_at(ref_or_row, col = nil)
+      ref = if col
+              "#{Elements::Cell.column_letter(col)}#{ref_or_row.to_i + 1}"
+            else
+              ref_or_row.to_s.upcase
+            end
+      images.select { |img| img.cell_ref == ref }
+    end
+
+    # Loads and returns images for this worksheet, optionally yielding self for block syntax.
+    #
+    # @yield [sheet]
+    # @yieldparam sheet [StreamSheet]
+    # @return [StreamSheet, void]
+    # @api public
+    #: () { (StreamSheet) -> void } -> void
+    #: () -> StreamSheet
+    def with_images
+      images
+      if block_given?
+        yield self
+        nil
+      else
+        self
       end
     end
 

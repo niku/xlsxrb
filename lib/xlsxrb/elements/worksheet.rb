@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :styles, :date1904
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904
       attr_writer :dimension
       alias conditional_formats conditional_formatting
 
@@ -33,13 +33,14 @@ module Xlsxrb
       # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
       # @param hyperlinks [Hash{String => Hash}] Hyperlink mappings by cell reference.
       # @param comments [Array<Hash>] Comments and notes in the sheet.
+      # @param images [Array<Elements::Image>] Embedded images in the sheet.
       # @param styles [Hash, nil] Optional parsed styles hash.
       # @param dimension [String, nil] Sheet dimension reference string (e.g. "A1:Z50000").
       # @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during iteration.
       # @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
       # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false)
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -53,6 +54,7 @@ module Xlsxrb
         @state = state ? state.to_sym : :visible
         @hyperlinks = (hyperlinks || {}).freeze
         @comments = (comments || []).freeze
+        @images = (images || []).freeze
         @styles = styles
         @date1904 = date1904 ? true : false
         @dimension = dimension
@@ -259,6 +261,39 @@ module Xlsxrb
         return to_enum(:each_cell) unless block_given?
 
         cells.each(&)
+      end
+
+      # Returns all images anchored at a specific cell reference or 0-based coordinate.
+      #
+      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+      # @param col [Integer, nil] Optional 0-based column index.
+      # @return [Array<Elements::Image>]
+      # @api public
+      #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Elements::Image]
+      def images_at(ref_or_row, col = nil)
+        ref = if col
+                "#{Cell.column_letter(col)}#{ref_or_row.to_i + 1}"
+              else
+                ref_or_row.to_s.upcase
+              end
+        images.select { |img| img.cell_ref == ref }
+      end
+
+      # Yields self with images loaded or returns self.
+      #
+      # @yield [sheet]
+      # @yieldparam sheet [Elements::Worksheet]
+      # @return [Elements::Worksheet, void]
+      # @api public
+      #: () { (Elements::Worksheet) -> void } -> void
+      #: () -> Elements::Worksheet
+      def with_images
+        if block_given?
+          yield self
+          nil
+        else
+          self
+        end
       end
 
       # Returns whether the worksheet is valid according to OOXML specifications.

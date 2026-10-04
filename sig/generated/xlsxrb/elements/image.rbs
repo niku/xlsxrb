@@ -1,0 +1,82 @@
+# Generated from lib/xlsxrb/elements/image.rb with RBS::Inline
+
+module Xlsxrb
+  module Elements
+    # Represents an embedded image anchored to worksheet cells.
+    # Coordinates (from_row, from_col, to_row, to_col) are 0-based.
+    #
+    # @example Access image properties
+    #   image = sheet.images.first
+    #   image.filename       #=> "image1.png"
+    #   image.cell_ref       #=> "B3"
+    #   image.content_type   #=> "image/png"
+    #   image.data           #=> "\x89PNG..."
+    #
+    # @api public
+    class Image
+      MIME_TYPES: untyped
+
+      # @param filename [String] Target filename (e.g. "image1.png").
+      # @param name [String, nil] Image or shape name.
+      # @param content_type [String, nil] MIME content type (e.g. "image/png").
+      # @param data [String, nil] Raw binary image data.
+      # @param from_col [Integer] 0-based starting column index.
+      # @param from_row [Integer] 0-based starting row index.
+      # @param to_col [Integer, nil] 0-based ending column index (nil for 1-cell anchor).
+      # @param to_row [Integer, nil] 0-based ending row index (nil for 1-cell anchor).
+      # @param cx [Integer, nil] Extent width in EMUs (English Metric Units).
+      # @param cy [Integer, nil] Extent height in EMUs (English Metric Units).
+      # @param unmapped_data [Hash] Additional metadata from drawing XML.
+      # : (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer?, ?to_row: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
+      # rubocop:disable Naming/MethodParameterName
+      def initialize: (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer?, ?to_row: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
+
+      # Returns the top-left cell coordinate reference string (e.g. "A1").
+      #
+      # @return [String]
+      # @api public
+      # : () -> String
+      def cell_ref: () -> String
+
+      alias cell cell_ref
+
+      alias ref cell_ref
+
+      # Returns the bottom-right cell coordinate reference string (e.g. "B5"), or nil for 1-cell anchors.
+      #
+      # @return [String, nil]
+      # @api public
+      # : () -> String?
+      def to_cell_ref: () -> String?
+
+      # Returns whether this image uses a one-cell anchor.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def one_cell_anchor?: () -> bool
+
+      # Returns whether this image uses a two-cell anchor.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def two_cell_anchor?: () -> bool
+
+      # Returns the size of the binary image data in bytes.
+      #
+      # @return [Integer]
+      # @api public
+      # : () -> Integer
+      def bytesize: () -> Integer
+
+      # Writes the image data directly to a file on disk.
+      #
+      # @param path [String] Target file path.
+      # @return [Integer] Number of bytes written.
+      # @api public
+      # : (String path) -> Integer
+      def write_to: (String path) -> Integer
+    end
+  end
+end

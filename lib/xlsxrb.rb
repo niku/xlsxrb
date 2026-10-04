@@ -609,13 +609,14 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
-      return Elements::Worksheet.new(name: name, state: state, styles: styles, date1904: date1904, dimension: sheet_dimension, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) if sheet_xml.nil? || sheet_xml.empty?
+      return Elements::Worksheet.new(name: name, state: state, styles: styles, images: images || [], date1904: date1904, dimension: sheet_dimension, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) if sheet_xml.nil? || sheet_xml.empty?
 
       sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
       sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
+      sheet_images = images || resolve_images(zip_reader: zip_reader, entry_name: entry_name)
       raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings, styles: styles)
       raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
 
@@ -659,6 +660,7 @@ module Xlsxrb
         state: state,
         hyperlinks: sheet_hyperlinks,
         comments: sheet_comments,
+        images: sheet_images,
         styles: styles,
         date1904: date1904,
         dimension: sheet_dimension,
@@ -699,6 +701,20 @@ module Xlsxrb
       result
     end
 
+    #: (String base_dir, String target) -> String
+    def resolve_relative_path(base_dir, target)
+      if target.start_with?("/")
+        target.delete_prefix("/")
+      elsif target.start_with?("..")
+        parts = base_dir.split("/") + target.split("/")
+        resolved = []
+        parts.each { |p| p == ".." ? resolved.pop : resolved << p }
+        resolved.join("/")
+      else
+        "#{base_dir}/#{target}"
+      end
+    end
+
     #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
     def resolve_comments(zip_reader: nil, entry_name: nil)
       return [] unless zip_reader && entry_name
@@ -716,17 +732,7 @@ module Xlsxrb
       return [] unless rel
 
       base_dir = File.dirname(entry_name)
-      target = rel[:target]
-      comments_path = if target.start_with?("/")
-                        target.delete_prefix("/")
-                      elsif target.start_with?("..")
-                        parts = base_dir.split("/") + target.split("/")
-                        resolved = []
-                        parts.each { |p| p == ".." ? resolved.pop : resolved << p }
-                        resolved.join("/")
-                      else
-                        "#{base_dir}/#{target}"
-                      end
+      comments_path = resolve_relative_path(base_dir, rel[:target])
 
       xml = zip_reader.read_entry(comments_path)
       return [] if xml.nil? || xml.empty?
@@ -736,6 +742,81 @@ module Xlsxrb
       c_parser.listen(c_listener)
       c_parser.parse
       c_listener.comments
+    end
+
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::Image]
+    def resolve_images(zip_reader: nil, entry_name: nil)
+      return [] unless zip_reader && entry_name
+
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = Ooxml::Reader::RelsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      drawing_rel = listener.relationships.find { |r| r[:type]&.end_with?("/drawing") }
+      return [] unless drawing_rel
+
+      base_dir = File.dirname(entry_name)
+      target = drawing_rel[:target]
+      drawing_path = resolve_relative_path(base_dir, target)
+      drawing_xml = zip_reader.read_entry(drawing_path)
+      return [] if drawing_xml.nil? || drawing_xml.empty?
+
+      drawing_rels_path = drawing_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      drawing_rels_xml = zip_reader.read_entry(drawing_rels_path)
+      drawing_rels = {}
+      if drawing_rels_xml && !drawing_rels_xml.empty?
+        d_parser = REXML::Parsers::SAX2Parser.new(drawing_rels_xml)
+        d_listener = Ooxml::Reader::RelsListener.new
+        d_parser.listen(d_listener)
+        d_parser.parse
+        d_listener.relationships.each do |r|
+          drawing_rels[r[:id]] = r[:target]
+        end
+      end
+
+      p_parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+      img_listener = Ooxml::Reader::DrawingImagesListener.new
+      p_parser.listen(img_listener)
+      p_parser.parse
+
+      drawing_dir = File.dirname(drawing_path)
+      img_listener.images.map do |raw_img|
+        rid = raw_img[:embed_rid]
+        media_target = drawing_rels[rid]
+        img_data = nil
+        filename = nil
+        if media_target
+          media_path = resolve_relative_path(drawing_dir, media_target)
+          filename = File.basename(media_path)
+          img_data = zip_reader.read_entry(media_path)
+        end
+
+        from_col = raw_img[:from_col] || 0
+        from_row = raw_img[:from_row] || 0
+        to_col = raw_img[:to_col]
+        to_row = raw_img[:to_row]
+        cx = raw_img[:cx]
+        cy = raw_img[:cy]
+        name = raw_img[:name]
+
+        Elements::Image.new(
+          filename: filename || "image.png",
+          name: name,
+          data: img_data,
+          from_col: from_col,
+          from_row: from_row,
+          to_col: to_col,
+          to_row: to_row,
+          cx: cx,
+          cy: cy,
+          unmapped_data: raw_img
+        )
+      end
     end
 
     #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool) -> (Elements::Row | untyped)

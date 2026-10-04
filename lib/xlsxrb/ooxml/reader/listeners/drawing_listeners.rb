@@ -87,11 +87,14 @@ module Xlsxrb
           when "to"
             @inside_to = true if @inside_anchor
           when "ext"
+            cx = attributes["cx"]
+            cy = attributes["cy"]
             if @inside_pic && @current_image
-              cx = attributes["cx"]
-              cy = attributes["cy"]
               @current_image[:cx] = cx.to_i if cx
               @current_image[:cy] = cy.to_i if cy
+            elsif @inside_anchor
+              @anchor_cx = cx.to_i if cx
+              @anchor_cy = cy.to_i if cy
             end
           when "col", "colOff", "row", "rowOff"
             @current_field = name
@@ -116,6 +119,8 @@ module Xlsxrb
               @anchor_from.each { |k, v| @current_image[:"from_#{k}"] = v }
               @anchor_to.each { |k, v| @current_image[:"to_#{k}"] = v }
               @current_image[:edit_as] = @anchor_edit_as if @anchor_edit_as
+              @current_image[:cx] ||= @anchor_cx if @anchor_cx
+              @current_image[:cy] ||= @anchor_cy if @anchor_cy
               @images << @current_image
             end
             @current_image = nil
@@ -127,6 +132,8 @@ module Xlsxrb
             @inside_anchor = false
             @anchor_from = {}
             @anchor_to = {}
+            @anchor_cx = nil
+            @anchor_cy = nil
             @anchor_locks_with_sheet = nil
             @anchor_prints_with_sheet = nil
             @anchor_published = false

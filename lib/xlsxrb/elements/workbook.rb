@@ -130,6 +130,31 @@ module Xlsxrb
         target_sheet&.formatted_value(ref_or_row, col)
       end
 
+      # Returns all embedded images across all worksheets.
+      #
+      # @return [Array<Elements::Image>]
+      # @api public
+      #: () -> Array[Elements::Image]
+      def images
+        sheets.flat_map(&:images)
+      end
+
+      # Returns all images anchored at a specific cell in the given worksheet.
+      #
+      # @param sheet_identifier [Integer, String, untyped] Sheet index or sheet name.
+      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+      # @param col [Integer, nil] Optional 0-based column index.
+      # @return [Array<Elements::Image>]
+      # @api public
+      #: (Integer | String | untyped sheet_identifier, String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Elements::Image]
+      def images_at(sheet_identifier, ref_or_row, col = nil)
+        ident = sheet_identifier.is_a?(Symbol) ? sheet_identifier.to_s : sheet_identifier
+        target_sheet = sheet(ident)
+        return [] unless target_sheet
+
+        target_sheet.images_at(ref_or_row, col)
+      end
+
       # Loads all sheets into memory, returning an Elements::Workbook where every
       # worksheet is a fully-parsed Elements::Worksheet supporting coordinate random access.
       #

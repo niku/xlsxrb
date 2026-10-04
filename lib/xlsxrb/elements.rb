@@ -10,6 +10,7 @@ require_relative "elements/coordinate_access"
 require_relative "elements/worksheet"
 require_relative "elements/workbook"
 require_relative "elements/styles"
+require_relative "elements/image"
 
 module Xlsxrb
   # High-level domain model layer.
