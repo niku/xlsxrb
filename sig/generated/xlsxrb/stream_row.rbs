@@ -38,12 +38,19 @@ module Xlsxrb
     # @param custom_height [Boolean] Whether custom height is set.
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
-    # @param styles [Hash, nil] Optional styles hash.
-    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?) -> void
-    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?) -> void
+    # @param date1904 [Boolean] Whether the 1904 date system is active.
+    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
+    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index, ?untyped styles) -> untyped
+    def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index, ?untyped styles, ?untyped date1904) -> untyped
+
+    # Returns whether the row uses the 1904 date system.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def date1904?: () -> bool
 
     # Iterate over cells in this streaming row one by one.
     #

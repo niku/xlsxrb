@@ -202,7 +202,8 @@ module Xlsxrb
           styles,
           zip_reader: zip_reader,
           entry_name: sheet_path,
-          state: sheet_info[:state] || :visible
+          state: sheet_info[:state] || :visible,
+          date1904: is_date1904
         )
       end.compact
 
@@ -226,6 +227,10 @@ module Xlsxrb
     ensure
       zip_reader.close if block_given?
     end
+  end
+
+  class << self
+    alias stream read
   end
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
@@ -593,16 +598,16 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil)
-      return Elements::Worksheet.new(name: name, state: state, styles: styles) if sheet_xml.nil? || sheet_xml.empty?
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, date1904: false)
+      return Elements::Worksheet.new(name: name, state: state, styles: styles, date1904: date1904) if sheet_xml.nil? || sheet_xml.empty?
 
       sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
       sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
       raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings, styles: styles)
       raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
 
-      rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks, sheet_comments, styles) }
+      rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks, sheet_comments, styles, date1904: date1904) }
       columns = raw_columns.map do |rc|
         # Columns from OOXML are 1-based min/max ranges; convert to 0-based
         col_unmapped = {}
@@ -642,7 +647,8 @@ module Xlsxrb
         state: state,
         hyperlinks: sheet_hyperlinks,
         comments: sheet_comments,
-        styles: styles
+        styles: styles,
+        date1904: date1904
       )
     end
 
@@ -716,8 +722,8 @@ module Xlsxrb
       c_listener.comments
     end
 
-    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles) -> (Elements::Row | untyped)
-    def build_row_from_raw(raw_row, hyperlinks = {}, comments = [], styles = nil)
+    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool) -> (Elements::Row | untyped)
+    def build_row_from_raw(raw_row, hyperlinks = {}, comments = [], styles = nil, date1904: false)
       return raw_row if raw_row.is_a?(Elements::Row)
 
       comments_map = if comments.is_a?(Hash)
@@ -732,8 +738,8 @@ module Xlsxrb
           hl = hyperlinks && !hyperlinks.empty? ? hyperlinks[rc.ref] : nil
           cm = comments_map && !comments_map.empty? ? comments_map[rc.ref] : nil
           fmt = rc.format_code || (NumberFormatter.format_code_for(rc.style_index, styles) if styles && rc.style_index)
-          if hl || cm || (fmt && rc.format_code != fmt)
-            rc.with(hyperlink: hl || rc.hyperlink, comment: cm || rc.comment, format_code: fmt || rc.format_code)
+          if hl || cm || (fmt && rc.format_code != fmt) || (date1904 && !rc.date1904?)
+            rc.with(hyperlink: hl || rc.hyperlink, comment: cm || rc.comment, format_code: fmt || rc.format_code, date1904: date1904 || rc.date1904?)
           else
             rc
           end
@@ -765,7 +771,8 @@ module Xlsxrb
             comment: cm,
             raw_value: raw_val,
             format_code: fmt,
-            errors: cell_errors
+            errors: cell_errors,
+            date1904: date1904
           )
         end
       end

@@ -47,9 +47,16 @@ module Xlsxrb
     # @param styles [Hash, nil] Optional parsed styles hash.
     # @param zip_reader [Ooxml::ZipReader, nil] Optional ZipReader context.
     # @param entry_name [String, nil] Archive entry name for this sheet.
-    # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
-    # : (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol) -> void
-    def initialize: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol) -> void
+    # @param date1904 [Boolean] Whether the 1904 date system is active.
+    # : (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool) -> void
+    def initialize: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool) -> void
+
+    # Returns whether the sheet uses the 1904 date system.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def date1904?: () -> bool
 
     # Returns whether the sheet is hidden (:hidden or :very_hidden).
     #

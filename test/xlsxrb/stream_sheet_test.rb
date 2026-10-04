@@ -216,4 +216,36 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(%w[1042 2084], ws.rows.first.raw_values)
     assert_equal(["1,042.00", "2084"], ws.rows.first.formatted_values)
   end
+
+  test "stream_sheet supports date1904 system flag" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1"><v>0</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    sheet1900 = Xlsxrb::StreamSheet.new("Sheet1900", xml.b, [], date1904: false)
+    assert_equal(false, sheet1900.date1904?)
+    row1900 = sheet1900.each_row.first
+    assert_equal(false, row1900.date1904?)
+    assert_equal(false, row1900[:date1904])
+    assert_equal(false, row1900.cells.first.date1904?)
+    assert_equal(Date.new(1899, 12, 31), row1900.cells.first.to_date)
+
+    sheet1904 = Xlsxrb::StreamSheet.new("Sheet1904", xml.b, [], date1904: true)
+    assert_equal(true, sheet1904.date1904?)
+    row1904 = sheet1904.each_row.first
+    assert_equal(true, row1904.date1904?)
+    assert_equal(true, row1904[:date1904])
+    assert_equal(true, row1904.cells.first.date1904?)
+    assert_equal(Date.new(1904, 1, 1), row1904.cells.first.to_date)
+
+    ws1904 = sheet1904.load
+    assert_equal(true, ws1904.date1904?)
+    assert_equal(Date.new(1904, 1, 1), ws1904["A1"].to_date)
+  end
 end

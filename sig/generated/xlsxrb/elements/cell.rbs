@@ -36,6 +36,8 @@ module Xlsxrb
 
       attr_reader format_code: untyped
 
+      attr_reader date1904: untyped
+
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
       # @param value [Object, nil] The cell's value.
@@ -47,10 +49,12 @@ module Xlsxrb
       # @param comment [Hash, String, nil] Optional cell comment or note.
       # @param raw_value [String, nil] Optional unparsed raw string value.
       # @param format_code [String, nil] Optional OpenXML number/date format code.
-      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?) -> void
-      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?) -> void
+      # @param date1904 [Boolean] Whether the cell belongs to a 1904 date system workbook.
+      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool) -> void
+      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool) -> void
 
-      def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula, ?untyped raw_value, ?untyped format_code) -> untyped
+      # rubocop:disable Style/OptionalBooleanParameter
+      def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula, ?untyped raw_value, ?untyped format_code, ?untyped date1904) -> untyped
 
       def ==: (untyped other) -> untyped
 
@@ -137,6 +141,13 @@ module Xlsxrb
       # : (Symbol key) -> untyped
       def []: (Symbol key) -> untyped
 
+      # Returns whether the cell's workbook uses the 1904 date system.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def date1904?: () -> bool
+
       # Returns the cell value.
       #
       # @return [Object, nil]
@@ -167,18 +178,19 @@ module Xlsxrb
 
       # Converts the cell value (numeric serial date or date string) to Date.
       #
+      # @param date1904 [Boolean, nil] Whether to use the 1904 date system (defaults to cell's date1904 setting).
       # @return [Date, nil]
       # @api public
-      # : (?date1904: bool) -> Date?
-      def to_date: (?date1904: bool) -> Date?
+      # : (?date1904: bool?) -> Date?
+      def to_date: (?date1904: bool?) -> Date?
 
       # Converts the cell value (numeric serial datetime or datetime string) to Time.
       #
-      # @param date1904 [Boolean] Whether to use the 1904 date system.
+      # @param date1904 [Boolean, nil] Whether to use the 1904 date system (defaults to cell's date1904 setting).
       # @return [Time, nil]
       # @api public
-      # : (?date1904: bool) -> Time?
-      def to_time: (?date1904: bool) -> Time?
+      # : (?date1904: bool?) -> Time?
+      def to_time: (?date1904: bool?) -> Time?
 
       # Pure calculation: converts a 0-based column index to an Excel letter.
       #

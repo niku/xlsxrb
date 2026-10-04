@@ -32,10 +32,10 @@ module Xlsxrb
     # @param custom_height [Boolean] Whether custom height is set.
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
-    # @param styles [Hash, nil] Optional styles hash.
-    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?) -> void
+    # @param date1904 [Boolean] Whether the 1904 date system is active.
+    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
     def initialize(index:, xml_bytes:, from:, to:, shared_strings:, prefix: "", height: nil, hidden: false,
-                   custom_height: false, outline_level: nil, style_index: nil, styles: nil)
+                   custom_height: false, outline_level: nil, style_index: nil, styles: nil, date1904: false)
       @index = index
       @xml = xml_bytes
       @from = from
@@ -48,11 +48,12 @@ module Xlsxrb
       @outline_level = outline_level
       @style_index = style_index
       @styles = styles
+      @date1904 = date1904 ? true : false
       @cells = nil
     end
 
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil)
+    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil, date1904 = false)
       inst = allocate
       inst.instance_variable_set(:@index, index)
       inst.instance_variable_set(:@xml, xml_bytes)
@@ -66,10 +67,20 @@ module Xlsxrb
       inst.instance_variable_set(:@outline_level, outline_level)
       inst.instance_variable_set(:@style_index, style_index)
       inst.instance_variable_set(:@styles, styles)
+      inst.instance_variable_set(:@date1904, date1904 ? true : false)
       inst.instance_variable_set(:@cells, nil)
       inst
     end
     # rubocop:enable Style/OptionalBooleanParameter
+
+    # Returns whether the row uses the 1904 date system.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def date1904?
+      @date1904 ? true : false
+    end
 
     # Iterate over cells in this streaming row one by one.
     #
@@ -85,7 +96,7 @@ module Xlsxrb
       if @cells
         @cells.each(&block)
       else
-        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, &block)
+        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, @date1904, &block)
       end
     end
 
@@ -109,7 +120,7 @@ module Xlsxrb
     def cells
       @cells ||= begin
         arr = []
-        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles) do |c|
+        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, @date1904) do |c|
           arr << c
         end
         arr.freeze
@@ -137,6 +148,7 @@ module Xlsxrb
         when :custom_height then custom_height
         when :outline_level then outline_level
         when :style_index then style_index
+        when :date1904 then date1904?
         when :attrs
           h = { height: height, hidden: hidden, custom_height: custom_height, outline_level: outline_level }
           h[:style_index] = style_index if style_index

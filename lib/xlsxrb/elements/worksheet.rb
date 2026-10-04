@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :styles
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :styles, :date1904
       alias conditional_formats conditional_formatting
 
       # @param name [String] The worksheet name (max 31 characters).
@@ -33,8 +33,9 @@ module Xlsxrb
       # @param hyperlinks [Hash{String => Hash}] Hyperlink mappings by cell reference.
       # @param comments [Array<Hash>] Comments and notes in the sheet.
       # @param styles [Hash, nil] Optional parsed styles hash.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil)
+      # @param date1904 [Boolean] Whether the sheet uses the 1904 date system.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil, date1904: false)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -49,6 +50,16 @@ module Xlsxrb
         @hyperlinks = (hyperlinks || {}).freeze
         @comments = (comments || []).freeze
         @styles = styles
+        @date1904 = date1904 ? true : false
+      end
+
+      # Returns whether the worksheet uses the 1904 date system.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def date1904?
+        @date1904
       end
 
       # Iterate over rows in the worksheet.

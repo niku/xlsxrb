@@ -20,7 +20,7 @@ module Xlsxrb
       def self.parse: (untyped xml_string, ?shared_strings: untyped, ?styles: untyped) -> untyped
 
       # Streaming parse: yields one raw row hash at a time.
-      def self.each_row: (untyped xml_source, ?shared_strings: untyped, ?part_name: untyped, ?styles: untyped) ?{ (?) -> untyped } -> untyped
+      def self.each_row: (untyped xml_source, ?shared_strings: untyped, ?part_name: untyped, ?styles: untyped, ?date1904: untyped) ?{ (?) -> untyped } -> untyped
 
       # Parses column definitions (<cols>) from a worksheet.
       def self.parse_columns: (untyped xml_string, ?untyped _part_name) -> untyped
@@ -70,9 +70,11 @@ module Xlsxrb
         def characters: (untyped _text) -> untyped
       end
 
-      def self.fast_scan_rows_direct: (untyped xml_src, untyped shared_strings, untyped _part_name, ?untyped styles) ?{ (?) -> untyped } -> untyped
+      # rubocop:disable Style/OptionalBooleanParameter
+      def self.fast_scan_rows_direct: (untyped xml_src, untyped shared_strings, untyped _part_name, ?untyped styles, ?untyped date1904) ?{ (?) -> untyped } -> untyped
 
-      def self.scan_rows_stream: (untyped source, untyped shared_strings, untyped _part_name, ?untyped styles) ?{ (?) -> untyped } -> untyped
+      # rubocop:disable Style/OptionalBooleanParameter
+      def self.scan_rows_stream: (untyped source, untyped shared_strings, untyped _part_name, ?untyped styles, ?untyped date1904) ?{ (?) -> untyped } -> untyped
 
       COL_LETTERS: untyped
 
@@ -90,7 +92,8 @@ module Xlsxrb
 
       def self.fast_parse_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped prefix) -> untyped
 
-      def self.fast_scan_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped _prefix, ?untyped styles) ?{ (?) -> untyped } -> untyped
+      # rubocop:disable Style/OptionalBooleanParameter
+      def self.fast_scan_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped _prefix, ?untyped styles, ?untyped date1904) ?{ (?) -> untyped } -> untyped
     end
   end
 end

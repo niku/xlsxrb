@@ -123,4 +123,14 @@ class StreamRowTest < Test::Unit::TestCase
 
     assert_equal([10, 20, 30], row.values)
   end
+
+  test "stream_row date1904? reflects date1904 flag and bracket access" do
+    row1900 = Xlsxrb::StreamRow.fast_create(0, "".b, 0, 0, [], "", nil, false, false, nil, nil, nil, false)
+    assert_equal(false, row1900.date1904?)
+    assert_equal(false, row1900[:date1904])
+
+    row1904 = Xlsxrb::StreamRow.fast_create(0, "".b, 0, 0, [], "", nil, false, false, nil, nil, nil, true)
+    assert_equal(true, row1904.date1904?)
+    assert_equal(true, row1904[:date1904])
+  end
 end

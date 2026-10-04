@@ -51,9 +51,9 @@ module Xlsxrb
     # @param styles [Hash, nil] Optional parsed styles hash.
     # @param zip_reader [Ooxml::ZipReader, nil] Optional ZipReader context.
     # @param entry_name [String, nil] Archive entry name for this sheet.
-    # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
-    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol) -> void
-    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible)
+    # @param date1904 [Boolean] Whether the 1904 date system is active.
+    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool) -> void
+    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible, date1904: false)
       @name = name
       @sheet_source = sheet_source
       @shared_strings = shared_strings
@@ -61,7 +61,17 @@ module Xlsxrb
       @zip_reader = zip_reader
       @entry_name = entry_name
       @state = state ? state.to_sym : :visible
+      @date1904 = date1904 ? true : false
       @sheet_xml = sheet_source if sheet_source.is_a?(String)
+    end
+
+    # Returns whether the sheet uses the 1904 date system.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def date1904?
+      @date1904
     end
 
     # Returns whether the sheet is hidden (:hidden or :very_hidden).
@@ -104,7 +114,7 @@ module Xlsxrb
                  ->(&blk) { @zip_reader.each_entry_chunk(@entry_name, &blk) }
                end
 
-      Ooxml::WorksheetParser.each_row(source, shared_strings: @shared_strings, styles: @styles, &)
+      Ooxml::WorksheetParser.each_row(source, shared_strings: @shared_strings, styles: @styles, date1904: @date1904, &)
     end
 
     # Iterates over all cells across all rows continuously with O(1) memory.
@@ -153,7 +163,7 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments)
+      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, date1904: @date1904)
     end
     alias to_worksheet load
 

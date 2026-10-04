@@ -28,14 +28,14 @@ module Xlsxrb
       end
 
       # Streaming parse: yields one raw row hash at a time.
-      def self.each_row(xml_source, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", styles: nil, &block)
-        return enum_for(:each_row, xml_source, shared_strings: shared_strings, part_name: part_name, styles: styles) unless block
+      def self.each_row(xml_source, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", styles: nil, date1904: false, &block)
+        return enum_for(:each_row, xml_source, shared_strings: shared_strings, part_name: part_name, styles: styles, date1904: date1904) unless block
         return if xml_source.nil? || (xml_source.respond_to?(:empty?) && xml_source.empty?)
 
         if xml_source.is_a?(String)
-          fast_scan_rows_direct(xml_source, shared_strings, part_name, styles, &block)
+          fast_scan_rows_direct(xml_source, shared_strings, part_name, styles, date1904, &block)
         else
-          scan_rows_stream(xml_source, shared_strings, part_name, styles, &block)
+          scan_rows_stream(xml_source, shared_strings, part_name, styles, date1904, &block)
         end
       end
 
@@ -496,7 +496,9 @@ module Xlsxrb
         def characters(_text); end
       end
 
-      def self.fast_scan_rows_direct(xml_src, shared_strings, _part_name, styles = nil, &block)
+      # rubocop:disable Style/OptionalBooleanParameter
+      def self.fast_scan_rows_direct(xml_src, shared_strings, _part_name, styles = nil, date1904 = false, &block)
+        # rubocop:enable Style/OptionalBooleanParameter
         xml = xml_src.b # force ASCII-8BIT for O(1) byte indexing
 
         sd_term = xml.index("sheetData")
@@ -586,7 +588,8 @@ module Xlsxrb
             attrs[:custom_height] || false,
             attrs[:outline_level],
             attrs[:style_index],
-            styles
+            styles,
+            date1904
           )
           block.call(row_obj)
 
@@ -596,7 +599,9 @@ module Xlsxrb
 
       private_class_method :fast_scan_rows_direct
 
-      def self.scan_rows_stream(source, shared_strings, _part_name, styles = nil, &block)
+      # rubocop:disable Style/OptionalBooleanParameter
+      def self.scan_rows_stream(source, shared_strings, _part_name, styles = nil, date1904 = false, &block)
+        # rubocop:enable Style/OptionalBooleanParameter
         buffer = +""
         buffer.force_encoding(Encoding::BINARY)
         in_sheet_data = false
@@ -729,7 +734,8 @@ module Xlsxrb
               attrs[:custom_height] || false,
               attrs[:outline_level],
               attrs[:style_index],
-              styles
+              styles,
+              date1904
             )
             block.call(row_obj)
 
@@ -798,7 +804,9 @@ module Xlsxrb
         cells
       end
 
-      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", styles = nil, &block)
+      # rubocop:disable Style/OptionalBooleanParameter
+      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", styles = nil, date1904 = false, &block)
+        # rubocop:enable Style/OptionalBooleanParameter
         chunk = xml.byteslice(from, to - from)
         row_idx = row_source.is_a?(Hash) ? row_source[:row] : row_source
         col_idx = 0
@@ -849,7 +857,7 @@ module Xlsxrb
           formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
           formula_expr = nil if formula_expr && formula_expr.empty?
           fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
-          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code)
+          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code, date1904)
           block.call(cell)
         end
 
@@ -902,7 +910,7 @@ module Xlsxrb
           formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
           formula_expr = nil if formula_expr && formula_expr.empty?
           fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
-          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code)
+          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code, date1904)
           block.call(cell)
         end
       end
