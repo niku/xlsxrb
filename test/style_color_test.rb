@@ -14,7 +14,7 @@ class StyleColorTest < Test::Unit::TestCase
     assert_equal("FF00FF00", builder.border_props[:top][:color])
 
     # Check invalid symbol defaults to to_s
-    builder.font_color(:purple)
-    assert_equal("purple", builder.font_props[:color])
+    builder.font_color(:unknown_custom_color)
+    assert_equal("unknown_custom_color", builder.font_props[:color])
   end
 end

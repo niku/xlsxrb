@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Unified color and border style normalizers in `StyleBuilder`: Add `StyleBuilder.normalize_color` (supporting 140+ CSS named colors, `#RGB`, `#RRGGBB`, `#AARRGGBB` hex strings, numeric RGB integers, and optional alpha channel) and `StyleBuilder.normalize_border_style` (supporting border style symbols, aliases, strings, and 0..13 numeric border indices).
 - Public date and time serial conversion utilities: Expose `date_to_serial`, `serial_to_date`, `datetime_to_serial`, and `serial_to_time` (aliased `serial_to_datetime`) on `Xlsxrb` and `Xlsxrb::Utils` for converting Ruby `Date` and `Time` instances to and from Excel 1900 and 1904 serial numbers.
 - Cascade style inheritance and column styles: Support cascade style inheritance (Cell Style > Row Style > Column Style) in `WorksheetWriter`, and add `style:` parameter to `StreamWriter#column` and `WorksheetBuilder#column`.
 - Embedded drawing and image extraction: Add `Elements::Image` representing anchored embedded images, expose `images`, `images_at`, and `with_images` across `StreamSheet` and `Elements::Worksheet`, and expose `images` and `images_at` across `Elements::Workbook`.

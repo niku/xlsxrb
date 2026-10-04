@@ -7,6 +7,43 @@ module Xlsxrb
   class StyleBuilder
     COLORS: untyped
 
+    CSS_COLORS: untyped
+
+    BORDER_STYLES: untyped
+
+    BORDER_INDEX_MAP: untyped
+
+    # Normalizes a color definition (CSS color name, hex code, or RGB integer) to an OpenXML hex color string.
+    #
+    # @example
+    #   StyleBuilder.normalize_color(:navy)                 #=> "FF000080"
+    #   StyleBuilder.normalize_color("#FF0000")             #=> "FFFF0000"
+    #   StyleBuilder.normalize_color("#F00")                #=> "FFFF0000"
+    #   StyleBuilder.normalize_color("FF0000", alpha: false) #=> "FF0000"
+    #   StyleBuilder.normalize_color(0xFF0000)              #=> "FFFF0000"
+    #
+    # @param color [String, Symbol, Integer, nil]
+    # @param alpha [Boolean] Whether to include the alpha channel ("AARRGGBB" vs "RRGGBB").
+    # @return [String, nil]
+    # @api public
+    # : (String | Symbol | Integer | nil color, ?alpha: bool) -> String?
+    def self.normalize_color: (String | Symbol | Integer | nil color, ?alpha: bool) -> String?
+
+    # Normalizes a border style symbol, string, or integer index to an OOXML ST_BorderStyle symbol.
+    #
+    # @example
+    #   StyleBuilder.normalize_border_style(:border_thin)      #=> :thin
+    #   StyleBuilder.normalize_border_style(1)                 #=> :thin
+    #   StyleBuilder.normalize_border_style(:medium_dashed)    #=> :mediumDashed
+    #   StyleBuilder.normalize_border_style("double")          #=> :double
+    #   StyleBuilder.normalize_border_style(0)                 #=> :none
+    #
+    # @param style [Symbol, String, Integer, nil]
+    # @return [Symbol, nil]
+    # @api public
+    # : (Symbol | String | Integer | nil style) -> Symbol?
+    def self.normalize_border_style: (Symbol | String | Integer | nil style) -> Symbol?
+
     # Resolves a color symbol, string, or prefix to an aRGB hex string.
     #
     # @param color [Symbol, String, Object, nil]
@@ -147,55 +184,55 @@ module Xlsxrb
     def border: (**untyped) -> self
 
     # Sets all borders.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
-    def border_all: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    def border_all: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
 
     # Sets the left border.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
-    def border_left: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    def border_left: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
 
     # Sets the right border.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
-    def border_right: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    def border_right: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
 
     # Sets the top border.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
-    def border_top: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    def border_top: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
 
     # Sets the bottom border.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    # : (?style: String | Symbol, ?color: String | Symbol | nil) -> self
-    def border_bottom: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    def border_bottom: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
 
     # rubocop:disable Naming/MethodParameterName
     # Sets diagonal borders.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @param up [Boolean] Diagonal up.
     # @param down [Boolean] Diagonal down.
     # @return [self]
     # @api public
-    # : (?style: String | Symbol, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
-    def border_diagonal: (?style: String | Symbol, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
+    def border_diagonal: (?style: String | Symbol | Integer, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
 
     # Sets horizontal alignment.
     # @param value [String, Symbol] The alignment.

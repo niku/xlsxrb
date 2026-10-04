@@ -42,6 +42,68 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_equal("FFFF0000", Xlsxrb::StyleBuilder.resolve_color(:red))
     assert_equal("FF0000FF", Xlsxrb::StyleBuilder.resolve_color(":blue"))
     assert_equal("FF112233", Xlsxrb::StyleBuilder.resolve_color("FF112233"))
+    assert_equal("FF000080", Xlsxrb::StyleBuilder.resolve_color(:navy))
+    assert_equal("FFFF0000", Xlsxrb::StyleBuilder.resolve_color("#FF0000"))
+  end
+
+  test "normalize_color normalizes CSS colors, hex codes, integers, and alpha" do
+    assert_nil(Xlsxrb::StyleBuilder.normalize_color(nil))
+    assert_nil(Xlsxrb::StyleBuilder.normalize_color(""))
+    assert_nil(Xlsxrb::StyleBuilder.normalize_color(":"))
+    assert_nil(Xlsxrb::StyleBuilder.normalize_color("unknown_color"))
+
+    # CSS color names (with and without alpha)
+    assert_equal("FF000080", Xlsxrb::StyleBuilder.normalize_color(:navy))
+    assert_equal("000080", Xlsxrb::StyleBuilder.normalize_color(:navy, alpha: false))
+    assert_equal("FFFFD700", Xlsxrb::StyleBuilder.normalize_color("gold"))
+    assert_equal("FFDC143C", Xlsxrb::StyleBuilder.normalize_color(:crimson))
+    assert_equal("FF663399", Xlsxrb::StyleBuilder.normalize_color(:rebeccapurple))
+
+    # Hex strings (3-digit, 6-digit, 8-digit)
+    assert_equal("FFFF0000", Xlsxrb::StyleBuilder.normalize_color("#F00"))
+    assert_equal("FF0000", Xlsxrb::StyleBuilder.normalize_color("#F00", alpha: false))
+    assert_equal("FFFF0000", Xlsxrb::StyleBuilder.normalize_color("F00"))
+    assert_equal("FFFF0000", Xlsxrb::StyleBuilder.normalize_color("#FF0000"))
+    assert_equal("FF0000", Xlsxrb::StyleBuilder.normalize_color("#FF0000", alpha: false))
+    assert_equal("FFFF0000", Xlsxrb::StyleBuilder.normalize_color("FF0000"))
+    assert_equal("FFFF0000", Xlsxrb::StyleBuilder.normalize_color("#FFFF0000"))
+    assert_equal("FF0000", Xlsxrb::StyleBuilder.normalize_color("#FFFF0000", alpha: false))
+    assert_equal("FF123456", Xlsxrb::StyleBuilder.normalize_color("FF123456"))
+    assert_equal("123456", Xlsxrb::StyleBuilder.normalize_color("FF123456", alpha: false))
+
+    # Integer RGB
+    assert_equal("FFFF0000", Xlsxrb::StyleBuilder.normalize_color(0xFF0000))
+    assert_equal("FF0000", Xlsxrb::StyleBuilder.normalize_color(0xFF0000, alpha: false))
+    assert_equal("FF000080", Xlsxrb::StyleBuilder.normalize_color(0x000080))
+  end
+
+  test "normalize_border_style normalizes border symbols, aliases, strings, and indices" do
+    assert_nil(Xlsxrb::StyleBuilder.normalize_border_style(nil))
+    assert_nil(Xlsxrb::StyleBuilder.normalize_border_style(:invalid_style))
+
+    # Integer mappings 0..13
+    assert_equal(:none, Xlsxrb::StyleBuilder.normalize_border_style(0))
+    assert_equal(:thin, Xlsxrb::StyleBuilder.normalize_border_style(1))
+    assert_equal(:medium, Xlsxrb::StyleBuilder.normalize_border_style(2))
+    assert_equal(:dashed, Xlsxrb::StyleBuilder.normalize_border_style(3))
+    assert_equal(:dotted, Xlsxrb::StyleBuilder.normalize_border_style(4))
+    assert_equal(:thick, Xlsxrb::StyleBuilder.normalize_border_style(5))
+    assert_equal(:double, Xlsxrb::StyleBuilder.normalize_border_style(6))
+    assert_equal(:hair, Xlsxrb::StyleBuilder.normalize_border_style(7))
+    assert_equal(:mediumDashed, Xlsxrb::StyleBuilder.normalize_border_style(8))
+    assert_equal(:dashDot, Xlsxrb::StyleBuilder.normalize_border_style(9))
+    assert_equal(:mediumDashDot, Xlsxrb::StyleBuilder.normalize_border_style(10))
+    assert_equal(:dashDotDot, Xlsxrb::StyleBuilder.normalize_border_style(11))
+    assert_equal(:mediumDashDotDot, Xlsxrb::StyleBuilder.normalize_border_style(12))
+    assert_equal(:slantDashDot, Xlsxrb::StyleBuilder.normalize_border_style(13))
+
+    # Symbol and String styles
+    assert_equal(:thin, Xlsxrb::StyleBuilder.normalize_border_style(:thin))
+    assert_equal(:thin, Xlsxrb::StyleBuilder.normalize_border_style("thin"))
+    assert_equal(:thin, Xlsxrb::StyleBuilder.normalize_border_style(:border_thin))
+    assert_equal(:mediumDashed, Xlsxrb::StyleBuilder.normalize_border_style(:medium_dashed))
+    assert_equal(:mediumDashed, Xlsxrb::StyleBuilder.normalize_border_style(:border_medium_dashed))
+    assert_equal(:mediumDashed, Xlsxrb::StyleBuilder.normalize_border_style("mediumDashed"))
   end
 
   # --- Font properties & chaining ---
@@ -111,6 +173,18 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_equal({ style: "medium", color: "FF000000" }, b.border_props[:diagonal])
     assert_equal(true, b.border_props[:diagonal_up])
     assert_equal(true, b.border_props[:diagonal_down])
+  end
+
+  test "border methods accept integer styles and symbol aliases" do
+    b = Xlsxrb::StyleBuilder.new
+    b.border_all(style: 1, color: :navy)
+    assert_equal({ style: "thin", color: "FF000080" }, b.border_props[:left])
+    assert_equal({ style: "thin", color: "FF000080" }, b.border_props[:right])
+
+    b.border_left(style: :border_medium, color: "#FF0000")
+    b.border_right(style: :medium_dashed)
+    assert_equal({ style: "medium", color: "FFFF0000" }, b.border_props[:left])
+    assert_equal({ style: "mediumDashed" }, b.border_props[:right])
   end
 
   # --- Alignment properties ---

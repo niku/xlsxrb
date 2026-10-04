@@ -20,6 +20,281 @@ module Xlsxrb
       grey: "FF808080"
     }.freeze
 
+    CSS_COLORS = {
+      aliceblue: "F0F8FF",
+      antiquewhite: "FAEBD7",
+      aqua: "00FFFF",
+      aquamarine: "7FFFD4",
+      azure: "F0FFFF",
+      beige: "F5F5DC",
+      bisque: "FFE4C4",
+      black: "000000",
+      blanchedalmond: "FFEBCD",
+      blue: "0000FF",
+      blueviolet: "8A2BE2",
+      brown: "A52A2A",
+      burlywood: "DEB887",
+      cadetblue: "5F9EA0",
+      chartreuse: "7FFF00",
+      chocolate: "D2691E",
+      coral: "FF7F50",
+      cornflowerblue: "6495ED",
+      cornsilk: "FFF8DC",
+      crimson: "DC143C",
+      cyan: "00FFFF",
+      darkblue: "00008B",
+      darkcyan: "008B8B",
+      darkgoldenrod: "B8860B",
+      darkgray: "A9A9A9",
+      darkgrey: "A9A9A9",
+      darkgreen: "006400",
+      darkkhaki: "BDB76B",
+      darkmagenta: "8B008B",
+      darkolivegreen: "556B2F",
+      darkorange: "FF8C00",
+      darkorchid: "9932CC",
+      darkred: "8B0000",
+      darksalmon: "E9967A",
+      darkseagreen: "8FBC8F",
+      darkslateblue: "483D8B",
+      darkslategray: "2F4F4F",
+      darkslategrey: "2F4F4F",
+      darkturquoise: "00CED1",
+      darkviolet: "9400D3",
+      deeppink: "FF1493",
+      deepskyblue: "00BFFF",
+      dimgray: "696969",
+      dimgrey: "696969",
+      dodgerblue: "1E90FF",
+      firebrick: "B22222",
+      floralwhite: "FFFAF0",
+      forestgreen: "228B22",
+      fuchsia: "FF00FF",
+      gainsboro: "DCDCDC",
+      ghostwhite: "F8F8FF",
+      gold: "FFD700",
+      goldenrod: "DAA520",
+      gray: "808080",
+      grey: "808080",
+      green: "00FF00",
+      greenyellow: "ADFF2F",
+      honeydew: "F0FFF0",
+      hotpink: "FF69B4",
+      indianred: "CD5C5C",
+      indigo: "4B0082",
+      ivory: "FFFFF0",
+      khaki: "F0E68C",
+      lavender: "E6E6FA",
+      lavenderblush: "FFF0F5",
+      lawngreen: "7CFC00",
+      lemonchiffon: "FFFACD",
+      lightblue: "ADD8E6",
+      lightcoral: "F08080",
+      lightcyan: "E0FFFF",
+      lightgoldenrodyellow: "FAFAD2",
+      lightgray: "D3D3D3",
+      lightgrey: "D3D3D3",
+      lightgreen: "90EE90",
+      lightpink: "FFB6C1",
+      lightsalmon: "FFA07A",
+      lightseagreen: "20B2AA",
+      lightskyblue: "87CEFA",
+      lightslategray: "778899",
+      lightslategrey: "778899",
+      lightsteelblue: "B0C4DE",
+      lightyellow: "FFFFE0",
+      lime: "00FF00",
+      limegreen: "32CD32",
+      linen: "FAF0E6",
+      magenta: "FF00FF",
+      maroon: "800000",
+      mediumaquamarine: "66CDAA",
+      mediumblue: "0000CD",
+      mediumorchid: "BA55D3",
+      mediumpurple: "9370DB",
+      mediumseagreen: "3CB371",
+      mediumslateblue: "7B68EE",
+      mediumspringgreen: "00FA9A",
+      mediumturquoise: "48D1CC",
+      mediumvioletred: "C71585",
+      midnightblue: "191970",
+      mintcream: "F5FFFA",
+      mistyrose: "FFE4E1",
+      moccasin: "FFE4B5",
+      navajowhite: "FFDEAD",
+      navy: "000080",
+      oldlace: "FDF5E6",
+      olive: "808000",
+      olivedrab: "6B8E23",
+      orange: "FFA500",
+      orangered: "FF4500",
+      orchid: "DA70D6",
+      palegoldenrod: "EEE8AA",
+      palegreen: "98FB98",
+      paleturquoise: "AFEEEE",
+      palevioletred: "DB7093",
+      papayawhip: "FFEFD5",
+      peachpuff: "FFDAB9",
+      peru: "CD853F",
+      pink: "FFC0CB",
+      plum: "DDA0DD",
+      powderblue: "B0E0E6",
+      purple: "800080",
+      rebeccapurple: "663399",
+      red: "FF0000",
+      rosybrown: "BC8F8F",
+      royalblue: "4169E1",
+      saddlebrown: "8B4513",
+      salmon: "FA8072",
+      sandybrown: "F4A460",
+      seagreen: "2E8B57",
+      seashell: "FFF5EE",
+      sienna: "A0522D",
+      silver: "C0C0C0",
+      skyblue: "87CEEB",
+      slateblue: "6A5ACD",
+      slategray: "708090",
+      slategrey: "708090",
+      snow: "FFFAFA",
+      springgreen: "00FF7F",
+      steelblue: "4682B4",
+      tan: "D2B48C",
+      teal: "008080",
+      thistle: "D8BFD8",
+      tomato: "FF6347",
+      turquoise: "40E0D0",
+      violet: "EE82EE",
+      wheat: "F5DEB3",
+      white: "FFFFFF",
+      whitesmoke: "F5F5F5",
+      yellow: "FFFF00",
+      yellowgreen: "9ACD32"
+    }.freeze
+
+    BORDER_STYLES = {
+      none: :none,
+      thin: :thin,
+      medium: :medium,
+      dashed: :dashed,
+      dotted: :dotted,
+      thick: :thick,
+      double: :double,
+      hair: :hair,
+      medium_dashed: :mediumDashed,
+      mediumdashed: :mediumDashed,
+      mediumDashed: :mediumDashed,
+      dash_dot: :dashDot,
+      dashdot: :dashDot,
+      dashDot: :dashDot,
+      medium_dash_dot: :mediumDashDot,
+      mediumdashdot: :mediumDashDot,
+      mediumDashDot: :mediumDashDot,
+      dash_dot_dot: :dashDotDot,
+      dashdotdot: :dashDotDot,
+      dashDotDot: :dashDotDot,
+      medium_dash_dot_dot: :mediumDashDotDot,
+      mediumdashdotdot: :mediumDashDotDot,
+      mediumDashDotDot: :mediumDashDotDot,
+      slant_dash_dot: :slantDashDot,
+      slantdashdot: :slantDashDot,
+      slantDashDot: :slantDashDot
+    }.freeze
+
+    BORDER_INDEX_MAP = {
+      0 => :none,
+      1 => :thin,
+      2 => :medium,
+      3 => :dashed,
+      4 => :dotted,
+      5 => :thick,
+      6 => :double,
+      7 => :hair,
+      8 => :mediumDashed,
+      9 => :dashDot,
+      10 => :mediumDashDot,
+      11 => :dashDotDot,
+      12 => :mediumDashDotDot,
+      13 => :slantDashDot
+    }.freeze
+
+    # Normalizes a color definition (CSS color name, hex code, or RGB integer) to an OpenXML hex color string.
+    #
+    # @example
+    #   StyleBuilder.normalize_color(:navy)                 #=> "FF000080"
+    #   StyleBuilder.normalize_color("#FF0000")             #=> "FFFF0000"
+    #   StyleBuilder.normalize_color("#F00")                #=> "FFFF0000"
+    #   StyleBuilder.normalize_color("FF0000", alpha: false) #=> "FF0000"
+    #   StyleBuilder.normalize_color(0xFF0000)              #=> "FFFF0000"
+    #
+    # @param color [String, Symbol, Integer, nil]
+    # @param alpha [Boolean] Whether to include the alpha channel ("AARRGGBB" vs "RRGGBB").
+    # @return [String, nil]
+    # @api public
+    #: (String | Symbol | Integer | nil color, ?alpha: bool) -> String?
+    def self.normalize_color(color, alpha: true)
+      return nil if color.nil?
+
+      hex = case color
+            when Symbol, defined?(String) && String
+              str = color.to_s.strip
+              return nil if str.empty?
+
+              # Strip leading colon (e.g. ":red")
+              str = str.sub(/^:/, "")
+              return nil if str.empty?
+
+              sym_key = str.downcase.to_sym
+              if CSS_COLORS.key?(sym_key)
+                CSS_COLORS[sym_key]
+              else
+                # Hex string parsing
+                clean_hex = str.sub(/^#/, "")
+                case clean_hex.length
+                when 3
+                  if clean_hex.match?(/\A[0-9a-fA-F]{3}\z/)
+                    r, g, b = clean_hex.chars
+                    "#{r}#{r}#{g}#{g}#{b}#{b}".upcase
+                  end
+                when 6
+                  clean_hex.upcase if clean_hex.match?(/\A[0-9a-fA-F]{6}\z/)
+                when 8
+                  if clean_hex.match?(/\A[0-9a-fA-F]{8}\z/)
+                    return alpha ? clean_hex.upcase : clean_hex[2..7].upcase
+                  end
+                end
+              end
+            when Integer
+              format("%06X", color & 0xFFFFFF)
+            end
+
+      return nil unless hex
+
+      alpha ? "FF#{hex}" : hex
+    end
+
+    # Normalizes a border style symbol, string, or integer index to an OOXML ST_BorderStyle symbol.
+    #
+    # @example
+    #   StyleBuilder.normalize_border_style(:border_thin)      #=> :thin
+    #   StyleBuilder.normalize_border_style(1)                 #=> :thin
+    #   StyleBuilder.normalize_border_style(:medium_dashed)    #=> :mediumDashed
+    #   StyleBuilder.normalize_border_style("double")          #=> :double
+    #   StyleBuilder.normalize_border_style(0)                 #=> :none
+    #
+    # @param style [Symbol, String, Integer, nil]
+    # @return [Symbol, nil]
+    # @api public
+    #: (Symbol | String | Integer | nil style) -> Symbol?
+    def self.normalize_border_style(style)
+      return nil if style.nil?
+
+      return BORDER_INDEX_MAP[style] if style.is_a?(Integer)
+
+      str = style.to_s.sub(/^border_/, "")
+      sym = str.to_sym
+      BORDER_STYLES[sym] || BORDER_STYLES[str.downcase.to_sym]
+    end
+
     # Resolves a color symbol, string, or prefix to an aRGB hex string.
     #
     # @param color [Symbol, String, Object, nil]
@@ -30,8 +305,11 @@ module Xlsxrb
 
       if color.is_a?(Symbol) || (color.is_a?(String) && color.start_with?(":") && color.length > 1)
         key = color.to_s.sub(/^:/, "").to_sym
-        return COLORS[key] || color.to_s
+        return COLORS[key] || (CSS_COLORS[key] ? "FF#{CSS_COLORS[key]}" : nil) || color.to_s
       end
+
+      return normalize_color(color, alpha: true) || color.to_s if color.is_a?(String) && color.start_with?("#")
+
       color.to_s
     end
 
@@ -314,75 +592,81 @@ module Xlsxrb
     end
 
     # Sets all borders.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
     def border_all(style: "thin", color: nil)
+      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
       color_opt = color ? { color: resolve_color(color) } : {}
-      @border_props[:left] = { style: style, **color_opt }
-      @border_props[:right] = { style: style, **color_opt }
-      @border_props[:top] = { style: style, **color_opt }
-      @border_props[:bottom] = { style: style, **color_opt }
+      @border_props[:left] = { style: norm_style, **color_opt }
+      @border_props[:right] = { style: norm_style, **color_opt }
+      @border_props[:top] = { style: norm_style, **color_opt }
+      @border_props[:bottom] = { style: norm_style, **color_opt }
       self
     end
 
     # Sets the left border.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
     def border_left(style: "thin", color: nil)
-      @border_props[:left] = { style: style, color: resolve_color(color) }.compact
+      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      @border_props[:left] = { style: norm_style, color: resolve_color(color) }.compact
       self
     end
 
     # Sets the right border.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
     def border_right(style: "thin", color: nil)
-      @border_props[:right] = { style: style, color: resolve_color(color) }.compact
+      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      @border_props[:right] = { style: norm_style, color: resolve_color(color) }.compact
       self
     end
 
     # Sets the top border.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
     def border_top(style: "thin", color: nil)
-      @border_props[:top] = { style: style, color: resolve_color(color) }.compact
+      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      @border_props[:top] = { style: norm_style, color: resolve_color(color) }.compact
       self
     end
 
     # Sets the bottom border.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @return [self]
     # @api public
-    #: (?style: String | Symbol, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
     def border_bottom(style: "thin", color: nil)
-      @border_props[:bottom] = { style: style, color: resolve_color(color) }.compact
+      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      @border_props[:bottom] = { style: norm_style, color: resolve_color(color) }.compact
       self
     end
 
     # rubocop:disable Naming/MethodParameterName
     # Sets diagonal borders.
-    # @param style [String, Symbol] The border style.
+    # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
     # @param up [Boolean] Diagonal up.
     # @param down [Boolean] Diagonal down.
     # @return [self]
     # @api public
-    #: (?style: String | Symbol, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
     def border_diagonal(style: "thin", color: nil, up: false, down: false)
-      @border_props[:diagonal] = { style: style, color: resolve_color(color) }.compact
+      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      @border_props[:diagonal] = { style: norm_style, color: resolve_color(color) }.compact
       @border_props[:diagonal_up] = true if up
       @border_props[:diagonal_down] = true if down
       self
