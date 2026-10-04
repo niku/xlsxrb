@@ -96,18 +96,20 @@ module Xlsxrb
   # yields each {StreamSheet} sequentially. Call {#load} on the returned Workbook or Sheet
   # to convert to an in-memory representation for coordinate random access (`sheet["A1"]`).
   #
-  # @overload read(source, password: nil, &block)
+  # @overload read(source, password: nil, trim_empty_rows: false, &block)
   #   Yields each {StreamSheet} sequentially in streaming mode.
   #   @param source [String, IO, StringIO] File path, binary content string, or readable IO stream.
   #   @param password [String, nil] Optional password to decrypt password-protected XLSX files.
+  #   @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during sheet iteration.
   #   @yield [sheet]
   #   @yieldparam sheet [StreamSheet] The streaming worksheet object.
   #   @return [void]
   #
-  # @overload read(source, password: nil)
+  # @overload read(source, password: nil, trim_empty_rows: false)
   #   Returns a lazy {Elements::Workbook} object.
   #   @param source [String, IO, StringIO] File path, binary content string, or readable IO stream.
   #   @param password [String, nil] Optional password to decrypt password-protected XLSX files.
+  #   @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during sheet iteration.
   #   @return [Elements::Workbook]
   #
   # @example Streaming read across sheets and rows (O(1) constant memory)
@@ -128,10 +130,10 @@ module Xlsxrb
   # @raise [InvalidPasswordError] If the supplied password is incorrect.
   # @raise [ParseError] If the spreadsheet XML structure is invalid.
   # @api public
-  # : (untyped source, ?password: String?) { (StreamSheet) -> void } -> void
-  # : (untyped source, ?password: String?) -> Elements::Workbook
-  def self.read: (untyped source, ?password: String?) { (StreamSheet) -> void } -> void
-               | (untyped source, ?password: String?) -> Elements::Workbook
+  # : (untyped source, ?password: String?, ?trim_empty_rows: bool) { (StreamSheet) -> void } -> void
+  # : (untyped source, ?password: String?, ?trim_empty_rows: bool) -> Elements::Workbook
+  def self.read: (untyped source, ?password: String?, ?trim_empty_rows: bool) { (StreamSheet) -> void } -> void
+               | (untyped source, ?password: String?, ?trim_empty_rows: bool) -> Elements::Workbook
 
   alias self.stream self.read
 
@@ -225,8 +227,8 @@ module Xlsxrb
   # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
   def self.build: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
-  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?) -> Elements::Worksheet
-  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?) -> Elements::Worksheet
+  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool) -> Elements::Worksheet
+  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool) -> Elements::Worksheet
 
   # : (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
   private def self.resolve_hyperlinks: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]

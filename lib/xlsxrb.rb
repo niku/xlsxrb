@@ -134,18 +134,20 @@ module Xlsxrb
   # yields each {StreamSheet} sequentially. Call {#load} on the returned Workbook or Sheet
   # to convert to an in-memory representation for coordinate random access (`sheet["A1"]`).
   #
-  # @overload read(source, password: nil, &block)
+  # @overload read(source, password: nil, trim_empty_rows: false, &block)
   #   Yields each {StreamSheet} sequentially in streaming mode.
   #   @param source [String, IO, StringIO] File path, binary content string, or readable IO stream.
   #   @param password [String, nil] Optional password to decrypt password-protected XLSX files.
+  #   @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during sheet iteration.
   #   @yield [sheet]
   #   @yieldparam sheet [StreamSheet] The streaming worksheet object.
   #   @return [void]
   #
-  # @overload read(source, password: nil)
+  # @overload read(source, password: nil, trim_empty_rows: false)
   #   Returns a lazy {Elements::Workbook} object.
   #   @param source [String, IO, StringIO] File path, binary content string, or readable IO stream.
   #   @param password [String, nil] Optional password to decrypt password-protected XLSX files.
+  #   @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during sheet iteration.
   #   @return [Elements::Workbook]
   #
   # @example Streaming read across sheets and rows (O(1) constant memory)
@@ -166,9 +168,9 @@ module Xlsxrb
   # @raise [InvalidPasswordError] If the supplied password is incorrect.
   # @raise [ParseError] If the spreadsheet XML structure is invalid.
   # @api public
-  #: (untyped source, ?password: String?) { (StreamSheet) -> void } -> void
-  #: (untyped source, ?password: String?) -> Elements::Workbook
-  def self.read(source, password: nil, &)
+  #: (untyped source, ?password: String?, ?trim_empty_rows: bool) { (StreamSheet) -> void } -> void
+  #: (untyped source, ?password: String?, ?trim_empty_rows: bool) -> Elements::Workbook
+  def self.read(source, password: nil, trim_empty_rows: false, &)
     prepared_source = prepare_source_io(source, password)
     zip_reader = Ooxml::ZipReader.open(prepared_source)
     begin
@@ -203,7 +205,8 @@ module Xlsxrb
           zip_reader: zip_reader,
           entry_name: sheet_path,
           state: sheet_info[:state] || :visible,
-          date1904: is_date1904
+          date1904: is_date1904,
+          trim_empty_rows: trim_empty_rows
         )
       end.compact
 
@@ -598,10 +601,10 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, date1904: false, dimension: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, date1904: false, dimension: nil, trim_empty_rows: false)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
-      return Elements::Worksheet.new(name: name, state: state, styles: styles, date1904: date1904, dimension: sheet_dimension) if sheet_xml.nil? || sheet_xml.empty?
+      return Elements::Worksheet.new(name: name, state: state, styles: styles, date1904: date1904, dimension: sheet_dimension, trim_empty_rows: trim_empty_rows) if sheet_xml.nil? || sheet_xml.empty?
 
       sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
       sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
@@ -650,7 +653,8 @@ module Xlsxrb
         comments: sheet_comments,
         styles: styles,
         date1904: date1904,
-        dimension: sheet_dimension
+        dimension: sheet_dimension,
+        trim_empty_rows: trim_empty_rows
       )
     end
 

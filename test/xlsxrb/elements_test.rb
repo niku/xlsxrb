@@ -1234,4 +1234,44 @@ class ElementsTest < Test::Unit::TestCase
     ws.each_row_values(type_cast: true) { |v| collected << v }
     assert_equal([[Date.new(2023, 1, 1), "hello"]], collected)
   end
+
+  test "row empty? and worksheet trim_empty_rows" do
+    empty_row1 = Xlsxrb::Elements::Row.new(index: 0, cells: [])
+    assert_true(empty_row1.empty?)
+
+    c_nil = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: nil)
+    empty_row2 = Xlsxrb::Elements::Row.new(index: 0, cells: [c_nil])
+    assert_true(empty_row2.empty?)
+
+    c_empty_str = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "")
+    empty_row3 = Xlsxrb::Elements::Row.new(index: 0, cells: [c_empty_str])
+    assert_true(empty_row3.empty?)
+
+    c_zero = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 0)
+    assert_false(Xlsxrb::Elements::Row.new(index: 0, cells: [c_zero]).empty?)
+
+    c_false = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: false)
+    assert_false(Xlsxrb::Elements::Row.new(index: 0, cells: [c_false]).empty?)
+
+    c_val1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "R1")
+    r1 = Xlsxrb::Elements::Row.new(index: 0, cells: [c_val1])
+
+    c_val3 = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 0, value: "R3")
+    r3 = Xlsxrb::Elements::Row.new(index: 2, cells: [c_val3])
+
+    r2 = empty_row1
+    r4 = empty_row2
+    r5 = empty_row3
+
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Test", rows: [r1, r2, r3, r4, r5])
+    assert_false(ws.trim_empty_rows?)
+    assert_equal(5, ws.each_row.to_a.size)
+    assert_equal(3, ws.each_row(trim_empty_rows: true).to_a.size)
+    assert_equal([["R1"], [], ["R3"]], ws.each_row_values(trim_empty_rows: true).to_a)
+
+    ws_trimmed = ws.with(trim_empty_rows: true)
+    assert_true(ws_trimmed.trim_empty_rows?)
+    assert_equal(3, ws_trimmed.each_row.to_a.size)
+    assert_equal(5, ws_trimmed.each_row(trim_empty_rows: false).to_a.size)
+  end
 end

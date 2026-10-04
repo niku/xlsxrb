@@ -91,6 +91,13 @@ module Xlsxrb
       # : () -> bool
       def valid?: () -> bool
 
+      # Returns whether the row contains no cell values (or all cell values are nil or empty strings).
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def empty?: () -> bool
+
       # Returns the cell at the given 0-based column index, or nil.
       #
       # @param column_index [Integer] 0-based column index.

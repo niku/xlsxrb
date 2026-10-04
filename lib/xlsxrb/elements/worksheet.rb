@@ -34,10 +34,10 @@ module Xlsxrb
       # @param hyperlinks [Hash{String => Hash}] Hyperlink mappings by cell reference.
       # @param comments [Array<Hash>] Comments and notes in the sheet.
       # @param styles [Hash, nil] Optional parsed styles hash.
-      # @param date1904 [Boolean] Whether the sheet uses the 1904 date system.
       # @param dimension [String, nil] Sheet dimension reference string (e.g. "A1:Z50000").
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil, date1904: false, dimension: nil)
+      # @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during iteration.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -54,7 +54,18 @@ module Xlsxrb
         @styles = styles
         @date1904 = date1904 ? true : false
         @dimension = dimension
+        @trim_empty_rows = trim_empty_rows ? true : false
       end
+
+      # Returns whether trailing empty rows are omitted during iteration.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def trim_empty_rows?
+        @trim_empty_rows ? true : false
+      end
+      alias trim_empty_rows trim_empty_rows?
 
       # Returns whether the worksheet uses the 1904 date system.
       #
@@ -101,37 +112,71 @@ module Xlsxrb
       #     puts "Row #{row.index}: #{row.to_a.inspect}"
       #   end
       #
-      # @yield [row]
-      # @yieldparam row [Elements::Row]
-      # @return [Enumerator, void]
+      # @overload each_row(trim_empty_rows: nil, &block)
+      #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
+      #   @yield [row]
+      #   @yieldparam row [Elements::Row]
+      #   @return [void]
+      #
+      # @overload each_row(trim_empty_rows: nil)
+      #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
+      #   @return [Enumerator, void]
+      #
       # @api public
-      #: () { (Elements::Row) -> void } -> void
-      #: () -> Enumerator[Elements::Row, void]
-      def each_row(&)
-        return to_enum(:each_row) unless block_given?
+      #: (?trim_empty_rows: bool?) { (Elements::Row) -> void } -> void
+      #: (?trim_empty_rows: bool?) -> Enumerator[Elements::Row, void]
+      def each_row(trim_empty_rows: nil, &block)
+        return to_enum(:each_row, trim_empty_rows: trim_empty_rows) unless block
 
-        rows.each(&)
+        trim = if trim_empty_rows.nil?
+                 @trim_empty_rows
+               else
+                 (trim_empty_rows ? true : false)
+               end
+
+        if trim
+          pending_empty = []
+          rows.each do |row|
+            if row.empty?
+              pending_empty << row
+            else
+              pending_empty.each(&block)
+              pending_empty.clear
+              block.call(row)
+            end
+          end
+        else
+          rows.each(&block)
+        end
       end
 
       # Iterates over row values as Arrays.
       #
-      # @overload each_row_values(type_cast: false, &block)
+      # @overload each_row_values(type_cast: false, trim_empty_rows: nil, &block)
       #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+      #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
       #   @yield [values]
       #   @yieldparam values [Array<Object>] Row values array.
       #   @return [void]
       #
-      # @overload each_row_values(type_cast: false)
+      # @overload each_row_values(type_cast: false, trim_empty_rows: nil)
       #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+      #   @param trim_empty_rows [Boolean, nil] Whether to omit trailing empty rows.
       #   @return [Enumerator<Array<Object>, void>]
       #
       # @api public
-      #: (?type_cast: bool) { (Array[untyped]) -> void } -> void
-      #: (?type_cast: bool) -> Enumerator[Array[untyped], void]
-      def each_row_values(type_cast: false, &block)
-        return to_enum(:each_row_values, type_cast: type_cast) unless block
+      #: (?type_cast: bool, ?trim_empty_rows: bool?) { (Array[untyped]) -> void } -> void
+      #: (?type_cast: bool, ?trim_empty_rows: bool?) -> Enumerator[Array[untyped], void]
+      def each_row_values(type_cast: false, trim_empty_rows: nil, &block)
+        return to_enum(:each_row_values, type_cast: type_cast, trim_empty_rows: trim_empty_rows) unless block
 
-        rows.each do |row|
+        trim = if trim_empty_rows.nil?
+                 @trim_empty_rows
+               else
+                 (trim_empty_rows ? true : false)
+               end
+
+        each_row(trim_empty_rows: trim) do |row|
           block.call(row.values(type_cast: type_cast))
         end
       end
@@ -332,6 +377,7 @@ module Xlsxrb
         new_styles = changes.key?(:styles) ? changes[:styles] : styles
         new_date1904 = changes.key?(:date1904) ? changes[:date1904] : date1904
         new_dim = changes.key?(:dimension) ? changes[:dimension] : @dimension
+        new_trim = changes.key?(:trim_empty_rows) ? changes[:trim_empty_rows] : @trim_empty_rows
 
         self.class.new(
           name: new_name,
@@ -347,7 +393,8 @@ module Xlsxrb
           comments: new_comments,
           styles: new_styles,
           date1904: new_date1904,
-          dimension: new_dim
+          dimension: new_dim,
+          trim_empty_rows: new_trim
         )
       end
 
@@ -369,7 +416,8 @@ module Xlsxrb
           comments: comments,
           styles: styles,
           date1904: date1904,
-          dimension: dimension
+          dimension: dimension,
+          trim_empty_rows: @trim_empty_rows
         }
       end
 

@@ -214,4 +214,59 @@ class StreamRowTest < Test::Unit::TestCase
     )
     assert_equal([Date.new(2023, 1, 1)], row1904.values(type_cast: true))
   end
+
+  test "stream_row empty? accurately detects empty cells, empty strings, and values" do
+    empty_row = Xlsxrb::StreamRow.fast_create(0, "".b, 0, 0, [])
+    assert_true(empty_row.empty?)
+
+    self_closing_xml = %(<c r="A1"/>).b
+    self_closing_cell_row = Xlsxrb::StreamRow.new(
+      index: 0,
+      xml_bytes: self_closing_xml,
+      from: 0,
+      to: self_closing_xml.bytesize,
+      shared_strings: []
+    )
+    assert_true(self_closing_cell_row.empty?)
+
+    empty_str_xml = %(<c r="A1" t="s"><v>0</v></c>).b
+    empty_str_row = Xlsxrb::StreamRow.new(
+      index: 0,
+      xml_bytes: empty_str_xml,
+      from: 0,
+      to: empty_str_xml.bytesize,
+      shared_strings: [""]
+    )
+    assert_true(empty_str_row.empty?)
+
+    zero_xml = %(<c r="A1"><v>0</v></c>).b
+    zero_row = Xlsxrb::StreamRow.new(
+      index: 0,
+      xml_bytes: zero_xml,
+      from: 0,
+      to: zero_xml.bytesize,
+      shared_strings: []
+    )
+    assert_false(zero_row.empty?)
+
+    false_xml = %(<c r="A1" t="b"><v>0</v></c>).b
+    false_row = Xlsxrb::StreamRow.new(
+      index: 0,
+      xml_bytes: false_xml,
+      from: 0,
+      to: false_xml.bytesize,
+      shared_strings: []
+    )
+    assert_false(false_row.empty?)
+
+    val_xml = %(<c r="C1"><v>42</v></c>).b
+    val_row = Xlsxrb::StreamRow.new(
+      index: 0,
+      xml_bytes: val_xml,
+      from: 0,
+      to: val_xml.bytesize,
+      shared_strings: []
+    )
+    assert_false(val_row.empty?)
+  end
 end

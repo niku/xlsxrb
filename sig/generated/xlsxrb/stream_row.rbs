@@ -140,6 +140,13 @@ module Xlsxrb
     # : () -> bool
     def valid?: () -> bool
 
+    # Returns whether the row contains no cell values (or all cell values are nil or empty strings).
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def empty?: () -> bool
+
     # Unmapped metadata for compatibility with Elements::Row.
     #
     # @return [Hash]

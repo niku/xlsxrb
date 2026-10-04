@@ -379,7 +379,7 @@ class StreamSheetTest < Test::Unit::TestCase
                                             ]
                                           })
 
-    sheet = Xlsxrb::StreamSheet.new("Data", xml.b, ["hello"], styles)
+    sheet = Xlsxrb::StreamSheet.new("Data", xml.b, ["hello"], styles, zip_reader: nil)
 
     enum = sheet.each_row_values
     assert_kind_of(Enumerator, enum)
@@ -392,5 +392,63 @@ class StreamSheetTest < Test::Unit::TestCase
     typecast_collected = []
     sheet.each_row_values(type_cast: true) { |row_vals| typecast_collected << row_vals }
     assert_equal([[10, "hello"], [Date.new(2023, 1, 1), nil, 30]], typecast_collected)
+  end
+
+  test "stream_sheet trim_empty_rows omits trailing empty rows while preserving inner empty rows" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1" t="str"><v>Row1</v></c>
+          </row>
+          <row r="2">
+            <c r="A2"/>
+          </row>
+          <row r="3">
+            <c r="A3" t="str"><v>Row3</v></c>
+          </row>
+          <row r="4">
+            <c r="A4"/>
+          </row>
+          <row r="5">
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    sheet_default = Xlsxrb::StreamSheet.new("Data", xml.b, [])
+    assert_false(sheet_default.trim_empty_rows?)
+    assert_equal(5, sheet_default.each_row.to_a.size)
+    assert_equal([["Row1"], [nil], ["Row3"], [nil], []], sheet_default.each_row_values.to_a)
+
+    sheet_trimmed = Xlsxrb::StreamSheet.new("Data", xml.b, [], trim_empty_rows: true)
+    assert_true(sheet_trimmed.trim_empty_rows?)
+    rows_trimmed = sheet_trimmed.each_row.to_a
+    assert_equal(3, rows_trimmed.size)
+    assert_equal(0, rows_trimmed[0].index)
+    assert_equal(1, rows_trimmed[1].index)
+    assert_equal(2, rows_trimmed[2].index)
+    assert_equal([["Row1"], [nil], ["Row3"]], sheet_trimmed.each_row_values.to_a)
+
+    assert_equal(5, sheet_trimmed.each_row(trim_empty_rows: false).to_a.size)
+    assert_equal(3, sheet_default.each_row(trim_empty_rows: true).to_a.size)
+    assert_equal([["Row1"], [nil], ["Row3"]], sheet_default.each_row_values(trim_empty_rows: true).to_a)
+  end
+
+  test "stream_sheet trim_empty_rows on sheet with only empty rows yields empty array" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+          </row>
+          <row r="2"><c r="A2"/></row>
+          <row r="3"></row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    sheet = Xlsxrb::StreamSheet.new("Empty", xml.b, [], trim_empty_rows: true)
+    assert_equal([], sheet.each_row.to_a)
+    assert_equal([], sheet.each_row_values.to_a)
   end
 end

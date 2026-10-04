@@ -146,6 +146,17 @@ module Xlsxrb
         errors.empty?
       end
 
+      # Returns whether the row contains no cell values (or all cell values are nil or empty strings).
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def empty?
+        return true if cells.empty?
+
+        cells.all? { |c| c.value.nil? || (c.value.is_a?(String) && c.value.empty?) }
+      end
+
       # Returns the cell at the given 0-based column index, or nil.
       #
       # @param column_index [Integer] 0-based column index.

@@ -296,6 +296,32 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal([1, 2, 3, 4], cells)
   end
 
+  test "Xlsxrb.read with trim_empty_rows: true omits trailing empty rows" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("Trimming") do |s|
+        s.row(["Header", 100])
+        s.row([])
+        s.row(["Data", 200])
+        s.row([])
+        s.row([])
+      end
+    end
+    binary = Xlsxrb.write(wb)
+
+    all_rows = []
+    Xlsxrb.read(binary) do |sheet|
+      sheet.each_row_values { |v| all_rows << v }
+    end
+    assert_equal([["Header", 100], [], ["Data", 200], [], []], all_rows)
+
+    trimmed_rows = []
+    Xlsxrb.read(binary, trim_empty_rows: true) do |sheet|
+      assert_true(sheet.trim_empty_rows?)
+      sheet.each_row_values { |v| trimmed_rows << v }
+    end
+    assert_equal([["Header", 100], [], ["Data", 200]], trimmed_rows)
+  end
+
   test "Xlsxrb.read with multiple sheets streaming" do
     tmp = Tempfile.new(["read_multi_sheet", ".xlsx"])
     begin

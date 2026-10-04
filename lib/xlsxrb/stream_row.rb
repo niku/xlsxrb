@@ -249,6 +249,18 @@ module Xlsxrb
       true
     end
 
+    # Returns whether the row contains no cell values (or all cell values are nil or empty strings).
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def empty?
+      vals = values
+      return true if vals.empty?
+
+      vals.all? { |v| v.nil? || (v.is_a?(String) && v.empty?) }
+    end
+
     # Unmapped metadata for compatibility with Elements::Row.
     #
     # @return [Hash]

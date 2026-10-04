@@ -28,14 +28,29 @@ module Xlsxrb
       end
 
       # Streaming parse: yields one raw row hash at a time.
-      def self.each_row(xml_source, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", styles: nil, date1904: false, &block)
-        return enum_for(:each_row, xml_source, shared_strings: shared_strings, part_name: part_name, styles: styles, date1904: date1904) unless block
+      def self.each_row(xml_source, shared_strings: [], part_name: "xl/worksheets/sheet1.xml", styles: nil, date1904: false, trim_empty_rows: false, &block)
+        return enum_for(:each_row, xml_source, shared_strings: shared_strings, part_name: part_name, styles: styles, date1904: date1904, trim_empty_rows: trim_empty_rows) unless block
         return if xml_source.nil? || (xml_source.respond_to?(:empty?) && xml_source.empty?)
 
+        row_consumer = if trim_empty_rows
+                         pending_empty = []
+                         lambda do |row|
+                           if row.empty?
+                             pending_empty << row
+                           else
+                             pending_empty.each(&block)
+                             pending_empty.clear
+                             block.call(row)
+                           end
+                         end
+                       else
+                         block
+                       end
+
         if xml_source.is_a?(String)
-          fast_scan_rows_direct(xml_source, shared_strings, part_name, styles, date1904, &block)
+          fast_scan_rows_direct(xml_source, shared_strings, part_name, styles, date1904, &row_consumer)
         else
-          scan_rows_stream(xml_source, shared_strings, part_name, styles, date1904, &block)
+          scan_rows_stream(xml_source, shared_strings, part_name, styles, date1904, &row_consumer)
         end
       end
 
