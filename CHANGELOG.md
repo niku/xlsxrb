@@ -31,6 +31,7 @@
 - Optimize chunked streaming read performance: Hoist `</sheetData>` tag lookup outside row iteration, eliminate byte delimiter array allocations, and terminate entry inflation early once worksheet rows are fully parsed, restoring streaming read throughput faster than in-memory read while preserving $O(1)$ memory consumption.
 
 ### Fixed
+- Fallback cached value for formula cells: Emit `<v>0</v>` instead of omitting `<v>` when a formula cell does not specify a cached value, ensuring compatibility with OpenXML parsers (such as Roo and LibreOffice) that discard formula cells lacking `<v>` elements.
 - Shared formula cell parsing: Support self-closing formula tags (e.g. `<f t="shared" si="0"/>`) in `WorksheetParser` regex scanners, preventing cells containing shared formulas from being silently omitted.
 - Fixed missing `dcterms:created` and `dcterms:modified` serialization in `WorkbookWriter` core properties (`docProps/core.xml`).
 - Prevent `Encoding::CompatibilityError` in `Xlsxrb.read` and `Cfb::Reader.cfb?` when inspecting raw string buffers in UTF-8 encoding.

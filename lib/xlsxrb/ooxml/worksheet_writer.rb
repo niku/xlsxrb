@@ -241,7 +241,7 @@ module Xlsxrb
             if xml_val
               buf << "<v>" << xml_val.to_s << "</v></c>"
             else
-              buf << "</c>"
+              buf << "<v>0</v></c>"
             end
           else
             buf << "><v>" << xml_val.to_s << "</v></c>"
@@ -295,7 +295,7 @@ module Xlsxrb
                 next
               end
               formula_expr = value[1..]
-              buf << "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f></c>"
+              buf << "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>0</v></c>"
             when true
               buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"b\"><v>1</v></c>"
             when false
@@ -320,7 +320,7 @@ module Xlsxrb
               buf << if value.cached_value
                        "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>#{value.cached_value}</v></c>"
                      else
-                       "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f></c>"
+                       "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>0</v></c>"
                      end
             when Hash
               if value.key?(:formula)
@@ -330,7 +330,7 @@ module Xlsxrb
                 buf << if xml_val
                          "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>#{xml_val}</v></c>"
                        else
-                         "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f></c>"
+                         "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>0</v></c>"
                        end
               end
             when Xlsxrb::Elements::CellError
@@ -531,7 +531,7 @@ module Xlsxrb
             if xml_val
               buf << "<v>" << xml_val.to_s << "</v></c>"
             else
-              buf << "</c>"
+              buf << "<v>0</v></c>"
             end
           else
             buf << "><v>" << xml_val.to_s << "</v></c>"
@@ -1144,7 +1144,12 @@ module Xlsxrb
             @builder.tag("f", f_attrs) { |b| b.text(formula) }
           end
         end
-        @builder.tag("v") { |b| b.text(xml_cell_value(value, type)) } unless value.nil?
+        v_val = if value.nil?
+                  formula ? "0" : nil
+                else
+                  xml_cell_value(value, type)
+                end
+        @builder.tag("v") { |b| b.text(v_val) } unless v_val.nil?
         @builder.close_tag("c")
       end
 

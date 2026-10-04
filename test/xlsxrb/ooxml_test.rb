@@ -726,4 +726,25 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(["name"], sst)
     assert_equal(0, sst_index["name"])
   end
+
+  test "worksheet_writer emits fallback <v>0</v> for formula cells without cached value" do
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.start
+    formula_obj = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A10)")
+    formula_with_val = Xlsxrb::Elements::Formula.new(expression: "SUM(B1:B10)", cached_value: 42)
+    writer.write_row(0, [
+                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, formula: formula_obj),
+                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, formula: formula_with_val)
+                     ])
+    writer.write_row_values(1, ["=A1*2", formula_obj, { formula: "NOW()" }])
+    writer.finish
+
+    xml = io.string
+    assert_include(xml, '<c r="A1"><f>SUM(A1:A10)</f><v>0</v></c>')
+    assert_include(xml, '<c r="B1"><f>SUM(B1:B10)</f><v>42</v></c>')
+    assert_include(xml, '<c r="A2"><f>A1*2</f><v>0</v></c>')
+    assert_include(xml, '<c r="B2"><f>SUM(A1:A10)</f><v>0</v></c>')
+    assert_include(xml, '<c r="C2"><f>NOW()</f><v>0</v></c>')
+  end
 end
