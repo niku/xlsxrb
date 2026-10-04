@@ -355,4 +355,42 @@ class StreamSheetTest < Test::Unit::TestCase
     # Stopped on first chunk where dimension and sheetData appeared
     assert_equal(1, chunks_read)
   end
+
+  test "stream_sheet each_row_values yields row value arrays directly without allocating Cell objects" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1"><v>10</v></c>
+            <c r="B1" t="s"><v>0</v></c>
+          </row>
+          <row r="2">
+            <c r="A2" s="1"><v>44927</v></c>
+            <c r="C2"><v>30</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    styles = Xlsxrb::Elements::Styles.new({
+                                            cell_xfs: [
+                                              { num_fmt_id: 0 },
+                                              { num_fmt_id: 14 }
+                                            ]
+                                          })
+
+    sheet = Xlsxrb::StreamSheet.new("Data", xml.b, ["hello"], styles)
+
+    enum = sheet.each_row_values
+    assert_kind_of(Enumerator, enum)
+    assert_equal([[10, "hello"], [44_927, nil, 30]], enum.to_a)
+
+    collected = []
+    sheet.each_row_values { |row_vals| collected << row_vals }
+    assert_equal([[10, "hello"], [44_927, nil, 30]], collected)
+
+    typecast_collected = []
+    sheet.each_row_values(type_cast: true) { |row_vals| typecast_collected << row_vals }
+    assert_equal([[10, "hello"], [Date.new(2023, 1, 1), nil, 30]], typecast_collected)
+  end
 end

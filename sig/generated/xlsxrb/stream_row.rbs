@@ -104,12 +104,13 @@ module Xlsxrb
     # : () -> Array[untyped]
     def to_a: () -> Array[untyped]
 
-    # Returns cell values as an Array.
+    # Returns cell values as an Array (sparse columns get nil).
     #
+    # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
     # @return [Array<Object>]
     # @api public
-    # : () -> Array[untyped]
-    def values: () -> Array[untyped]
+    # : (?type_cast: bool) -> Array[untyped]
+    def values: (?type_cast: bool) -> Array[untyped]
 
     # Convert row cells to an Array of raw string values (sparse columns get nil).
     #
@@ -159,5 +160,10 @@ module Xlsxrb
     # @api public
     # : () -> String
     def inspect: () -> String
+
+    private
+
+    # : (bool) -> Array[untyped]
+    def values_from_cells: (bool) -> Array[untyped]
   end
 end

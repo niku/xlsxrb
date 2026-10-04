@@ -191,6 +191,29 @@ module Xlsxrb
       end
     end
 
+    # Iterates over row values directly as Arrays without wrapping cells in Elements::Cell objects.
+    #
+    # @overload each_row_values(type_cast: false, &block)
+    #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+    #   @yield [values]
+    #   @yieldparam values [Array<Object>] Row values array.
+    #   @return [void]
+    #
+    # @overload each_row_values(type_cast: false)
+    #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+    #   @return [Enumerator<Array<Object>, void>]
+    #
+    # @api public
+    #: (?type_cast: bool) { (Array[untyped]) -> void } -> void
+    #: (?type_cast: bool) -> Enumerator[Array[untyped], void]
+    def each_row_values(type_cast: false, &block)
+      return enum_for(:each_row_values, type_cast: type_cast) unless block
+
+      each_row do |row|
+        block.call(row.values(type_cast: type_cast))
+      end
+    end
+
     # Default Enumerable iteration delegates to {#each_row}.
     #
     # @overload each(&block)

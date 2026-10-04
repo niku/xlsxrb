@@ -1215,4 +1215,23 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("$20.51", wb.formatted_value("Data", "A1"))
     assert_nil(wb.formatted_value("NonExistent", "A1"))
   end
+
+  test "row values and worksheet each_row_values with type_cast: true" do
+    c1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 44_927, format_code: "yyyy-mm-dd")
+    c2 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "hello")
+    row = Xlsxrb::Elements::Row.new(index: 0, cells: [c1, c2])
+
+    assert_equal([44_927, "hello"], row.values)
+    assert_equal([44_927, "hello"], row.values(type_cast: false))
+    assert_equal([Date.new(2023, 1, 1), "hello"], row.values(type_cast: true))
+
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Data", rows: [row])
+    assert_kind_of(Enumerator, ws.each_row_values)
+    assert_equal([[44_927, "hello"]], ws.each_row_values.to_a)
+    assert_equal([[Date.new(2023, 1, 1), "hello"]], ws.each_row_values(type_cast: true).to_a)
+
+    collected = []
+    ws.each_row_values(type_cast: true) { |v| collected << v }
+    assert_equal([[Date.new(2023, 1, 1), "hello"]], collected)
+  end
 end

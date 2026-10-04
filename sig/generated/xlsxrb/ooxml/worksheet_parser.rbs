@@ -94,6 +94,10 @@ module Xlsxrb
 
       # rubocop:disable Style/OptionalBooleanParameter
       def self.fast_scan_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped _prefix, ?untyped styles, ?untyped date1904) ?{ (?) -> untyped } -> untyped
+
+      # rubocop:disable Style/OptionalBooleanParameter
+      # : (String xml, Integer from, Integer to, Array[String] shared_strings, ?untyped styles, ?bool date1904, ?type_cast: bool) -> Array[untyped]
+      def self.fast_scan_row_values: (String xml, Integer from, Integer to, Array[String] shared_strings, ?untyped styles, ?bool date1904, ?type_cast: bool) -> Array[untyped]
     end
   end
 end

@@ -915,6 +915,128 @@ module Xlsxrb
         end
       end
 
+      # rubocop:disable Style/OptionalBooleanParameter
+      #: (String xml, Integer from, Integer to, Array[String] shared_strings, ?untyped styles, ?bool date1904, ?type_cast: bool) -> Array[untyped]
+      def self.fast_scan_row_values(xml, from, to, shared_strings, styles = nil, date1904 = false, type_cast: false)
+        # rubocop:enable Style/OptionalBooleanParameter
+        chunk = xml.byteslice(from, to - from)
+        return [] if chunk.nil? || chunk.empty?
+
+        col_idx = 0
+        matched_any = false
+        row_values = []
+
+        chunk.scan(CELL_FAST_RE) do |r, s, t, _f, v, is, self_r, self_s|
+          matched_any = true
+          ref = r || self_r
+          s_val = s || self_s
+          c_idx = if ref
+                    expected_letter = COL_LETTERS[col_idx]
+                    if expected_letter && ref.start_with?(expected_letter)
+                      col_idx
+                    else
+                      c_len = 0
+                      c_len += 1 while (b = ref.getbyte(c_len)) && (b.between?(65, 90) || b.between?(97, 122))
+                      col_letters = ref.byteslice(0, c_len).upcase
+                      COL_MAP[col_letters] || col_idx
+                    end
+                  else
+                    col_idx
+                  end
+          col_idx = c_idx + 1
+
+          val = if t == "s"
+                  shared_strings[v.to_i] || ""
+                elsif t == "b"
+                  v == "1"
+                elsif %w[inlineStr str e].include?(t)
+                  if is
+                    extract_inline_text(is, 0, is.bytesize)
+                  elsif v
+                    v.include?("&") ? decode_xml_entities(v) : v
+                  else
+                    ""
+                  end
+                elsif v
+                  v.include?(".") ? v.to_f : v.to_i
+                end
+
+          if type_cast && val.is_a?(Numeric) && s_val && styles
+            fmt_type = NumberFormatter.format_type_for(s_val.to_i, styles)
+            begin
+              case fmt_type
+              when :date
+                val = Utils.serial_to_date(val, date1904: date1904)
+              when :datetime, :time
+                val = Utils.serial_to_datetime(val, date1904: date1904)
+              end
+            rescue StandardError
+              # Keep numeric value on conversion failure
+            end
+          end
+
+          row_values[c_idx] = val
+        end
+
+        return row_values if matched_any || (!chunk.include?("<c") && !chunk.include?(":c"))
+
+        # Fallback for non-standard attribute ordering
+        chunk.scan(CELL_GENERIC_RE) do |attrs, _f, v, is|
+          r = attrs[ATTR_R, 1]
+          t = attrs[ATTR_T, 1]
+          s = attrs[ATTR_S, 1]
+
+          c_idx = if r
+                    expected_letter = COL_LETTERS[col_idx]
+                    if expected_letter && r.start_with?(expected_letter)
+                      col_idx
+                    else
+                      c_len = 0
+                      c_len += 1 while (b = r.getbyte(c_len)) && (b.between?(65, 90) || b.between?(97, 122))
+                      col_letters = r.byteslice(0, c_len).upcase
+                      COL_MAP[col_letters] || col_idx
+                    end
+                  else
+                    col_idx
+                  end
+          col_idx = c_idx + 1
+
+          val = if t == "s"
+                  shared_strings[v.to_i] || ""
+                elsif t == "b"
+                  v == "1"
+                elsif %w[inlineStr str e].include?(t)
+                  if is
+                    extract_inline_text(is, 0, is.bytesize)
+                  elsif v
+                    v.include?("&") ? decode_xml_entities(v) : v
+                  else
+                    ""
+                  end
+                elsif v
+                  v.include?(".") ? v.to_f : v.to_i
+                end
+
+          if type_cast && val.is_a?(Numeric) && s && styles
+            fmt_type = NumberFormatter.format_type_for(s.to_i, styles)
+            begin
+              case fmt_type
+              when :date
+                val = Utils.serial_to_date(val, date1904: date1904)
+              when :datetime, :time
+                val = Utils.serial_to_datetime(val, date1904: date1904)
+              end
+            rescue StandardError
+              # Keep numeric value on conversion failure
+            end
+          end
+
+          row_values[c_idx] = val
+        end
+
+        row_values
+      end
+
       private_class_method :fast_parse_cells_direct
     end
   end

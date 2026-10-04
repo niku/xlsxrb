@@ -175,23 +175,21 @@ module Xlsxrb
     # @api public
     #: () -> Array[untyped]
     def to_a
-      return [] if cells.empty?
-
-      max_col = cells.map(&:column_index).max || 0
-      arr = Array.new(max_col + 1)
-      cells.each do |cell|
-        arr[cell.column_index] = cell.value
-      end
-      arr
+      values
     end
 
-    # Returns cell values as an Array.
+    # Returns cell values as an Array (sparse columns get nil).
     #
+    # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
     # @return [Array<Object>]
     # @api public
-    #: () -> Array[untyped]
-    def values
-      to_a
+    #: (?type_cast: bool) -> Array[untyped]
+    def values(type_cast: false)
+      if @cells
+        values_from_cells(type_cast)
+      else
+        Ooxml::WorksheetParser.fast_scan_row_values(@xml, @from, @to, @shared_strings, @styles, @date1904, type_cast: type_cast)
+      end
     end
 
     # Convert row cells to an Array of raw string values (sparse columns get nil).
@@ -276,6 +274,38 @@ module Xlsxrb
     #: () -> String
     def inspect
       "#<#{self.class.name} index=#{index} height=#{height.inspect} hidden=#{hidden}>"
+    end
+
+    private
+
+    #: (bool) -> Array[untyped]
+    def values_from_cells(type_cast)
+      return [] if @cells.nil? || @cells.empty?
+
+      max_col = @cells.map(&:column_index).max || 0
+      arr = Array.new(max_col + 1)
+      @cells.each do |c|
+        val = c.value
+        if type_cast && val.is_a?(Numeric)
+          fmt_type = if c.style_index && @styles
+                       NumberFormatter.format_type_for(c.style_index, @styles)
+                     elsif c.format_code
+                       NumberFormatter.format_type(c.format_code)
+                     end
+          begin
+            case fmt_type
+            when :date
+              val = Ooxml::Utils.serial_to_date(val, date1904: @date1904)
+            when :datetime, :time
+              val = Ooxml::Utils.serial_to_datetime(val, date1904: @date1904)
+            end
+          rescue StandardError
+            # Keep val numeric on failure
+          end
+        end
+        arr[c.column_index] = val
+      end
+      arr
     end
   end
 end

@@ -158,15 +158,32 @@ module Xlsxrb
 
       # Returns cell values as an Array (sparse columns get nil).
       #
+      # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
       # @return [Array<Object>]
       # @api public
-      #: () -> Array[untyped]
-      def values
+      #: (?type_cast: bool) -> Array[untyped]
+      def values(type_cast: false)
         return [] if cells.empty?
 
-        max_col = cells.max_by(&:column_index).column_index
+        max_col = cells.max_by(&:column_index)&.column_index || 0
         result = Array.new(max_col + 1)
-        cells.each { |c| result[c.column_index] = c.value }
+        cells.each do |c|
+          val = c.value
+          if type_cast && val.is_a?(Numeric) && c.format_code
+            fmt_type = NumberFormatter.format_type(c.format_code)
+            begin
+              case fmt_type
+              when :date
+                val = Ooxml::Utils.serial_to_date(val, date1904: c.date1904?)
+              when :datetime, :time
+                val = Ooxml::Utils.serial_to_datetime(val, date1904: c.date1904?)
+              end
+            rescue StandardError
+              # Keep val numeric on failure
+            end
+          end
+          result[c.column_index] = val
+        end
         result
       end
 

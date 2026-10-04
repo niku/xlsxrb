@@ -108,6 +108,24 @@ module Xlsxrb
       def each_row: () { (Elements::Row) -> void } -> void
                   | () -> Enumerator[Elements::Row, void]
 
+      # Iterates over row values as Arrays.
+      #
+      # @overload each_row_values(type_cast: false, &block)
+      #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+      #   @yield [values]
+      #   @yieldparam values [Array<Object>] Row values array.
+      #   @return [void]
+      #
+      # @overload each_row_values(type_cast: false)
+      #   @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
+      #   @return [Enumerator<Array<Object>, void>]
+      #
+      # @api public
+      # : (?type_cast: bool) { (Array[untyped]) -> void } -> void
+      # : (?type_cast: bool) -> Enumerator[Array[untyped], void]
+      def each_row_values: (?type_cast: bool) { (Array[untyped]) -> void } -> void
+                         | (?type_cast: bool) -> Enumerator[Array[untyped], void]
+
       # Iterate over all cells across rows.
       #
       # @yield [cell]
