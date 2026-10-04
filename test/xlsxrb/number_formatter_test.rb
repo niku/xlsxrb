@@ -305,5 +305,51 @@ class NumberFormatterTest < Test::Unit::TestCase
     empty_parsed = Xlsxrb::Ooxml::StylesParser.parse("")
     assert_instance_of(Xlsxrb::Elements::Styles, empty_parsed)
     assert_nil(empty_parsed.number_format(0))
+
+    # Test format_code_for and classification_for aliases
+    assert_equal("yyyy-mm-dd", parsed.format_code_for(1))
+    assert_equal(:date, parsed.classification_for(1))
+  end
+
+  test "NumberFormatter checkers accept optional num_fmt_id" do
+    assert_true(Xlsxrb::NumberFormatter.date_format?(nil, 14))
+    assert_true(Xlsxrb::NumberFormatter.date_only_format?(nil, 14))
+    assert_false(Xlsxrb::NumberFormatter.time_format?(nil, 14))
+    assert_false(Xlsxrb::NumberFormatter.datetime_format?(nil, 14))
+
+    assert_true(Xlsxrb::NumberFormatter.date_format?(nil, 20))
+    assert_true(Xlsxrb::NumberFormatter.time_format?(nil, 20))
+    assert_false(Xlsxrb::NumberFormatter.date_only_format?(nil, 20))
+
+    assert_true(Xlsxrb::NumberFormatter.date_format?(nil, 22))
+    assert_true(Xlsxrb::NumberFormatter.datetime_format?(nil, 22))
+
+    assert_false(Xlsxrb::NumberFormatter.date_format?(nil, 1))
+    assert_false(Xlsxrb::NumberFormatter.time_format?(nil, 1))
+  end
+
+  test "Elements::Cell format classification methods" do
+    date_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 44_927, format_code: "yyyy-mm-dd")
+    assert_equal(:date, date_cell.format_type)
+    assert_true(date_cell.date_format?)
+    assert_false(date_cell.time_format?)
+    assert_equal(:date, date_cell[:format_type])
+    assert_true(date_cell[:date_format])
+    assert_false(date_cell[:time_format])
+
+    time_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: 0.5, format_code: "hh:mm:ss")
+    assert_equal(:time, time_cell.format_type)
+    assert_true(time_cell.date_format?)
+    assert_true(time_cell.time_format?)
+
+    num_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 2, value: 123, format_code: "#,##0.00")
+    assert_equal(:number, num_cell.format_type)
+    assert_false(num_cell.date_format?)
+    assert_false(num_cell.time_format?)
+
+    plain_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 3, value: "hello")
+    assert_nil(plain_cell.format_type)
+    assert_false(plain_cell.date_format?)
+    assert_false(plain_cell.time_format?)
   end
 end

@@ -246,6 +246,9 @@ module Xlsxrb
         when :raw_value then raw_value
         when :format_code then format_code
         when :formatted_value then formatted_value
+        when :format_type then format_type
+        when :date_format then date_format?
+        when :time_format then time_format?
         when :date1904 then date1904?
         when :type
           case value
@@ -253,6 +256,33 @@ module Xlsxrb
           when true, false then "b"
           end
         end
+      end
+
+      # Returns the classified format category for this cell (:date, :datetime, :time, :number, :text, :general, or nil).
+      #
+      # @return [Symbol, nil]
+      # @api public
+      #: () -> Symbol?
+      def format_type
+        format_code ? NumberFormatter.format_type(format_code) : nil
+      end
+
+      # Returns whether the cell has a date, datetime, or time format.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def date_format?
+        format_code ? NumberFormatter.date_format?(format_code) : false
+      end
+
+      # Returns whether the cell has a time-only format.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def time_format?
+        format_code ? NumberFormatter.time_format?(format_code) : false
       end
 
       # Returns whether the cell's workbook uses the 1904 date system.

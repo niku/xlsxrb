@@ -24,6 +24,8 @@ module Xlsxrb
 
       alias format_code number_format
 
+      alias format_code_for number_format
+
       # Returns the classified format category (:date, :datetime, :time, :number, :text, :general) for a style index.
       #
       # @param style_index [Integer, nil]
@@ -31,6 +33,8 @@ module Xlsxrb
       # @api public
       # : (Integer? style_index) -> Symbol?
       def format_type: (Integer? style_index) -> Symbol?
+
+      alias classification_for format_type
 
       # Returns whether the style index represents a date, datetime, or time pattern.
       #

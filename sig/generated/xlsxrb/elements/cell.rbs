@@ -141,6 +141,27 @@ module Xlsxrb
       # : (Symbol key) -> untyped
       def []: (Symbol key) -> untyped
 
+      # Returns the classified format category for this cell (:date, :datetime, :time, :number, :text, :general, or nil).
+      #
+      # @return [Symbol, nil]
+      # @api public
+      # : () -> Symbol?
+      def format_type: () -> Symbol?
+
+      # Returns whether the cell has a date, datetime, or time format.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def date_format?: () -> bool
+
+      # Returns whether the cell has a time-only format.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def time_format?: () -> bool
+
       # Returns whether the cell's workbook uses the 1904 date system.
       #
       # @return [Boolean]

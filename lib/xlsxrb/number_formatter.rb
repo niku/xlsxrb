@@ -130,43 +130,61 @@ module Xlsxrb
       # Checks whether a format code string represents a date, datetime, or time pattern.
       #
       # @param format_code [String, nil]
+      # @param num_fmt_id [Integer, nil]
       # @return [Boolean]
-      #: (String? format_code) -> bool
-      def date_format?(format_code)
-        return false if format_code.nil? || format_code.empty?
+      #: (String? format_code, ?Integer? num_fmt_id) -> bool
+      def date_format?(format_code, num_fmt_id = nil)
+        code = format_code
+        code = Ooxml::Utils::BUILTIN_NUM_FMT_CODES[num_fmt_id] if (code.nil? || code.empty?) && num_fmt_id
+        return false if code.nil? || code.empty?
 
-        type = format_type(format_code)
+        type = format_type(code)
         %i[date datetime time].include?(type)
       end
 
       # Checks whether a format code string represents a date-only pattern.
       #
       # @param format_code [String, nil]
+      # @param num_fmt_id [Integer, nil]
       # @return [Boolean]
       # @api public
-      #: (String? format_code) -> bool
-      def date_only_format?(format_code)
-        format_type(format_code) == :date
+      #: (String? format_code, ?Integer? num_fmt_id) -> bool
+      def date_only_format?(format_code, num_fmt_id = nil)
+        code = format_code
+        code = Ooxml::Utils::BUILTIN_NUM_FMT_CODES[num_fmt_id] if (code.nil? || code.empty?) && num_fmt_id
+        return false if code.nil? || code.empty?
+
+        format_type(code) == :date
       end
 
       # Checks whether a format code string represents a datetime pattern.
       #
       # @param format_code [String, nil]
+      # @param num_fmt_id [Integer, nil]
       # @return [Boolean]
       # @api public
-      #: (String? format_code) -> bool
-      def datetime_format?(format_code)
-        format_type(format_code) == :datetime
+      #: (String? format_code, ?Integer? num_fmt_id) -> bool
+      def datetime_format?(format_code, num_fmt_id = nil)
+        code = format_code
+        code = Ooxml::Utils::BUILTIN_NUM_FMT_CODES[num_fmt_id] if (code.nil? || code.empty?) && num_fmt_id
+        return false if code.nil? || code.empty?
+
+        format_type(code) == :datetime
       end
 
       # Checks whether a format code string represents a time-only pattern.
       #
       # @param format_code [String, nil]
+      # @param num_fmt_id [Integer, nil]
       # @return [Boolean]
       # @api public
-      #: (String? format_code) -> bool
-      def time_format?(format_code)
-        format_type(format_code) == :time
+      #: (String? format_code, ?Integer? num_fmt_id) -> bool
+      def time_format?(format_code, num_fmt_id = nil)
+        code = format_code
+        code = Ooxml::Utils::BUILTIN_NUM_FMT_CODES[num_fmt_id] if (code.nil? || code.empty?) && num_fmt_id
+        return false if code.nil? || code.empty?
+
+        format_type(code) == :time
       end
 
       # Returns the format category Symbol for a style index and styles definition.

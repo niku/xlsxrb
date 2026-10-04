@@ -40,33 +40,37 @@ module Xlsxrb
     # Checks whether a format code string represents a date, datetime, or time pattern.
     #
     # @param format_code [String, nil]
+    # @param num_fmt_id [Integer, nil]
     # @return [Boolean]
-    # : (String? format_code) -> bool
-    def self.date_format?: (String? format_code) -> bool
+    # : (String? format_code, ?Integer? num_fmt_id) -> bool
+    def self.date_format?: (String? format_code, ?Integer? num_fmt_id) -> bool
 
     # Checks whether a format code string represents a date-only pattern.
     #
     # @param format_code [String, nil]
+    # @param num_fmt_id [Integer, nil]
     # @return [Boolean]
     # @api public
-    # : (String? format_code) -> bool
-    def self.date_only_format?: (String? format_code) -> bool
+    # : (String? format_code, ?Integer? num_fmt_id) -> bool
+    def self.date_only_format?: (String? format_code, ?Integer? num_fmt_id) -> bool
 
     # Checks whether a format code string represents a datetime pattern.
     #
     # @param format_code [String, nil]
+    # @param num_fmt_id [Integer, nil]
     # @return [Boolean]
     # @api public
-    # : (String? format_code) -> bool
-    def self.datetime_format?: (String? format_code) -> bool
+    # : (String? format_code, ?Integer? num_fmt_id) -> bool
+    def self.datetime_format?: (String? format_code, ?Integer? num_fmt_id) -> bool
 
     # Checks whether a format code string represents a time-only pattern.
     #
     # @param format_code [String, nil]
+    # @param num_fmt_id [Integer, nil]
     # @return [Boolean]
     # @api public
-    # : (String? format_code) -> bool
-    def self.time_format?: (String? format_code) -> bool
+    # : (String? format_code, ?Integer? num_fmt_id) -> bool
+    def self.time_format?: (String? format_code, ?Integer? num_fmt_id) -> bool
 
     # Returns the format category Symbol for a style index and styles definition.
     #

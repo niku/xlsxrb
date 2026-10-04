@@ -40,6 +40,7 @@ module Xlsxrb
         @format_codes[style_index]
       end
       alias format_code number_format
+      alias format_code_for number_format
 
       # Returns the classified format category (:date, :datetime, :time, :number, :text, :general) for a style index.
       #
@@ -53,6 +54,7 @@ module Xlsxrb
         precompute! unless @format_types
         @format_types[style_index]
       end
+      alias classification_for format_type
 
       # Returns whether the style index represents a date, datetime, or time pattern.
       #

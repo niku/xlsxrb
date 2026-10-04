@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Format classification helpers: Add `Elements::Styles#format_code_for` and `#classification_for` aliases, allow `NumberFormatter` format predicates (`date_format?`, `time_format?`, etc.) to resolve built-in formats by `num_fmt_id`, and expose `format_type`, `date_format?`, and `time_format?` on `Elements::Cell`.
 - Date1904 accessor and read_buffer alias: Expose `Ooxml::Reader#date1904?`, add `date1904:` keyword argument to `Elements::Workbook#initialize`, and alias `Xlsxrb.read_buffer` to `Xlsxrb.read` for in-memory buffer reading.
 - Coordinate utilities module: Add `Xlsxrb::Utils` exposing public coordinate helpers (`ref_to_row_col`, `row_col_to_ref`, `col_name_to_index`, `col_index_to_name`, `split_coordinate`).
 - Configurable trailing empty row trimming: Add `trim_empty_rows` option across `Xlsxrb.read`, `Xlsxrb.build_worksheet`, `WorksheetParser.each_row`, `StreamSheet#initialize`, `StreamSheet#each_row`, `StreamSheet#each_row_values`, `StreamSheet#each`, `Elements::Worksheet#initialize`, `Elements::Worksheet#each_row`, and `Elements::Worksheet#each_row_values` to omit trailing empty rows, and add `empty?` predicate to `StreamRow` and `Elements::Row`.

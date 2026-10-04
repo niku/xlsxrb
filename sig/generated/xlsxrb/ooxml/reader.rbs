@@ -158,6 +158,12 @@ module Xlsxrb
       # Returns workbook properties (e.g. { date1904: false, default_theme_version: 166925 }).
       def workbook_properties: () -> untyped
 
+      # Returns whether the workbook uses the 1904 date system.
+      #
+      # @return [Boolean]
+      # : () -> bool
+      def date1904?: () -> bool
+
       # Returns the workbook conformance class ("transitional" or "strict"), or nil if not set.
       def conformance: () -> untyped
 

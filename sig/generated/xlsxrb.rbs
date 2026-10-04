@@ -137,6 +137,8 @@ module Xlsxrb
 
   alias self.stream self.read
 
+  alias self.read_buffer self.read
+
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
   #
   # @overload write(target, password: nil, encryption_mode: :standard, strict_excel_mode: true, &block)
