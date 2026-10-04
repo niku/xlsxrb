@@ -2423,4 +2423,45 @@ class PublicApiTest < Test::Unit::TestCase
     assert_in_delta(44_561.5, st04, 1e-6)
     assert_equal(t, Xlsxrb.serial_to_time(st04, date1904: true))
   end
+
+  test "Xlsxrb.write returns in-memory binary string when target is omitted" do
+    # Streaming block with omitted target
+    data1 = Xlsxrb.write do |w|
+      w.sheet("Items") do |s|
+        s.add_row(%w[Header1 Header2])
+        s << ["Val1", 10] << ["Val2", 20]
+      end
+    end
+
+    assert_kind_of(String, data1)
+    assert(data1.start_with?("PK\x03\x04"))
+    wb1 = Xlsxrb.read(data1).load
+    sheet1 = wb1.sheet(0)
+    assert_equal("Items", sheet1.name)
+    assert_equal("Header1", sheet1.cell_value("A1"))
+    assert_equal("Val1", sheet1.cell_value("A2"))
+    assert_equal(10, sheet1.cell_value("B2"))
+    assert_equal("Val2", sheet1.cell_value("A3"))
+    assert_equal(20, sheet1.cell_value("B3"))
+
+    # In-memory workbook with omitted target
+    wb_in = Xlsxrb.build do |w|
+      w.sheet("DOM") do |s|
+        s.add_row(["DOM_A", 100])
+        s << ["DOM_B", 200] << ["DOM_C", 300]
+      end
+    end
+    data2 = Xlsxrb.write(wb_in)
+    assert_kind_of(String, data2)
+    assert(data2.start_with?("PK\x03\x04"))
+    wb2 = Xlsxrb.read(data2).load
+    sheet2 = wb2.sheet(0)
+    assert_equal("DOM", sheet2.name)
+    assert_equal("DOM_A", sheet2.cell_value("A1"))
+    assert_equal(100, sheet2.cell_value("B1"))
+    assert_equal("DOM_B", sheet2.cell_value("A2"))
+    assert_equal(200, sheet2.cell_value("B2"))
+    assert_equal("DOM_C", sheet2.cell_value("A3"))
+    assert_equal(300, sheet2.cell_value("B3"))
+  end
 end

@@ -229,7 +229,21 @@ module Xlsxrb
 
         @writer.row(values, styles: styles, height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level)
       end
-      alias << row
+      alias add_row row
+
+      # Appends a row to the worksheet and returns self for chaining.
+      #
+      # @example
+      #   sheet << ["A", 1] << ["B", 2]
+      #
+      # @param values [Array, Hash] Row cell values.
+      # @return [self]
+      # @api public
+      #: (Array[untyped] | Hash[untyped, untyped] values) -> self
+      def <<(values)
+        row(values)
+        self
+      end
 
       # Configures column width and properties.
       #
@@ -956,7 +970,21 @@ module Xlsxrb
       @current_row_writer.write_row_values(row_index, values, styles: styles, style_map: @style_name_to_id, sst: @sst, sst_index: @sst_index, attrs: attrs)
       start_sheet_entry if !@sheet_entry_started && @current_row_buffer.bytesize >= 65_536
     end
-    alias << row
+    alias add_row row
+
+    # Appends a row to the worksheet and returns self for chaining.
+    #
+    # @example
+    #   writer << ["A", 1] << ["B", 2]
+    #
+    # @param values [Array, Hash] Row cell values.
+    # @return [self]
+    # @api public
+    #: (Array[untyped] | Hash[untyped, untyped] values) -> self
+    def <<(values)
+      row(values)
+      self
+    end
 
     # Sets column formatting and properties for one or multiple columns.
     #

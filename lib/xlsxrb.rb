@@ -58,6 +58,9 @@ module Xlsxrb
   # Raised when parsing malformed or invalid XML structures.
   class ParseError < Error; end
 
+  OMITTED_TARGET = Object.new.freeze
+  private_constant :OMITTED_TARGET
+
   # Raised when cell, row, or workbook parameters fail specification validation.
   class ValidationError < Error; end
 
@@ -301,20 +304,20 @@ module Xlsxrb
 
   class << self
     alias stream read
-    alias read_buffer read
   end
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
   #
-  # @overload write(target, password: nil, encryption_mode: :standard, strict_excel_mode: true, &block)
+  # @overload write(?target, password: nil, encryption_mode: :standard, strict_excel_mode: true, &block)
   #   Streaming write: yields a {StreamWriter} context for high-speed, zero-allocation XLSX generation.
-  #   @param target [String, IO, StringIO] Destination file path or writable IO object.
+  #   If target is omitted, returns the generated XLSX as an in-memory binary String.
+  #   @param target [String, IO, StringIO, nil] Optional destination file path or writable IO object.
   #   @param password [String, nil] Optional password to encrypt the generated XLSX file.
   #   @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
   #   @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
   #   @yield [stream_writer]
   #   @yieldparam stream_writer [Xlsxrb::StreamWriter]
-  #   @return [void]
+  #   @return [String, void] Binary data if target is omitted, or void if written to target.
   #
   # @overload write(workbook, password: nil, encryption_mode: :standard)
   #   In-memory write: exports the workbook to an in-memory binary String.
@@ -336,6 +339,11 @@ module Xlsxrb
   #     writer.sheet("Sheet1") { |s| s.row(["Hello", "World"]) }
   #   end
   #
+  # @example Streaming write to in-memory binary string (target omitted)
+  #   binary_data = Xlsxrb.write do |writer|
+  #     writer.sheet("Sheet1") { |s| s.row(["Hello", "World"]) }
+  #   end
+  #
   # @example Password-protected streaming write
   #   Xlsxrb.write("protected.xlsx", password: "SecretPassword123") do |writer|
   #     writer.sheet("Confidential") { |s| s.row(["Private Data", 100]) }
@@ -347,9 +355,16 @@ module Xlsxrb
   # @api public
   #: (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
   #: (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-  #: (untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
-  def self.write(target_or_workbook, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, &block)
+  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
+  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, &)
     if block_given?
+      if target_or_workbook.equal?(OMITTED_TARGET)
+        io = StringIO.new
+        io.binmode
+        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, &)
+        return io.string.b
+      end
+
       target = target_or_workbook
       raise Error, "target is required" if target.nil?
 
@@ -383,6 +398,8 @@ module Xlsxrb
     end
 
     if workbook_or_nil.nil?
+      raise Error, "workbook must be an Elements::Workbook" if target_or_workbook.equal?(OMITTED_TARGET)
+
       wb = target_or_workbook
       raise Error, "workbook must be an Elements::Workbook" unless wb.is_a?(Elements::Workbook)
 

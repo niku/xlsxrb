@@ -206,6 +206,21 @@ module Xlsxrb
         outline_level: outline_level
       )
     end
+    alias add_row row
+
+    # Appends a row to the worksheet and returns self for chaining.
+    #
+    # @example
+    #   sheet << ["A", 1] << ["B", 2]
+    #
+    # @param values [Array, Hash] Row cell values.
+    # @return [self]
+    # @api public
+    #: (Array[untyped] | Hash[untyped, untyped] values) -> self
+    def <<(values)
+      row(values)
+      self
+    end
 
     # Sets column formatting and properties for one or multiple columns.
     #

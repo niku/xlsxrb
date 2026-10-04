@@ -46,6 +46,19 @@ module Xlsxrb
     # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
     def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
 
+    alias add_row row
+
+    # Appends a row to the worksheet and returns self for chaining.
+    #
+    # @example
+    #   sheet << ["A", 1] << ["B", 2]
+    #
+    # @param values [Array, Hash] Row cell values.
+    # @return [self]
+    # @api public
+    # : (Array[untyped] | Hash[untyped, untyped] values) -> self
+    def <<: (Array[untyped] | Hash[untyped, untyped] values) -> self
+
     # Sets column formatting and properties for one or multiple columns.
     #
     # @example Set width for column A
