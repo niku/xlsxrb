@@ -97,4 +97,30 @@ class StreamRowTest < Test::Unit::TestCase
     assert_equal(3, row_with_style[:style_index])
     assert_equal({ height: nil, hidden: false, custom_height: false, outline_level: nil, style_index: 3 }, row_with_style[:attrs])
   end
+
+  test "stream_row parses shared formula cells and retains values" do
+    xml = %(<c r="A1" s="2"><f t="shared" ref="A1:A5" si="0">B1+C1</f><v>10</v></c><c r="B1" s="2"><f t="shared" si="0"/><v>20</v></c><c r="C1" s="2"><f t="shared" si="0" /><v>30</v></c>).b
+    row = Xlsxrb::StreamRow.new(
+      index: 0,
+      xml_bytes: xml,
+      from: 0,
+      to: xml.bytesize,
+      shared_strings: []
+    )
+
+    assert_equal(3, row.cells.size)
+    assert_equal("A1", row.cells[0].ref)
+    assert_equal(10, row.cells[0].value)
+    assert_equal("B1+C1", row.cells[0].formula_expression)
+
+    assert_equal("B1", row.cells[1].ref)
+    assert_equal(20, row.cells[1].value)
+    assert_nil(row.cells[1].formula_expression)
+
+    assert_equal("C1", row.cells[2].ref)
+    assert_equal(30, row.cells[2].value)
+    assert_nil(row.cells[2].formula_expression)
+
+    assert_equal([10, 20, 30], row.values)
+  end
 end

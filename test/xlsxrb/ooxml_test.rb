@@ -643,6 +643,47 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(55, cell[:value])
   end
 
+  test "worksheet_parser parses shared formula cells with self-closing f tags" do
+    xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1" s="2"><f t="shared" ref="A1:C1" si="0">B1+C1</f><v>10</v></c>
+            <c r="B1" s="2"><f t="shared" si="0"/><v>20</v></c>
+            <c r="C1" s="2"><f t="shared" si="0" /><v>30</v></c>
+          </row>
+          <row r="2">
+            <c s="1" r="A2"><f t="shared" si="0"/><v>40</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    rows = Xlsxrb::Ooxml::WorksheetParser.parse(xml, shared_strings: [])
+    assert_equal(2, rows.size)
+
+    row1_cells = rows[0][:cells]
+    assert_equal(3, row1_cells.size)
+    assert_equal("A1", row1_cells[0][:ref])
+    assert_equal(10, row1_cells[0][:value])
+    assert_equal("B1+C1", row1_cells[0][:formula])
+
+    assert_equal("B1", row1_cells[1][:ref])
+    assert_equal(20, row1_cells[1][:value])
+    assert_nil(row1_cells[1][:formula])
+
+    assert_equal("C1", row1_cells[2][:ref])
+    assert_equal(30, row1_cells[2][:value])
+    assert_nil(row1_cells[2][:formula])
+
+    row2_cells = rows[1][:cells]
+    assert_equal(1, row2_cells.size)
+    assert_equal("A2", row2_cells[0][:ref])
+    assert_equal(40, row2_cells[0][:value])
+    assert_nil(row2_cells[0][:formula])
+  end
+
   # --- WorksheetWriter ---
 
   test "worksheet_writer generates valid worksheet XML" do
