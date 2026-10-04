@@ -225,8 +225,8 @@ module Xlsxrb
   # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
   def self.build: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
-  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool) -> Elements::Worksheet
-  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool) -> Elements::Worksheet
+  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?) -> Elements::Worksheet
+  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?) -> Elements::Worksheet
 
   # : (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
   private def self.resolve_hyperlinks: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]

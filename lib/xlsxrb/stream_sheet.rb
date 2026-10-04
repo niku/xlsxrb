@@ -52,8 +52,9 @@ module Xlsxrb
     # @param zip_reader [Ooxml::ZipReader, nil] Optional ZipReader context.
     # @param entry_name [String, nil] Archive entry name for this sheet.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
-    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool) -> void
-    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible, date1904: false)
+    # @param dimension [String, nil] Sheet dimension reference string (e.g. "A1:Z50000").
+    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?) -> void
+    def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible, date1904: false, dimension: nil)
       @name = name
       @sheet_source = sheet_source
       @shared_strings = shared_strings
@@ -62,8 +63,60 @@ module Xlsxrb
       @entry_name = entry_name
       @state = state ? state.to_sym : :visible
       @date1904 = date1904 ? true : false
+      @dimension = dimension
+      @dimension_checked = !dimension.nil?
       @sheet_xml = sheet_source if sheet_source.is_a?(String)
     end
+
+    # Returns the dimension reference string (e.g. "A1:Z50000"), or nil if not present.
+    #
+    # @return [String, nil]
+    # @api public
+    #: () -> String?
+    def dimension
+      return @dimension if @dimension_checked
+
+      @dimension_checked = true
+      @dimension = extract_dimension
+    end
+
+    # Returns the 1-based index of the first row defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    #: () -> Integer?
+    def first_row
+      dimension_bounds&.[](0)
+    end
+
+    # Returns the 1-based index of the first column defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    #: () -> Integer?
+    def first_column
+      dimension_bounds&.[](1)
+    end
+    alias first_col first_column
+
+    # Returns the 1-based index of the last row defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    #: () -> Integer?
+    def last_row
+      dimension_bounds&.[](2)
+    end
+
+    # Returns the 1-based index of the last column defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    #: () -> Integer?
+    def last_column
+      dimension_bounds&.[](3)
+    end
+    alias last_col last_column
 
     # Returns whether the sheet uses the 1904 date system.
     #
@@ -163,7 +216,7 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, date1904: @date1904)
+      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, date1904: @date1904, dimension: dimension)
     end
     alias to_worksheet load
 
@@ -340,6 +393,73 @@ module Xlsxrb
                          else
                            ""
                          end
+    end
+
+    # Returns 1-based bounds [first_row, first_col, last_row, last_col] from dimension ref.
+    #: () -> Array[Integer]?
+    def dimension_bounds
+      return @dimension_bounds if defined?(@dimension_bounds)
+
+      ref = dimension
+      return @dimension_bounds = nil unless ref
+
+      parts = ref.split(":", 2)
+      first_coords = Elements::Cell.parse_ref(parts[0])
+      return @dimension_bounds = nil unless first_coords
+
+      last_coords = parts[1] ? Elements::Cell.parse_ref(parts[1]) : first_coords
+      return @dimension_bounds = nil unless last_coords
+
+      @dimension_bounds = [
+        first_coords[0] + 1,
+        first_coords[1] + 1,
+        last_coords[0] + 1,
+        last_coords[1] + 1
+      ].freeze
+    end
+
+    # Extracts dimension reference from XML source lazily without parsing the entire file.
+    #: () -> String?
+    def extract_dimension
+      if @sheet_source.is_a?(String)
+        @sheet_source.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
+      elsif @zip_reader && @entry_name
+        stream = @zip_reader.open_entry_io(@entry_name)
+        buf = +""
+        dim = nil
+        begin
+          while (chunk = stream.read(65_536))
+            buf << chunk
+            if (m = buf.match(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/))
+              dim = m[1]
+              break
+            end
+            break if buf.include?("<sheetData") || buf.include?(":sheetData")
+          end
+        ensure
+          stream.close
+        end
+        dim
+      elsif @sheet_source.respond_to?(:call)
+        buf = +""
+        dim = nil
+        @sheet_source.call do |chunk|
+          buf << chunk
+          if (m = buf.match(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/))
+            dim = m[1]
+            break
+          end
+          break if buf.include?("<sheetData") || buf.include?(":sheetData")
+        end
+        dim
+      elsif @sheet_source.respond_to?(:seek) && @sheet_source.respond_to?(:pos)
+        pos = @sheet_source.pos
+        buf = @sheet_source.read(65_536) || ""
+        @sheet_source.seek(pos, IO::SEEK_SET)
+        buf.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
+      else
+        raw_sheet_xml.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
+      end
     end
   end
 end

@@ -18,6 +18,7 @@ module Xlsxrb
       [Enumerable, CoordinateAccess].each { |m| include m }
 
       attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :styles, :date1904
+      attr_writer :dimension
       alias conditional_formats conditional_formatting
 
       # @param name [String] The worksheet name (max 31 characters).
@@ -34,8 +35,9 @@ module Xlsxrb
       # @param comments [Array<Hash>] Comments and notes in the sheet.
       # @param styles [Hash, nil] Optional parsed styles hash.
       # @param date1904 [Boolean] Whether the sheet uses the 1904 date system.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?, ?date1904: bool) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil, date1904: false)
+      # @param dimension [String, nil] Sheet dimension reference string (e.g. "A1:Z50000").
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], styles: nil, date1904: false, dimension: nil)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -51,6 +53,7 @@ module Xlsxrb
         @comments = (comments || []).freeze
         @styles = styles
         @date1904 = date1904 ? true : false
+        @dimension = dimension
       end
 
       # Returns whether the worksheet uses the 1904 date system.
@@ -60,6 +63,16 @@ module Xlsxrb
       #: () -> bool
       def date1904?
         @date1904
+      end
+
+      # Returns the worksheet dimension reference string (e.g. "A1:Z50000"),
+      # or computes it dynamically from rows if not explicitly set.
+      #
+      # @return [String, nil]
+      # @api public
+      #: () -> String?
+      def dimension
+        @dimension ||= compute_dimension
       end
 
       # Iterate over rows in the worksheet.
@@ -294,6 +307,8 @@ module Xlsxrb
         new_hyperlinks = changes.key?(:hyperlinks) ? changes[:hyperlinks] : hyperlinks
         new_comments = changes.key?(:comments) ? changes[:comments] : comments
         new_styles = changes.key?(:styles) ? changes[:styles] : styles
+        new_date1904 = changes.key?(:date1904) ? changes[:date1904] : date1904
+        new_dim = changes.key?(:dimension) ? changes[:dimension] : @dimension
 
         self.class.new(
           name: new_name,
@@ -307,7 +322,9 @@ module Xlsxrb
           state: new_state,
           hyperlinks: new_hyperlinks,
           comments: new_comments,
-          styles: new_styles
+          styles: new_styles,
+          date1904: new_date1904,
+          dimension: new_dim
         )
       end
 
@@ -327,7 +344,9 @@ module Xlsxrb
           state: state,
           hyperlinks: hyperlinks,
           comments: comments,
-          styles: styles
+          styles: styles,
+          date1904: date1904,
+          dimension: dimension
         }
       end
 
@@ -396,6 +415,35 @@ module Xlsxrb
           end
         end
         errs
+      end
+
+      private
+
+      #: () -> String?
+      def compute_dimension
+        return nil if rows.empty?
+
+        min_r = nil
+        max_r = nil
+        min_c = nil
+        max_c = nil
+
+        rows.each do |r|
+          next if r.cells.empty?
+
+          min_r = r.index if min_r.nil? || r.index < min_r
+          max_r = r.index if max_r.nil? || r.index > max_r
+          r.cells.each do |c|
+            min_c = c.column_index if min_c.nil? || c.column_index < min_c
+            max_c = c.column_index if max_c.nil? || c.column_index > max_c
+          end
+        end
+
+        return nil if min_r.nil? || min_c.nil?
+
+        start_cell = "#{Elements::Cell.column_letter(min_c)}#{min_r + 1}"
+        end_cell = "#{Elements::Cell.column_letter(max_c)}#{max_r + 1}"
+        start_cell == end_cell ? start_cell : "#{start_cell}:#{end_cell}"
       end
     end
   end

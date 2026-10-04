@@ -726,6 +726,15 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(1, ws.first_row.index)
     assert_equal(3, ws.last_row.index)
 
+    # first_column and last_column (1-based)
+    assert_equal(1, ws.first_column)
+    assert_equal(1, ws.first_col)
+    assert_equal(3, ws.last_column)
+    assert_equal(3, ws.last_col)
+
+    # computed dimension
+    assert_equal("A2:C4", ws.dimension)
+
     # cells_hash
     hash = ws.cells_hash
     assert_equal(c2, hash["A2"])
@@ -755,9 +764,33 @@ class ElementsTest < Test::Unit::TestCase
     empty_ws = Xlsxrb::Elements::Worksheet.new(name: "Empty", rows: [])
     assert_nil(empty_ws.first_row)
     assert_nil(empty_ws.last_row)
+    assert_nil(empty_ws.first_column)
+    assert_nil(empty_ws.first_col)
+    assert_nil(empty_ws.last_column)
+    assert_nil(empty_ws.last_col)
+    assert_nil(empty_ws.dimension)
     assert_equal({}, empty_ws.cells_hash)
     assert_equal([], empty_ws.cells)
     assert_nil(empty_ws["A1"])
+  end
+
+  test "worksheet dimension property, with, and deconstruct_keys" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", dimension: "A1:Z100")
+    assert_equal("A1:Z100", ws.dimension)
+
+    # with replaces dimension
+    ws2 = ws.with(dimension: "B2:D10")
+    assert_equal("B2:D10", ws2.dimension)
+    assert_equal("A1:Z100", ws.dimension)
+
+    # deconstruct_keys includes dimension
+    assert_equal("A1:Z100", ws.deconstruct_keys(nil)[:dimension])
+
+    # single cell dimension computation
+    single_cell = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 2, value: 42)
+    single_row = Xlsxrb::Elements::Row.new(index: 2, cells: [single_cell])
+    single_ws = Xlsxrb::Elements::Worksheet.new(name: "Single", rows: [single_row])
+    assert_equal("C3", single_ws.dimension)
   end
 
   test "worksheet handles first-class conditional_formatting and data_validations" do

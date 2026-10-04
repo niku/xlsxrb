@@ -598,9 +598,10 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, date1904: false)
-      return Elements::Worksheet.new(name: name, state: state, styles: styles, date1904: date1904) if sheet_xml.nil? || sheet_xml.empty?
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?date1904: bool, ?dimension: String?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, date1904: false, dimension: nil)
+      sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
+      return Elements::Worksheet.new(name: name, state: state, styles: styles, date1904: date1904, dimension: sheet_dimension) if sheet_xml.nil? || sheet_xml.empty?
 
       sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
       sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
@@ -648,7 +649,8 @@ module Xlsxrb
         hyperlinks: sheet_hyperlinks,
         comments: sheet_comments,
         styles: styles,
-        date1904: date1904
+        date1904: date1904,
+        dimension: sheet_dimension
       )
     end
 

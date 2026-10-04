@@ -48,8 +48,48 @@ module Xlsxrb
     # @param zip_reader [Ooxml::ZipReader, nil] Optional ZipReader context.
     # @param entry_name [String, nil] Archive entry name for this sheet.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
-    # : (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool) -> void
-    def initialize: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool) -> void
+    # @param dimension [String, nil] Sheet dimension reference string (e.g. "A1:Z50000").
+    # : (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?) -> void
+    def initialize: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?) -> void
+
+    # Returns the dimension reference string (e.g. "A1:Z50000"), or nil if not present.
+    #
+    # @return [String, nil]
+    # @api public
+    # : () -> String?
+    def dimension: () -> String?
+
+    # Returns the 1-based index of the first row defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    # : () -> Integer?
+    def first_row: () -> Integer?
+
+    # Returns the 1-based index of the first column defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    # : () -> Integer?
+    def first_column: () -> Integer?
+
+    alias first_col first_column
+
+    # Returns the 1-based index of the last row defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    # : () -> Integer?
+    def last_row: () -> Integer?
+
+    # Returns the 1-based index of the last column defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    # : () -> Integer?
+    def last_column: () -> Integer?
+
+    alias last_col last_column
 
     # Returns whether the sheet uses the 1904 date system.
     #
@@ -225,5 +265,13 @@ module Xlsxrb
     # Returns the full raw XML string for this worksheet, loaded on demand.
     # : () -> String
     def raw_sheet_xml: () -> String
+
+    # Returns 1-based bounds [first_row, first_col, last_row, last_col] from dimension ref.
+    # : () -> Array[Integer]?
+    def dimension_bounds: () -> Array[Integer]?
+
+    # Extracts dimension reference from XML source lazily without parsing the entire file.
+    # : () -> String?
+    def extract_dimension: () -> String?
   end
 end

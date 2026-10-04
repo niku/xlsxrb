@@ -76,6 +76,38 @@ module Xlsxrb
         rows.max_by(&:index)
       end
 
+      # Returns the 1-based index of the first column containing data, or nil.
+      #
+      # @return [Integer, nil]
+      # @api public
+      #: () -> Integer?
+      def first_column
+        min_c = nil
+        rows.each do |r|
+          r.cells.each do |c|
+            min_c = c.column_index if min_c.nil? || c.column_index < min_c
+          end
+        end
+        min_c ? min_c + 1 : nil
+      end
+      alias first_col first_column
+
+      # Returns the 1-based index of the last column containing data, or nil.
+      #
+      # @return [Integer, nil]
+      # @api public
+      #: () -> Integer?
+      def last_column
+        max_c = nil
+        rows.each do |r|
+          r.cells.each do |c|
+            max_c = c.column_index if max_c.nil? || c.column_index > max_c
+          end
+        end
+        max_c ? max_c + 1 : nil
+      end
+      alias last_col last_column
+
       # Returns the raw cell value at the given Excel-style reference (e.g. "A1").
       #
       # @example

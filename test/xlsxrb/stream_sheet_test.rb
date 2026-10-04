@@ -248,4 +248,111 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(true, ws1904.date1904?)
     assert_equal(Date.new(1904, 1, 1), ws1904["A1"].to_date)
   end
+
+  test "stream_sheet exposes dimension and 1-based bounds" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <dimension ref="A1:Z50000"/>
+        <sheetData>
+          <row r="1"><c r="A1"><v>1</v></c></row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    sheet = Xlsxrb::StreamSheet.new("Sheet1", xml.b, [])
+    assert_equal("A1:Z50000", sheet.dimension)
+    assert_equal(1, sheet.first_row)
+    assert_equal(1, sheet.first_column)
+    assert_equal(1, sheet.first_col)
+    assert_equal(50_000, sheet.last_row)
+    assert_equal(26, sheet.last_column)
+    assert_equal(26, sheet.last_col)
+
+    ws = sheet.load
+    assert_equal("A1:Z50000", ws.dimension)
+  end
+
+  test "stream_sheet dimension bounds with non-A1 range and single cell" do
+    xml_range = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <dimension ref="B2:D10"/>
+        <sheetData/>
+      </worksheet>
+    XML
+    sheet_range = Xlsxrb::StreamSheet.new("RangeSheet", xml_range.b, [])
+    assert_equal("B2:D10", sheet_range.dimension)
+    assert_equal(2, sheet_range.first_row)
+    assert_equal(2, sheet_range.first_col)
+    assert_equal(10, sheet_range.last_row)
+    assert_equal(4, sheet_range.last_col)
+
+    xml_single = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <dimension ref="C5"/>
+        <sheetData/>
+      </worksheet>
+    XML
+    sheet_single = Xlsxrb::StreamSheet.new("SingleSheet", xml_single.b, [])
+    assert_equal("C5", sheet_single.dimension)
+    assert_equal(5, sheet_single.first_row)
+    assert_equal(3, sheet_single.first_col)
+    assert_equal(5, sheet_single.last_row)
+    assert_equal(3, sheet_single.last_col)
+  end
+
+  test "stream_sheet dimension handles missing and malformed tags" do
+    xml_missing = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData/>
+      </worksheet>
+    XML
+    sheet_missing = Xlsxrb::StreamSheet.new("Missing", xml_missing.b, [])
+    assert_nil(sheet_missing.dimension)
+    assert_nil(sheet_missing.first_row)
+    assert_nil(sheet_missing.first_col)
+    assert_nil(sheet_missing.last_row)
+    assert_nil(sheet_missing.last_col)
+
+    xml_malformed = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <dimension ref="NOT_A_VALID_REF"/>
+        <sheetData/>
+      </worksheet>
+    XML
+    sheet_malformed = Xlsxrb::StreamSheet.new("Malformed", xml_malformed.b, [])
+    assert_equal("NOT_A_VALID_REF", sheet_malformed.dimension)
+    assert_nil(sheet_malformed.first_row)
+    assert_nil(sheet_malformed.last_row)
+
+    # Explicit dimension keyword argument
+    sheet_explicit = Xlsxrb::StreamSheet.new("Explicit", xml_missing.b, [], dimension: "X1:Y2")
+    assert_equal("X1:Y2", sheet_explicit.dimension)
+    assert_equal(1, sheet_explicit.first_row)
+    assert_equal(24, sheet_explicit.first_col)
+    assert_equal(2, sheet_explicit.last_row)
+    assert_equal(25, sheet_explicit.last_col)
+  end
+
+  test "stream_sheet lazily extracts dimension from chunk supplier without reading later chunks" do
+    chunks = [
+      "<worksheet><dimension ref=\"A1:F30\"/><sheetData>",
+      "<row r=\"1\"><c r=\"A1\"><v>val</v></c></row>",
+      "</sheetData></worksheet>"
+    ]
+    chunks_read = 0
+    supplier = lambda do |&blk|
+      chunks.each do |c|
+        chunks_read += 1
+        blk.call(c)
+      end
+    end
+
+    sheet = Xlsxrb::StreamSheet.new("Supplier", supplier, [])
+    assert_equal("A1:F30", sheet.dimension)
+    assert_equal(1, sheet.first_row)
+    assert_equal(30, sheet.last_row)
+    assert_equal(6, sheet.last_col)
+    # Stopped on first chunk where dimension and sheetData appeared
+    assert_equal(1, chunks_read)
+  end
 end

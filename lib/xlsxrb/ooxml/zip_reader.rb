@@ -96,6 +96,11 @@ module Xlsxrb
           return if @closed
 
           @closed = true
+          begin
+            @inflater&.reset
+          rescue StandardError
+            nil
+          end
           @inflater&.close
           @inflater = nil
           @buffer.clear
