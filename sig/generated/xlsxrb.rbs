@@ -53,19 +53,25 @@ module Xlsxrb
 
   # Helper to construct {Elements::RichText} objects with formatted text runs.
   #
-  # @example Create multi-run rich text
+  # @example Create multi-run rich text with hashes
   #   rt = Xlsxrb.rich_text({ text: "Total: ", font: { bold: true } }, { text: "$100" })
+  #
+  # @example Create rich text with text/font pairs
+  #   rt = Xlsxrb.rich_text("Normal text, ", ["bold text, ", { bold: true }], ["red text", { color: "FF0000" }])
+  #
+  # @example Create rich text with format objects implementing to_font_hash
+  #   rt = Xlsxrb.rich_text("Normal text, ", bold_format, "bold text")
   #
   # @example Create simple styled text
   #   rt = Xlsxrb.rich_text(text: "Important Notice", bold: true, color: "FF0000")
   #
-  # @param runs [Array<Hash, String>] Optional array of rich text run hashes or string.
+  # @param runs [Array<Hash, String, Array, Elements::RichTextRun, Object>] Optional array of rich text run items.
   # @param text [String, nil] Plain text string (convenience parameter).
   # @param font_props [Hash] Inline font styling options (e.g. bold: true, color: "FF0000").
   # @return [Elements::RichText] The compiled rich text element.
   # @api public
-  # : (*(Hash[Symbol, untyped] | Elements::RichTextRun | String) runs, ?text: String?, **untyped font_props) -> Elements::RichText
-  def self.rich_text: (*Hash[Symbol, untyped] | Elements::RichTextRun | String runs, ?text: String?, **untyped font_props) -> Elements::RichText
+  # : (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, **untyped font_props) -> Elements::RichText
+  def self.rich_text: (*Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped runs, ?text: String?, **untyped font_props) -> Elements::RichText
 
   # Creates an {Elements::Formula} object for use in cell values.
   #

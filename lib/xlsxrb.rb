@@ -78,23 +78,61 @@ module Xlsxrb
 
   # Helper to construct {Elements::RichText} objects with formatted text runs.
   #
-  # @example Create multi-run rich text
+  # @example Create multi-run rich text with hashes
   #   rt = Xlsxrb.rich_text({ text: "Total: ", font: { bold: true } }, { text: "$100" })
+  #
+  # @example Create rich text with text/font pairs
+  #   rt = Xlsxrb.rich_text("Normal text, ", ["bold text, ", { bold: true }], ["red text", { color: "FF0000" }])
+  #
+  # @example Create rich text with format objects implementing to_font_hash
+  #   rt = Xlsxrb.rich_text("Normal text, ", bold_format, "bold text")
   #
   # @example Create simple styled text
   #   rt = Xlsxrb.rich_text(text: "Important Notice", bold: true, color: "FF0000")
   #
-  # @param runs [Array<Hash, String>] Optional array of rich text run hashes or string.
+  # @param runs [Array<Hash, String, Array, Elements::RichTextRun, Object>] Optional array of rich text run items.
   # @param text [String, nil] Plain text string (convenience parameter).
   # @param font_props [Hash] Inline font styling options (e.g. bold: true, color: "FF0000").
   # @return [Elements::RichText] The compiled rich text element.
   # @api public
-  #: (*(Hash[Symbol, untyped] | Elements::RichTextRun | String) runs, ?text: String?, **untyped font_props) -> Elements::RichText
+  #: (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, **untyped font_props) -> Elements::RichText
   def self.rich_text(*runs, text: nil, **font_props)
     if text
-      runs = [{ text: text, font: font_props }]
+      runs = [Elements::RichTextRun.new(text: text, font: font_props.empty? ? nil : font_props)]
     elsif runs.size == 1 && runs.first.is_a?(String) && !font_props.empty?
-      runs = [{ text: runs.first, font: font_props }]
+      runs = [Elements::RichTextRun.new(text: runs.first, font: font_props)]
+    else
+      normalized_runs = []
+      pending_font = nil
+
+      runs.each do |item|
+        if item.respond_to?(:to_font_hash)
+          pending_font = item.to_font_hash
+        elsif item.is_a?(Hash) && !item.key?(:text)
+          pending_font = item
+        elsif item.is_a?(Elements::RichTextRun)
+          normalized_runs << item
+          pending_font = nil
+        elsif item.is_a?(Hash)
+          f = item[:font] || pending_font
+          f = f.to_font_hash if f.respond_to?(:to_font_hash)
+          normalized_runs << Elements::RichTextRun.new(text: item[:text].to_s, font: f)
+          pending_font = nil
+        elsif item.is_a?(Array)
+          t = item[0].to_s
+          f = item[1] || pending_font
+          f = f.to_font_hash if f.respond_to?(:to_font_hash)
+          f = f.to_h if f.respond_to?(:to_h) && !f.is_a?(Hash)
+          normalized_runs << Elements::RichTextRun.new(text: t, font: f.is_a?(Hash) ? f : nil)
+          pending_font = nil
+        elsif pending_font
+          normalized_runs << Elements::RichTextRun.new(text: item.to_s, font: pending_font)
+          pending_font = nil
+        else
+          normalized_runs << Elements::RichTextRun.new(text: item.to_s)
+        end
+      end
+      runs = normalized_runs
     end
     Elements::RichText.new(runs: runs)
   end

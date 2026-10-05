@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Flexible rich text run input in `Xlsxrb.rich_text`: Support `[text, font_hash]` pair arrays, alternating varargs of plain strings and format hashes or objects responding to `to_font_hash`, and mixed `Elements::RichTextRun` instances.
 - First-class `Elements::Hyperlink`, `Xlsxrb.hyperlink`, and `Cell#tooltip`: Add `Elements::Hyperlink` data class and `Xlsxrb.hyperlink` factory helper with `tooltip:` support, expose `Cell#tooltip` and `:tooltip`, `:url` symbol key access on `Elements::Cell`, and support `Elements::Hyperlink` instances in `WorksheetBuilder#hyperlink`, `StreamWriter#hyperlink`, and `Ooxml::Writer#hyperlink`.
 - Array and dynamic array formula serialization and `Xlsxrb.array_formula`: Add `Xlsxrb.array_formula(expression, ref, cached_value:)` factory method, extend `Xlsxrb.formula` with optional `type:` and `ref:` keywords, and serialize `<f t="array" ref="...">` and shared formula attributes across all `WorksheetWriter` serialization paths.
 - First-class `style_index:` keyword on `Elements::Column`: Add `style_index:` keyword argument directly to `Elements::Column.new`, storing it in `Data.define` attributes and populating it from `rc[:style_index]` during worksheet parsing and DSL column definitions.

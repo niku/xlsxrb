@@ -976,6 +976,33 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal({ italic: true }, rt.runs[1][:font])
   end
 
+  test "Xlsxrb.rich_text supports text and font pair arrays" do
+    rt = Xlsxrb.rich_text("Normal, ", ["bold text, ", { bold: true }], ["red text", { color: "FF0000" }])
+    assert_equal("Normal, bold text, red text", rt.to_s)
+    assert_equal(3, rt.runs.size)
+    assert_equal("Normal, ", rt.runs[0].text)
+    assert_nil(rt.runs[0].font)
+    assert_equal("bold text, ", rt.runs[1].text)
+    assert_equal({ bold: true }, rt.runs[1].font)
+    assert_equal("red text", rt.runs[2].text)
+    assert_equal({ color: "FF0000" }, rt.runs[2].font)
+  end
+
+  test "Xlsxrb.rich_text supports alternating format hashes and format objects with to_font_hash" do
+    custom_format = Object.new
+    def custom_format.to_font_hash
+      { italic: true, color: "0000FF" }
+    end
+
+    rt = Xlsxrb.rich_text("Normal, ", { bold: true }, "bold text, ", custom_format, "italic blue", ", normal end")
+    assert_equal("Normal, bold text, italic blue, normal end", rt.to_s)
+    assert_equal(4, rt.runs.size)
+    assert_nil(rt.runs[0].font)
+    assert_equal({ bold: true }, rt.runs[1].font)
+    assert_equal({ italic: true, color: "0000FF" }, rt.runs[2].font)
+    assert_nil(rt.runs[3].font)
+  end
+
   test "WorkbookBuilder#workbook_property configures correctly" do
     wb = Xlsxrb.build do |w|
       w.workbook_property(:test_prop, "test_val")
