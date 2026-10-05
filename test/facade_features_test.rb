@@ -1354,4 +1354,95 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  test "add_sparkline helper in build API maps win_loss to stacked and preserves options" do
+    workbook = Xlsxrb.build do |w|
+      w.sheet("Metrics") do |s|
+        s.row([1, 2, 3])
+        s.row([4, -2, 3])
+        s.row([10, 20, 30])
+        s.add_sparkline(location: "D1", range: "A1:C1", type: :line)
+        s.add_sparkline(location: "D2", range: "A2:C2", type: :win_loss, high: true, low: true)
+        s.add_sparkline(location: "D3", range: "A3:C3", type: "column", markers: true)
+      end
+    end
+
+    ws = workbook.sheets.first
+    assert_equal(3, ws.sparkline_groups.size)
+    assert_equal("stacked", ws.sparkline_groups[1][:type])
+    assert_equal(true, ws.sparkline_groups[1][:high])
+    assert_equal(true, ws.sparkline_groups[1][:low])
+
+    tmp = Tempfile.new(["facade_add_sparkline_build", ".xlsx"])
+    Xlsxrb.write(tmp.path, workbook)
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    assert_match(/x14:sparklineGroup[^>]*type="stacked"/, sheet_xml)
+    assert_match(/x14:sparklineGroup[^>]*type="column"/, sheet_xml)
+    assert_match(/high="1"/, sheet_xml)
+    assert_match(/low="1"/, sheet_xml)
+    assert_match(/markers="1"/, sheet_xml)
+    assert_match(%r{<xm:sqref>D2</xm:sqref>}, sheet_xml)
+  ensure
+    tmp&.close!
+  end
+
+  test "add_sparkline helper in stream API writes valid sparklines" do
+    tmp = Tempfile.new(["facade_add_sparkline_stream", ".xlsx"])
+    Xlsxrb.write(tmp.path) do |w|
+      w.sheet("StreamMetrics") do |s|
+        s.row([5, 10, -5, 20])
+        s.add_sparkline(location: "E1", range: "A1:D1", type: :win_loss)
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    assert_match(/x14:sparklineGroup[^>]*type="stacked"/, sheet_xml)
+    assert_match(%r{<xm:f>A1:D1</xm:f>}, sheet_xml)
+    assert_match(%r{<xm:sqref>E1</xm:sqref>}, sheet_xml)
+  ensure
+    tmp&.close!
+  end
+
+  test "add_sparkline raises ArgumentError if location or range is missing" do
+    assert_raises(ArgumentError) do
+      Xlsxrb.build do |w|
+        w.sheet("Errors") do |s|
+          s.add_sparkline(range: "A1:D1")
+        end
+      end
+    end
+
+    assert_raises(ArgumentError) do
+      Xlsxrb.build do |w|
+        w.sheet("Errors") do |s|
+          s.add_sparkline(location: "E1")
+        end
+      end
+    end
+  end
+
+  test "Xlsxrb.write serializes sparkline_groups from direct Elements::Worksheet" do
+    sgs = [{ type: "stacked", sparklines: [{ location_ref: "E1", data_ref: "A1:D1" }] }]
+    c1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 10)
+    row = Xlsxrb::Elements::Row.new(index: 0, cells: [c1])
+    ws = Xlsxrb::Elements::Worksheet.new(name: "DirectWS", rows: [row], sparkline_groups: sgs)
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
+
+    tmp = Tempfile.new(["facade_direct_sparkline_ws", ".xlsx"])
+    Xlsxrb.write(tmp.path, wb)
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    assert_match(/x14:sparklineGroup[^>]*type="stacked"/, sheet_xml)
+    assert_match(%r{<xm:f>A1:D1</xm:f>}, sheet_xml)
+    assert_match(%r{<xm:sqref>E1</xm:sqref>}, sheet_xml)
+  ensure
+    tmp&.close!
+  end
 end

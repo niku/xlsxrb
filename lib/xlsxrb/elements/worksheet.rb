@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups
       attr_writer :dimension
       alias conditional_formats conditional_formatting
 
@@ -41,8 +41,9 @@ module Xlsxrb
       # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
       # @param print_area [String, nil] Sheet print area range (e.g. "A1:H50").
       # @param print_titles [Hash, nil] Repeating print title rows/cols (e.g. { rows: "1:2", cols: "A:B" }).
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil)
+      # @param sparkline_groups [Array<Hash>] Sparkline groups in the sheet.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]]) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [])
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -62,6 +63,7 @@ module Xlsxrb
         @dimension = dimension
         @print_area = print_area
         @print_titles = print_titles&.freeze
+        @sparkline_groups = (sparkline_groups || []).freeze
         @trim_empty_rows = trim_empty_rows ? true : false
         @pad_empty_rows = pad_empty_rows ? true : false
         @pad_empty_cells = pad_empty_cells ? true : false
@@ -482,6 +484,9 @@ module Xlsxrb
         new_styles = changes.key?(:styles) ? changes[:styles] : styles
         new_date1904 = changes.key?(:date1904) ? changes[:date1904] : date1904
         new_dim = changes.key?(:dimension) ? changes[:dimension] : @dimension
+        new_print_area = changes.key?(:print_area) ? changes[:print_area] : print_area
+        new_print_titles = changes.key?(:print_titles) ? changes[:print_titles] : print_titles
+        new_sparklines = changes.key?(:sparkline_groups) ? changes[:sparkline_groups] : sparkline_groups
         new_trim = changes.key?(:trim_empty_rows) ? changes[:trim_empty_rows] : @trim_empty_rows
 
         self.class.new(
@@ -499,6 +504,9 @@ module Xlsxrb
           styles: new_styles,
           date1904: new_date1904,
           dimension: new_dim,
+          print_area: new_print_area,
+          print_titles: new_print_titles,
+          sparkline_groups: new_sparklines,
           trim_empty_rows: new_trim
         )
       end
@@ -522,6 +530,9 @@ module Xlsxrb
           styles: styles,
           date1904: date1904,
           dimension: dimension,
+          print_area: print_area,
+          print_titles: print_titles,
+          sparkline_groups: sparkline_groups,
           trim_empty_rows: @trim_empty_rows
         }
       end

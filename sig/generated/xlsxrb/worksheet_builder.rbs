@@ -193,6 +193,26 @@ module Xlsxrb
     # : (sparklines: Array[String | Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
     def sparkline_group: (sparklines: Array[String | Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
 
+    # Adds a single sparkline to the sheet.
+    #
+    # @example Add a line sparkline
+    #   sheet.add_sparkline(location: "F1", range: "A1:E1")
+    #
+    # @example Add a column sparkline with high/low markers
+    #   sheet.add_sparkline(location: "F2", range: "A2:E2", type: :column, high: true, low: true)
+    #
+    # @example Add a win/loss sparkline
+    #   sheet.add_sparkline(location: "F3", range: "A3:E3", type: :win_loss)
+    #
+    # @param location [String, nil] Target cell for the sparkline (e.g. "F1").
+    # @param range [String, nil] Data range for the sparkline (e.g. "A1:E1").
+    # @param type [Symbol, String, nil] Sparkline type (:line, :column, :win_loss / :stacked).
+    # @param opts [Hash] Additional sparkline options.
+    # @return [void]
+    # @api public
+    # : (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
+    def add_sparkline: (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
+
     # Merges a range of cells into a single cell.
     #
     # @example Merge with string range

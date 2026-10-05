@@ -423,6 +423,38 @@ module Xlsxrb
       @sparkline_groups << group
     end
 
+    # Adds a single sparkline to the sheet.
+    #
+    # @example Add a line sparkline
+    #   sheet.add_sparkline(location: "F1", range: "A1:E1")
+    #
+    # @example Add a column sparkline with high/low markers
+    #   sheet.add_sparkline(location: "F2", range: "A2:E2", type: :column, high: true, low: true)
+    #
+    # @example Add a win/loss sparkline
+    #   sheet.add_sparkline(location: "F3", range: "A3:E3", type: :win_loss)
+    #
+    # @param location [String, nil] Target cell for the sparkline (e.g. "F1").
+    # @param range [String, nil] Data range for the sparkline (e.g. "A1:E1").
+    # @param type [Symbol, String, nil] Sparkline type (:line, :column, :win_loss / :stacked).
+    # @param opts [Hash] Additional sparkline options.
+    # @return [void]
+    # @api public
+    #: (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
+    def add_sparkline(location: nil, range: nil, type: nil, **opts)
+      loc = location || opts.delete(:location_ref)
+      rng = range || opts.delete(:data_ref) || opts.delete(:data)
+      raise ArgumentError, "Missing required location: parameter for sparkline" unless loc
+      raise ArgumentError, "Missing required range: parameter for sparkline" unless rng
+
+      mapped_type = case type&.to_s
+                    when "win_loss" then "stacked"
+                    when nil, "" then nil
+                    else type.to_s
+                    end
+      sparkline_group(sparklines: [{ data_ref: rng.to_s, location_ref: loc.to_s }], type: mapped_type, **opts)
+    end
+
     # Merges a range of cells into a single cell.
     #
     # @example Merge with string range
@@ -795,7 +827,8 @@ module Xlsxrb
         hyperlinks: hl_hash,
         comments: @comments,
         print_area: @print_area,
-        print_titles: @print_titles
+        print_titles: @print_titles,
+        sparkline_groups: @sparkline_groups
       )
     end
 

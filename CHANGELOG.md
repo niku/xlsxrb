@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- First-class sparkline groups on worksheet and `add_sparkline` helper: Expose `sparkline_groups` reader and keyword argument on `Elements::Worksheet`, propagate `ws.sparkline_groups` during `Xlsxrb.write` DOM serialization, and add `add_sparkline(location:, range:, type:, **opts)` helper to `WorksheetBuilder`, `StreamWriter`, and `StreamWriter::SheetContext` supporting `:win_loss` mapping to `"stacked"`.
 - High-level print area and print titles DSL: Add `print_area`, `print_titles`, `repeat_rows`, and `repeat_columns` to `WorksheetBuilder`, `StreamWriter::SheetContext`, and `StreamWriter`, expose `print_area` and `print_titles` on `Elements::Worksheet`, and auto-generate `_xlnm.Print_Area` and `_xlnm.Print_Titles` defined names in `WorkbookBuilder#build` and `Xlsxrb.write` DOM export.
 - ECMA-376 indexed color palette and `Xlsxrb::Colors`: Add `Xlsxrb::Colors` providing `INDEXED_COLORS` (indices 0..63 per ECMA-376 Part 4 §18.8.27), `palette_color`, and `to_hex` utilities, expose `Xlsxrb.palette_color` and `Xlsxrb.to_hex_color` facade methods, and resolve integer palette indices 0..63 automatically in `StyleBuilder.resolve_color`.
 - Flexible rich text run input in `Xlsxrb.rich_text`: Support `[text, font_hash]` pair arrays, alternating varargs of plain strings and format hashes or objects responding to `to_font_hash`, and mixed `Elements::RichTextRun` instances.

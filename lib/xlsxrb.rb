@@ -284,11 +284,11 @@ module Xlsxrb
   #   Xlsxrb.palette_color(12)               #=> "0000FF"
   #   Xlsxrb.palette_color(12, alpha: true)  #=> "FF0000FF"
   #
-  # @param index [Integer] Palette index (0..63).
+  # @param index [Object, nil] Palette index (0..63).
   # @param alpha [Boolean] Whether to prefix "FF" alpha channel.
   # @return [String, nil]
   # @api public
-  #: (Integer index, ?alpha: bool) -> String?
+  #: (untyped index, ?alpha: bool) -> String?
   def self.palette_color(index, alpha: false)
     Colors.palette_color(index, alpha: alpha)
   end
@@ -581,6 +581,7 @@ module Xlsxrb
       if ws.respond_to?(:hyperlinks) && !ws.hyperlinks.empty?
         sd[:hyperlinks] ||= ws.hyperlinks.is_a?(Hash) ? ws.hyperlinks.values : ws.hyperlinks
       end
+      sd[:sparkline_groups] ||= ws.sparkline_groups if ws.respond_to?(:sparkline_groups) && !ws.sparkline_groups.empty?
 
       sd
     end

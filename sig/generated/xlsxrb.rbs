@@ -189,12 +189,12 @@ module Xlsxrb
   #   Xlsxrb.palette_color(12)               #=> "0000FF"
   #   Xlsxrb.palette_color(12, alpha: true)  #=> "FF0000FF"
   #
-  # @param index [Integer] Palette index (0..63).
+  # @param index [Object, nil] Palette index (0..63).
   # @param alpha [Boolean] Whether to prefix "FF" alpha channel.
   # @return [String, nil]
   # @api public
-  # : (Integer index, ?alpha: bool) -> String?
-  def self.palette_color: (Integer index, ?alpha: bool) -> String?
+  # : (untyped index, ?alpha: bool) -> String?
+  def self.palette_color: (untyped index, ?alpha: bool) -> String?
 
   # Converts any supported color representation (palette index 0..63, CSS name, #RGB, #RRGGBB, #AARRGGBB, integer RGB)
   # to a normalized hex string.

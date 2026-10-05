@@ -1499,4 +1499,26 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(ws_empty.print_area)
     assert_nil(ws_empty.print_titles)
   end
+
+  test "worksheet sparkline_groups initialization, with, and deconstruct_keys" do
+    sgs = [{ type: "line", sparklines: [{ data_ref: "A1:E1", location_ref: "F1" }] }]
+    ws = Xlsxrb::Elements::Worksheet.new(name: "SparkTest", sparkline_groups: sgs, print_area: "A1:F10")
+    assert_equal(sgs, ws.sparkline_groups)
+    assert_true(ws.sparkline_groups.frozen?)
+
+    # default
+    ws_empty = Xlsxrb::Elements::Worksheet.new(name: "EmptySpark")
+    assert_equal([], ws_empty.sparkline_groups)
+
+    # with
+    new_sgs = [{ type: "column", sparklines: [{ data_ref: "A2:E2", location_ref: "F2" }] }]
+    ws2 = ws.with(sparkline_groups: new_sgs)
+    assert_equal(new_sgs, ws2.sparkline_groups)
+    assert_equal("A1:F10", ws2.print_area)
+
+    # deconstruct_keys
+    keys = ws.deconstruct_keys(nil)
+    assert_equal(sgs, keys[:sparkline_groups])
+    assert_equal("A1:F10", keys[:print_area])
+  end
 end

@@ -80,11 +80,11 @@ module Xlsxrb
     #   Xlsxrb::Colors.palette_color(12)               #=> "0000FF"
     #   Xlsxrb::Colors.palette_color(12, alpha: true)  #=> "FF0000FF"
     #
-    # @param index [Integer] Palette index (0..63).
+    # @param index [Object, nil] Palette index (0..63).
     # @param alpha [Boolean] Whether to prefix "FF" alpha channel.
     # @return [String, nil]
     # @api public
-    #: (Integer index, ?alpha: bool) -> String?
+    #: (untyped index, ?alpha: bool) -> String?
     def self.palette_color(index, alpha: false)
       return nil unless index.is_a?(Integer) && index >= 0 && index < INDEXED_COLORS.size
 

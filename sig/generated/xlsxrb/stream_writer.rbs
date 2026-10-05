@@ -191,8 +191,8 @@ module Xlsxrb
       # @param location [String, nil] Destination location / URL (keyword alternative).
       # @return [void]
       # @api public
-      # : (String cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
-      def hyperlink: (String cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+      # : (String | Integer cell, ?(String | Elements::Hyperlink)? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+      def hyperlink: (String | Integer cell, ?(String | Elements::Hyperlink)? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
 
       # Sets the auto-filter range on the active sheet.
       #
@@ -318,6 +318,26 @@ module Xlsxrb
       # @api public
       # : (sparklines: Array[Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
       def sparkline_group: (sparklines: Array[Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
+
+      # Adds a single sparkline to the sheet.
+      #
+      # @example Add a line sparkline
+      #   s.add_sparkline(location: "F1", range: "A1:E1")
+      #
+      # @example Add a column sparkline with high/low markers
+      #   s.add_sparkline(location: "F2", range: "A2:E2", type: :column, high: true, low: true)
+      #
+      # @example Add a win/loss sparkline
+      #   s.add_sparkline(location: "F3", range: "A3:E3", type: :win_loss)
+      #
+      # @param location [String, nil] Target cell for the sparkline (e.g. "F1").
+      # @param range [String, nil] Data range for the sparkline (e.g. "A1:E1").
+      # @param type [Symbol, String, nil] Sparkline type (:line, :column, :win_loss / :stacked).
+      # @param opts [Hash] Additional sparkline options.
+      # @return [void]
+      # @api public
+      # : (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
+      def add_sparkline: (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
 
       # Sets workbook-level properties.
       #
@@ -745,6 +765,26 @@ module Xlsxrb
     # @api public
     # : (sparklines: untyped, ?type: untyped, **untyped opts) -> void
     def sparkline_group: (sparklines: untyped, ?type: untyped, **untyped opts) -> void
+
+    # Adds a single sparkline to the sheet.
+    #
+    # @example Add a line sparkline
+    #   writer.add_sparkline(location: "F1", range: "A1:E1")
+    #
+    # @example Add a column sparkline with high/low markers
+    #   writer.add_sparkline(location: "F2", range: "A2:E2", type: :column, high: true, low: true)
+    #
+    # @example Add a win/loss sparkline
+    #   writer.add_sparkline(location: "F3", range: "A3:E3", type: :win_loss)
+    #
+    # @param location [String, nil] Target cell for the sparkline (e.g. "F1").
+    # @param range [String, nil] Data range for the sparkline (e.g. "A1:E1").
+    # @param type [Symbol, String, nil] Sparkline type (:line, :column, :win_loss / :stacked).
+    # @param opts [Hash] Additional sparkline options.
+    # @return [void]
+    # @api public
+    # : (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
+    def add_sparkline: (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
 
     # Merges a range of cells into a single cell.
     #
