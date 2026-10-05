@@ -75,6 +75,32 @@ module Xlsxrb
     # : (?rows: String?, ?cols: String?, ?sheet: String?) -> void
     def print_titles: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
 
+    # Sets repeating title rows for pagination on the target or active sheet.
+    #
+    # @example Repeat first row
+    #   wb.repeat_rows(0)
+    #
+    # @param first [Integer, String] First row index (0-based) or range string (e.g. "1:2").
+    # @param last [Integer, String, nil] Optional last row index (0-based).
+    # @param sheet [String, nil] Target sheet name.
+    # @return [void]
+    # @api public
+    # : (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
+    def repeat_rows: (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
+
+    # Sets repeating title columns for pagination on the target or active sheet.
+    #
+    # @example Repeat columns A through C
+    #   wb.repeat_columns("A", "C")
+    #
+    # @param first [Integer, String] First column index (0-based) or column name/range.
+    # @param last [Integer, String, nil] Optional last column index/name.
+    # @param sheet [String, nil] Target sheet name.
+    # @return [void]
+    # @api public
+    # : (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
+    def repeat_columns: (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
+
     # Sets workbook structure and window protection.
     #
     # @param opts [Hash] Protection options (e.g. lock_structure: true, password: "secret").

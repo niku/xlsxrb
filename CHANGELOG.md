@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- High-level print area and print titles DSL: Add `print_area`, `print_titles`, `repeat_rows`, and `repeat_columns` to `WorksheetBuilder`, `StreamWriter::SheetContext`, and `StreamWriter`, expose `print_area` and `print_titles` on `Elements::Worksheet`, and auto-generate `_xlnm.Print_Area` and `_xlnm.Print_Titles` defined names in `WorkbookBuilder#build` and `Xlsxrb.write` DOM export.
 - ECMA-376 indexed color palette and `Xlsxrb::Colors`: Add `Xlsxrb::Colors` providing `INDEXED_COLORS` (indices 0..63 per ECMA-376 Part 4 §18.8.27), `palette_color`, and `to_hex` utilities, expose `Xlsxrb.palette_color` and `Xlsxrb.to_hex_color` facade methods, and resolve integer palette indices 0..63 automatically in `StyleBuilder.resolve_color`.
 - Flexible rich text run input in `Xlsxrb.rich_text`: Support `[text, font_hash]` pair arrays, alternating varargs of plain strings and format hashes or objects responding to `to_font_hash`, and mixed `Elements::RichTextRun` instances.
 - First-class `Elements::Hyperlink`, `Xlsxrb.hyperlink`, and `Cell#tooltip`: Add `Elements::Hyperlink` data class and `Xlsxrb.hyperlink` factory helper with `tooltip:` support, expose `Cell#tooltip` and `:tooltip`, `:url` symbol key access on `Elements::Cell`, and support `Elements::Hyperlink` instances in `WorksheetBuilder#hyperlink`, `StreamWriter#hyperlink`, and `Ooxml::Writer#hyperlink`.

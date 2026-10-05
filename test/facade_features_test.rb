@@ -717,6 +717,71 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
+  test "worksheet-level print_area, repeat_rows, and repeat_columns in build API" do
+    workbook = Xlsxrb.build do |w|
+      w.sheet("Report") do |s|
+        s.row(%w[H1 H2 H3])
+        s.row([1, 2, 3])
+        s.print_area("A1:C10")
+        s.repeat_rows(0, 0)
+        s.repeat_columns(0, 1)
+      end
+    end
+
+    assert_equal("A1:C10", workbook.sheet(0).print_area)
+    assert_equal({ rows: "1:1", cols: "A:B" }, workbook.sheet(0).print_titles)
+
+    tmp = Tempfile.new(["facade_sheet_print", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path, workbook)
+      reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      assert_equal("$A$1:$C$10", reader.print_area(sheet: "Report"))
+      assert_equal("'Report'!$A:$B,'Report'!$1:$1", reader.print_titles(sheet: "Report"))
+    ensure
+      tmp&.close!
+    end
+  end
+
+  test "worksheet-level repeat_rows and repeat_columns in streaming write API" do
+    tmp = Tempfile.new(["facade_sheet_print_stream", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("Summary") do |s|
+          s.row(%w[ColA ColB ColC])
+          s.print_area("A1:C50")
+          s.repeat_rows(0)
+          s.repeat_columns("A", "B")
+        end
+      end
+
+      reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      assert_equal("$A$1:$C$50", reader.print_area(sheet: "Summary"))
+      assert_equal("'Summary'!$A:$B,'Summary'!$1:$1", reader.print_titles(sheet: "Summary"))
+    ensure
+      tmp&.close!
+    end
+  end
+
+  test "DOM write auto-generates defined names from Elements::Worksheet print settings" do
+    ws = Xlsxrb::Elements::Worksheet.new(
+      name: "DirectSheet",
+      rows: [Xlsxrb::Elements::Row.new(index: 0, cells: [Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Hi")])],
+      print_area: "A1:B20",
+      print_titles: { rows: "1:2", cols: "A:A" }
+    )
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
+
+    tmp = Tempfile.new(["dom_print_names", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path, wb)
+      reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      assert_equal("$A$1:$B$20", reader.print_area(sheet: "DirectSheet"))
+      assert_equal("'DirectSheet'!$A:$A,'DirectSheet'!$1:$2", reader.print_titles(sheet: "DirectSheet"))
+    ensure
+      tmp&.close!
+    end
+  end
+
   # =====================================================
   # Workbook Protection
   # =====================================================

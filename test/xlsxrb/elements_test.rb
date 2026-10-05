@@ -1485,4 +1485,18 @@ class ElementsTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "worksheet print_area and print_titles initialization and accessors" do
+    ws = Xlsxrb::Elements::Worksheet.new(
+      name: "PrintTest",
+      print_area: "A1:D10",
+      print_titles: { rows: "1:2", cols: "A:B" }
+    )
+    assert_equal("A1:D10", ws.print_area)
+    assert_equal({ rows: "1:2", cols: "A:B" }, ws.print_titles)
+
+    ws_empty = Xlsxrb::Elements::Worksheet.new(name: "EmptyPrint")
+    assert_nil(ws_empty.print_area)
+    assert_nil(ws_empty.print_titles)
+  end
 end

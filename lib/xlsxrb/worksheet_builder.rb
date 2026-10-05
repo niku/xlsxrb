@@ -46,7 +46,11 @@ module Xlsxrb
       @sheet_view = {}
       @row_breaks = []
       @col_breaks = []
+      @print_area = nil
+      @print_titles = nil
     end
+
+    attr_reader :name
 
     # Defines or configures a named cell style.
     #
@@ -531,6 +535,98 @@ module Xlsxrb
       @print_options[name] = value
     end
 
+    # Sets or gets the print area for the worksheet.
+    #
+    # @example Set print area range
+    #   sheet.print_area("A1:H50")
+    #
+    # @example Get print area range
+    #   sheet.print_area #=> "A1:H50"
+    #
+    # @param range [String, nil] Cell range (e.g. "A1:H50").
+    # @return [String, nil]
+    # @api public
+    #: (?String? range) -> String?
+    def print_area(range = nil)
+      return @print_area if range.nil?
+
+      @print_area = range
+    end
+
+    # Sets or gets repeating print titles (rows and/or columns) for pagination.
+    #
+    # @example Set repeating header rows
+    #   sheet.print_titles(rows: "1:2")
+    #
+    # @example Get repeating print titles
+    #   sheet.print_titles #=> { rows: "1:2", cols: nil }
+    #
+    # @param rows [String, nil] Repeating row range (e.g. "1:2").
+    # @param cols [String, nil] Repeating column range (e.g. "A:B").
+    # @return [Hash, nil]
+    # @api public
+    #: (?rows: String?, ?cols: String?) -> Hash[Symbol, untyped]?
+    def print_titles(rows: nil, cols: nil)
+      return @print_titles if rows.nil? && cols.nil?
+
+      @print_titles = { rows: rows, cols: cols }
+    end
+
+    # Sets repeating title rows to appear at the top of each printed page.
+    # Accepts 0-indexed row numbers (WriteXLSX / xlsxrb convention) or Excel range string ("1:2").
+    #
+    # @example Repeat first row
+    #   sheet.repeat_rows(0)
+    #
+    # @example Repeat rows 1 through 3
+    #   sheet.repeat_rows(0, 2)
+    #
+    # @param first [Integer, String] First row index (0-based) or range string (e.g. "1:2").
+    # @param last [Integer, String, nil] Optional last row index (0-based, defaults to first).
+    # @return [void]
+    # @api public
+    #: (Integer | String first, ?(Integer | String)? last) -> void
+    def repeat_rows(first, last = nil)
+      rows_str = if first.is_a?(String)
+                   first.include?(":") ? first : "#{first}:#{last || first}"
+                 else
+                   last ||= first
+                   "#{first + 1}:#{last + 1}"
+                 end
+      @print_titles = (@print_titles || {}).merge(rows: rows_str)
+    end
+
+    # Sets repeating title columns to appear at the left of each printed page.
+    # Accepts 0-indexed column numbers (0 => "A"), column names ("A", "B"), or range string ("A:B").
+    #
+    # @example Repeat column A
+    #   sheet.repeat_columns(0)
+    #
+    # @example Repeat columns A through C
+    #   sheet.repeat_columns("A", "C")
+    #
+    # @param first [Integer, String] First column index (0-based) or column name/range.
+    # @param last [Integer, String, nil] Optional last column index/name (defaults to first).
+    # @return [void]
+    # @api public
+    #: (Integer | String first, ?(Integer | String)? last) -> void
+    def repeat_columns(first, last = nil)
+      cols_str = if first.is_a?(String)
+                   first.include?(":") ? first : "#{first}:#{last || first}"
+                 else
+                   first_name = Utils.col_index_to_name(first)
+                   last_name = if last.is_a?(Integer)
+                                 Utils.col_index_to_name(last)
+                               elsif last
+                                 last.to_s
+                               else
+                                 first_name
+                               end
+                   "#{first_name}:#{last_name}"
+                 end
+      @print_titles = (@print_titles || {}).merge(cols: cols_str)
+    end
+
     # Sets sheet-level protection with optional password hashing.
     #
     # @param opts [Hash] Protection options (e.g. password: "secret", select_locked_cells: true).
@@ -653,6 +749,8 @@ module Xlsxrb
       facade_meta[:sheet_view] = @sheet_view unless @sheet_view.empty?
       facade_meta[:row_breaks] = @row_breaks unless @row_breaks.empty?
       facade_meta[:col_breaks] = @col_breaks unless @col_breaks.empty?
+      facade_meta[:print_area] = @print_area if @print_area
+      facade_meta[:print_titles] = @print_titles if @print_titles
 
       hl_hash = {}
       @hyperlinks.each do |h|
@@ -695,7 +793,9 @@ module Xlsxrb
         unmapped_data: facade_meta.empty? ? {} : { facade: facade_meta },
         state: @state,
         hyperlinks: hl_hash,
-        comments: @comments
+        comments: @comments,
+        print_area: @print_area,
+        print_titles: @print_titles
       )
     end
 

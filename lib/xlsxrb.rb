@@ -588,7 +588,25 @@ module Xlsxrb
     # Extract workbook-level facade metadata
     wb_facade = workbook.unmapped_data[:facade] || {}
     wb_properties = workbook.unmapped_data[:workbook_properties] || wb_facade[:workbook_properties]
-    defined_names = wb_facade[:defined_names] || (workbook.respond_to?(:defined_names) && !workbook.defined_names.empty? ? workbook.defined_names : nil)
+    raw_dns = wb_facade[:defined_names] || (workbook.respond_to?(:defined_names) && !workbook.defined_names.empty? ? workbook.defined_names : nil)
+    defined_names = raw_dns ? raw_dns.map(&:dup) : []
+
+    # Auto-generate _xlnm.Print_Area and _xlnm.Print_Titles from worksheet definitions if not already present
+    workbook.sheets.each_with_index do |ws, idx|
+      sheet_name = ws.name || "Sheet#{idx + 1}"
+      if ws.respond_to?(:print_area) && ws.print_area && defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && (dn[:local_sheet_id] == idx || dn[:local_sheet_name] == sheet_name) }
+        val = "'#{sheet_name}'!#{DslHelpers.absolute_range(ws.print_area)}"
+        defined_names << { name: "_xlnm.Print_Area", value: val, local_sheet_id: idx }
+      end
+      next unless ws.respond_to?(:print_titles) && ws.print_titles && defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && (dn[:local_sheet_id] == idx || dn[:local_sheet_name] == sheet_name) }
+
+      pt = ws.print_titles
+      parts = []
+      parts << "'#{sheet_name}'!$#{pt[:cols].sub(":", ":$")}" if pt[:cols]
+      parts << "'#{sheet_name}'!$#{pt[:rows].sub(":", ":$")}" if pt[:rows]
+      defined_names << { name: "_xlnm.Print_Titles", value: parts.join(","), local_sheet_id: idx } unless parts.empty?
+    end
+    defined_names = nil if defined_names.empty?
 
     if password && !password.empty?
       buf = StringIO.new

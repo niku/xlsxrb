@@ -117,12 +117,66 @@ module Xlsxrb
     #: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
     def print_titles(rows: nil, cols: nil, sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
+      existing = @defined_names.find { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
+      if existing && (rows.nil? || cols.nil?)
+        cols = Regexp.last_match(1).delete("$") if cols.nil? && existing[:value] =~ /'[^']*'!\$([A-Za-z]+:\$[A-Za-z]+)/
+        rows = Regexp.last_match(1).delete("$") if rows.nil? && existing[:value] =~ /'[^']*'!\$([0-9]+:\$[0-9]+)/
+      end
       parts = []
       parts << "'#{sheet_name}'!$#{cols.sub(":", ":$")}" if cols
       parts << "'#{sheet_name}'!$#{rows.sub(":", ":$")}" if rows
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
       defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
+    end
+
+    # Sets repeating title rows for pagination on the target or active sheet.
+    #
+    # @example Repeat first row
+    #   wb.repeat_rows(0)
+    #
+    # @param first [Integer, String] First row index (0-based) or range string (e.g. "1:2").
+    # @param last [Integer, String, nil] Optional last row index (0-based).
+    # @param sheet [String, nil] Target sheet name.
+    # @return [void]
+    # @api public
+    #: (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
+    def repeat_rows(first, last = nil, sheet: nil)
+      rows_str = if first.is_a?(String)
+                   first.include?(":") ? first : "#{first}:#{last || first}"
+                 else
+                   last ||= first
+                   "#{first + 1}:#{last + 1}"
+                 end
+      print_titles(rows: rows_str, sheet: sheet)
+    end
+
+    # Sets repeating title columns for pagination on the target or active sheet.
+    #
+    # @example Repeat columns A through C
+    #   wb.repeat_columns("A", "C")
+    #
+    # @param first [Integer, String] First column index (0-based) or column name/range.
+    # @param last [Integer, String, nil] Optional last column index/name.
+    # @param sheet [String, nil] Target sheet name.
+    # @return [void]
+    # @api public
+    #: (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
+    def repeat_columns(first, last = nil, sheet: nil)
+      cols_str = if first.is_a?(String)
+                   first.include?(":") ? first : "#{first}:#{last || first}"
+                 else
+                   first_name = Utils.col_index_to_name(first)
+                   last_name = if last.is_a?(Integer)
+                                 Utils.col_index_to_name(last)
+                               elsif last
+                                 last.to_s
+                               else
+                                 first_name
+                               end
+                   "#{first_name}:#{last_name}"
+                 end
+      print_titles(cols: cols_str, sheet: sheet)
     end
 
     # Sets workbook structure and window protection.
@@ -194,6 +248,12 @@ module Xlsxrb
 
       # Process styles from all sheets and collect style definitions
       processed_sheets, styles_definition = process_styles(@sheets)
+
+      # Auto-register print_area and print_titles defined names from sheet builders if not explicitly defined
+      @sheet_builders.each do |sb|
+        print_area(sb.print_area, sheet: sb.name) if sb.print_area && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sb.name }
+        print_titles(rows: sb.print_titles[:rows], cols: sb.print_titles[:cols], sheet: sb.name) if sb.print_titles && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sb.name }
+      end
 
       # Store workbook-level metadata in unmapped_data
       wb_meta = {}

@@ -569,6 +569,32 @@ module Xlsxrb
 
         @writer.print_titles(...)
       end
+
+      # Sets repeating title rows to appear at the top of each printed page.
+      #
+      # @param first [Integer, String] First row index (0-based) or range string (e.g. "1:2").
+      # @param last [Integer, String, nil] Optional last row index (0-based).
+      # @return [void]
+      # @api public
+      #: (Integer | String first, ?(Integer | String)? last) -> void
+      def repeat_rows(first, last = nil)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.repeat_rows(first, last, sheet: @sheet_name)
+      end
+
+      # Sets repeating title columns to appear at the left of each printed page.
+      #
+      # @param first [Integer, String] First column index (0-based) or column name/range.
+      # @param last [Integer, String, nil] Optional last column index/name.
+      # @return [void]
+      # @api public
+      #: (Integer | String first, ?(Integer | String)? last) -> void
+      def repeat_columns(first, last = nil)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.repeat_columns(first, last, sheet: @sheet_name)
+      end
       # simplecov:enable
 
       # Splits sheet view into panes.
@@ -1458,12 +1484,66 @@ module Xlsxrb
     #: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
     def print_titles(rows: nil, cols: nil, sheet: nil)
       sheet_name = sheet || @current_sheet || "Sheet1"
+      existing = @defined_names.find { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
+      if existing && (rows.nil? || cols.nil?)
+        cols = Regexp.last_match(1).delete("$") if cols.nil? && existing[:value] =~ /'[^']*'!\$([A-Za-z]+:\$[A-Za-z]+)/
+        rows = Regexp.last_match(1).delete("$") if rows.nil? && existing[:value] =~ /'[^']*'!\$([0-9]+:\$[0-9]+)/
+      end
       parts = []
       parts << "'#{sheet_name}'!$#{cols.sub(":", ":$")}" if cols
       parts << "'#{sheet_name}'!$#{rows.sub(":", ":$")}" if rows
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
       defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
+    end
+
+    # Sets repeating title rows for pagination on the current or named sheet.
+    #
+    # @example Repeat first row
+    #   stream.repeat_rows(0)
+    #
+    # @param first [Integer, String] First row index (0-based) or range string (e.g. "1:2").
+    # @param last [Integer, String, nil] Optional last row index (0-based).
+    # @param sheet [String, nil] Target sheet name.
+    # @return [void]
+    # @api public
+    #: (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
+    def repeat_rows(first, last = nil, sheet: nil)
+      rows_str = if first.is_a?(String)
+                   first.include?(":") ? first : "#{first}:#{last || first}"
+                 else
+                   last ||= first
+                   "#{first + 1}:#{last + 1}"
+                 end
+      print_titles(rows: rows_str, sheet: sheet)
+    end
+
+    # Sets repeating title columns for pagination on the current or named sheet.
+    #
+    # @example Repeat columns A through C
+    #   stream.repeat_columns("A", "C")
+    #
+    # @param first [Integer, String] First column index (0-based) or column name/range.
+    # @param last [Integer, String, nil] Optional last column index/name.
+    # @param sheet [String, nil] Target sheet name.
+    # @return [void]
+    # @api public
+    #: (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
+    def repeat_columns(first, last = nil, sheet: nil)
+      cols_str = if first.is_a?(String)
+                   first.include?(":") ? first : "#{first}:#{last || first}"
+                 else
+                   first_name = Utils.col_index_to_name(first)
+                   last_name = if last.is_a?(Integer)
+                                 Utils.col_index_to_name(last)
+                               elsif last
+                                 last.to_s
+                               else
+                                 first_name
+                               end
+                   "#{first_name}:#{last_name}"
+                 end
+      print_titles(cols: cols_str, sheet: sheet)
     end
 
     # Sets workbook protection.

@@ -11,6 +11,8 @@ module Xlsxrb
     # : (String name, ?strict_excel_mode: bool, ?state: Symbol) -> void
     def initialize: (String name, ?strict_excel_mode: bool, ?state: Symbol) -> void
 
+    attr_reader name: untyped
+
     # Defines or configures a named cell style.
     #
     # @example Define a bold header style
@@ -276,6 +278,67 @@ module Xlsxrb
     # @api public
     # : (Symbol name, untyped value) -> void
     def print_options: (Symbol name, untyped value) -> void
+
+    # Sets or gets the print area for the worksheet.
+    #
+    # @example Set print area range
+    #   sheet.print_area("A1:H50")
+    #
+    # @example Get print area range
+    #   sheet.print_area #=> "A1:H50"
+    #
+    # @param range [String, nil] Cell range (e.g. "A1:H50").
+    # @return [String, nil]
+    # @api public
+    # : (?String? range) -> String?
+    def print_area: (?String? range) -> String?
+
+    # Sets or gets repeating print titles (rows and/or columns) for pagination.
+    #
+    # @example Set repeating header rows
+    #   sheet.print_titles(rows: "1:2")
+    #
+    # @example Get repeating print titles
+    #   sheet.print_titles #=> { rows: "1:2", cols: nil }
+    #
+    # @param rows [String, nil] Repeating row range (e.g. "1:2").
+    # @param cols [String, nil] Repeating column range (e.g. "A:B").
+    # @return [Hash, nil]
+    # @api public
+    # : (?rows: String?, ?cols: String?) -> Hash[Symbol, untyped]?
+    def print_titles: (?rows: String?, ?cols: String?) -> Hash[Symbol, untyped]?
+
+    # Sets repeating title rows to appear at the top of each printed page.
+    # Accepts 0-indexed row numbers (WriteXLSX / xlsxrb convention) or Excel range string ("1:2").
+    #
+    # @example Repeat first row
+    #   sheet.repeat_rows(0)
+    #
+    # @example Repeat rows 1 through 3
+    #   sheet.repeat_rows(0, 2)
+    #
+    # @param first [Integer, String] First row index (0-based) or range string (e.g. "1:2").
+    # @param last [Integer, String, nil] Optional last row index (0-based, defaults to first).
+    # @return [void]
+    # @api public
+    # : (Integer | String first, ?(Integer | String)? last) -> void
+    def repeat_rows: (Integer | String first, ?(Integer | String)? last) -> void
+
+    # Sets repeating title columns to appear at the left of each printed page.
+    # Accepts 0-indexed column numbers (0 => "A"), column names ("A", "B"), or range string ("A:B").
+    #
+    # @example Repeat column A
+    #   sheet.repeat_columns(0)
+    #
+    # @example Repeat columns A through C
+    #   sheet.repeat_columns("A", "C")
+    #
+    # @param first [Integer, String] First column index (0-based) or column name/range.
+    # @param last [Integer, String, nil] Optional last column index/name (defaults to first).
+    # @return [void]
+    # @api public
+    # : (Integer | String first, ?(Integer | String)? last) -> void
+    def repeat_columns: (Integer | String first, ?(Integer | String)? last) -> void
 
     # Sets sheet-level protection with optional password hashing.
     #
