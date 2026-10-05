@@ -27,6 +27,7 @@ require_relative "xlsxrb/ooxml"
 require_relative "xlsxrb/elements"
 require_relative "xlsxrb/stream_row"
 require_relative "xlsxrb/stream_sheet"
+require_relative "xlsxrb/colors"
 require_relative "xlsxrb/style_builder"
 require_relative "xlsxrb/chart_builder"
 require_relative "xlsxrb/dsl_helpers"
@@ -275,6 +276,42 @@ module Xlsxrb
 
   class << self
     alias serial_to_datetime serial_to_time
+  end
+
+  # Resolves an ECMA-376 indexed color palette index (0..63) to an RRGGBB hex string (or AARRGGBB if alpha: true).
+  #
+  # @example
+  #   Xlsxrb.palette_color(12)               #=> "0000FF"
+  #   Xlsxrb.palette_color(12, alpha: true)  #=> "FF0000FF"
+  #
+  # @param index [Integer] Palette index (0..63).
+  # @param alpha [Boolean] Whether to prefix "FF" alpha channel.
+  # @return [String, nil]
+  # @api public
+  #: (Integer index, ?alpha: bool) -> String?
+  def self.palette_color(index, alpha: false)
+    Colors.palette_color(index, alpha: alpha)
+  end
+
+  # Converts any supported color representation (palette index 0..63, CSS name, #RGB, #RRGGBB, #AARRGGBB, integer RGB)
+  # to a normalized hex string.
+  #
+  # @example
+  #   Xlsxrb.to_hex_color(12)                      #=> "0000FF"
+  #   Xlsxrb.to_hex_color(:navy)                   #=> "000080"
+  #   Xlsxrb.to_hex_color("#FF0000")               #=> "FF0000"
+  #
+  # @param color [Integer, String, Symbol, nil]
+  # @param alpha [Boolean] Whether to include the alpha channel (default false -> "RRGGBB").
+  # @return [String, nil]
+  # @api public
+  #: (Integer | String | Symbol | nil color, ?alpha: bool) -> String?
+  def self.to_hex_color(color, alpha: false)
+    Colors.to_hex(color, alpha: alpha)
+  end
+
+  class << self
+    alias color_to_hex to_hex_color
   end
 
   # Reads an XLSX file (streaming and lazy-loaded by default) from a file path, IO stream, or binary String.

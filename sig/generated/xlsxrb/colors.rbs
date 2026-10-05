@@ -1,0 +1,40 @@
+# Generated from lib/xlsxrb/colors.rb with RBS::Inline
+
+module Xlsxrb
+  # ECMA-376 Part 4 §18.8.27 Standard Indexed Color Palette and utilities.
+  module Colors
+    # Standard ECMA-376 indexed colors (indices 0 through 63 as 6-character RRGGBB hex strings).
+    # Indices 8 through 63 represent the classic 56-color palette.
+    INDEXED_COLORS: untyped
+
+    # Resolves a palette index (0..63) to an RRGGBB hex string (or AARRGGBB if alpha: true).
+    #
+    # @example
+    #   Xlsxrb::Colors.palette_color(12)               #=> "0000FF"
+    #   Xlsxrb::Colors.palette_color(12, alpha: true)  #=> "FF0000FF"
+    #
+    # @param index [Integer] Palette index (0..63).
+    # @param alpha [Boolean] Whether to prefix "FF" alpha channel.
+    # @return [String, nil]
+    # @api public
+    # : (Integer index, ?alpha: bool) -> String?
+    def self.palette_color: (Integer index, ?alpha: bool) -> String?
+
+    # Converts any supported color representation (palette index 0..63, CSS name, #RGB, #RRGGBB, #AARRGGBB, integer RGB)
+    # to a normalized hex string.
+    #
+    # @example
+    #   Xlsxrb::Colors.to_hex(12)                      #=> "0000FF"
+    #   Xlsxrb::Colors.to_hex(12, alpha: true)         #=> "FF0000FF"
+    #   Xlsxrb::Colors.to_hex(:navy)                   #=> "000080"
+    #   Xlsxrb::Colors.to_hex("#FF0000")               #=> "FF0000"
+    #   Xlsxrb::Colors.to_hex(0xFF0000)                #=> "FF0000"
+    #
+    # @param color [Integer, String, Symbol, nil]
+    # @param alpha [Boolean] Whether to include the alpha channel (default false -> "RRGGBB").
+    # @return [String, nil]
+    # @api public
+    # : (Integer | String | Symbol | nil color, ?alpha: bool) -> String?
+    def self.to_hex: (Integer | String | Symbol | nil color, ?alpha: bool) -> String?
+  end
+end

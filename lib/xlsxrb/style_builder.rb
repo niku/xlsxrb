@@ -303,6 +303,8 @@ module Xlsxrb
     def self.resolve_color(color)
       return nil unless color
 
+      return Colors.palette_color(color, alpha: true) if color.is_a?(Integer) && defined?(Colors) && color >= 0 && color < Colors::INDEXED_COLORS.size
+
       if color.is_a?(Symbol) || (color.is_a?(String) && color.start_with?(":") && color.length > 1)
         key = color.to_s.sub(/^:/, "").to_sym
         return COLORS[key] || (CSS_COLORS[key] ? "FF#{CSS_COLORS[key]}" : nil) || color.to_s

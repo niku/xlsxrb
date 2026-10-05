@@ -44,6 +44,10 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_equal("FF112233", Xlsxrb::StyleBuilder.resolve_color("FF112233"))
     assert_equal("FF000080", Xlsxrb::StyleBuilder.resolve_color(:navy))
     assert_equal("FFFF0000", Xlsxrb::StyleBuilder.resolve_color("#FF0000"))
+    assert_equal("FF0000FF", Xlsxrb::StyleBuilder.resolve_color(12))
+    assert_equal("FF000000", Xlsxrb::StyleBuilder.resolve_color(0))
+    assert_equal("FFFFFFFF", Xlsxrb::StyleBuilder.resolve_color(1))
+    assert_equal("FF333333", Xlsxrb::StyleBuilder.resolve_color(63))
   end
 
   test "normalize_color normalizes CSS colors, hex codes, integers, and alpha" do
