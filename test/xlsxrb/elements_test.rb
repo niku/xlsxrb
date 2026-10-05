@@ -1058,6 +1058,21 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(f.calculate_always)
   end
 
+  test "Xlsxrb.formula supports type and ref" do
+    f = Xlsxrb.formula("SUM(A1:A10)", type: :shared, ref: "A1:A10")
+    assert_equal(:shared, f.type)
+    assert_equal("A1:A10", f.ref)
+  end
+
+  test "Xlsxrb.array_formula creates an array Formula" do
+    f = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", "A1:C1", cached_value: 0)
+    assert_instance_of(Xlsxrb::Elements::Formula, f)
+    assert_equal("SUM(B1:B10*C1:C10)", f.expression)
+    assert_equal(:array, f.type)
+    assert_equal("A1:C1", f.ref)
+    assert_equal(0, f.cached_value)
+  end
+
   # --- CellError & RichText ---
 
   test "cell_error valid error codes, to_s, equality, and validation" do

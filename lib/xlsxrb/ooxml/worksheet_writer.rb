@@ -170,13 +170,25 @@ module Xlsxrb
 
           xml_val = value
           type = cell_type_val
-          formula_expr = nil
+          formula_type = nil
+          formula_ref = nil
+          formula_si = nil
 
           if formula
             if formula.is_a?(Xlsxrb::Elements::Formula)
               formula_expr = formula.expression
               formula_ca = formula.calculate_always
-              xml_val = formula.cached_value || value || nil
+              formula_type = formula.type
+              formula_ref = formula.ref
+              formula_si = formula.shared_index
+              xml_val = formula.cached_value.nil? ? (value || nil) : formula.cached_value
+            elsif formula.is_a?(Hash)
+              formula_expr = formula[:formula] || formula[:expression]
+              formula_ca = formula[:calculate_always]
+              formula_type = formula[:type]
+              formula_ref = formula[:ref]
+              formula_si = formula[:si] || formula[:shared_index]
+              xml_val = formula[:value] || formula[:cached_value] || value || nil
             else
               formula_expr = formula
               xml_val = value || nil
@@ -262,12 +274,20 @@ module Xlsxrb
               buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
             end
           elsif formula_expr
-            buf << if formula_ca
-                     '><f ca="1">'
-                   else
-                     "><f>"
-                   end
-            buf << escape_xml(formula_expr) << "</f>"
+            f_attrs = +""
+            if formula_type
+              case formula_type.to_sym
+              when :array
+                f_attrs << ' t="array"'
+                f_attrs << %( ref="#{formula_ref}") if formula_ref
+              when :shared
+                f_attrs << ' t="shared"'
+                f_attrs << %( si="#{formula_si}") if formula_si
+                f_attrs << %( ref="#{formula_ref}") if formula_ref
+              end
+            end
+            f_attrs << ' ca="1"' if formula_ca
+            buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
             if xml_val
               buf << "<v>" << xml_val.to_s << "</v></c>"
             else
@@ -347,21 +367,40 @@ module Xlsxrb
             when Xlsxrb::Elements::Formula
               formula_expr = value.expression
               formula_expr = formula_expr[1..] if formula_expr.start_with?("=")
-              buf << if value.cached_value
-                       "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>#{value.cached_value}</v></c>"
-                     else
-                       "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>0</v></c>"
-                     end
+              f_attrs = +""
+              if value.type
+                case value.type.to_sym
+                when :array
+                  f_attrs << ' t="array"'
+                  f_attrs << %( ref="#{value.ref}") if value.ref
+                when :shared
+                  f_attrs << ' t="shared"'
+                  f_attrs << %( si="#{value.shared_index}") if value.shared_index
+                  f_attrs << %( ref="#{value.ref}") if value.ref
+                end
+              end
+              f_attrs << ' ca="1"' if value.calculate_always
+              v_val = value.cached_value.nil? ? 0 : value.cached_value
+              buf << "<c r=\"#{col_ref}#{row_num_str}\"><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{v_val}</v></c>"
             when Hash
               if value.key?(:formula)
-                formula_expr = value[:formula]
+                formula_expr = value[:formula] || value[:expression]
                 formula_expr = formula_expr[1..] if formula_expr.start_with?("=")
-                xml_val = value[:value]
-                buf << if xml_val
-                         "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>#{xml_val}</v></c>"
-                       else
-                         "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>0</v></c>"
-                       end
+                f_attrs = +""
+                if value[:type]
+                  case value[:type].to_sym
+                  when :array
+                    f_attrs << ' t="array"'
+                    f_attrs << %( ref="#{value[:ref]}") if value[:ref]
+                  when :shared
+                    f_attrs << ' t="shared"'
+                    f_attrs << %( si="#{value[:si] || value[:shared_index]}") if value[:si] || value[:shared_index]
+                    f_attrs << %( ref="#{value[:ref]}") if value[:ref]
+                  end
+                end
+                f_attrs << ' ca="1"' if value[:calculate_always]
+                xml_val = value[:value] || value[:cached_value] || 0
+                buf << "<c r=\"#{col_ref}#{row_num_str}\"><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{xml_val}</v></c>"
               end
             when Xlsxrb::Elements::CellError
               buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"e\"><v>#{value.code}</v></c>"
@@ -489,6 +528,9 @@ module Xlsxrb
           # General path: styled, formula, rich text, or complex cell
           formula_expr = nil
           formula_ca = false
+          formula_type = nil
+          formula_ref = nil
+          formula_si = nil
           xml_val = value
           type = nil
 
@@ -496,6 +538,9 @@ module Xlsxrb
           when Xlsxrb::Elements::Formula
             formula_expr = value.expression
             formula_ca = value.calculate_always
+            formula_type = value.type
+            formula_ref = value.ref
+            formula_si = value.shared_index
             xml_val = value.cached_value
             case value.cached_value
             when String
@@ -509,9 +554,12 @@ module Xlsxrb
             end
           when Hash
             if value.key?(:formula)
-              formula_expr = value[:formula]
+              formula_expr = value[:formula] || value[:expression]
               formula_ca = value[:calculate_always] || false
-              xml_val = value[:value]
+              formula_type = value[:type]
+              formula_ref = value[:ref]
+              formula_si = value[:si] || value[:shared_index]
+              xml_val = value[:value] || value[:cached_value]
               case xml_val
               when String
                 type = "str"
@@ -577,12 +625,20 @@ module Xlsxrb
           buf << ' s="' << style_id.to_s << '"' if style_id
           buf << ' t="' << type << '"' if type
           if formula_expr
-            buf << if formula_ca
-                     '><f ca="1">'
-                   else
-                     "><f>"
-                   end
-            buf << escape_xml(formula_expr) << "</f>"
+            f_attrs = +""
+            if formula_type
+              case formula_type.to_sym
+              when :array
+                f_attrs << ' t="array"'
+                f_attrs << %( ref="#{formula_ref}") if formula_ref
+              when :shared
+                f_attrs << ' t="shared"'
+                f_attrs << %( si="#{formula_si}") if formula_si
+                f_attrs << %( ref="#{formula_ref}") if formula_ref
+              end
+            end
+            f_attrs << ' ca="1"' if formula_ca
+            buf << "<f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
             if xml_val
               buf << "<v>" << xml_val.to_s << "</v></c>"
             else
@@ -1197,11 +1253,28 @@ module Xlsxrb
         @builder.open_tag("c", attrs)
         if formula
           f_attrs = {}
-          f_attrs[:ca] = "1" if cell[:formula_ca]
-          if f_attrs.empty?
-            @builder.tag("f") { |b| b.text(formula) }
+          formula_text = formula
+          if formula.is_a?(Xlsxrb::Elements::Formula)
+            formula_text = formula.expression
+            formula_text = formula_text[1..] if formula_text.start_with?("=")
+            f_attrs[:t] = formula.type.to_s if formula.type
+            f_attrs[:ref] = formula.ref if formula.ref
+            f_attrs[:si] = formula.shared_index.to_s if formula.shared_index
+            f_attrs[:ca] = "1" if formula.calculate_always
           else
-            @builder.tag("f", f_attrs) { |b| b.text(formula) }
+            formula_text = formula_text[1..] if formula_text.is_a?(String) && formula_text.start_with?("=")
+            f_type = cell[:formula_type] || cell[:type]
+            if f_type && %i[array shared].include?(f_type.to_sym)
+              f_attrs[:t] = f_type.to_s
+              f_attrs[:ref] = cell[:formula_ref] || cell[:ref] if cell[:formula_ref] || (f_type.to_s == "array" && cell[:ref])
+              f_attrs[:si] = cell[:formula_si].to_s if cell[:formula_si]
+            end
+            f_attrs[:ca] = "1" if cell[:formula_ca]
+          end
+          if f_attrs.empty?
+            @builder.tag("f") { |b| b.text(formula_text) }
+          else
+            @builder.tag("f", f_attrs) { |b| b.text(formula_text) }
           end
         end
         v_val = if value.nil?

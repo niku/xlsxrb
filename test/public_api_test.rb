@@ -930,6 +930,34 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(true, f.calculate_always)
   end
 
+  test "Xlsxrb.array_formula returns an array formula element and serializes in XML" do
+    f = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", "A1:C1", cached_value: 0)
+    assert_instance_of(Xlsxrb::Elements::Formula, f)
+    assert_equal("SUM(B1:B10*C1:C10)", f.expression)
+    assert_equal(:array, f.type)
+    assert_equal("A1:C1", f.ref)
+    assert_equal(0, f.cached_value)
+
+    # Test serialization in streaming mode
+    data = Xlsxrb.write do |w|
+      w.sheet("Sheet1") do |s|
+        s.row([f])
+      end
+    end
+    xml_content = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(data)) { |zr| zr.read_entry("xl/worksheets/sheet1.xml") }
+    assert_includes(xml_content, '<f t="array" ref="A1:C1">SUM(B1:B10*C1:C10)</f><v>0</v>')
+
+    # Test serialization in DOM mode
+    wb = Xlsxrb.build do |b|
+      b.sheet("Sheet1") do |s|
+        s.row([f])
+      end
+    end
+    dom_data = Xlsxrb.write(wb)
+    dom_xml = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(dom_data)) { |zr| zr.read_entry("xl/worksheets/sheet1.xml") }
+    assert_includes(dom_xml, '<f t="array" ref="A1:C1">SUM(B1:B10*C1:C10)</f><v>0</v>')
+  end
+
   test "Xlsxrb.rich_text returns a rich text element" do
     rt = Xlsxrb.rich_text(text: "Hello", bold: true)
     assert_instance_of(Xlsxrb::Elements::RichText, rt)

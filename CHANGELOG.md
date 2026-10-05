@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Array and dynamic array formula serialization and `Xlsxrb.array_formula`: Add `Xlsxrb.array_formula(expression, ref, cached_value:)` factory method, extend `Xlsxrb.formula` with optional `type:` and `ref:` keywords, and serialize `<f t="array" ref="...">` and shared formula attributes across all `WorksheetWriter` serialization paths.
 - First-class `style_index:` keyword on `Elements::Column`: Add `style_index:` keyword argument directly to `Elements::Column.new`, storing it in `Data.define` attributes and populating it from `rc[:style_index]` during worksheet parsing and DSL column definitions.
 - In-memory streaming write and row append chaining: Support `Xlsxrb.write` with omitted target in block mode to return an in-memory binary String, support self-returning `<<` row appending for chaining across `StreamWriter`, `SheetContext`, and `WorksheetBuilder`, and add `add_row` aliases.
 - Unified color and border style normalizers in `StyleBuilder`: Add `StyleBuilder.normalize_color` (supporting 140+ CSS named colors, `#RGB`, `#RRGGBB`, `#AARRGGBB` hex strings, numeric RGB integers, and optional alpha channel) and `StyleBuilder.normalize_border_style` (supporting border style symbols, aliases, strings, and 0..13 numeric border indices).

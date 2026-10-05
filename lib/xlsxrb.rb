@@ -109,13 +109,41 @@ module Xlsxrb
   #
   # @param expression [String] The formula expression without leading '=' (e.g. "SUM(A1:A10)").
   # @param cached_value [Object, nil] Optional precomputed value for readers that do not evaluate formulas.
+  # @param type [Symbol, String, nil] Formula type (:shared, :array, etc.).
+  # @param ref [String, nil] Target cell or range reference (e.g. "A1:C1").
   # @return [Elements::Formula]
   # @api public
-  #: (String expression, ?cached_value: (String | Numeric | bool | nil)) -> Elements::Formula
-  def self.formula(expression, cached_value: nil)
+  #: (String expression, ?cached_value: (String | Numeric | bool | nil), ?type: (Symbol | String)?, ?ref: String?) -> Elements::Formula
+  def self.formula(expression, cached_value: nil, type: nil, ref: nil)
     Elements::Formula.new(
       expression: expression,
       cached_value: cached_value,
+      type: type,
+      ref: ref,
+      calculate_always: cached_value.nil? || nil
+    )
+  end
+
+  # Creates an array or dynamic array {Elements::Formula} object.
+  #
+  # @example Create a multi-cell array formula
+  #   formula = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", "A1:C1", cached_value: 0)
+  #
+  # @example Create a dynamic array formula
+  #   formula = Xlsxrb.array_formula("SORT(UNIQUE(A1:A10))", "D1")
+  #
+  # @param expression [String] The formula expression without leading '='.
+  # @param ref [String, nil] Target cell or range reference (e.g. "A1:C1" or "D1").
+  # @param cached_value [Object, nil] Optional precomputed value.
+  # @return [Elements::Formula]
+  # @api public
+  #: (String expression, ?String? ref, ?cached_value: (String | Numeric | bool | nil)) -> Elements::Formula
+  def self.array_formula(expression, ref = nil, cached_value: nil)
+    Elements::Formula.new(
+      expression: expression,
+      cached_value: cached_value,
+      type: :array,
+      ref: ref,
       calculate_always: cached_value.nil? || nil
     )
   end
