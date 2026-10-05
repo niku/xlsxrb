@@ -631,8 +631,8 @@ module Xlsxrb
     # @param location [String, nil] Internal location.
     # @return [void]
     # @api public
-    # : (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
-    def hyperlink: (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+    # : (String | Integer cell, ?(String | Elements::Hyperlink)? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+    def hyperlink: (String | Integer cell, ?(String | Elements::Hyperlink)? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
 
     # Sets the auto-filter range on the active sheet.
     #

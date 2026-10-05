@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- First-class `Elements::Hyperlink`, `Xlsxrb.hyperlink`, and `Cell#tooltip`: Add `Elements::Hyperlink` data class and `Xlsxrb.hyperlink` factory helper with `tooltip:` support, expose `Cell#tooltip` and `:tooltip`, `:url` symbol key access on `Elements::Cell`, and support `Elements::Hyperlink` instances in `WorksheetBuilder#hyperlink`, `StreamWriter#hyperlink`, and `Ooxml::Writer#hyperlink`.
 - Array and dynamic array formula serialization and `Xlsxrb.array_formula`: Add `Xlsxrb.array_formula(expression, ref, cached_value:)` factory method, extend `Xlsxrb.formula` with optional `type:` and `ref:` keywords, and serialize `<f t="array" ref="...">` and shared formula attributes across all `WorksheetWriter` serialization paths.
 - First-class `style_index:` keyword on `Elements::Column`: Add `style_index:` keyword argument directly to `Elements::Column.new`, storing it in `Data.define` attributes and populating it from `rc[:style_index]` during worksheet parsing and DSL column definitions.
 - In-memory streaming write and row append chaining: Support `Xlsxrb.write` with omitted target in block mode to return an in-memory binary String, support self-returning `<<` row appending for chaining across `StreamWriter`, `SheetContext`, and `WorksheetBuilder`, and add `add_row` aliases.

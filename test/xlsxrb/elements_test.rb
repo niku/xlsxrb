@@ -203,20 +203,45 @@ class ElementsTest < Test::Unit::TestCase
     assert_true(cell_link.link?)
     assert_true(cell_link.hyperlink?)
     assert_equal("https://google.com", cell_link.url)
+    assert_equal("Search", cell_link.tooltip)
     assert_equal({ url: "https://google.com", tooltip: "Search" }, cell_link.hyperlink)
     assert_equal({ url: "https://google.com", tooltip: "Search" }, cell_link[:hyperlink])
+    assert_equal("https://google.com", cell_link[:url])
+    assert_equal("Search", cell_link[:tooltip])
 
     cell_loc = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: { location: "Sheet2!A1" })
     assert_true(cell_loc.link?)
     assert_equal("Sheet2!A1", cell_loc.url)
+    assert_nil(cell_loc.tooltip)
 
     cell_str = cell_no_link.with(hyperlink: "https://ruby-lang.org")
     assert_true(cell_str.link?)
     assert_equal("https://ruby-lang.org", cell_str.url)
+    assert_nil(cell_str.tooltip)
+
+    # First-class Elements::Hyperlink and Xlsxrb.hyperlink
+    hl = Xlsxrb.hyperlink("https://example.com", display: "Example Site", tooltip: "Visit website", location: "Sheet1!A1")
+    assert_instance_of(Xlsxrb::Elements::Hyperlink, hl)
+    assert_equal("https://example.com", hl.url)
+    assert_equal("Example Site", hl.display)
+    assert_equal("Visit website", hl.tooltip)
+    assert_equal("Sheet1!A1", hl.location)
+    assert_equal("https://example.com", hl[:url])
+    assert_equal("Visit website", hl[:tooltip])
+    assert_equal("https://example.com", hl.to_s)
+    assert_equal({ url: "https://example.com", display: "Example Site", tooltip: "Visit website", location: "Sheet1!A1" }, hl.to_h)
+
+    cell_hl = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: hl)
+    assert_true(cell_hl.link?)
+    assert_equal("https://example.com", cell_hl.url)
+    assert_equal("Visit website", cell_hl.tooltip)
+    assert_equal("https://example.com", cell_hl[:url])
+    assert_equal("Visit website", cell_hl[:tooltip])
 
     assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").link?)
     assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: {}).link?)
     assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").url)
+    assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").tooltip)
   end
 
   test "cell comment predicate and text accessor" do

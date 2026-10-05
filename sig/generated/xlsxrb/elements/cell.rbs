@@ -111,6 +111,13 @@ module Xlsxrb
       # : () -> String?
       def url: () -> String?
 
+      # Returns the hyperlink tooltip (ScreenTip) text, or nil.
+      #
+      # @return [String, nil]
+      # @api public
+      # : () -> String?
+      def tooltip: () -> String?
+
       # Returns whether the cell contains a comment or note.
       #
       # @return [Boolean]

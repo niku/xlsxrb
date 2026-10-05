@@ -106,5 +106,62 @@ module Xlsxrb
         runs.map { |r| r[:text] || r.to_s }.join
       end
     end
+
+    # Represents a worksheet hyperlink with an optional target URL, display text, tooltip (ScreenTip), and internal location.
+    #
+    # @example Create a hyperlink
+    #   link = Elements::Hyperlink.new(url: "https://example.com", tooltip: "Visit website")
+    #
+    # @api public
+    # rubocop:disable Lint/DataDefineOverride -- :display represents the hyperlink display text attribute in OOXML
+    Hyperlink = Data.define(:url, :display, :tooltip, :location) do
+      # rubocop:enable Lint/DataDefineOverride
+      # @param url [String, nil] Target external URL or URI.
+      # @param display [String, nil] Optional friendly display label.
+      # @param tooltip [String, nil] Optional hover ScreenTip text.
+      # @param location [String, nil] Optional internal sheet/cell reference.
+      #: (?url: String?, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+      def initialize(url: nil, display: nil, tooltip: nil, location: nil)
+        super
+      end
+
+      # Supports hash-like key access for backwards compatibility.
+      #
+      # @param key [Symbol]
+      # @return [Object, nil]
+      # @api public
+      #: (Symbol key) -> untyped
+      def [](key)
+        case key
+        when :url then url
+        when :display then display
+        when :tooltip then tooltip
+        when :location then location
+        end
+      end
+
+      # Supports Hash conversion.
+      #
+      # @return [Hash{Symbol => String}]
+      # @api public
+      #: () -> Hash[Symbol, String]
+      def to_h
+        h = {}
+        h[:url] = url if url
+        h[:display] = display if display
+        h[:tooltip] = tooltip if tooltip
+        h[:location] = location if location
+        h
+      end
+
+      # Returns the target URL or location string.
+      #
+      # @return [String, nil]
+      # @api public
+      #: () -> String?
+      def to_s
+        url || location
+      end
+    end
   end
 end

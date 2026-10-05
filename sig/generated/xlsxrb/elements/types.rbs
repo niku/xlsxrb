@@ -97,5 +97,29 @@ module Xlsxrb
 
       def members: () -> [ :runs ]
     end
+
+    # Represents a worksheet hyperlink with an optional target URL, display text, tooltip (ScreenTip), and internal location.
+    #
+    # @example Create a hyperlink
+    #   link = Elements::Hyperlink.new(url: "https://example.com", tooltip: "Visit website")
+    #
+    # @api public
+    # rubocop:disable Lint/DataDefineOverride -- :display represents the hyperlink display text attribute in OOXML
+    class Hyperlink < Data
+      attr_reader url(): untyped
+
+      attr_reader display(): untyped
+
+      attr_reader tooltip(): untyped
+
+      attr_reader location(): untyped
+
+      def self.new: (untyped url, untyped display, untyped tooltip, untyped location) -> instance
+                  | (url: untyped, display: untyped, tooltip: untyped, location: untyped) -> instance
+
+      def self.members: () -> [ :url, :display, :tooltip, :location ]
+
+      def members: () -> [ :url, :display, :tooltip, :location ]
+    end
   end
 end

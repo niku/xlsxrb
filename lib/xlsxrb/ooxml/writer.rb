@@ -330,6 +330,19 @@ module Xlsxrb
         validate_cell_address!(cell_address)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @hyperlinks.key?(sheet_name)
+
+        if url.is_a?(Elements::Hyperlink)
+          link = {}
+          link[:url] = url.url if url.url
+          link[:display] = url.display || display if url.display || display
+          link[:tooltip] = url.tooltip || tooltip if url.tooltip || tooltip
+          link[:location] = url.location || location if url.location || location
+          raise ArgumentError, "url or location required" if link[:url].nil? && link[:location].nil?
+
+          @hyperlinks[sheet_name][cell_address] = link
+          return
+        end
+
         raise ArgumentError, "url or location required" if url.nil? && location.nil?
 
         link = {}

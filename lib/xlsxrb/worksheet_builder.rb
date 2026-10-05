@@ -280,8 +280,17 @@ module Xlsxrb
     # @param location [String, nil] Optional internal sheet location (e.g. "Sheet2!A1").
     # @return [void]
     # @api public
-    #: (String | Integer cell, ?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+    #: (String | Integer cell, ?(String | Elements::Hyperlink)? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
     def hyperlink(cell, url = nil, display: nil, tooltip: nil, location: nil)
+      if url.is_a?(Elements::Hyperlink)
+        link = { cell: cell }
+        link[:url] = url.url if url.url
+        link[:display] = url.display || display if url.display || display
+        link[:tooltip] = url.tooltip || tooltip if url.tooltip || tooltip
+        link[:location] = url.location || location if url.location || location
+        @hyperlinks << link
+        return
+      end
       link = { cell: cell }
       link[:url] = url if url
       link[:display] = display if display

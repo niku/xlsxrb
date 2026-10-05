@@ -148,6 +148,25 @@ module Xlsxrb
     )
   end
 
+  # Creates an {Elements::Hyperlink} object for use in cell hyperlinks.
+  #
+  # @example Create an external hyperlink with a ScreenTip tooltip
+  #   link = Xlsxrb.hyperlink("https://example.com", tooltip: "Visit Example")
+  #
+  # @example Create an internal worksheet link
+  #   link = Xlsxrb.hyperlink(location: "Sheet2!A1", tooltip: "Go to Sheet 2")
+  #
+  # @param url [String, nil] External hyperlink URL.
+  # @param display [String, nil] Optional display label.
+  # @param tooltip [String, nil] Optional hover ScreenTip text.
+  # @param location [String, nil] Optional internal sheet coordinate.
+  # @return [Elements::Hyperlink]
+  # @api public
+  #: (?String? url, ?display: String?, ?tooltip: String?, ?location: String?) -> Elements::Hyperlink
+  def self.hyperlink(url = nil, display: nil, tooltip: nil, location: nil)
+    Elements::Hyperlink.new(url: url, display: display, tooltip: tooltip, location: location)
+  end
+
   # Formats a cell value according to an Excel format code string.
   #
   # @param value [Object, nil] Value to format.

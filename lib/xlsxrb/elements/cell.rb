@@ -183,6 +183,22 @@ module Xlsxrb
           u&.to_s
         when String
           hyperlink.empty? ? nil : hyperlink
+        when Elements::Hyperlink
+          (hyperlink.url || hyperlink.location)&.to_s
+        end
+      end
+
+      # Returns the hyperlink tooltip (ScreenTip) text, or nil.
+      #
+      # @return [String, nil]
+      # @api public
+      #: () -> String?
+      def tooltip
+        case hyperlink
+        when Hash
+          hyperlink[:tooltip]&.to_s
+        when Elements::Hyperlink
+          hyperlink.tooltip&.to_s
         end
       end
 
@@ -242,6 +258,8 @@ module Xlsxrb
         when :column_index then column_index
         when :row_index then row_index
         when :hyperlink then hyperlink
+        when :url then url
+        when :tooltip then tooltip
         when :comment then comment
         when :raw_value then raw_value
         when :format_code then format_code

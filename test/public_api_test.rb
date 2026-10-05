@@ -1267,6 +1267,33 @@ class PublicApiTest < Test::Unit::TestCase
     assert_not_equal({}, val)
   end
 
+  test "WorksheetBuilder#hyperlink and StreamWriter#hyperlink accept Elements::Hyperlink" do
+    hl = Xlsxrb.hyperlink("https://example.com", display: "Example Site", tooltip: "Go to Example")
+
+    # StreamWriter
+    stream_data = Xlsxrb.write do |w|
+      w.sheet("Links") do |s|
+        s.row(["Test"])
+        s.hyperlink("A1", hl)
+      end
+    end
+    xml = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(stream_data)) { |zr| zr.read_entry("xl/worksheets/sheet1.xml") }
+    assert_includes(xml, 'tooltip="Go to Example"')
+    assert_includes(xml, 'display="Example Site"')
+
+    # WorksheetBuilder
+    wb = Xlsxrb.build do |w|
+      w.sheet("Links") do |s|
+        s.row(["Test"])
+        s.hyperlink("A1", hl)
+      end
+    end
+    dom_data = Xlsxrb.write(wb)
+    dom_xml = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(dom_data)) { |zr| zr.read_entry("xl/worksheets/sheet1.xml") }
+    assert_includes(dom_xml, 'tooltip="Go to Example"')
+    assert_includes(dom_xml, 'display="Example Site"')
+  end
+
   test "WorksheetBuilder#sparkline_group configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
