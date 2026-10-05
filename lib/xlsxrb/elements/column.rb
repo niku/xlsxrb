@@ -12,21 +12,23 @@ module Xlsxrb
     #
     # @api public
     # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
-    class Column < Data.define(:index, :width, :hidden, :custom_width, :outline_level, :unmapped_data, :errors)
+    class Column < Data.define(:index, :width, :hidden, :custom_width, :outline_level, :style_index, :unmapped_data, :errors)
       # rubocop:enable Style/DataInheritance
       # @param index [Integer] 0-based column index.
       # @param width [Float, Integer, nil] Column width in characters.
       # @param hidden [Boolean] Whether the column is hidden.
       # @param custom_width [Boolean] Whether custom width flag is set.
       # @param outline_level [Integer, nil] Grouping/outline level.
+      # @param style_index [Integer, String, nil] Optional style identifier.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      #: (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      #: (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize(index:, width: nil, hidden: false, custom_width: false, outline_level: nil,
-                     unmapped_data: {}, errors: nil)
+                     style_index: nil, unmapped_data: {}, errors: nil)
+        style_idx = style_index || unmapped_data[:style_index] || unmapped_data[:style]
         computed_errors = errors || self.class.validate(index)
         super(index: index, width: width, hidden: hidden, custom_width: custom_width,
-              outline_level: outline_level, unmapped_data: unmapped_data,
+              outline_level: outline_level, style_index: style_idx, unmapped_data: unmapped_data,
               errors: computed_errors.freeze)
       end
 
@@ -36,14 +38,6 @@ module Xlsxrb
       #: () -> bool
       def valid?
         errors.empty?
-      end
-
-      # Returns style_index if present in unmapped_data.
-      #
-      # @return [Integer, nil]
-      #: () -> Integer?
-      def style_index
-        unmapped_data[:style_index] || unmapped_data[:style]
       end
 
       # Returns whether the column index is within valid OOXML range (0..16383).

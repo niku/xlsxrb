@@ -708,6 +708,7 @@ module Xlsxrb
           hidden: rc[:hidden] || false,
           custom_width: rc[:custom_width] || false,
           outline_level: rc[:outline_level],
+          style_index: rc[:style_index],
           unmapped_data: col_unmapped
         )
       end

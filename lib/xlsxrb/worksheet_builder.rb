@@ -248,6 +248,7 @@ module Xlsxrb
           hidden: hidden,
           custom_width: custom_width || !width.nil?,
           outline_level: outline_level,
+          style_index: style,
           unmapped_data: unmapped
         )
       end

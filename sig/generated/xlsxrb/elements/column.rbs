@@ -17,22 +17,17 @@ module Xlsxrb
       # @param hidden [Boolean] Whether the column is hidden.
       # @param custom_width [Boolean] Whether custom width flag is set.
       # @param outline_level [Integer, nil] Grouping/outline level.
+      # @param style_index [Integer, String, nil] Optional style identifier.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      # : (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize: (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      # : (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
       # Returns whether the column definition is valid according to OOXML specifications.
       #
       # @return [Boolean]
       # : () -> bool
       def valid?: () -> bool
-
-      # Returns style_index if present in unmapped_data.
-      #
-      # @return [Integer, nil]
-      # : () -> Integer?
-      def style_index: () -> Integer?
 
       # Returns whether the column index is within valid OOXML range (0..16383).
       #

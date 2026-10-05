@@ -616,15 +616,21 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(2, col.outline_level)
   end
 
-  test "column style_index returns style from unmapped_data" do
+  test "column style_index returns style from keyword or unmapped_data" do
     col1 = Xlsxrb::Elements::Column.new(index: 0)
     assert_nil(col1.style_index)
+
+    col_kw = Xlsxrb::Elements::Column.new(index: 0, style_index: 7)
+    assert_equal(7, col_kw.style_index)
 
     col2 = Xlsxrb::Elements::Column.new(index: 1, unmapped_data: { style_index: 2 })
     assert_equal(2, col2.style_index)
 
     col3 = Xlsxrb::Elements::Column.new(index: 2, unmapped_data: { style: 5 })
     assert_equal(5, col3.style_index)
+
+    col_both = Xlsxrb::Elements::Column.new(index: 3, style_index: 9, unmapped_data: { style_index: 2 })
+    assert_equal(9, col_both.style_index)
   end
 
   test "column with negative index is invalid" do
