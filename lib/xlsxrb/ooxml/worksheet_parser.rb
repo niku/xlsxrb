@@ -199,6 +199,7 @@ module Xlsxrb
         row_end_len = row_end_tag.bytesize
 
         pos = sd_open_end + 1
+        last_row_index = -1
 
         while pos < sd_end
           row_start = xml.index(row_start_pattern, pos)
@@ -220,9 +221,9 @@ module Xlsxrb
 
           # Row index and attrs from tag substring (bounded search)
           row_tag = xml.byteslice(row_start, tag_end - row_start)
-          row_index = 0
           r_val = tag_attr(row_tag, ' r="')
-          row_index = r_val.to_i - 1 if r_val
+          row_index = r_val ? r_val.to_i - 1 : last_row_index + 1
+          last_row_index = row_index
 
           attrs = extract_row_attrs(row_tag)
 
@@ -559,6 +560,7 @@ module Xlsxrb
         row_end_len = row_end_tag.bytesize
 
         pos = sd_open_end + 1
+        last_row_index = -1
 
         while pos < sd_end
           row_start = xml.index(row_start_pattern, pos)
@@ -578,22 +580,22 @@ module Xlsxrb
             next
           end
 
-          row_index = 0
+          row_index = nil
           has_custom_attrs = false
           ri = row_start + row_start_len
           while ri < tag_end
             rb = xml.getbyte(ri)
             if rb == 114 && xml.getbyte(ri + 1) == 61 && xml.getbyte(ri + 2) == 34 # r="
               ri += 3
+              parsed_r = 0
               while ri < tag_end
                 cb = xml.getbyte(ri)
                 break unless cb.between?(48, 57)
 
-                row_index = (row_index * 10) + (cb - 48)
+                parsed_r = (parsed_r * 10) + (cb - 48)
                 ri += 1
-
               end
-              row_index -= 1
+              row_index = parsed_r - 1
             elsif ROW_ATTR_START_BYTES.include?(rb) # 'h', 'c', 'o', 's' for ht, customHeight, hidden, outlineLevel, s
               has_custom_attrs = true
               ri += 1
@@ -601,6 +603,9 @@ module Xlsxrb
               ri += 1
             end
           end
+
+          row_index ||= last_row_index + 1
+          last_row_index = row_index
 
           attrs = if has_custom_attrs
                     row_tag = xml.byteslice(row_start, tag_end - row_start)
@@ -649,6 +654,7 @@ module Xlsxrb
         row_end_tag = "</row>"
         row_end_len = 6
         sd_end_tag = "</sheetData>"
+        last_row_index = -1
 
         push_chunk = lambda do |chunk|
           return if in_sheet_data == :closed
@@ -729,21 +735,22 @@ module Xlsxrb
               break
             end
 
-            row_index = 0
+            row_index = nil
             has_custom_attrs = false
             ri = row_start + row_start_len
             while ri < tag_end
               rb = buffer.getbyte(ri)
               if rb == 114 && buffer.getbyte(ri + 1) == 61 && buffer.getbyte(ri + 2) == 34 # r="
                 ri += 3
+                parsed_r = 0
                 while ri < tag_end
                   cb = buffer.getbyte(ri)
                   break unless cb.between?(48, 57)
 
-                  row_index = (row_index * 10) + (cb - 48)
+                  parsed_r = (parsed_r * 10) + (cb - 48)
                   ri += 1
                 end
-                row_index -= 1
+                row_index = parsed_r - 1
               elsif ROW_ATTR_START_BYTES.include?(rb)
                 has_custom_attrs = true
                 ri += 1
@@ -751,6 +758,9 @@ module Xlsxrb
                 ri += 1
               end
             end
+
+            row_index ||= last_row_index + 1
+            last_row_index = row_index
 
             attrs = if has_custom_attrs
                       row_tag = buffer.byteslice(row_start, tag_end - row_start)

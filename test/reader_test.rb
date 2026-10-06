@@ -10955,4 +10955,47 @@ class ReaderTest < Test::Unit::TestCase
     sheet = wb.sheets.first
     assert_equal("CaseInsensitiveString", sheet.row_at(0)[0].value)
   end
+
+  test "parses rows sequentially when row element has no r attribute" do
+    sheet_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row>
+            <c r="A1"><v>10</v></c>
+          </row>
+          <row>
+            <c r="A2"><v>20</v></c>
+          </row>
+          <row r="5">
+            <c r="A5"><v>50</v></c>
+          </row>
+          <row>
+            <c r="A6"><v>60</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    # Direct string parsing
+    rows = Xlsxrb::Ooxml::WorksheetParser.each_row(sheet_xml).to_a
+    assert_equal(4, rows.size)
+    assert_equal(0, rows[0].index)
+    assert_equal(10, rows[0][0].value)
+    assert_equal(1, rows[1].index)
+    assert_equal(20, rows[1][0].value)
+    assert_equal(4, rows[2].index)
+    assert_equal(50, rows[2][0].value)
+    assert_equal(5, rows[3].index)
+    assert_equal(60, rows[3][0].value)
+
+    # Streaming IO parsing
+    stream_rows = Xlsxrb::Ooxml::WorksheetParser.each_row(StringIO.new(sheet_xml)).to_a
+    assert_equal([0, 1, 4, 5], stream_rows.map(&:index))
+
+    # Event stream parsing
+    events = Xlsxrb::Ooxml::WorksheetParser.each_event(sheet_xml).to_a
+    row_starts = events.select { |e| e.type == :row_start }
+    assert_equal([0, 1, 4, 5], row_starts.map { |e| e.args[0] })
+  end
 end
