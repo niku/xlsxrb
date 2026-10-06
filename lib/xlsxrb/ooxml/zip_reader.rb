@@ -232,9 +232,10 @@ module Xlsxrb
       # Returns raw bytes for a single entry, or nil if not found.
       #: (String name) -> String?
       def read_entry(name)
-        return @cached_entries[name] if @cached_entries&.key?(name)
+        norm_name = normalize_entry_name(name)
+        return @cached_entries[norm_name] if @cached_entries&.key?(norm_name)
 
-        entry = catalog[name]
+        entry = catalog[norm_name]
         return nil unless entry
 
         io.seek(entry.data_offset, IO::SEEK_SET)
@@ -255,7 +256,8 @@ module Xlsxrb
       # Opens an EntryStreamIO for an entry by name.
       #: (String entry_name) -> EntryStreamIO
       def open_entry_io(entry_name)
-        entry = catalog[entry_name]
+        norm_name = normalize_entry_name(entry_name)
+        entry = catalog[norm_name]
         raise ArgumentError, "Entry not found in archive: #{entry_name}" unless entry
 
         EntryStreamIO.new(io, entry.data_offset, entry.compressed_size, entry.method, max_uncompressed_size: @max_uncompressed_size)
@@ -277,7 +279,7 @@ module Xlsxrb
       # Returns true if the archive contains the specified entry.
       #: (String name) -> bool
       def entry?(name)
-        catalog.key?(name)
+        catalog.key?(normalize_entry_name(name))
       end
 
       # Returns entry metadata catalog.
@@ -295,7 +297,8 @@ module Xlsxrb
       # Copies the specified entry to a ZipWriter directly without decompression.
       #: (String entry_name, ZipWriter writer, ?target_path: String?) -> void
       def copy_to_writer(entry_name, writer, target_path: nil)
-        entry = catalog[entry_name]
+        norm_name = normalize_entry_name(entry_name)
+        entry = catalog[norm_name]
         raise ArgumentError, "Entry not found in archive: #{entry_name}" unless entry
 
         if entry.compressed_size.zero? && entry.uncompressed_size.positive?
@@ -401,7 +404,8 @@ module Xlsxrb
           entry_name = io.read(nlen).force_encoding("UTF-8")
           io.read(elen + clen)
 
-          next if entry_name.end_with?("/")
+          norm_name = normalize_entry_name(entry_name)
+          next if norm_name.end_with?("/")
 
           current_cd_pos = io.pos
 
@@ -416,8 +420,8 @@ module Xlsxrb
           local_elen = local_header[24, 2].unpack1("v")
           data_offset = offset + 30 + local_nlen + local_elen
 
-          result[entry_name] = Entry.new(
-            name: entry_name,
+          entry = Entry.new(
+            name: norm_name,
             method: method,
             compressed_size: csize,
             uncompressed_size: usize,
@@ -425,6 +429,8 @@ module Xlsxrb
             local_header_offset: offset,
             data_offset: data_offset
           )
+          result[norm_name] = entry
+          result[entry_name] = entry if entry_name != norm_name
 
           io.seek(current_cd_pos, IO::SEEK_SET)
         end
@@ -458,16 +464,18 @@ module Xlsxrb
           io.read(extra_len)
           data_offset = io.pos
 
-          next if entry_name.end_with?("/")
+          norm_name = normalize_entry_name(entry_name)
+          next if norm_name.end_with?("/")
 
           has_data_descriptor = gp_flag.anybits?(0x08)
 
           if has_data_descriptor && compressed_size.zero?
             entry_data, = find_data_descriptor_stream(io, method)
             @cached_entries ||= {}
-            @cached_entries[entry_name] = entry_data
-            result[entry_name] = Entry.new(
-              name: entry_name,
+            @cached_entries[norm_name] = entry_data
+            @cached_entries[entry_name] = entry_data if entry_name != norm_name
+            entry = Entry.new(
+              name: norm_name,
               method: method,
               compressed_size: entry_data.bytesize,
               uncompressed_size: entry_data.bytesize,
@@ -475,9 +483,11 @@ module Xlsxrb
               local_header_offset: header_pos,
               data_offset: data_offset
             )
+            result[norm_name] = entry
+            result[entry_name] = entry if entry_name != norm_name
           else
-            result[entry_name] = Entry.new(
-              name: entry_name,
+            entry = Entry.new(
+              name: norm_name,
               method: method,
               compressed_size: compressed_size,
               uncompressed_size: uncompressed_size,
@@ -485,6 +495,8 @@ module Xlsxrb
               local_header_offset: header_pos,
               data_offset: data_offset
             )
+            result[norm_name] = entry
+            result[entry_name] = entry if entry_name != norm_name
 
             io.seek(compressed_size, IO::SEEK_CUR) if io.respond_to?(:seek)
           end
@@ -565,6 +577,10 @@ module Xlsxrb
         end
 
         result.force_encoding("UTF-8")
+      end
+
+      def normalize_entry_name(name)
+        name.include?("\\") ? name.tr("\\", "/") : name
       end
     end
   end

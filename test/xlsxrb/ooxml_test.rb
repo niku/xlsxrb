@@ -84,6 +84,31 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("A" * (150_000 - 15_000), rest)
   end
 
+  test "zip_reader normalizes Windows backslash path separators" do
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      w.add_entry("xl\\workbook.xml", "<workbook/>")
+      w.add_entry("xl\\worksheets\\sheet1.xml", "<worksheet/>")
+    end
+    io.rewind
+
+    reader = Xlsxrb::Ooxml::ZipReader.new(io)
+    assert_equal(true, reader.entry?("xl/workbook.xml"))
+    assert_equal(true, reader.entry?("xl\\workbook.xml"))
+    assert_equal(true, reader.entry?("xl/worksheets/sheet1.xml"))
+    assert_equal("<workbook/>", reader.read_entry("xl/workbook.xml"))
+    assert_equal("<workbook/>", reader.read_entry("xl\\workbook.xml"))
+    assert_equal("<worksheet/>", reader.read_entry("xl/worksheets/sheet1.xml"))
+
+    stream = reader.open_entry_io("xl/workbook.xml")
+    assert_equal("<workbook/>", stream.read)
+    stream.close
+
+    stream_bs = reader.open_entry_io("xl\\workbook.xml")
+    assert_equal("<workbook/>", stream_bs.read)
+    stream_bs.close
+  end
+
   # --- ZipWriter ---
 
   test "zip_writer creates valid ZIP with entries" do
