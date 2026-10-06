@@ -10998,4 +10998,43 @@ class ReaderTest < Test::Unit::TestCase
     row_starts = events.select { |e| e.type == :row_start }
     assert_equal([0, 1, 4, 5], row_starts.map { |e| e.args[0] })
   end
+
+  test "parses cells with whitespace and newlines between child elements" do
+    sheet_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1" t="s">
+              <v>
+                0
+              </v>
+            </c>
+            <c r="B1">
+              <f>
+                1+1
+              </f>
+              <v>
+                2
+              </v>
+            </c>
+            <c r="C1" t="str">
+              <v>
+                Hello World
+              </v>
+            </c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    sst = ["SharedText"]
+    rows = Xlsxrb::Ooxml::WorksheetParser.each_row(sheet_xml, shared_strings: sst).to_a
+    assert_equal(1, rows.size)
+    row = rows.first
+    assert_equal("SharedText", row[0].value)
+    assert_equal(2, row[1].value)
+    assert_equal("1+1", row[1].formula_expression)
+    assert_equal("Hello World", row[2].value)
+  end
 end
