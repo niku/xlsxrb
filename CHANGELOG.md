@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Non-self-closing `<sheet>` and `<xf>` tag compatibility: Verify and support spreadsheet XML where `<sheet>...</sheet>` in `workbook.xml` or `<xf>...</xf>` in `styles.xml` are serialized with explicit closing tags rather than self-closing syntax.
 - Namespace prefix resilience for relationship and embed attributes: Match relationship and embed attributes by local name or any namespace prefix (`r:id`, `d3p1:id`, `rel:id`, `id`, `r:embed`, `embed`) across `WorkbookListener`, `HyperlinksListener`, `DrawingListener`, and `WorksheetParser`, ensuring reliable sheet, hyperlink, and media resolution for non-standard XML generators.
 - UTF-16LE, UTF-16BE, and UTF-8 BOM encoding normalization in `ZipReader`: Automatically detect and transcode Byte Order Mark (BOM) encoded XML streams (`\xFF\xFE`, `\xFE\xFF`, and `\xEF\xBB\xBF`) to UTF-8 in `ZipReader#read_entry` and `EntryStreamIO`, enabling seamless parsing of workbooks generated on Windows Phone and legacy platforms.
 - XML 1.0 line ending normalization (`\r\n` and `\r` to `\n`): Normalize line breaks in shared strings, inline strings, and cell text values per W3C XML 1.0 §2.11 across `SharedStringsParser` and `WorksheetParser`.

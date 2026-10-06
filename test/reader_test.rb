@@ -11125,4 +11125,43 @@ class ReaderTest < Test::Unit::TestCase
       assert_equal(["Sheet1"], reader.sheet_names)
     end
   end
+
+  test "reads workbook with non-self-closing sheet and xf elements" do
+    raw_xlsx = Xlsxrb.write do |w|
+      w.sheet("Sheet1") { |s| s.row(["Cell 1"]) }
+    end
+
+    src_reader = Xlsxrb::Ooxml::ZipReader.open(raw_xlsx)
+    modified_io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(modified_io) do |w|
+      src_reader.each_entry do |name, content|
+        case name
+        when "xl/workbook.xml"
+          custom_content = content.gsub(%r{<sheet\b([^>]*?)/>}m, '<sheet \1></sheet>')
+          w.add_binary_entry(name, custom_content.b)
+        when "xl/styles.xml"
+          custom_content = content.gsub(%r{<xf\b([^>]*?)/>}m, '<xf \1></xf>')
+          w.add_binary_entry(name, custom_content.b)
+        else
+          w.add_binary_entry(name, (content || "").b)
+        end
+      end
+    end
+    src_reader.close
+
+    wb = Xlsxrb.read(modified_io.string).load
+    assert_equal(1, wb.sheets.size)
+    assert_equal("Sheet1", wb.sheets.first.name)
+    assert_equal("Cell 1", wb.sheets.first.row_at(0)[0].value)
+
+    Tempfile.create(["test", ".xlsx"]) do |tmp|
+      tmp.binmode
+      tmp.write(modified_io.string)
+      tmp.flush
+
+      reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      assert_equal(["Sheet1"], reader.sheet_names)
+      assert_predicate(reader.cell_xfs.size, :positive?)
+    end
+  end
 end
