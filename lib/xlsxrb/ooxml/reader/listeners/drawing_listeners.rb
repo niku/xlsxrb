@@ -51,7 +51,7 @@ module Xlsxrb
               @current_image[:hidden] = %w[1 true].include?(attributes["hidden"]) if attributes["hidden"]
             end
           when "blip"
-            rid = attributes["r:embed"] || attributes["embed"]
+            rid = attributes["r:embed"] || attributes["embed"] || attributes.find { |k, _| k.end_with?(":embed") }&.last
             @current_image[:embed_rid] = rid if @inside_pic && @current_image && rid
           when "alphaModFix"
             @current_image[:alpha_mod_fix] = attributes["amt"].to_i if @inside_pic && @current_image && attributes["amt"]
@@ -210,7 +210,7 @@ module Xlsxrb
               @current_chart[:frame_hidden] = %w[1 true].include?(attributes["hidden"]) if attributes["hidden"]
             end
           when "chart"
-            rid = attributes["r:id"] || attributes["id"]
+            rid = attributes["r:id"] || attributes["id"] || attributes.find { |k, _| k.end_with?(":id") }&.last
             @current_chart[:rid] = rid if @inside_graphic_frame && @current_chart && rid
           when "graphicFrameLocks"
             @current_chart[:frame_no_grp] = true if @inside_graphic_frame && @current_chart && %w[1 true].include?(attributes["noGrp"])

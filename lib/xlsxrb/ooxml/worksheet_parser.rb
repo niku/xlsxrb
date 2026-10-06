@@ -146,7 +146,7 @@ module Xlsxrb
 
           hl_tag = xml.byteslice(hl_start, hl_tag_end - hl_start)
           ref = tag_attr(hl_tag, ' ref="')
-          rid = tag_attr(hl_tag, ' r:id="') || tag_attr(hl_tag, ' id="')
+          rid = tag_attr(hl_tag, ' r:id="') || tag_attr(hl_tag, ' id="') || hl_tag[/(?:[a-zA-Z0-9_]+:)?id="([^"]+)"/, 1]
           display = tag_attr(hl_tag, ' display="')
           tooltip = tag_attr(hl_tag, ' tooltip="')
           location = tag_attr(hl_tag, ' location="')

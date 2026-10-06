@@ -401,7 +401,8 @@ module Xlsxrb
           when "workbook"
             @conformance = attributes["conformance"] if attributes["conformance"]
           when "sheet"
-            @sheets << { name: attributes["name"], rid: attributes["r:id"], state: attributes["state"] }
+            rid = attributes["r:id"] || attributes["id"] || attributes.find { |k, _| k.end_with?(":id") }&.last
+            @sheets << { name: attributes["name"], rid: rid, state: attributes["state"] }
           when "fileVersion"
             an = attributes["appName"]
             @file_version[:app_name] = an if an
@@ -736,7 +737,8 @@ module Xlsxrb
           return unless ref
 
           link = { ref: ref }
-          link[:rid] = attributes["r:id"] if attributes["r:id"]
+          rid = attributes["r:id"] || attributes["id"] || attributes.find { |k, _| k.end_with?(":id") }&.last
+          link[:rid] = rid if rid
           link[:display] = attributes["display"] if attributes["display"]
           link[:tooltip] = attributes["tooltip"] if attributes["tooltip"]
           link[:location] = attributes["location"] if attributes["location"]

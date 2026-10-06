@@ -11091,4 +11091,38 @@ class ReaderTest < Test::Unit::TestCase
     sheet = wb.sheets.first
     assert_equal("UTF-16 Cell Value", sheet.row_at(0)[0].value)
   end
+
+  test "reads workbook with custom namespace prefix on sheet and hyperlink relationships" do
+    raw_xlsx = Xlsxrb.write do |w|
+      w.sheet("Sheet1") { |s| s.row(["Hello"]) }
+    end
+
+    src_reader = Xlsxrb::Ooxml::ZipReader.open(raw_xlsx)
+    modified_io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(modified_io) do |w|
+      src_reader.each_entry do |name, content|
+        if name == "xl/workbook.xml"
+          custom_content = content.gsub('r:id="rId1"', 'xmlns:d3p1="http://schemas.openxmlformats.org/officeDocument/2006/relationships" d3p1:id="rId1"')
+          w.add_binary_entry(name, custom_content.b)
+        else
+          w.add_binary_entry(name, (content || "").b)
+        end
+      end
+    end
+    src_reader.close
+
+    wb = Xlsxrb.read(modified_io.string).load
+    assert_equal(1, wb.sheets.size)
+    assert_equal("Sheet1", wb.sheets.first.name)
+    assert_equal("Hello", wb.sheets.first.row_at(0)[0].value)
+
+    Tempfile.create(["test", ".xlsx"]) do |tmp|
+      tmp.binmode
+      tmp.write(modified_io.string)
+      tmp.flush
+
+      reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      assert_equal(["Sheet1"], reader.sheet_names)
+    end
+  end
 end
