@@ -49,12 +49,15 @@ module Xlsxrb
           @total_uncompressed = 0
           @eof = false
           @closed = false
+          @bom_checked = false
           @inflater = @compression_method == 8 ? Zlib::Inflate.new(-Zlib::MAX_WBITS) : nil
         end
 
         #: (?Integer? length) -> String?
         def read(length = nil)
           raise IOError, "closed stream" if @closed
+
+          check_bom_encoding!
 
           if length.nil?
             result = @buffer.dup
@@ -181,6 +184,37 @@ module Xlsxrb
             nil
           end
         end
+
+        def check_bom_encoding!
+          return if @bom_checked
+
+          @bom_checked = true
+          peek = fetch_chunk(DEFAULT_CHUNK_SIZE)
+          return unless peek
+
+          raw_b = peek.b
+          if raw_b.start_with?("\xFF\xFE".b)
+            rest = +""
+            while (chunk = fetch_chunk(DEFAULT_CHUNK_SIZE))
+              rest << chunk
+            end
+            full = (peek + rest).force_encoding(Encoding::UTF_16LE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
+            @buffer = full
+            @eof = true
+          elsif raw_b.start_with?("\xFE\xFF".b)
+            rest = +""
+            while (chunk = fetch_chunk(DEFAULT_CHUNK_SIZE))
+              rest << chunk
+            end
+            full = (peek + rest).force_encoding(Encoding::UTF_16BE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
+            @buffer = full
+            @eof = true
+          elsif raw_b.start_with?("\xEF\xBB\xBF".b)
+            @buffer << peek.b.delete_prefix("\xEF\xBB\xBF".b).force_encoding(Encoding::UTF_8)
+          else
+            @buffer << peek
+          end
+        end
       end
 
       # Opens a ZIP from a file path or IO and yields the reader.
@@ -233,12 +267,13 @@ module Xlsxrb
       #: (String name) -> String?
       def read_entry(name)
         norm_name = normalize_entry_name(name)
-        return @cached_entries[norm_name] if @cached_entries&.key?(norm_name)
+        cached = @cached_entries[norm_name] if @cached_entries&.key?(norm_name)
 
         entry = lookup_entry(norm_name)
         return nil unless entry
 
-        return @cached_entries[entry.name] if @cached_entries&.key?(entry.name)
+        cached ||= @cached_entries[entry.name] if @cached_entries&.key?(entry.name)
+        return normalize_text_encoding(cached) if cached
 
         io.seek(entry.data_offset, IO::SEEK_SET)
         raw = io.read(entry.compressed_size)
@@ -544,11 +579,15 @@ module Xlsxrb
       end
 
       def decompress(raw, method)
-        return raw&.dup&.force_encoding("UTF-8") || "" if method.zero?
-
-        safe_inflate(raw || "", -Zlib::MAX_WBITS)
+        data = if method.zero?
+                 raw&.dup || ""
+               else
+                 safe_inflate(raw || "", -Zlib::MAX_WBITS)
+               end
+        normalize_text_encoding(data)
       rescue Zlib::DataError
-        safe_inflate(raw || "", -Zlib::MAX_WBITS)
+        data = safe_inflate(raw || "", -Zlib::MAX_WBITS)
+        normalize_text_encoding(data)
       end
 
       def safe_inflate(raw, wbits)
@@ -590,6 +629,21 @@ module Xlsxrb
 
       def ci_catalog
         @ci_catalog ||= catalog.transform_keys(&:downcase)
+      end
+
+      def normalize_text_encoding(data)
+        return data if data.nil? || data.empty?
+
+        raw_b = data.b
+        if raw_b.start_with?("\xFF\xFE".b)
+          data.force_encoding(Encoding::UTF_16LE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
+        elsif raw_b.start_with?("\xFE\xFF".b)
+          data.force_encoding(Encoding::UTF_16BE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
+        elsif raw_b.start_with?("\xEF\xBB\xBF".b)
+          data.b.delete_prefix("\xEF\xBB\xBF".b).force_encoding(Encoding::UTF_8)
+        else
+          data.force_encoding(Encoding::UTF_8)
+        end
       end
     end
   end

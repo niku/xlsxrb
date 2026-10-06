@@ -62,6 +62,8 @@ module Xlsxrb
         private
 
         def fetch_chunk: (untyped chunk_size) -> untyped
+
+        def check_bom_encoding!: () -> untyped
       end
 
       # Opens a ZIP from a file path or IO and yields the reader.
@@ -134,6 +136,8 @@ module Xlsxrb
       def lookup_entry: (untyped name) -> untyped
 
       def ci_catalog: () -> untyped
+
+      def normalize_text_encoding: (untyped data) -> untyped
     end
   end
 end

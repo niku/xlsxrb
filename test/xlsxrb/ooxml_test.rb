@@ -132,6 +132,37 @@ class OoxmlTest < Test::Unit::TestCase
     stream.close
   end
 
+  test "zip_reader normalizes UTF-16LE, UTF-16BE, and UTF-8 BOM encodings to UTF-8" do
+    utf16le_content = "\uFEFF<root>UTF16LE Content</root>".encode(Encoding::UTF_16LE)
+    utf16be_content = "\uFEFF<root>UTF16BE Content</root>".encode(Encoding::UTF_16BE)
+    utf8_bom_content = "\xEF\xBB\xBF<root>UTF8 BOM Content</root>".b
+
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      w.add_binary_entry("utf16le.xml", utf16le_content.b)
+      w.add_binary_entry("utf16be.xml", utf16be_content.b)
+      w.add_binary_entry("utf8bom.xml", utf8_bom_content)
+    end
+    io.rewind
+
+    reader = Xlsxrb::Ooxml::ZipReader.new(io)
+    assert_equal("<root>UTF16LE Content</root>", reader.read_entry("utf16le.xml"))
+    assert_equal("<root>UTF16BE Content</root>", reader.read_entry("utf16be.xml"))
+    assert_equal("<root>UTF8 BOM Content</root>", reader.read_entry("utf8bom.xml"))
+
+    stream_le = reader.open_entry_io("utf16le.xml")
+    assert_equal("<root>UTF16LE Content</root>", stream_le.read)
+    stream_le.close
+
+    stream_be = reader.open_entry_io("utf16be.xml")
+    assert_equal("<root>UTF16BE Content</root>", stream_be.read)
+    stream_be.close
+
+    stream_bom = reader.open_entry_io("utf8bom.xml")
+    assert_equal("<root>UTF8 BOM Content</root>", stream_bom.read)
+    stream_bom.close
+  end
+
   # --- ZipWriter ---
 
   test "zip_writer creates valid ZIP with entries" do

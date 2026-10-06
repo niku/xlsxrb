@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- UTF-16LE, UTF-16BE, and UTF-8 BOM encoding normalization in `ZipReader`: Automatically detect and transcode Byte Order Mark (BOM) encoded XML streams (`\xFF\xFE`, `\xFE\xFF`, and `\xEF\xBB\xBF`) to UTF-8 in `ZipReader#read_entry` and `EntryStreamIO`, enabling seamless parsing of workbooks generated on Windows Phone and legacy platforms.
 - XML 1.0 line ending normalization (`\r\n` and `\r` to `\n`): Normalize line breaks in shared strings, inline strings, and cell text values per W3C XML 1.0 §2.11 across `SharedStringsParser` and `WorksheetParser`.
 - Whitespace and newline tolerance in cell regex scanning: Allow whitespace and newline sequences between `<c>` child tags (`<f>`, `<v>`, `<is>`) and strip whitespace on extracted values in `WorksheetParser`, ensuring reliable parsing of pretty-printed or formatted worksheet XML.
 - Sequential row index fallback for omitted `r` attributes: Track previous row index and fall back to sequential 1-based indexing when `<row>` elements omit the `r` attribute per ECMA-376 Part 1 §18.3.1.73 across direct string scanning, chunked stream scanning, and event scanning in `WorksheetParser`.

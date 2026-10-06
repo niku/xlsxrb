@@ -14,6 +14,8 @@ module Xlsxrb
       def self.fast_scan: (untyped xml_src) -> untyped
 
       def self.extract_multi_t: (untyped xml, untyped from, untyped to) -> untyped
+
+      def self.normalize_newlines: (untyped str) -> untyped
     end
   end
 end

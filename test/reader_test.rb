@@ -11067,4 +11067,28 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("Inline 1\nInline 2\nInline 3", rows[0][0].value)
     assert_equal("Formula 1\nFormula 2\nFormula 3", rows[0][1].value)
   end
+
+  test "reads workbook with UTF-16LE encoded worksheet XML" do
+    raw_xlsx = Xlsxrb.write do |w|
+      w.sheet("Sheet1") { |s| s.row(["UTF-16 Cell Value"]) }
+    end
+
+    src_reader = Xlsxrb::Ooxml::ZipReader.open(raw_xlsx)
+    modified_io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(modified_io) do |w|
+      src_reader.each_entry do |name, content|
+        if name == "xl/worksheets/sheet1.xml"
+          utf16le = "\uFEFF#{content}".encode(Encoding::UTF_16LE).b
+          w.add_binary_entry(name, utf16le)
+        else
+          w.add_binary_entry(name, (content || "").b)
+        end
+      end
+    end
+    src_reader.close
+
+    wb = Xlsxrb.read(modified_io.string).load
+    sheet = wb.sheets.first
+    assert_equal("UTF-16 Cell Value", sheet.row_at(0)[0].value)
+  end
 end
