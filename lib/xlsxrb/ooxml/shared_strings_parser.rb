@@ -101,7 +101,7 @@ module Xlsxrb
             str = ""
           end
 
-          yield str.freeze
+          yield normalize_newlines(str).freeze
           pos = si_end + 5
         end
       end
@@ -134,6 +134,12 @@ module Xlsxrb
       end
 
       private_class_method :extract_multi_t
+
+      def self.normalize_newlines(str)
+        str.include?("\r") ? str.gsub("\r\n", "\n").tr("\r", "\n") : str
+      end
+
+      private_class_method :normalize_newlines
     end
   end
 end

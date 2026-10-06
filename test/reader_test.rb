@@ -11037,4 +11037,34 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("1+1", row[1].formula_expression)
     assert_equal("Hello World", row[2].value)
   end
+
+  test "normalizes CRLF and lone CR to LF per XML 1.0 Section 2.11" do
+    sst_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="2" uniqueCount="2">
+        <si><t>Line 1\r\nLine 2\rLine 3\nLine 4</t></si>
+        <si><r><t>Run 1\r\n</t></r><r><t>Run 2\rRun 3</t></r></si>
+      </sst>
+    XML
+
+    sst = Xlsxrb::Ooxml::SharedStringsParser.parse(sst_xml)
+    assert_equal("Line 1\nLine 2\nLine 3\nLine 4", sst[0])
+    assert_equal("Run 1\nRun 2\nRun 3", sst[1])
+
+    sheet_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1" t="inlineStr"><is><t>Inline 1\r\nInline 2\rInline 3</t></is></c>
+            <c r="B1" t="str"><v>Formula 1\r\nFormula 2\rFormula 3</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    rows = Xlsxrb::Ooxml::WorksheetParser.each_row(sheet_xml).to_a
+    assert_equal("Inline 1\nInline 2\nInline 3", rows[0][0].value)
+    assert_equal("Formula 1\nFormula 2\nFormula 3", rows[0][1].value)
+  end
 end

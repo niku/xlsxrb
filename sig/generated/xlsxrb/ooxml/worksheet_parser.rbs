@@ -55,6 +55,9 @@ module Xlsxrb
       # : (String str) -> String
       def self.decode_xml_entities: (String str) -> String
 
+      # : (String str) -> String
+      def self.normalize_text: (String str) -> String
+
       # Parses <cols> section for column definitions.
       class ColumnsListener
         include REXML::SAX2Listener

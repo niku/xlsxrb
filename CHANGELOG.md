@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- XML 1.0 line ending normalization (`\r\n` and `\r` to `\n`): Normalize line breaks in shared strings, inline strings, and cell text values per W3C XML 1.0 §2.11 across `SharedStringsParser` and `WorksheetParser`.
 - Whitespace and newline tolerance in cell regex scanning: Allow whitespace and newline sequences between `<c>` child tags (`<f>`, `<v>`, `<is>`) and strip whitespace on extracted values in `WorksheetParser`, ensuring reliable parsing of pretty-printed or formatted worksheet XML.
 - Sequential row index fallback for omitted `r` attributes: Track previous row index and fall back to sequential 1-based indexing when `<row>` elements omit the `r` attribute per ECMA-376 Part 1 §18.3.1.73 across direct string scanning, chunked stream scanning, and event scanning in `WorksheetParser`.
 - Case-insensitive part name lookup in `ZipReader`: Fall back to case-insensitive lookup for package part entries per ECMA-376 Part 2 §8.1.1, allowing workbooks with case-varying part names (such as lower-case `xl/sharedstrings.xml` or `xl/styles.xml`) to resolve transparently.

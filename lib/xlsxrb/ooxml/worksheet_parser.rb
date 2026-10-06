@@ -455,8 +455,7 @@ module Xlsxrb
           break unless t_end && t_end <= to
 
           text_segment = xml.byteslice(t_tag_end + 1, t_close - t_tag_end - 1).force_encoding("UTF-8")
-          text_segment = decode_xml_entities(text_segment) if text_segment.include?("&")
-          result << text_segment
+          result << normalize_text(text_segment)
 
           pos = t_end + 1
         end
@@ -472,8 +471,7 @@ module Xlsxrb
         when "b"
           raw == "1"
         when "e", "str", "inlineStr"
-          val = raw.force_encoding("UTF-8")
-          val.include?("&") ? decode_xml_entities(val) : val
+          normalize_text(raw.force_encoding("UTF-8"))
         else
           return nil if raw.empty?
 
@@ -493,6 +491,12 @@ module Xlsxrb
       #: (String str) -> String
       def self.decode_xml_entities(str)
         XmlBuilder.unescape(str)
+      end
+
+      #: (String str) -> String
+      def self.normalize_text(str)
+        s = decode_xml_entities(str)
+        s.include?("\r") ? s.gsub("\r\n", "\n").tr("\r", "\n") : s
       end
 
       # Parses <cols> section for column definitions.
@@ -892,7 +896,7 @@ module Xlsxrb
                   if is
                     extract_inline_text(is, 0, is.bytesize)
                   elsif v
-                    v.include?("&") ? decode_xml_entities(v) : v
+                    normalize_text(v)
                   else
                     ""
                   end
@@ -903,10 +907,10 @@ module Xlsxrb
           raw_val = if is
                       extract_inline_text(is, 0, is.bytesize)
                     elsif v
-                      v.include?("&") ? decode_xml_entities(v) : v
+                      normalize_text(v)
                     end
 
-          formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
+          formula_expr = f ? normalize_text(f) : nil
           formula_expr = nil if formula_expr && formula_expr.empty?
           fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
           cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code, date1904)
@@ -946,7 +950,7 @@ module Xlsxrb
                   if is
                     extract_inline_text(is, 0, is.bytesize)
                   elsif v
-                    v.include?("&") ? decode_xml_entities(v) : v
+                    normalize_text(v)
                   else
                     ""
                   end
@@ -957,11 +961,11 @@ module Xlsxrb
           raw_val = if is
                       extract_inline_text(is, 0, is.bytesize)
                     elsif v
-                      v.include?("&") ? decode_xml_entities(v) : v
+                      normalize_text(v)
                     end
 
           style_idx = s&.to_i
-          formula_expr = f&.include?("&") ? decode_xml_entities(f) : f
+          formula_expr = f ? normalize_text(f) : nil
           formula_expr = nil if formula_expr && formula_expr.empty?
           fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
           cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code, date1904)
@@ -998,6 +1002,7 @@ module Xlsxrb
                     col_idx
                   end
           col_idx = c_idx + 1
+          v = v.strip if v
 
           val = if t == "s"
                   shared_strings[v.to_i] || ""
@@ -1007,7 +1012,7 @@ module Xlsxrb
                   if is
                     extract_inline_text(is, 0, is.bytesize)
                   elsif v
-                    v.include?("&") ? decode_xml_entities(v) : v
+                    normalize_text(v)
                   else
                     ""
                   end
@@ -1054,6 +1059,7 @@ module Xlsxrb
                     col_idx
                   end
           col_idx = c_idx + 1
+          v = v.strip if v
 
           val = if t == "s"
                   shared_strings[v.to_i] || ""
@@ -1063,7 +1069,7 @@ module Xlsxrb
                   if is
                     extract_inline_text(is, 0, is.bytesize)
                   elsif v
-                    v.include?("&") ? decode_xml_entities(v) : v
+                    normalize_text(v)
                   else
                     ""
                   end
