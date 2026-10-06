@@ -10934,4 +10934,25 @@ class ReaderTest < Test::Unit::TestCase
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
+
+  test "reads workbook with lower case sharedstrings.xml" do
+    raw_xlsx = Xlsxrb.write do |w|
+      w.sheet("Sheet1") { |s| s.row(["CaseInsensitiveString"]) }
+    end
+
+    # Create modified ZIP where xl/sharedStrings.xml is named xl/sharedstrings.xml
+    src_reader = Xlsxrb::Ooxml::ZipReader.open(raw_xlsx)
+    modified_io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(modified_io) do |w|
+      src_reader.each_entry do |name, content|
+        target_name = name == "xl/sharedStrings.xml" ? "xl/sharedstrings.xml" : name
+        w.add_entry(target_name, content || "")
+      end
+    end
+    src_reader.close
+
+    wb = Xlsxrb.read(modified_io.string).load
+    sheet = wb.sheets.first
+    assert_equal("CaseInsensitiveString", sheet.row_at(0)[0].value)
+  end
 end

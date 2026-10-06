@@ -130,6 +130,10 @@ module Xlsxrb
       def safe_inflate: (untyped raw, untyped wbits) -> untyped
 
       def normalize_entry_name: (untyped name) -> untyped
+
+      def lookup_entry: (untyped name) -> untyped
+
+      def ci_catalog: () -> untyped
     end
   end
 end

@@ -186,13 +186,12 @@ module Xlsxrb
       # Opens a ZIP from a file path or IO and yields the reader.
       #: (untyped source, ?max_uncompressed_size: Integer) ?{ (ZipReader) -> untyped } -> (ZipReader | untyped)
       def self.open(source, max_uncompressed_size: MAX_UNCOMPRESSED_SIZE)
-        should_close = source.is_a?(String) && File.file?(source)
-        io = if source.is_a?(String)
-               if source.start_with?(LOCAL_HEADER_SIG) || source.include?("\x00")
-                 StringIO.new(source.b)
-               else
-                 File.open(source, "rb")
-               end
+        is_binary = source.is_a?(String) && (source.start_with?(LOCAL_HEADER_SIG) || source.include?("\x00"))
+        should_close = source.is_a?(String) && !is_binary && File.file?(source)
+        io = if should_close
+               File.open(source, "rb")
+             elsif source.is_a?(String)
+               StringIO.new(source.b)
              else
                source
              end
@@ -216,6 +215,7 @@ module Xlsxrb
         @tempfile = nil
         @io = nil
         @catalog = nil
+        @ci_catalog = nil
         @cached_entries = nil
       end
 
@@ -235,8 +235,10 @@ module Xlsxrb
         norm_name = normalize_entry_name(name)
         return @cached_entries[norm_name] if @cached_entries&.key?(norm_name)
 
-        entry = catalog[norm_name]
+        entry = lookup_entry(norm_name)
         return nil unless entry
+
+        return @cached_entries[entry.name] if @cached_entries&.key?(entry.name)
 
         io.seek(entry.data_offset, IO::SEEK_SET)
         raw = io.read(entry.compressed_size)
@@ -256,8 +258,7 @@ module Xlsxrb
       # Opens an EntryStreamIO for an entry by name.
       #: (String entry_name) -> EntryStreamIO
       def open_entry_io(entry_name)
-        norm_name = normalize_entry_name(entry_name)
-        entry = catalog[norm_name]
+        entry = lookup_entry(entry_name)
         raise ArgumentError, "Entry not found in archive: #{entry_name}" unless entry
 
         EntryStreamIO.new(io, entry.data_offset, entry.compressed_size, entry.method, max_uncompressed_size: @max_uncompressed_size)
@@ -279,7 +280,7 @@ module Xlsxrb
       # Returns true if the archive contains the specified entry.
       #: (String name) -> bool
       def entry?(name)
-        catalog.key?(normalize_entry_name(name))
+        !lookup_entry(name).nil?
       end
 
       # Returns entry metadata catalog.
@@ -297,8 +298,7 @@ module Xlsxrb
       # Copies the specified entry to a ZipWriter directly without decompression.
       #: (String entry_name, ZipWriter writer, ?target_path: String?) -> void
       def copy_to_writer(entry_name, writer, target_path: nil)
-        norm_name = normalize_entry_name(entry_name)
-        entry = catalog[norm_name]
+        entry = lookup_entry(entry_name)
         raise ArgumentError, "Entry not found in archive: #{entry_name}" unless entry
 
         if entry.compressed_size.zero? && entry.uncompressed_size.positive?
@@ -581,6 +581,15 @@ module Xlsxrb
 
       def normalize_entry_name(name)
         name.include?("\\") ? name.tr("\\", "/") : name
+      end
+
+      def lookup_entry(name)
+        norm_name = normalize_entry_name(name)
+        catalog[norm_name] || ci_catalog[norm_name.downcase]
+      end
+
+      def ci_catalog
+        @ci_catalog ||= catalog.transform_keys(&:downcase)
       end
     end
   end

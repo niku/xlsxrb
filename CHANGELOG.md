@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Case-insensitive part name lookup in `ZipReader`: Fall back to case-insensitive lookup for package part entries per ECMA-376 Part 2 §8.1.1, allowing workbooks with case-varying part names (such as lower-case `xl/sharedstrings.xml` or `xl/styles.xml`) to resolve transparently.
 - Windows backslash path separator normalization in `ZipReader`: Normalize Windows backslash separators (`\`) in ZIP central directory and local headers to standard forward slashes (`/`), enabling transparent extraction and catalog lookup for XLSX archives generated on Windows.
 - First-class sparkline groups on worksheet and `add_sparkline` helper: Expose `sparkline_groups` reader and keyword argument on `Elements::Worksheet`, propagate `ws.sparkline_groups` during `Xlsxrb.write` DOM serialization, and add `add_sparkline(location:, range:, type:, **opts)` helper to `WorksheetBuilder`, `StreamWriter`, and `StreamWriter::SheetContext` supporting `:win_loss` mapping to `"stacked"`.
 - High-level print area and print titles DSL: Add `print_area`, `print_titles`, `repeat_rows`, and `repeat_columns` to `WorksheetBuilder`, `StreamWriter::SheetContext`, and `StreamWriter`, expose `print_area` and `print_titles` on `Elements::Worksheet`, and auto-generate `_xlnm.Print_Area` and `_xlnm.Print_Titles` defined names in `WorkbookBuilder#build` and `Xlsxrb.write` DOM export.

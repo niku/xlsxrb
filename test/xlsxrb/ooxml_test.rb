@@ -109,6 +109,29 @@ class OoxmlTest < Test::Unit::TestCase
     stream_bs.close
   end
 
+  test "zip_reader matches part names case-insensitively per ECMA-376 Part 2" do
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      w.add_entry("xl/sharedstrings.xml", "<sst/>")
+      w.add_entry("xl/STYLES.XML", "<styleSheet/>")
+    end
+    io.rewind
+
+    reader = Xlsxrb::Ooxml::ZipReader.new(io)
+    assert_equal(true, reader.entry?("xl/sharedStrings.xml"))
+    assert_equal(true, reader.entry?("xl/sharedstrings.xml"))
+    assert_equal(true, reader.entry?("xl/styles.xml"))
+    assert_equal(true, reader.entry?("xl/STYLES.XML"))
+    assert_equal("<sst/>", reader.read_entry("xl/sharedStrings.xml"))
+    assert_equal("<sst/>", reader.read_entry("xl/sharedstrings.xml"))
+    assert_equal("<styleSheet/>", reader.read_entry("xl/styles.xml"))
+    assert_equal("<styleSheet/>", reader.read_entry("xl/STYLES.XML"))
+
+    stream = reader.open_entry_io("xl/sharedStrings.xml")
+    assert_equal("<sst/>", stream.read)
+    stream.close
+  end
+
   # --- ZipWriter ---
 
   test "zip_writer creates valid ZIP with entries" do
