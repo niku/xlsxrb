@@ -2,6 +2,8 @@
 
 A Ruby library for reading and writing XLSX files with streaming support.
 
+Drop-in compatibility adapters for peer Ruby XLSX libraries are available at [xlsxrb-adapters](https://github.com/niku/xlsxrb-adapters).
+
 ## Motivation
 
 The Ruby ecosystem has several XLSX libraries designed for specific tradeoffs:
