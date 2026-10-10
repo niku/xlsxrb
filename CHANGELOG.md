@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.1.14] - 2026-10-10
+
 ### Added
 - Non-self-closing `<sheet>` and `<xf>` tag compatibility: Verify and support spreadsheet XML where `<sheet>...</sheet>` in `workbook.xml` or `<xf>...</xf>` in `styles.xml` are serialized with explicit closing tags rather than self-closing syntax.
 - Namespace prefix resilience for relationship and embed attributes: Match relationship and embed attributes by local name or any namespace prefix (`r:id`, `d3p1:id`, `rel:id`, `id`, `r:embed`, `embed`) across `WorkbookListener`, `HyperlinksListener`, `DrawingListener`, and `WorksheetParser`, ensuring reliable sheet, hyperlink, and media resolution for non-standard XML generators.
