@@ -38,6 +38,8 @@ module Xlsxrb
 
       private
 
+      def resolve_style_id: (untyped style, untyped style_map) -> untyped
+
       def write_sheet_properties: (untyped props) -> untyped
 
       def write_sheet_views: (?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped) -> untyped

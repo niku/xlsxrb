@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Fixed
+- Prevent serialization of unresolved non-integer style names as `s` attribute in `WorksheetWriter`: Guard style resolution in `WorksheetWriter` to only emit valid integer style indices, ignoring unresolved strings or symbols to maintain ECMA-376 XML Schema conformance (`xs:unsignedInt`).
+
 ## [0.1.14] - 2026-10-10
 
 ### Added

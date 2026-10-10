@@ -158,4 +158,20 @@ class RowColumnStylesTest < Test::Unit::TestCase
     dom_sheet = wb_built.sheets.first
     assert_equal :highlight, dom_sheet.columns.first.style_index
   end
+
+  def test_unresolved_style_name_does_not_emit_invalid_string_attribute
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.start
+    # "unknown" string and :nonexistent symbol are not in style_map and not Integer
+    writer.write_row_values(0, %w[A1 B1 C1], styles: ["unknown", :nonexistent, 5], style_map: { "valid" => 1 })
+    writer.finish
+
+    xml = io.string
+    # A1 ("unknown") and B1 (:nonexistent) must not have s="..."
+    assert_no_match(/<c r="A1"[^>]* s="unknown"/, xml)
+    assert_no_match(/<c r="B1"[^>]* s="nonexistent"/, xml)
+    # C1 (raw integer 5) must have s="5"
+    assert_match(/<c r="C1"[^>]* s="5"/, xml)
+  end
 end

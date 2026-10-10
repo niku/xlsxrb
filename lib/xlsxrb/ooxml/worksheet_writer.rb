@@ -88,7 +88,7 @@ module Xlsxrb
         row_num_str = row_num.to_s
         buf = @row_buffer ||= String.new(capacity: 65_536)
         buf << '<row r="' << row_num_str << '"'
-        buf << ' s="' << attrs[:style_index].to_s << '" customFormat="1"' if attrs[:style_index]
+        buf << ' s="' << attrs[:style_index].to_s << '" customFormat="1"' if attrs[:style_index].is_a?(Integer)
         if attrs[:height]
           buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"'
         elsif attrs[:custom_height]
@@ -128,6 +128,7 @@ module Xlsxrb
 
           col_style = @column_styles && col_idx ? @column_styles[col_idx] : nil
           style_id ||= attrs[:style_index] || col_style
+          style_id = nil unless style_id.is_a?(Integer)
 
           # Fast path for common unstyled cells
           if !formula && !style_id && !cell_type_val
@@ -425,8 +426,7 @@ module Xlsxrb
         end
 
         is_styles_collection = styles && (styles.is_a?(Array) || styles.is_a?(Hash))
-        single_style_id = nil
-        single_style_id = style_map[styles] if styles && style_map && !is_styles_collection
+        single_style_id = resolve_style_id(styles, style_map) unless is_styles_collection
 
         buf << '<row r="' << row_num_str << '"'
         if attrs
@@ -444,7 +444,7 @@ module Xlsxrb
         end
 
         row_style = attrs ? attrs[:style_index] : nil
-        row_style_id = row_style && style_map ? (style_map[row_style] || style_map[row_style.to_s] || row_style) : row_style
+        row_style_id = resolve_style_id(row_style, style_map)
 
         col_index = 0
         while col_index < max_len
@@ -456,20 +456,12 @@ module Xlsxrb
                          else
                            styles[col_index]
                          end
-            style_id = if style_map && style_name
-                         style_map[style_name] || style_map[style_name.to_s] || style_name
-                       else
-                         style_name
-                       end
+            style_id = resolve_style_id(style_name, style_map)
           end
 
           if style_id.nil?
             col_style = @column_styles ? @column_styles[col_index] : nil
-            col_style_id = if col_style && style_map
-                             style_map[col_style] || style_map[col_style.to_s] || col_style
-                           else
-                             col_style
-                           end
+            col_style_id = resolve_style_id(col_style, style_map)
             style_id = row_style_id || col_style_id
           end
 
@@ -700,6 +692,17 @@ module Xlsxrb
       end
 
       private
+
+      def resolve_style_id(style, style_map)
+        return nil if style.nil?
+
+        if style_map
+          mapped = style_map[style] || style_map[style.to_s]
+          return mapped if mapped
+        end
+
+        style.is_a?(Integer) ? style : nil
+      end
 
       # --- Pre-sheetData elements ---
 
@@ -1243,7 +1246,7 @@ module Xlsxrb
         col_idx = cell[:column_index]
         col_style = @column_styles && col_idx ? @column_styles[col_idx] : nil
         style_id = cell[:style_index] || col_style
-        attrs[:s] = style_id.to_s if style_id
+        attrs[:s] = style_id.to_s if style_id.is_a?(Integer)
 
         if value.nil? && formula.nil?
           @builder.empty_tag("c", attrs)
