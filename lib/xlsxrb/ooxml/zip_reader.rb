@@ -397,7 +397,7 @@ module Xlsxrb
         cd_catalog = parse_catalog_from_central_directory(io)
         return cd_catalog if cd_catalog && !cd_catalog.empty?
 
-        io.seek(-4, IO::SEEK_CUR) if io.respond_to?(:seek)
+        io.seek(0, IO::SEEK_SET) if io.respond_to?(:seek)
         parse_catalog_from_local_headers(io)
       end
 
@@ -437,7 +437,10 @@ module Xlsxrb
 
           _v_made, _v_need, _gp, method, _time, _date, crc, csize, usize, nlen, elen, clen, _dnum, _iattr, _eattr, offset = cd_header.unpack("vvvvvvVVVvvvvvVV")
           entry_name = io.read(nlen).force_encoding("UTF-8")
-          io.read(elen + clen)
+          extra_data = elen.positive? ? io.read(elen) : nil
+          io.read(clen) if clen.positive?
+
+          usize, csize, offset = parse_zip64_extra(extra_data, usize, csize, offset) if extra_data && (usize == 0xFFFF_FFFF || csize == 0xFFFF_FFFF || offset == 0xFFFF_FFFF)
 
           norm_name = normalize_entry_name(entry_name)
           next if norm_name.end_with?("/")
@@ -496,7 +499,8 @@ module Xlsxrb
           extra_len       = header[24, 2].unpack1("v")
 
           entry_name = io.read(name_len).force_encoding("UTF-8")
-          io.read(extra_len)
+          extra_data = extra_len.positive? ? io.read(extra_len) : nil
+          uncompressed_size, compressed_size, = parse_zip64_extra(extra_data, uncompressed_size, compressed_size, 0) if extra_data && (uncompressed_size == 0xFFFF_FFFF || compressed_size == 0xFFFF_FFFF)
           data_offset = io.pos
 
           norm_name = normalize_entry_name(entry_name)
@@ -644,6 +648,34 @@ module Xlsxrb
         else
           data.force_encoding(Encoding::UTF_8)
         end
+      end
+
+      #: (String extra_data, Integer usize, Integer csize, Integer offset) -> [Integer, Integer, Integer]
+      def parse_zip64_extra(extra_data, usize, csize, offset)
+        pos = 0
+        len = extra_data.bytesize
+        while pos + 4 <= len
+          header_id, data_size = extra_data.byteslice(pos, 4).unpack("vv")
+          pos += 4
+          if header_id == 0x0001
+            field_data = extra_data.byteslice(pos, data_size)
+            if field_data
+              fpos = 0
+              if usize == 0xFFFF_FFFF && fpos + 8 <= field_data.bytesize
+                usize = field_data.byteslice(fpos, 8).unpack1("Q<")
+                fpos += 8
+              end
+              if csize == 0xFFFF_FFFF && fpos + 8 <= field_data.bytesize
+                csize = field_data.byteslice(fpos, 8).unpack1("Q<")
+                fpos += 8
+              end
+              offset = field_data.byteslice(fpos, 8).unpack1("Q<") if offset == 0xFFFF_FFFF && fpos + 8 <= field_data.bytesize
+            end
+            break
+          end
+          pos += data_size
+        end
+        [usize, csize, offset]
       end
     end
   end

@@ -138,6 +138,9 @@ module Xlsxrb
       def ci_catalog: () -> untyped
 
       def normalize_text_encoding: (untyped data) -> untyped
+
+      # : (String extra_data, Integer usize, Integer csize, Integer offset) -> [Integer, Integer, Integer]
+      def parse_zip64_extra: (String extra_data, Integer usize, Integer csize, Integer offset) -> [ Integer, Integer, Integer ]
     end
   end
 end

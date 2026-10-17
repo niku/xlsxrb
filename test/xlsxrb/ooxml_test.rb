@@ -217,6 +217,45 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(e1.method, e2.method)
   end
 
+  test "zip_reader parses ZIP64 extra fields in central directory and local headers" do
+    filename = "test.txt"
+    payload = "Hello ZIP64!"
+    crc = Zlib.crc32(payload)
+    u_size = 5_000_000_000
+    c_size = 4_000_000_000
+    local_offset = 0
+
+    # Local extra
+    local_extra = [1, 16, u_size, c_size].pack("vvQ<Q<")
+    local_hdr = "PK\x03\x04#{[45, 0, 0, 0, 0, crc, 0xFFFF_FFFF, 0xFFFF_FFFF, filename.bytesize, local_extra.bytesize].pack("vvvvvVVVvv")}#{filename}#{local_extra}"
+
+    # Central Directory extra
+    cd_extra = [1, 24, u_size, c_size, local_offset].pack("vvQ<Q<Q<")
+    cd_hdr = "PK\x01\x02#{[45, 45, 0, 0, 0, 0, crc, 0xFFFF_FFFF, 0xFFFF_FFFF, filename.bytesize, cd_extra.bytesize, 0, 0, 0, 0, 0xFFFF_FFFF].pack("vvvvvvVVVvvvvvVV")}#{filename}#{cd_extra}"
+
+    cd_offset = local_hdr.bytesize + payload.bytesize
+    cd_size = cd_hdr.bytesize
+    eocd = "PK\x05\x06#{[0, 0, 1, 1, cd_size, cd_offset, 0].pack("vvvvVVv")}"
+
+    buf = local_hdr + payload + cd_hdr + eocd
+    reader = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(buf))
+    entry = reader.entry_catalog["test.txt"]
+
+    assert_equal u_size, entry.uncompressed_size
+    assert_equal c_size, entry.compressed_size
+    assert_equal local_offset, entry.local_header_offset
+
+    # Local header fallback test
+    local_extra_fallback = [1, 16, payload.bytesize, payload.bytesize].pack("vvQ<Q<")
+    local_hdr_fallback = "PK\x03\x04#{[45, 0, 0, 0, 0, crc, 0xFFFF_FFFF, 0xFFFF_FFFF, filename.bytesize, local_extra_fallback.bytesize].pack("vvvvvVVVvv")}#{filename}#{local_extra_fallback}"
+    reader_fallback = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(local_hdr_fallback + payload))
+    entry_fallback = reader_fallback.entry_catalog["test.txt"]
+
+    assert_equal payload.bytesize, entry_fallback.uncompressed_size
+    assert_equal payload.bytesize, entry_fallback.compressed_size
+    assert_equal payload, reader_fallback.read_entry("test.txt")
+  end
+
   # --- XmlBuilder ---
 
   test "xml_builder builds XML with tags and attributes" do
