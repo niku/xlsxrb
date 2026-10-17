@@ -1563,20 +1563,27 @@ module Xlsxrb
 
     #: (String sheet_xml, String new_sheet_data_xml) -> String
     def replace_sheet_data(sheet_xml, new_sheet_data_xml)
-      sheet_data_start = sheet_xml.index("<sheetData")
+      sd_term = sheet_xml.index("sheetData")
+      return sheet_xml unless sd_term
+
+      sheet_data_start = sheet_xml.rindex("<", sd_term)
       return sheet_xml unless sheet_data_start
 
-      open_tag_end = sheet_xml.index(">", sheet_data_start)
+      prefix_len = sd_term - (sheet_data_start + 1)
+      tag_prefix = sheet_xml[sheet_data_start + 1, prefix_len]
+
+      open_tag_end = sheet_xml.index(">", sd_term)
       return sheet_xml unless open_tag_end
 
       prefix = sheet_xml[0...sheet_data_start]
       suffix = if sheet_xml.getbyte(open_tag_end - 1) == 47
                  sheet_xml[(open_tag_end + 1)..]
                else
-                 close_tag_start = sheet_xml.index("</sheetData>", open_tag_end)
+                 close_tag = "</#{tag_prefix}sheetData>"
+                 close_tag_start = sheet_xml.index(close_tag, open_tag_end)
                  return sheet_xml unless close_tag_start
 
-                 sheet_xml[(close_tag_start + 12)..]
+                 sheet_xml[(close_tag_start + close_tag.bytesize)..]
                end
 
       "#{prefix}#{new_sheet_data_xml}#{suffix}"

@@ -27,6 +27,7 @@
 - Use `nil` for unstyled cells in `embedded_images.rb` example instead of undefined `"left"`.
 
 ### Fixed
+- XML namespace prefix tolerance in template modification (`replace_sheet_data`): Locate `<sheetData>` and matching closing tags dynamically regardless of XML namespace prefixes (such as `<x:sheetData>` or `<d:sheetData>`) or self-closing syntax during `Xlsxrb.modify`.
 - Resilience against duplicate XML declarations and malformed `.rels` files in `RelationshipsParser`: Sanitize duplicate or multiple `<?xml ...?>` declarations and provide regex fallback scanning if SAX parsing fails on malformed relationship XML.
 - Fix false positive date detection for color tags like `[Red]` in `Ooxml::Reader#date_pattern?`: Unify custom number format date evaluation with `NumberFormatter.date_format?`, ignoring bracketed formatting codes (such as `[Red]` or `[Green]`) so negative numbers with colored styles are not misidentified as dates.
 - Fix layout overlap between Playground Run & Preview button and theme toggle: Override absolute positioning of `.theme-toggle` from RDoc Aliki styles with static inline-flex flow in `docs/preview.html` to eliminate button collision and preserve clean spacing across light and dark modes.

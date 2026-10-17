@@ -885,6 +885,17 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
+  test "replace_sheet_data handles namespace prefixes like <x:sheetData> and self-closing tags" do
+    xml = %(<?xml version="1.0" encoding="UTF-8"?><x:worksheet xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><x:sheetViews/><x:sheetData><x:row r="1"><x:c r="A1"><x:v>1</x:v></x:c></x:row></x:sheetData><x:pageMargins/></x:worksheet>)
+    replaced = Xlsxrb.send(:replace_sheet_data, xml, %(<x:sheetData><x:row r="1"><x:c r="A1"><x:v>99</x:v></x:c></x:row></x:sheetData>))
+    assert_includes(replaced, "<x:v>99</x:v>")
+    assert_includes(replaced, "</x:worksheet>")
+
+    self_closing_xml = %(<worksheet><sheetData/><pageMargins/></worksheet>)
+    replaced_sc = Xlsxrb.send(:replace_sheet_data, self_closing_xml, %(<sheetData><row/></sheetData>))
+    assert_equal("<worksheet><sheetData><row/></sheetData><pageMargins/></worksheet>", replaced_sc)
+  end
+
   # 1. Workbook#update_sheet
   test "Workbook#update_sheet creates a new workbook with the updated sheet" do
     wb = Xlsxrb::Elements::Workbook.new(
