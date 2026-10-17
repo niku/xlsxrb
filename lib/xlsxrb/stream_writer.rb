@@ -70,6 +70,7 @@ module Xlsxrb
       @current_images = []
       @current_shapes = []
       @current_sheet_properties = {}
+      @current_sheet_format = {}
       @current_sheet_view = {}
       @current_row_breaks = []
       @current_col_breaks = []
@@ -830,6 +831,20 @@ module Xlsxrb
         @writer.sheet_view(...)
       end
 
+      # Configures sheet format properties (e.g. default_row_height, default_col_width).
+      #
+      # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
+      # @param value [Object, nil] Property value when name is provided.
+      # @param opts [Hash] Keyword arguments for sheet format properties.
+      # @return [Hash[Symbol, untyped]]
+      # @api public
+      #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+      def sheet_format(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sheet_format(...)
+      end
+
       # simplecov:disable
       # Edge case / untested delegation block
       # Adds a horizontal page break after the given row index.
@@ -922,6 +937,7 @@ module Xlsxrb
       @current_images = []
       @current_shapes = []
       @current_sheet_properties = {}
+      @current_sheet_format = {}
       @current_sheet_view = {}
       @current_row_breaks = []
       @current_col_breaks = []
@@ -967,7 +983,8 @@ module Xlsxrb
         freeze_pane: @current_freeze_pane,
         split_pane: @current_split_pane,
         selection: @current_selection,
-        sheet_view: @current_sheet_view.empty? ? nil : @current_sheet_view
+        sheet_view: @current_sheet_view.empty? ? nil : @current_sheet_view,
+        sheet_format: @current_sheet_format.empty? ? nil : @current_sheet_format
       )
       @zip.write_data(@current_row_buffer) unless @current_row_buffer.empty?
       @current_row_buffer.clear
@@ -1464,6 +1481,25 @@ module Xlsxrb
       @current_sheet_view[name] = value
     end
 
+    # Configures sheet format properties (e.g. default_row_height, default_col_width).
+    #
+    # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
+    # @param value [Object, nil] Property value when name is provided.
+    # @param opts [Hash] Keyword arguments for sheet format properties.
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+    def sheet_format(name = nil, value = nil, **opts)
+      sheet if @current_sheet.nil?
+      if name.is_a?(Hash)
+        @current_sheet_format.merge!(name)
+      elsif name && value
+        @current_sheet_format[name.to_sym] = value
+      end
+      @current_sheet_format.merge!(opts) unless opts.empty?
+      @current_sheet_format
+    end
+
     # Inserts a horizontal page break before a row.
     #
     # @param row_num [Integer] 1-based row number.
@@ -1819,6 +1855,7 @@ module Xlsxrb
         images: @current_images,
         shapes: @current_shapes,
         sheet_properties: @current_sheet_properties,
+        sheet_format: @current_sheet_format,
         sheet_view: @current_sheet_view,
         row_breaks: @current_row_breaks,
         col_breaks: @current_col_breaks

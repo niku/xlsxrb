@@ -395,6 +395,13 @@ module Xlsxrb
     # : () -> Hash[Symbol, untyped]
     def sheet_properties: () -> Hash[Symbol, untyped]
 
+    # Returns sheet format properties (defaultRowHeight, defaultColWidth, baseColWidth) for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    # : () -> Hash[Symbol, untyped]
+    def sheet_format: () -> Hash[Symbol, untyped]
+
     # Returns page setup configurations for this worksheet.
     #
     # @return [Hash[Symbol, untyped]]

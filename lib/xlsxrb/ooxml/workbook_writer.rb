@@ -93,6 +93,7 @@ module Xlsxrb
               selection: sheet[:selection],
               sheet_view: sheet[:sheet_view],
               sheet_properties: sheet[:sheet_properties],
+              sheet_format: sheet[:sheet_format],
               tables: sheet_tables,
               table_start_rid: info[:table_start_rid],
               legacy_drawing_rid: info[:vml_rid],
@@ -923,7 +924,7 @@ module Xlsxrb
                               print_options: nil, page_margins: nil, page_setup: nil,
                               header_footer: nil, row_breaks: nil, col_breaks: nil,
                               freeze_pane: nil, split_pane: nil, selection: nil,
-                              sheet_view: nil, sheet_properties: nil,
+                              sheet_view: nil, sheet_properties: nil, sheet_format: nil,
                               tables: nil, table_start_rid: nil,
                               legacy_drawing_rid: nil, sparkline_groups: nil)
         date1904 = @workbook_properties&.[](:date1904) ? true : false
@@ -934,7 +935,8 @@ module Xlsxrb
           freeze_pane: freeze_pane,
           split_pane: split_pane,
           selection: selection,
-          sheet_view: sheet_view
+          sheet_view: sheet_view,
+          sheet_format: sheet_format
         )
         if sheet[:rows_tmp_path]
           File.open(sheet[:rows_tmp_path], "rb") do |f|

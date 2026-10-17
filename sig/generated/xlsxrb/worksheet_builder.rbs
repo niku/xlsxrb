@@ -414,6 +414,22 @@ module Xlsxrb
     # : (Symbol name, untyped value) -> void
     def sheet_view: (Symbol name, untyped value) -> void
 
+    # Configures sheet format properties (e.g. default_row_height, default_col_width).
+    #
+    # @example Using keyword arguments
+    #   sheet.sheet_format(default_row_height: 24, default_col_width: 15)
+    #
+    # @example Using property name and value
+    #   sheet.sheet_format(:default_row_height, 24)
+    #
+    # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
+    # @param value [Object, nil] Property value when name is provided.
+    # @param opts [Hash] Keyword arguments for sheet format properties.
+    # @return [Hash]
+    # @api public
+    # : (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+    def sheet_format: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+
     # Inserts a horizontal page break before the specified row.
     #
     # @param row_num [Integer] 1-based row number.

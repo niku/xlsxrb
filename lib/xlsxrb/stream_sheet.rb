@@ -343,6 +343,7 @@ module Xlsxrb
         sheet_protection: sheet_protection,
         sheet_view: sheet_view,
         sheet_properties: sheet_properties,
+        sheet_format: sheet_format,
         row_breaks: row_breaks,
         col_breaks: col_breaks
       )
@@ -604,6 +605,21 @@ module Xlsxrb
                             else
                               {}
                             end
+    end
+
+    # Returns sheet format properties (defaultRowHeight, defaultColWidth, baseColWidth) for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    #: () -> Hash[Symbol, untyped]
+    def sheet_format
+      @sheet_format ||= if raw_sheet_xml.include?("<sheetFormatPr")
+                          listener = Ooxml::Reader::SheetFormatListener.new
+                          Ooxml::XmlParser.parse(raw_sheet_xml, listener)
+                          listener.properties
+                        else
+                          {}
+                        end
     end
 
     # Returns page setup configurations for this worksheet.

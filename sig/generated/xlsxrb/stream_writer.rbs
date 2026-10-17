@@ -575,6 +575,16 @@ module Xlsxrb
       # : (Symbol | String name, untyped value) -> void
       def sheet_view: (Symbol | String name, untyped value) -> void
 
+      # Configures sheet format properties (e.g. default_row_height, default_col_width).
+      #
+      # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
+      # @param value [Object, nil] Property value when name is provided.
+      # @param opts [Hash] Keyword arguments for sheet format properties.
+      # @return [Hash[Symbol, untyped]]
+      # @api public
+      # : (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+      def sheet_format: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+
       # simplecov:disable
       # Edge case / untested delegation block
       # Adds a horizontal page break after the given row index.
@@ -919,6 +929,16 @@ module Xlsxrb
     # @api public
     # : (Symbol name, untyped value) -> void
     def sheet_view: (Symbol name, untyped value) -> void
+
+    # Configures sheet format properties (e.g. default_row_height, default_col_width).
+    #
+    # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
+    # @param value [Object, nil] Property value when name is provided.
+    # @param opts [Hash] Keyword arguments for sheet format properties.
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    # : (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+    def sheet_format: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
 
     # Inserts a horizontal page break before a row.
     #

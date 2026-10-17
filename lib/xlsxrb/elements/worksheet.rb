@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups, :merged_cells, :auto_filter, :tables, :shapes, :freeze_pane, :page_setup, :page_margins, :header_footer, :print_options, :sheet_protection, :sheet_view, :sheet_properties, :row_breaks, :col_breaks
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups, :merged_cells, :auto_filter, :tables, :shapes, :freeze_pane, :page_setup, :page_margins, :header_footer, :print_options, :sheet_protection, :sheet_view, :sheet_properties, :sheet_format, :row_breaks, :col_breaks
       attr_writer :dimension
       alias conditional_formats conditional_formatting
 
@@ -54,10 +54,11 @@ module Xlsxrb
       # @param sheet_protection [Hash, nil] Sheet protection settings.
       # @param sheet_view [Hash] Sheet view configurations (e.g. zoom, gridlines).
       # @param sheet_properties [Hash] Sheet properties (e.g. tabColor, outlinePr).
+      # @param sheet_format [Hash] Sheet format properties (e.g. defaultRowHeight, defaultColWidth).
       # @param row_breaks [Array<Integer | Hash>] Explicit page row breaks.
       # @param col_breaks [Array<Integer | Hash>] Explicit page column breaks.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]], ?shapes: Array[Hash[Symbol, untyped]], ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped], ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped], ?print_options: Hash[Symbol, untyped], ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped], ?sheet_properties: Hash[Symbol, untyped], ?row_breaks: Array[untyped], ?col_breaks: Array[untyped]) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil, tables: [], shapes: [], freeze_pane: nil, page_setup: {}, page_margins: nil, header_footer: {}, print_options: {}, sheet_protection: nil, sheet_view: {}, sheet_properties: {}, row_breaks: [], col_breaks: [])
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]], ?shapes: Array[Hash[Symbol, untyped]], ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped], ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped], ?print_options: Hash[Symbol, untyped], ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped], ?sheet_properties: Hash[Symbol, untyped], ?sheet_format: Hash[Symbol, untyped], ?row_breaks: Array[untyped], ?col_breaks: Array[untyped]) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil, tables: [], shapes: [], freeze_pane: nil, page_setup: {}, page_margins: nil, header_footer: {}, print_options: {}, sheet_protection: nil, sheet_view: {}, sheet_properties: {}, sheet_format: {}, row_breaks: [], col_breaks: [])
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -93,6 +94,7 @@ module Xlsxrb
         @sheet_protection = sheet_protection&.freeze
         @sheet_view = (sheet_view || {}).freeze
         @sheet_properties = (sheet_properties || {}).freeze
+        @sheet_format = (sheet_format || unmapped_data[:sheet_format] || unmapped_data.dig(:facade, :sheet_format) || {}).freeze
         @row_breaks = (row_breaks || []).freeze
         @col_breaks = (col_breaks || []).freeze
       end
@@ -528,6 +530,7 @@ module Xlsxrb
         new_sheet_protection = changes.key?(:sheet_protection) ? changes[:sheet_protection] : sheet_protection
         new_sheet_view = changes.key?(:sheet_view) ? changes[:sheet_view] : sheet_view
         new_sheet_properties = changes.key?(:sheet_properties) ? changes[:sheet_properties] : sheet_properties
+        new_sheet_format = changes.key?(:sheet_format) ? changes[:sheet_format] : sheet_format
         new_row_breaks = changes.key?(:row_breaks) ? changes[:row_breaks] : row_breaks
         new_col_breaks = changes.key?(:col_breaks) ? changes[:col_breaks] : col_breaks
 
@@ -562,6 +565,7 @@ module Xlsxrb
           sheet_protection: new_sheet_protection,
           sheet_view: new_sheet_view,
           sheet_properties: new_sheet_properties,
+          sheet_format: new_sheet_format,
           row_breaks: new_row_breaks,
           col_breaks: new_col_breaks
         )
@@ -602,6 +606,7 @@ module Xlsxrb
           sheet_protection: sheet_protection,
           sheet_view: sheet_view,
           sheet_properties: sheet_properties,
+          sheet_format: sheet_format,
           row_breaks: row_breaks,
           col_breaks: col_breaks
         }
@@ -620,7 +625,8 @@ module Xlsxrb
           page_setup == other.page_setup && page_margins == other.page_margins &&
           header_footer == other.header_footer && print_options == other.print_options &&
           sheet_protection == other.sheet_protection && sheet_view == other.sheet_view &&
-          sheet_properties == other.sheet_properties && row_breaks == other.row_breaks && col_breaks == other.col_breaks
+          sheet_properties == other.sheet_properties && sheet_format == other.sheet_format &&
+          row_breaks == other.row_breaks && col_breaks == other.col_breaks
       end
       alias eql? ==
 
@@ -630,7 +636,7 @@ module Xlsxrb
           self.class, name, rows, columns, charts, conditional_formatting, data_validations,
           state, hyperlinks, comments, merged_cells, auto_filter, tables, shapes, freeze_pane,
           page_setup, page_margins, header_footer, print_options, sheet_protection, sheet_view,
-          sheet_properties, row_breaks, col_breaks
+          sheet_properties, sheet_format, row_breaks, col_breaks
         ].hash
       end
 

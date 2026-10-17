@@ -2691,4 +2691,46 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("DOM_C", sheet2.cell_value("A3"))
     assert_equal(300, sheet2.cell_value("B3"))
   end
+
+  test "sheet_format configured via build and streaming write round-trips correctly" do
+    # 1. Via Xlsxrb.build
+    wb_built = Xlsxrb.build do |w|
+      w.sheet("Formatted") do |s|
+        s.sheet_format(default_row_height: 24.5, default_col_width: 18.0)
+        s.sheet_format(:outline_level_row, 2)
+        s.row(["Header 1", "Header 2"])
+      end
+    end
+
+    assert_equal(24.5, wb_built.sheet(0).sheet_format[:default_row_height])
+    assert_equal(18.0, wb_built.sheet(0).sheet_format[:default_col_width])
+    assert_equal(2, wb_built.sheet(0).sheet_format[:outline_level_row])
+
+    # Write and read back
+    data = Xlsxrb.write(wb_built)
+    wb_read = Xlsxrb.read(data)
+    stream_sheet = wb_read.sheet(0)
+    assert_equal(24.5, stream_sheet.sheet_format[:default_row_height])
+    assert_equal(18.0, stream_sheet.sheet_format[:default_col_width])
+    assert_equal(2, stream_sheet.sheet_format[:outline_level_row])
+
+    loaded_sheet = stream_sheet.load
+    assert_equal(24.5, loaded_sheet.sheet_format[:default_row_height])
+    assert_equal(18.0, loaded_sheet.sheet_format[:default_col_width])
+    assert_equal(2, loaded_sheet.sheet_format[:outline_level_row])
+
+    # 2. Via streaming Xlsxrb.write
+    stream_data = Xlsxrb.write do |w|
+      w.sheet("StreamFormat") do |s|
+        s.sheet_format(default_row_height: 30.0, default_col_width: 12.5)
+        s.row(%w[Val1 Val2])
+      end
+    end
+
+    wb_stream_read = Xlsxrb.read(stream_data)
+    assert_equal(30.0, wb_stream_read.sheet(0).sheet_format[:default_row_height])
+    assert_equal(12.5, wb_stream_read.sheet(0).sheet_format[:default_col_width])
+    assert_equal(30.0, wb_stream_read.sheet(0).load.sheet_format[:default_row_height])
+    assert_equal(12.5, wb_stream_read.sheet(0).load.sheet_format[:default_col_width])
+  end
 end

@@ -44,6 +44,7 @@ module Xlsxrb
       @shapes = []
       @sheet_properties = {}
       @sheet_view = {}
+      @sheet_format = {}
       @row_breaks = []
       @col_breaks = []
       @print_area = nil
@@ -728,6 +729,30 @@ module Xlsxrb
       @sheet_view[name] = value
     end
 
+    # Configures sheet format properties (e.g. default_row_height, default_col_width).
+    #
+    # @example Using keyword arguments
+    #   sheet.sheet_format(default_row_height: 24, default_col_width: 15)
+    #
+    # @example Using property name and value
+    #   sheet.sheet_format(:default_row_height, 24)
+    #
+    # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
+    # @param value [Object, nil] Property value when name is provided.
+    # @param opts [Hash] Keyword arguments for sheet format properties.
+    # @return [Hash]
+    # @api public
+    #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+    def sheet_format(name = nil, value = nil, **opts)
+      if name.is_a?(Hash)
+        @sheet_format.merge!(name)
+      elsif name && value
+        @sheet_format[name.to_sym] = value
+      end
+      @sheet_format.merge!(opts) unless opts.empty?
+      @sheet_format
+    end
+
     # Inserts a horizontal page break before the specified row.
     #
     # @param row_num [Integer] 1-based row number.
@@ -778,6 +803,7 @@ module Xlsxrb
       facade_meta[:images] = @images unless @images.empty?
       facade_meta[:shapes] = @shapes unless @shapes.empty?
       facade_meta[:sheet_properties] = @sheet_properties unless @sheet_properties.empty?
+      facade_meta[:sheet_format] = @sheet_format unless @sheet_format.empty?
       facade_meta[:sheet_view] = @sheet_view unless @sheet_view.empty?
       facade_meta[:row_breaks] = @row_breaks unless @row_breaks.empty?
       facade_meta[:col_breaks] = @col_breaks unless @col_breaks.empty?
@@ -841,6 +867,7 @@ module Xlsxrb
         sheet_protection: @sheet_protection,
         sheet_view: @sheet_view,
         sheet_properties: @sheet_properties,
+        sheet_format: @sheet_format,
         row_breaks: @row_breaks,
         col_breaks: @col_breaks
       )

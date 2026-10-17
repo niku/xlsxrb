@@ -47,7 +47,7 @@ module Xlsxrb
       #   split_pane: { x_split:, y_split:, top_left_cell: }
       #   selection: { active_cell:, sqref:, pane: }
       #   sheet_view: Hash of sheet view properties
-      def start(columns: [], sheet_properties: nil, freeze_pane: nil, split_pane: nil, selection: nil, sheet_view: nil)
+      def start(columns: [], sheet_properties: nil, freeze_pane: nil, split_pane: nil, selection: nil, sheet_view: nil, sheet_format: nil)
         return if @started
 
         @started = true
@@ -75,6 +75,7 @@ module Xlsxrb
 
         write_sheet_properties(sheet_properties) if sheet_properties && !sheet_properties.empty?
         write_sheet_views(freeze_pane: freeze_pane, split_pane: split_pane, selection: selection, sheet_view: sheet_view) if freeze_pane || split_pane || selection || (sheet_view && !sheet_view.empty?)
+        write_sheet_format_pr(sheet_format) if sheet_format && !sheet_format.empty?
         write_columns(columns) unless columns.empty?
 
         @builder.open_tag("sheetData")
@@ -771,6 +772,22 @@ module Xlsxrb
         end
         @builder.close_tag("sheetView")
         @builder.close_tag("sheetViews")
+      end
+
+      def write_sheet_format_pr(fmt)
+        return if fmt.nil? || fmt.empty?
+
+        attrs = {}
+        attrs[:defaultRowHeight] = fmt[:default_row_height].to_s if fmt[:default_row_height]
+        attrs[:defaultColWidth] = fmt[:default_col_width].to_s if fmt[:default_col_width]
+        attrs[:baseColWidth] = fmt[:base_col_width].to_s if fmt[:base_col_width]
+        attrs[:outlineLevelRow] = fmt[:outline_level_row].to_s if fmt[:outline_level_row]
+        attrs[:outlineLevelCol] = fmt[:outline_level_col].to_s if fmt[:outline_level_col]
+        attrs[:customHeight] = "1" if fmt[:custom_height]
+        attrs[:zeroHeight] = "1" if fmt[:zero_height]
+        attrs[:thickTop] = "1" if fmt[:thick_top]
+        attrs[:thickBottom] = "1" if fmt[:thick_bottom]
+        @builder.empty_tag("sheetFormatPr", attrs) unless attrs.empty?
       end
 
       # --- Post-sheetData elements (in OOXML order) ---

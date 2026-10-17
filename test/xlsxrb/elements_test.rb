@@ -987,6 +987,7 @@ class ElementsTest < Test::Unit::TestCase
     protection = { sheet: true }
     view = { show_grid_lines: false }
     props = { tab_color: "FFFF0000" }
+    fmt = { default_row_height: 24.0, default_col_width: 15.0 }
     row_brks = [10]
     col_brks = [5]
 
@@ -1002,6 +1003,7 @@ class ElementsTest < Test::Unit::TestCase
       sheet_protection: protection,
       sheet_view: view,
       sheet_properties: props,
+      sheet_format: fmt,
       row_breaks: row_brks,
       col_breaks: col_brks
     )
@@ -1016,6 +1018,7 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(protection, ws.sheet_protection)
     assert_equal(view, ws.sheet_view)
     assert_equal(props, ws.sheet_properties)
+    assert_equal(fmt, ws.sheet_format)
     assert_equal(row_brks, ws.row_breaks)
     assert_equal(col_brks, ws.col_breaks)
 
@@ -1031,19 +1034,22 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(ws_empty.sheet_protection)
     assert_equal({}, ws_empty.sheet_view)
     assert_equal({}, ws_empty.sheet_properties)
+    assert_equal({}, ws_empty.sheet_format)
     assert_equal([], ws_empty.row_breaks)
     assert_equal([], ws_empty.col_breaks)
 
     # with
-    ws_updated = ws_empty.with(freeze_pane: { row: 2, col: 1 }, sheet_properties: { tab_color: "00FF00" })
+    ws_updated = ws_empty.with(freeze_pane: { row: 2, col: 1 }, sheet_properties: { tab_color: "00FF00" }, sheet_format: { default_row_height: 20 })
     assert_equal({ row: 2, col: 1 }, ws_updated.freeze_pane)
     assert_equal({ tab_color: "00FF00" }, ws_updated.sheet_properties)
+    assert_equal({ default_row_height: 20 }, ws_updated.sheet_format)
 
     # deconstruct_keys
     keys = ws.deconstruct_keys(nil)
     assert_equal(tables, keys[:tables])
     assert_equal(freeze, keys[:freeze_pane])
     assert_equal(page_setup, keys[:page_setup])
+    assert_equal(fmt, keys[:sheet_format])
 
     # == and hash
     same_ws = Xlsxrb::Elements::Worksheet.new(
@@ -1052,13 +1058,15 @@ class ElementsTest < Test::Unit::TestCase
       page_setup: page_setup, page_margins: page_margins,
       header_footer: header_footer, print_options: print_options,
       sheet_protection: protection, sheet_view: view,
-      sheet_properties: props, row_breaks: row_brks, col_breaks: col_brks
+      sheet_properties: props, sheet_format: fmt, row_breaks: row_brks, col_breaks: col_brks
     )
     diff_ws = ws.with(freeze_pane: nil)
+    diff_ws_fmt = ws.with(sheet_format: {})
 
     assert_equal(ws, same_ws)
     assert_equal(ws.hash, same_ws.hash)
     refute_equal(ws, diff_ws)
+    refute_equal(ws, diff_ws_fmt)
   end
 
   # --- Workbook ---

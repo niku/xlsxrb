@@ -24,7 +24,7 @@ module Xlsxrb
       #   split_pane: { x_split:, y_split:, top_left_cell: }
       #   selection: { active_cell:, sqref:, pane: }
       #   sheet_view: Hash of sheet view properties
-      def start: (?columns: untyped, ?sheet_properties: untyped, ?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped) -> untyped
+      def start: (?columns: untyped, ?sheet_properties: untyped, ?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped, ?sheet_format: untyped) -> untyped
 
       # Write a single row. Automatically calls start if needed.
       def write_row: (untyped row_index, untyped cells, ?attrs: untyped, ?unmapped: untyped, ?sst_index: untyped) -> untyped
@@ -43,6 +43,8 @@ module Xlsxrb
       def write_sheet_properties: (untyped props) -> untyped
 
       def write_sheet_views: (?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped) -> untyped
+
+      def write_sheet_format_pr: (untyped fmt) -> untyped
 
       def write_sheet_protection: (untyped opts) -> untyped
 
