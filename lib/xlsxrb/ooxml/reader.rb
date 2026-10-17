@@ -5,6 +5,7 @@
 require "zlib"
 require "rexml/parsers/sax2parser"
 require "rexml/sax2listener"
+require_relative "../number_formatter"
 
 module Xlsxrb
   module Ooxml
@@ -1280,9 +1281,7 @@ module Xlsxrb
       end
 
       def date_pattern?(code)
-        # Strip quoted strings to avoid false matches.
-        stripped = code.gsub(/"[^"]*"/, "").gsub(/\\[.]/, "")
-        stripped.match?(/[ymdhsYMDHS]/)
+        NumberFormatter.date_format?(code)
       end
 
       def extract_zip_entry(entry_name)

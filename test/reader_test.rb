@@ -378,6 +378,15 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(Date.new(1900, 1, 1), Xlsxrb::Ooxml::Utils.serial_to_date(1))
   end
 
+  test "date_pattern? does not misidentify color tags like [Red] as dates" do
+    reader = Xlsxrb::Ooxml::Reader.new("dummy.xlsx")
+    assert_false(reader.send(:date_pattern?, "[Red]#,##0"))
+    assert_false(reader.send(:date_pattern?, "[Green]#,##0.00;[Red]-#,##0.00"))
+    assert_true(reader.send(:date_pattern?, "yyyy-mm-dd"))
+    assert_true(reader.send(:date_pattern?, "[$-409]yyyy/mm/dd"))
+    assert_true(reader.send(:date_pattern?, "[h]:mm:ss"))
+  end
+
   test "round-trips auto filter" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path
