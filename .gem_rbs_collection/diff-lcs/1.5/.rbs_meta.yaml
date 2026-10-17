@@ -1,0 +1,9 @@
+---
+name: diff-lcs
+version: '1.5'
+source:
+  type: git
+  name: ruby/gem_rbs_collection
+  revision: 948749e8a945f7955607b2e37aa495d7dbc2b164
+  remote: https://github.com/ruby/gem_rbs_collection.git
+  repo_dir: gems
