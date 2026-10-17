@@ -9,6 +9,47 @@
 
 'use strict';
 
+// Polyfill navigator.permissions.query for Firefox / non-standard environments
+(function(scope) {
+  try {
+    const nav = scope.navigator;
+    if (!nav || !nav.permissions) return;
+    const proto = (typeof scope.Permissions !== 'undefined' && scope.Permissions.prototype)
+      ? scope.Permissions.prototype
+      : nav.permissions;
+    if (!proto || typeof proto.query !== 'function') return;
+    if (proto.query.__clipboard_polyfilled__) return;
+
+    const originalQuery = proto.query;
+    function createFakeStatus(name) {
+      const target = (typeof scope.EventTarget === 'function') ? new scope.EventTarget() : {};
+      return Object.assign(target, { name: name, state: 'prompt', onchange: null });
+    }
+
+    const patchedQuery = function(desc) {
+      if (desc && typeof desc.name === 'string' && desc.name.startsWith('clipboard-')) {
+        try {
+          const res = originalQuery.call(this, desc);
+          if (res && typeof res.catch === 'function') {
+            return res.catch(() => createFakeStatus(desc.name));
+          }
+          return Promise.resolve(res);
+        } catch (e) {
+          return Promise.resolve(createFakeStatus(desc.name));
+        }
+      }
+      return originalQuery.call(this, desc);
+    };
+
+    patchedQuery.__clipboard_polyfilled__ = true;
+    try { proto.query = patchedQuery; } catch (e) {}
+    try {
+      if (nav.permissions.query !== patchedQuery) {
+        nav.permissions.query = patchedQuery;
+      }
+    } catch (e) {}
+  } catch (_) {}
+})(typeof globalThis !== 'undefined' ? globalThis : self);
 
 // global variables - zetajs environment:
 let zetajs, css;
@@ -43,21 +84,23 @@ function demo() {
 function loadFile(filename) {
   if (xModel) {
     try {
-      const xCloseable = css.util.XCloseable.query(xModel);
+      const xCloseable = (css && css.util && css.util.XCloseable) ? css.util.XCloseable.query(xModel) : null;
       if (xCloseable) {
         xCloseable.close(true);
-      } else {
+      } else if (typeof xModel.close === 'function') {
+        xModel.close(true);
+      } else if (typeof xModel.dispose === 'function') {
         xModel.dispose();
       }
-    } catch (e) {
-      console.warn("xCloseable.close failed, trying dispose:", e);
+    } catch (_) {
       try {
-        xModel.dispose();
-      } catch (e2) {
-        console.error("Failed to dispose old xModel:", e2);
-      }
+        if (typeof xModel.dispose === 'function') {
+          xModel.dispose();
+        }
+      } catch (_) {}
     }
     xModel = null;
+    ctrl = null;
   }
 
   const in_path = 'file:///tmp/office/' + filename;

@@ -10,16 +10,17 @@ The Ruby ecosystem has several XLSX libraries designed for specific tradeoffs:
 
 | Library | Read | Write | Streaming | In-Memory |
 | :--- | :---: | :---: | :---: | :---: |
-| [roo](https://rubygems.org/gems/roo) | ✅ | ❌ | ✅ | ❌ |
-| [creek](https://rubygems.org/gems/creek) | ✅ | ❌ | ✅ | ❌ |
-| [xsv](https://rubygems.org/gems/xsv) | ✅ | ❌ | ✅ | ❌ |
-| [simple_xlsx_reader](https://rubygems.org/gems/simple_xlsx_reader) | ✅ | ❌ | ✅ | ❌ |
-| [caxlsx / axlsx](https://rubygems.org/gems/caxlsx) | ❌ | ✅ | ❌ | ✅ |
-| [write_xlsx](https://rubygems.org/gems/write_xlsx) | ❌ | ✅ | ❌ | ✅ |
-| [xlsxtream](https://rubygems.org/gems/xlsxtream) | ❌ | ✅ | ✅ | ❌ |
-| [fast_excel](https://rubygems.org/gems/fast_excel) | ❌ | ✅ | ✅ | ❌ |
-| [rubyXL](https://rubygems.org/gems/rubyXL) | ✅ | ✅ | ❌ | ✅ |
-| [xlsxrb](https://github.com/niku/xlsxrb) | ✅ | ✅ | ✅ | ✅ |
+| [roo](https://rubygems.org/gems/roo) | Yes | - | - | Yes |
+| [creek](https://rubygems.org/gems/creek) | Yes | - | Yes | - |
+| [xsv](https://rubygems.org/gems/xsv) | Yes | - | Yes | - |
+| [simple_xlsx_reader](https://rubygems.org/gems/simple_xlsx_reader) | Yes | - | Yes | - |
+| [caxlsx / axlsx](https://rubygems.org/gems/caxlsx) | - | Yes | - | Yes |
+| [write_xlsx](https://rubygems.org/gems/write_xlsx) | - | Yes | - | Yes |
+| [xlsxtream](https://rubygems.org/gems/xlsxtream) | - | Yes | Yes | - |
+| [fast_excel](https://rubygems.org/gems/fast_excel) | - | Yes | Yes | - |
+| [rubyXL](https://rubygems.org/gems/rubyXL) | Yes | Yes | - | Yes |
+| [xlsxrb](https://github.com/niku/xlsxrb) | Yes | Yes | Yes | Yes |
+
 
 These libraries make different architectural tradeoffs:
 * Streaming Model: Writes or reads rows sequentially on-the-fly to maintain a constant $O(1)$, low-memory footprint regardless of dataset size.
@@ -52,13 +53,13 @@ bundle add xlsxrb
 
 Try `xlsxrb` directly in your browser without installing anything!
 
-[👉 Try the Live Demo / Interactive Playground](https://niku.github.io/xlsxrb/docs/visual/VisualGallery_md.html)
+[Try the Live Demo / Interactive Playground](https://niku.github.io/xlsxrb/preview.html)
 
 <p align="center">
   <img src="docs/assets/playground_preview.png" width="100%" alt="Interactive WebAssembly Playground with Live LibreOffice Preview"/>
 </p>
 
-You can also browse 50+ rendered visual examples across all features in the [Visual Examples Gallery](docs/visual/VisualGallery.md).
+You can also browse 80+ rendered visual examples across all features in the [Visual Examples Gallery](docs/visual/VisualGallery.md).
 
 ## Usage
 

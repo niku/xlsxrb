@@ -59,6 +59,7 @@ if (typeof window === 'undefined') {
     });
 } else {
     (() => {
+        if (window.crossOriginIsolated) return;
         const reloaded = sessionStorage.getItem("coiReloaded");
         const isSecureContext = window.isSecureContext;
         if (!isSecureContext) return;

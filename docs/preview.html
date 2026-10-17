@@ -4,21 +4,119 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="xlsxrb Live Playground: Run Ruby code in WebAssembly and preview XLSX spreadsheets in LibreOffice Calc in your browser.">
     <!-- Enable Cross-Origin Isolation in client-side using service worker -->
     <script src="coi-serviceworker.js"></script>
-    <title>xlsxrb Wasm LibreOffice Preview</title>
+    <title>xlsxrb Live Playground</title>
     <!-- Localized Fonts -->
     <link href="fonts/fonts.css" rel="stylesheet">
+    <!-- Theme preference initialization before render to prevent flash -->
+    <script>
+      (function() {
+        try {
+          const stored = localStorage.getItem('rdoc-theme');
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const theme = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (_) {}
+      })();
+    </script>
+    <script src="js/theme-toggle.js" onerror="window.__theme_toggle_failed = true;"></script>
+    <!-- RDoc Aliki Theme Stylesheet -->
+    <link href="css/rdoc.css" rel="stylesheet">
+    <!-- Monaco Editor Stylesheet -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/editor/editor.main.css">
 
     <style>
+      /* Design Tokens aligned with Aliki / RDoc Theme */
       :root {
-        --bg-color: #0b0f19;
-        --panel-bg: #111827;
-        --accent-green: #10b981;
-        --accent-blue: #3b82f6;
-        --border-color: #1f2937;
-        --text-color: #f3f4f6;
-        --text-muted: #9ca3af;
+        /* Primary (Ruby coral/red) */
+        --color-primary-50: #fdeae9;
+        --color-primary-100: #fadad3;
+        --color-primary-200: #f8bfbd;
+        --color-primary-300: #f5a9a7;
+        --color-primary-400: #f07f7b;
+        --color-primary-500: #eb544f;
+        --color-primary-600: #e62923;
+        --color-primary-700: #b8211c;
+        --color-primary-800: #8a1915;
+        --color-primary-900: #5c100e;
+
+        /* Neutrals */
+        --color-neutral-50: #fafaf9;
+        --color-neutral-100: #f5f5f4;
+        --color-neutral-200: #e7e5e4;
+        --color-neutral-300: #d6d3d1;
+        --color-neutral-400: #a8a29e;
+        --color-neutral-500: #78716c;
+        --color-neutral-600: #57534e;
+        --color-neutral-700: #44403c;
+        --color-neutral-800: #292524;
+        --color-neutral-900: #1c1917;
+
+        /* Semantic - Light Theme */
+        --color-text-primary: var(--color-neutral-900);
+        --color-text-secondary: var(--color-neutral-600);
+        --color-text-tertiary: var(--color-neutral-500);
+        --color-background-primary: #ffffff;
+        --color-background-secondary: var(--color-neutral-50);
+        --color-background-tertiary: var(--color-neutral-100);
+        --color-border-default: var(--color-neutral-300);
+        --color-border-subtle: var(--color-neutral-200);
+        --color-border-emphasis: var(--color-neutral-400);
+        --color-link-default: var(--color-text-primary);
+        --color-link-hover: var(--color-primary-600);
+        --color-accent-primary: var(--color-primary-600);
+        --color-accent-hover: var(--color-primary-700);
+        --color-accent-subtle: var(--color-primary-50);
+        --color-code-bg: #f6f8fa;
+        --color-code-border: var(--color-neutral-300);
+
+        /* Typography */
+        --font-family-base: -apple-system, blinkmacsystemfont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
+        --font-family-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace;
+        --font-primary: var(--font-family-base);
+        --font-code: var(--font-family-mono);
+
+        /* Dimensions & Radius */
+        --layout-header-height: 60px;
+        --radius-sm: 4px;
+        --radius-md: 6px;
+        --radius-lg: 8px;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px -1px rgb(0 0 0 / 10%);
+        --shadow-md: 0 2px 8px rgb(0 0 0 / 10%);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
+
+        /* Transitions */
+        --transition-fast: 150ms ease-in-out;
+        --transition-base: 200ms ease-in-out;
+        --ease-out-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Dark Theme */
+      [data-theme="dark"] {
+        --color-text-primary: var(--color-neutral-50);
+        --color-text-secondary: var(--color-neutral-200);
+        --color-text-tertiary: var(--color-neutral-400);
+        --color-background-primary: var(--color-neutral-900);
+        --color-background-secondary: var(--color-neutral-800);
+        --color-background-tertiary: var(--color-neutral-700);
+        --color-border-default: var(--color-neutral-600);
+        --color-border-subtle: var(--color-neutral-700);
+        --color-border-emphasis: var(--color-neutral-300);
+        --color-link-default: var(--color-neutral-50);
+        --color-link-hover: var(--color-primary-500);
+        --color-accent-primary: var(--color-primary-500);
+        --color-accent-hover: var(--color-primary-400);
+        --color-accent-subtle: rgb(235 84 79 / 10%);
+        --color-code-bg: var(--color-neutral-800);
+        --color-code-border: var(--color-neutral-700);
+
+        --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 40%), 0 1px 2px -1px rgb(0 0 0 / 40%);
+        --shadow-md: 0 2px 8px rgb(0 0 0 / 40%);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 40%), 0 4px 6px -4px rgb(0 0 0 / 40%);
       }
 
       * {
@@ -28,62 +126,277 @@
       }
 
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: var(--bg-color);
-        color: var(--text-color);
+        font-family: var(--font-primary);
+        background-color: var(--color-background-primary);
+        color: var(--color-text-primary);
         height: 100vh;
         display: flex;
         flex-direction: column;
         overflow: hidden;
       }
 
-      header {
-        background-color: var(--panel-bg);
-        border-bottom: 1px solid var(--border-color);
-        padding: 12px 24px;
+      /* Top Navbar Header */
+      header.top-navbar {
+        background-color: var(--color-background-primary);
+        border-bottom: 1px solid var(--color-border-default);
+        height: var(--layout-header-height);
+        padding: 0 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        z-index: 10;
+        z-index: 20;
+        box-shadow: var(--shadow-sm);
+        flex-shrink: 0;
+        gap: 16px;
       }
 
-      .logo-area {
+      .navbar-left {
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-shrink: 0;
       }
 
-      .logo-title {
-        font-size: 1.1rem;
+      .navbar-brand {
+        font-size: 1.25rem;
         font-weight: 700;
-        letter-spacing: 0.5px;
-        background: linear-gradient(135deg, #60a5fa, #34d399);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: var(--color-text-primary);
+        text-decoration: none;
+        letter-spacing: -0.01em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: color var(--transition-fast);
+      }
+
+      .navbar-brand:hover {
+        color: var(--color-accent-primary);
+      }
+
+      .navbar-separator {
+        color: var(--color-border-emphasis);
+        font-weight: 300;
+        user-select: none;
+      }
+
+      .navbar-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        white-space: nowrap;
       }
 
       .badge {
-        background-color: rgba(59, 130, 246, 0.15);
-        color: #60a5fa;
+        background-color: var(--color-primary-50);
+        color: var(--color-primary-700);
+        border: 1px solid var(--color-primary-200);
         font-size: 0.75rem;
-        padding: 3px 8px;
+        font-weight: 500;
+        padding: 2px 8px;
         border-radius: 9999px;
-        border: 1px solid rgba(59, 130, 246, 0.3);
+        letter-spacing: 0.02em;
+        white-space: nowrap;
       }
 
+      [data-theme="dark"] .badge {
+        background-color: rgba(235, 84, 79, 0.15);
+        color: var(--color-primary-300);
+        border-color: rgba(235, 84, 79, 0.35);
+      }
+
+      .navbar-nav {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-left: 12px;
+      }
+
+      .nav-link {
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        text-decoration: none;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 6px;
+        transition: all var(--transition-fast);
+        white-space: nowrap;
+      }
+
+      .nav-link:hover {
+        color: var(--color-accent-primary);
+        background-color: var(--color-background-secondary);
+      }
+
+      .nav-link.active {
+        color: var(--color-accent-primary);
+        font-weight: 600;
+        background-color: var(--color-accent-subtle);
+      }
+
+      .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .select-label {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .example-select {
+        background-color: var(--color-background-primary);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border-default);
+        border-radius: var(--radius-md);
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        font-family: inherit;
+        outline: none;
+        cursor: pointer;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      }
+
+      .example-select:focus {
+        border-color: var(--color-accent-primary);
+        box-shadow: 0 0 0 3px var(--color-accent-subtle);
+      }
+
+      [data-theme="dark"] .example-select {
+        background-color: var(--color-background-secondary);
+      }
+
+      .btn-run {
+        background-color: var(--color-primary-600);
+        color: #ffffff;
+        border: 1px solid var(--color-primary-700);
+        border-radius: var(--radius-md);
+        padding: 7px 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-sm);
+        transition: all var(--transition-fast);
+        white-space: nowrap;
+      }
+
+      .btn-run:hover:not(:disabled) {
+        background-color: var(--color-primary-700);
+        border-color: var(--color-primary-800);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+      }
+
+      .btn-run:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn-run:disabled {
+        background-color: var(--color-background-tertiary);
+        color: var(--color-text-tertiary);
+        border-color: var(--color-border-subtle);
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+        opacity: 0.7;
+      }
+
+      [data-theme="dark"] .btn-run {
+        background-color: var(--color-primary-500);
+        color: #ffffff;
+        border-color: var(--color-primary-600);
+        box-shadow: var(--shadow-sm);
+      }
+
+      [data-theme="dark"] .btn-run:hover:not(:disabled) {
+        background-color: var(--color-primary-400);
+        border-color: var(--color-primary-500);
+      }
+
+      [data-theme="dark"] .btn-run:disabled {
+        background-color: var(--color-background-secondary);
+        color: var(--color-text-tertiary);
+        border-color: var(--color-border-default);
+      }
+
+      /* Theme toggle button in header - reset absolute positioning from rdoc.css */
+      header.top-navbar .theme-toggle,
+      .header-controls .theme-toggle,
+      .theme-toggle {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        transform: none !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        background: transparent;
+        border: 1px solid var(--color-border-default);
+        border-radius: var(--radius-md);
+        color: var(--color-text-primary);
+        cursor: pointer;
+        transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+        font-size: 1.1rem;
+        line-height: 1;
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+      }
+
+      header.top-navbar .theme-toggle:hover,
+      .header-controls .theme-toggle:hover,
+      .theme-toggle:hover {
+        background: var(--color-background-secondary);
+        border-color: var(--color-accent-primary);
+        color: var(--color-accent-primary);
+        transform: scale(1.05) !important;
+      }
+
+      .theme-toggle:focus {
+        outline: none;
+        border-color: var(--color-accent-primary);
+        box-shadow: 0 0 0 3px var(--color-accent-subtle);
+      }
+
+      .theme-toggle-icon {
+        display: inline-block;
+        transition: transform var(--transition-base);
+      }
+
+      .theme-toggle:hover .theme-toggle-icon {
+        transform: rotate(15deg) scale(1.1);
+      }
+
+      /* Workspace Layout */
       .main-workspace {
         flex: 1;
         display: flex;
         overflow: hidden;
         position: relative;
+        background-color: var(--color-background-primary);
       }
 
       /* Split Layout */
       .editor-pane {
-        width: 40%;
-        min-width: 300px;
-        background-color: #0f172a;
-        border-right: 1px solid var(--border-color);
+        width: 45%;
+        min-width: 340px;
+        background-color: var(--color-background-secondary);
+        border-right: 1px solid var(--color-border-default);
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -91,7 +404,7 @@
 
       .preview-pane {
         flex: 1;
-        background-color: var(--bg-color);
+        background-color: var(--color-background-primary);
         position: relative;
         display: flex;
         flex-direction: column;
@@ -99,73 +412,170 @@
       }
 
       .pane-header {
-        background-color: var(--panel-bg);
-        border-bottom: 1px solid var(--border-color);
+        background-color: var(--color-background-secondary);
+        border-bottom: 1px solid var(--color-border-default);
         padding: 10px 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 0.85rem;
+        font-size: 0.8125rem;
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--color-text-secondary);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .pane-badge {
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: none;
+        padding: 2px 7px;
+        border-radius: var(--radius-sm);
+        background: var(--color-background-tertiary);
+        color: var(--color-text-tertiary);
+        border: 1px solid var(--color-border-subtle);
+      }
+
+      /* Live status indicator with status dot */
+      .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: normal;
+        color: var(--color-text-secondary);
+        user-select: none;
+      }
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background-color: var(--color-neutral-400);
+        display: inline-block;
+        flex-shrink: 0;
+        transition: background-color var(--transition-fast);
+      }
+
+      /* Initializing / Loading state */
+      .status-indicator.status-loading .status-dot {
+        background-color: var(--code-orange, #d97706);
+        animation: pulse-dot 1.5s ease-in-out infinite;
+      }
+      .status-indicator.status-loading {
+        color: var(--color-text-tertiary);
+      }
+
+      /* Ready state */
+      .status-indicator.status-ready .status-dot {
+        background-color: var(--color-green-500, #22c55e);
+      }
+      .status-indicator.status-ready {
+        color: var(--color-text-secondary);
+      }
+
+      /* Rendering / Generating state */
+      .status-indicator.status-busy .status-dot {
+        background-color: var(--color-primary-500, #eb544f);
+        animation: pulse-dot 1s ease-in-out infinite;
+      }
+      .status-indicator.status-busy {
+        color: var(--color-primary-600);
+      }
+
+      [data-theme="dark"] .status-indicator.status-busy {
+        color: var(--color-primary-400);
+      }
+
+      /* Error state */
+      .status-indicator.status-error .status-dot {
+        background-color: var(--code-red, #dc2626);
+      }
+      .status-indicator.status-error {
+        color: var(--code-red, #dc2626);
+      }
+
+      @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.35; transform: scale(0.85); }
       }
 
       .editor-container {
         flex: 1;
         position: relative;
         padding: 12px;
+        min-height: 0;
+        overflow: hidden;
+        background-color: var(--color-background-secondary);
       }
 
-      textarea.code-editor {
+      .code-editor {
         width: 100%;
         height: 100%;
-        background-color: #090d16;
-        color: #38bdf8;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 16px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.9rem;
-        line-height: 1.5;
-        resize: none;
-        outline: none;
-        transition: border-color 0.2s;
+        border: 1px solid var(--color-border-default);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        background: var(--color-background-primary);
+        box-shadow: var(--shadow-sm);
       }
 
-      textarea.code-editor:focus {
-        border-color: var(--accent-blue);
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      .code-editor.focused {
+        border-color: var(--color-accent-primary);
+        box-shadow: 0 0 0 3px var(--color-accent-subtle);
       }
 
-      .btn-run {
-        background: linear-gradient(135deg, #3b82f6, #10b981);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 8px 16px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
+      /* Console / Output logs */
+      .console-pane {
         display: flex;
+        flex-direction: column;
+        border-top: 1px solid var(--color-border-default);
+        flex-shrink: 0;
+      }
+
+      .console-header {
+        background-color: var(--color-background-secondary);
+        padding: 5px 14px;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 8px;
-        transition: transform 0.1s, opacity 0.2s;
+        font-size: 0.725rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-bottom: 1px solid var(--color-border-subtle);
       }
 
-      .btn-run:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
+      .console-clear-btn {
+        background: transparent;
+        border: none;
+        color: var(--color-text-tertiary);
+        font-size: 0.725rem;
+        font-family: inherit;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        transition: color var(--transition-fast), background var(--transition-fast);
       }
 
-      .btn-run:active {
-        transform: translateY(0);
+      .console-clear-btn:hover {
+        color: var(--color-text-primary);
+        background: var(--color-background-tertiary);
       }
 
-      .btn-run:disabled {
-        background: #374151;
-        color: #9ca3af;
-        cursor: not-allowed;
-        transform: none;
+      .console-log {
+        height: 125px;
+        background-color: var(--color-code-bg);
+        padding: 10px 14px;
+        font-family: var(--font-family-mono);
+        font-size: 0.775rem;
+        line-height: 1.5;
+        color: var(--color-text-primary);
+        overflow-y: auto;
+        white-space: pre-wrap;
       }
 
       /* Preview Canvas */
@@ -176,6 +586,7 @@
         justify-content: center;
         align-items: center;
         overflow: hidden;
+        background-color: var(--color-background-primary);
       }
 
       #qtcanvas {
@@ -183,21 +594,8 @@
         height: 100%;
         border: none;
         outline: none;
-        background-color: #ffffff; /* White background for spreadsheets */
+        background-color: #ffffff;
         display: block;
-      }
-
-      /* Console / Output logs */
-      .console-log {
-        height: 160px;
-        background-color: #020617;
-        border-top: 1px solid var(--border-color);
-        padding: 12px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.8rem;
-        color: #e2e8f0;
-        overflow-y: auto;
-        white-space: pre-wrap;
       }
 
       /* Loading Overlays */
@@ -207,7 +605,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: rgba(11, 15, 25, 0.85);
+        background-color: rgba(255, 255, 255, 0.88);
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -217,14 +615,23 @@
         transition: opacity 0.3s ease;
       }
 
+      [data-theme="dark"] .overlay {
+        background-color: rgba(28, 25, 23, 0.88);
+      }
+
       .spinner {
-        width: 50px;
-        height: 50px;
-        border: 4px solid rgba(59, 130, 246, 0.1);
-        border-top: 4px solid var(--accent-blue);
+        width: 44px;
+        height: 44px;
+        border: 3px solid var(--color-primary-100);
+        border-top: 3px solid var(--color-accent-primary);
         border-radius: 50%;
-        animation: spin 1s linear infinite;
+        animation: spin 0.8s linear infinite;
         margin-bottom: 16px;
+      }
+
+      [data-theme="dark"] .spinner {
+        border-color: rgba(235, 84, 79, 0.2);
+        border-top-color: var(--color-accent-primary);
       }
 
       @keyframes spin {
@@ -233,19 +640,19 @@
       }
 
       .overlay-text {
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 600;
-        color: var(--text-color);
-        margin-bottom: 8px;
+        color: var(--color-text-primary);
+        margin-bottom: 6px;
       }
 
       .overlay-subtext {
         font-size: 0.8rem;
-        color: var(--text-muted);
+        color: var(--color-text-secondary);
       }
 
       /* Drawer / iframe Integration Styles */
-      body.iframe-mode header {
+      body.iframe-mode header.top-navbar {
         display: none !important;
       }
       body.iframe-mode .editor-pane {
@@ -260,35 +667,110 @@
         border: none !important;
       }
       body.iframe-mode {
-        background-color: #ffffff !important;
-        color: #1f2937 !important;
+        background-color: var(--color-background-primary) !important;
+        color: var(--color-text-primary) !important;
       }
       body.iframe-mode .pane-header {
-        background-color: #f8fafc !important;
-        border-bottom: 1px solid #e2e8f0 !important;
-        color: #475569 !important;
+        background-color: var(--color-background-secondary) !important;
+        border-bottom: 1px solid var(--color-border-default) !important;
+        color: var(--color-text-secondary) !important;
         font-family: inherit;
-        font-size: 0.85rem;
-        padding: 12px 20px;
+        font-size: 0.8125rem;
+        padding: 10px 16px;
+      }
+      body.iframe-mode .console-pane {
+        border-top: 1px solid var(--color-border-default) !important;
+      }
+      body.iframe-mode .console-header {
+        display: none !important;
       }
       body.iframe-mode .console-log {
-        background-color: #0f172a !important;
-        border-top: 1px solid #e2e8f0 !important;
+        background-color: var(--color-code-bg) !important;
+        color: var(--color-text-primary) !important;
         font-size: 0.75rem;
+      }
+
+      /* Responsive Layout */
+      @media (max-width: 900px) {
+        .navbar-nav {
+          display: none;
+        }
+        .main-workspace {
+          flex-direction: column;
+        }
+        .editor-pane {
+          width: 100%;
+          height: 48%;
+          border-right: none;
+          border-bottom: 1px solid var(--color-border-default);
+        }
+        .preview-pane {
+          width: 100%;
+          height: 52%;
+        }
+      }
+
+      @media (max-width: 640px) {
+        header.top-navbar {
+          padding: 0 12px;
+          gap: 8px;
+        }
+        .navbar-title,
+        .navbar-separator,
+        .badge {
+          display: none;
+        }
+        .select-label {
+          display: none;
+        }
+        .example-select {
+          max-width: 160px;
+        }
       }
     </style>
   </head>
   <body>
-    <header>
-      <div class="logo-area">
-        <h1 class="logo-title">xlsxrb Live Preview</h1>
-        <span class="badge">ZetaOffice WebAssembly Demo</span>
+    <header class="top-navbar">
+      <div class="navbar-left">
+        <a href="index.html" class="navbar-brand">xlsxrb</a>
+        <span class="navbar-separator">/</span>
+        <span class="navbar-title">Live Playground</span>
+        <span class="badge">Wasm &amp; LibreOffice</span>
+        <nav class="navbar-nav">
+          <a href="index.html" class="nav-link">Documentation</a>
+          <a href="docs/visual/VisualGallery_md.html" class="nav-link">Visual Gallery</a>
+          <a href="preview.html" class="nav-link active">Live Playground</a>
+          <a href="https://github.com/niku/xlsxrb" class="nav-link" target="_blank" rel="noopener">GitHub</a>
+        </nav>
       </div>
-      <div>
-        <button class="btn-run" id="btnPreview" onclick="generateAndPreview()" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+      <div class="header-controls">
+        <div class="control-group">
+          <label for="exampleSelector" class="select-label">Preset:</label>
+          <select id="exampleSelector" class="example-select" onchange="onPresetSelected(this.value)">
+            <option value="quick_start" selected>Quick Start (Dashboard with Chart &amp; Logo)</option>
+            <option value="sales_report">Sales Report (Advanced Layout)</option>
+            <option value="chart_bar">Bar Chart</option>
+            <option value="chart_line">Line Chart</option>
+            <option value="chart_pie">Pie Chart</option>
+            <option value="table_styles">Excel Table</option>
+            <option value="styles_borders">Styles &amp; Borders</option>
+            <option value="number_formats">Numbers, Dates &amp; Currencies</option>
+            <option value="conditional_formatting">Conditional Formatting</option>
+            <option value="hyperlinks">Hyperlinks</option>
+            <option value="japanese_text">Japanese Text</option>
+          </select>
+        </div>
+
+        <button class="btn-run" id="btnPreview" onclick="generateAndPreview()" disabled title="Run code and preview in LibreOffice (Ctrl+Enter)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>Run & Preview
+          </svg>
+          <span>Run &amp; Preview</span>
+        </button>
+
+        <button id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" type="button">
+          <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
         </button>
       </div>
     </header>
@@ -296,128 +778,31 @@
     <div class="main-workspace">
       <!-- Left: Editor & Console -->
       <div class="editor-pane">
-        <div class="pane-header">Ruby Code Editor</div>
-        <div class="editor-container">
-          <textarea class="code-editor" id="codeEditor" spellcheck="false">require "xlsxrb"
-
-Xlsxrb.generate("preview.xlsx") do |w|
-  # 1. Define professional styles using fluent DSL
-  w.add_style("title") do |s|
-    s.bold
-    s.size 16
-    s.font_color "FFFFFF"
-    s.fill_color "1F497D" # Navy blue header
-    s.align_horizontal "center"
-    s.align_vertical "center"
-  end
-
-  w.add_style("subtitle") do |s|
-    s.italic
-    s.size 10
-    s.font_color "595959"
-    s.align_horizontal "left"
-  end
-
-  w.add_style("header") do |s|
-    s.bold
-    s.size 11
-    s.font_color "FFFFFF"
-    s.fill_color "2F5597" # Slate blue header
-    s.align_horizontal "center"
-    s.border_all style: "thin", color: "D9D9D9"
-  end
-
-  w.add_style("data_left") do |s|
-    s.size 10
-    s.align_horizontal "left"
-    s.border_all style: "thin", color: "D9D9D9"
-  end
-
-  w.add_style("data_center") do |s|
-    s.size 10
-    s.align_horizontal "center"
-    s.border_all style: "thin", color: "D9D9D9"
-  end
-
-  w.add_style("data_right") do |s|
-    s.size 10
-    s.align_horizontal "right"
-    s.border_all style: "thin", color: "D9D9D9"
-  end
-
-  w.add_style("currency") do |s|
-    s.size 10
-    s.number_format "$#,##0.00"
-    s.align_horizontal "right"
-    s.border_all style: "thin", color: "D9D9D9"
-  end
-
-  w.add_style("total") do |s|
-    s.bold
-    s.size 11
-    s.fill_color "D9E1F2" # Soft light blue fill
-    s.number_format "$#,##0.00"
-    s.align_horizontal "right"
-    s.border_bottom style: "double", color: "2F5597" # Double bottom border for accountant total
-    s.border_top style: "thin", color: "D9D9D9"
-    s.border_left style: "thin", color: "D9D9D9"
-    s.border_right style: "thin", color: "D9D9D9"
-  end
-
-  w.add_style("total_label") do |s|
-    s.bold
-    s.size 11
-    s.fill_color "D9E1F2"
-    s.align_horizontal "right"
-    s.border_bottom style: "double", color: "2F5597"
-    s.border_top style: "thin", color: "D9D9D9"
-    s.border_left style: "thin", color: "D9D9D9"
-    s.border_right style: "thin", color: "D9D9D9"
-  end
-
-  # 2. Start worksheet
-  w.add_sheet("Sales Report") do |sheet|
-    # Set column widths
-    sheet.set_column(0, width: 22) # Product Name
-    sheet.set_column(1, width: 12) # Quantity
-    sheet.set_column(2, width: 15) # Unit Price
-    sheet.set_column(3, width: 18) # Total Amount
-
-    # Title Row (A1:D1 merged)
-    sheet.add_row(["Premium Product Sales Report", "", "", ""], styles: "title", height: 35)
-    sheet.merge_cells("A1:D1")
-
-    # Metadata Row
-    sheet.add_row(["Report Generated at: #{Time.now.strftime('%Y-%m-%d %H:%M')}", "", "", ""], styles: "subtitle", height: 20)
-    sheet.merge_cells("A2:D2")
-    sheet.add_row([]) # Blank separator row
-
-    # Table Header Row
-    header_styles = ["header", "header", "header", "header"]
-    sheet.add_row(["Product Item", "Quantity", "Unit Price", "Total Value"], styles: header_styles, height: 24)
-
-    # Data Rows
-    row_styles = ["data_left", "data_center", "currency", "currency"]
-    sheet.add_row(["Wireless Headphones", 120, 89.99, "=B5*C5"], styles: row_styles, height: 20)
-    sheet.add_row(["Smart Watch", 85, 199.50, "=B6*C6"], styles: row_styles, height: 20)
-    sheet.add_row(["Bluetooth Speaker", 150, 45.00, "=B7*C7"], styles: row_styles, height: 20)
-    sheet.add_row(["Mechanical Keyboard", 60, 129.00, "=B8*C8"], styles: row_styles, height: 20)
-    sheet.add_row(["Ergonomic Mouse", 210, 59.90, "=B9*C9"], styles: row_styles, height: 20)
-
-    # Total Row (Using Accountants style double underline bottom border)
-    total_styles = ["total_label", "total_label", "total_label", "total"]
-    sheet.add_row(["Total Portfolio Value", "", "", "=SUM(D5:D9)"], styles: total_styles, height: 24)
-  end
-end
-
-puts "Excel generation completed!"</textarea>
+        <div class="pane-header">
+          <span>Ruby Code Editor</span>
+          <span class="pane-badge">Ctrl+Enter to Run</span>
         </div>
-        <div class="console-log" id="consoleLog">Console ready. Loading engines...</div>
+        <div class="editor-container">
+          <div class="code-editor" id="monacoEditor"></div>
+        </div>
+        <div class="console-pane">
+          <div class="console-header">
+            <span>Console Output</span>
+            <button type="button" class="console-clear-btn" onclick="clearConsole()">Clear</button>
+          </div>
+          <div class="console-log" id="consoleLog">Console ready. Loading engines...</div>
+        </div>
       </div>
 
       <!-- Right: LibreOffice Canvas -->
       <div class="preview-pane">
-        <div class="pane-header">LibreOffice Spreadsheet Preview</div>
+        <div class="pane-header">
+          <span>LibreOffice Spreadsheet Preview</span>
+          <span class="status-indicator status-loading" id="previewStatus">
+            <span class="status-dot"></span>
+            <span class="status-text">Initializing...</span>
+          </span>
+        </div>
         <div class="canvas-container" onselectstart="event.preventDefault()">
           <!-- Loading Overlay -->
           <div id="loadingOverlay" class="overlay">
@@ -436,16 +821,383 @@ puts "Excel generation completed!"</textarea>
       </div>
     </div>
 
+    <!-- Monaco Editor AMD Loader & Cross-Origin Isolated Web Worker Environment -->
+    <script>
+      const MONACO_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/';
+      window.MonacoEnvironment = {
+        getWorker: function (moduleId, label) {
+          const workerScript = `
+            self.MonacoEnvironment = { baseUrl: '${MONACO_CDN}' };
+            importScripts('${MONACO_CDN}vs/base/worker/workerMain.js');
+          `;
+          const blob = new Blob([workerScript], { type: 'application/javascript' });
+          return new Worker(URL.createObjectURL(blob));
+        }
+      };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+
     <!-- Scripts Integration -->
     <script type="text/javascript">
       'use strict';
+
+      // Preset examples library
+      const PRESET_EXAMPLES = {
+        quick_start: `require "xlsxrb"
+
+# 32x32 Ruby Gem Icon (embedded PNG data)
+logo = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAi0lEQVR42u3SwQmAMBBE0dSQu4UIglersDU7sRd78B6vEkx2VjMbkB3Yq/8RDMHn8wE75zWV7hiW4tHjEuAzQoojgNcIJI4C1Ig9TolxXeMQgh2vIqzi4ktoP7TFUXXN/4PmcS2CEtcgaHEUQY0jCHpcQpjEawizeAlhGn9CmMdzRJf4HdEt7vP9Zhf1uKUN/Ho3BAAAAABJRU5ErkJggg==".unpack1("m")
+
+Xlsxrb.write("executive_dashboard.xlsx") do |wb|
+  wb.style(:title, font: { bold: true, size: 16, color: "0F172A" }, align_vertical: :center)
+  wb.style(:subtitle, font: { size: 9, color: "64748B" }, align_vertical: :center)
+
+  # KPI Summary Card Styles
+  card_bdr = { style: :thin, color: "E2E8F0" }
+  wb.style(:kpi_lbl, font: { size: 8, color: "64748B", bold: true }, fill_color: "F8FAFC", align_horizontal: :center, border_all: card_bdr)
+  wb.style(:kpi_val, font: { size: 13, color: "0F172A", bold: true }, fill_color: "F8FAFC", number_format: "$#,##0", align_horizontal: :center, border_all: card_bdr)
+  wb.style(:kpi_var, font: { size: 13, color: "16A34A", bold: true }, fill_color: "F8FAFC", number_format: "+$#,##0;-$#,##0;$0", align_horizontal: :center, border_all: card_bdr)
+  wb.style(:kpi_pct, font: { size: 13, color: "2563EB", bold: true }, fill_color: "F8FAFC", number_format: "0.0%", align_horizontal: :center, border_all: card_bdr)
+
+  # Breakdown Table Styles (Zebra Striping & Professional Borders)
+  row_bdr = { style: :thin, color: "E2E8F0" }
+  wb.style(:th_l, font: { bold: true, color: "FFFFFF", size: 9 }, fill_color: "1E293B", align_horizontal: :left, align_vertical: :center)
+  wb.style(:th_r, font: { bold: true, color: "FFFFFF", size: 9 }, fill_color: "1E293B", align_horizontal: :right, align_vertical: :center)
+  wb.style(:td_txt, font: { size: 9 }, border_bottom: row_bdr)
+  wb.style(:td_num, font: { size: 9 }, number_format: "$#,##0", align_horizontal: :right, border_bottom: row_bdr)
+  wb.style(:td_pct, font: { size: 9 }, number_format: "0.0%", align_horizontal: :right, border_bottom: row_bdr)
+  wb.style(:td_txt_alt, font: { size: 9 }, fill_color: "F8FAFC", border_bottom: row_bdr)
+  wb.style(:td_num_alt, font: { size: 9 }, fill_color: "F8FAFC", number_format: "$#,##0", align_horizontal: :right, border_bottom: row_bdr)
+  wb.style(:td_pct_alt, font: { size: 9 }, fill_color: "F8FAFC", number_format: "0.0%", align_horizontal: :right, border_bottom: row_bdr)
+
+  # Accounting Total Row Styles
+  tot_bdr = { border_top: { style: :thin, color: "CBD5E1" }, border_bottom: { style: :double, color: "0F172A" } }
+  wb.style(:tot_l, font: { bold: true, size: 9, color: "0F172A" }, fill_color: "F1F5F9", **tot_bdr)
+  wb.style(:tot_r, font: { bold: true, size: 9, color: "0F172A" }, fill_color: "F1F5F9", number_format: "$#,##0", align_horizontal: :right, **tot_bdr)
+  wb.style(:tot_pct, font: { bold: true, size: 9, color: "2563EB" }, fill_color: "F1F5F9", number_format: "0.0%", align_horizontal: :right, **tot_bdr)
+
+  wb.sheet("Dashboard") do |s|
+    s.column(0, width: 4)   # Logo / indent
+    s.column(1, width: 20)  # Business Line
+    s.column(2, width: 13)  # Target
+    s.column(3, width: 13)  # Actual
+    s.column(4, width: 12)  # Attainment
+    s.column(5, width: 2)   # Spacer
+
+    # Title Banner & Logo
+    s.row(["", "Executive Sales Dashboard"], height: 26, styles: [nil, :title])
+    s.row(["", "Q3 Performance Overview & Target Attainment"], height: 16, styles: [nil, :subtitle])
+    s.row([])
+    s.image(logo, ext: "png", from_col: 0, from_row: 0, to_col: 1, to_row: 1)
+
+    # KPI Summary Cards
+    s.row(["", "ACTUAL REVENUE", "TARGET REVENUE", "VARIANCE", "ATTAINMENT"], height: 14, styles: [nil, :kpi_lbl, :kpi_lbl, :kpi_lbl, :kpi_lbl])
+    s.row(["", "=D12", "=C12", "=D12-C12", "=D12/C12"], height: 24, styles: [nil, :kpi_val, :kpi_val, :kpi_var, :kpi_pct])
+    s.row([])
+
+    # Business Line Breakdown Table
+    s.row(["", "Business Line", "Target", "Actual", "Attainment"], height: 22, styles: [nil, :th_l, :th_r, :th_r, :th_r])
+    s.row(["", "Cloud Platform", 50000, 54500, "=D8/C8"], styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
+    s.row(["", "AI & Analytics", 35000, 39200, "=D9/C9"], styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
+    s.row(["", "Cybersecurity", 25000, 26800, "=D10/C10"], styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
+    s.row(["", "Consulting", 30000, 28000, "=D11/C11"], styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
+    s.row(["", "Total Portfolio", "=SUM(C8:C11)", "=SUM(D8:D11)", "=D12/C12"], height: 20, styles: [nil, :tot_l, :tot_r, :tot_r, :tot_pct])
+
+    # Target vs Actual Clustered Bar Chart (Opaque Card Background)
+    s.chart(
+      type: :bar,
+      title: "Revenue by Business Line (Target vs Actual)",
+      from_col: 6, from_row: 3, to_col: 14, to_row: 13,
+      chart_fill: "FFFFFF",
+      chart_line_color: "E2E8F0",
+      series: [
+        { name: "Target", cat_ref: "Dashboard!$B$8:$B$11", val_ref: "Dashboard!$C$8:$C$11", fill_color: "94A3B8" },
+        { name: "Actual", cat_ref: "Dashboard!$B$8:$B$11", val_ref: "Dashboard!$D$8:$D$11", fill_color: "2563EB" }
+      ]
+    )
+  end
+end
+
+puts "Executive Dashboard generated!"`,
+
+        sales_report: `require "xlsxrb"
+
+Xlsxrb.write("sales_report.xlsx") do |wb|
+  wb.style(:title, font: { bold: true, size: 16, color: "FFFFFF" }, fill_color: "1F497D", align_horizontal: :center)
+  wb.style(:subtitle, font: { italic: true, size: 10, color: "595959" }, align_horizontal: :left)
+  wb.style(:header, font: { bold: true, size: 11, color: "FFFFFF" }, fill_color: "2F5597", align_horizontal: :center, border_all: { style: :thin, color: "D9D9D9" })
+  wb.style(:td_left, font: { size: 10 }, align_horizontal: :left, border_all: { style: :thin, color: "D9D9D9" })
+  wb.style(:td_center, font: { size: 10 }, align_horizontal: :center, border_all: { style: :thin, color: "D9D9D9" })
+  wb.style(:currency, font: { size: 10 }, number_format: "$#,##0.00", align_horizontal: :right, border_all: { style: :thin, color: "D9D9D9" })
+  wb.style(:total, font: { bold: true, size: 11 }, fill_color: "D9E1F2", number_format: "$#,##0.00", align_horizontal: :right, border_top: { style: :thin, color: "D9D9D9" }, border_bottom: { style: :double, color: "2F5597" })
+  wb.style(:total_label, font: { bold: true, size: 11 }, fill_color: "D9E1F2", align_horizontal: :right, border_top: { style: :thin, color: "D9D9D9" }, border_bottom: { style: :double, color: "2F5597" })
+
+  wb.sheet("Sales Report") do |s|
+    s.column(0, width: 22)
+    s.column(1, width: 12)
+    s.column(2, width: 15)
+    s.column(3, width: 18)
+
+    s.row(["Premium Product Sales Report", nil, nil, nil], styles: :title)
+    s.merge("A1:D1")
+
+    s.row(["Report Generated at: #{Time.now.strftime('%Y-%m-%d')}", nil, nil, nil], styles: :subtitle)
+    s.merge("A2:D2")
+    s.row([])
+
+    s.row(%w[Product_Item Quantity Unit_Price Total_Value], styles: :header)
+    s.row(["Wireless Headphones", 120, 89.99, "=B5*C5"], styles: %i[td_left td_center currency currency])
+    s.row(["Smart Watch", 85, 199.50, "=B6*C6"], styles: %i[td_left td_center currency currency])
+    s.row(["Bluetooth Speaker", 150, 45.00, "=B7*C7"], styles: %i[td_left td_center currency currency])
+    s.row(["Mechanical Keyboard", 60, 129.00, "=B8*C8"], styles: %i[td_left td_center currency currency])
+    s.row(["Ergonomic Mouse", 210, 59.90, "=B9*C9"], styles: %i[td_left td_center currency currency])
+
+    s.row(["Total Portfolio Value", nil, nil, "=SUM(D5:D9)"], styles: %i[total_label total_label total_label total])
+    s.merge("A10:C10")
+  end
+end
+
+puts "Excel generation completed!"`,
+
+        chart_bar: `require "xlsxrb"
+
+Xlsxrb.write("chart_bar.xlsx") do |wb|
+  wb.sheet("Sales Data") do |s|
+    s.column(0, width: 18)
+    s.column(1, width: 14)
+    s.column(2, width: 14)
+    s.row(%w[Department Q1_Sales Q2_Sales])
+    s.row(["Electronics", 12000, 15000])
+    s.row(["Apparel", 8500, 9200])
+    s.row(["Home & Garden", 6300, 7800])
+    s.row(["Sports", 9400, 11000])
+
+    s.chart(
+      type: :bar,
+      title: "Quarterly Department Sales",
+      from_col: 4, from_row: 1, to_col: 12, to_row: 15,
+      chart_fill: "FFFFFF",
+      chart_line_color: "CBD5E1",
+      series: [
+        { name: "Q1 Sales", cat_ref: "'Sales Data'!$A$2:$A$5", val_ref: "'Sales Data'!$B$2:$B$5", fill_color: "4F81BD" },
+        { name: "Q2 Sales", cat_ref: "'Sales Data'!$A$2:$A$5", val_ref: "'Sales Data'!$C$2:$C$5", fill_color: "C0504D" }
+      ]
+    )
+  end
+end
+
+puts "Bar chart generated!"`,
+
+        chart_line: `require "xlsxrb"
+
+Xlsxrb.write("chart_line.xlsx") do |wb|
+  wb.sheet("Monthly Trends") do |s|
+    s.column(0, width: 14)
+    s.column(1, width: 14)
+    s.column(2, width: 14)
+    s.row(%w[Month 2025 2026])
+    s.row(["Jan", 100, 120])
+    s.row(["Feb", 115, 135])
+    s.row(["Mar", 130, 150])
+    s.row(["Apr", 125, 160])
+    s.row(["May", 140, 180])
+    s.row(["Jun", 155, 195])
+
+    s.chart(
+      type: :line,
+      title: "Year-over-Year Growth Trend",
+      from_col: 4, from_row: 1, to_col: 12, to_row: 15,
+      chart_fill: "FFFFFF",
+      chart_line_color: "CBD5E1",
+      series: [
+        { name: "2025", cat_ref: "'Monthly Trends'!$A$2:$A$7", val_ref: "'Monthly Trends'!$B$2:$B$7", line_color: "4F81BD" },
+        { name: "2026", cat_ref: "'Monthly Trends'!$A$2:$A$7", val_ref: "'Monthly Trends'!$C$2:$C$7", line_color: "C0504D" }
+      ]
+    )
+  end
+end
+
+puts "Line chart generated!"`,
+
+        chart_pie: `require "xlsxrb"
+
+Xlsxrb.write("chart_pie.xlsx") do |wb|
+  wb.sheet("Market Share") do |s|
+    s.sheet_properties(:fit_to_page, true)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
+    s.column(0, width: 18)
+    s.column(1, width: 14)
+    s.row(%w[Platform Share])
+    s.row(["Platform A", 45])
+    s.row(["Platform B", 28])
+    s.row(["Platform C", 17])
+    s.row(["Others", 10])
+
+    s.chart(
+      type: :pie,
+      title: "Platform Market Share",
+      from_col: 3, from_row: 1, to_col: 10, to_row: 14,
+      chart_fill: "FFFFFF",
+      chart_line_color: "CBD5E1",
+      series: [
+        {
+          name: "Share",
+          cat_ref: "'Market Share'!$A$2:$A$5",
+          val_ref: "'Market Share'!$B$2:$B$5",
+          data_points: [
+            { idx: 0, fill_color: "2563EB" },
+            { idx: 1, fill_color: "38BDF8" },
+            { idx: 2, fill_color: "F59E0B" },
+            { idx: 3, fill_color: "94A3B8" }
+          ]
+        }
+      ]
+    )
+  end
+end
+
+puts "Pie chart generated!"`,
+
+        table_styles: `require "xlsxrb"
+
+Xlsxrb.write("table_styles.xlsx") do |wb|
+  wb.sheet("Employees") do |s|
+    s.column(0, width: 10)
+    s.column(1, width: 18)
+    s.column(2, width: 18)
+    s.column(3, width: 16)
+
+    s.row(%w[ID Name Department Salary])
+    s.row([101, "Alice Smith", "Engineering", 120000])
+    s.row([102, "Bob Jones", "Marketing", 95000])
+    s.row([103, "Carol White", "Sales", 110000])
+    s.row([104, "David Brown", "Engineering", 130000])
+
+    s.table("A1:D5", columns: %w[ID Name Department Salary], name: "EmployeeTable", style: "TableStyleMedium9")
+  end
+end
+
+puts "Excel Table generated!"`,
+
+        styles_borders: `require "xlsxrb"
+
+Xlsxrb.write("styles_borders.xlsx") do |wb|
+  wb.style(:header, bold: true, size: 12, fill_color: "4F81BD", font_color: "FFFFFF", align_horizontal: :center)
+  wb.style(:box, border_all: { style: :thin, color: "000000" }, align_horizontal: :center)
+  wb.style(:double_box, border_all: { style: :double, color: "1F497D" }, align_horizontal: :center)
+  wb.style(:colored, font: { bold: true, color: "C00000" }, fill_color: "FFFF00", align_horizontal: :center)
+
+  wb.sheet("Styles & Borders") do |s|
+    s.column(0..2, width: 22)
+    s.row(["Header 1", "Header 2", "Header 3"], styles: :header)
+    s.row(["Thin Borders", "Double Borders", "Yellow Highlight"], styles: %i[box double_box colored])
+    s.row(["Normal Data", "More Data", "Sample Value"])
+  end
+end
+
+puts "Styles and borders generated!"`,
+
+        number_formats: `require "xlsxrb"
+require "date"
+
+Xlsxrb.write("number_formats.xlsx") do |wb|
+  wb.style(:header, bold: true, fill_color: "D9E1F2", align_horizontal: :center)
+  wb.style(:currency, number_format: "$#,##0.00", align_horizontal: :right)
+  wb.style(:yen, number_format: "¥#,##0", align_horizontal: :right)
+  wb.style(:percent, number_format: "0.0%", align_horizontal: :right)
+  wb.style(:date, number_format: "yyyy-mm-dd", align_horizontal: :center)
+
+  wb.sheet("Formats") do |s|
+    s.column(0, width: 20)
+    s.column(1, width: 18)
+
+    s.row(%w[Type Formatted_Value], styles: :header)
+    s.row(["US Dollar", 12345.67], styles: [nil, :currency])
+    s.row(["Japanese Yen", 54000], styles: [nil, :yen])
+    s.row(["Percentage", 0.785], styles: [nil, :percent])
+    s.row(["Date", Date.new(2026, 10, 10)], styles: [nil, :date])
+  end
+end
+
+puts "Number formats generated!"`,
+
+        conditional_formatting: `require "xlsxrb"
+
+Xlsxrb.write("conditional_formatting.xlsx") do |wb|
+  wb.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF", align_horizontal: :center)
+  wb.style(:center, align_horizontal: :center)
+
+  wb.sheet("CF Demo") do |s|
+    s.column(0, width: 15)
+    s.column(1, width: 15)
+
+    s.row(%w[Score Heatmap], styles: :header)
+    [95, 82, 64, 45, 90, 73].each do |score|
+      s.row([score, score], styles: :center)
+    end
+
+    # Highlight scores >= 80 with soft red fill
+    s.conditional_format("A2:A7", type: "cellIs", operator: "greaterThanOrEqual", formula: "80", fill_color: "FFC7CE")
+    # Color scale heatmap on B2:B7
+    s.conditional_format("B2:B7", type: "colorScale", min_color: "F8696B", mid_color: "FFEB84", max_color: "63BE7B")
+  end
+end
+
+puts "Conditional formatting generated!"`,
+
+        hyperlinks: `require "xlsxrb"
+
+Xlsxrb.write("hyperlinks.xlsx") do |wb|
+  wb.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF", align_horizontal: :center)
+  wb.style(:link, font_color: "0000FF", underline: true)
+
+  wb.sheet("Links") do |s|
+    s.column(0, width: 22)
+    s.column(1, width: 35)
+
+    s.row(%w[Link_Type Target], styles: :header)
+    s.row(["External URL", "Visit GitHub Repository"], styles: [nil, :link])
+    s.row(["Internal Sheet", "Jump to Summary Sheet"], styles: [nil, :link])
+
+    s.hyperlink("B2", "https://github.com/niku/xlsxrb", display: "Visit GitHub Repository", tooltip: "Open xlsxrb repository")
+    s.hyperlink("B3", location: "Summary!A1", tooltip: "Go to Summary Sheet")
+  end
+
+  wb.sheet("Summary") do |s|
+    s.row(["Welcome to the Summary Sheet!"])
+  end
+end
+
+puts "Hyperlinks generated!"`,
+
+        japanese_text: `require "xlsxrb"
+
+Xlsxrb.write("japanese_text.xlsx") do |wb|
+  wb.style(:jp_header, font: { bold: true, name: "Noto Sans CJK JP", size: 11, color: "FFFFFF" }, fill_color: "1F497D", align_horizontal: :center)
+  wb.style(:jp_cell, font: { name: "Noto Sans CJK JP", size: 10 })
+  wb.style(:currency, font: { name: "Noto Sans CJK JP", size: 10 }, number_format: "¥#,##0", align_horizontal: :right)
+
+  wb.sheet("日本語シート") do |s|
+    s.column(0, width: 14)
+    s.column(1, width: 24)
+    s.column(2, width: 16)
+
+    s.row(%w[商品コード 商品名 価格], styles: :jp_header)
+    s.row(["A-001", "ワイヤレスイヤホン", 8800], styles: %i[jp_cell jp_cell currency])
+    s.row(["A-002", "スマートウォッチ", 19800], styles: %i[jp_cell jp_cell currency])
+    s.row(["A-003", "メカニカルキーボード", 14500], styles: %i[jp_cell jp_cell currency])
+  end
+end
+
+puts "Japanese text generated!"`
+      };
 
       // Detect if running inside an iframe (e.g. RDoc Side Drawer preview)
       if (window.self !== window.top) {
         document.body.classList.add('iframe-mode');
       }
 
-      // Resolve the absolute URL dynamically to prevent path resolution failures inside Web Workers (Blob origin)
+      // Resolve absolute URL dynamically
       const current_href = window.location.href.split('#')[0].split('?')[0];
       const base_dir = current_href.substring(0, current_href.lastIndexOf('/') + 1);
       const soffice_base_url = base_dir + 'zetaoffice/';
@@ -456,39 +1208,492 @@ puts "Excel generation completed!"</textarea>
       const loadingSubtext = document.getElementById('loadingSubtext');
       const btnPreview = document.getElementById('btnPreview');
       const consoleLog = document.getElementById('consoleLog');
+      const exampleSelector = document.getElementById('exampleSelector');
+      const previewStatus = document.getElementById('previewStatus');
+
+      function clearConsole() {
+        if (consoleLog) {
+          consoleLog.textContent = "";
+        }
+      }
+
+      function setPreviewStatus(state, label) {
+        if (!previewStatus) return;
+        previewStatus.className = `status-indicator status-${state}`;
+        const textEl = previewStatus.querySelector('.status-text');
+        if (textEl) {
+          textEl.textContent = label;
+        } else {
+          previewStatus.textContent = label;
+        }
+      }
 
       let rubyVM = null;
       let zetaPort = null;
       let isZetaLoaded = false;
       let isRubyLoaded = false;
-
-      // Listen for incoming code from parent RDoc playground (Side Drawer integration)
       let pendingCodeRun = null;
-      window.addEventListener("message", (event) => {
-        if (event.data && event.data.action === "load_code") {
-          const code = event.data.code;
-          const editor = document.getElementById('codeEditor');
-          if (editor) {
-            editor.value = code;
-            if (isZetaLoaded && isRubyLoaded && rubyVM) {
-              // Trigger preview run automatically if engine is already ready
-              generateAndPreview();
-            } else {
-              // Store code to run automatically once loading finishes
-              pendingCodeRun = code;
+
+      let editor = null;
+      let currentCode = PRESET_EXAMPLES.quick_start;
+      let isMonacoReady = false;
+
+      function getEditorCode() {
+        return (editor && isMonacoReady) ? editor.getValue() : currentCode;
+      }
+
+      function setEditorCode(val) {
+        currentCode = val;
+        if (editor && isMonacoReady) {
+          editor.setValue(val);
+        }
+      }
+
+      // Backward-compatible codeEditor interface
+      const codeEditor = {
+        get value() { return getEditorCode(); },
+        set value(v) { setEditorCode(v); }
+      };
+      window.codeEditor = codeEditor;
+
+      // Initialize Monaco Editor with Ruby syntax highlighting & xlsxrb DSL snippets
+      function initMonacoEditor() {
+        return new Promise((resolve) => {
+          if (typeof require === 'undefined') {
+            console.error('Monaco AMD loader (require) is not available');
+            return resolve(null);
+          }
+
+          require.config({ paths: { vs: MONACO_CDN + 'vs' } });
+          require(['vs/editor/editor.main'], function () {
+            // 1. Ruby Language Configuration (2-space indent, auto closing brackets & quotes)
+            monaco.languages.setLanguageConfiguration('ruby', {
+              indentationRules: {
+                increaseIndentPattern: /^\s*(def|class|module|if|unless|else|elsif|case|when|while|until|for|begin|rescue|ensure)\b|do(\s*\|[^|]*\|)?\s*$/,
+                decreaseIndentPattern: /^\s*(end|else|elsif|when|rescue|ensure)\b/
+              },
+              brackets: [
+                ['{', '}'],
+                ['[', ']'],
+                ['(', ')']
+              ],
+              autoClosingPairs: [
+                { open: '{', close: '}' },
+                { open: '[', close: ']' },
+                { open: '(', close: ')' },
+                { open: '"', close: '"' },
+                { open: "'", close: "'" },
+                { open: '`', close: '`' }
+              ],
+              surroundingPairs: [
+                { open: '{', close: '}' },
+                { open: '[', close: ']' },
+                { open: '(', close: ')' },
+                { open: '"', close: '"' },
+                { open: "'", close: "'" }
+              ]
+            });
+
+            // 2. Register xlsxrb DSL completion items and snippets
+            monaco.languages.registerCompletionItemProvider('ruby', {
+              provideCompletionItems: function (model, position) {
+                const word = model.getWordUntilPosition(position);
+                const range = {
+                  startLineNumber: position.lineNumber,
+                  endLineNumber: position.lineNumber,
+                  startColumn: word.startColumn,
+                  endColumn: word.endColumn
+                };
+
+                const suggestions = [
+                  {
+                    label: 'Xlsxrb.write',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 'Xlsxrb.write("${1:output.xlsx}") do |wb|\\n  ${2}\\nend',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Create and write an Excel workbook (.xlsx)',
+                    detail: 'xlsxrb workbook writer',
+                    range: range
+                  },
+                  {
+                    label: 'wb.sheet',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 'wb.sheet("${1:Sheet1}") do |s|\\n  ${2}\\nend',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Add a new worksheet to the workbook',
+                    detail: 'xlsxrb worksheet definition',
+                    range: range
+                  },
+                  {
+                    label: 'wb.style',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 'wb.style(:${1:title}, font: { bold: ${2:true}, size: ${3:14}, color: "${4:0F172A}" }, align_horizontal: :${5:left})',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Define a reusable style format for cells',
+                    detail: 'xlsxrb cell style',
+                    range: range
+                  },
+                  {
+                    label: 'wb.style (borders)',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 'wb.style(:${1:bordered}, border_all: { style: :${2:thin}, color: "${3:CBD5E1}" })',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Define a cell style with borders',
+                    detail: 'xlsxrb border style',
+                    range: range
+                  },
+                  {
+                    label: 's.row',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 's.row([${1:"Item", 100}], height: ${2:20}, styles: [${3:nil, :bold}])',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Append a row with cell values, row height, and styles',
+                    detail: 'xlsxrb worksheet row',
+                    range: range
+                  },
+                  {
+                    label: 's.column',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 's.column(${1:0}, width: ${2:15})',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Set width for a 0-indexed column',
+                    detail: 'xlsxrb column width',
+                    range: range
+                  },
+                  {
+                    label: 's.chart',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: [
+                      's.chart(',
+                      '  type: :${1|bar,line,pie,area,scatter,doughnut,radar|},',
+                      '  title: "${2:Chart Title}",',
+                      '  from_col: ${3:4}, from_row: ${4:1}, to_col: ${5:12}, to_row: ${6:12},',
+                      '  series: [',
+                      '    { name: "${7:Series 1}", cat_ref: "${8:Sheet1!$A$2:$A$5}", val_ref: "${9:Sheet1!$B$2:$B$5}" }',
+                      '  ]',
+                      ')'
+                    ].join('\\n'),
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Embed a chart into the worksheet',
+                    detail: 'xlsxrb chart builder',
+                    range: range
+                  },
+                  {
+                    label: 's.table',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 's.table("${1:A1:D10}", name: "${2:Table1}", style: "${3:TableStyleMedium9}")',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Create an Excel formatted table with filtering and styling',
+                    detail: 'xlsxrb table builder',
+                    range: range
+                  },
+                  {
+                    label: 's.merge',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 's.merge("${1:A1:B2}")',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Merge a cell range (e.g., A1:D1)',
+                    detail: 'xlsxrb cell merge',
+                    range: range
+                  },
+                  {
+                    label: 's.conditional_format',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 's.conditional_format("${1:A2:A10}", type: "${2:cellIs}", operator: "${3:greaterThan}", formula: "${4:100}", fill_color: "${5:FFC7CE}")',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Add conditional formatting rules',
+                    detail: 'xlsxrb conditional formatting',
+                    range: range
+                  },
+                  {
+                    label: 's.hyperlink',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 's.hyperlink("${1:A1}", "${2:https://example.com}", display: "${3:Click Here}")',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Add a hyperlink to a cell',
+                    detail: 'xlsxrb cell hyperlink',
+                    range: range
+                  },
+                  {
+                    label: 's.image',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 's.image(${1:logo_bytes}, ext: "${2:png}", from_col: ${3:0}, from_row: ${4:0}, to_col: ${5:1}, to_row: ${6:1})',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Insert an image into the worksheet',
+                    detail: 'xlsxrb image embedding',
+                    range: range
+                  },
+                  {
+                    label: 's.freeze_panes',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 's.freeze_panes(col: ${1:1}, row: ${2:1})',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Freeze panes at given column and row index',
+                    detail: 'xlsxrb freeze panes',
+                    range: range
+                  },
+                  {
+                    label: 's.autofilter',
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertText: 's.autofilter("${1:A1:D10}")',
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: 'Enable AutoFilter for cell range',
+                    detail: 'xlsxrb autofilter',
+                    range: range
+                  }
+                ];
+                return { suggestions: suggestions };
+              }
+            });
+
+            // 3. Create Monaco Editor instance
+            const editorElement = document.getElementById('monacoEditor');
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            editor = monaco.editor.create(editorElement, {
+              value: currentCode,
+              language: 'ruby',
+              theme: isDark ? 'vs-dark' : 'vs',
+              tabSize: 2,
+              insertSpaces: true,
+              detectIndentation: false,
+              autoClosingBrackets: 'always',
+              autoClosingQuotes: 'always',
+              minimap: { enabled: true },
+              lineNumbers: 'on',
+              bracketPairColorization: { enabled: true },
+              matchBrackets: 'always',
+              multiCursorModifier: 'alt',
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              fontFamily: "ui-monospace, 'SFMono-Regular', 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace",
+              fontSize: 13,
+              lineHeight: 20
+            });
+
+            // Add Ctrl+Enter / Cmd+Enter run shortcut
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+              if (btnPreview && !btnPreview.disabled) {
+                generateAndPreview();
+              }
+            });
+
+            editor.onDidFocusEditorWidget(() => {
+              editorElement.classList.add('focused');
+            });
+            editor.onDidBlurEditorWidget(() => {
+              editorElement.classList.remove('focused');
+            });
+
+            isMonacoReady = true;
+            window.editor = editor;
+            window.monaco = monaco;
+            resolve(editor);
+          });
+        });
+      }
+
+      // Observe theme changes to dynamically sync Monaco Editor and UI controls
+      const themeObserver = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.type === 'attributes' && m.attributeName === 'data-theme') {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (window.monaco && window.editor) {
+              window.monaco.editor.setTheme(isDark ? 'vs-dark' : 'vs');
+            }
+            const icon = document.querySelector('#theme-toggle .theme-toggle-icon');
+            if (icon) {
+              icon.textContent = isDark ? '☀️' : '🌙';
             }
           }
         }
       });
+      themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+      function initThemeSync() {
+        const toggleBtn = document.getElementById('theme-toggle');
+        if (!toggleBtn) return;
+        const icon = toggleBtn.querySelector('.theme-toggle-icon');
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+        toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+
+        if (window.__theme_toggle_failed) {
+          toggleBtn.addEventListener('click', () => {
+            const currentlyDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const next = currentlyDark ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            try { localStorage.setItem('rdoc-theme', next); } catch (_) {}
+            if (icon) icon.textContent = next === 'dark' ? '☀️' : '🌙';
+            toggleBtn.setAttribute('aria-label', next === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+            if (window.monaco && window.editor) {
+              window.monaco.editor.setTheme(next === 'dark' ? 'vs-dark' : 'vs');
+            }
+          });
+        }
+      }
+
+      // Select preset code
+      function onPresetSelected(key) {
+        if (PRESET_EXAMPLES[key]) {
+          setEditorCode(PRESET_EXAMPLES[key]);
+          if (isZetaLoaded && isRubyLoaded && rubyVM) {
+            generateAndPreview();
+          }
+        }
+      }
+
+      // Load initial code from URL or preset
+      function setupInitialCode() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const exampleParam = urlParams.get('example');
+        if (exampleParam && PRESET_EXAMPLES[exampleParam]) {
+          exampleSelector.value = exampleParam;
+          setEditorCode(PRESET_EXAMPLES[exampleParam]);
+        } else {
+          exampleSelector.value = 'quick_start';
+          setEditorCode(PRESET_EXAMPLES.quick_start);
+        }
+      }
+
+      // Listen for incoming code & theme from parent RDoc playground (Side Drawer integration)
+      window.addEventListener("message", (event) => {
+        if (!event.data) return;
+        if (event.data.theme || event.data.action === "set_theme") {
+          const theme = event.data.theme;
+          if (theme === 'dark' || theme === 'light') {
+            document.documentElement.setAttribute('data-theme', theme);
+          }
+        }
+        if (event.data.action === "load_code") {
+          const code = event.data.code;
+          setEditorCode(code);
+          if (isZetaLoaded && isRubyLoaded && rubyVM) {
+            generateAndPreview();
+          } else {
+            pendingCodeRun = code;
+          }
+        }
+      });
+
+      // Polyfill navigator.permissions.query for Firefox / non-standard environments
+      // Firefox does not support 'clipboard-read' or 'clipboard-write' in PermissionDescriptor,
+      // which causes Embind / ZetaOffice to throw unhandled TypeErrors during clipboard capability queries.
+      const PERMISSIONS_POLYFILL = `
+        (function(scope) {
+          try {
+            const nav = scope.navigator;
+            if (!nav || !nav.permissions) return;
+            const proto = (typeof scope.Permissions !== 'undefined' && scope.Permissions.prototype)
+              ? scope.Permissions.prototype
+              : nav.permissions;
+            if (!proto || typeof proto.query !== 'function') return;
+            if (proto.query.__clipboard_polyfilled__) return;
+
+            const originalQuery = proto.query;
+            function createFakeStatus(name) {
+              const target = (typeof scope.EventTarget === 'function') ? new scope.EventTarget() : {};
+              return Object.assign(target, {
+                name: name,
+                state: 'prompt',
+                onchange: null
+              });
+            }
+
+            const patchedQuery = function(desc) {
+              if (desc && typeof desc.name === 'string' && desc.name.startsWith('clipboard-')) {
+                try {
+                  const res = originalQuery.call(this, desc);
+                  if (res && typeof res.catch === 'function') {
+                    return res.catch(() => createFakeStatus(desc.name));
+                  }
+                  return Promise.resolve(res);
+                } catch (e) {
+                  return Promise.resolve(createFakeStatus(desc.name));
+                }
+              }
+              return originalQuery.call(this, desc);
+            };
+
+            patchedQuery.__clipboard_polyfilled__ = true;
+            try { proto.query = patchedQuery; } catch (e) {}
+            try {
+              if (nav.permissions.query !== patchedQuery) {
+                nav.permissions.query = patchedQuery;
+              }
+            } catch (e) {}
+
+            scope.addEventListener('unhandledrejection', function(event) {
+              if (event.reason && typeof event.reason.message === 'string' &&
+                  event.reason.message.includes('clipboard-')) {
+                event.preventDefault();
+              }
+            });
+          } catch (_) {}
+        })(typeof globalThis !== 'undefined' ? globalThis : self);
+      `;
+
+      // Install in main window
+      new Function(PERMISSIONS_POLYFILL)();
 
       // 1. Setup Module settings for Emscripten / ZetaJS
       var Module = {
         canvas,
         uno_scripts: ['./zeta.js', './office_thread.js'],
         locateFile: function(path, prefix) { return (prefix || soffice_base_url) + path; },
-        mainScriptUrlOrBlob: new Blob(
-          ["importScripts('" + soffice_base_url + "soffice.js');"], {type: 'text/javascript'}
-        )
+        mainScriptUrlOrBlob: new Blob([
+          PERMISSIONS_POLYFILL + "\nimportScripts('" + soffice_base_url + "soffice.js');"
+        ], {type: 'text/javascript'}),
+        instantiateWasm: function(info, receiveInstance) {
+          const wasmUrl = soffice_base_url + "soffice.wasm";
+
+          async function doInstantiate() {
+            try {
+              if (typeof WebAssembly.instantiateStreaming === 'function') {
+                try {
+                  const output = await WebAssembly.instantiateStreaming(fetch(wasmUrl, { credentials: "same-origin" }), info);
+                  receiveInstance(output.instance, output.module);
+                  return;
+                } catch (streamingErr) {
+                  console.warn("instantiateStreaming failed, trying compileStreaming fallback:", streamingErr);
+                  const module = await WebAssembly.compileStreaming(fetch(wasmUrl, { credentials: "same-origin" }));
+                  const instance = new WebAssembly.Instance(module, info);
+                  receiveInstance(instance, module);
+                  return;
+                }
+              }
+              const resp = await fetch(wasmUrl, { credentials: "same-origin" });
+              const buf = await resp.arrayBuffer();
+              const output = await WebAssembly.instantiate(buf, info);
+              receiveInstance(output.instance, output.module);
+            } catch (err) {
+              console.error("ZetaOffice Wasm instantiation error:", err);
+              logToConsole(`ZetaOffice Wasm compilation failed: ${err.message || err}`, 'error');
+              setPreviewStatus('error', 'Error');
+              if (loadingText) {
+                loadingText.textContent = "WebAssembly Memory Limit";
+                loadingSubtext.textContent = "Failed to allocate memory for LibreOffice WebAssembly (~160MB). Please close background tabs, restart browser, or use a 64-bit browser.";
+              }
+              if (loadingOverlay) {
+                loadingOverlay.style.display = 'flex';
+              }
+            }
+          }
+
+          doInstantiate();
+          return {};
+        },
+        print: function(text) {
+          if (typeof text === 'string' && text.startsWith('QRect(')) return;
+          console.log(text);
+        },
+        printErr: function(text) {
+          if (typeof text === 'string' && (
+            text.startsWith('QRect(') ||
+            text.includes('invalid nullptr parameter') ||
+            text.includes('unsupported syscall')
+          )) return;
+          console.log(text);
+        }
       };
 
       // Custom logger for textarea console
@@ -504,12 +1709,22 @@ puts "Excel generation completed!"</textarea>
       async function initRubyWasm() {
         logToConsole("Fetching Ruby WebAssembly binary...");
         try {
-          // Localized import of browser.umd.js for Ruby Wasm
           await loadScript("wasm/browser.umd.js");
 
-          const response = await fetch("wasm/ruby.wasm?cb=" + Date.now());
-          const buffer = await response.arrayBuffer();
-          const module = await WebAssembly.compile(buffer);
+          let module;
+          if (typeof WebAssembly.compileStreaming === 'function') {
+            try {
+              module = await WebAssembly.compileStreaming(fetch("wasm/ruby.wasm"));
+            } catch (_) {
+              const response = await fetch("wasm/ruby.wasm");
+              const buffer = await response.arrayBuffer();
+              module = await WebAssembly.compile(buffer);
+            }
+          } else {
+            const response = await fetch("wasm/ruby.wasm");
+            const buffer = await response.arrayBuffer();
+            module = await WebAssembly.compile(buffer);
+          }
 
           const rubyWasm = window.rubyWasm || window["ruby-wasm-wasi"];
           const DefaultRubyVM = rubyWasm.DefaultRubyVM;
@@ -562,6 +1777,9 @@ puts "Excel generation completed!"</textarea>
             logToConsole("Auto-running incoming playground code...");
             generateAndPreview();
             pendingCodeRun = null;
+          } else {
+            // Automatically run initial preset
+            generateAndPreview();
           }
         } else if (isRubyLoaded) {
           loadingText.textContent = "Loading LibreOffice Wasm...";
@@ -569,14 +1787,22 @@ puts "Excel generation completed!"</textarea>
         }
       }
 
-      // Helper to dynamically load external scripts
+      // Helper to dynamically load external scripts without AMD collision
       function loadScript(src) {
         return new Promise((resolve, reject) => {
+          const origDefine = window.define;
+          window.define = undefined;
           const script = document.createElement("script");
           script.src = src;
           script.crossOrigin = "anonymous";
-          script.onload = resolve;
-          script.onerror = reject;
+          script.onload = () => {
+            window.define = origDefine;
+            resolve();
+          };
+          script.onerror = (err) => {
+            window.define = origDefine;
+            reject(err);
+          };
           document.head.appendChild(script);
         });
       }
@@ -600,12 +1826,14 @@ puts "Excel generation completed!"</textarea>
                   break;
                 case 'ui_ready':
                   logToConsole("LibreOffice UI successfully rendered!");
-                  // Force resizing window to map canvas area correctly
-                  window.dispatchEvent(new Event('resize'));
+                  const readyEvent = new Event('resize');
+                  readyEvent.isSynthetic = true;
+                  window.dispatchEvent(readyEvent);
                   setTimeout(() => {
                     loadingOverlay.style.display = 'none';
                     canvas.style.visibility = 'visible';
                     btnPreview.disabled = false;
+                    setPreviewStatus('ready', 'Ready');
                   }, 1000);
                   break;
                 default:
@@ -616,6 +1844,7 @@ puts "Excel generation completed!"</textarea>
         };
         soffice_js.onerror = function(err) {
           logToConsole("Failed to load soffice.js binary.", 'error');
+          setPreviewStatus('error', 'Error');
         };
         document.body.appendChild(soffice_js);
       }
@@ -625,13 +1854,14 @@ puts "Excel generation completed!"</textarea>
         if (!rubyVM || !zetaPort) return;
 
         btnPreview.disabled = true;
+        setPreviewStatus('busy', 'Rendering...');
         loadingOverlay.style.display = 'flex';
         loadingText.textContent = "Generating spreadsheet...";
         loadingSubtext.textContent = "Running xlsxrb in Ruby Wasm VM...";
         canvas.style.visibility = 'hidden';
 
         logToConsole("Running Ruby script to generate XLSX...");
-        let code = document.getElementById('codeEditor').value;
+        let code = getEditorCode();
         if (!code.includes('require "xlsxrb"') && !code.includes("require 'xlsxrb'")) {
           code = 'require "xlsxrb"\n' + code;
         }
@@ -644,7 +1874,7 @@ puts "Excel generation completed!"</textarea>
         try {
           rubyVM.eval(code);
 
-          // Dynamically detect the generated output file name in the VFS root
+          // Dynamically detect generated output file name in VFS root
           const generatedFile = rubyVM.eval('Dir.glob("*.xlsx").first').toString();
           if (!generatedFile || generatedFile === "nil" || generatedFile.length === 0) {
             throw new Error("No .xlsx file was generated by the script.");
@@ -662,7 +1892,7 @@ puts "Excel generation completed!"</textarea>
           loadingText.textContent = "Loading into LibreOffice...";
           loadingSubtext.textContent = "Writing file to ZetaOffice memory VFS...";
 
-          // Write file into ZetaOffice Emscripten VFS (through main FS scope safely)
+          // Write file into ZetaOffice Emscripten VFS
           const fsObject = window.FS || Module.FS;
           if (!fsObject) {
             throw new Error("LibreOffice WebAssembly FileSystem (FS) is not initialized yet.");
@@ -671,17 +1901,21 @@ puts "Excel generation completed!"</textarea>
           fsObject.writeFile('/tmp/office/preview.xlsx', fileData);
 
           logToConsole("Triggering LibreOffice renderer...");
-          // Instruct ZetaOffice thread worker to load the XLSX file
           zetaPort.postMessage({ cmd: 'upload', filename: 'preview.xlsx' });
         } catch (e) {
           logToConsole(`Error executing Ruby script: ${e.message}`, 'error');
           loadingOverlay.style.display = 'none';
           btnPreview.disabled = false;
+          setPreviewStatus('error', 'Error');
         }
       }
 
       // Start loading engines on page load safely
       window.addEventListener("load", () => {
+        initThemeSync();
+        setupInitialCode();
+        initMonacoEditor();
+
         if (!window.isSecureContext) {
           const warnMsg = "Secure Context Required: Please access via 'localhost' or 'HTTPS' to enable preview.";
           logToConsole(warnMsg, "error");
@@ -690,29 +1924,45 @@ puts "Excel generation completed!"</textarea>
           return;
         }
 
-        if (navigator.serviceWorker && !navigator.serviceWorker.controller) {
+        async function startEngines() {
+          // Initialize Ruby Wasm first, then ZetaOffice sequentially to prevent peak memory exhaustion
+          try {
+            await initRubyWasm();
+          } catch (e) {
+            console.error("Ruby Wasm initialization error:", e);
+          }
+          initZetaOffice();
+        }
+
+        if (window.crossOriginIsolated || (navigator.serviceWorker && navigator.serviceWorker.controller)) {
+          startEngines();
+        } else if (navigator.serviceWorker) {
           logToConsole("Waiting for Service Worker activation (SharedArrayBuffer)...");
           loadingText.textContent = "Preparing Environment...";
           loadingSubtext.textContent = "Activating Cross-Origin Isolation Service Worker...";
 
           navigator.serviceWorker.addEventListener("controllerchange", () => {
             logToConsole("Service Worker activated! Starting engines...");
-            initRubyWasm();
-            initZetaOffice();
+            startEngines();
           });
         } else {
-          initRubyWasm();
-          initZetaOffice();
+          startEngines();
         }
       });
 
-      // Handle window resize for Qt engine mapping
-      window.addEventListener('resize', () => {
-        if (isZetaLoaded) {
-          setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-          }, 150);
+      // Handle window resize for Qt engine mapping (debounced and guarded against recursive dispatch)
+      let resizeTimer = null;
+      window.addEventListener('resize', (event) => {
+        if (editor) {
+          editor.layout();
         }
+        if (event.isSynthetic || !isZetaLoaded) return;
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          const syntheticEvent = new Event('resize');
+          syntheticEvent.isSynthetic = true;
+          window.dispatchEvent(syntheticEvent);
+        }, 150);
       });
     </script>
   </body>

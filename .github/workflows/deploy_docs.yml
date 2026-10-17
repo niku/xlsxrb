@@ -32,9 +32,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
-      - name: Build RDoc with WebAssembly Playground
+      - name: Build and Verify RDoc with WebAssembly Playground
         run: |
-          bundle exec rake doc
+          bundle exec rake doc:check
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v5

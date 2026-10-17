@@ -474,7 +474,112 @@ task doc: %i[wasm fetch_assets] do
   FileUtils.cp("docs/zeta.js", "doc/zeta.js")
   FileUtils.cp("docs/office_thread.js", "doc/office_thread.js")
 
-  # Inject stylesheet and javascript loading tags to all generated HTML docs
+  # --- Documentation Usability & Unified Layout Post-Processing ---
+  puts "Applying documentation usability enhancements and unified layout..."
+
+  # 1. Enrich Search Index with Pages, Guides, and Live Playground
+  search_data_path = "doc/js/search_data.js"
+  if File.exist?(search_data_path)
+    search_js = File.read(search_data_path)
+    if search_js =~ /\Avar search_data = (\{.*\});?\z/m
+      begin
+        require "json"
+        data = JSON.parse(Regexp.last_match(1))
+        pages_to_add = [
+          {
+            "name" => "Visual Gallery",
+            "full_name" => "Visual Examples Gallery",
+            "type" => "page",
+            "path" => "docs/visual/VisualGallery_md.html",
+            "snippet" => "<p>Interactive gallery showcasing xlsxrb DSL usage side-by-side with visual LibreOffice Calc rendering, charts, tables, and styles.</p>"
+          },
+          {
+            "name" => "Live Playground",
+            "full_name" => "WebAssembly Live Playground",
+            "type" => "page",
+            "path" => "preview.html",
+            "snippet" => "<p>In-browser Ruby Wasm workspace with live LibreOffice spreadsheet preview and instant XLSX download.</p>"
+          },
+          {
+            "name" => "Architecture",
+            "full_name" => "Xlsxrb Architecture & Design",
+            "type" => "page",
+            "path" => "docs/ARCHITECTURE_md.html",
+            "snippet" => "<p>Multi-layered architecture separating low-level OpenXML specifications from high-level idiomatic Ruby DSL.</p>"
+          },
+          {
+            "name" => "Development Guide",
+            "full_name" => "Development & Contributing Guide",
+            "type" => "page",
+            "path" => "docs/DEVELOPMENT_md.html",
+            "snippet" => "<p>Local setup, Dev Container workflows, test commands, and quality verification standards.</p>"
+          },
+          {
+            "name" => "Mutation Testing",
+            "full_name" => "Mutation Testing Rigor",
+            "type" => "page",
+            "path" => "docs/MUTATION_TESTING_md.html",
+            "snippet" => "<p>100% mutation kill rate policy and mutant remediation workflows for pure coordinate and element algorithms.</p>"
+          },
+          {
+            "name" => "Peer Libraries",
+            "full_name" => "Peer Library Comparison",
+            "type" => "page",
+            "path" => "docs/PEER_LIBRARIES_md.html",
+            "snippet" => "<p>Comparison of architecture, features, memory footprints, and performance with roo, creek, caxlsx, and rubyXL.</p>"
+          },
+          {
+            "name" => "QA Agents Playbook",
+            "full_name" => "QA Agents Playbook",
+            "type" => "page",
+            "path" => "docs/QA_AGENTS_md.html",
+            "snippet" => "<p>Guidelines and playbooks for autonomous coding agents contributing to xlsxrb.</p>"
+          },
+          {
+            "name" => "Quality Assurance",
+            "full_name" => "Quality Assurance Specification",
+            "type" => "page",
+            "path" => "docs/QUALITY_ASSURANCE_md.html",
+            "snippet" => "<p>Static analysis, Steep type checking, schema compliance, and memory stability standards.</p>"
+          },
+          {
+            "name" => "Specification Sources",
+            "full_name" => "Specification Sources & Index",
+            "type" => "page",
+            "path" => "docs/SPEC_SOURCES_md.html",
+            "snippet" => "<p>ISO/IEC 29500 (ECMA-376) and MS-OFFCRYPTO specification sources and reference mapping.</p>"
+          },
+          {
+            "name" => "Changelog",
+            "full_name" => "Release Changelog",
+            "type" => "page",
+            "path" => "CHANGELOG_md.html",
+            "snippet" => "<p>Notable changes and release history for xlsxrb releases.</p>"
+          }
+        ]
+        data["index"] = pages_to_add + (data["index"] || [])
+        File.write(search_data_path, "var search_data = #{JSON.generate(data)};")
+      rescue StandardError => e
+        warn "Could not update search_data.js: #{e.message}"
+      end
+    end
+  end
+
+  # Page Title Mapping for clean, human-friendly Title Case
+  page_titles = {
+    "ARCHITECTURE" => "Architecture",
+    "DEVELOPMENT" => "Development Guide",
+    "MUTATION_TESTING" => "Mutation Testing",
+    "PEER_LIBRARIES" => "Peer Libraries",
+    "QA_AGENTS" => "QA Agents Playbook",
+    "QUALITY_ASSURANCE" => "Quality Assurance",
+    "SPEC_SOURCES" => "Specification Sources",
+    "VisualGallery" => "Visual Gallery",
+    "CHANGELOG" => "Changelog",
+    "CODE_OF_CONDUCT" => "Code of Conduct"
+  }.freeze
+
+  # 2. Inject stylesheet, javascript loading tags, unified header, and polished sidebar
   Dir.glob("doc/**/*.html").each do |html_path|
     next if File.basename(html_path) == "preview.html"
 
@@ -482,47 +587,318 @@ task doc: %i[wasm fetch_assets] do
     depth = html_path.sub(%r{\Adoc/}, "").count("/")
     rel_prefix = "../" * depth
 
+    prefix_script = %(<script>window.rdoc_rel_prefix = "#{rel_prefix}";</script>)
     coi_tag = %(<script src="#{rel_prefix}coi-serviceworker.js"></script>)
     js_tag = %(<script src="#{rel_prefix}js/wasm_doc_helper.js" defer></script>)
     css_tag = %(<link href="#{rel_prefix}css/wasm_doc_helper.css" rel="stylesheet">)
 
+    # Rewrite any ../preview.html links so they correctly point to root preview.html from nested RDoc directories
+    html_content.gsub!(%r{href="(?:\.\./)+preview\.html}, %(href="#{rel_prefix}preview.html))
+
+    # Clean up internal type annotations polluting module/class docstrings
+    html_content.gsub!(%r{<p>\s*rbs_inline:\s*enabled\s*</p>\s*}i, "")
+    html_content.gsub!(%r{<p>\s*@api\s+public\s*</p>\s*}i, "")
+
+    # Clean up screaming all-caps page titles
+    page_titles.each do |raw_title, friendly_title|
+      html_content.gsub!(%r{<title>#{raw_title} - xlsxrb Documentation</title>}, "<title>#{friendly_title} - xlsxrb Documentation</title>")
+    end
+
+    # Transform Markdown callouts ([!TIP], [!NOTE], [!WARNING]) to styled banner elements with inline SVGs
+    tip_svg = %(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;" aria-hidden="true"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></svg>)
+    note_svg = %(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>)
+    warn_svg = %(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>)
+
+    html_content.gsub!(%r{<blockquote>\s*<p>\[!TIP\]\s*(.*?)</p>\s*</blockquote>}m) do
+      %(<div class="doc-callout doc-callout-tip">#{tip_svg}#{Regexp.last_match(1)}</div>)
+    end
+    html_content.gsub!(%r{<blockquote>\s*<p>\[!NOTE\]\s*(.*?)</p>\s*</blockquote>}m) do
+      %(<div class="doc-callout doc-callout-note">#{note_svg}#{Regexp.last_match(1)}</div>)
+    end
+    html_content.gsub!(%r{<blockquote>\s*<p>\[!WARNING\]\s*(.*?)</p>\s*</blockquote>}m) do
+      %(<div class="doc-callout doc-callout-warning">#{warn_svg}#{Regexp.last_match(1)}</div>)
+    end
+    html_content.gsub!(%r{<p>\[!TIP\]\s*(.*?)</p>}m) do
+      %(<div class="doc-callout doc-callout-tip">#{tip_svg}#{Regexp.last_match(1)}</div>)
+    end
+    html_content.gsub!(%r{<p>\[!NOTE\]\s*(.*?)</p>}m) do
+      %(<div class="doc-callout doc-callout-note">#{note_svg}#{Regexp.last_match(1)}</div>)
+    end
+    html_content.gsub!(%r{<p>\[!WARNING\]\s*(.*?)</p>}m) do
+      %(<div class="doc-callout doc-callout-warning">#{warn_svg}#{Regexp.last_match(1)}</div>)
+    end
+
+    # Replace table checkmark / cross emojis with styled text badges
+    html_content.gsub!("<td>✅</td>", %(<td align="center"><span style="color:#16a34a;font-weight:700;font-size:1.05rem;">✓</span></td>))
+    html_content.gsub!("<td>❌</td>", %(<td align="center"><span style="color:#dc2626;font-weight:700;font-size:0.95rem;">✕</span></td>))
+
+    # Replace emoji buttons with crisp, high-resolution SVG icons (prevents missing font square boxes)
+    html_content.gsub!(
+      %r{<span aria-hidden="true">🔍</span>},
+      %(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>)
+    )
+    html_content.gsub!(
+      %r{<span class="theme-toggle-icon" aria-hidden="true">🌙</span>},
+      %(<svg class="theme-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>)
+    )
+
+    # Style gallery playground links cleanly without broken emoji glyph
+    html_content.gsub!(
+      %r{<p><a href="([^"]*preview\.html[^"]*)">👉\s*Run and edit in Live Playground</a></p>},
+      %(<p><a href="\\1" class="gallery-playground-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Run and edit in Live Playground</a></p>)
+    )
+
+    # Determine current context for header navigation active states
+    is_gallery = html_path.include?("VisualGallery")
+    is_doc_home = ["doc/index.html", "doc/README_md.html"].include?(html_path)
+    is_guide = html_path.include?("doc/docs/") && !is_gallery
+    is_api = html_path.include?("Xlsxrb") || html_path.include?("RubyLsp")
+
+    section_subtitle = if is_gallery
+                         "Visual Gallery"
+                       elsif is_guide
+                         basename = File.basename(html_path, ".html").sub(/_md\z/, "")
+                         page_titles[basename] || "Guide"
+                       elsif is_api
+                         "API Reference"
+                       else
+                         "Documentation"
+                       end
+
+    # Replace top-navbar with the unified, harmonized navigation header
+    unified_header = <<~HTML.strip
+      <header class="top-navbar">
+        <div class="navbar-left">
+          <a href="#{rel_prefix}index.html" class="navbar-brand">xlsxrb</a>
+          <span class="navbar-separator">/</span>
+          <span class="navbar-title">#{section_subtitle}</span>
+          <nav class="navbar-nav">
+            <a href="#{rel_prefix}index.html" class="nav-link #{"active" if is_doc_home || (is_api && !is_gallery)}">Documentation</a>
+            <a href="#{rel_prefix}docs/visual/VisualGallery_md.html" class="nav-link #{"active" if is_gallery}">Visual Gallery</a>
+            <a href="#{rel_prefix}preview.html" class="nav-link">Live Playground</a>
+            <a href="https://github.com/niku/xlsxrb" class="nav-link nav-link-github" target="_blank" rel="noopener">GitHub</a>
+          </nav>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search navbar-search-desktop" role="search">
+            <form action="#" method="get" accept-charset="utf-8">
+              <input id="search-field" role="combobox" aria-label="Search"
+                     aria-autocomplete="list" aria-controls="search-results-desktop"
+                     type="text" name="search" placeholder="Search (/) classes, guides, methods..."
+                     spellcheck="false" autocomplete="off"
+                     title="Type to search, Up and Down to navigate, Enter to load">
+              <ul id="search-results-desktop" aria-label="Search Results"
+                  aria-busy="false" aria-expanded="false"
+                  aria-atomic="false" class="initially-hidden search-results"></ul>
+            </form>
+          </div>
+
+          <button id="search-toggle" class="navbar-search-mobile" aria-label="Open search" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </button>
+
+          <button id="theme-toggle" class="theme-toggle" aria-label="Switch theme" type="button">
+            <svg class="theme-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+        </div>
+      </header>
+    HTML
+
+    html_content.sub!(%r{<header class="top-navbar">.*?</header>}m, unified_header)
+
+    # Replace raw RDoc fileindex-section with clean, discoverable Pages & Guides sidebar
+    featured_gallery_active = is_gallery ? " active" : ""
+    gallery_svg = %(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-svg-icon" aria-hidden="true" style="vertical-align: middle; margin-right: 6px;"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>)
+    playground_svg = %(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-svg-icon" aria-hidden="true" style="vertical-align: middle; margin-right: 6px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>)
+
+    clean_sidebar = <<~HTML.strip
+      <div id="fileindex-section" class="nav-section">
+        <details class="nav-section-collapsible" open>
+          <summary class="nav-section-header">
+            <span class="nav-section-icon">
+              <svg>
+                <use href="#icon-file"></use>
+              </svg>
+            </span>
+            <span class="nav-section-title">Pages &amp; Guides</span>
+            <span class="nav-section-chevron">
+              <svg>
+                <use href="#icon-chevron"></use>
+              </svg>
+            </span>
+          </summary>
+
+          <ul class="nav-list">
+            <li class="nav-item-featured">
+              <a href="#{rel_prefix}docs/visual/VisualGallery_md.html" class="nav-link-featured#{featured_gallery_active}">
+                #{gallery_svg}Visual Gallery
+              </a>
+            </li>
+            <li class="nav-item-featured">
+              <a href="#{rel_prefix}preview.html" class="nav-link-featured">
+                #{playground_svg}Live Playground
+              </a>
+            </li>
+
+            <li>
+              <details class="nav-section-subcollapsible" open>
+                <summary class="nav-sub-summary">Guides</summary>
+                <ul class="link-list">
+                  <li><a href="#{rel_prefix}docs/ARCHITECTURE_md.html" class="#{"active" if html_path.include?("ARCHITECTURE")}">Architecture</a></li>
+                  <li><a href="#{rel_prefix}docs/DEVELOPMENT_md.html" class="#{"active" if html_path.include?("DEVELOPMENT")}">Development Guide</a></li>
+                  <li><a href="#{rel_prefix}docs/MUTATION_TESTING_md.html" class="#{"active" if html_path.include?("MUTATION_TESTING")}">Mutation Testing</a></li>
+                  <li><a href="#{rel_prefix}docs/PEER_LIBRARIES_md.html" class="#{"active" if html_path.include?("PEER_LIBRARIES")}">Peer Libraries</a></li>
+                  <li><a href="#{rel_prefix}docs/QA_AGENTS_md.html" class="#{"active" if html_path.include?("QA_AGENTS")}">QA Agents Playbook</a></li>
+                  <li><a href="#{rel_prefix}docs/QUALITY_ASSURANCE_md.html" class="#{"active" if html_path.include?("QUALITY_ASSURANCE")}">Quality Assurance</a></li>
+                  <li><a href="#{rel_prefix}docs/SPEC_SOURCES_md.html" class="#{"active" if html_path.include?("SPEC_SOURCES")}">Specification Sources</a></li>
+                </ul>
+              </details>
+            </li>
+
+            <li><a href="#{rel_prefix}CHANGELOG_md.html" class="#{"active" if html_path.include?("CHANGELOG")}">Changelog</a></li>
+            <li><a href="#{rel_prefix}CODE_OF_CONDUCT_md.html" class="#{"active" if html_path.include?("CODE_OF_CONDUCT")}">Code of Conduct</a></li>
+          </ul>
+        </details>
+      </div>
+    HTML
+
+    html_content.sub!(%r{<div id="fileindex-section" class="nav-section">.*?</details>\s*</div>}m, clean_sidebar)
+
     if html_content.include?("<body")
-      modified = html_content.sub("<body", "#{coi_tag}\n#{js_tag}\n#{css_tag}\n<body")
-      File.write(html_path, modified)
+      tags = "#{coi_tag}\n#{prefix_script}\n#{js_tag}\n#{css_tag}\n<body"
+      html_content = html_content.sub("<body", tags)
+    end
+    File.write(html_path, html_content)
+  end
+  # Validate generated doc assets
+  puts "Validating generated documentation assets..."
+  required_assets = [
+    { path: "doc/preview.html", min_size: 1_000 },
+    { path: "doc/coi-serviceworker.js", min_size: 500 },
+    { path: "doc/wasm/ruby.wasm", min_size: 1_000_000, magic: "\x00asm" },
+    { path: "doc/zetaoffice/soffice.wasm", min_size: 10_000_000, magic: "\x00asm" },
+    { path: "doc/zetaoffice/soffice.data", min_size: 10_000_000, magic: "PK\x03\x04" }
+  ]
+
+  required_assets.each do |asset|
+    file_path = File.expand_path(asset[:path], __dir__)
+    raise "Doc asset missing: #{asset[:path]}" unless File.exist?(file_path)
+
+    size = File.size(file_path)
+    raise "Doc asset truncated: #{asset[:path]} is only #{size} bytes (expected >= #{asset[:min_size]})" if size < asset[:min_size]
+
+    if asset[:magic]
+      actual_magic = File.binread(file_path, asset[:magic].bytesize)
+      raise "Doc asset corrupted: #{asset[:path]} magic bytes mismatch (expected #{asset[:magic].inspect}, got #{actual_magic.inspect})" if actual_magic != asset[:magic]
     end
   end
+  puts "Generated documentation assets validated successfully!"
+
   puts "WebAssembly Playground integrated successfully!"
   puts "RDoc documentation generated successfully at doc/"
 end
 
 namespace :doc do
+  desc "Verify documentation assets and server response headers"
+  task check: :doc do
+    puts "Verifying documentation server response headers..."
+    require "webrick"
+    require "net/http"
+
+    server = WEBrick::HTTPServer.new(
+      Port: 0,
+      DocumentRoot: File.expand_path("doc", __dir__),
+      Logger: WEBrick::Log.new(nil, WEBrick::BasicLog::WARN),
+      AccessLog: [],
+      RequestCallback: lambda { |_req, res|
+        res["Cross-Origin-Opener-Policy"] = "same-origin"
+        res["Cross-Origin-Embedder-Policy"] = "require-corp"
+        res["Cross-Origin-Resource-Policy"] = "cross-origin"
+      }
+    )
+
+    port = server.config[:Port]
+    server_thread = Thread.new { server.start }
+
+    begin
+      checks = [
+        { path: "/preview.html", expected_status: 200, content_type: %r{\Atext/html}, magic: "<!DOCTYPE html" },
+        { path: "/wasm/ruby.wasm", expected_status: 200, content_type: %r{\Aapplication/wasm}, magic: "\x00asm" },
+        { path: "/zetaoffice/soffice.wasm", expected_status: 200, content_type: %r{\Aapplication/wasm}, magic: "\x00asm" },
+        { path: "/zetaoffice/soffice.data", expected_status: 200, content_type: %r{\Aapplication/octet-stream}, magic: "PK\x03\x04" },
+        { path: "/coi-serviceworker.js", expected_status: 200, content_type: %r{\A(?:application|text)/javascript} }
+      ]
+
+      checks.each do |c|
+        uri = URI("http://127.0.0.1:#{port}#{c[:path]}")
+        req = Net::HTTP::Get.new(uri)
+        req["Connection"] = "close"
+        req["Range"] = "bytes=0-1023"
+
+        res = Net::HTTP.start(uri.hostname, uri.port) { |http| http.request(req) }
+        expected_statuses = [c[:expected_status], 206]
+        raise "Doc check failed for #{c[:path]}: expected HTTP #{expected_statuses.join("/")}, got #{res.code}" unless expected_statuses.include?(res.code.to_i)
+
+        raise "Doc check failed for #{c[:path]}: expected Content-Type matching #{c[:content_type]}, got #{res["content-type"].inspect}" if c[:content_type] && !res["content-type"]&.match?(c[:content_type])
+
+        raise "Doc check failed for #{c[:path]}: unexpected Content-Encoding header #{res["content-encoding"].inspect} on uncompressed asset" if res["content-encoding"]
+
+        raise "Doc check failed for #{c[:path]}: missing Cross-Origin Isolation headers (COOP: #{res["cross-origin-opener-policy"].inspect}, COEP: #{res["cross-origin-embedder-policy"].inspect})" unless res["cross-origin-opener-policy"] == "same-origin" && res["cross-origin-embedder-policy"] == "require-corp"
+
+        if c[:magic] && (!res.body || !res.body.start_with?(c[:magic]))
+          actual = res.body ? res.body[0...c[:magic].length].inspect : "nil"
+          raise "Doc check failed for #{c[:path]}: body magic bytes mismatch (expected #{c[:magic].inspect}, got #{actual})"
+        end
+
+        puts "  ✓ #{c[:path]} verified (HTTP #{res.code}, COOP/COEP, valid magic)"
+      end
+      puts "All documentation server checks passed!"
+    ensure
+      server.shutdown
+      server_thread.join
+    end
+
+    # Verify all Playground preset code examples execute without errors
+    puts "Verifying Playground preset code examples..."
+    require "tmpdir"
+    preview_html_path = File.expand_path("doc/preview.html", __dir__)
+    content = File.read(preview_html_path)
+    presets = content[%r{const PRESET_EXAMPLES = \{(.*?)\};\s*// Detect if running}m, 1]
+    raise "No PRESET_EXAMPLES found in #{preview_html_path}" unless presets
+
+    Dir.mktmpdir("xlsxrb_preset_verify") do |tmp_dir|
+      presets.scan(/([a-z_]+):\s*`([^`]+)`/m).each do |name, code|
+        tmp_file = File.join(tmp_dir, "#{name}.xlsx")
+        run_code = code.gsub(/Xlsxrb\.write\("[^"]+"\)/, "Xlsxrb.write(#{tmp_file.inspect})")
+        # rubocop:disable Security/Eval
+        eval(run_code, TOPLEVEL_BINDING)
+        # rubocop:enable Security/Eval
+        raise "Preset :#{name} failed to generate XLSX file in #{tmp_file}" unless File.exist?(tmp_file) && File.size(tmp_file) > 100
+
+        puts "  ✓ preset :#{name} executed successfully (#{File.size(tmp_file)} bytes)"
+      end
+    end
+    puts "All Playground preset code examples verified!"
+  end
+
   desc "Build and preview RDoc documentation locally"
-  task preview: :doc do
+  task preview: %i[doc check] do
     require "webrick"
 
     port = ENV.fetch("PORT", "8000").to_i
 
-    # Configure WEBrick to serve 'doc' directory
+    # Configure WEBrick to serve 'doc' directory with Cross-Origin Isolation headers
     server = WEBrick::HTTPServer.new(
       Port: port,
       DocumentRoot: File.expand_path("doc", __dir__),
       Logger: WEBrick::Log.new(nil, WEBrick::BasicLog::WARN),
       AccessLog: [],
-      # If the file is a Brotli-compressed Wasm/Data asset (checked via magic bytes),
-      # dynamically inject 'Content-Encoding: br' header so the browser decompresses it natively.
-      RequestCallback: lambda { |req, res|
-        if req.path.end_with?(".wasm") || req.path.end_with?(".data")
-          # Resolve physical file path from req.path manually since res.filename is nil at this stage
-          local_path = File.join(File.expand_path("doc", __dir__), req.path)
-          if File.exist?(local_path)
-            first_bytes = begin
-              File.binread(local_path, 4)
-            rescue StandardError
-              nil
-            end
-            res["Content-Encoding"] = "br" if first_bytes != "\x00asm"
-          end
-        end
+      RequestCallback: lambda { |_req, res|
+        # Provide Cross-Origin Isolation headers for WebAssembly SharedArrayBuffer support
+        res["Cross-Origin-Opener-Policy"] = "same-origin"
+        res["Cross-Origin-Embedder-Policy"] = "require-corp"
+        res["Cross-Origin-Resource-Policy"] = "cross-origin"
       }
     )
 
