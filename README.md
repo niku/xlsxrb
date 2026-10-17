@@ -40,7 +40,7 @@ Maintaining a gem that supports both reading and writing across streaming and in
 
 ### Autonomous Quality Assurance
 
-To maintain its multi-layered QA suite (Steep static typing, 100% mutation kill rate across 38 subjects, ECMA-376 XSD validation, and $O(1)$ streaming memory) without high manual maintenance overhead, xlsxrb defines remediation workflows for AI coding agents ([AGENTS.md](AGENTS.md), [docs/QA_AGENTS.md](docs/QA_AGENTS.md)).
+To maintain its multi-layered QA suite (Steep static typing, 100% mutation kill rate across 43 subjects, ECMA-376 XSD validation, and $O(1)$ streaming memory) without high manual maintenance overhead, xlsxrb defines remediation workflows for AI coding agents ([AGENTS.md](AGENTS.md), [docs/QA_AGENTS.md](docs/QA_AGENTS.md)).
 
 ## Installation
 
@@ -173,7 +173,7 @@ Verified by a multi-layered QA architecture:
 * Microsoft Open XML SDK Validation: Validates generated OOXML structures against Microsoft's official SDK.
 * Visual Regression Testing (VRT): Headless LibreOffice Calc pixel-by-pixel rendering checks.
 * Contract & Round-Trip Tests: Verifies parity between Streaming and In-Memory APIs and round-trip read/write accuracy.
-* Mutation Testing (Mutant): 100% mutant kill rate (1,091/1,091 mutations across 38 subjects) on pure algorithms, predicates, and coordinates ([docs/MUTATION_TESTING.md](docs/MUTATION_TESTING.md)).
+* Mutation Testing (Mutant): 100% mutant kill rate (1,528/1,528 mutations across 43 subjects) on pure algorithms, predicates, and coordinates ([docs/MUTATION_TESTING.md](docs/MUTATION_TESTING.md)).
 * Security & DoS Protection: Formula injection mitigation and ZIP bomb protection.
 
 For full architectural details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/QUALITY_ASSURANCE.md](docs/QUALITY_ASSURANCE.md).

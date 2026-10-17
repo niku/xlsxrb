@@ -49,15 +49,39 @@ lib/
   xlsxrb.rb                          # Facade: Xlsxrb.read / .write / .build / .modify
   xlsxrb/
     version.rb                       # Xlsxrb::VERSION
-    elements.rb                      # Requires for Elements layer
+    dsl_helpers.rb                   # DSL normalization and validation helpers
+    number_formatter.rb              # Custom number format parsing and formatting
+    colors.rb                        # Standard and theme color utilities
+    utils.rb                         # Range and coordinate conversion utilities
+    chart_builder.rb                 # DSL context for building charts
+    style_builder.rb                 # DSL context for cell styling
+    workbook_builder.rb              # DSL context for in-memory workbooks
+    worksheet_builder.rb             # DSL context for in-memory worksheets
+    stream_writer.rb                 # Constant O(1) memory streaming spreadsheet writer
+    stream_sheet.rb                  # Streaming sheet reader and enumerator
     stream_row.rb                    # Lazy/streaming row and cell reader (O(1) memory)
+    elements.rb                      # Requires for Elements layer
+    elements/                        # Layer 2 – Domain model
+      types.rb                       #   Xlsxrb::Elements::Formula, CellError, RichText
+      cell.rb                        #   Xlsxrb::Elements::Cell
+      row.rb                         #   Xlsxrb::Elements::Row
+      column.rb                      #   Xlsxrb::Elements::Column
+      coordinate_access.rb           #   Xlsxrb::Elements::CoordinateAccess
+      image.rb                       #   Xlsxrb::Elements::Image
+      styles.rb                      #   Xlsxrb::Elements::Styles
+      worksheet.rb                   #   Xlsxrb::Elements::Worksheet
+      workbook.rb                    #   Xlsxrb::Elements::Workbook
     ooxml.rb                         # Requires for Ooxml layer
     ooxml/                           # Layer 1 – Low-level OOXML
       reader.rb                      #   Xlsxrb::Ooxml::Reader (core reading logic)
       writer.rb                      #   Xlsxrb::Ooxml::Writer (core writing logic)
-      zip_generator.rb               #   Xlsxrb::Ooxml::ZipGenerator
+      reader/                        #   SAX2 listener implementations
+      writer/                        #   Sub-writers (drawing, features, styles)
+      cfb.rb                         #   Compound File Binary (CFB) format parser
+      crypto.rb                      #   Password encryption and agile/standard crypto
+      zip_generator.rb               #   Pure ZIP binary generation
       utils.rb                       #   Xlsxrb::Ooxml::Utils (date/time/hash helpers)
-      zip_reader.rb                  #   Xlsxrb::Ooxml::ZipReader
+      zip_reader.rb                  #   Xlsxrb::Ooxml::ZipReader (with ZIP64 support)
       zip_writer.rb                  #   Xlsxrb::Ooxml::ZipWriter
       xml_parser.rb                  #   Xlsxrb::Ooxml::XmlParser
       xml_builder.rb                 #   Xlsxrb::Ooxml::XmlBuilder
@@ -67,13 +91,6 @@ lib/
       worksheet_writer.rb            #   Streaming sheetN.xml writer
       workbook_parser.rb             #   workbook.xml reader
       workbook_writer.rb             #   workbook.xml / styles / SST writer
-    elements/                        # Layer 2 – Domain model
-      types.rb                       #   Xlsxrb::Elements::Formula, CellError, RichText
-      cell.rb                        #   Xlsxrb::Elements::Cell
-      row.rb                         #   Xlsxrb::Elements::Row
-      column.rb                      #   Xlsxrb::Elements::Column
-      worksheet.rb                   #   Xlsxrb::Elements::Worksheet
-      workbook.rb                    #   Xlsxrb::Elements::Workbook
 ```
 
 ---

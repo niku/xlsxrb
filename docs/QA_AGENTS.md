@@ -26,7 +26,7 @@ xlsxrb is a pure Ruby library for reading and writing Excel spreadsheets with st
 
 ### 1. Test Rigor Agent (`test-rigor`)
 - Target Quality Attribute: Test Suite Rigor / Detection Power
-- Mission: Eliminate surviving mutants in pure logic, algorithms, and conversions to maintain a 100.00% kill rate across all 38 pure functional subjects.
+- Mission: Eliminate surviving mutants in pure logic, algorithms, and conversions to maintain a 100.00% kill rate across all 43 pure functional subjects.
 - Scope: Coordinate conversions, Julian day/serial dates, binary packaging, XML escaping, row/column boundary invariants.
 - Direct Commands:
   ```bash
@@ -34,7 +34,7 @@ xlsxrb is a pure Ruby library for reading and writing Excel spreadsheets with st
   bundle exec mutant run --usage opensource -r ./test/xlsxrb/elements_test.rb -- "Xlsxrb::Elements::Cell.valid_coordinates?"
   bundle exec mutant run --usage opensource -r ./test/xlsxrb/elements_test.rb -- "Xlsxrb::Elements::Cell#to_i"
 
-  # Run mutant on all 38 pure subjects (~28s)
+  # Run mutant on all 43 pure subjects (~50s)
   bundle exec rake mutant:pure
   ```
 

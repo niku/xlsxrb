@@ -2,7 +2,7 @@
 
 To verify test assertion strength and avoid tests that execute code without asserting behavior, `xlsxrb` adopts mutation testing via [`mbj/mutant`](https://github.com/mbj/mutant) with `test-unit` integration.
 
-As of the current release, the test suite achieves 100.00% kill rate (1,091 / 1,091 mutations killed, 0 alive) across all 38 pure functional subjects.
+As of the current release, the test suite achieves 100.00% kill rate (1,528 / 1,528 mutations killed, 0 alive) across all 43 pure functional subjects.
 
 ## Motivation & Strategy
 
@@ -31,9 +31,12 @@ Running mutation testing across the entire codebase (which includes heavy file I
    - MS-DOS packed datetime calculation with arithmetic bitfield combinations (`ZipGenerator.dos_datetime`).
    - Compound File Binary (CFB) magic header recognition (`Cfb::Reader.cfb?`) and directory entry predicates (`DirEntry#stream?`, `#root?`, `#storage?`).
 5. XML Character Escaping (`Xlsxrb::Ooxml::XmlBuilder`):
-   - Pure escaping of XML special characters (`XmlBuilder.escape`) with object identity preservation for clean strings.
+   - Pure escaping and unescaping of XML characters (`XmlBuilder.escape`, `XmlBuilder.unescape`) with object identity preservation for clean strings.
 6. DSL Normalization (`Xlsxrb::DslHelpers`):
    - Column indices, range, and alphabet normalization (`DslHelpers.normalize_column_indices`).
+   - Range string absolute coordinate formatting (`DslHelpers.absolute_range`).
+   - Row values and styles normalization (`DslHelpers.normalize_row_values`, `DslHelpers.normalize_row_styles`).
+   - Strict row bounds validation (`DslHelpers.validate_row_bounds!`).
 
 ### Excluded Scope (Non-Targets)
 
@@ -44,7 +47,7 @@ Running mutation testing across the entire codebase (which includes heavy file I
 ## Running Mutation Testing
 
 ```bash
-# Run full mutation testing suite (38 subjects, ~35 seconds)
+# Run full mutation testing suite (43 subjects, ~50 seconds)
 bundle exec rake mutant:pure
 
 # Or run mutant against a specific class or method using .mutant.yml configuration
