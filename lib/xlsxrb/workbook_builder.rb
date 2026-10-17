@@ -348,16 +348,7 @@ module Xlsxrb
             errors: row.errors
           )
         end
-        Elements::Worksheet.new(
-          name: sheet.name,
-          rows: new_rows,
-          columns: sheet.columns,
-          charts: sheet.charts,
-          conditional_formatting: sheet.conditional_formatting,
-          data_validations: sheet.data_validations,
-          unmapped_data: sheet.unmapped_data,
-          errors: sheet.errors
-        )
+        sheet.with(rows: new_rows)
       end
 
       [updated_sheets, styles_definition]

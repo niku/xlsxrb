@@ -444,6 +444,20 @@ module Xlsxrb
     # : () -> Array[untyped]
     def col_breaks: () -> Array[untyped]
 
+    # Returns protected ranges defined for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Array[Hash[Symbol, untyped]]
+    def protected_ranges: () -> Array[Hash[Symbol, untyped]]
+
+    # Returns cell watch cell references defined for this worksheet.
+    #
+    # @return [Array<String>]
+    # @api public
+    # : () -> Array[String]
+    def cell_watches: () -> Array[String]
+
     # Closes any underlying reader resources.
     # : () -> void
     def close: () -> void

@@ -345,7 +345,9 @@ module Xlsxrb
         sheet_properties: sheet_properties,
         sheet_format: sheet_format,
         row_breaks: row_breaks,
-        col_breaks: col_breaks
+        col_breaks: col_breaks,
+        protected_ranges: protected_ranges,
+        cell_watches: cell_watches
       )
     end
     alias to_worksheet load
@@ -674,6 +676,36 @@ module Xlsxrb
     #: () -> Array[untyped]
     def col_breaks
       print_page_data[:col_breaks] || []
+    end
+
+    # Returns protected ranges defined for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def protected_ranges
+      @protected_ranges ||= if raw_sheet_xml.include?("<protectedRanges")
+                              listener = Ooxml::Reader::ProtectedRangesListener.new
+                              Ooxml::XmlParser.parse(raw_sheet_xml, listener)
+                              listener.ranges
+                            else
+                              []
+                            end
+    end
+
+    # Returns cell watch cell references defined for this worksheet.
+    #
+    # @return [Array<String>]
+    # @api public
+    #: () -> Array[String]
+    def cell_watches
+      @cell_watches ||= if raw_sheet_xml.include?("<cellWatches")
+                          listener = Ooxml::Reader::CellWatchesListener.new
+                          Ooxml::XmlParser.parse(raw_sheet_xml, listener)
+                          listener.watches
+                        else
+                          []
+                        end
     end
 
     # Closes any underlying reader resources.

@@ -74,6 +74,8 @@ module Xlsxrb
       @current_sheet_view = {}
       @current_row_breaks = []
       @current_col_breaks = []
+      @current_protected_ranges = []
+      @current_cell_watches = []
       @current_cells = {}
       @styles = {} # { style_name => StyleBuilder }
       @style_writer = Ooxml::Writer.new
@@ -874,6 +876,35 @@ module Xlsxrb
         @writer.page_break_col(...)
       end
       # simplecov:enable
+
+      # Adds a protected range to the sheet.
+      #
+      # @param name [String] Name of the protected range.
+      # @param sqref [String] Cell range (e.g. "A1:B10").
+      # @param password [String, nil] Optional password or hash.
+      # @param opts [Hash] Additional options.
+      # @return [void]
+      # @api public
+      #: (String name, String sqref, ?password: String?, **untyped opts) -> void
+      def protected_range(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.protected_range(...)
+      end
+      alias add_protected_range protected_range
+
+      # Adds a cell watch to the sheet.
+      #
+      # @param ref [String] Cell reference (e.g. "A1").
+      # @return [void]
+      # @api public
+      #: (String ref) -> void
+      def cell_watch(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.cell_watch(...)
+      end
+      alias add_cell_watch cell_watch
     end
 
     # Adds a new sheet to the workbook and starts streaming rows into it.
@@ -941,6 +972,8 @@ module Xlsxrb
       @current_sheet_view = {}
       @current_row_breaks = []
       @current_col_breaks = []
+      @current_protected_ranges = []
+      @current_cell_watches = []
       @current_cells = {}
 
       return unless block_given?
@@ -1529,6 +1562,36 @@ module Xlsxrb
       # simplecov:enable
     end
 
+    # Adds a protected range to the current sheet.
+    #
+    # @param name [String] Name of the protected range.
+    # @param sqref [String] Cell range (e.g. "A1:B10").
+    # @param password [String, nil] Optional password or hash.
+    # @param opts [Hash] Additional options.
+    # @return [void]
+    # @api public
+    #: (String name, String sqref, ?password: String?, **untyped opts) -> void
+    def protected_range(name, sqref, password: nil, **opts)
+      sheet if @current_sheet.nil?
+      entry = { name: name.to_s, sqref: sqref.to_s }
+      entry[:password] = password if password
+      entry.merge!(opts) unless opts.empty?
+      @current_protected_ranges << DslHelpers.normalize_protection_options(entry)
+    end
+    alias add_protected_range protected_range
+
+    # Adds a cell watch to the current sheet.
+    #
+    # @param ref [String] Cell reference (e.g. "A1").
+    # @return [void]
+    # @api public
+    #: (String ref) -> void
+    def cell_watch(ref)
+      sheet if @current_sheet.nil?
+      @current_cell_watches << ref.to_s
+    end
+    alias add_cell_watch cell_watch
+
     # --- Workbook-Level Methods ---
 
     # Adds a defined name.
@@ -1858,7 +1921,9 @@ module Xlsxrb
         sheet_format: @current_sheet_format,
         sheet_view: @current_sheet_view,
         row_breaks: @current_row_breaks,
-        col_breaks: @current_col_breaks
+        col_breaks: @current_col_breaks,
+        protected_ranges: @current_protected_ranges,
+        cell_watches: @current_cell_watches
       }
       sheet_data[:cells] = @current_cells if @current_cells && !@current_cells.empty?
       @current_cells = nil
@@ -1869,6 +1934,7 @@ module Xlsxrb
       @current_row_writer.finish(
         drawing_rid: info[:drawing_rid],
         sheet_protection: @current_sheet_protection,
+        protected_ranges: @current_protected_ranges.empty? ? nil : @current_protected_ranges,
         auto_filter: @current_auto_filter,
         filter_columns: @current_filter_columns.empty? ? nil : @current_filter_columns,
         sort_state: @current_sort_state,
@@ -1882,6 +1948,7 @@ module Xlsxrb
         header_footer: @current_header_footer.empty? ? nil : @current_header_footer,
         row_breaks: @current_row_breaks.empty? ? nil : @current_row_breaks,
         col_breaks: @current_col_breaks.empty? ? nil : @current_col_breaks,
+        cell_watches: @current_cell_watches.empty? ? nil : @current_cell_watches,
         tables: @current_tables.empty? ? nil : @current_tables,
         table_start_rid: info[:table_start_rid],
         legacy_drawing_rid: info[:vml_rid],

@@ -655,12 +655,12 @@ module Xlsxrb
 
       # Write the worksheet footer. Call once after all rows.
       # Options for post-sheetData elements (in OOXML order):
-      def finish(drawing_rid: nil, sheet_protection: nil, auto_filter: nil,
+      def finish(drawing_rid: nil, sheet_protection: nil, protected_ranges: nil, auto_filter: nil,
                  filter_columns: nil, sort_state: nil, merge_cells: nil,
                  conditional_formats: nil, data_validations: nil,
                  hyperlinks: nil, print_options: nil, page_margins: nil,
                  page_setup: nil, header_footer: nil, row_breaks: nil,
-                 col_breaks: nil, tables: nil, table_start_rid: nil,
+                 col_breaks: nil, cell_watches: nil, tables: nil, table_start_rid: nil,
                  legacy_drawing_rid: nil, sparkline_groups: nil)
         return if @finished
 
@@ -674,6 +674,7 @@ module Xlsxrb
 
         # Elements must appear in OOXML specification order after sheetData
         write_sheet_protection(sheet_protection) if sheet_protection
+        write_protected_ranges(protected_ranges) if protected_ranges && !protected_ranges.empty?
         write_auto_filter(auto_filter, filter_columns, sort_state) if auto_filter
         write_merge_cells(merge_cells) if merge_cells && !merge_cells.empty?
         write_conditional_formatting(conditional_formats) if conditional_formats && !conditional_formats.empty?
@@ -685,6 +686,7 @@ module Xlsxrb
         write_header_footer(header_footer) if header_footer && !header_footer.empty?
         write_row_breaks(row_breaks) if row_breaks && !row_breaks.empty?
         write_col_breaks(col_breaks) if col_breaks && !col_breaks.empty?
+        write_cell_watches(cell_watches) if cell_watches && !cell_watches.empty?
         @builder.empty_tag("drawing", { "r:id": drawing_rid }) if drawing_rid
         @builder.empty_tag("legacyDrawing", { "r:id": legacy_drawing_rid }) if legacy_drawing_rid
         write_table_parts(tables, table_start_rid) if tables && !tables.empty?
@@ -816,6 +818,28 @@ module Xlsxrb
         attrs[:saltValue] = opts[:salt_value] if opts[:salt_value]
         attrs[:spinCount] = opts[:spin_count].to_s if opts[:spin_count]
         @builder.empty_tag("sheetProtection", attrs)
+      end
+
+      def write_protected_ranges(ranges)
+        @builder.open_tag("protectedRanges")
+        ranges.each do |pr|
+          attrs = { sqref: pr[:sqref].to_s, name: pr[:name].to_s }
+          attrs[:password] = pr[:password].to_s if pr[:password]
+          attrs[:algorithmName] = pr[:algorithm_name].to_s if pr[:algorithm_name]
+          attrs[:hashValue] = pr[:hash_value].to_s if pr[:hash_value]
+          attrs[:saltValue] = pr[:salt_value].to_s if pr[:salt_value]
+          attrs[:spinCount] = pr[:spin_count].to_s if pr[:spin_count]
+          attrs[:securityDescriptor] = pr[:security_descriptor].to_s if pr[:security_descriptor]
+          sds = pr[:security_descriptors] || []
+          if sds.empty?
+            @builder.empty_tag("protectedRange", attrs)
+          else
+            @builder.open_tag("protectedRange", attrs)
+            sds.each { |sd| @builder.tag("securityDescriptor") { @builder.text(sd.to_s) } }
+            @builder.close_tag("protectedRange")
+          end
+        end
+        @builder.close_tag("protectedRanges")
       end
 
       def write_auto_filter(range, filter_columns, sort_state)
@@ -1151,6 +1175,14 @@ module Xlsxrb
           @builder.empty_tag("brk", { id: brk.to_s, max: "1048575", man: "1" })
         end
         @builder.close_tag("colBreaks")
+      end
+
+      def write_cell_watches(watches)
+        @builder.open_tag("cellWatches")
+        watches.each do |w|
+          @builder.empty_tag("cellWatch", { r: w.to_s })
+        end
+        @builder.close_tag("cellWatches")
       end
 
       def write_table_parts(tables, start_rid)

@@ -2744,4 +2744,69 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(30.0, wb_stream_read.sheet(0).load.sheet_format[:default_row_height])
     assert_equal(12.5, wb_stream_read.sheet(0).load.sheet_format[:default_col_width])
   end
+
+  test "protected_range and cell_watch configured via build and streaming write round-trips correctly" do
+    # 1. Via Xlsxrb.build
+    wb_built = Xlsxrb.build do |w|
+      w.sheet("ProtectedSheet") do |s|
+        s.protected_range("Range1", "A1:B10", password: "CCEE")
+        s.add_protected_range("Range2", "C1:D5", password: "modern_password")
+        s.cell_watch("A1")
+        s.add_cell_watch("B10")
+        s.row(%w[A B C D])
+      end
+    end
+
+    built_sheet = wb_built.sheet(0)
+    assert_equal(2, built_sheet.protected_ranges.size)
+    assert_equal("Range1", built_sheet.protected_ranges[0][:name])
+    assert_equal("A1:B10", built_sheet.protected_ranges[0][:sqref])
+    assert_equal("CCEE", built_sheet.protected_ranges[0][:password])
+    assert_equal("Range2", built_sheet.protected_ranges[1][:name])
+    assert_equal("C1:D5", built_sheet.protected_ranges[1][:sqref])
+    assert_equal("SHA-512", built_sheet.protected_ranges[1][:algorithm_name])
+    assert_not_nil(built_sheet.protected_ranges[1][:hash_value])
+
+    assert_equal(%w[A1 B10], built_sheet.cell_watches)
+
+    # Write and read back
+    data = Xlsxrb.write(wb_built)
+    wb_read = Xlsxrb.read(data)
+    stream_sheet = wb_read.sheet(0)
+
+    assert_equal(2, stream_sheet.protected_ranges.size)
+    assert_equal("Range1", stream_sheet.protected_ranges[0][:name])
+    assert_equal("A1:B10", stream_sheet.protected_ranges[0][:sqref])
+    assert_equal("Range2", stream_sheet.protected_ranges[1][:name])
+    assert_equal("C1:D5", stream_sheet.protected_ranges[1][:sqref])
+    assert_equal("SHA-512", stream_sheet.protected_ranges[1][:algorithm_name])
+    assert_equal(%w[A1 B10], stream_sheet.cell_watches)
+
+    loaded_sheet = stream_sheet.load
+    assert_equal(2, loaded_sheet.protected_ranges.size)
+    assert_equal("Range1", loaded_sheet.protected_ranges[0][:name])
+    assert_equal("A1:B10", loaded_sheet.protected_ranges[0][:sqref])
+    assert_equal(%w[A1 B10], loaded_sheet.cell_watches)
+
+    # 2. Via streaming Xlsxrb.write
+    stream_data = Xlsxrb.write do |w|
+      w.sheet("StreamProtected") do |s|
+        s.protected_range("StreamRange", "B2:F20")
+        s.cell_watch("C3")
+        s.row(%w[Stream Row])
+      end
+    end
+
+    wb_stream_read = Xlsxrb.read(stream_data)
+    ss = wb_stream_read.sheet(0)
+    assert_equal(1, ss.protected_ranges.size)
+    assert_equal("StreamRange", ss.protected_ranges[0][:name])
+    assert_equal("B2:F20", ss.protected_ranges[0][:sqref])
+    assert_equal(["C3"], ss.cell_watches)
+
+    ls = ss.load
+    assert_equal(1, ls.protected_ranges.size)
+    assert_equal("StreamRange", ls.protected_ranges[0][:name])
+    assert_equal(["C3"], ls.cell_watches)
+  end
 end

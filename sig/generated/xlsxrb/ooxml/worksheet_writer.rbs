@@ -34,7 +34,7 @@ module Xlsxrb
 
       # Write the worksheet footer. Call once after all rows.
       # Options for post-sheetData elements (in OOXML order):
-      def finish: (?drawing_rid: untyped, ?sheet_protection: untyped, ?auto_filter: untyped, ?filter_columns: untyped, ?sort_state: untyped, ?merge_cells: untyped, ?conditional_formats: untyped, ?data_validations: untyped, ?hyperlinks: untyped, ?print_options: untyped, ?page_margins: untyped, ?page_setup: untyped, ?header_footer: untyped, ?row_breaks: untyped, ?col_breaks: untyped, ?tables: untyped, ?table_start_rid: untyped, ?legacy_drawing_rid: untyped, ?sparkline_groups: untyped) -> untyped
+      def finish: (?drawing_rid: untyped, ?sheet_protection: untyped, ?protected_ranges: untyped, ?auto_filter: untyped, ?filter_columns: untyped, ?sort_state: untyped, ?merge_cells: untyped, ?conditional_formats: untyped, ?data_validations: untyped, ?hyperlinks: untyped, ?print_options: untyped, ?page_margins: untyped, ?page_setup: untyped, ?header_footer: untyped, ?row_breaks: untyped, ?col_breaks: untyped, ?cell_watches: untyped, ?tables: untyped, ?table_start_rid: untyped, ?legacy_drawing_rid: untyped, ?sparkline_groups: untyped) -> untyped
 
       private
 
@@ -47,6 +47,8 @@ module Xlsxrb
       def write_sheet_format_pr: (untyped fmt) -> untyped
 
       def write_sheet_protection: (untyped opts) -> untyped
+
+      def write_protected_ranges: (untyped ranges) -> untyped
 
       def write_auto_filter: (untyped range, untyped filter_columns, untyped sort_state) -> untyped
 
@@ -71,6 +73,8 @@ module Xlsxrb
       def write_row_breaks: (untyped breaks) -> untyped
 
       def write_col_breaks: (untyped breaks) -> untyped
+
+      def write_cell_watches: (untyped watches) -> untyped
 
       def write_table_parts: (untyped tables, untyped start_rid) -> untyped
 

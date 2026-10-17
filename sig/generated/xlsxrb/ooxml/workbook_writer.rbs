@@ -68,7 +68,7 @@ module Xlsxrb
 
       def write_shared_strings_xml: (untyped zip) -> untyped
 
-      def write_worksheet_xml: (untyped io, untyped sheet, ?drawing_rid: untyped, ?sheet_protection: untyped, ?auto_filter: untyped, ?filter_columns: untyped, ?sort_state: untyped, ?merge_cells: untyped, ?conditional_formats: untyped, ?data_validations: untyped, ?hyperlinks: untyped, ?print_options: untyped, ?page_margins: untyped, ?page_setup: untyped, ?header_footer: untyped, ?row_breaks: untyped, ?col_breaks: untyped, ?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped, ?sheet_properties: untyped, ?sheet_format: untyped, ?tables: untyped, ?table_start_rid: untyped, ?legacy_drawing_rid: untyped, ?sparkline_groups: untyped) -> untyped
+      def write_worksheet_xml: (untyped io, untyped sheet, ?drawing_rid: untyped, ?sheet_protection: untyped, ?protected_ranges: untyped, ?auto_filter: untyped, ?filter_columns: untyped, ?sort_state: untyped, ?merge_cells: untyped, ?conditional_formats: untyped, ?data_validations: untyped, ?hyperlinks: untyped, ?print_options: untyped, ?page_margins: untyped, ?page_setup: untyped, ?header_footer: untyped, ?row_breaks: untyped, ?col_breaks: untyped, ?cell_watches: untyped, ?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped, ?sheet_properties: untyped, ?sheet_format: untyped, ?tables: untyped, ?table_start_rid: untyped, ?legacy_drawing_rid: untyped, ?sparkline_groups: untyped) -> untyped
 
       def build_table_xml: (untyped tbl, untyped table_id) -> untyped
 

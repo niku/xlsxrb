@@ -302,4 +302,25 @@ class XsdValidationTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  # 11. Protected ranges and cell watches XML schema validation
+  def test_protected_ranges_and_cell_watches_validation
+    tmp = Tempfile.new(["xsd_prot_ranges_watches", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("ProtectedSheet") do |s|
+          s.protect_sheet(sheet: true)
+          s.protected_range("Range1", "A1:B10", password: "pwd")
+          s.protected_range("Range2", "C1:D5")
+          s.cell_watch("A1")
+          s.cell_watch("C5")
+          s.row(%w[Val1 Val2 Val3 Val4])
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
 end

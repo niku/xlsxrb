@@ -47,6 +47,8 @@ module Xlsxrb
       @sheet_format = {}
       @row_breaks = []
       @col_breaks = []
+      @protected_ranges = []
+      @cell_watches = []
       @print_area = nil
       @print_titles = nil
     end
@@ -774,6 +776,34 @@ module Xlsxrb
       @col_breaks << col_index
     end
 
+    # Adds a protected range to the worksheet.
+    #
+    # @param name [String] Name of the protected range.
+    # @param sqref [String] Cell range (e.g. "A1:B10").
+    # @param password [String, nil] Optional password or hash.
+    # @param opts [Hash] Additional options.
+    # @return [void]
+    # @api public
+    #: (String name, String sqref, ?password: String?, **untyped opts) -> void
+    def protected_range(name, sqref, password: nil, **opts)
+      entry = { name: name.to_s, sqref: sqref.to_s }
+      entry[:password] = password if password
+      entry.merge!(opts) unless opts.empty?
+      @protected_ranges << DslHelpers.normalize_protection_options(entry)
+    end
+    alias add_protected_range protected_range
+
+    # Adds a cell watch to the worksheet.
+    #
+    # @param ref [String] Cell reference (e.g. "A1").
+    # @return [void]
+    # @api public
+    #: (String ref) -> void
+    def cell_watch(ref)
+      @cell_watches << ref.to_s
+    end
+    alias add_cell_watch cell_watch
+
     # Builds and returns the in-memory {Elements::Worksheet}.
     #
     # @return [Elements::Worksheet]
@@ -807,6 +837,8 @@ module Xlsxrb
       facade_meta[:sheet_view] = @sheet_view unless @sheet_view.empty?
       facade_meta[:row_breaks] = @row_breaks unless @row_breaks.empty?
       facade_meta[:col_breaks] = @col_breaks unless @col_breaks.empty?
+      facade_meta[:protected_ranges] = @protected_ranges unless @protected_ranges.empty?
+      facade_meta[:cell_watches] = @cell_watches unless @cell_watches.empty?
       facade_meta[:print_area] = @print_area if @print_area
       facade_meta[:print_titles] = @print_titles if @print_titles
 
@@ -869,7 +901,9 @@ module Xlsxrb
         sheet_properties: @sheet_properties,
         sheet_format: @sheet_format,
         row_breaks: @row_breaks,
-        col_breaks: @col_breaks
+        col_breaks: @col_breaks,
+        protected_ranges: @protected_ranges,
+        cell_watches: @cell_watches
       )
     end
 

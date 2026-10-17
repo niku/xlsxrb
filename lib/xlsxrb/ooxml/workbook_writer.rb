@@ -94,6 +94,8 @@ module Xlsxrb
               sheet_view: sheet[:sheet_view],
               sheet_properties: sheet[:sheet_properties],
               sheet_format: sheet[:sheet_format],
+              protected_ranges: sheet[:protected_ranges],
+              cell_watches: sheet[:cell_watches],
               tables: sheet_tables,
               table_start_rid: info[:table_start_rid],
               legacy_drawing_rid: info[:vml_rid],
@@ -918,14 +920,14 @@ module Xlsxrb
       end
 
       def write_worksheet_xml(io, sheet, drawing_rid: nil, sheet_protection: nil,
-                              auto_filter: nil, filter_columns: nil, sort_state: nil,
-                              merge_cells: nil, conditional_formats: nil,
+                              protected_ranges: nil, auto_filter: nil, filter_columns: nil,
+                              sort_state: nil, merge_cells: nil, conditional_formats: nil,
                               data_validations: nil, hyperlinks: nil,
                               print_options: nil, page_margins: nil, page_setup: nil,
                               header_footer: nil, row_breaks: nil, col_breaks: nil,
-                              freeze_pane: nil, split_pane: nil, selection: nil,
-                              sheet_view: nil, sheet_properties: nil, sheet_format: nil,
-                              tables: nil, table_start_rid: nil,
+                              cell_watches: nil, freeze_pane: nil, split_pane: nil,
+                              selection: nil, sheet_view: nil, sheet_properties: nil,
+                              sheet_format: nil, tables: nil, table_start_rid: nil,
                               legacy_drawing_rid: nil, sparkline_groups: nil)
         date1904 = @workbook_properties&.[](:date1904) ? true : false
         ws = WorksheetWriter.new(io, date1904: date1904)
@@ -963,6 +965,7 @@ module Xlsxrb
         ws.finish(
           drawing_rid: drawing_rid,
           sheet_protection: sheet_protection,
+          protected_ranges: protected_ranges,
           auto_filter: auto_filter,
           filter_columns: filter_columns,
           sort_state: sort_state,
@@ -976,6 +979,7 @@ module Xlsxrb
           header_footer: header_footer,
           row_breaks: row_breaks,
           col_breaks: col_breaks,
+          cell_watches: cell_watches,
           tables: tables,
           table_start_rid: table_start_rid,
           legacy_drawing_rid: legacy_drawing_rid,

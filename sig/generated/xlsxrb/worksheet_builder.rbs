@@ -446,6 +446,29 @@ module Xlsxrb
     # : (Integer | String col_index) -> void
     def page_break_col: (Integer | String col_index) -> void
 
+    # Adds a protected range to the worksheet.
+    #
+    # @param name [String] Name of the protected range.
+    # @param sqref [String] Cell range (e.g. "A1:B10").
+    # @param password [String, nil] Optional password or hash.
+    # @param opts [Hash] Additional options.
+    # @return [void]
+    # @api public
+    # : (String name, String sqref, ?password: String?, **untyped opts) -> void
+    def protected_range: (String name, String sqref, ?password: String?, **untyped opts) -> void
+
+    alias add_protected_range protected_range
+
+    # Adds a cell watch to the worksheet.
+    #
+    # @param ref [String] Cell reference (e.g. "A1").
+    # @return [void]
+    # @api public
+    # : (String ref) -> void
+    def cell_watch: (String ref) -> void
+
+    alias add_cell_watch cell_watch
+
     # Builds and returns the in-memory {Elements::Worksheet}.
     #
     # @return [Elements::Worksheet]
