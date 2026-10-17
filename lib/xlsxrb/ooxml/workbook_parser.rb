@@ -89,8 +89,28 @@ module Xlsxrb
       def self.parse(xml_string)
         return {} if xml_string.nil? || xml_string.empty?
 
+        sanitized = xml_string.lstrip
+        if sanitized.start_with?("<?xml")
+          first_decl_end = sanitized.index("?>")
+          if first_decl_end
+            decl = sanitized[0..(first_decl_end + 1)]
+            rest = sanitized[(first_decl_end + 2)..].gsub(/<\?xml\b[^>]*\?>/i, "")
+            sanitized = "#{decl}#{rest}".lstrip
+          end
+        end
+
         listener = Listener.new
-        XmlParser.parse(xml_string, listener)
+        begin
+          XmlParser.parse(sanitized, listener)
+        rescue StandardError
+          # Fallback to regex scanning if SAX parser fails on malformed XML
+          sanitized.scan(%r{<(?:[a-zA-Z0-9_]+:)?Relationship\b([^>]*)/?>}i) do |match|
+            attrs_str = match[0]
+            id = attrs_str[/\bId=["']([^"']+)["']/i, 1]
+            target = attrs_str[/\bTarget=["']([^"']+)["']/i, 1]
+            listener.relationships[id] = target if id && target
+          end
+        end
         listener.relationships
       end
 

@@ -27,6 +27,7 @@
 - Use `nil` for unstyled cells in `embedded_images.rb` example instead of undefined `"left"`.
 
 ### Fixed
+- Resilience against duplicate XML declarations and malformed `.rels` files in `RelationshipsParser`: Sanitize duplicate or multiple `<?xml ...?>` declarations and provide regex fallback scanning if SAX parsing fails on malformed relationship XML.
 - Fix false positive date detection for color tags like `[Red]` in `Ooxml::Reader#date_pattern?`: Unify custom number format date evaluation with `NumberFormatter.date_format?`, ignoring bracketed formatting codes (such as `[Red]` or `[Green]`) so negative numbers with colored styles are not misidentified as dates.
 - Fix layout overlap between Playground Run & Preview button and theme toggle: Override absolute positioning of `.theme-toggle` from RDoc Aliki styles with static inline-flex flow in `docs/preview.html` to eliminate button collision and preserve clean spacing across light and dark modes.
 - Prevent WebAssembly out-of-memory error during ZetaOffice instantiation on Firefox: Provide custom `Module.instantiateWasm` handler in `docs/preview.html` with streaming-first compilation (`WebAssembly.instantiateStreaming` / `WebAssembly.compileStreaming`) to bypass Emscripten's default `instantiateArrayBuffer` fallback that allocates an extra 160MB ArrayBuffer on memory pressure, and sequence Ruby Wasm and LibreOffice Wasm engine initialization to eliminate concurrent memory peaks.

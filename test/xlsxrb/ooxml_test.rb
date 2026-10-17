@@ -675,6 +675,14 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal({}, Xlsxrb::Ooxml::RelationshipsParser.parse(nil))
   end
 
+  test "relationships_parser handles duplicate xml declarations and malformed xml" do
+    duplicate_decl_xml = %(<?xml version="1.0" encoding="UTF-8"?><?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>)
+    assert_equal({ "rId1" => "worksheets/sheet1.xml" }, Xlsxrb::Ooxml::RelationshipsParser.parse(duplicate_decl_xml))
+
+    malformed_xml = %(<Relationships><Relationship Target="worksheets/sheet2.xml" Type="http://..." Id="rId2"><broken xml>)
+    assert_equal({ "rId2" => "worksheets/sheet2.xml" }, Xlsxrb::Ooxml::RelationshipsParser.parse(malformed_xml))
+  end
+
   # --- WorksheetParser ---
 
   test "worksheet_parser parses rows and cells" do
