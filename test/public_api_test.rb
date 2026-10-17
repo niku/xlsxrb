@@ -1070,6 +1070,36 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal({ password: "123" }, wb.unmapped_data.dig(:facade, :workbook_protection))
   end
 
+  test "Elements::Workbook provides document properties and protection accessors" do
+    wb = Xlsxrb.build do |w|
+      w.core_property(:title, "Quarterly Report")
+      w.core_property(:creator, "Finance Team")
+      w.app_property(:company, "Acme Corp")
+      w.custom_property("Confidential", true, type: :boolean)
+      w.protect_workbook(lock_structure: true)
+      w.sheet("S") do |s|
+        s.row(["data"])
+      end
+    end
+
+    assert_equal({ title: "Quarterly Report", creator: "Finance Team" }, wb.core_properties)
+    assert_equal({ company: "Acme Corp" }, wb.app_properties)
+    assert_equal([{ name: "Confidential", value: true, type: :boolean }], wb.custom_properties)
+    assert_equal({ lock_structure: true }, wb.workbook_protection)
+
+    # Test round-trip via write and read
+    binary = Xlsxrb.write(wb)
+    read_wb = Xlsxrb.read(binary).load
+
+    assert_equal("Quarterly Report", read_wb.core_properties[:title])
+    assert_equal("Finance Team", read_wb.core_properties[:creator])
+    assert_equal("Acme Corp", read_wb.app_properties[:company])
+    assert_equal(1, read_wb.custom_properties.size)
+    assert_equal("Confidential", read_wb.custom_properties.first[:name])
+    assert_equal(true, read_wb.custom_properties.first[:value])
+    assert_equal(true, read_wb.workbook_protection[:lock_structure])
+  end
+
   test "WorksheetBuilder#split_pane configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|

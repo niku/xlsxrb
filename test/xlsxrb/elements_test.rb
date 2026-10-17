@@ -1181,6 +1181,51 @@ class ElementsTest < Test::Unit::TestCase
     assert_raises(*expected_errors) { wb.update_sheet("OldName") { "not_a_worksheet" } }
   end
 
+  test "workbook document properties and protection accessors" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
+
+    wb_empty = Xlsxrb::Elements::Workbook.new(sheets: [ws])
+    assert_equal({}, wb_empty.core_properties)
+    assert_equal({}, wb_empty.app_properties)
+    assert_equal([], wb_empty.custom_properties)
+    assert_nil(wb_empty.workbook_protection)
+
+    core_props = { title: "Report", creator: "Alice" }
+    app_props = { application: "xlsxrb" }
+    custom_props = [{ name: "Environment", type: :lpwstr, value: "Production" }]
+    wb_prot = { lock_structure: true }
+
+    wb_direct = Xlsxrb::Elements::Workbook.new(
+      sheets: [ws],
+      unmapped_data: {
+        core_properties: core_props,
+        app_properties: app_props,
+        custom_properties: custom_props,
+        workbook_protection: wb_prot
+      }
+    )
+    assert_equal(core_props, wb_direct.core_properties)
+    assert_equal(app_props, wb_direct.app_properties)
+    assert_equal(custom_props, wb_direct.custom_properties)
+    assert_equal(wb_prot, wb_direct.workbook_protection)
+
+    wb_facade = Xlsxrb::Elements::Workbook.new(
+      sheets: [ws],
+      unmapped_data: {
+        facade: {
+          core_properties: core_props,
+          app_properties: app_props,
+          custom_properties: custom_props,
+          workbook_protection: wb_prot
+        }
+      }
+    )
+    assert_equal(core_props, wb_facade.core_properties)
+    assert_equal(app_props, wb_facade.app_properties)
+    assert_equal(custom_props, wb_facade.custom_properties)
+    assert_equal(wb_prot, wb_facade.workbook_protection)
+  end
+
   # --- Formula helper ---
 
   test "Xlsxrb.formula creates a Formula without cached value" do

@@ -404,6 +404,37 @@ module Xlsxrb
 
       wb_unmapped = {}
       wb_unmapped[:workbook_properties] = { date1904: true } if is_date1904
+
+      if workbook_xml&.include?("<workbookProtection")
+        prot_match = workbook_xml.match(%r{<workbookProtection\b([^>]*)/>})
+        if prot_match
+          prot = {}
+          prot[:lock_structure] = true if prot_match[1].include?('lockStructure="1"') || prot_match[1].include?('lockStructure="true"')
+          prot[:lock_windows] = true if prot_match[1].include?('lockWindows="1"') || prot_match[1].include?('lockWindows="true"')
+          wb_unmapped[:workbook_protection] = prot unless prot.empty?
+        end
+      end
+
+      core_xml = zip_reader.read_entry("docProps/core.xml")
+      if core_xml && !core_xml.empty?
+        c_listener = Ooxml::Reader::CorePropertiesListener.new
+        Ooxml::XmlParser.parse(core_xml, c_listener)
+        wb_unmapped[:core_properties] = c_listener.properties unless c_listener.properties.empty?
+      end
+
+      app_xml = zip_reader.read_entry("docProps/app.xml")
+      if app_xml && !app_xml.empty?
+        a_listener = Ooxml::Reader::AppPropertiesListener.new
+        Ooxml::XmlParser.parse(app_xml, a_listener)
+        wb_unmapped[:app_properties] = a_listener.properties unless a_listener.properties.empty?
+      end
+
+      custom_xml = zip_reader.read_entry("docProps/custom.xml")
+      if custom_xml && !custom_xml.empty?
+        cu_listener = Ooxml::Reader::CustomPropertiesListener.new
+        Ooxml::XmlParser.parse(custom_xml, cu_listener)
+        wb_unmapped[:custom_properties] = cu_listener.properties unless cu_listener.properties.empty?
+      end
       defined_names = wb_parsed[:defined_names] || []
       wb = Elements::Workbook.new(
         sheets: sheets,

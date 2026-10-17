@@ -1102,11 +1102,13 @@ module Xlsxrb
         @custom_properties.each_with_index do |prop, idx|
           b.open_tag("property", { fmtid: "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}", pid: (idx + 2).to_s, name: prop[:name] })
           case prop[:type]
-          when :number
+          when :number, :int, :i4
             b.tag("vt:i4") { |_| b.text(prop[:value].to_s) }
-          when :bool
+          when :float, :r8
+            b.tag("vt:r8") { |_| b.text(prop[:value].to_s) }
+          when :bool, :boolean
             b.tag("vt:bool") { |_| b.text(prop[:value] ? "true" : "false") }
-          when :date
+          when :date, :filetime
             b.tag("vt:filetime") { |_| b.text(prop[:value].to_s) }
           else
             b.tag("vt:lpwstr") { |_| b.text(prop[:value].to_s) }

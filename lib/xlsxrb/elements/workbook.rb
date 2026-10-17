@@ -72,6 +72,42 @@ module Xlsxrb
         props&.[](:date1904) ? true : false
       end
 
+      # Returns core document properties (e.g. title, creator, created), or an empty hash.
+      #
+      # @return [Hash<Symbol, untyped>]
+      # @api public
+      #: () -> Hash[Symbol, untyped]
+      def core_properties
+        unmapped_data[:core_properties] || unmapped_data.dig(:facade, :core_properties) || {}
+      end
+
+      # Returns application properties (e.g. app_name, doc_security), or an empty hash.
+      #
+      # @return [Hash<Symbol, untyped>]
+      # @api public
+      #: () -> Hash[Symbol, untyped]
+      def app_properties
+        unmapped_data[:app_properties] || unmapped_data.dig(:facade, :app_properties) || {}
+      end
+
+      # Returns custom document properties as an array of property hashes, or an empty array.
+      #
+      # @return [Array<Hash[Symbol, untyped]>]
+      # @api public
+      #: () -> Array[Hash[Symbol, untyped]]
+      def custom_properties
+        unmapped_data[:custom_properties] || unmapped_data.dig(:facade, :custom_properties) || []
+      end
+
+      # Returns workbook protection settings as a hash, or nil if unprotected.
+      #
+      # @return [Hash[Symbol, untyped], nil]
+      # @api public
+      #: () -> Hash[Symbol, untyped]?
+      def workbook_protection
+        unmapped_data[:workbook_protection] || unmapped_data.dig(:facade, :workbook_protection)
+      end
+
       # Returns the defined name matching name (and optionally sheet), or nil.
       #
       # @example

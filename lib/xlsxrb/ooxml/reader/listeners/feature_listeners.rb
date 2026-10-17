@@ -204,7 +204,7 @@ module Xlsxrb
         def start_element(_uri, local_name, qname, _attributes)
           name = element_name(local_name, qname)
           case name
-          when "Application", "AppVersion"
+          when "Application", "AppVersion", "Company", "Manager"
             @current_field = name
             @text_buffer = +""
           when "HeadingPairs"
@@ -231,6 +231,12 @@ module Xlsxrb
             @current_field = nil
           when "AppVersion"
             @properties[:app_version] = @text_buffer.dup
+            @current_field = nil
+          when "Company"
+            @properties[:company] = @text_buffer.dup
+            @current_field = nil
+          when "Manager"
+            @properties[:manager] = @text_buffer.dup
             @current_field = nil
           when "lpstr"
             if @inside_titles_of_parts

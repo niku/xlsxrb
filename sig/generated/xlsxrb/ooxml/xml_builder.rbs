@@ -46,6 +46,8 @@ module Xlsxrb
       # : (untyped value) -> String
       def self.escape: (untyped value) -> String
 
+      NUM_ENTITY_RE: ::Regexp
+
       # Unescapes predefined and numeric/hex XML entities in a string.
       #
       # @param value [Object]

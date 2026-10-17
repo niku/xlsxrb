@@ -715,7 +715,7 @@ module Xlsxrb
                        "<vt:i4>#{prop[:value]}</vt:i4>"
                      when :float, :r8
                        "<vt:r8>#{prop[:value]}</vt:r8>"
-                     when :bool
+                     when :bool, :boolean
                        "<vt:bool>#{prop[:value] ? "true" : "false"}</vt:bool>"
                      when :date, :filetime
                        "<vt:filetime>#{prop[:value]}</vt:filetime>"
