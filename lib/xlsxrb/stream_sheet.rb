@@ -314,7 +314,7 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, images: images, date1904: @date1904, dimension: dimension, trim_empty_rows: @trim_empty_rows, pad_empty_rows: @pad_empty_rows, pad_empty_cells: @pad_empty_cells)
+      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, images: images, date1904: @date1904, dimension: dimension, trim_empty_rows: @trim_empty_rows, pad_empty_rows: @pad_empty_rows, pad_empty_cells: @pad_empty_cells, merged_cells: merged_cells, auto_filter: auto_filter)
     end
     alias to_worksheet load
 

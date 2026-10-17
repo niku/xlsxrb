@@ -2484,6 +2484,36 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
+  test "Xlsxrb.read loads merged_cells and auto_filter onto Elements::Worksheet" do
+    Tempfile.create(["merge_filter_test", ".xlsx"]) do |f|
+      Xlsxrb.write(f.path) do |wb|
+        wb.sheet("Sales") do |s|
+          s.row(%w[Header1 Header2 Header3])
+          s.row([1, 2, 3])
+          s.merge("A1:B1")
+          s.auto_filter("A1:C2")
+        end
+      end
+
+      # StreamSheet
+      stream_wb = Xlsxrb.read(f.path)
+      stream_sheet = stream_wb.sheet(0)
+      assert_equal(["A1:B1"], stream_sheet.merged_cells)
+      assert_equal("A1:C2", stream_sheet.auto_filter)
+
+      # Elements::Worksheet via load
+      loaded_ws = stream_sheet.load
+      assert_kind_of(Xlsxrb::Elements::Worksheet, loaded_ws)
+      assert_equal(["A1:B1"], loaded_ws.merged_cells)
+      assert_equal("A1:C2", loaded_ws.auto_filter)
+
+      # Elements::Workbook via load
+      loaded_wb = stream_wb.load
+      assert_equal(["A1:B1"], loaded_wb.sheet(0).merged_cells)
+      assert_equal("A1:C2", loaded_wb.sheet(0).auto_filter)
+    end
+  end
+
   test "Xlsxrb top-level date and time serial conversion utilities" do
     d = Date.new(2026, 1, 1)
     s = Xlsxrb.date_to_serial(d)

@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups, :merged_cells, :auto_filter
       attr_writer :dimension
       alias conditional_formats conditional_formatting
 
@@ -42,8 +42,10 @@ module Xlsxrb
       # @param print_area [String, nil] Sheet print area range (e.g. "A1:H50").
       # @param print_titles [Hash, nil] Repeating print title rows/cols (e.g. { rows: "1:2", cols: "A:B" }).
       # @param sparkline_groups [Array<Hash>] Sparkline groups in the sheet.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]]) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [])
+      # @param merged_cells [Array<String>] Merged cell ranges (e.g. ["A1:B2"]).
+      # @param auto_filter [String, nil] AutoFilter range (e.g. "A1:E10").
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -67,6 +69,8 @@ module Xlsxrb
         @trim_empty_rows = trim_empty_rows ? true : false
         @pad_empty_rows = pad_empty_rows ? true : false
         @pad_empty_cells = pad_empty_cells ? true : false
+        @merged_cells = (merged_cells || []).freeze
+        @auto_filter = auto_filter
       end
 
       # Returns whether trailing empty rows are omitted during iteration.
@@ -488,6 +492,8 @@ module Xlsxrb
         new_print_titles = changes.key?(:print_titles) ? changes[:print_titles] : print_titles
         new_sparklines = changes.key?(:sparkline_groups) ? changes[:sparkline_groups] : sparkline_groups
         new_trim = changes.key?(:trim_empty_rows) ? changes[:trim_empty_rows] : @trim_empty_rows
+        new_merged = changes.key?(:merged_cells) ? changes[:merged_cells] : merged_cells
+        new_auto_filter = changes.key?(:auto_filter) ? changes[:auto_filter] : auto_filter
 
         self.class.new(
           name: new_name,
@@ -507,7 +513,9 @@ module Xlsxrb
           print_area: new_print_area,
           print_titles: new_print_titles,
           sparkline_groups: new_sparklines,
-          trim_empty_rows: new_trim
+          trim_empty_rows: new_trim,
+          merged_cells: new_merged,
+          auto_filter: new_auto_filter
         )
       end
 
@@ -533,7 +541,9 @@ module Xlsxrb
           print_area: print_area,
           print_titles: print_titles,
           sparkline_groups: sparkline_groups,
-          trim_empty_rows: @trim_empty_rows
+          trim_empty_rows: @trim_empty_rows,
+          merged_cells: merged_cells,
+          auto_filter: auto_filter
         }
       end
 
@@ -544,13 +554,14 @@ module Xlsxrb
 
         name == other.name && rows == other.rows && columns == other.columns && charts == other.charts &&
           conditional_formatting == other.conditional_formatting && data_validations == other.data_validations &&
-          state == other.state && hyperlinks == other.hyperlinks && comments == other.comments
+          state == other.state && hyperlinks == other.hyperlinks && comments == other.comments &&
+          merged_cells == other.merged_cells && auto_filter == other.auto_filter
       end
       alias eql? ==
 
       #: () -> Integer
       def hash
-        [self.class, name, rows, columns, charts, conditional_formatting, data_validations, state, hyperlinks, comments].hash
+        [self.class, name, rows, columns, charts, conditional_formatting, data_validations, state, hyperlinks, comments, merged_cells, auto_filter].hash
       end
 
       # Returns self when load is called on an already in-memory Worksheet.

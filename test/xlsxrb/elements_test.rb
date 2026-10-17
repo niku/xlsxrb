@@ -946,6 +946,36 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(ws_hidden.hash, same_hidden.hash)
   end
 
+  test "worksheet handles merged_cells and auto_filter" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "MergedSheet", merged_cells: ["A1:B2"], auto_filter: "A1:E10")
+    assert_equal(["A1:B2"], ws.merged_cells)
+    assert_equal("A1:E10", ws.auto_filter)
+
+    ws_empty = Xlsxrb::Elements::Worksheet.new(name: "EmptySheet")
+    assert_equal([], ws_empty.merged_cells)
+    assert_nil(ws_empty.auto_filter)
+
+    # with
+    ws_updated = ws_empty.with(merged_cells: ["C1:D3"], auto_filter: "B2:F20")
+    assert_equal(["C1:D3"], ws_updated.merged_cells)
+    assert_equal("B2:F20", ws_updated.auto_filter)
+
+    # deconstruct_keys
+    keys = ws.deconstruct_keys(nil)
+    assert_equal(["A1:B2"], keys[:merged_cells])
+    assert_equal("A1:E10", keys[:auto_filter])
+
+    # == and hash
+    same_ws = Xlsxrb::Elements::Worksheet.new(name: "MergedSheet", merged_cells: ["A1:B2"], auto_filter: "A1:E10")
+    diff_merge = Xlsxrb::Elements::Worksheet.new(name: "MergedSheet", merged_cells: ["A1:C3"], auto_filter: "A1:E10")
+    diff_filter = Xlsxrb::Elements::Worksheet.new(name: "MergedSheet", merged_cells: ["A1:B2"], auto_filter: "A1:G10")
+
+    assert_equal(ws, same_ws)
+    assert_equal(ws.hash, same_ws.hash)
+    refute_equal(ws, diff_merge)
+    refute_equal(ws, diff_filter)
+  end
+
   # --- Workbook ---
 
   test "workbook creates a valid workbook" do

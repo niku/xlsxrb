@@ -827,10 +827,10 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
-      return Elements::Worksheet.new(name: name, state: state, styles: styles, images: images || [], date1904: date1904, dimension: sheet_dimension, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells) if sheet_xml.nil? || sheet_xml.empty?
+      return Elements::Worksheet.new(name: name, state: state, styles: styles, images: images || [], date1904: date1904, dimension: sheet_dimension, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells, merged_cells: merged_cells || [], auto_filter: auto_filter) if sheet_xml.nil? || sheet_xml.empty?
 
       sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
       sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
@@ -870,6 +870,20 @@ module Xlsxrb
               []
             end
 
+      sheet_merged_cells = merged_cells || if sheet_xml.include?("<mergeCell")
+                                             listener = Ooxml::Reader::MergeCellsListener.new
+                                             Ooxml::XmlParser.parse(sheet_xml, listener)
+                                             listener.ranges
+                                           else
+                                             []
+                                           end
+
+      sheet_auto_filter = auto_filter || if sheet_xml.include?("<autoFilter")
+                                           listener = Ooxml::Reader::AutoFilterListener.new
+                                           Ooxml::XmlParser.parse(sheet_xml, listener)
+                                           listener.ref
+                                         end
+
       Elements::Worksheet.new(
         name: name,
         rows: rows,
@@ -885,7 +899,9 @@ module Xlsxrb
         dimension: sheet_dimension,
         trim_empty_rows: trim_empty_rows,
         pad_empty_rows: pad_empty_rows,
-        pad_empty_cells: pad_empty_cells
+        pad_empty_cells: pad_empty_cells,
+        merged_cells: sheet_merged_cells,
+        auto_filter: sheet_auto_filter
       )
     end
 
