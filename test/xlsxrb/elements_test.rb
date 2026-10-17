@@ -976,6 +976,91 @@ class ElementsTest < Test::Unit::TestCase
     refute_equal(ws, diff_filter)
   end
 
+  test "worksheet handles sheet structure, print, and view metadata" do
+    tables = [{ id: 1, name: "Table1", ref: "A1:C10" }]
+    shapes = [{ name: "Box", id: 2 }]
+    freeze = { row: 1, col: 0 }
+    page_setup = { orientation: "landscape" }
+    page_margins = { left: 0.7, right: 0.7 }
+    header_footer = { odd_header: "Header" }
+    print_options = { grid_lines: true }
+    protection = { sheet: true }
+    view = { show_grid_lines: false }
+    props = { tab_color: "FFFF0000" }
+    row_brks = [10]
+    col_brks = [5]
+
+    ws = Xlsxrb::Elements::Worksheet.new(
+      name: "StructSheet",
+      tables: tables,
+      shapes: shapes,
+      freeze_pane: freeze,
+      page_setup: page_setup,
+      page_margins: page_margins,
+      header_footer: header_footer,
+      print_options: print_options,
+      sheet_protection: protection,
+      sheet_view: view,
+      sheet_properties: props,
+      row_breaks: row_brks,
+      col_breaks: col_brks
+    )
+
+    assert_equal(tables, ws.tables)
+    assert_equal(shapes, ws.shapes)
+    assert_equal(freeze, ws.freeze_pane)
+    assert_equal(page_setup, ws.page_setup)
+    assert_equal(page_margins, ws.page_margins)
+    assert_equal(header_footer, ws.header_footer)
+    assert_equal(print_options, ws.print_options)
+    assert_equal(protection, ws.sheet_protection)
+    assert_equal(view, ws.sheet_view)
+    assert_equal(props, ws.sheet_properties)
+    assert_equal(row_brks, ws.row_breaks)
+    assert_equal(col_brks, ws.col_breaks)
+
+    # Defaults on empty worksheet
+    ws_empty = Xlsxrb::Elements::Worksheet.new(name: "EmptyStruct")
+    assert_equal([], ws_empty.tables)
+    assert_equal([], ws_empty.shapes)
+    assert_nil(ws_empty.freeze_pane)
+    assert_equal({}, ws_empty.page_setup)
+    assert_nil(ws_empty.page_margins)
+    assert_equal({}, ws_empty.header_footer)
+    assert_equal({}, ws_empty.print_options)
+    assert_nil(ws_empty.sheet_protection)
+    assert_equal({}, ws_empty.sheet_view)
+    assert_equal({}, ws_empty.sheet_properties)
+    assert_equal([], ws_empty.row_breaks)
+    assert_equal([], ws_empty.col_breaks)
+
+    # with
+    ws_updated = ws_empty.with(freeze_pane: { row: 2, col: 1 }, sheet_properties: { tab_color: "00FF00" })
+    assert_equal({ row: 2, col: 1 }, ws_updated.freeze_pane)
+    assert_equal({ tab_color: "00FF00" }, ws_updated.sheet_properties)
+
+    # deconstruct_keys
+    keys = ws.deconstruct_keys(nil)
+    assert_equal(tables, keys[:tables])
+    assert_equal(freeze, keys[:freeze_pane])
+    assert_equal(page_setup, keys[:page_setup])
+
+    # == and hash
+    same_ws = Xlsxrb::Elements::Worksheet.new(
+      name: "StructSheet",
+      tables: tables, shapes: shapes, freeze_pane: freeze,
+      page_setup: page_setup, page_margins: page_margins,
+      header_footer: header_footer, print_options: print_options,
+      sheet_protection: protection, sheet_view: view,
+      sheet_properties: props, row_breaks: row_brks, col_breaks: col_brks
+    )
+    diff_ws = ws.with(freeze_pane: nil)
+
+    assert_equal(ws, same_ws)
+    assert_equal(ws.hash, same_ws.hash)
+    refute_equal(ws, diff_ws)
+  end
+
   # --- Workbook ---
 
   test "workbook creates a valid workbook" do

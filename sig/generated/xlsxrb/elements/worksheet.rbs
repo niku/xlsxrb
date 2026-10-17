@@ -51,6 +51,30 @@ module Xlsxrb
 
       attr_reader auto_filter: untyped
 
+      attr_reader tables: untyped
+
+      attr_reader shapes: untyped
+
+      attr_reader freeze_pane: untyped
+
+      attr_reader page_setup: untyped
+
+      attr_reader page_margins: untyped
+
+      attr_reader header_footer: untyped
+
+      attr_reader print_options: untyped
+
+      attr_reader sheet_protection: untyped
+
+      attr_reader sheet_view: untyped
+
+      attr_reader sheet_properties: untyped
+
+      attr_reader row_breaks: untyped
+
+      attr_reader col_breaks: untyped
+
       attr_writer dimension: untyped
 
       alias conditional_formats conditional_formatting
@@ -78,8 +102,20 @@ module Xlsxrb
       # @param sparkline_groups [Array<Hash>] Sparkline groups in the sheet.
       # @param merged_cells [Array<String>] Merged cell ranges (e.g. ["A1:B2"]).
       # @param auto_filter [String, nil] AutoFilter range (e.g. "A1:E10").
-      # : (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?) -> void
-      def initialize: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?) -> void
+      # @param tables [Array<Hash>] Table definitions in the sheet.
+      # @param shapes [Array<Hash>] Shape definitions in the sheet.
+      # @param freeze_pane [Hash, nil] Freeze pane settings (e.g. { row: 1, col: 0 }).
+      # @param page_setup [Hash] Page setup properties (e.g. orientation, paper size).
+      # @param page_margins [Hash, nil] Page margins settings.
+      # @param header_footer [Hash] Header and footer configurations.
+      # @param print_options [Hash] Print options (e.g. gridlines, headings).
+      # @param sheet_protection [Hash, nil] Sheet protection settings.
+      # @param sheet_view [Hash] Sheet view configurations (e.g. zoom, gridlines).
+      # @param sheet_properties [Hash] Sheet properties (e.g. tabColor, outlinePr).
+      # @param row_breaks [Array<Integer | Hash>] Explicit page row breaks.
+      # @param col_breaks [Array<Integer | Hash>] Explicit page column breaks.
+      # : (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]], ?shapes: Array[Hash[Symbol, untyped]], ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped], ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped], ?print_options: Hash[Symbol, untyped], ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped], ?sheet_properties: Hash[Symbol, untyped], ?row_breaks: Array[untyped], ?col_breaks: Array[untyped]) -> void
+      def initialize: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]], ?shapes: Array[Hash[Symbol, untyped]], ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped], ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped], ?print_options: Hash[Symbol, untyped], ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped], ?sheet_properties: Hash[Symbol, untyped], ?row_breaks: Array[untyped], ?col_breaks: Array[untyped]) -> void
 
       # Returns whether trailing empty rows are omitted during iteration.
       #

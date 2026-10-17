@@ -96,6 +96,57 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(["50"], sheet.conditional_formats.first[:formulas])
   end
 
+  test "stream_sheet structure metadata: freeze_pane, sheet_view, sheet_properties, sheet_protection, page_setup, page_margins, header_footer, print_options, breaks" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetPr>
+          <tabColor rgb="FFFF0000"/>
+        </sheetPr>
+        <sheetViews>
+          <sheetView showGridLines="0" zoomScale="125">
+            <pane ySplit="1" xSplit="2" state="frozen"/>
+          </sheetView>
+        </sheetViews>
+        <sheetProtection sheet="1"/>
+        <sheetData/>
+        <printOptions gridLines="1" headings="1"/>
+        <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
+        <pageSetup orientation="landscape" paperSize="9"/>
+        <headerFooter>
+          <oddHeader>&amp;CHeader</oddHeader>
+        </headerFooter>
+        <rowBreaks count="1"><brk id="10" max="16383" man="1"/></rowBreaks>
+        <colBreaks count="1"><brk id="5" max="1048575" man="1"/></colBreaks>
+      </worksheet>
+    XML
+
+    sheet = Xlsxrb::StreamSheet.new("Structure", xml.b, [])
+
+    assert_equal({ tab_color: "FFFF0000" }, sheet.sheet_properties)
+    assert_equal({ show_grid_lines: false, zoom_scale: 125 }, sheet.sheet_view)
+    assert_equal({ row: 1, col: 2, state: :frozen }, sheet.freeze_pane)
+    assert_equal({ sheet: true }, sheet.sheet_protection)
+    assert_equal({ grid_lines: true, headings: true }, sheet.print_options)
+    assert_equal({ left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 }, sheet.page_margins)
+    assert_equal({ orientation: "landscape", paper_size: 9 }, sheet.page_setup)
+    assert_equal({ odd_header: "&CHeader" }, sheet.header_footer)
+    assert_equal([{ id: 10, max: 16_383, man: true }], sheet.row_breaks)
+    assert_equal([{ id: 5, max: 1_048_575, man: true }], sheet.col_breaks)
+
+    # Propagation to Elements::Worksheet via load
+    ws = sheet.load
+    assert_equal(sheet.sheet_properties, ws.sheet_properties)
+    assert_equal(sheet.sheet_view, ws.sheet_view)
+    assert_equal(sheet.freeze_pane, ws.freeze_pane)
+    assert_equal(sheet.sheet_protection, ws.sheet_protection)
+    assert_equal(sheet.print_options, ws.print_options)
+    assert_equal(sheet.page_margins, ws.page_margins)
+    assert_equal(sheet.page_setup, ws.page_setup)
+    assert_equal(sheet.header_footer, ws.header_footer)
+    assert_equal(sheet.row_breaks, ws.row_breaks)
+    assert_equal(sheet.col_breaks, ws.col_breaks)
+  end
+
   test "stream_sheet visibility state and propagation to in-memory Worksheet on load" do
     xml = <<~XML
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">

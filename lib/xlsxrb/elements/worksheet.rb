@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups, :merged_cells, :auto_filter
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups, :merged_cells, :auto_filter, :tables, :shapes, :freeze_pane, :page_setup, :page_margins, :header_footer, :print_options, :sheet_protection, :sheet_view, :sheet_properties, :row_breaks, :col_breaks
       attr_writer :dimension
       alias conditional_formats conditional_formatting
 
@@ -44,8 +44,20 @@ module Xlsxrb
       # @param sparkline_groups [Array<Hash>] Sparkline groups in the sheet.
       # @param merged_cells [Array<String>] Merged cell ranges (e.g. ["A1:B2"]).
       # @param auto_filter [String, nil] AutoFilter range (e.g. "A1:E10").
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil)
+      # @param tables [Array<Hash>] Table definitions in the sheet.
+      # @param shapes [Array<Hash>] Shape definitions in the sheet.
+      # @param freeze_pane [Hash, nil] Freeze pane settings (e.g. { row: 1, col: 0 }).
+      # @param page_setup [Hash] Page setup properties (e.g. orientation, paper size).
+      # @param page_margins [Hash, nil] Page margins settings.
+      # @param header_footer [Hash] Header and footer configurations.
+      # @param print_options [Hash] Print options (e.g. gridlines, headings).
+      # @param sheet_protection [Hash, nil] Sheet protection settings.
+      # @param sheet_view [Hash] Sheet view configurations (e.g. zoom, gridlines).
+      # @param sheet_properties [Hash] Sheet properties (e.g. tabColor, outlinePr).
+      # @param row_breaks [Array<Integer | Hash>] Explicit page row breaks.
+      # @param col_breaks [Array<Integer | Hash>] Explicit page column breaks.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, Hash[Symbol, untyped]], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]], ?shapes: Array[Hash[Symbol, untyped]], ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped], ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped], ?print_options: Hash[Symbol, untyped], ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped], ?sheet_properties: Hash[Symbol, untyped], ?row_breaks: Array[untyped], ?col_breaks: Array[untyped]) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil, tables: [], shapes: [], freeze_pane: nil, page_setup: {}, page_margins: nil, header_footer: {}, print_options: {}, sheet_protection: nil, sheet_view: {}, sheet_properties: {}, row_breaks: [], col_breaks: [])
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -71,6 +83,18 @@ module Xlsxrb
         @pad_empty_cells = pad_empty_cells ? true : false
         @merged_cells = (merged_cells || []).freeze
         @auto_filter = auto_filter
+        @tables = (tables || []).freeze
+        @shapes = (shapes || []).freeze
+        @freeze_pane = freeze_pane&.freeze
+        @page_setup = (page_setup || {}).freeze
+        @page_margins = page_margins&.freeze
+        @header_footer = (header_footer || {}).freeze
+        @print_options = (print_options || {}).freeze
+        @sheet_protection = sheet_protection&.freeze
+        @sheet_view = (sheet_view || {}).freeze
+        @sheet_properties = (sheet_properties || {}).freeze
+        @row_breaks = (row_breaks || []).freeze
+        @col_breaks = (col_breaks || []).freeze
       end
 
       # Returns whether trailing empty rows are omitted during iteration.
@@ -494,6 +518,18 @@ module Xlsxrb
         new_trim = changes.key?(:trim_empty_rows) ? changes[:trim_empty_rows] : @trim_empty_rows
         new_merged = changes.key?(:merged_cells) ? changes[:merged_cells] : merged_cells
         new_auto_filter = changes.key?(:auto_filter) ? changes[:auto_filter] : auto_filter
+        new_tables = changes.key?(:tables) ? changes[:tables] : tables
+        new_shapes = changes.key?(:shapes) ? changes[:shapes] : shapes
+        new_freeze_pane = changes.key?(:freeze_pane) ? changes[:freeze_pane] : freeze_pane
+        new_page_setup = changes.key?(:page_setup) ? changes[:page_setup] : page_setup
+        new_page_margins = changes.key?(:page_margins) ? changes[:page_margins] : page_margins
+        new_header_footer = changes.key?(:header_footer) ? changes[:header_footer] : header_footer
+        new_print_options = changes.key?(:print_options) ? changes[:print_options] : print_options
+        new_sheet_protection = changes.key?(:sheet_protection) ? changes[:sheet_protection] : sheet_protection
+        new_sheet_view = changes.key?(:sheet_view) ? changes[:sheet_view] : sheet_view
+        new_sheet_properties = changes.key?(:sheet_properties) ? changes[:sheet_properties] : sheet_properties
+        new_row_breaks = changes.key?(:row_breaks) ? changes[:row_breaks] : row_breaks
+        new_col_breaks = changes.key?(:col_breaks) ? changes[:col_breaks] : col_breaks
 
         self.class.new(
           name: new_name,
@@ -515,7 +551,19 @@ module Xlsxrb
           sparkline_groups: new_sparklines,
           trim_empty_rows: new_trim,
           merged_cells: new_merged,
-          auto_filter: new_auto_filter
+          auto_filter: new_auto_filter,
+          tables: new_tables,
+          shapes: new_shapes,
+          freeze_pane: new_freeze_pane,
+          page_setup: new_page_setup,
+          page_margins: new_page_margins,
+          header_footer: new_header_footer,
+          print_options: new_print_options,
+          sheet_protection: new_sheet_protection,
+          sheet_view: new_sheet_view,
+          sheet_properties: new_sheet_properties,
+          row_breaks: new_row_breaks,
+          col_breaks: new_col_breaks
         )
       end
 
@@ -543,7 +591,19 @@ module Xlsxrb
           sparkline_groups: sparkline_groups,
           trim_empty_rows: @trim_empty_rows,
           merged_cells: merged_cells,
-          auto_filter: auto_filter
+          auto_filter: auto_filter,
+          tables: tables,
+          shapes: shapes,
+          freeze_pane: freeze_pane,
+          page_setup: page_setup,
+          page_margins: page_margins,
+          header_footer: header_footer,
+          print_options: print_options,
+          sheet_protection: sheet_protection,
+          sheet_view: sheet_view,
+          sheet_properties: sheet_properties,
+          row_breaks: row_breaks,
+          col_breaks: col_breaks
         }
       end
 
@@ -555,13 +615,23 @@ module Xlsxrb
         name == other.name && rows == other.rows && columns == other.columns && charts == other.charts &&
           conditional_formatting == other.conditional_formatting && data_validations == other.data_validations &&
           state == other.state && hyperlinks == other.hyperlinks && comments == other.comments &&
-          merged_cells == other.merged_cells && auto_filter == other.auto_filter
+          merged_cells == other.merged_cells && auto_filter == other.auto_filter &&
+          tables == other.tables && shapes == other.shapes && freeze_pane == other.freeze_pane &&
+          page_setup == other.page_setup && page_margins == other.page_margins &&
+          header_footer == other.header_footer && print_options == other.print_options &&
+          sheet_protection == other.sheet_protection && sheet_view == other.sheet_view &&
+          sheet_properties == other.sheet_properties && row_breaks == other.row_breaks && col_breaks == other.col_breaks
       end
       alias eql? ==
 
       #: () -> Integer
       def hash
-        [self.class, name, rows, columns, charts, conditional_formatting, data_validations, state, hyperlinks, comments, merged_cells, auto_filter].hash
+        [
+          self.class, name, rows, columns, charts, conditional_formatting, data_validations,
+          state, hyperlinks, comments, merged_cells, auto_filter, tables, shapes, freeze_pane,
+          page_setup, page_margins, header_footer, print_options, sheet_protection, sheet_view,
+          sheet_properties, row_breaks, col_breaks
+        ].hash
       end
 
       # Returns self when load is called on an already in-memory Worksheet.

@@ -828,7 +828,21 @@ module Xlsxrb
         comments: @comments,
         print_area: @print_area,
         print_titles: @print_titles,
-        sparkline_groups: @sparkline_groups
+        sparkline_groups: @sparkline_groups,
+        merged_cells: @merge_cells_ranges,
+        auto_filter: @auto_filter,
+        tables: @tables,
+        shapes: @shapes,
+        freeze_pane: @freeze_pane,
+        page_setup: @page_setup,
+        page_margins: @page_margins,
+        header_footer: @header_footer,
+        print_options: @print_options,
+        sheet_protection: @sheet_protection,
+        sheet_view: @sheet_view,
+        sheet_properties: @sheet_properties,
+        row_breaks: @row_breaks,
+        col_breaks: @col_breaks
       )
     end
 

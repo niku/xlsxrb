@@ -827,10 +827,20 @@ module Xlsxrb
   class << self
     private
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, Hash[Symbol, untyped]]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, row_breaks: nil, col_breaks: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
-      return Elements::Worksheet.new(name: name, state: state, styles: styles, images: images || [], date1904: date1904, dimension: sheet_dimension, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells, merged_cells: merged_cells || [], auto_filter: auto_filter) if sheet_xml.nil? || sheet_xml.empty?
+      if sheet_xml.nil? || sheet_xml.empty?
+        return Elements::Worksheet.new(
+          name: name, state: state, styles: styles, images: images || [], date1904: date1904,
+          dimension: sheet_dimension, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells,
+          merged_cells: merged_cells || [], auto_filter: auto_filter,
+          tables: tables || [], shapes: shapes || [], freeze_pane: freeze_pane,
+          page_setup: page_setup || {}, page_margins: page_margins, header_footer: header_footer || {},
+          print_options: print_options || {}, sheet_protection: sheet_protection, sheet_view: sheet_view || {},
+          sheet_properties: sheet_properties || {}, row_breaks: row_breaks || [], col_breaks: col_breaks || []
+        )
+      end
 
       sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
       sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
@@ -884,6 +894,56 @@ module Xlsxrb
                                            listener.ref
                                          end
 
+      sheet_tables = tables || resolve_tables(zip_reader: zip_reader, entry_name: entry_name)
+      sheet_shapes = shapes || resolve_shapes(zip_reader: zip_reader, entry_name: entry_name)
+
+      sheet_view_data = if freeze_pane.nil? || sheet_view.nil?
+                          if sheet_xml.include?("<sheetView")
+                            v_listener = Ooxml::Reader::SheetViewListener.new
+                            Ooxml::XmlParser.parse(sheet_xml, v_listener)
+                            { view: v_listener.view, pane: v_listener.pane }
+                          else
+                            { view: {}, pane: nil }
+                          end
+                        else
+                          { view: sheet_view, pane: freeze_pane }
+                        end
+      sheet_freeze_pane = freeze_pane || sheet_view_data[:pane]
+      sheet_view_val = sheet_view || sheet_view_data[:view] || {}
+
+      sheet_prot = sheet_protection || if sheet_xml.include?("<sheetProtection")
+                                         prot_listener = Ooxml::Reader::SheetProtectionListener.new
+                                         Ooxml::XmlParser.parse(sheet_xml, prot_listener)
+                                         prot_listener.protection
+                                       end
+
+      sheet_props = sheet_properties || if sheet_xml.include?("<sheetPr")
+                                          pr_listener = Ooxml::Reader::SheetPropertiesListener.new
+                                          Ooxml::XmlParser.parse(sheet_xml, pr_listener)
+                                          pr_listener.properties
+                                        else
+                                          {}
+                                        end
+
+      print_data = if page_setup.nil? || page_margins.nil? || header_footer.nil? || print_options.nil? || row_breaks.nil? || col_breaks.nil?
+                     if sheet_xml.match?(/<(?:pageSetup|pageMargins|headerFooter|printOptions|rowBreaks|colBreaks)\b/)
+                       pg_listener = Ooxml::Reader::PrintPageListener.new
+                       Ooxml::XmlParser.parse(sheet_xml, pg_listener)
+                       {
+                         page_margins: pg_listener.page_margins,
+                         page_setup: pg_listener.page_setup,
+                         header_footer: pg_listener.header_footer,
+                         print_options: pg_listener.print_options,
+                         row_breaks: pg_listener.row_breaks,
+                         col_breaks: pg_listener.col_breaks
+                       }
+                     else
+                       { page_margins: nil, page_setup: {}, header_footer: {}, print_options: {}, row_breaks: [], col_breaks: [] }
+                     end
+                   else
+                     { page_margins: page_margins, page_setup: page_setup, header_footer: header_footer, print_options: print_options, row_breaks: row_breaks, col_breaks: col_breaks }
+                   end
+
       Elements::Worksheet.new(
         name: name,
         rows: rows,
@@ -901,7 +961,19 @@ module Xlsxrb
         pad_empty_rows: pad_empty_rows,
         pad_empty_cells: pad_empty_cells,
         merged_cells: sheet_merged_cells,
-        auto_filter: sheet_auto_filter
+        auto_filter: sheet_auto_filter,
+        tables: sheet_tables,
+        shapes: sheet_shapes,
+        freeze_pane: sheet_freeze_pane,
+        page_setup: page_setup || print_data[:page_setup] || {},
+        page_margins: page_margins || print_data[:page_margins],
+        header_footer: header_footer || print_data[:header_footer] || {},
+        print_options: print_options || print_data[:print_options] || {},
+        sheet_protection: sheet_prot,
+        sheet_view: sheet_view_val,
+        sheet_properties: sheet_props,
+        row_breaks: row_breaks || print_data[:row_breaks] || [],
+        col_breaks: col_breaks || print_data[:col_breaks] || []
       )
     end
 
@@ -1052,6 +1124,64 @@ module Xlsxrb
           unmapped_data: raw_img
         )
       end
+    end
+
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
+    def resolve_tables(zip_reader: nil, entry_name: nil)
+      return [] unless zip_reader && entry_name
+
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = Ooxml::Reader::RelsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      table_rels = listener.relationships.select { |r| r[:type]&.end_with?("/table") }
+      return [] if table_rels.empty?
+
+      base_dir = File.dirname(entry_name)
+      table_rels.filter_map do |rel|
+        tbl_path = resolve_relative_path(base_dir, rel[:target])
+        tbl_xml = zip_reader.read_entry(tbl_path)
+        next if tbl_xml.nil? || tbl_xml.empty?
+
+        t_parser = REXML::Parsers::SAX2Parser.new(tbl_xml)
+        t_listener = Ooxml::Reader::TableListener.new
+        t_parser.listen(t_listener)
+        t_parser.parse
+        t_listener.table
+      end
+    end
+
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
+    def resolve_shapes(zip_reader: nil, entry_name: nil)
+      return [] unless zip_reader && entry_name
+
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = Ooxml::Reader::RelsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      drawing_rel = listener.relationships.find { |r| r[:type]&.end_with?("/drawing") }
+      return [] unless drawing_rel
+
+      base_dir = File.dirname(entry_name)
+      drawing_path = resolve_relative_path(base_dir, drawing_rel[:target])
+      drawing_xml = zip_reader.read_entry(drawing_path)
+      return [] if drawing_xml.nil? || drawing_xml.empty?
+
+      d_parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+      d_listener = Ooxml::Reader::DrawingShapesListener.new
+      d_parser.listen(d_listener)
+      d_parser.parse
+      d_listener.shapes
     end
 
     #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool) -> (Elements::Row | untyped)

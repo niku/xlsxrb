@@ -1506,9 +1506,10 @@ class PublicApiTest < Test::Unit::TestCase
         s.shape(preset: "rect", text: "Hi")
       end
     end
-    shapes = wb.sheet(0).unmapped_data.dig(:facade, :shapes)
+    shapes = wb.sheet(0).shapes
     assert_equal "rect", shapes.first[:preset]
     assert_equal "Hi", shapes.first[:text]
+    assert_equal shapes, wb.sheet(0).unmapped_data.dig(:facade, :shapes)
   end
 
   test "WorksheetBuilder#table captures values" do
@@ -1517,8 +1518,9 @@ class PublicApiTest < Test::Unit::TestCase
         s.table("A1:B10", columns: [], name: "Table1")
       end
     end
-    tables = wb.sheet(0).unmapped_data.dig(:facade, :tables)
+    tables = wb.sheet(0).tables
     assert_equal "Table1", tables.first[:name]
+    assert_equal tables, wb.sheet(0).unmapped_data.dig(:facade, :tables)
   end
 
   test "WorkbookBuilder#custom_property captures values" do

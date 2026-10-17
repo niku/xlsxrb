@@ -353,13 +353,102 @@ module Xlsxrb
     # : () -> Array[Hash[Symbol, untyped]]
     def conditional_formats: () -> Array[Hash[Symbol, untyped]]
 
+    # Returns tables defined in this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Array[Hash[Symbol, untyped]]
+    def tables: () -> Array[Hash[Symbol, untyped]]
+
+    # Returns shapes defined in this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Array[Hash[Symbol, untyped]]
+    def shapes: () -> Array[Hash[Symbol, untyped]]
+
+    # Returns freeze pane settings for this worksheet, or nil if none.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    # : () -> Hash[Symbol, untyped]?
+    def freeze_pane: () -> Hash[Symbol, untyped]?
+
+    # Returns sheet view properties for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    # : () -> Hash[Symbol, untyped]
+    def sheet_view: () -> Hash[Symbol, untyped]
+
+    # Returns sheet protection settings as a hash, or nil if unprotected.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    # : () -> Hash[Symbol, untyped]?
+    def sheet_protection: () -> Hash[Symbol, untyped]?
+
+    # Returns sheet-level properties (tabColor, outlinePr) for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    # : () -> Hash[Symbol, untyped]
+    def sheet_properties: () -> Hash[Symbol, untyped]
+
+    # Returns page setup configurations for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    # : () -> Hash[Symbol, untyped]
+    def page_setup: () -> Hash[Symbol, untyped]
+
+    # Returns page margins for this worksheet, or nil if none.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    # : () -> Hash[Symbol, untyped]?
+    def page_margins: () -> Hash[Symbol, untyped]?
+
+    # Returns header/footer configurations for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    # : () -> Hash[Symbol, untyped]
+    def header_footer: () -> Hash[Symbol, untyped]
+
+    # Returns print options for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    # : () -> Hash[Symbol, untyped]
+    def print_options: () -> Hash[Symbol, untyped]
+
+    # Returns explicit row page breaks for this worksheet.
+    #
+    # @return [Array<untyped>]
+    # @api public
+    # : () -> Array[untyped]
+    def row_breaks: () -> Array[untyped]
+
+    # Returns explicit column page breaks for this worksheet.
+    #
+    # @return [Array<untyped>]
+    # @api public
+    # : () -> Array[untyped]
+    def col_breaks: () -> Array[untyped]
+
     # Closes any underlying reader resources.
     # : () -> void
     def close: () -> void
 
     private
 
-    # Returns the full raw XML string for this worksheet, loaded on demand.
+    # : () -> Hash[Symbol, untyped]
+    def sheet_view_data: () -> Hash[Symbol, untyped]
+
+    # : () -> Hash[Symbol, untyped]
+    def print_page_data: () -> Hash[Symbol, untyped]
+
     # : () -> String
     def raw_sheet_xml: () -> String
 

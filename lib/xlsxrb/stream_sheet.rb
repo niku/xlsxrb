@@ -314,7 +314,38 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Worksheet
     def load
-      Xlsxrb.send(:build_worksheet, @name, raw_sheet_xml, @shared_strings, @styles, state: @state, zip_reader: @zip_reader, entry_name: @entry_name, hyperlinks: hyperlinks, comments: comments, images: images, date1904: @date1904, dimension: dimension, trim_empty_rows: @trim_empty_rows, pad_empty_rows: @pad_empty_rows, pad_empty_cells: @pad_empty_cells, merged_cells: merged_cells, auto_filter: auto_filter)
+      Xlsxrb.send(
+        :build_worksheet,
+        @name,
+        raw_sheet_xml,
+        @shared_strings,
+        @styles,
+        state: @state,
+        zip_reader: @zip_reader,
+        entry_name: @entry_name,
+        hyperlinks: hyperlinks,
+        comments: comments,
+        images: images,
+        date1904: @date1904,
+        dimension: dimension,
+        trim_empty_rows: @trim_empty_rows,
+        pad_empty_rows: @pad_empty_rows,
+        pad_empty_cells: @pad_empty_cells,
+        merged_cells: merged_cells,
+        auto_filter: auto_filter,
+        tables: tables,
+        shapes: shapes,
+        freeze_pane: freeze_pane,
+        page_setup: page_setup,
+        page_margins: page_margins,
+        header_footer: header_footer,
+        print_options: print_options,
+        sheet_protection: sheet_protection,
+        sheet_view: sheet_view,
+        sheet_properties: sheet_properties,
+        row_breaks: row_breaks,
+        col_breaks: col_breaks
+      )
     end
     alias to_worksheet load
 
@@ -511,6 +542,124 @@ module Xlsxrb
       end
     end
 
+    # Returns tables defined in this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def tables
+      @tables ||= Xlsxrb.send(:resolve_tables, zip_reader: @zip_reader, entry_name: @entry_name)
+    end
+
+    # Returns shapes defined in this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def shapes
+      @shapes ||= Xlsxrb.send(:resolve_shapes, zip_reader: @zip_reader, entry_name: @entry_name)
+    end
+
+    # Returns freeze pane settings for this worksheet, or nil if none.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    #: () -> Hash[Symbol, untyped]?
+    def freeze_pane
+      sheet_view_data[:pane]
+    end
+
+    # Returns sheet view properties for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    #: () -> Hash[Symbol, untyped]
+    def sheet_view
+      sheet_view_data[:view] || {}
+    end
+
+    # Returns sheet protection settings as a hash, or nil if unprotected.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    #: () -> Hash[Symbol, untyped]?
+    def sheet_protection
+      @sheet_protection ||= if raw_sheet_xml.include?("<sheetProtection")
+                              listener = Ooxml::Reader::SheetProtectionListener.new
+                              Ooxml::XmlParser.parse(raw_sheet_xml, listener)
+                              listener.protection
+                            end
+    end
+
+    # Returns sheet-level properties (tabColor, outlinePr) for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    #: () -> Hash[Symbol, untyped]
+    def sheet_properties
+      @sheet_properties ||= if raw_sheet_xml.include?("<sheetPr")
+                              listener = Ooxml::Reader::SheetPropertiesListener.new
+                              Ooxml::XmlParser.parse(raw_sheet_xml, listener)
+                              listener.properties
+                            else
+                              {}
+                            end
+    end
+
+    # Returns page setup configurations for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    #: () -> Hash[Symbol, untyped]
+    def page_setup
+      print_page_data[:page_setup] || {}
+    end
+
+    # Returns page margins for this worksheet, or nil if none.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    #: () -> Hash[Symbol, untyped]?
+    def page_margins
+      print_page_data[:page_margins]
+    end
+
+    # Returns header/footer configurations for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    #: () -> Hash[Symbol, untyped]
+    def header_footer
+      print_page_data[:header_footer] || {}
+    end
+
+    # Returns print options for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    #: () -> Hash[Symbol, untyped]
+    def print_options
+      print_page_data[:print_options] || {}
+    end
+
+    # Returns explicit row page breaks for this worksheet.
+    #
+    # @return [Array<untyped>]
+    # @api public
+    #: () -> Array[untyped]
+    def row_breaks
+      print_page_data[:row_breaks] || []
+    end
+
+    # Returns explicit column page breaks for this worksheet.
+    #
+    # @return [Array<untyped>]
+    # @api public
+    #: () -> Array[untyped]
+    def col_breaks
+      print_page_data[:col_breaks] || []
+    end
+
     # Closes any underlying reader resources.
     #: () -> void
     def close
@@ -520,7 +669,42 @@ module Xlsxrb
 
     private
 
-    # Returns the full raw XML string for this worksheet, loaded on demand.
+    #: () -> Hash[Symbol, untyped]
+    def sheet_view_data
+      @sheet_view_data ||= if raw_sheet_xml.include?("<sheetView")
+                             listener = Ooxml::Reader::SheetViewListener.new
+                             Ooxml::XmlParser.parse(raw_sheet_xml, listener)
+                             { view: listener.view, pane: listener.pane, selection: listener.selection }
+                           else
+                             { view: {}, pane: nil, selection: nil }
+                           end
+    end
+
+    #: () -> Hash[Symbol, untyped]
+    def print_page_data
+      @print_page_data ||= if raw_sheet_xml.match?(/<(?:pageSetup|pageMargins|headerFooter|printOptions|rowBreaks|colBreaks)\b/)
+                             listener = Ooxml::Reader::PrintPageListener.new
+                             Ooxml::XmlParser.parse(raw_sheet_xml, listener)
+                             {
+                               page_margins: listener.page_margins,
+                               page_setup: listener.page_setup,
+                               header_footer: listener.header_footer,
+                               print_options: listener.print_options,
+                               row_breaks: listener.row_breaks,
+                               col_breaks: listener.col_breaks
+                             }
+                           else
+                             {
+                               page_margins: nil,
+                               page_setup: {},
+                               header_footer: {},
+                               print_options: {},
+                               row_breaks: [],
+                               col_breaks: []
+                             }
+                           end
+    end
+
     #: () -> String
     def raw_sheet_xml
       @raw_sheet_xml ||= if @sheet_source.is_a?(String)
