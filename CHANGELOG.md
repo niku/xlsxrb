@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Range coordinate conversion utilities (`Xlsxrb::Utils.parse_range` and `range_to_ref`): Parse cell range references (`"A1:C10"`, `"A1"`) to 0-based `[[top_row, left_col], [bottom_row, right_col]]` coordinate pairs, and format bounding coordinate tuples into A1-style range references (`"A1:C10"`) with `Xlsxrb.parse_range` and `Xlsxrb.range_to_ref` facade methods.
 - Sheet format configuration DSL and properties (`sheet_format`): Add `sheet_format` method to `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` supporting `default_row_height:`, `default_col_width:`, and extended properties (`outline_level_row`, `outline_level_col`, `zero_height`, `custom_height`, `thick_top`, `thick_bottom`), serialize `<sheetFormatPr>` schema-compliantly in `WorksheetWriter` and `WorkbookWriter`, and expose `sheet_format` reader on `Elements::Worksheet` and `StreamSheet`.
 - Numeric and hexadecimal XML entity decoding in `XmlBuilder.unescape`: Support decoding decimal (`&#...;`) and hexadecimal (`&#x...;`) XML numeric character references with UTF-8 encoding and `RangeError` fallback.
 - ZIP64 extra field support in `ZipReader`: Support reading ZIP64 extra fields (`0x0001`) in both central directory headers and local file headers for 64-bit uncompressed sizes, compressed sizes, and local header offsets.

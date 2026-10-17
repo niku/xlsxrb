@@ -23,6 +23,23 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal("AA1", Xlsxrb::Utils.row_col_to_ref(0, 26))
   end
 
+  test "parse_range converts cell range references to 0-based coordinate pairs" do
+    assert_equal([[0, 0], [9, 2]], Xlsxrb::Utils.parse_range("A1:C10"))
+    assert_equal([[0, 0], [9, 2]], Xlsxrb.parse_range("A1:C10"))
+    assert_equal([[4, 1], [4, 1]], Xlsxrb::Utils.parse_range("B5"))
+    assert_equal([[0, 0], [9, 2]], Xlsxrb::Utils.parse_range("C10:A1"))
+    assert_nil(Xlsxrb::Utils.parse_range(nil))
+    assert_nil(Xlsxrb::Utils.parse_range(""))
+    assert_nil(Xlsxrb::Utils.parse_range("invalid"))
+    assert_nil(Xlsxrb::Utils.parse_range("invalid:range"))
+  end
+
+  test "range_to_ref converts 0-based coordinates to A1-style range reference" do
+    assert_equal("A1:C10", Xlsxrb::Utils.range_to_ref(0, 0, 9, 2))
+    assert_equal("A1:C10", Xlsxrb.range_to_ref(0, 0, 9, 2))
+    assert_equal("B5", Xlsxrb::Utils.range_to_ref(4, 1, 4, 1))
+  end
+
   test "col_name_to_index converts column names to 0-based column index" do
     assert_equal(0, Xlsxrb::Utils.col_name_to_index("A"))
     assert_equal(1, Xlsxrb::Utils.col_name_to_index("B"))

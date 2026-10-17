@@ -39,6 +39,59 @@ module Xlsxrb
       "#{Elements::Cell.column_letter(col_idx)}#{row_idx + 1}"
     end
 
+    # Converts a cell range reference string (e.g. "A1:C10", "B2:D5", "A1") to 0-based
+    # [[top_row, left_col], [bottom_row, right_col]] coordinate pairs.
+    #
+    # @example Range reference
+    #   Xlsxrb::Utils.parse_range("A1:C10") #=> [[0, 0], [9, 2]]
+    #
+    # @example Single cell reference
+    #   Xlsxrb::Utils.parse_range("B5")     #=> [[4, 1], [4, 1]]
+    #
+    # @param range_ref [String, nil] Cell range reference string.
+    # @return [Array([Integer, Integer], [Integer, Integer]), nil] 0-based coordinate pairs, or nil if invalid.
+    # @api public
+    #: (String? range_ref) -> [[Integer, Integer], [Integer, Integer]]?
+    def self.parse_range(range_ref)
+      return nil if range_ref.nil? || range_ref.empty?
+
+      parts = range_ref.split(":", 2)
+      first = Elements::Cell.parse_ref(parts[0])
+      return nil unless first
+
+      second = parts[1] ? Elements::Cell.parse_ref(parts[1]) : first
+      return nil unless second
+
+      top_row = [first[0], second[0]].min
+      bottom_row = [first[0], second[0]].max
+      left_col = [first[1], second[1]].min
+      right_col = [first[1], second[1]].max
+      [[top_row, left_col], [bottom_row, right_col]]
+    end
+
+    # Converts 0-based bounding coordinates to an A1-style range reference string.
+    #
+    # @example Range coordinates
+    #   Xlsxrb::Utils.range_to_ref(0, 0, 9, 2) #=> "A1:C10"
+    #
+    # @example Single cell coordinates
+    #   Xlsxrb::Utils.range_to_ref(4, 1, 4, 1) #=> "B5"
+    #
+    # @param top_row [Integer] 0-based start row index.
+    # @param left_col [Integer] 0-based start column index.
+    # @param bottom_row [Integer] 0-based end row index.
+    # @param right_col [Integer] 0-based end column index.
+    # @return [String] A1-style range reference string.
+    # @api public
+    #: (Integer top_row, Integer left_col, Integer bottom_row, Integer right_col) -> String
+    def self.range_to_ref(top_row, left_col, bottom_row, right_col)
+      if top_row == bottom_row && left_col == right_col
+        row_col_to_ref(top_row, left_col)
+      else
+        "#{row_col_to_ref(top_row, left_col)}:#{row_col_to_ref(bottom_row, right_col)}"
+      end
+    end
+
     # Converts a column letter name (e.g. "A", "BC") to a 0-based integer index.
     #
     # @example

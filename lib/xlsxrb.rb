@@ -278,6 +278,35 @@ module Xlsxrb
     alias serial_to_datetime serial_to_time
   end
 
+  # Converts a cell range reference string (e.g. "A1:C10", "A1") to 0-based [[top_row, left_col], [bottom_row, right_col]].
+  #
+  # @example
+  #   Xlsxrb.parse_range("A1:C10") #=> [[0, 0], [9, 2]]
+  #
+  # @param range_ref [String, nil]
+  # @return [Array([Integer, Integer], [Integer, Integer]), nil]
+  # @api public
+  #: (String? range_ref) -> [[Integer, Integer], [Integer, Integer]]?
+  def self.parse_range(range_ref)
+    Utils.parse_range(range_ref)
+  end
+
+  # Converts 0-based bounding coordinates to an A1-style range reference string.
+  #
+  # @example
+  #   Xlsxrb.range_to_ref(0, 0, 9, 2) #=> "A1:C10"
+  #
+  # @param top_row [Integer]
+  # @param left_col [Integer]
+  # @param bottom_row [Integer]
+  # @param right_col [Integer]
+  # @return [String]
+  # @api public
+  #: (Integer top_row, Integer left_col, Integer bottom_row, Integer right_col) -> String
+  def self.range_to_ref(top_row, left_col, bottom_row, right_col)
+    Utils.range_to_ref(top_row, left_col, bottom_row, right_col)
+  end
+
   # Resolves an ECMA-376 indexed color palette index (0..63) to an RRGGBB hex string (or AARRGGBB if alpha: true).
   #
   # @example
