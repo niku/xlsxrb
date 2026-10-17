@@ -14,12 +14,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Green tab sheet"])
   end
 end
-
-# 2. Read the generated sheet and print sheet properties
-puts "=== Read Validation ==="
-reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path).load
-workbook.sheet_names.each do |s_name|
-  props = reader.sheet_properties(sheet: s_name)
-  puts "Sheet: #{s_name}, tab color: #{props[:tab_color].inspect}"
-end

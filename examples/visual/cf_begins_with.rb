@@ -13,12 +13,3 @@ Xlsxrb.write(output_path) do |wb|
     s.conditional_format("A2:A4", type: "beginsWith", operator: "beginsWith", text: "A", formula: 'LEFT(A2,1)="A"', fill_color: "FFFFC7CE")
   end
 end
-
-# 2. Read the generated sheet and print cell values
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.first(5).each do |row|
-  row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
-end

@@ -18,16 +18,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], styles: %w[border border border])
     s.row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], styles: %w[border border border])
 
-    s.merge(row: 0, col_start: 0, col_end: 2)
+    s.merge("A1:C1")
     s.freeze_pane(row: 2, col: 0)
   end
-end
-
-# 2. Read the generated sheet and print cell values
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.first(5).each do |row|
-  row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end

@@ -14,15 +14,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(%w[Left Center Right], styles: { 0 => "left", 1 => "center", 2 => "right" })
   end
 end
-
-# 2. Read the generated sheet and print the parsed alignments
-puts "=== Read Alignment (Xlsxrb.read) ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-row = sheet.rows.first
-
-row.cells.each do |c|
-  xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  align_h = xf&.dig(:alignment, :horizontal)
-  puts "Cell #{c.ref} ('#{c.value}'): align_horizontal = #{align_h.inspect}"
-end

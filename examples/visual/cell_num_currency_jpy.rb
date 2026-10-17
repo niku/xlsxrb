@@ -12,16 +12,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Negative Yen", -8000], styles: { 1 => "jpy" })
   end
 end
-
-# 2. Read the generated sheet and print parsed cell numbers and format codes
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.each do |row|
-  row_cells = row.cells.map do |c|
-    xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-    num_fmt = xf ? workbook.styles[:num_fmts][xf[:num_fmt_id]] : nil
-    "#{c.ref}: #{c.value.inspect} (Format ID: #{xf&.[](:num_fmt_id)}, Code: #{num_fmt.inspect})"
-  end
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
-end

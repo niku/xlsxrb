@@ -10,12 +10,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["No Grid Lines displayed"])
   end
 end
-
-# 2. Read the generated sheet and print view configurations
-puts "=== Read Validation ==="
-reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path).load
-workbook.sheet_names.each do |s_name|
-  view = reader.sheet_view(sheet: s_name)
-  puts "Sheet '#{s_name}' views zoom scale: #{view[:zoom_scale]}%, show grid lines: #{view[:show_grid_lines]}"
-end

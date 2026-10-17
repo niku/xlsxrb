@@ -13,12 +13,3 @@ Xlsxrb.write(output_path) do |wb|
   end
   wb.defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
 end
-
-# 2. Read the generated sheet and print cell values
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.first(5).each do |row|
-  row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
-end

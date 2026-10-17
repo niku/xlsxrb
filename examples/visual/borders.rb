@@ -42,14 +42,3 @@ Xlsxrb.write(output_path) do |wb|
 end
 
 # Read check
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.each do |row|
-  row_cells = row.cells.map do |c|
-    xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-    border_id = xf ? xf[:border_id] : 0
-    "#{c.ref}: #{c.value.inspect} (border_id: #{border_id})"
-  end
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
-end

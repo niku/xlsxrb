@@ -10,11 +10,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Wide Column A", "Narrow B"], styles: %w[border border])
   end
 end
-
-# 2. Read the generated sheet and print column dimensions
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.columns.each do |col|
-  puts "Column #{col.index}: width=#{col.width}, hidden=#{col.hidden}, outline_level=#{col.outline_level}"
-end

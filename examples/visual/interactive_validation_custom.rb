@@ -11,13 +11,3 @@ Xlsxrb.write(output_path) do |wb|
     s.validate_data("B2", type: "custom", formula1: "B2>A2", show_error_message: true, error_title: "Validation Error", error: "Number B must be greater than Number A")
   end
 end
-
-# 2. Read the generated sheet and print data validations
-puts "=== Read Validation ==="
-reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-validations = reader.data_validations(sheet: sheet.name)
-validations.each do |v|
-  puts "Validation range #{v[:sqref]}: type=#{v[:type]}, formula1=#{v[:formula1]}, formula2=#{v[:formula2]}"
-end

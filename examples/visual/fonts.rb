@@ -66,4 +66,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Align: Subscript", "H2O (2 is sub)"], styles: [nil, "subscript"])
   end
 end
-puts "Created #{output_path}"

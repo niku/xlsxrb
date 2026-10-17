@@ -85,7 +85,60 @@ module Xlsxrb
         "interactive_validation_text_length" => "Demonstrates interactive text length validation rules.",
         "interactive_validation_custom" => "Demonstrates interactive custom formula validation rules.",
         "interactive_validation_time" => "Demonstrates interactive time validation rules.",
-        "cell_num_currency_jpy" => "Demonstrates Yen Currency format code formatting."
+        "cell_num_currency_jpy" => "Demonstrates Yen Currency format code formatting.",
+        "hyperlinks" => "Demonstrates cell hyperlinks to external web URLs with custom tooltips, and internal workbook links jumping to specific sheets.",
+        "column_styles" => "Demonstrates setting default cell styles and number formats at the column level so data rows automatically inherit them without per-cell style mapping.",
+        "page_repeat_rows" => "Demonstrates repeating table header rows at the top of every printed page for multipage print layouts.",
+        "sheet_protection" => "Demonstrates locking and password-protecting worksheets against modifications while configuring user interaction permissions.",
+        "drawing_shapes" => "Demonstrates embedding vector shapes (rectangles, rounded rectangles, block arrows) with labels in worksheet drawings.",
+        "pivot_table" => "Demonstrates embedding native Excel Pivot Tables summarizing regional data across quarters with sum aggregation.",
+        "table_styles" => "Demonstrates creating native Excel formatted tables (ListObjects) with named table styles, headers, and column definitions."
+      }.freeze
+
+      CATEGORIES = {
+        "Fundamentals & Data Types" => %w[
+          basic_data cell_numbers cell_dates cell_times cell_booleans cell_rich_text cell_formulas japanese_text
+        ],
+        "Styles & Formatting" => %w[
+          styles_fonts_fills column_styles fonts borders fill_solid_colors fill_patterns fill_gradients sheet_tab_colors
+        ],
+        "Alignment & Layout" => %w[
+          align_horizontal align_horizontal_fill align_horizontal_justify align_vertical align_text_wrap align_text_rotation align_indent col_widths col_width_tall row_heights row_height_tall merge_freeze col_grouping row_grouping
+        ],
+        "Number Formats & Currencies" => %w[
+          cell_num_currency_jpy cell_num_percent_decimals cell_num_scientific cell_num_fractions cell_num_custom_colors
+        ],
+        "Conditional Formatting" => %w[
+          conditional_formatting cf_color_scale cf_data_bar cf_icon_set cf_cell_greater_than cf_cell_less_than cf_cell_equal_to cf_cell_between cf_cell_greater_equal cf_contains_text cf_begins_with cf_ends_with cf_expression_formula
+        ],
+        "Charts & Sparklines" => %w[
+          chart_bar chart_bar_stacked chart_bar_percent_stacked chart_line chart_line_stacked chart_area chart_area_stacked chart_pie chart_doughnut chart_scatter chart_radar sparkline_line sparkline_column
+        ],
+        "Tables, Shapes & Pivot" => %w[
+          table_styles pivot_table drawing_shapes embedded_images
+        ],
+        "Page Setup & Printing" => %w[
+          page_orientation_landscape page_paper_size_a3 page_margins_narrow page_margins_wide page_header_footer page_grid_lines_print page_headings_print page_repeat_rows
+        ],
+        "Interactive & Sheet Features" => %w[
+          hyperlinks sheet_protection interactive_autofilter interactive_comments interactive_validation_list interactive_validation_range interactive_validation_date interactive_validation_time interactive_validation_text_length interactive_validation_custom view_show_grid_lines view_zoom_scale workbook_three_sheets
+        ]
+      }.freeze
+
+      PLAYGROUND_PRESETS = {
+        "basic_data" => "quick_start",
+        "chart_bar" => "chart_bar",
+        "chart_line" => "chart_line",
+        "chart_pie" => "chart_pie",
+        "table_styles" => "table_styles",
+        "styles_fonts_fills" => "styles_borders",
+        "borders" => "styles_borders",
+        "cell_numbers" => "number_formats",
+        "cell_dates" => "number_formats",
+        "cell_num_currency_jpy" => "number_formats",
+        "conditional_formatting" => "conditional_formatting",
+        "hyperlinks" => "hyperlinks",
+        "japanese_text" => "japanese_text"
       }.freeze
 
       def self.generate
@@ -115,6 +168,12 @@ module Xlsxrb
         ScreenshotCapturer.capture_all
 
         # 3. Build gallery items by copying images from baselines
+        ordered_names = CATEGORIES.values.flatten
+        examples = examples.sort_by do |example_path|
+          name = File.basename(example_path, ".rb")
+          ordered_names.index(name) || 999
+        end
+
         items = []
 
         examples.each do |example_path|
@@ -170,44 +229,65 @@ module Xlsxrb
           }
         end
 
+        items_by_name = items.to_h { |item| [item[:name], item] }
+
         # Build Markdown
         markdown = +""
         markdown << "# Visual Examples Gallery\n\n"
         markdown << "This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering in LibreOffice Calc.\n\n"
+        markdown << "> [!TIP]\n"
+        markdown << "> **Interactive WebAssembly Playground**: Experiment with `xlsxrb` directly in your browser. Open the [WebAssembly Live Playground](../preview.html) to run Ruby code and preview spreadsheets rendered in LibreOffice Calc without local installation.\n\n"
         markdown << "[◄ Back to README](../../README.md)\n\n"
 
-        # 1. Add Visual Capability Grid (TOC)
+        # 1. Add Visual Capability Grid (TOC) categorized
         markdown << "## Capability Overview\n\n"
-        markdown << "<table>\n"
-        markdown << "<thead>\n"
-        markdown << "<tr>\n"
-        markdown << "<th align=\"left\">Feature</th>\n"
-        markdown << "<th align=\"center\">Visual Preview</th>\n"
-        markdown << "<th align=\"center\">Link to Detail</th>\n"
-        markdown << "</tr>\n"
-        markdown << "</thead>\n"
-        markdown << "<tbody>\n"
-        items.each do |item|
-          first_page = item[:pngs].first
-          anchor = item[:title].downcase.gsub(" ", "-")
-          markdown << "<tr>\n"
-          markdown << "<td><strong>#{item[:title]}</strong></td>\n"
-          markdown << "<td align=\"center\"><img src=\"#{first_page}\" width=\"160\" alt=\"#{item[:title]}\"/></td>\n"
-          markdown << "<td align=\"center\"><a href=\"##{anchor}\">View Code &amp; Detail</a></td>\n"
-          markdown << "</tr>\n"
-        end
-        markdown << "</tbody>\n"
-        markdown << "</table>\n\n"
 
-        markdown << "\n---\n\n"
+        CATEGORIES.each do |cat_name, example_names|
+          cat_items = example_names.map { |n| items_by_name[n] }.compact
+          next if cat_items.empty?
+
+          markdown << "### #{cat_name}\n\n"
+          markdown << "<table>\n"
+          markdown << "<thead>\n"
+          markdown << "<tr>\n"
+          markdown << "<th align=\"left\">Feature</th>\n"
+          markdown << "<th align=\"center\">Visual Preview</th>\n"
+          markdown << "<th align=\"center\">Actions</th>\n"
+          markdown << "</tr>\n"
+          markdown << "</thead>\n"
+          markdown << "<tbody>\n"
+          cat_items.each do |item|
+            first_page = item[:pngs].first
+            anchor = item[:title].downcase.gsub(" ", "-")
+            preset = PLAYGROUND_PRESETS[item[:name]]
+            playground_link = if preset
+                                %(<a href="../preview.html?example=#{preset}">Live Playground</a>)
+                              else
+                                %(<a href="../preview.html">Live Playground</a>)
+                              end
+            markdown << "<tr>\n"
+            markdown << "<td>#{item[:title]}</td>\n"
+            markdown << "<td align=\"center\"><img src=\"#{first_page}\" width=\"160\" alt=\"#{item[:title]}\"/></td>\n"
+            markdown << "<td align=\"center\"><a href=\"##{anchor}\">View Code</a><br/>#{playground_link}</td>\n"
+            markdown << "</tr>\n"
+          end
+          markdown << "</tbody>\n"
+          markdown << "</table>\n\n"
+        end
+
+        markdown << "---\n\n"
 
         # 2. Add Detailed Sections
         items.each do |item|
+          preset = PLAYGROUND_PRESETS[item[:name]]
+          playground_url = preset ? "../preview.html?example=#{preset}" : "../preview.html"
+
           markdown << "## #{item[:title]}\n\n"
+          markdown << "[👉 Run and edit in Live Playground](#{playground_url})\n\n"
 
           if item[:name].start_with?("interactive_")
             markdown << "> [!TIP]\n"
-            markdown << "> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, please use the **Live Preview** to interact with it!\n\n"
+            markdown << "> **Interactive Feature**: This example uses interactive Excel behaviors (such as validation dropdowns, comments, or autofilters). Since the static visual preview below represents a printed page layout, open the [Live Playground](#{playground_url}) or download the file to interact with it.\n\n"
           end
 
           markdown << "#{item[:explanation]}\n\n"

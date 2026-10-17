@@ -13,14 +13,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Formatted Date", Date.new(2026, 12, 25)], styles: { 1 => "custom_date" })
   end
 end
-
-# 2. Read the generated sheet and print parsed cell values and Ruby classes
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.each do |row|
-  row_cells = row.cells.map do |c|
-    "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
-  end
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
-end

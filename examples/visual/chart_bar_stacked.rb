@@ -24,9 +24,3 @@ Xlsxrb.write(output_path) do |wb|
     )
   end
 end
-
-# 2. Read the generated sheet and print the chart count
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-puts "Sheet '#{sheet.name}' has #{sheet.charts.size} chart(s)"

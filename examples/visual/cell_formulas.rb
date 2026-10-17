@@ -9,18 +9,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row(%w[Item Value])
     s.row(["A", 10])
     s.row(["B", 20])
-    s.row(["SUM", Xlsxrb::Elements::Formula.new(expression: "SUM(B2:B3)", cached_value: 30)])
-    s.row(["AVERAGE", Xlsxrb::Elements::Formula.new(expression: "AVERAGE(B2:B3)", cached_value: 15)])
+    s.row(["SUM", Xlsxrb.formula("SUM(B2:B3)", cached_value: 30)])
+    s.row(["AVERAGE", Xlsxrb.formula("AVERAGE(B2:B3)", cached_value: 15)])
   end
-end
-
-# 2. Read the generated sheet and print parsed cell values and Ruby classes
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.each do |row|
-  row_cells = row.cells.map do |c|
-    "#{c.ref}: #{c.value.inspect} (#{c.value.class})"
-  end
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end

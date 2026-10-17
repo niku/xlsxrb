@@ -11,11 +11,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Normal Row", ""], styles: %w[border border])
   end
 end
-
-# 2. Read the generated sheet and print row attributes
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.each do |row|
-  puts "Row #{row.index}: height=#{row.height}, hidden=#{row.hidden}, outline_level=#{row.outline_level}"
-end

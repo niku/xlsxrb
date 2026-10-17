@@ -16,21 +16,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Styles") do |sheet|
     sheet.column(0, width: 25)
     sheet.column(1, width: 25)
-    sheet.row(["Header 1", "Header 2"], styles: { 0 => "header", 1 => "header" })
-    sheet.row(["Normal Text", "Highlighted Text"], styles: { 1 => "highlight" })
+    sheet.row(["Header 1", "Header 2"], styles: "header")
+    sheet.row(["Normal Text", "Highlighted Text"], styles: [nil, "highlight"])
   end
-end
-
-# 2. Read the generated sheet and print styling details
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.first(4).each do |row|
-  row_cells = row.cells.map do |c|
-    xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-    font = xf ? workbook.styles[:fonts][xf[:font_id]] : nil
-    fill = xf ? workbook.styles[:fills][xf[:fill_id]] : nil
-    "#{c.ref}: #{c.value.inspect} (font=#{font&.[](:name)}, fill=#{fill&.[](:fg_color)&.[](:rgb)})"
-  end
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
 end

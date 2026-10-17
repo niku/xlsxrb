@@ -14,19 +14,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Indent 3"], styles: { 0 => "indent_3" })
   end
 end
-
-# 2. Read the generated sheet and print the parsed alignments
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-row = sheet.rows.first
-row.cells.each do |c|
-  xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  align_h = xf&.dig(:alignment, :horizontal)
-  align_v = xf&.dig(:alignment, :vertical)
-  wrap = xf&.dig(:alignment, :wrap_text)
-  indent = xf&.dig(:alignment, :indent)
-  rot = xf&.dig(:alignment, :text_rotation)
-  shrink = xf&.dig(:alignment, :shrink_to_fit)
-  puts "Cell #{c.ref} ('#{c.value}'): align_h=#{align_h.inspect}, align_v=#{align_v.inspect}, wrap=#{wrap.inspect}, indent=#{indent.inspect}, rotation=#{rot.inspect}, shrink=#{shrink.inspect}"
-end

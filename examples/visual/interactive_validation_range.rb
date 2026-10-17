@@ -10,13 +10,3 @@ Xlsxrb.write(output_path) do |wb|
     s.validate_data("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
   end
 end
-
-# 2. Read the generated sheet and print data validations
-puts "=== Read Validation ==="
-reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-validations = reader.data_validations(sheet: sheet.name)
-validations.each do |v|
-  puts "Validation range #{v[:sqref]}: type=#{v[:type]}, formula1=#{v[:formula1]}, formula2=#{v[:formula2]}"
-end

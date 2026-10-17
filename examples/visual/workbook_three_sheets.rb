@@ -7,8 +7,3 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Second Sheet") { |s| s.row(["Second Sheet Data"]) }
   wb.sheet("Third Sheet") { |s| s.row(["Third Sheet Data"]) }
 end
-
-# 2. Read the generated sheet and print the sheets structure
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-puts "Workbook sheets: #{workbook.sheet_names.join(", ")}"

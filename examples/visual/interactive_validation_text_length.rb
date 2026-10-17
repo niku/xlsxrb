@@ -10,13 +10,3 @@ Xlsxrb.write(output_path) do |wb|
     s.validate_data("B2", type: "textLength", operator: "lessThan", formula1: "10", show_error_message: true, error_title: "Too Long", error: "Username must be under 10 characters")
   end
 end
-
-# 2. Read the generated sheet and print data validations
-puts "=== Read Validation ==="
-reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-validations = reader.data_validations(sheet: sheet.name)
-validations.each do |v|
-  puts "Validation range #{v[:sqref]}: type=#{v[:type]}, formula1=#{v[:formula1]}, formula2=#{v[:formula2]}"
-end

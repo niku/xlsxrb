@@ -13,11 +13,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Child Row 1.2", ""], outline_level: 1, styles: %w[child child])
   end
 end
-
-# 2. Read the generated sheet and print row attributes
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.each do |row|
-  puts "Row #{row.index}: height=#{row.height}, hidden=#{row.hidden}, outline_level=#{row.outline_level}"
-end

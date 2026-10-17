@@ -39,20 +39,3 @@ Xlsxrb.write(output_path) do |wb|
     s.column(3, width: 15)
   end
 end
-
-# 2. Read the generated sheet and print cell values + parsed embedded images details
-puts "=== Read Validation ==="
-reader = Xlsxrb::Ooxml::Reader.new(output_path)
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-sheet.rows.first(5).each do |row|
-  row_cells = row.cells.map { |c| "#{c.ref}: #{c.value.inspect}" }
-  puts "Row #{row.index}: #{row_cells.join(", ")}"
-end
-images = reader.images(sheet: sheet.name)
-images.each_with_index do |img, idx|
-  zip_path = File.expand_path(img[:target], "/xl/drawings").sub(%r{^/}, "")
-  img_data = reader.send(:extract_zip_entry, zip_path)
-  is_png = img_data && img_data[0..3] == "\x89PNG".b
-  puts "Image ##{idx + 1}: name='#{img[:name]}', target='#{img[:target]}' -> ZIP path='#{zip_path}', size=#{img_data&.bytesize} bytes, valid_png=#{is_png}, range=Col #{img[:from_col]} Row #{img[:from_row]} to Col #{img[:to_col]} Row #{img[:to_row]}"
-end

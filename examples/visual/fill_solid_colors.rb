@@ -13,14 +13,3 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Green", "Green Fill"], styles: { 1 => "green_fill" })
   end
 end
-
-# 2. Read the generated sheet and print cell fill properties
-puts "=== Read Validation ==="
-workbook = Xlsxrb.read(output_path).load
-sheet = workbook.sheets.first
-row = sheet.rows.first
-row.cells.each do |c|
-  xf = workbook.styles[:cell_xfs][c.style_index] if c.style_index
-  fill = xf ? workbook.styles[:fills][xf[:fill_id]] : nil
-  puts "Cell #{c.ref} ('#{c.value}'): fill pattern = #{fill&.[](:pattern).inspect}, fg_color = #{fill&.[](:fg_color).inspect}"
-end
