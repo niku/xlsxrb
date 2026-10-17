@@ -630,7 +630,7 @@ module Xlsxrb
               end
             end
             f_attrs << ' ca="1"' if formula_ca
-            buf << "<f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
+            buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
             if xml_val
               buf << "<v>" << xml_val.to_s << "</v></c>"
             else

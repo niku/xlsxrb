@@ -826,4 +826,15 @@ class OoxmlTest < Test::Unit::TestCase
     assert_include(xml, '<c r="B2"><f>SUM(A1:A10)</f><v>0</v></c>')
     assert_include(xml, '<c r="C2"><f>NOW()</f><v>0</v></c>')
   end
+
+  test "worksheet_writer write_row_values properly serializes styled formula cells" do
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.start
+    writer.write_row_values(0, ["=SUM(A1:A5)"], styles: { 0 => "currency" }, style_map: { "currency" => 5 })
+    writer.finish
+
+    xml = io.string
+    assert_include(xml, '<c r="A1" s="5"><f>SUM(A1:A5)</f><v>0</v></c>')
+  end
 end
