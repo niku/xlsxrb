@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.1.15] - 2026-10-17
+
 ### Added
 - Block form for table and data validation configuration: Support optional configuration block in `table` and `validate_data` methods on `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` using `TableBuilder` and `DataValidationBuilder` contexts.
 - Protected range and cell watch configuration DSL and properties (`protected_range` and `cell_watch`): Add `protected_range` (and alias `add_protected_range`) and `cell_watch` (and alias `add_cell_watch`) methods to `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy`, normalize passwords into ECMA-376 compliant hashes or modern SHA-512 protection attributes, serialize `<protectedRanges>` and `<cellWatches>` according to OOXML schema sequence rules in `WorksheetWriter`, and expose `protected_ranges` and `cell_watches` readers on `Elements::Worksheet` and `StreamSheet`.
