@@ -118,14 +118,26 @@ module Xlsxrb
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end
 
-      # Unescapes predefined XML entities in a string in a single pass.
+      NUM_ENTITY_RE = /&#(?:(\d+)|x([0-9a-fA-F]+));/
+      private_constant :NUM_ENTITY_RE
+
+      # Unescapes predefined and numeric/hex XML entities in a string.
       #
       # @param value [Object]
       # @return [String]
       #: (untyped value) -> String
       def self.unescape(value)
         str = value.to_s
-        str.include?("&") ? str.gsub(UNESCAPE_RE, UNESCAPE_MAP) : str
+        return str unless str.include?("&")
+
+        res = str.gsub(UNESCAPE_RE, UNESCAPE_MAP)
+        res.gsub(NUM_ENTITY_RE) do |match|
+          dec = Regexp.last_match(1)
+          codepoint = dec ? Integer(dec) : Integer(Regexp.last_match(2), 16)
+          codepoint.chr(Encoding::UTF_8)
+        rescue RangeError
+          match
+        end
       end
 
       private

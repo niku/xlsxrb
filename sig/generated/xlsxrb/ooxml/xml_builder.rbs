@@ -46,7 +46,7 @@ module Xlsxrb
       # : (untyped value) -> String
       def self.escape: (untyped value) -> String
 
-      # Unescapes predefined XML entities in a string in a single pass.
+      # Unescapes predefined and numeric/hex XML entities in a string.
       #
       # @param value [Object]
       # @return [String]

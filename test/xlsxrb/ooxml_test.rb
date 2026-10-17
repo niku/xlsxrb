@@ -270,6 +270,26 @@ class OoxmlTest < Test::Unit::TestCase
     empty = ""
     assert_same(empty, Xlsxrb::Ooxml::XmlBuilder.unescape(empty))
     assert_equal("&unknown;", Xlsxrb::Ooxml::XmlBuilder.unescape("&unknown;"))
+    assert_equal("a &# b", Xlsxrb::Ooxml::XmlBuilder.unescape("a &# b"))
+
+    # Decimal entities
+    assert_equal("ABC", Xlsxrb::Ooxml::XmlBuilder.unescape("&#65;&#66;&#67;"))
+    assert_equal("A", Xlsxrb::Ooxml::XmlBuilder.unescape("&#65;"))
+
+    # Hexadecimal entities (lowercase, uppercase, multibyte)
+    assert_equal("ABC", Xlsxrb::Ooxml::XmlBuilder.unescape("&#x41;&#x42;&#x43;"))
+    assert_equal("a", Xlsxrb::Ooxml::XmlBuilder.unescape("&#x61;"))
+    assert_equal("\x10", Xlsxrb::Ooxml::XmlBuilder.unescape("&#x10;"))
+    emoji = Xlsxrb::Ooxml::XmlBuilder.unescape("&#x1F600;")
+    assert_equal("😀", emoji)
+    assert_equal(Encoding::UTF_8, emoji.encoding)
+
+    # Out of range codepoints (RangeError rescued to match string)
+    assert_equal("&#9999999999;", Xlsxrb::Ooxml::XmlBuilder.unescape("&#9999999999;"))
+    assert_equal("&#xFFFFFFFFF;", Xlsxrb::Ooxml::XmlBuilder.unescape("&#xFFFFFFFFF;"))
+
+    # Mixed entities and text
+    assert_equal("Hello <World> & 😀!", Xlsxrb::Ooxml::XmlBuilder.unescape("Hello &lt;World&gt; &amp; &#x1F600;!"))
 
     # WorksheetParser.decode_xml_entities delegation
     assert_equal("Tom & Jerry", Xlsxrb::Ooxml::WorksheetParser.decode_xml_entities("Tom &amp; Jerry"))
