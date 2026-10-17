@@ -802,6 +802,89 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
+  test "Xlsxrb.modify updates cell hyperlinks and comments during template modification" do
+    source = Tempfile.new(["modify_links_comments_src", ".xlsx"])
+    target = Tempfile.new(["modify_links_comments_tgt", ".xlsx"])
+    begin
+      init_wb = Xlsxrb.build do |w|
+        w.sheet("Report") do |s|
+          s.row(%w[Title Score Notes])
+          s.row(["Item1", 100, "Initial note"])
+        end
+        w.sheet("Summary") do |s|
+          s.row(["Total", 100])
+        end
+      end
+      Xlsxrb.write(source.path, init_wb)
+
+      Xlsxrb.modify(source.path, target.path) do |wb|
+        wb.update_sheet("Report") do |sheet|
+          sheet.update_cell("A2", value: "Visit Docs", hyperlink: "https://example.com/docs")
+               .update_cell("B2", value: 105, comment: { text: "Score audited", author: "Auditor" })
+               .update_cell("C2", value: "Go to Summary", hyperlink: "#Summary!A1")
+        end
+      end
+
+      result = Xlsxrb.read(target.path).load
+      report = result.sheet("Report")
+      assert_equal("Visit Docs", report.cell_value("A2"))
+      assert_equal(105, report.cell_value("B2"))
+      assert_equal("Go to Summary", report.cell_value("C2"))
+
+      a2_link = report.cell("A2").hyperlink
+      assert_not_nil(a2_link)
+      assert_equal("https://example.com/docs", a2_link[:url])
+
+      c2_link = report.cell("C2").hyperlink
+      assert_not_nil(c2_link)
+      assert_equal("Summary!A1", c2_link[:location])
+
+      b2_comment = report.cell("B2").comment
+      assert_not_nil(b2_comment)
+      assert_equal("Score audited", b2_comment[:text])
+      assert_equal("Auditor", b2_comment[:author])
+    ensure
+      source.close!
+      target.close!
+    end
+  end
+
+  test "Xlsxrb.modify updates existing hyperlinks and comments in place" do
+    source = Tempfile.new(["modify_existing_links_src", ".xlsx"])
+    begin
+      Xlsxrb.write(
+        source.path,
+        Xlsxrb.build do |w|
+          w.sheet("S") do |s|
+            s.row(["Original"])
+          end
+        end
+      )
+
+      # First modify: add hyperlink and comment
+      Xlsxrb.modify(source.path) do |wb|
+        wb.update_sheet(0) do |sheet|
+          sheet.update_cell("A1", value: "Link1", hyperlink: "https://example.com/v1", comment: "Initial comment")
+        end
+      end
+
+      # Second modify: update the hyperlink URL and comment text in-place
+      Xlsxrb.modify(source.path) do |wb|
+        wb.update_sheet(0) do |sheet|
+          sheet.update_cell("A1", value: "Link2", hyperlink: "https://example.com/v2", comment: "Updated comment")
+        end
+      end
+
+      result = Xlsxrb.read(source.path).load
+      sheet = result.sheet(0)
+      assert_equal("Link2", sheet.cell_value("A1"))
+      assert_equal("https://example.com/v2", sheet.cell("A1").hyperlink[:url])
+      assert_equal("Updated comment", sheet.cell("A1").comment[:text])
+    ensure
+      source.close!
+    end
+  end
+
   # 1. Workbook#update_sheet
   test "Workbook#update_sheet creates a new workbook with the updated sheet" do
     wb = Xlsxrb::Elements::Workbook.new(

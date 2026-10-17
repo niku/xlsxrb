@@ -610,7 +610,15 @@ module Xlsxrb
       sd[:state] ||= ws.state if ws.respond_to?(:state) && ws.state && ws.state != :visible
       sd[:comments] ||= ws.comments if ws.respond_to?(:comments) && !ws.comments.empty?
       if ws.respond_to?(:hyperlinks) && !ws.hyperlinks.empty?
-        sd[:hyperlinks] ||= ws.hyperlinks.is_a?(Hash) ? ws.hyperlinks.values : ws.hyperlinks
+        sd[:hyperlinks] ||= if ws.hyperlinks.is_a?(Hash)
+                              ws.hyperlinks.map do |cell_ref, link|
+                                entry = link.is_a?(Hash) ? link.dup : { url: link }
+                                entry[:ref] ||= cell_ref
+                                entry
+                              end
+                            else
+                              ws.hyperlinks
+                            end
       end
       sd[:sparkline_groups] ||= ws.sparkline_groups if ws.respond_to?(:sparkline_groups) && !ws.sparkline_groups.empty?
 
@@ -787,6 +795,51 @@ module Xlsxrb
             )
             updated_sheet_xml = replace_sheet_data(orig_sheet_xml, new_sheet_data)
             updated_sheet_xml = update_dimension(updated_sheet_xml, new_sheet.rows)
+
+            all_hyperlinks = new_sheet.hyperlinks.dup
+            new_sheet.rows.each do |row|
+              row.cells.each do |cell|
+                all_hyperlinks[cell.ref] ||= cell.hyperlink if cell.hyperlink
+              end
+            end
+
+            if all_hyperlinks != orig_sheet.hyperlinks
+              rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+              orig_rels_xml = replaced_entries[rels_path] || zip_reader.read_entry(rels_path)
+              updated_sheet_xml, updated_rels_xml = update_sheet_hyperlinks(
+                updated_sheet_xml,
+                orig_rels_xml,
+                all_hyperlinks
+              )
+              replaced_entries[rels_path] = updated_rels_xml if updated_rels_xml
+            end
+
+            all_comments = new_sheet.comments.dup
+            new_sheet.rows.each do |row|
+              row.cells.each do |cell|
+                if cell.comment && all_comments.none? { |c| (c[:ref] || c[:cell])&.to_s&.upcase == cell.ref.upcase }
+                  entry = cell.comment.is_a?(Hash) ? cell.comment.merge(ref: cell.ref) : { ref: cell.ref, text: cell.comment }
+                  all_comments << entry
+                end
+              end
+            end
+
+            if all_comments != orig_sheet.comments
+              rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+              orig_rels_xml = replaced_entries[rels_path] || zip_reader.read_entry(rels_path)
+              updated_sheet_xml, updated_rels_xml = update_sheet_comments(
+                updated_sheet_xml,
+                rels_path,
+                orig_rels_xml,
+                all_comments,
+                zip_reader,
+                idx,
+                entry_name,
+                replaced_entries
+              )
+              replaced_entries[rels_path] = updated_rels_xml if updated_rels_xml
+            end
+
             replaced_entries[entry_name] = updated_sheet_xml
           end
 
@@ -1535,6 +1588,199 @@ module Xlsxrb
                 end
 
       sheet_xml.sub(/<dimension\b([^>]*)\bref="[^"]*"/, "<dimension\\1ref=\"#{dim_ref}\"")
+    end
+
+    #: (String sheet_xml, String? orig_rels_xml, Hash[String, untyped] new_hyperlinks) -> [String, String?]
+    def update_sheet_hyperlinks(sheet_xml, orig_rels_xml, new_hyperlinks)
+      existing_rels = []
+      max_rid_num = 0
+      if orig_rels_xml && !orig_rels_xml.empty?
+        orig_rels_xml.scan(%r{<Relationship\b([^>]*)/?>}) do |m|
+          attrs = m[0]
+          id = attrs[/Id="([^"]*)"/, 1]
+          type = attrs[/Type="([^"]*)"/, 1]
+          target = attrs[/Target="([^"]*)"/, 1]
+          target_mode = attrs[/TargetMode="([^"]*)"/, 1]
+          if id =~ /\ArId(\d+)\z/
+            num = Regexp.last_match(1).to_i
+            max_rid_num = num if num > max_rid_num
+          end
+          existing_rels << { id: id, type: type, target: target, target_mode: target_mode } unless type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+        end
+      end
+
+      sheet_rels = existing_rels.dup
+      cur_rid = max_rid_num
+      hl_elements = []
+
+      new_hyperlinks.each do |cell_ref, link|
+        entry = link.is_a?(Hash) ? link.dup : { url: link.to_s }
+        url = entry[:url]
+        loc = entry[:location]
+        if url&.start_with?("#")
+          loc ||= url.delete_prefix("#")
+          url = nil
+        end
+        display = entry[:display]
+        tooltip = entry[:tooltip]
+
+        attrs = if url && !url.empty?
+                  cur_rid += 1
+                  rid = "rId#{cur_rid}"
+                  sheet_rels << {
+                    id: rid,
+                    type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+                    target: url,
+                    target_mode: "External"
+                  }
+                  %(ref="#{cell_ref}" r:id="#{rid}")
+                elsif loc && !loc.empty?
+                  %(ref="#{cell_ref}" location="#{Ooxml::XmlBuilder.escape(loc)}")
+                else
+                  next
+                end
+
+        attrs << %( display="#{Ooxml::XmlBuilder.escape(display)}") if display
+        attrs << %( tooltip="#{Ooxml::XmlBuilder.escape(tooltip)}") if tooltip
+        hl_elements << "<hyperlink #{attrs}/>"
+      end
+
+      updated_sheet_xml = sheet_xml.dup
+      updated_sheet_xml.sub!(/<worksheet\b/, '<worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"') if hl_elements.any? && !updated_sheet_xml.include?('xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"')
+
+      new_hyperlinks_xml = hl_elements.empty? ? "" : "<hyperlinks>#{hl_elements.join}</hyperlinks>"
+
+      if updated_sheet_xml.include?("<hyperlinks")
+        updated_sheet_xml.sub!(%r{<hyperlinks\b[^>]*/\s*>|<hyperlinks\b[^>]*>.*?</hyperlinks>}m, new_hyperlinks_xml)
+      elsif hl_elements.any?
+        insert_pattern = %r{<(?:printOptions|pageMargins|pageSetup|headerFooter|rowBreaks|colBreaks|customProperties|cellWatches|ignoredErrors|smartTags|drawing|legacyDrawing|legacyDrawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst)\b|</worksheet>}
+        match = updated_sheet_xml.match(insert_pattern)
+        if match
+          updated_sheet_xml.insert(match.begin(0), new_hyperlinks_xml)
+        else
+          updated_sheet_xml << new_hyperlinks_xml
+        end
+      end
+
+      updated_rels_xml = if sheet_rels.empty? && (orig_rels_xml.nil? || orig_rels_xml.empty?)
+                           nil
+                         else
+                           io = StringIO.new
+                           b = Ooxml::XmlBuilder.new(io)
+                           b.declaration
+                           b.open_tag("Relationships", { xmlns: "http://schemas.openxmlformats.org/package/2006/relationships" })
+                           sheet_rels.each do |rel|
+                             rel_attrs = { Id: rel[:id], Type: rel[:type], Target: rel[:target] }
+                             rel_attrs[:TargetMode] = rel[:target_mode] if rel[:target_mode]
+                             b.empty_tag("Relationship", rel_attrs)
+                           end
+                           b.close_tag("Relationships")
+                           io.string
+                         end
+
+      [updated_sheet_xml, updated_rels_xml]
+    end
+
+    #: (String sheet_xml, String _rels_path, String? orig_rels_xml, Array[Hash[Symbol, untyped]] new_comments, Ooxml::ZipReader zip_reader, Integer sheet_idx, String entry_name, Hash[String, String] replaced_entries) -> [String, String?]
+    def update_sheet_comments(sheet_xml, _rels_path, orig_rels_xml, new_comments, zip_reader, sheet_idx, entry_name, replaced_entries)
+      existing_rels = []
+      max_rid_num = 0
+      if orig_rels_xml && !orig_rels_xml.empty?
+        orig_rels_xml.scan(%r{<Relationship\b([^>]*)/?>}) do |m|
+          attrs = m[0]
+          id = attrs[/Id="([^"]*)"/, 1]
+          type = attrs[/Type="([^"]*)"/, 1]
+          target = attrs[/Target="([^"]*)"/, 1]
+          target_mode = attrs[/TargetMode="([^"]*)"/, 1]
+          if id =~ /\ArId(\d+)\z/
+            num = Regexp.last_match(1).to_i
+            max_rid_num = num if num > max_rid_num
+          end
+          existing_rels << { id: id, type: type, target: target, target_mode: target_mode }
+        end
+      end
+
+      comments_rel = existing_rels.find { |r| r[:type]&.end_with?("/comments") }
+      vml_rel = existing_rels.find { |r| r[:type]&.end_with?("/vmlDrawing") }
+
+      writer = Ooxml::Writer.new
+      new_comments.each do |c|
+        writer.add_comment(c[:cell] || c[:ref], c[:text], author: c[:author] || "Author")
+      end
+      comments_xml = writer.send(:generate_comments_xml, writer.comments)
+      vml_xml = writer.send(:generate_vml_drawing_xml, writer.comments)
+
+      updated_sheet_xml = sheet_xml.dup
+
+      if comments_rel
+        base_dir = File.dirname(entry_name)
+        comments_path = resolve_relative_path(base_dir, comments_rel[:target])
+        replaced_entries[comments_path] = comments_xml
+        if vml_rel
+          vml_path = resolve_relative_path(base_dir, vml_rel[:target])
+          replaced_entries[vml_path] = vml_xml
+        end
+      elsif new_comments.any?
+        existing_comment_count = zip_reader.entry_names.count { |n| n =~ %r{\Axl/comments\d+\.xml\z} }
+        comment_file_num = existing_comment_count + sheet_idx + 1
+        comments_path = "xl/comments#{comment_file_num}.xml"
+        vml_path = "xl/drawings/vmlDrawing#{comment_file_num}.vml"
+        replaced_entries[comments_path] = comments_xml
+        replaced_entries[vml_path] = vml_xml
+
+        max_rid_num += 1
+        c_rid = "rId#{max_rid_num}"
+        existing_rels << {
+          id: c_rid,
+          type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments",
+          target: "../comments#{comment_file_num}.xml"
+        }
+
+        max_rid_num += 1
+        vml_rid = "rId#{max_rid_num}"
+        existing_rels << {
+          id: vml_rid,
+          type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing",
+          target: "../drawings/vmlDrawing#{comment_file_num}.vml"
+        }
+
+        unless updated_sheet_xml.include?("<legacyDrawing")
+          legacy_tag = %(<legacyDrawing r:id="#{vml_rid}"/>)
+          insert_pattern = %r{<(?:picture|oleObjects|controls|webPublishItems|tableParts|extLst)\b|</worksheet>}
+          match = updated_sheet_xml.match(insert_pattern)
+          if match
+            updated_sheet_xml.insert(match.begin(0), legacy_tag)
+          else
+            updated_sheet_xml << legacy_tag
+          end
+        end
+
+        updated_sheet_xml.sub!(/<worksheet\b/, '<worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"') unless updated_sheet_xml.include?('xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"')
+
+        ct_xml = replaced_entries["[Content_Types].xml"] || zip_reader.read_entry("[Content_Types].xml")
+        if ct_xml && !ct_xml.include?("comments#{comment_file_num}.xml")
+          override_tag = %(<Override PartName="/#{comments_path}" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"/>)
+          ct_xml = ct_xml.sub(%r{</Types>}, "#{override_tag}</Types>")
+          unless ct_xml.include?('Extension="vml"')
+            default_vml = %(<Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/>)
+            ct_xml = ct_xml.sub(%r{</Types>}, "#{default_vml}</Types>")
+          end
+          replaced_entries["[Content_Types].xml"] = ct_xml
+        end
+      end
+
+      io = StringIO.new
+      b = Ooxml::XmlBuilder.new(io)
+      b.declaration
+      b.open_tag("Relationships", { xmlns: "http://schemas.openxmlformats.org/package/2006/relationships" })
+      existing_rels.each do |rel|
+        rel_attrs = { Id: rel[:id], Type: rel[:type], Target: rel[:target] }
+        rel_attrs[:TargetMode] = rel[:target_mode] if rel[:target_mode]
+        b.empty_tag("Relationship", rel_attrs)
+      end
+      b.close_tag("Relationships")
+
+      [updated_sheet_xml, io.string]
     end
 
     #: (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool, ?date1904: bool) -> String

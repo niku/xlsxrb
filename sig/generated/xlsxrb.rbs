@@ -405,6 +405,12 @@ module Xlsxrb
   # : (String sheet_xml, Array[Elements::Row] rows) -> String
   private def self.update_dimension: (String sheet_xml, Array[Elements::Row] rows) -> String
 
+  # : (String sheet_xml, String? orig_rels_xml, Hash[String, untyped] new_hyperlinks) -> [String, String?]
+  private def self.update_sheet_hyperlinks: (String sheet_xml, String? orig_rels_xml, Hash[String, untyped] new_hyperlinks) -> [ String, String? ]
+
+  # : (String sheet_xml, String _rels_path, String? orig_rels_xml, Array[Hash[Symbol, untyped]] new_comments, Ooxml::ZipReader zip_reader, Integer sheet_idx, String entry_name, Hash[String, String] replaced_entries) -> [String, String?]
+  private def self.update_sheet_comments: (String sheet_xml, String _rels_path, String? orig_rels_xml, Array[Hash[Symbol, untyped]] new_comments, Ooxml::ZipReader zip_reader, Integer sheet_idx, String entry_name, Hash[String, String] replaced_entries) -> [ String, String? ]
+
   # : (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool, ?date1904: bool) -> String
   private def self.serialize_sheet_data_xml: (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool, ?date1904: bool) -> String
 
