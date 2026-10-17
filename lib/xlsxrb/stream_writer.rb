@@ -6,6 +6,7 @@ require "tempfile"
 require_relative "style_builder"
 require_relative "chart_builder"
 require_relative "dsl_helpers"
+require_relative "worksheet_builder"
 require_relative "ooxml/writer"
 require_relative "ooxml/worksheet_writer"
 require_relative "ooxml/workbook_writer"
@@ -362,15 +363,24 @@ module Xlsxrb
 
       # Adds data validation rules to a range.
       #
+      # Adds data validation to a cell or range.
+      #
       # @example Dropdown list validation
       #   s.validate_data("B2:B100", type: "list", formula1: '"High,Medium,Low"')
       #
-      # @param range [String] The cell range (e.g. "B2:B10").
-      # @param type [String, Symbol] Validation type ("list", "whole", "decimal", "date", "time", "textLength", "custom").
+      # @example Block syntax
+      #   s.validate_data("B2:B100") do |dv|
+      #     dv.type :list
+      #     dv.formula1 '"High,Medium,Low"'
+      #   end
+      #
+      # @param range [String, nil] The cell range (e.g. "B2:B10").
+      # @param type [String, Symbol, nil] Validation type ("list", "whole", "decimal", "date", "time", "textLength", "custom").
       # @param opts [Hash] Validation options.
+      # @yield [data_validation_builder] Optional configuration block.
       # @return [void]
       # @api public
-      #: (String range, ?type: String | Symbol, **untyped opts) -> void
+      #: (?String? range, ?type: (String | Symbol)?, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
       def validate_data(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -396,18 +406,25 @@ module Xlsxrb
 
       # Adds a formatted Excel Table to the sheet.
       #
-      # @example
+      # @example Standard keyword arguments
       #   s.table("A1:C10", columns: ["ID", "Name", "Total"], name: "SalesTable", style: "TableStyleMedium9")
       #
-      # @param ref [String] The cell range for the table (e.g. "A1:D10").
-      # @param columns [Array<String>, Array<Hash>] Column names or definitions.
+      # @example Block syntax
+      #   s.table("A1:C10") do |t|
+      #     t.columns ["ID", "Name", "Total"]
+      #     t.style "TableStyleMedium9"
+      #   end
+      #
+      # @param ref [String, nil] The cell range for the table (e.g. "A1:D10").
+      # @param columns [Array<String>, Array<Hash>, nil] Column names or definitions.
       # @param name [String, nil] Table name.
       # @param display_name [String, nil] Display name.
       # @param style [String, nil] Table style name.
       # @param opts [Hash] Additional options.
+      # @yield [table_builder] Optional configuration block.
       # @return [void]
       # @api public
-      #: (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
+      #: (?String? ref, ?columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) ?{ (TableBuilder) -> void } -> void
       def table(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1202,13 +1219,22 @@ module Xlsxrb
 
     # Adds a data validation rule.
     #
-    # @param sqref [String] Cell range.
+    # @param sqref [String, nil] Cell range.
     # @param opts [Hash] Validation options.
+    # @yield [data_validation_builder] Optional configuration block.
     # @return [void]
     # @api public
-    #: (untyped sqref, **untyped opts) -> void
-    def validate_data(sqref, **opts)
+    #: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
+    def validate_data(sqref = nil, **opts)
       sheet if @current_sheet.nil?
+      if block_given?
+        builder = DataValidationBuilder.new(sqref, **opts)
+        yield builder
+        opts = builder.to_h
+        sqref = opts.delete(:sqref) || sqref
+      end
+      raise ArgumentError, "data validation sqref must be provided" unless sqref
+
       @current_data_validations << opts.merge(sqref: sqref)
     end
 
@@ -1226,18 +1252,33 @@ module Xlsxrb
 
     # Adds an Excel Table (ListObject).
     #
-    # @param ref [String] Table range.
-    # @param columns [Array<String>] Column names.
+    # @param ref [String, nil] Table range.
+    # @param columns [Array<String>, nil] Column names.
     # @param name [String, nil] Table name.
     # @param display_name [String, nil] Display name.
     # @param style [String, nil] Table style.
     # @param opts [Hash] Additional options.
+    # @yield [table_builder] Optional configuration block.
     # @return [void]
     # @api public
-    #: (untyped ref, columns: untyped, ?name: untyped, ?display_name: untyped, ?style: untyped, **untyped opts) -> void
-    def table(ref, columns:, name: nil, display_name: nil, style: nil, **)
+    #: (?String? ref, ?columns: untyped, ?name: untyped, ?display_name: untyped, ?style: untyped, **untyped opts) ?{ (TableBuilder) -> void } -> void
+    def table(ref = nil, columns: nil, name: nil, display_name: nil, style: nil, **opts)
       sheet if @current_sheet.nil?
-      @current_tables << DslHelpers.normalize_table_options(ref, columns: columns, name: name, display_name: display_name, style: style, **)
+      opts = opts.dup
+      if block_given?
+        builder = TableBuilder.new(ref, columns: columns, name: name, display_name: display_name, style: style, **opts)
+        yield builder
+        opts = builder.to_h
+        ref = opts.delete(:ref) || ref
+        columns = opts.delete(:columns) || columns
+        name = opts.delete(:name) || name
+        display_name = opts.delete(:display_name) || display_name
+        style = opts.delete(:style) || style
+      end
+      raise ArgumentError, "table ref must be provided" unless ref
+      raise ArgumentError, "table columns must be provided" if columns.nil?
+
+      @current_tables << DslHelpers.normalize_table_options(ref, columns: columns, name: name, display_name: display_name, style: style, **opts)
     end
 
     # Adds a Pivot Table.

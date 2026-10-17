@@ -129,12 +129,13 @@ module Xlsxrb
 
     # Adds a data validation rule to a cell or range.
     #
-    # @param sqref [String] Target cell or range reference (e.g. "B2:B100").
+    # @param sqref [String, nil] Target cell or range reference (e.g. "B2:B100").
     # @param opts [Hash] Validation configuration (e.g. type: :list, formula1: '"Option1,Option2"').
+    # @yield [data_validation_builder] Optional configuration block.
     # @return [void]
     # @api public
-    # : (String sqref, **untyped opts) -> void
-    def validate_data: (String sqref, **untyped opts) -> void
+    # : (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
+    def validate_data: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
 
     # Adds a conditional formatting rule to a cell range.
     #
@@ -147,16 +148,17 @@ module Xlsxrb
 
     # Adds an Excel Table (ListObject) to the sheet.
     #
-    # @param ref [String] The table range (e.g. "A1:D20").
-    # @param columns [Array<String>] Column header names.
+    # @param ref [String, nil] The table range (e.g. "A1:D20").
+    # @param columns [Array<String>, nil] Column header names.
     # @param name [String, nil] Table name identifier.
     # @param display_name [String, nil] Table display name.
     # @param style [String, nil] Built-in table style name (e.g. "TableStyleMedium2").
     # @param opts [Hash] Additional table properties.
+    # @yield [table_builder] Optional configuration block.
     # @return [void]
     # @api public
-    # : (String ref, columns: Array[String | Hash[Symbol, untyped]], ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
-    def table: (String ref, columns: Array[String | Hash[Symbol, untyped]], ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
+    # : (?String? ref, ?columns: Array[String | Hash[Symbol, untyped]]?, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) ?{ (TableBuilder) -> void } -> void
+    def table: (?String? ref, ?columns: Array[String | Hash[Symbol, untyped]]?, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) ?{ (TableBuilder) -> void } -> void
 
     # Adds a Pivot Table to the sheet.
     #
@@ -480,5 +482,206 @@ module Xlsxrb
     # @return [Hash{String => StyleBuilder}]
     # : Hash[String, StyleBuilder]
     attr_reader styles: untyped
+  end
+
+  # Builder context for configuring an Excel Table (ListObject) in block form.
+  #
+  # @api public
+  class TableBuilder
+    # @param ref [String, nil] Table range (e.g. "A1:D10").
+    # @param columns [Array, nil] Column header names or definition hashes.
+    # @param name [String, nil] Table name identifier.
+    # @param display_name [String, nil] Table display name.
+    # @param style [String, nil] Built-in table style name (e.g. "TableStyleMedium2").
+    # @param opts [Hash] Additional table properties.
+    # : (?String? ref, ?columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
+    def initialize: (?String? ref, ?columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
+
+    # : (untyped key) -> untyped
+    def []: (untyped key) -> untyped
+
+    # : (untyped key, untyped value) -> untyped
+    def []=: (untyped key, untyped value) -> untyped
+
+    # : (?String? val) -> String?
+    def ref: (?String? val) -> String?
+
+    # : (String val) -> String
+    def ref=: (String val) -> String
+
+    # : (*untyped cols) -> untyped
+    def columns: (*untyped cols) -> untyped
+
+    # : (untyped cols) -> untyped
+    def columns=: (untyped cols) -> untyped
+
+    # Appends a single column name or column definition.
+    #
+    # @param col [String, Hash] Column header name or definition.
+    # @return [void]
+    # : (String | Hash[Symbol, untyped] col) -> void
+    def column: (String | Hash[Symbol, untyped] col) -> void
+
+    alias add_column column
+
+    # : (?String? val) -> String?
+    def name: (?String? val) -> String?
+
+    # : (String val) -> String
+    def name=: (String val) -> String
+
+    # : (?String? val) -> String?
+    def display_name: (?String? val) -> String?
+
+    # : (String val) -> String
+    def display_name=: (String val) -> String
+
+    # : (?String? val) -> String?
+    def style: (?String? val) -> String?
+
+    # : (String val) -> String
+    def style=: (String val) -> String
+
+    # : (?bool? val) -> bool?
+    def show_row_stripes: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def show_row_stripes=: (bool val) -> bool
+
+    # : (?bool? val) -> bool?
+    def show_column_stripes: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def show_column_stripes=: (bool val) -> bool
+
+    # : (?bool? val) -> bool?
+    def show_first_column: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def show_first_column=: (bool val) -> bool
+
+    # : (?bool? val) -> bool?
+    def show_last_column: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def show_last_column=: (bool val) -> bool
+
+    # : (?Integer? val) -> Integer?
+    def total_row_count: (?Integer? val) -> Integer?
+
+    # : (Integer val) -> Integer
+    def total_row_count=: (Integer val) -> Integer
+
+    # : () -> Hash[Symbol, untyped]
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+
+  # Builder context for configuring data validation rules in block form.
+  #
+  # @api public
+  class DataValidationBuilder
+    # @param sqref [String, nil] Target cell or range reference.
+    # @param opts [Hash] Additional validation properties.
+    # : (?String? sqref, **untyped opts) -> void
+    def initialize: (?String? sqref, **untyped opts) -> void
+
+    # : (untyped key) -> untyped
+    def []: (untyped key) -> untyped
+
+    # : (untyped key, untyped value) -> untyped
+    def []=: (untyped key, untyped value) -> untyped
+
+    # : (?String? val) -> String?
+    def sqref: (?String? val) -> String?
+
+    # : (String val) -> String
+    def sqref=: (String val) -> String
+
+    alias range sqref
+
+    alias range= sqref=
+
+    # : (?untyped val) -> untyped
+    def type: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def type=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def operator: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def operator=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def formula1: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def formula1=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def formula2: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def formula2=: (untyped val) -> untyped
+
+    # : (?bool? val) -> bool?
+    def allow_blank: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def allow_blank=: (bool val) -> bool
+
+    # : (?bool? val) -> bool?
+    def show_input_message: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def show_input_message=: (bool val) -> bool
+
+    # : (?bool? val) -> bool?
+    def show_error_message: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def show_error_message=: (bool val) -> bool
+
+    # : (?String? val) -> String?
+    def error_title: (?String? val) -> String?
+
+    # : (String val) -> String
+    def error_title=: (String val) -> String
+
+    # : (?String? val) -> String?
+    def error_message: (?String? val) -> String?
+
+    # : (String val) -> String
+    def error_message=: (String val) -> String
+
+    alias error error_message
+
+    alias error= error_message=
+
+    # : (?String? val) -> String?
+    def prompt_title: (?String? val) -> String?
+
+    # : (String val) -> String
+    def prompt_title=: (String val) -> String
+
+    # : (?String? val) -> String?
+    def prompt_message: (?String? val) -> String?
+
+    # : (String val) -> String
+    def prompt_message=: (String val) -> String
+
+    alias prompt prompt_message
+
+    alias prompt= prompt_message=
+
+    # : (?untyped val) -> untyped
+    def error_style: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def error_style=: (untyped val) -> untyped
+
+    # : () -> Hash[Symbol, untyped]
+    def to_h: () -> Hash[Symbol, untyped]
   end
 end

@@ -2809,4 +2809,94 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("StreamRange", ls.protected_ranges[0][:name])
     assert_equal(["C3"], ls.cell_watches)
   end
+
+  test "table and validate_data block forms configure options and round-trip correctly" do
+    # 1. Via Xlsxrb.build
+    wb_built = Xlsxrb.build do |w|
+      w.sheet("BlockConfig") do |s|
+        s.table("A1:C5") do |t|
+          t.column "ID"
+          t.column "Name"
+          t.column "Score"
+          t.name "ScoreTable"
+          t.style "TableStyleMedium2"
+          t.show_row_stripes true
+        end
+
+        s.validate_data("B2:B5") do |dv|
+          dv.type :list
+          dv.formula1 '"Alice,Bob,Charlie"'
+          dv.allow_blank true
+          dv.error_title "Invalid Name"
+          dv.error_message "Select a valid student name"
+        end
+
+        s.row(%w[ID Name Score])
+        s.row([1, "Alice", 95])
+        s.row([2, "Bob", 88])
+      end
+    end
+
+    built_sheet = wb_built.sheet(0)
+    assert_equal(1, built_sheet.tables.size)
+    table_cfg = built_sheet.tables.first
+    assert_equal("A1:C5", table_cfg[:ref])
+    assert_equal(%w[ID Name Score], table_cfg[:columns])
+    assert_equal("ScoreTable", table_cfg[:name])
+    assert_equal("TableStyleMedium2", table_cfg[:style])
+    assert_equal(true, table_cfg[:show_row_stripes])
+
+    assert_equal(1, built_sheet.data_validations.size)
+    dv_cfg = built_sheet.data_validations.first
+    assert_equal("B2:B5", dv_cfg[:sqref])
+    assert_equal(:list, dv_cfg[:type])
+    assert_equal('"Alice,Bob,Charlie"', dv_cfg[:formula1])
+    assert_equal(true, dv_cfg[:allow_blank])
+    assert_equal("Invalid Name", dv_cfg[:error_title])
+    assert_equal("Select a valid student name", dv_cfg[:error])
+
+    # Write and read back
+    data = Xlsxrb.write(wb_built)
+    wb_read = Xlsxrb.read(data)
+    stream_sheet = wb_read.sheet(0)
+
+    assert_equal(1, stream_sheet.tables.size)
+    assert_equal("ScoreTable", stream_sheet.tables.first[:name])
+    assert_equal("A1:C5", stream_sheet.tables.first[:ref])
+
+    assert_equal(1, stream_sheet.data_validations.size)
+    assert_equal("B2:B5", stream_sheet.data_validations.first[:sqref])
+    assert_equal("list", stream_sheet.data_validations.first[:type])
+
+    # 2. Via streaming Xlsxrb.write
+    stream_data = Xlsxrb.write do |w|
+      w.sheet("StreamBlock") do |s|
+        s.table("A1:B3") do |t|
+          t.columns %w[Key Value]
+          t.style = "TableStyleLight1"
+        end
+        s.validate_data("B2:B3") do |dv|
+          dv.type = :whole
+          dv.operator = :greaterThan
+          dv.formula1 = "0"
+        end
+        s.row(%w[Key Value])
+        s.row(["K1", 10])
+      end
+    end
+
+    wb_stream = Xlsxrb.read(stream_data)
+    assert_equal(1, wb_stream.sheet(0).tables.size)
+    assert_equal("A1:B3", wb_stream.sheet(0).tables.first[:ref])
+    assert_equal(1, wb_stream.sheet(0).data_validations.size)
+    assert_equal("B2:B3", wb_stream.sheet(0).data_validations.first[:sqref])
+
+    # 3. Validation errors
+    assert_raise(ArgumentError) do
+      Xlsxrb.build { |w| w.sheet("Err") { |s| s.table("A1:B2") { |_t| nil } } }
+    end
+    assert_raise(ArgumentError) do
+      Xlsxrb.build { |w| w.sheet("Err") { |s| s.validate_data { |_dv| nil } } }
+    end
+  end
 end

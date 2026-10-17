@@ -341,12 +341,21 @@ module Xlsxrb
 
     # Adds a data validation rule to a cell or range.
     #
-    # @param sqref [String] Target cell or range reference (e.g. "B2:B100").
+    # @param sqref [String, nil] Target cell or range reference (e.g. "B2:B100").
     # @param opts [Hash] Validation configuration (e.g. type: :list, formula1: '"Option1,Option2"').
+    # @yield [data_validation_builder] Optional configuration block.
     # @return [void]
     # @api public
-    #: (String sqref, **untyped opts) -> void
-    def validate_data(sqref, **opts)
+    #: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
+    def validate_data(sqref = nil, **opts)
+      if block_given?
+        builder = DataValidationBuilder.new(sqref, **opts)
+        yield builder
+        opts = builder.to_h
+        sqref = opts.delete(:sqref) || sqref
+      end
+      raise ArgumentError, "data validation sqref must be provided" unless sqref
+
       @data_validations << opts.merge(sqref: sqref)
     end
 
@@ -363,17 +372,32 @@ module Xlsxrb
 
     # Adds an Excel Table (ListObject) to the sheet.
     #
-    # @param ref [String] The table range (e.g. "A1:D20").
-    # @param columns [Array<String>] Column header names.
+    # @param ref [String, nil] The table range (e.g. "A1:D20").
+    # @param columns [Array<String>, nil] Column header names.
     # @param name [String, nil] Table name identifier.
     # @param display_name [String, nil] Table display name.
     # @param style [String, nil] Built-in table style name (e.g. "TableStyleMedium2").
     # @param opts [Hash] Additional table properties.
+    # @yield [table_builder] Optional configuration block.
     # @return [void]
     # @api public
-    #: (String ref, columns: Array[String | Hash[Symbol, untyped]], ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
-    def table(ref, columns:, name: nil, display_name: nil, style: nil, **)
-      @tables << DslHelpers.normalize_table_options(ref, columns: columns, name: name, display_name: display_name, style: style, **)
+    #: (?String? ref, ?columns: Array[String | Hash[Symbol, untyped]]?, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) ?{ (TableBuilder) -> void } -> void
+    def table(ref = nil, columns: nil, name: nil, display_name: nil, style: nil, **opts)
+      opts = opts.dup
+      if block_given?
+        builder = TableBuilder.new(ref, columns: columns, name: name, display_name: display_name, style: style, **opts)
+        yield builder
+        opts = builder.to_h
+        ref = opts.delete(:ref) || ref
+        columns = opts.delete(:columns) || columns
+        name = opts.delete(:name) || name
+        display_name = opts.delete(:display_name) || display_name
+        style = opts.delete(:style) || style
+      end
+      raise ArgumentError, "table ref must be provided" unless ref
+      raise ArgumentError, "table columns must be provided" if columns.nil?
+
+      @tables << DslHelpers.normalize_table_options(ref, columns: columns, name: name, display_name: display_name, style: style, **opts)
     end
 
     # Adds a Pivot Table to the sheet.
@@ -911,5 +935,409 @@ module Xlsxrb
     # @return [Hash{String => StyleBuilder}]
     #: Hash[String, StyleBuilder]
     attr_reader :styles
+  end
+
+  # Builder context for configuring an Excel Table (ListObject) in block form.
+  #
+  # @api public
+  class TableBuilder
+    # @param ref [String, nil] Table range (e.g. "A1:D10").
+    # @param columns [Array, nil] Column header names or definition hashes.
+    # @param name [String, nil] Table name identifier.
+    # @param display_name [String, nil] Table display name.
+    # @param style [String, nil] Built-in table style name (e.g. "TableStyleMedium2").
+    # @param opts [Hash] Additional table properties.
+    #: (?String? ref, ?columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
+    def initialize(ref = nil, columns: nil, name: nil, display_name: nil, style: nil, **opts)
+      @options = opts.dup
+      @options[:ref] = ref if ref
+      @options[:columns] = columns.is_a?(Array) ? columns.dup : [columns] if columns
+      @options[:name] = name if name
+      @options[:display_name] = display_name if display_name
+      @options[:style] = style if style
+    end
+
+    #: (untyped key) -> untyped
+    def [](key)
+      @options[key.to_sym]
+    end
+
+    #: (untyped key, untyped value) -> untyped
+    def []=(key, value)
+      @options[key.to_sym] = value
+    end
+
+    #: (?String? val) -> String?
+    def ref(val = nil)
+      if val
+        @options[:ref] = val.to_s
+      else
+        @options[:ref]
+      end
+    end
+
+    #: (String val) -> String
+    def ref=(val)
+      @options[:ref] = val.to_s
+    end
+
+    #: (*untyped cols) -> untyped
+    def columns(*cols)
+      if cols.empty?
+        @options[:columns]
+      elsif cols.size == 1 && cols.first.is_a?(Array)
+        @options[:columns] = cols.first
+      else
+        @options[:columns] = cols
+      end
+    end
+
+    #: (untyped cols) -> untyped
+    def columns=(cols)
+      @options[:columns] = cols.is_a?(Array) ? cols : [cols]
+    end
+
+    # Appends a single column name or column definition.
+    #
+    # @param col [String, Hash] Column header name or definition.
+    # @return [void]
+    #: (String | Hash[Symbol, untyped] col) -> void
+    def column(col)
+      (@options[:columns] ||= []) << col
+    end
+    alias add_column column
+
+    #: (?String? val) -> String?
+    def name(val = nil)
+      if val
+        @options[:name] = val.to_s
+      else
+        @options[:name]
+      end
+    end
+
+    #: (String val) -> String
+    def name=(val)
+      @options[:name] = val.to_s
+    end
+
+    #: (?String? val) -> String?
+    def display_name(val = nil)
+      if val
+        @options[:display_name] = val.to_s
+      else
+        @options[:display_name]
+      end
+    end
+
+    #: (String val) -> String
+    def display_name=(val)
+      @options[:display_name] = val.to_s
+    end
+
+    #: (?String? val) -> String?
+    def style(val = nil)
+      if val
+        @options[:style] = val.to_s
+      else
+        @options[:style]
+      end
+    end
+
+    #: (String val) -> String
+    def style=(val)
+      @options[:style] = val.to_s
+    end
+
+    #: (?bool? val) -> bool?
+    def show_row_stripes(val = nil)
+      if val.nil?
+        @options[:show_row_stripes]
+      else
+        @options[:show_row_stripes] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def show_row_stripes=(val)
+      @options[:show_row_stripes] = val ? true : false
+    end
+
+    #: (?bool? val) -> bool?
+    def show_column_stripes(val = nil)
+      if val.nil?
+        @options[:show_column_stripes]
+      else
+        @options[:show_column_stripes] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def show_column_stripes=(val)
+      @options[:show_column_stripes] = val ? true : false
+    end
+
+    #: (?bool? val) -> bool?
+    def show_first_column(val = nil)
+      if val.nil?
+        @options[:show_first_column]
+      else
+        @options[:show_first_column] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def show_first_column=(val)
+      @options[:show_first_column] = val ? true : false
+    end
+
+    #: (?bool? val) -> bool?
+    def show_last_column(val = nil)
+      if val.nil?
+        @options[:show_last_column]
+      else
+        @options[:show_last_column] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def show_last_column=(val)
+      @options[:show_last_column] = val ? true : false
+    end
+
+    #: (?Integer? val) -> Integer?
+    def total_row_count(val = nil)
+      if val.nil?
+        @options[:total_row_count]
+      else
+        @options[:total_row_count] = val.to_i
+      end
+    end
+
+    #: (Integer val) -> Integer
+    def total_row_count=(val)
+      @options[:total_row_count] = val.to_i
+    end
+
+    #: () -> Hash[Symbol, untyped]
+    def to_h
+      @options.dup
+    end
+  end
+
+  # Builder context for configuring data validation rules in block form.
+  #
+  # @api public
+  class DataValidationBuilder
+    # @param sqref [String, nil] Target cell or range reference.
+    # @param opts [Hash] Additional validation properties.
+    #: (?String? sqref, **untyped opts) -> void
+    def initialize(sqref = nil, **opts)
+      @options = opts.dup
+      @options[:sqref] = sqref if sqref
+    end
+
+    #: (untyped key) -> untyped
+    def [](key)
+      @options[key.to_sym]
+    end
+
+    #: (untyped key, untyped value) -> untyped
+    def []=(key, value)
+      @options[key.to_sym] = value
+    end
+
+    #: (?String? val) -> String?
+    def sqref(val = nil)
+      if val
+        @options[:sqref] = val.to_s
+      else
+        @options[:sqref]
+      end
+    end
+
+    #: (String val) -> String
+    def sqref=(val)
+      @options[:sqref] = val.to_s
+    end
+    alias range sqref
+    alias range= sqref=
+
+    #: (?untyped val) -> untyped
+    def type(val = nil)
+      if val
+        @options[:type] = val
+      else
+        @options[:type]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def type=(val)
+      @options[:type] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def operator(val = nil)
+      if val
+        @options[:operator] = val
+      else
+        @options[:operator]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def operator=(val)
+      @options[:operator] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def formula1(val = nil)
+      if val
+        @options[:formula1] = val
+      else
+        @options[:formula1]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def formula1=(val)
+      @options[:formula1] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def formula2(val = nil)
+      if val
+        @options[:formula2] = val
+      else
+        @options[:formula2]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def formula2=(val)
+      @options[:formula2] = val
+    end
+
+    #: (?bool? val) -> bool?
+    def allow_blank(val = nil)
+      if val.nil?
+        @options[:allow_blank]
+      else
+        @options[:allow_blank] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def allow_blank=(val)
+      @options[:allow_blank] = val ? true : false
+    end
+
+    #: (?bool? val) -> bool?
+    def show_input_message(val = nil)
+      if val.nil?
+        @options[:show_input_message]
+      else
+        @options[:show_input_message] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def show_input_message=(val)
+      @options[:show_input_message] = val ? true : false
+    end
+
+    #: (?bool? val) -> bool?
+    def show_error_message(val = nil)
+      if val.nil?
+        @options[:show_error_message]
+      else
+        @options[:show_error_message] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def show_error_message=(val)
+      @options[:show_error_message] = val ? true : false
+    end
+
+    #: (?String? val) -> String?
+    def error_title(val = nil)
+      if val
+        @options[:error_title] = val.to_s
+      else
+        @options[:error_title]
+      end
+    end
+
+    #: (String val) -> String
+    def error_title=(val)
+      @options[:error_title] = val.to_s
+    end
+
+    #: (?String? val) -> String?
+    def error_message(val = nil)
+      if val
+        @options[:error] = val.to_s
+      else
+        @options[:error]
+      end
+    end
+
+    #: (String val) -> String
+    def error_message=(val)
+      @options[:error] = val.to_s
+    end
+    alias error error_message
+    alias error= error_message=
+
+    #: (?String? val) -> String?
+    def prompt_title(val = nil)
+      if val
+        @options[:prompt_title] = val.to_s
+      else
+        @options[:prompt_title]
+      end
+    end
+
+    #: (String val) -> String
+    def prompt_title=(val)
+      @options[:prompt_title] = val.to_s
+    end
+
+    #: (?String? val) -> String?
+    def prompt_message(val = nil)
+      if val
+        @options[:prompt] = val.to_s
+      else
+        @options[:prompt]
+      end
+    end
+
+    #: (String val) -> String
+    def prompt_message=(val)
+      @options[:prompt] = val.to_s
+    end
+    alias prompt prompt_message
+    alias prompt= prompt_message=
+
+    #: (?untyped val) -> untyped
+    def error_style(val = nil)
+      if val
+        @options[:error_style] = val
+      else
+        @options[:error_style]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def error_style=(val)
+      @options[:error_style] = val
+    end
+
+    #: () -> Hash[Symbol, untyped]
+    def to_h
+      @options.dup
+    end
   end
 end
