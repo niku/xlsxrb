@@ -553,6 +553,7 @@ module Xlsxrb
         listener.rules
       end
     end
+    alias conditional_formatting conditional_formats
 
     # Returns tables defined in this worksheet.
     #

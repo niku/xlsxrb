@@ -559,21 +559,7 @@ module Xlsxrb
                 xml_val = "0"
               end
             end
-          when String
-            if sst_index
-              idx = sst_index[value]
-              unless idx
-                sst << value
-                idx = sst.size - 1
-                sst_index[value] = idx
-              end
-              xml_val = idx
-              type = "s"
-            else
-              xml_val = value
-              type = "inlineStr"
-            end
-          when Xlsxrb::Elements::RichText
+          when String, Xlsxrb::Elements::RichText
             if sst_index
               idx = sst_index[value]
               unless idx
@@ -1156,7 +1142,14 @@ module Xlsxrb
       def write_row_breaks(breaks)
         @builder.open_tag("rowBreaks", { count: breaks.size.to_s, manualBreakCount: breaks.size.to_s })
         breaks.each do |brk|
-          @builder.empty_tag("brk", { id: brk.to_s, max: "16383", man: "1" })
+          attrs = if brk.is_a?(Hash)
+                    a = { id: (brk[:id] || brk[:row] || 0).to_s, max: (brk[:max] || 16_383).to_s, man: brk.fetch(:man, true) ? "1" : "0" }
+                    a[:min] = brk[:min].to_s if brk[:min]
+                    a
+                  else
+                    { id: brk.to_s, max: "16383", man: "1" }
+                  end
+          @builder.empty_tag("brk", attrs)
         end
         @builder.close_tag("rowBreaks")
       end
@@ -1164,7 +1157,14 @@ module Xlsxrb
       def write_col_breaks(breaks)
         @builder.open_tag("colBreaks", { count: breaks.size.to_s, manualBreakCount: breaks.size.to_s })
         breaks.each do |brk|
-          @builder.empty_tag("brk", { id: brk.to_s, max: "1048575", man: "1" })
+          attrs = if brk.is_a?(Hash)
+                    a = { id: (brk[:id] || brk[:col] || 0).to_s, max: (brk[:max] || 1_048_575).to_s, man: brk.fetch(:man, true) ? "1" : "0" }
+                    a[:min] = brk[:min].to_s if brk[:min]
+                    a
+                  else
+                    { id: brk.to_s, max: "1048575", man: "1" }
+                  end
+          @builder.empty_tag("brk", attrs)
         end
         @builder.close_tag("colBreaks")
       end

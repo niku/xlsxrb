@@ -48,25 +48,25 @@ class CellXmlParserPbtTest < Test::Unit::TestCase
 
       case variant
       when 0 # Self-closing empty cell
-        cells_xml << "<#{p}c #{attrs.join(' ')}/>"
+        cells_xml << "<#{p}c #{attrs.join(" ")}/>"
       when 1 # Simple numeric cell
-        cells_xml << "<#{p}c #{attrs.join(' ')}><#{p}v>#{int_val}</#{p}v></#{p}c>"
+        cells_xml << "<#{p}c #{attrs.join(" ")}><#{p}v>#{int_val}</#{p}v></#{p}c>"
       when 2 # Boolean cell
         attrs << %(t="b")
         attrs.shuffle!
         val_str = int_val.even? ? "1" : "0"
-        cells_xml << "<#{p}c #{attrs.join(' ')}><#{p}v>#{val_str}</#{p}v></#{p}c>"
+        cells_xml << "<#{p}c #{attrs.join(" ")}><#{p}v>#{val_str}</#{p}v></#{p}c>"
       when 3 # Inline text with phonetic reading (<rPh>)
         attrs << %(t="inlineStr")
         # Permute attributes based on perm
         attrs.rotate!(perm % attrs.size)
-        cells_xml << "<#{p}c #{attrs.join(' ')}><#{p}is><#{p}t>#{text1}</#{p}t><#{p}rPh sb=\"0\" eb=\"2\"><#{p}t>#{text2}</#{p}t></#{p}rPh></#{p}is></#{p}c>"
+        cells_xml << "<#{p}c #{attrs.join(" ")}><#{p}is><#{p}t>#{text1}</#{p}t><#{p}rPh sb=\"0\" eb=\"2\"><#{p}t>#{text2}</#{p}t></#{p}rPh></#{p}is></#{p}c>"
       when 4 # Rich text with formatting tags (<rPr>, <b/>)
         attrs << %(t="inlineStr")
-        cells_xml << "<#{p}c #{attrs.join(' ')}><#{p}is><#{p}r><#{p}rPr><b/><sz val=\"11\"/></#{p}rPr><#{p}t>#{text1}</#{p}t></#{p}r><#{p}r><#{p}t>#{text2}</#{p}t></#{p}r></#{p}is></#{p}c>"
+        cells_xml << "<#{p}c #{attrs.join(" ")}><#{p}is><#{p}r><#{p}rPr><b/><sz val=\"11\"/></#{p}rPr><#{p}t>#{text1}</#{p}t></#{p}r><#{p}r><#{p}t>#{text2}</#{p}t></#{p}r></#{p}is></#{p}c>"
       when 5 # Self-closing empty cell with t="s"
         attrs << %(t="s")
-        cells_xml << "<#{p}c #{attrs.join(' ')}/>"
+        cells_xml << "<#{p}c #{attrs.join(" ")}/>"
       end
     end
 
@@ -102,12 +102,8 @@ class CellXmlParserPbtTest < Test::Unit::TestCase
         end
 
         # Trim trailing nils to align arrays
-        while fast_values.last.nil? && fast_values.size > listener_values.size
-          fast_values.pop
-        end
-        while listener_values.last.nil? && listener_values.size > fast_values.size
-          listener_values.pop
-        end
+        fast_values.pop while fast_values.last.nil? && fast_values.size > listener_values.size
+        listener_values.pop while listener_values.last.nil? && listener_values.size > fast_values.size
 
         # Compare plain values (converting RichText to string for uniform comparison)
         normalized_listener = listener_values.map { |v| v.is_a?(Xlsxrb::Elements::RichText) ? v.to_s : v }

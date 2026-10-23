@@ -661,6 +661,38 @@ module Xlsxrb
       sd[:sheet_format] ||= ws.sheet_format if ws.respond_to?(:sheet_format) && !ws.sheet_format.empty?
       sd[:protected_ranges] ||= ws.protected_ranges if ws.respond_to?(:protected_ranges) && !ws.protected_ranges.empty?
       sd[:cell_watches] ||= ws.cell_watches if ws.respond_to?(:cell_watches) && !ws.cell_watches.empty?
+      sd[:freeze_pane] ||= ws.freeze_pane if ws.respond_to?(:freeze_pane) && ws.freeze_pane
+      sd[:split_pane] ||= ws.split_pane if ws.respond_to?(:split_pane) && ws.split_pane
+      sd[:sheet_view] ||= ws.sheet_view if ws.respond_to?(:sheet_view) && ws.sheet_view && !ws.sheet_view.empty?
+      sd[:page_setup] ||= ws.page_setup if ws.respond_to?(:page_setup) && ws.page_setup && !ws.page_setup.empty?
+      sd[:page_margins] ||= ws.page_margins if ws.respond_to?(:page_margins) && ws.page_margins && !ws.page_margins.empty?
+      sd[:header_footer] ||= ws.header_footer if ws.respond_to?(:header_footer) && ws.header_footer && !ws.header_footer.empty?
+      sd[:print_options] ||= ws.print_options if ws.respond_to?(:print_options) && ws.print_options && !ws.print_options.empty?
+      sd[:sheet_protection] ||= ws.sheet_protection if ws.respond_to?(:sheet_protection) && ws.sheet_protection && !ws.sheet_protection.empty?
+      sd[:tables] ||= ws.tables if ws.respond_to?(:tables) && ws.tables && !ws.tables.empty?
+      sd[:merge_cells] ||= ws.merged_cells if ws.respond_to?(:merged_cells) && ws.merged_cells && !ws.merged_cells.empty?
+      sd[:auto_filter] ||= ws.auto_filter if ws.respond_to?(:auto_filter) && ws.auto_filter
+      sd[:row_breaks] ||= ws.row_breaks if ws.respond_to?(:row_breaks) && ws.row_breaks && !ws.row_breaks.empty?
+      sd[:col_breaks] ||= ws.col_breaks if ws.respond_to?(:col_breaks) && ws.col_breaks && !ws.col_breaks.empty?
+      if ws.respond_to?(:images) && ws.images && !ws.images.empty?
+        sd[:images] ||= ws.images.map do |img|
+          if img.is_a?(Elements::Image)
+            ext = img.filename ? File.extname(img.filename).delete_prefix(".").downcase : "png"
+            opts = img.unmapped_data ? img.unmapped_data.dup : {}
+            opts[:name] ||= img.name
+            opts[:file_data] = img.data
+            opts[:ext] = ext
+            opts[:from_col] = img.from_col
+            opts[:from_row] = img.from_row
+            opts[:to_col] = img.to_col
+            opts[:to_row] = img.to_row
+            opts
+          else
+            img
+          end
+        end
+      end
+      sd[:shapes] ||= ws.shapes if ws.respond_to?(:shapes) && ws.shapes && !ws.shapes.empty?
 
       sd
     end
@@ -668,6 +700,10 @@ module Xlsxrb
     # Extract workbook-level facade metadata
     wb_facade = workbook.unmapped_data[:facade] || {}
     wb_properties = workbook.unmapped_data[:workbook_properties] || wb_facade[:workbook_properties]
+    wb_core = (workbook.respond_to?(:core_properties) && workbook.core_properties) || wb_facade[:core_properties]
+    wb_app = (workbook.respond_to?(:app_properties) && workbook.app_properties) || wb_facade[:app_properties]
+    wb_custom = (workbook.respond_to?(:custom_properties) && workbook.custom_properties) || wb_facade[:custom_properties]
+    wb_prot = (workbook.respond_to?(:workbook_protection) && workbook.workbook_protection) || wb_facade[:workbook_protection]
     raw_dns = wb_facade[:defined_names] || (workbook.respond_to?(:defined_names) && !workbook.defined_names.empty? ? workbook.defined_names : nil)
     defined_names = raw_dns ? raw_dns.map(&:dup) : []
 
@@ -698,10 +734,10 @@ module Xlsxrb
         shared_strings_index: sst_index,
         styles: workbook.styles,
         defined_names: defined_names,
-        core_properties: wb_facade[:core_properties],
-        app_properties: wb_facade[:app_properties],
-        custom_properties: wb_facade[:custom_properties],
-        workbook_protection: wb_facade[:workbook_protection],
+        core_properties: wb_core,
+        app_properties: wb_app,
+        custom_properties: wb_custom,
+        workbook_protection: wb_prot,
         workbook_properties: wb_properties
       )
       encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password, mode: encryption_mode)
@@ -718,10 +754,10 @@ module Xlsxrb
         shared_strings_index: sst_index,
         styles: workbook.styles,
         defined_names: defined_names,
-        core_properties: wb_facade[:core_properties],
-        app_properties: wb_facade[:app_properties],
-        custom_properties: wb_facade[:custom_properties],
-        workbook_protection: wb_facade[:workbook_protection],
+        core_properties: wb_core,
+        app_properties: wb_app,
+        custom_properties: wb_custom,
+        workbook_protection: wb_prot,
         workbook_properties: wb_properties
       )
     end

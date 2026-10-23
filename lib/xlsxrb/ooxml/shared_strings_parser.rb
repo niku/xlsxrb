@@ -117,10 +117,12 @@ module Xlsxrb
 
           # Ensure the tag is actually <t>, <t ...>, or <t/> and not <theme>, <table>, etc.
           b = xml.getbyte(t_start + 2)
+          # rubocop:disable Style/MultipleComparison -- Zero-allocation hot path check
           unless b == 62 || b == 32 || b == 47 || b == 9 || b == 10 || b == 13
             pos = t_start + 2
             next
           end
+          # rubocop:enable Style/MultipleComparison
 
           # Phonetic runs (<rPh>) hold furigana readings and are not part of the string
           rph_start = xml.index("<rPh", pos)

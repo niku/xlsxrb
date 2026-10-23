@@ -1019,8 +1019,25 @@ module Xlsxrb
         # Table columns
         columns = tbl[:columns] || []
         b.open_tag("tableColumns", { count: columns.size.to_s })
-        columns.each_with_index do |col_name, ci|
-          b.empty_tag("tableColumn", { id: (ci + 1).to_s, name: col_name })
+        columns.each_with_index do |col, ci|
+          col_name = col.is_a?(Hash) ? col[:name] : col
+          col_attrs = { id: (ci + 1).to_s, name: col_name.to_s }
+          if col.is_a?(Hash)
+            col_attrs[:totalsRowFunction] = col[:totals_row_function].to_s if col[:totals_row_function]
+            col_attrs[:totalsRowLabel] = col[:totals_row_label].to_s if col[:totals_row_label]
+            col_attrs[:dataDxfId] = col[:data_dxf_id].to_s if col[:data_dxf_id]
+            col_attrs[:totalsRowDxfId] = col[:totals_row_dxf_id].to_s if col[:totals_row_dxf_id]
+            col_attrs[:headerRowDxfId] = col[:header_row_dxf_id].to_s if col[:header_row_dxf_id]
+            col_attrs[:dataCellStyle] = col[:data_cell_style].to_s if col[:data_cell_style]
+          end
+          if col.is_a?(Hash) && (col[:calculated_column_formula] || col[:totals_row_formula])
+            b.open_tag("tableColumn", col_attrs)
+            b.tag("calculatedColumnFormula") { |cb| cb.text(col[:calculated_column_formula].to_s) } if col[:calculated_column_formula]
+            b.tag("totalsRowFormula") { |tb| tb.text(col[:totals_row_formula].to_s) } if col[:totals_row_formula]
+            b.close_tag("tableColumn")
+          else
+            b.empty_tag("tableColumn", col_attrs)
+          end
         end
         b.close_tag("tableColumns")
 

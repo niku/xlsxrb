@@ -6,6 +6,7 @@
 - Strict numeric cell values: a numeric cell (`t="n"` or no `t`) with an empty `<v>` now reads as `nil` instead of `0`, exponent notation such as `1E-3` reads as a Float, and text that is not a number raises `Xlsxrb::ParseError` instead of silently becoming `0`. Inline string and formula string cells without text read as `nil`, and `t="d"` cells read as their ISO 8601 text.
 
 ### Fixed
+- Preserve worksheet and workbook attributes during in-memory writes (`Xlsxrb.write(workbook)`): accurately map and serialize `freeze_pane`, `split_pane`, `sheet_view`, `page_setup`, `page_margins`, `header_footer`, `print_options`, `sheet_protection`, `tables`, `merged_cells`, `auto_filter`, `row_breaks`, `col_breaks`, and embedded images from `Elements::Worksheet`, and propagate workbook properties (`core_properties`, `app_properties`, `custom_properties`, `workbook_protection`).
 - Support arbitrary XML attribute ordering on cells (such as `t` before `s` or `r` after `s`) in streaming fast-scan parsers, ensuring cell types and styles are never dropped regardless of producer attribute sequence.
 - Empty self-closing string cells without `<v>` in fast scan parsers evaluate to `nil` instead of empty string `""`.
 - In-memory SAX listeners (`WorksheetListener` and `SharedStringsListener`) skip phonetic readings (`<rPh>`) and treat empty self-closing string cells (`<c ... t="s"/>`) as nil, matching streaming reader behavior.
@@ -16,6 +17,8 @@
 - Phonetic readings (`<rPh>`) are excluded from shared strings and inline strings, so cells with furigana no longer concatenate phonetic readings to display text.
 
 ### Added
+- Comprehensive round-trip contract tests in `test/contract/round_trip_fidelity_test.rb` verifying that `read -> write -> read` preserves worksheet and workbook attributes across streaming and loaded in-memory representations.
+- Alias `conditional_formatting` to `conditional_formats` on `StreamSheet` for complete API symmetry with `Elements::Worksheet`.
 - Property-based tests for cell XML parsing in `test/pbt/cell_xml_parser_pbt_test.rb`, validating 100% equivalence between streaming fast-scan and SAX listener parsers across random attribute permutations, namespaces, rich text, and phonetic elements.
 - Dedicated exception `Xlsxrb::ZipBombError < Xlsxrb::ZipError` for archive expansion limit violations.
 - Workbook view and calculation properties in in-memory writes: `Xlsxrb.write(workbook)` emits `<bookViews><workbookView activeTab="n"/></bookViews>` and `<calcPr fullCalcOnLoad="1"/>` when the workbook properties carry `active_tab:` and `full_calc_on_load: true`.
