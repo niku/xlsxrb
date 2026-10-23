@@ -60,7 +60,11 @@ module Xlsxrb
   class ParseError < Error; end
 
   OMITTED_TARGET = Object.new.freeze
-  private_constant :OMITTED_TARGET
+  OFFICE_DOC_REL_TYPES = [
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+    "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument"
+  ].freeze
+  private_constant :OMITTED_TARGET, :OFFICE_DOC_REL_TYPES
 
   # Raised when cell, row, or workbook parameters fail specification validation.
   class ValidationError < Error; end
@@ -392,6 +396,62 @@ module Xlsxrb
   # @raise [InvalidPasswordError] If the supplied password is incorrect.
   # @raise [ParseError] If the spreadsheet XML structure is invalid.
   # @api public
+  def self.resolve_workbook_entry(zip_reader)
+    rels_xml = zip_reader.read_entry("_rels/.rels")
+    if rels_xml
+      entries = Ooxml::RelationshipsParser.parse_entries(rels_xml)
+      doc_rel = entries.find { |e| OFFICE_DOC_REL_TYPES.include?(e[:type]) }
+      if doc_rel
+        clean = doc_rel[:target].delete_prefix("/")
+        return clean if zip_reader.entry?(clean)
+      end
+    end
+    return "xl/workbook.xml" if zip_reader.entry?("xl/workbook.xml")
+    return "workbook.xml" if zip_reader.entry?("workbook.xml")
+
+    "xl/workbook.xml"
+  end
+
+  def self.resolve_part_path(zip_reader, target_path, wb_dir)
+    return nil unless target_path
+
+    clean = target_path.delete_prefix("/")
+    candidates = [
+      wb_dir == "." ? clean : "#{wb_dir}/#{clean}",
+      clean,
+      "xl/#{clean}"
+    ]
+    candidates.find { |c| zip_reader.entry?(c) }
+  end
+
+  def self.resolve_sheet_entry(zip_reader, target_path, wb_dir, index)
+    resolved = resolve_part_path(zip_reader, target_path, wb_dir)
+    return resolved if resolved
+
+    fallbacks = [
+      wb_dir == "." ? "worksheets/sheet#{index + 1}.xml" : "#{wb_dir}/worksheets/sheet#{index + 1}.xml",
+      wb_dir == "." ? "sheet#{index + 1}.xml" : "#{wb_dir}/sheet#{index + 1}.xml",
+      "xl/worksheets/sheet#{index + 1}.xml",
+      "xl/sheet#{index + 1}.xml",
+      "worksheets/sheet#{index + 1}.xml",
+      "sheet#{index + 1}.xml"
+    ]
+    fallbacks.find { |f| zip_reader.entry?(f) }
+  end
+
+  def self.resolve_part_entry(zip_reader, rels, rel_type_sub, fallback_name, wb_dir)
+    target = rels.find { |_id, t| t.include?(rel_type_sub) }&.last
+    resolved = resolve_part_path(zip_reader, target, wb_dir)
+    return resolved if resolved
+
+    fallbacks = [
+      wb_dir == "." ? fallback_name : "#{wb_dir}/#{fallback_name}",
+      "xl/#{fallback_name}",
+      fallback_name
+    ]
+    fallbacks.find { |f| zip_reader.entry?(f) }
+  end
+
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
   def self.read(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil, &)
@@ -400,26 +460,29 @@ module Xlsxrb
     zip_options[:max_uncompressed_size] = max_uncompressed_size if max_uncompressed_size
     zip_reader = Ooxml::ZipReader.open(prepared_source, **zip_options)
     begin
-      shared_strings_xml = zip_reader.read_entry("xl/sharedStrings.xml")
-      shared_strings = Ooxml::SharedStringsParser.parse(shared_strings_xml)
+      workbook_path = resolve_workbook_entry(zip_reader)
+      wb_dir = File.dirname(workbook_path)
+      wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
+      rels_xml = zip_reader.read_entry(wb_rels_name)
+      rels = rels_xml ? Ooxml::RelationshipsParser.parse(rels_xml) : {}
 
-      workbook_xml = zip_reader.read_entry("xl/workbook.xml")
+      sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
+      shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
+      shared_strings = shared_strings_xml ? Ooxml::SharedStringsParser.parse(shared_strings_xml) : []
+
+      styles_entry = resolve_part_entry(zip_reader, rels, "styles", "styles.xml", wb_dir)
+      styles_xml = styles_entry ? zip_reader.read_entry(styles_entry) : nil
+      styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
+
+      workbook_xml = zip_reader.read_entry(workbook_path)
       wb_parsed = Ooxml::WorkbookParser.parse_with_properties(workbook_xml)
       workbook_sheets = wb_parsed[:sheets]
       is_date1904 = wb_parsed[:date1904]
 
-      rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
-      rels = Ooxml::RelationshipsParser.parse(rels_xml)
-
-      styles_xml = zip_reader.read_entry("xl/styles.xml")
-      styles = Ooxml::StylesParser.parse(styles_xml)
-
-      sheets = workbook_sheets.map do |sheet_info|
+      sheets = workbook_sheets.each_with_index.map do |sheet_info, idx|
         target = rels[sheet_info[:r_id]]
-        next nil unless target
-
-        sheet_path = target.start_with?("/") ? target.delete_prefix("/") : "xl/#{target}"
-        next nil unless zip_reader.entry?(sheet_path)
+        sheet_path = resolve_sheet_entry(zip_reader, target, wb_dir, idx)
+        next nil unless sheet_path
 
         chunk_supplier = ->(&blk) { zip_reader.each_entry_chunk(sheet_path, &blk) }
 
@@ -809,29 +872,32 @@ module Xlsxrb
       structural_change = false
 
       Ooxml::ZipReader.open(prepared_source) do |zip_reader|
-        shared_strings_xml = zip_reader.read_entry("xl/sharedStrings.xml")
+        workbook_path = resolve_workbook_entry(zip_reader)
+        wb_dir = File.dirname(workbook_path)
+        wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
+        rels_xml = zip_reader.read_entry(wb_rels_name)
+        rels = rels_xml ? Ooxml::RelationshipsParser.parse(rels_xml) : {}
+
+        sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
+        shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
         shared_strings = shared_strings_xml ? Ooxml::SharedStringsParser.parse(shared_strings_xml) : []
         sst_index = {}
         shared_strings.each_with_index { |s, idx| sst_index[s] ||= idx }
         initial_sst_size = shared_strings.size
 
-        workbook_xml = zip_reader.read_entry("xl/workbook.xml")
+        styles_entry = resolve_part_entry(zip_reader, rels, "styles", "styles.xml", wb_dir)
+        styles_xml = styles_entry ? zip_reader.read_entry(styles_entry) : nil
+        styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
+
+        workbook_xml = zip_reader.read_entry(workbook_path)
         wb_parsed = workbook_xml ? Ooxml::WorkbookParser.parse_with_properties(workbook_xml) : { sheets: [], date1904: false, defined_names: [] }
         workbook_sheets = wb_parsed[:sheets]
 
-        rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
-        rels = rels_xml ? Ooxml::RelationshipsParser.parse(rels_xml) : {}
-
-        styles_xml = zip_reader.read_entry("xl/styles.xml")
-        styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
-
         sheet_entry_map = {}
-        loaded_sheets = workbook_sheets.map do |sheet_info|
+        loaded_sheets = workbook_sheets.each_with_index.map do |sheet_info, idx|
           target_path = rels[sheet_info[:r_id]]
-          next nil unless target_path
-
-          sheet_path = target_path.start_with?("/") ? target_path.delete_prefix("/") : "xl/#{target_path}"
-          next nil unless zip_reader.entry?(sheet_path)
+          sheet_path = resolve_sheet_entry(zip_reader, target_path, wb_dir, idx)
+          next nil unless sheet_path
 
           sheet_entry_map[sheet_info[:name]] = sheet_path
           sheet_xml = zip_reader.read_entry(sheet_path) || ""
@@ -921,7 +987,8 @@ module Xlsxrb
 
           if mutable_shared_strings.size > initial_sst_size && shared_strings_xml
             new_strings = mutable_shared_strings[initial_sst_size..]
-            replaced_entries["xl/sharedStrings.xml"] = append_to_shared_strings_xml(
+            sst_path = sst_entry || (wb_dir == "." ? "sharedStrings.xml" : "#{wb_dir}/sharedStrings.xml")
+            replaced_entries[sst_path] = append_to_shared_strings_xml(
               shared_strings_xml,
               new_strings
             )

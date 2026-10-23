@@ -972,10 +972,14 @@ module Xlsxrb
 
       STRICT_SSML_NS = "http://purl.oclc.org/ooxml/spreadsheetml/main/2006/main"
       TRANSITIONAL_SSML_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+      OFFICE_DOC_REL_TYPES = [
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+        "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument"
+      ].freeze
 
       # Returns :strict or :transitional based on the namespace of the workbook XML.
       def format_variant
-        workbook_xml = extract_zip_entry("xl/workbook.xml")
+        workbook_xml = extract_zip_entry(resolve_workbook_entry)
         return :transitional if workbook_xml.nil? || workbook_xml.empty?
 
         if workbook_xml.include?(STRICT_SSML_NS)
@@ -986,6 +990,22 @@ module Xlsxrb
       end
 
       private
+
+      def resolve_workbook_entry
+        @resolve_workbook_entry ||= begin
+          rels_xml = extract_zip_entry("_rels/.rels")
+          target_path = nil
+          if rels_xml && !rels_xml.empty?
+            entries = parse_rels_with_types(rels_xml)
+            doc_rel = entries.find { |e| OFFICE_DOC_REL_TYPES.include?(e[:type]) }
+            if doc_rel
+              clean = doc_rel[:target].delete_prefix("/")
+              target_path = clean if extract_zip_entry(clean)
+            end
+          end
+          target_path || (extract_zip_entry("xl/workbook.xml") ? "xl/workbook.xml" : "workbook.xml")
+        end
+      end
 
       def resolve_sheet_for_defined_name(sheet)
         sheets = discover_sheets
@@ -1002,7 +1022,7 @@ module Xlsxrb
       end
 
       def parse_workbook_metadata
-        workbook_xml = extract_zip_entry("xl/workbook.xml")
+        workbook_xml = extract_zip_entry(resolve_workbook_entry)
         if workbook_xml.nil? || workbook_xml.empty?
           return { workbook_properties: {}, workbook_views: {}, calc_properties: {}, file_recovery_properties: {},
                    workbook_protection: nil }
@@ -1032,21 +1052,32 @@ module Xlsxrb
         target = resolve_sheet_target(sheets, sheet)
         raise ArgumentError, "sheet not found: #{sheet.inspect}" if target.nil?
 
-        # Target may be absolute (/xl/worksheets/sheet1.xml) or relative (worksheets/sheet1.xml).
-        entry_path = if target.start_with?("/")
-                       target.delete_prefix("/")
+        wb_dir = File.dirname(resolve_workbook_entry)
+        candidates = if target.start_with?("/")
+                       [target.delete_prefix("/")]
                      else
-                       "xl/#{target}"
+                       [
+                         wb_dir == "." ? target : "#{wb_dir}/#{target}",
+                         "xl/#{target}",
+                         target
+                       ]
                      end
 
-        extract_zip_entry(entry_path)
+        candidates.each do |c|
+          xml = extract_zip_entry(c)
+          return xml if xml
+        end
+        nil
       end
 
       def discover_sheets
-        workbook_xml = extract_zip_entry("xl/workbook.xml")
+        wb_path = resolve_workbook_entry
+        workbook_xml = extract_zip_entry(wb_path)
         return [{ name: "Sheet1", rid: "rId1", target: "worksheets/sheet1.xml" }] if workbook_xml.nil? || workbook_xml.empty?
 
-        rels_xml = extract_zip_entry("xl/_rels/workbook.xml.rels")
+        wb_dir = File.dirname(wb_path)
+        rels_path = wb_dir == "." ? "_rels/#{File.basename(wb_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(wb_path)}.rels"
+        rels_xml = extract_zip_entry(rels_path)
         rid_to_target = parse_rels(rels_xml)
 
         sheets = []
@@ -1055,9 +1086,9 @@ module Xlsxrb
         parser.listen(listener)
         parser.parse
 
-        listener.sheets.each do |s|
-          target = rid_to_target[s[:rid]]
-          sheets << { name: s[:name], rid: s[:rid], target: target, state: s[:state] } if target
+        listener.sheets.each_with_index do |s, idx|
+          target = rid_to_target[s[:rid]] || (wb_dir == "." ? "worksheets/sheet#{idx + 1}.xml" : "#{wb_dir}/worksheets/sheet#{idx + 1}.xml")
+          sheets << { name: s[:name], rid: s[:rid], target: target, state: s[:state] }
         end
         sheets
       end
@@ -1098,14 +1129,23 @@ module Xlsxrb
       end
 
       def load_shared_strings
-        sst_xml = extract_zip_entry("xl/sharedStrings.xml")
-        return [] if sst_xml.nil? || sst_xml.empty?
+        wb_dir = File.dirname(resolve_workbook_entry)
+        candidates = [
+          wb_dir == "." ? "sharedStrings.xml" : "#{wb_dir}/sharedStrings.xml",
+          "xl/sharedStrings.xml",
+          "sharedStrings.xml"
+        ]
+        candidates.each do |c|
+          sst_xml = extract_zip_entry(c)
+          next if sst_xml.nil? || sst_xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(sst_xml)
-        listener = SharedStringsListener.new
-        parser.listen(listener)
-        parser.parse
-        listener.strings
+          parser = REXML::Parsers::SAX2Parser.new(sst_xml)
+          listener = SharedStringsListener.new
+          parser.listen(listener)
+          parser.parse
+          return listener.strings
+        end
+        []
       end
 
       def resolve_sheet_index(sheet)
@@ -1199,21 +1239,30 @@ module Xlsxrb
       end
 
       def load_styles
-        styles_xml = extract_zip_entry("xl/styles.xml")
-        return {} if styles_xml.nil? || styles_xml.empty?
+        wb_dir = File.dirname(resolve_workbook_entry)
+        candidates = [
+          wb_dir == "." ? "styles.xml" : "#{wb_dir}/styles.xml",
+          "xl/styles.xml",
+          "styles.xml"
+        ]
+        candidates.each do |c|
+          styles_xml = extract_zip_entry(c)
+          next if styles_xml.nil? || styles_xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(styles_xml)
-        listener = StylesListener.new
-        parser.listen(listener)
-        parser.parse
-        {
-          num_fmts: listener.num_fmts, cell_xfs: listener.cell_xfs,
-          cell_style_xfs: listener.cell_style_xfs, cell_styles: listener.cell_styles,
-          fonts: listener.fonts, fills: listener.fills,
-          borders: listener.borders, dxfs: listener.dxfs,
-          indexed_colors: listener.indexed_colors, mru_colors: listener.mru_colors,
-          table_styles: listener.table_styles
-        }
+          parser = REXML::Parsers::SAX2Parser.new(styles_xml)
+          listener = StylesListener.new
+          parser.listen(listener)
+          parser.parse
+          return {
+            num_fmts: listener.num_fmts, cell_xfs: listener.cell_xfs,
+            cell_style_xfs: listener.cell_style_xfs, cell_styles: listener.cell_styles,
+            fonts: listener.fonts, fills: listener.fills,
+            borders: listener.borders, dxfs: listener.dxfs,
+            indexed_colors: listener.indexed_colors, mru_colors: listener.mru_colors,
+            table_styles: listener.table_styles
+          }
+        end
+        {}
       end
 
       def parse_cell_style_indices(xml)

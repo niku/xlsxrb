@@ -33,6 +33,9 @@ module Xlsxrb
     class RelationshipsParser
       def self.parse: (untyped xml_string) -> untyped
 
+      # Parses .rels files to return array of relationship hashes with id, type, and target.
+      def self.parse_entries: (untyped xml_string) -> untyped
+
       # SAX listener for .rels relationship files.
       class Listener
         include REXML::SAX2Listener

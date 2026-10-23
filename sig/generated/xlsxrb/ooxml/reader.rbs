@@ -240,10 +240,14 @@ module Xlsxrb
 
       TRANSITIONAL_SSML_NS: ::String
 
+      OFFICE_DOC_REL_TYPES: untyped
+
       # Returns :strict or :transitional based on the namespace of the workbook XML.
       def format_variant: () -> untyped
 
       private
+
+      def resolve_workbook_entry: () -> untyped
 
       def resolve_sheet_for_defined_name: (untyped sheet) -> untyped
 

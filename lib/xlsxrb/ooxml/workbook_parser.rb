@@ -114,6 +114,31 @@ module Xlsxrb
         listener.relationships
       end
 
+      # Parses .rels files to return array of relationship hashes with id, type, and target.
+      def self.parse_entries(xml_string)
+        return [] if xml_string.nil? || xml_string.empty?
+
+        sanitized = xml_string.lstrip
+        if sanitized.start_with?("<?xml")
+          first_decl_end = sanitized.index("?>")
+          if first_decl_end
+            decl = sanitized[0..(first_decl_end + 1)]
+            rest = sanitized[(first_decl_end + 2)..].gsub(/<\?xml\b[^>]*\?>/i, "")
+            sanitized = "#{decl}#{rest}".lstrip
+          end
+        end
+
+        entries = []
+        sanitized.scan(%r{<(?:[a-zA-Z0-9_]+:)?Relationship\b([^>]*)/?>}i) do |match|
+          attrs_str = match[0]
+          id = attrs_str[/\bId=["']([^"']+)["']/i, 1]
+          type = attrs_str[/\bType=["']([^"']+)["']/i, 1]
+          target = attrs_str[/\bTarget=["']([^"']+)["']/i, 1]
+          entries << { id: id, type: type, target: target } if id && target
+        end
+        entries
+      end
+
       # SAX listener for .rels relationship files.
       class Listener
         include REXML::SAX2Listener

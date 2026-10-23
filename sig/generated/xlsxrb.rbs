@@ -31,6 +31,8 @@ module Xlsxrb
 
   OMITTED_TARGET: untyped
 
+  OFFICE_DOC_REL_TYPES: untyped
+
   # Raised when cell, row, or workbook parameters fail specification validation.
   class ValidationError < Error
   end
@@ -288,6 +290,14 @@ module Xlsxrb
   # @raise [InvalidPasswordError] If the supplied password is incorrect.
   # @raise [ParseError] If the spreadsheet XML structure is invalid.
   # @api public
+  def self.resolve_workbook_entry: (untyped zip_reader) -> untyped
+
+  def self.resolve_part_path: (untyped zip_reader, untyped target_path, untyped wb_dir) -> untyped
+
+  def self.resolve_sheet_entry: (untyped zip_reader, untyped target_path, untyped wb_dir, untyped index) -> untyped
+
+  def self.resolve_part_entry: (untyped zip_reader, untyped rels, untyped rel_type_sub, untyped fallback_name, untyped wb_dir) -> untyped
+
   # : (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
   # : (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
   def self.read: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void

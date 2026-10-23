@@ -11173,4 +11173,98 @@ class ReaderTest < Test::Unit::TestCase
       assert_predicate(reader.cell_xfs.size, :positive?)
     end
   end
+
+  test "resolves renamed workbook part via root relationships" do
+    sheet = Xlsxrb::Elements::Worksheet.new(
+      name: "TestSheet",
+      rows: [
+        Xlsxrb::Elements::Row.new(
+          index: 0,
+          cells: [
+            Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Hello"),
+            Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "World")
+          ]
+        )
+      ]
+    )
+    raw_xlsx = Xlsxrb.write(Xlsxrb::Elements::Workbook.new(sheets: [sheet]))
+
+    # Rewrite package so xl/workbook.xml is at xl/custom_workbook.xml and _rels/.rels points to it
+    modified_io = StringIO.new
+    src_reader = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(raw_xlsx))
+    Xlsxrb::Ooxml::ZipWriter.open(modified_io) do |w|
+      src_reader.each_entry do |name, content|
+        case name
+        when "_rels/.rels"
+          new_rels = content.sub('Target="xl/workbook.xml"', 'Target="xl/custom_workbook.xml"')
+          w.add_binary_entry(name, new_rels.b)
+        when "xl/workbook.xml"
+          w.add_binary_entry("xl/custom_workbook.xml", content.b)
+        when "xl/_rels/workbook.xml.rels"
+          w.add_binary_entry("xl/_rels/custom_workbook.xml.rels", content.b)
+        else
+          w.add_binary_entry(name, (content || "").b)
+        end
+      end
+    end
+    src_reader.close
+
+    # Test in-memory read
+    wb = Xlsxrb.read(StringIO.new(modified_io.string))
+    assert_equal(1, wb.sheets.size)
+    assert_equal("TestSheet", wb.sheet(0).name)
+    assert_equal("Hello", wb.sheet(0).cell("A1").value)
+
+    # Test streaming read
+    stream_rows = []
+    Xlsxrb.read(StringIO.new(modified_io.string)) do |s|
+      s.each_row { |r| stream_rows << r.map(&:value) }
+    end
+    assert_equal([%w[Hello World]], stream_rows)
+
+    # Test Ooxml::Reader
+    Tempfile.create(["custom_wb", ".xlsx"]) do |tmp|
+      tmp.binmode
+      tmp.write(modified_io.string)
+      tmp.flush
+
+      reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      assert_equal(["TestSheet"], reader.sheet_names)
+      assert_equal("Hello", reader.cells(sheet: 0)["A1"])
+    end
+  end
+
+  test "recovers worksheet data when workbook.xml.rels is missing" do
+    sheet = Xlsxrb::Elements::Worksheet.new(
+      name: "FallbackSheet",
+      rows: [
+        Xlsxrb::Elements::Row.new(
+          index: 0,
+          cells: [
+            Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Data1"),
+            Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: 42)
+          ]
+        )
+      ]
+    )
+    raw_xlsx = Xlsxrb.write(Xlsxrb::Elements::Workbook.new(sheets: [sheet]))
+
+    # Omit xl/_rels/workbook.xml.rels from the package
+    modified_io = StringIO.new
+    src_reader = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(raw_xlsx))
+    Xlsxrb::Ooxml::ZipWriter.open(modified_io) do |w|
+      src_reader.each_entry do |name, content|
+        next if name == "xl/_rels/workbook.xml.rels"
+
+        w.add_binary_entry(name, (content || "").b)
+      end
+    end
+    src_reader.close
+
+    wb = Xlsxrb.read(StringIO.new(modified_io.string))
+    assert_equal(1, wb.sheets.size)
+    assert_equal("FallbackSheet", wb.sheet(0).name)
+    assert_equal("Data1", wb.sheet(0).cell("A1").value)
+    assert_equal(42, wb.sheet(0).cell("B1").value)
+  end
 end
