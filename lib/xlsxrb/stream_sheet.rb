@@ -772,7 +772,7 @@ module Xlsxrb
                          elsif @sheet_source.respond_to?(:call)
                            buf = +""
                            @sheet_source.call { |c| buf << c }
-                           buf
+                           buf.force_encoding(Encoding::UTF_8)
                          else
                            ""
                          end

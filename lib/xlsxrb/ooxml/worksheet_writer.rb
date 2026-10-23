@@ -289,12 +289,16 @@ module Xlsxrb
             f_attrs << ' ca="1"' if formula_ca
             buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
             if xml_val
-              buf << "<v>" << xml_val.to_s << "</v></c>"
+              v_str = xml_val.to_s
+              v_str = v_str.dup.force_encoding(Encoding::UTF_8) if v_str.encoding == Encoding::BINARY
+              buf << "<v>" << v_str << "</v></c>"
             else
               buf << "<v>0</v></c>"
             end
           else
-            buf << "><v>" << xml_val.to_s << "</v></c>"
+            v_str = xml_val.to_s
+            v_str = v_str.dup.force_encoding(Encoding::UTF_8) if v_str.encoding == Encoding::BINARY
+            buf << "><v>" << v_str << "</v></c>"
           end
         end
 
@@ -1364,6 +1368,7 @@ module Xlsxrb
 
       def escape_xml(value)
         str = value.to_s
+        str = str.dup.force_encoding(Encoding::UTF_8) if str.encoding == Encoding::BINARY
         str = str.gsub(INVALID_XML_CHARS_RE, "") if str.match?(INVALID_XML_CHARS_RE)
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end

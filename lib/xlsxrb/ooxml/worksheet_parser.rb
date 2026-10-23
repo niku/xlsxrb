@@ -551,7 +551,8 @@ module Xlsxrb
       #: (String str) -> String
       def self.normalize_text(str)
         s = decode_xml_entities(str)
-        s.include?("\r") ? s.gsub("\r\n", "\n").tr("\r", "\n") : s
+        s = s.gsub("\r\n", "\n").tr("\r", "\n") if s.include?("\r")
+        s.encoding == Encoding::BINARY ? s.dup.force_encoding(Encoding::UTF_8) : s
       end
 
       # Parses <cols> section for column definitions.

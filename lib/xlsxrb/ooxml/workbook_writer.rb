@@ -913,6 +913,7 @@ module Xlsxrb
 
       def escape_xml(value)
         str = value.to_s
+        str = str.dup.force_encoding(Encoding::UTF_8) if str.encoding == Encoding::BINARY
         str = str.gsub(INVALID_XML_CHARS_RE, "") if str.match?(INVALID_XML_CHARS_RE)
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end

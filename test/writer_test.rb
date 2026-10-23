@@ -7958,6 +7958,30 @@ class WriterTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "write handles binary ASCII-8BIT encoded strings with multibyte characters in formulas and cell values" do
+    korean_str = "한글".b
+    korean_formula = 'IF(ROW()>5,"한글","영어")'.b
+    sheet = Xlsxrb::Elements::Worksheet.new(
+      name: "Sheet1",
+      rows: [
+        Xlsxrb::Elements::Row.new(
+          index: 0,
+          cells: [
+            Xlsxrb::Elements::Cell.fast_create(0, 0, korean_str, nil, korean_formula, nil, nil, false)
+          ]
+        )
+      ]
+    )
+    wb = Xlsxrb::Elements::Workbook.new(sheets: [sheet])
+    out = Xlsxrb.write(wb)
+    assert_not_nil(out)
+    assert(out.bytesize.positive?)
+
+    read_wb = Xlsxrb.read(StringIO.new(out))
+    c = read_wb.sheet(0).cell("A1")
+    assert_equal("한글", c.value)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
