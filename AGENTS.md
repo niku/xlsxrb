@@ -45,4 +45,29 @@ When modifying specific parts of the codebase, the following verification standa
    - Verification: `bundle exec rake test:perf`
    - Requirement: Retained memory must remain constant (< 5MB across 10,000+ rows).
 
+5. Throughput and computational complexity (`lib/xlsxrb/ooxml/worksheet_parser.rb`, `lib/xlsxrb/ooxml/xml_builder.rb`, `lib/xlsxrb/number_formatter.rb`):
+   - Quality Attribute: Processing Speed / Linear Complexity ($O(N)$) & Low GC Churn
+   - Verification: `bundle exec ruby -Ilib -Itest test/performance/throughput_test.rb` and `bundle exec rake benchmark:ips`
+   - Requirement: Allocation caps (< 25 objects/row write, < 15 objects/row read), scaling ratio $\le 15.0\times$ on $10\times$ input growth.
+
+6. Security, DoS defense, and regular expressions (`lib/xlsxrb/ooxml/`, `lib/xlsxrb/ooxml/crypto/`):
+   - Quality Attribute: Availability / Attack Resilience
+   - Verification: `bundle exec ruby -Ilib -Itest test/security_resilience_test.rb test/dos_protection_test.rb test/zip_bomb_test.rb test/encryption_security_audit_test.rb` and `bundle exec rake bundle:audit`
+   - Requirement: Zero ReDoS catastrophic backtracking (< 50ms on 10k+ adversarial inputs), ZIP bomb bounds, zero CVEs.
+
+7. Builder / Reader API consistency (`lib/xlsxrb/worksheet_builder.rb`, `lib/xlsxrb/stream_writer.rb`, `lib/xlsxrb/elements/worksheet.rb`, `lib/xlsxrb/stream_sheet.rb`):
+   - Quality Attribute: API Symmetry / Lossless Round-Trip Fidelity
+   - Verification: `bundle exec ruby -Ilib -Itest test/contract/api_symmetry_test.rb` and `bundle exec rake test:contract test:pbt`
+   - Requirement: 0 method or arity discrepancies between builders, lossless `Read(Write(X)) = X`.
+
+8. Concurrency, thread safety, and Ractor isolation (`lib/`):
+   - Quality Attribute: Concurrency Safety / Ractor Shareability
+   - Verification: `bundle exec ruby -Ilib -Itest test/concurrent_test.rb`
+   - Requirement: 100% constant shareability across `Xlsxrb` namespace, 0 `Ractor::IsolationError` in parallel pipelines.
+
+9. Visual rendering and WebAssembly playground (`examples/visual/`, `docs/visual/`, `docs/preview.html`):
+   - Quality Attribute: Visual Rendering Fidelity / WebAssembly Compatibility
+   - Verification: `bundle exec rake test:visual` and `bundle exec rake doc:check`
+   - Requirement: Pixel difference within thresholds ($\le 100$px tables, $\le 500$px charts), 100% passing Wasm playground presets with COOP/COEP headers.
+
 Detailed procedural playbooks are documented in `.agents/skills/` and [docs/QA_AGENTS.md](docs/QA_AGENTS.md). For local environment setup (Dev Container) and test command references, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
