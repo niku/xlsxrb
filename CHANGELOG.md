@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Visual fidelity and Wasm compatibility verification agent (`visual-fidelity`): Formulated autonomous skill playbook covering headless LibreOffice Calc visual regression testing (`rake test:visual`) and WebAssembly playground asset verification (`rake doc:check`).
 - API symmetry and contract verification agent (`api-contract`): Added reflective method signature and parameter arity parity tests between `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` in `test/contract/api_symmetry_test.rb`, added `very_hidden?` predicate on both `Elements::Worksheet` and `StreamSheet`, and enforced lossless round-trip serialization contracts between streaming and in-memory workflows.
 - Security and resilience verification agent (`security-resilience`): Added regular expression ReDoS audit tests in `test/security_resilience_test.rb` verifying linear processing under 10k+ character adversarial inputs, supported `max_uncompressed_size` option on `Xlsxrb.read` block form to protect streaming decompression from ZIP bombs, and added `escape_formulas: true` option on `Xlsxrb.write`, `StreamWriter`, and `WorksheetWriter` to prevent formula and CSV injection vulnerabilities.
 - Throughput and complexity verification agent (`throughput-performance`): Added deterministic allocation bounds testing (< 25 objects/row write, < 15 objects/row read for 10k rows) and scaling ratio tests in `test/performance/throughput_test.rb`, hot-path microbenchmarks with `benchmark-ips` (`benchmark/micro_ips.rb`), and corresponding `benchmark:ips` rake task.
