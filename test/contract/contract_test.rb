@@ -1070,9 +1070,9 @@ class ContractTest < Test::Unit::TestCase
     assert_not_nil(a1[:fill], "A1 should have fill entry [cell_styles.fill]")
     fg = a1[:fill][:fg_color]
     assert_not_nil(fg, "A1 fill fg_color should be present [cell_styles.fill.fg_color]")
-    assert_equal("00FF00", fg,
-                 "A1 fill fg_color mismatch [cell_styles.fill.fg_color]. " \
-                 "Check StyleBuilder#fill_color and WorkbookWriter fgColor rgb attribute.")
+    assert_includes(%w[00FF00 FF00FF00], fg,
+                    "A1 fill fg_color mismatch [cell_styles.fill.fg_color]. " \
+                    "Check StyleBuilder#fill_color and WorkbookWriter fgColor rgb attribute.")
     assert_nil(cell_styles["A2"],
                "Unstyled cell A2 should not appear in cell_styles")
   ensure

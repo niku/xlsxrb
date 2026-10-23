@@ -962,11 +962,14 @@ module Xlsxrb
           when "formula2"
             @inside_formula2 = true
             @text_buffer = +""
+          when "sqref"
+            @inside_sqref = true
+            @text_buffer = +""
           end
         end
 
         def characters(text)
-          @text_buffer << text if @inside_formula1 || @inside_formula2
+          @text_buffer << text if @inside_formula1 || @inside_formula2 || @inside_sqref
         end
 
         def end_element(_uri, local_name, qname)
@@ -978,6 +981,9 @@ module Xlsxrb
           when "formula2"
             @current_dv[:formula2] = @text_buffer.dup if @current_dv
             @inside_formula2 = false
+          when "sqref"
+            @current_dv[:sqref] = @text_buffer.strip if @current_dv && (@current_dv[:sqref].nil? || @current_dv[:sqref].empty?)
+            @inside_sqref = false
           when "dataValidation"
             @validations << @current_dv if @current_dv
             @current_dv = nil

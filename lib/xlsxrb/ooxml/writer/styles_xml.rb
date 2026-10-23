@@ -125,7 +125,10 @@ module Xlsxrb
             parts << "<colors>"
             unless @indexed_colors.empty?
               parts << "<indexedColors>"
-              @indexed_colors.each { |c| parts << %(<rgbColor rgb="#{c}"/>) }
+              @indexed_colors.each do |c|
+                rgb_str = format_rgb_hex(c) || c
+                parts << %(<rgbColor rgb="#{rgb_str}"/>)
+              end
               parts << "</indexedColors>"
             end
             unless @mru_colors.empty?
@@ -163,18 +166,63 @@ module Xlsxrb
           "<protection #{attrs.join(" ")}/>"
         end
 
-        # : (untyped source, ?tag: ::String) -> (::String | ::String | ::String | ::String | "")
+        # : (untyped rgb) -> ::String?
+        def format_rgb_hex(rgb)
+          return nil unless rgb
+
+          str = rgb.to_s.sub(/^#/, "").strip
+          return nil if str.empty?
+
+          case str
+          when /\A[0-9a-fA-F]{8}\z/
+            str.upcase
+          when /\A[0-9a-fA-F]{6}\z/
+            "FF#{str.upcase}"
+          when /\A[0-9a-fA-F]{3}\z/
+            r, g, b = str.chars
+            "FF#{r}#{r}#{g}#{g}#{b}#{b}".upcase
+          else
+            resolved = StyleBuilder.resolve_color(rgb)
+            case resolved
+            when /\A[0-9a-fA-F]{8}\z/
+              resolved.upcase
+            when /\A[0-9a-fA-F]{6}\z/
+              "FF#{resolved.upcase}"
+            end
+          end
+        end
+
+        # : (untyped source, ?tag: ::String) -> ::String
         def emit_color_xml(source, tag: "color")
-          if source[:auto]
-            %(<#{tag} auto="1"/>)
-          elsif source[:color] || source[:rgb]
-            %(<#{tag} rgb="#{source[:color] || source[:rgb]}"/>)
-          elsif source[:theme]
-            attrs = [%(theme="#{source[:theme]}")]
-            attrs << %(tint="#{source[:tint]}") if source[:tint]
-            %(<#{tag} #{attrs.join(" ")}/>)
-          elsif source[:indexed]
-            %(<#{tag} indexed="#{source[:indexed]}"/>)
+          return "" unless source
+
+          spec = if source.is_a?(Hash) && source[:color]
+                   source[:color]
+                 else
+                   source
+                 end
+
+          return "" unless spec
+
+          if spec.is_a?(Hash)
+            if spec[:auto]
+              %(<#{tag} auto="1"/>)
+            elsif spec[:rgb] || (spec[:color] && !spec[:color].is_a?(Hash))
+              raw_rgb = spec[:rgb] || spec[:color]
+              formatted_rgb = format_rgb_hex(raw_rgb)
+              formatted_rgb ? %(<#{tag} rgb="#{formatted_rgb}"/>) : ""
+            elsif spec[:theme]
+              attrs = [%(theme="#{spec[:theme]}")]
+              attrs << %(tint="#{spec[:tint]}") if spec[:tint]
+              %(<#{tag} #{attrs.join(" ")}/>)
+            elsif spec[:indexed]
+              %(<#{tag} indexed="#{spec[:indexed]}"/>)
+            else
+              ""
+            end
+          elsif spec.is_a?(String) || spec.is_a?(Symbol)
+            formatted_rgb = format_rgb_hex(spec)
+            formatted_rgb ? %(<#{tag} rgb="#{formatted_rgb}"/>) : ""
           else
             ""
           end
@@ -226,10 +274,11 @@ module Xlsxrb
           parts.join
         end
 
-        # : (untyped tag, untyped fill, untyped prefix) -> (::String | ::String | ::String | ::String | "")
+        # : (untyped tag, untyped fill, untyped prefix) -> ::String
         def emit_fill_color_xml(tag, fill, prefix)
-          if fill[:"#{prefix}_color"]
-            %(<#{tag} rgb="#{fill[:"#{prefix}_color"]}"/>)
+          val = fill[:"#{prefix}_color"]
+          if val
+            emit_color_xml(val, tag: tag)
           elsif fill[:"#{prefix}_color_theme"]
             attrs = [%(theme="#{fill[:"#{prefix}_color_theme"]}")]
             attrs << %(tint="#{fill[:"#{prefix}_color_tint"]}") if fill[:"#{prefix}_color_tint"]

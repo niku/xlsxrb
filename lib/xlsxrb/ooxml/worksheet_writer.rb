@@ -193,7 +193,7 @@ module Xlsxrb
               formula_expr = formula
               xml_val = value || nil
             end
-            formula_expr = formula_expr[1..] if formula_expr.start_with?("=")
+            formula_expr = formula_expr[1..] if formula_expr.is_a?(String) && formula_expr.start_with?("=")
           end
 
           if !formula_expr && !type
@@ -1048,6 +1048,9 @@ module Xlsxrb
       end
 
       def write_data_validations(validations)
+        validations = validations.reject { |dv| dv[:sqref].nil? || dv[:sqref].to_s.empty? }
+        return if validations.empty?
+
         @builder.open_tag("dataValidations", { count: validations.size.to_s })
         validations.each do |dv|
           if dv[:in].is_a?(Array)
@@ -1123,7 +1126,7 @@ module Xlsxrb
         attrs[:scale] = opts[:scale].to_s if opts[:scale]
         attrs[:fitToWidth] = opts[:fit_to_width].to_s if opts[:fit_to_width]
         attrs[:fitToHeight] = opts[:fit_to_height].to_s if opts[:fit_to_height]
-        attrs[:firstPageNumber] = opts[:first_page_number].to_s if opts[:first_page_number]
+        attrs[:firstPageNumber] = opts[:first_page_number].to_s if opts[:first_page_number] && opts[:first_page_number].to_i >= 0
         attrs[:pageOrder] = opts[:page_order].to_s if opts[:page_order]
         attrs[:blackAndWhite] = "1" if opts[:black_and_white]
         attrs[:draft] = "1" if opts[:draft]

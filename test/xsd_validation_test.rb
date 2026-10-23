@@ -323,4 +323,113 @@ class XsdValidationTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  # 12. Structured color (theme, indexed, auto) round-trip XML schema validation
+  def test_structured_color_roundtrip_styles_validation
+    tmp = Tempfile.new(["xsd_structured_colors", ".xlsx"])
+    begin
+      sheet = Xlsxrb::Elements::Worksheet.new(
+        name: "Sheet1",
+        rows: [
+          Xlsxrb::Elements::Row.new(
+            index: 0,
+            cells: [
+              Xlsxrb::Elements::Cell.fast_create(0, 0, "Test", 1, nil, nil, nil, false)
+            ]
+          )
+        ],
+        styles: {
+          fonts: [
+            {},
+            { sz: 12, name: "Calibri", color: { theme: 1, tint: 0.4 } }
+          ],
+          fills: [
+            { pattern: "none" },
+            { pattern: "gray125" },
+            { pattern: "solid", fg_color: { indexed: 64 }, bg_color: { theme: 2, tint: -0.25 } }
+          ],
+          borders: [
+            {},
+            { left: { style: "thin", color: { auto: true } }, right: { style: "double", color: { theme: 3 } } }
+          ],
+          cell_xfs: [
+            { font_id: 0, fill_id: 0, border_id: 0, num_fmt_id: 0 },
+            { font_id: 1, fill_id: 2, border_id: 1, num_fmt_id: 0 }
+          ]
+        }
+      )
+      wb = Xlsxrb::Elements::Workbook.new(sheets: [sheet])
+
+      out = Xlsxrb.write(wb)
+      tmp.binmode
+      tmp.write(out)
+      tmp.flush
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
+
+  # 13. DrawingML line properties and character properties sequence order validation
+  def test_drawingml_line_and_char_properties_sequence_order_validation
+    tmp = Tempfile.new(["xsd_drawing_seq", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("Shapes") do |s|
+          s.shape(
+            preset: "roundRect",
+            from_col: 1,
+            from_row: 1,
+            to_col: 5,
+            to_row: 5,
+            text: "Rounded",
+            line_color: "FF0000",
+            line_width: 2,
+            line_join: "miter",
+            line_miter_limit: 800_000,
+            font: {
+              name: "Arial",
+              line_color: "0000FF",
+              line_width: 1,
+              outer_shadow: { blur_rad: 20_000, dist: 30_000, color: "000000" }
+            }
+          )
+          s.row(["Cell"])
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
+
+  # 14. Data validation with child sqref and page setup negative firstPageNumber validation
+  def test_data_validation_and_page_setup_validation
+    tmp = Tempfile.new(["xsd_dv_ps", ".xlsx"])
+    begin
+      sheet = Xlsxrb::Elements::Worksheet.new(
+        name: "Sheet1",
+        rows: [
+          Xlsxrb::Elements::Row.new(index: 0, cells: [Xlsxrb::Elements::Cell.fast_create(0, 0, "A", 0, nil, nil, nil, false)])
+        ],
+        data_validations: [
+          { sqref: "A1", type: "list", formula1: '"Option1,Option2"' },
+          { sqref: nil, type: "list", formula1: "$B$1:$B$5" } # Should be omitted because sqref is required
+        ],
+        page_setup: {
+          first_page_number: -1 # Should be omitted because firstPageNumber must be unsignedInt
+        }
+      )
+      wb = Xlsxrb::Elements::Workbook.new(sheets: [sheet])
+
+      out = Xlsxrb.write(wb)
+      tmp.binmode
+      tmp.write(out)
+      tmp.flush
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
 end

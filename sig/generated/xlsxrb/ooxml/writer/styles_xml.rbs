@@ -14,7 +14,10 @@ module Xlsxrb
         # : (untyped protection) -> ::String
         def emit_protection_xml: (untyped protection) -> untyped
 
-        # : (untyped source, ?tag: ::String) -> (::String | ::String | ::String | ::String | "")
+        # : (untyped rgb) -> ::String?
+        def format_rgb_hex: (untyped rgb) -> untyped
+
+        # : (untyped source, ?tag: ::String) -> ::String
         def emit_color_xml: (untyped source, ?tag: untyped) -> untyped
 
         # : (untyped font) -> untyped
@@ -23,7 +26,7 @@ module Xlsxrb
         # : (untyped fill) -> (untyped | ::String)
         def emit_fill_xml: (untyped fill) -> untyped
 
-        # : (untyped tag, untyped fill, untyped prefix) -> (::String | ::String | ::String | ::String | "")
+        # : (untyped tag, untyped fill, untyped prefix) -> ::String
         def emit_fill_color_xml: (untyped tag, untyped fill, untyped prefix) -> untyped
 
         # : (untyped gradient) -> untyped

@@ -58,6 +58,12 @@ module Xlsxrb
 
       def write_dxf_fill: (untyped builder, untyped fill) -> untyped
 
+      # : (untyped rgb) -> ::String?
+      def format_rgb_hex: (untyped rgb) -> untyped
+
+      # : (untyped spec) -> ::Hash[Symbol, ::String]?
+      def color_tag_attrs: (untyped spec) -> untyped
+
       INVALID_XML_CHARS_RE: ::Regexp
 
       ESCAPE_RE: ::Regexp

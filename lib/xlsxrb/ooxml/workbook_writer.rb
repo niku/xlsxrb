@@ -645,7 +645,8 @@ module Xlsxrb
                 b.empty_tag("u", font_props[:underline] == "single" ? {} : { val: font_props[:underline] })
               end
               b.empty_tag("sz", { val: (font_props[:sz] || 11).to_s }) if font_props[:sz] || fonts == [{}]
-              b.empty_tag("color", { rgb: font_props[:color] }) if font_props[:color]
+              color_attrs = color_tag_attrs(font_props[:color] || (font_props.key?(:rgb) || font_props.key?(:theme) || font_props.key?(:indexed) ? font_props : nil))
+              b.empty_tag("color", color_attrs) if color_attrs
               b.empty_tag("name", { val: font_props[:name] || "Calibri" })
             end
           end
@@ -661,14 +662,18 @@ module Xlsxrb
                 b.open_tag("gradientFill", { type: fill_props[:gradient][:type], degree: fill_props[:gradient][:degree]&.to_s }.compact)
                 fill_props[:gradient][:stops].each do |stop|
                   b.tag("stop", { position: stop[:position].to_s }) do |_|
-                    b.empty_tag("color", { rgb: stop[:color] })
+                    c_attrs = color_tag_attrs(stop[:color] || stop)
+                    b.empty_tag("color", c_attrs) if c_attrs
                   end
                 end
                 b.close_tag("gradientFill")
               else
                 b.tag("patternFill", { patternType: fill_props[:pattern] || "none" }) do |_|
-                  b.empty_tag("fgColor", { rgb: fill_props[:fg_color] }) if fill_props[:fg_color]
-                  b.empty_tag("bgColor", { rgb: fill_props[:bg_color] }) if fill_props[:bg_color]
+                  fg_attrs = color_tag_attrs(fill_props[:fg_color] || (fill_props[:fg_color_theme] ? { theme: fill_props[:fg_color_theme], tint: fill_props[:fg_color_tint] } : nil) || (fill_props[:fg_color_indexed] ? { indexed: fill_props[:fg_color_indexed] } : nil))
+                  b.empty_tag("fgColor", fg_attrs) if fg_attrs
+
+                  bg_attrs = color_tag_attrs(fill_props[:bg_color] || (fill_props[:bg_color_theme] ? { theme: fill_props[:bg_color_theme], tint: fill_props[:bg_color_tint] } : nil) || (fill_props[:bg_color_indexed] ? { indexed: fill_props[:bg_color_indexed] } : nil))
+                  b.empty_tag("bgColor", bg_attrs) if bg_attrs
                 end
               end
             end
@@ -688,16 +693,8 @@ module Xlsxrb
                 side_data = border_props[side]
                 if side_data
                   b.tag(side.to_s, { style: side_data[:style] }) do |_|
-                    c = side_data[:color]
-                    if c.is_a?(Hash)
-                      c_attrs = {}
-                      c_attrs[:rgb] = c[:rgb] if c[:rgb]
-                      c_attrs[:theme] = c[:theme].to_s if c[:theme]
-                      c_attrs[:tint] = c[:tint].to_s if c[:tint]
-                      b.empty_tag("color", c_attrs) unless c_attrs.empty?
-                    elsif c
-                      b.empty_tag("color", { rgb: c })
-                    end
+                    c_attrs = color_tag_attrs(side_data[:color])
+                    b.empty_tag("color", c_attrs) if c_attrs
                   end
                 else
                   b.empty_tag(side.to_s)
@@ -837,7 +834,8 @@ module Xlsxrb
               builder.empty_tag("u", { val: font[:underline] })
             end
           end
-          builder.empty_tag("color", { rgb: font[:color] }) if font[:color]
+          color_attrs = color_tag_attrs(font[:color] || font)
+          builder.empty_tag("color", color_attrs) if color_attrs
           builder.empty_tag("name", { val: font[:name] }) if font[:name]
           builder.empty_tag("sz", { val: font[:sz].to_s }) if font[:sz]
         end
@@ -847,9 +845,64 @@ module Xlsxrb
         builder.tag("fill") do |_|
           pattern = fill[:pattern] || "solid"
           builder.tag("patternFill", { patternType: pattern }) do |_|
-            builder.empty_tag("fgColor", { rgb: fill[:fg_color] }) if fill[:fg_color]
-            builder.empty_tag("bgColor", { rgb: fill[:bg_color] }) if fill[:bg_color]
+            fg_attrs = color_tag_attrs(fill[:fg_color])
+            builder.empty_tag("fgColor", fg_attrs) if fg_attrs
+            bg_attrs = color_tag_attrs(fill[:bg_color])
+            builder.empty_tag("bgColor", bg_attrs) if bg_attrs
           end
+        end
+      end
+
+      # : (untyped rgb) -> ::String?
+      def format_rgb_hex(rgb)
+        return nil unless rgb
+
+        str = rgb.to_s.sub(/^#/, "").strip
+        return nil if str.empty?
+
+        case str
+        when /\A[0-9a-fA-F]{8}\z/
+          str.upcase
+        when /\A[0-9a-fA-F]{6}\z/
+          "FF#{str.upcase}"
+        when /\A[0-9a-fA-F]{3}\z/
+          r, g, b = str.chars
+          "FF#{r}#{r}#{g}#{g}#{b}#{b}".upcase
+        else
+          resolved = StyleBuilder.resolve_color(rgb)
+          case resolved
+          when /\A[0-9a-fA-F]{8}\z/
+            resolved.upcase
+          when /\A[0-9a-fA-F]{6}\z/
+            "FF#{resolved.upcase}"
+          end
+        end
+      end
+
+      # : (untyped spec) -> ::Hash[Symbol, ::String]?
+      def color_tag_attrs(spec)
+        return nil unless spec
+
+        spec = spec[:color] if spec.is_a?(Hash) && spec[:color].is_a?(Hash)
+        return nil unless spec
+
+        if spec.is_a?(Hash)
+          if spec[:auto]
+            { auto: "1" }
+          elsif spec[:rgb] || (spec[:color] && !spec[:color].is_a?(Hash))
+            raw_rgb = spec[:rgb] || spec[:color]
+            fmt = format_rgb_hex(raw_rgb)
+            fmt ? { rgb: fmt } : nil
+          elsif spec[:theme]
+            attrs = { theme: spec[:theme].to_s }
+            attrs[:tint] = spec[:tint].to_s if spec[:tint]
+            attrs
+          elsif spec[:indexed]
+            { indexed: spec[:indexed].to_s }
+          end
+        elsif spec.is_a?(String) || spec.is_a?(Symbol)
+          fmt = format_rgb_hex(spec)
+          fmt ? { rgb: fmt } : nil
         end
       end
 
@@ -892,11 +945,10 @@ module Xlsxrb
                 end
                 buf << '<vertAlign val="' << font[:vert_align].to_s << '"/>' if font[:vert_align]
                 buf << '<sz val="' << font[:sz].to_s << '"/>' if font[:sz]
-                if font[:color]
-                  buf << '<color rgb="' << font[:color].to_s << '"/>'
-                elsif font[:theme]
-                  tint_attr = font[:tint] ? " tint=\"#{font[:tint]}\"" : ""
-                  buf << '<color theme="' << font[:theme].to_s << '"' << tint_attr << "/>"
+                color_attrs = color_tag_attrs(font[:color] || font)
+                if color_attrs
+                  attrs_str = color_attrs.map { |k, v| %(#{k}="#{v}") }.join(" ")
+                  buf << "<color #{attrs_str}/>"
                 end
                 buf << '<rFont val="' << escape_xml(font[:name]) << '"/>' if font[:name]
                 buf << '<family val="' << font[:family].to_s << '"/>' if font[:family]
@@ -909,13 +961,7 @@ module Xlsxrb
             end
             buf << "</si>"
           else
-            s = str.to_s
-            needs_space = s.start_with?(" ", "\t", "\n") || s.end_with?(" ", "\t", "\n")
-            if needs_space
-              buf << '<si><t xml:space="preserve">' << escape_xml(s) << "</t></si>"
-            else
-              buf << "<si><t>" << escape_xml(s) << "</t></si>"
-            end
+            buf << "<si><t>" << escape_xml(str.to_s) << "</t></si>"
           end
 
           if buf.bytesize >= 32_768

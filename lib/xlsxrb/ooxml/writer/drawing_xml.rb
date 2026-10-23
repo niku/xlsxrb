@@ -159,8 +159,6 @@ module Xlsxrb
                                              else
                                                ""
                                              end
-                                 head_part = build_line_end_xml("headEnd", shape[:head_end])
-                                 tail_part = build_line_end_xml("tailEnd", shape[:tail_end])
                                  join_part = case shape[:line_join]
                                              when "round" then "<a:round/>"
                                              when "bevel" then "<a:bevel/>"
@@ -168,7 +166,9 @@ module Xlsxrb
                                                shape[:line_miter_limit] ? "<a:miter lim=\"#{shape[:line_miter_limit].to_i}\"/>" : "<a:miter/>"
                                              else ""
                                              end
-                                 %(<a:ln#{ln_attrs}>#{fill_part}#{dash_part}#{head_part}#{tail_part}#{join_part}</a:ln>)
+                                 head_part = build_line_end_xml("headEnd", shape[:head_end])
+                                 tail_part = build_line_end_xml("tailEnd", shape[:tail_end])
+                                 %(<a:ln#{ln_attrs}>#{fill_part}#{dash_part}#{join_part}#{head_part}#{tail_part}</a:ln>)
                                else
                                  ""
                                end
@@ -425,14 +425,6 @@ module Xlsxrb
           attrs << %( err="1") if font[:err]
           attrs << %( bmk="#{xml_escape(font[:bmk])}") if font[:bmk]
           children = +""
-          children << %(<a:solidFill>#{color_xml(font[:color])}</a:solidFill>) if font[:color]
-          children << %(<a:highlight>#{color_xml(font[:highlight])}</a:highlight>) if font[:highlight]
-          children << %(<a:latin typeface="#{xml_escape(font[:name])}"/>) if font[:name]
-          children << %(<a:ea typeface="#{xml_escape(font[:ea_font])}"/>) if font[:ea_font]
-          children << %(<a:cs typeface="#{xml_escape(font[:cs_font])}"/>) if font[:cs_font]
-          children << %(<a:sym typeface="#{xml_escape(font[:sym_font])}"/>) if font[:sym_font]
-          children << "<a:uFillTx/>" if font[:u_fill_tx]
-          children << "<a:uLnTx/>" if font[:u_ln_tx]
           if font[:line_color] || font[:line_width] || font[:line_dash] || font[:line_cap] || font[:line_join]
             ln_attrs = +(font[:line_width] ? %( w="#{font[:line_width].to_i}") : "")
             ln_attrs << %( cap="#{xml_escape(font[:line_cap])}") if font[:line_cap]
@@ -447,6 +439,7 @@ module Xlsxrb
                       end
             children << "<a:ln#{ln_attrs}>#{ln_fill}#{ln_dash}#{ln_join}</a:ln>"
           end
+          children << %(<a:solidFill>#{color_xml(font[:color])}</a:solidFill>) if font[:color]
           if font[:outer_shadow] || font[:inner_shadow] || font[:glow] || font[:soft_edge] || font[:reflection] || font[:blur]
             eff = +""
             if font[:outer_shadow]
@@ -504,6 +497,13 @@ module Xlsxrb
             end
             children << "<a:effectLst>#{eff}</a:effectLst>"
           end
+          children << %(<a:highlight>#{color_xml(font[:highlight])}</a:highlight>) if font[:highlight]
+          children << "<a:uLnTx/>" if font[:u_ln_tx]
+          children << "<a:uFillTx/>" if font[:u_fill_tx]
+          children << %(<a:latin typeface="#{xml_escape(font[:name])}"/>) if font[:name]
+          children << %(<a:ea typeface="#{xml_escape(font[:ea_font])}"/>) if font[:ea_font]
+          children << %(<a:cs typeface="#{xml_escape(font[:cs_font])}"/>) if font[:cs_font]
+          children << %(<a:sym typeface="#{xml_escape(font[:sym_font])}"/>) if font[:sym_font]
           if children.empty?
             "<#{tag}#{attrs}/>"
           else
@@ -513,7 +513,11 @@ module Xlsxrb
 
         # : (untyped tag, untyped col, untyped row, ?col_off: ::Integer, ?row_off: ::Integer) -> ::String
         def anchor_xml(tag, col, row, col_off: 0, row_off: 0)
-          "<xdr:#{tag}><xdr:col>#{col}</xdr:col><xdr:colOff>#{col_off}</xdr:colOff><xdr:row>#{row}</xdr:row><xdr:rowOff>#{row_off}</xdr:rowOff></xdr:#{tag}>"
+          c = col.to_s.empty? ? 0 : col.to_i
+          r = row.to_s.empty? ? 0 : row.to_i
+          co = col_off.to_s.empty? ? 0 : col_off.to_i
+          ro = row_off.to_s.empty? ? 0 : row_off.to_i
+          "<xdr:#{tag}><xdr:col>#{c}</xdr:col><xdr:colOff>#{co}</xdr:colOff><xdr:row>#{r}</xdr:row><xdr:rowOff>#{ro}</xdr:rowOff></xdr:#{tag}>"
         end
 
         # : (untyped obj) -> ::String

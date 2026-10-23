@@ -2691,35 +2691,38 @@ module Xlsxrb
 
         # Emit <dataValidations> if defined.
         unless sheet_dv.empty?
-          dv_container_attrs = %( count="#{sheet_dv.size}")
-          dv_container_attrs << ' disablePrompts="1"' if dv_options[:disable_prompts]
-          dv_container_attrs << %( xWindow="#{dv_options[:x_window]}") if dv_options[:x_window]
-          dv_container_attrs << %( yWindow="#{dv_options[:y_window]}") if dv_options[:y_window]
-          parts << "<dataValidations#{dv_container_attrs}>"
-          sheet_dv.each do |dv|
-            dv_attrs = %(sqref="#{dv[:sqref]}")
-            dv_attrs << %( type="#{dv[:type]}") if dv[:type]
-            dv_attrs << %( operator="#{dv[:operator]}") if dv[:operator]
-            dv_attrs << %( errorStyle="#{dv[:error_style]}") if dv[:error_style]
-            dv_attrs << ' allowBlank="1"' if dv[:allow_blank]
-            dv_attrs << ' showInputMessage="1"' if dv[:show_input_message]
-            dv_attrs << ' showErrorMessage="1"' if dv[:show_error_message]
-            dv_attrs << %( errorTitle="#{xml_escape(dv[:error_title])}") if dv[:error_title]
-            dv_attrs << %( error="#{xml_escape(dv[:error])}") if dv[:error]
-            dv_attrs << %( promptTitle="#{xml_escape(dv[:prompt_title])}") if dv[:prompt_title]
-            dv_attrs << %( prompt="#{xml_escape(dv[:prompt])}") if dv[:prompt]
-            dv_attrs << ' showDropDown="1"' if dv[:show_drop_down]
-            dv_attrs << %( imeMode="#{dv[:ime_mode]}") if dv[:ime_mode]
-            if dv[:formula1] || dv[:formula2]
-              parts << "<dataValidation #{dv_attrs}>"
-              parts << "<formula1>#{xml_escape(dv[:formula1])}</formula1>" if dv[:formula1]
-              parts << "<formula2>#{xml_escape(dv[:formula2])}</formula2>" if dv[:formula2]
-              parts << "</dataValidation>"
-            else
-              parts << "<dataValidation #{dv_attrs}/>"
+          valid_dv = sheet_dv.reject { |dv| dv[:sqref].nil? || dv[:sqref].to_s.empty? }
+          unless valid_dv.empty?
+            dv_container_attrs = %( count="#{valid_dv.size}")
+            dv_container_attrs << ' disablePrompts="1"' if dv_options[:disable_prompts]
+            dv_container_attrs << %( xWindow="#{dv_options[:x_window]}") if dv_options[:x_window]
+            dv_container_attrs << %( yWindow="#{dv_options[:y_window]}") if dv_options[:y_window]
+            parts << "<dataValidations#{dv_container_attrs}>"
+            valid_dv.each do |dv|
+              dv_attrs = %(sqref="#{dv[:sqref]}")
+              dv_attrs << %( type="#{dv[:type]}") if dv[:type]
+              dv_attrs << %( operator="#{dv[:operator]}") if dv[:operator]
+              dv_attrs << %( errorStyle="#{dv[:error_style]}") if dv[:error_style]
+              dv_attrs << ' allowBlank="1"' if dv[:allow_blank]
+              dv_attrs << ' showInputMessage="1"' if dv[:show_input_message]
+              dv_attrs << ' showErrorMessage="1"' if dv[:show_error_message]
+              dv_attrs << %( errorTitle="#{xml_escape(dv[:error_title])}") if dv[:error_title]
+              dv_attrs << %( error="#{xml_escape(dv[:error])}") if dv[:error]
+              dv_attrs << %( promptTitle="#{xml_escape(dv[:prompt_title])}") if dv[:prompt_title]
+              dv_attrs << %( prompt="#{xml_escape(dv[:prompt])}") if dv[:prompt]
+              dv_attrs << ' showDropDown="1"' if dv[:show_drop_down]
+              dv_attrs << %( imeMode="#{dv[:ime_mode]}") if dv[:ime_mode]
+              if dv[:formula1] || dv[:formula2]
+                parts << "<dataValidation #{dv_attrs}>"
+                parts << "<formula1>#{xml_escape(dv[:formula1])}</formula1>" if dv[:formula1]
+                parts << "<formula2>#{xml_escape(dv[:formula2])}</formula2>" if dv[:formula2]
+                parts << "</dataValidation>"
+              else
+                parts << "<dataValidation #{dv_attrs}/>"
+              end
             end
+            parts << "</dataValidations>"
           end
-          parts << "</dataValidations>"
         end
 
         # Emit <printOptions> if defined.
@@ -2754,7 +2757,7 @@ module Xlsxrb
           ps_attrs << 'blackAndWhite="1"' if sheet_ps[:black_and_white]
           ps_attrs << 'draft="1"' if sheet_ps[:draft]
           ps_attrs << %(cellComments="#{sheet_ps[:cell_comments]}") if sheet_ps[:cell_comments]
-          ps_attrs << %(firstPageNumber="#{sheet_ps[:first_page_number]}") if sheet_ps[:first_page_number]
+          ps_attrs << %(firstPageNumber="#{sheet_ps[:first_page_number]}") if sheet_ps[:first_page_number] && sheet_ps[:first_page_number].to_i >= 0
           ps_attrs << 'useFirstPageNumber="1"' if sheet_ps[:use_first_page_number]
           ps_attrs << %(horizontalDpi="#{sheet_ps[:horizontal_dpi]}") if sheet_ps[:horizontal_dpi]
           ps_attrs << %(verticalDpi="#{sheet_ps[:vertical_dpi]}") if sheet_ps[:vertical_dpi]
