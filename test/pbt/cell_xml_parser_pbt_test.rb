@@ -20,7 +20,7 @@ class CellXmlParserPbtTest < Test::Unit::TestCase
   # - optional namespace prefixes (<x:c>, <x:is>, <x:t>)
   def arbitrary_cell_xml_row
     cell_gen = Pbt.tuple(
-      Pbt.choose(0..5), # cell variant
+      Pbt.choose(0..7), # cell variant
       Pbt.integer(min: 0, max: 1000), # int value
       Pbt.boolean, # boolean or namespace toggle
       Pbt.alphanumeric_string(min: 1, max: 10), # text1
@@ -49,7 +49,7 @@ class CellXmlParserPbtTest < Test::Unit::TestCase
       case variant
       when 0 # Self-closing empty cell
         cells_xml << "<#{p}c #{attrs.join(" ")}/>"
-      when 1 # Simple numeric cell
+      when 1 # Simple numeric cell without t attribute
         cells_xml << "<#{p}c #{attrs.join(" ")}><#{p}v>#{int_val}</#{p}v></#{p}c>"
       when 2 # Boolean cell
         attrs << %(t="b")
@@ -67,6 +67,11 @@ class CellXmlParserPbtTest < Test::Unit::TestCase
       when 5 # Self-closing empty cell with t="s"
         attrs << %(t="s")
         cells_xml << "<#{p}c #{attrs.join(" ")}/>"
+      when 6 # String value in <v> without t attribute (Open XML SDK pattern)
+        cells_xml << "<#{p}c #{attrs.join(" ")}><#{p}v>#{text1}</#{p}v></#{p}c>"
+      when 7 # Explicit numeric cell with t="n"
+        attrs << %(t="n")
+        cells_xml << "<#{p}c #{attrs.join(" ")}><#{p}v>#{int_val}</#{p}v></#{p}c>"
       end
     end
 

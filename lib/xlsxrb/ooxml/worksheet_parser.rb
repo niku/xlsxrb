@@ -507,8 +507,17 @@ module Xlsxrb
           end
         when "d"
           raw_value && normalize_text(raw_value)
-        else
+        when "n"
           raw_value ? numeric_cell_value(raw_value) : nil
+        else
+          if raw_value
+            text = raw_value.strip
+            return nil if text.empty?
+
+            Integer(text, 10, exception: false) ||
+              Float(text, exception: false) ||
+              normalize_text(raw_value)
+          end
         end
       end
 

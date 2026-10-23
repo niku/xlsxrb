@@ -2997,6 +2997,10 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     assert_equal(-90_000, rf[:sy])
     assert_equal("bl", rf[:algn])
     assert_equal(false, rf[:rot_with_shape])
+
+    assert_equal({ "A1" => "test" }, reader.cells)
+    wb = Xlsxrb.read(xlsx_path)
+    assert_equal("test", wb.sheet(0).load["A1"]&.value)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

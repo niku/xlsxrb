@@ -693,18 +693,21 @@ class StreamSheetTest < Test::Unit::TestCase
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
         <sheetData>
           <row r="1"><c r="A1"><v>1E-3</v></c><c r="B1"><v></v></c><c r="C1"><v>1500</v></c><c r="D1" t="inlineStr"></c></row>
-          <row r="2"><c r="A2"><v>abc</v></c></row>
+          <row r="2"><c r="A2" t="n"><v>abc</v></c></row>
+          <row r="3"><c r="A3"><v>text_without_t</v></c></row>
         </sheetData>
       </worksheet>
     XML
 
     sheet = Xlsxrb::StreamSheet.new("Data", xml.b, [])
-    first, second = sheet.each_row.to_a
+    first, second, third = sheet.each_row.to_a
 
     assert_equal([0.001, nil, 1500, nil], first.values)
     assert_equal([0.001, nil, 1500, nil], first.cells.map(&:value))
     assert_raise_with_message(Xlsxrb::ParseError, /"abc"/) { second.values }
     assert_raise_with_message(Xlsxrb::ParseError, /"abc"/) { second.cells }
+    assert_equal(["text_without_t"], third.values)
+    assert_equal(["text_without_t"], third.cells.map(&:value))
   end
 
   test "stream_sheet excludes phonetic readings from inline strings and shared strings" do
