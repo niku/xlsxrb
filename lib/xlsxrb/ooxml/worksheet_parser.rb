@@ -492,7 +492,7 @@ module Xlsxrb
 
       # Resolves a cell value from its type attribute and parsed XML content (<v> or <is>).
       # Consolidates parsing across fast-scan direct, row values, events, and listener paths.
-      #: (String? type, String? raw_value, String? is_xml, Array[String] shared_strings) -> untyped
+      #: (String? type, String? raw_value, String? is_xml, Array[String | Elements::RichText | untyped] shared_strings) -> untyped
       def self.resolve_cell_value(type, raw_value, is_xml, shared_strings)
         case type
         when "s"
@@ -995,7 +995,7 @@ module Xlsxrb
       end
 
       # rubocop:disable Style/OptionalBooleanParameter
-      #: (String xml, Integer from, Integer to, Array[String] shared_strings, ?untyped styles, ?bool date1904, ?type_cast: bool) -> Array[untyped]
+      #: (String xml, Integer from, Integer to, Array[String | Elements::RichText | untyped] shared_strings, ?untyped styles, ?bool date1904, ?type_cast: bool) -> Array[untyped]
       def self.fast_scan_row_values(xml, from, to, shared_strings, styles = nil, date1904 = false, type_cast: false)
         # rubocop:enable Style/OptionalBooleanParameter
         chunk = xml.byteslice(from, to - from)
