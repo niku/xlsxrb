@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Changed
+- Reading a file that is not a ZIP archive (including an empty file) raises `Xlsxrb::ZipError` instead of `ArgumentError`.
 - Strict numeric cell values: a numeric cell (`t="n"` or no `t`) with an empty `<v>` now reads as `nil` instead of `0`, exponent notation such as `1E-3` reads as a Float, and text that is not a number raises `Xlsxrb::ParseError` instead of silently becoming `0`. Inline string and formula string cells without text read as `nil`, and `t="d"` cells read as their ISO 8601 text.
 
 ### Fixed

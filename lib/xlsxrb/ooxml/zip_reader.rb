@@ -391,7 +391,7 @@ module Xlsxrb
 
       def parse_catalog
         first_sig = io.read(4)
-        raise ArgumentError, "Invalid magic number: Expected a valid ZIP/XLSX file format (PK\\x03\\x04)" unless first_sig == LOCAL_HEADER_SIG
+        raise ZipError, "Invalid magic number: Expected a valid ZIP/XLSX file format (PK\\x03\\x04)" unless first_sig == LOCAL_HEADER_SIG
 
         # Try Central Directory first
         cd_catalog = parse_catalog_from_central_directory(io)
