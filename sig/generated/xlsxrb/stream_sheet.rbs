@@ -143,6 +143,13 @@ module Xlsxrb
     # : () -> bool
     def visible?: () -> bool
 
+    # Returns whether the sheet is very hidden (:very_hidden).
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def very_hidden?: () -> bool
+
     # Iterates over rows in this streaming worksheet with O(1) memory.
     #
     # @overload each_row(&block)

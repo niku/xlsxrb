@@ -362,6 +362,15 @@ module Xlsxrb
         @state == :visible
       end
 
+      # Returns whether the worksheet is very hidden (:very_hidden).
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def very_hidden?
+        @state == :very_hidden
+      end
+
       # Returns hyperlink metadata for the given cell reference, or nil.
       #
       # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.

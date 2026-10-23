@@ -183,6 +183,15 @@ module Xlsxrb
       @state == :visible
     end
 
+    # Returns whether the sheet is very hidden (:very_hidden).
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def very_hidden?
+      @state == :very_hidden
+    end
+
     # Iterates over rows in this streaming worksheet with O(1) memory.
     #
     # @overload each_row(&block)
