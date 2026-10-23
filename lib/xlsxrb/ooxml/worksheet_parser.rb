@@ -879,7 +879,7 @@ module Xlsxrb
         [COL_LETTERS[idx], idx]
       end.freeze
 
-      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\s+r="([A-Za-z0-9]+)"(?:[^>]*?s="(\d+)")?(?:[^>]*?t="([a-zA-Z]+)")?[^>]*(?<!/)>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\s+r="([A-Za-z0-9]+)"(?:[^>]*?s="(\d+)")?[^>]*/>}m
+      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*(?<!/))>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\b([^>]*)/?>}m
       CELL_GENERIC_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*?)(?:>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|/>)}m
       ATTR_R = /r="([A-Za-z0-9]+)"/
       ATTR_T = /t="([a-zA-Z]+)"/
@@ -899,11 +899,14 @@ module Xlsxrb
         col_idx = 0
         matched_any = false
 
-        chunk.scan(CELL_FAST_RE) do |r, s, t, f, v, is, self_r, self_s|
+        chunk.scan(CELL_FAST_RE) do |attrs_str, f, v, is, self_attrs|
           matched_any = true
-          ref = r || self_r
-          s_val = s || self_s
-          style_idx = s_val&.to_i
+          raw_attrs = attrs_str || self_attrs || ""
+          r = raw_attrs[ATTR_R, 1]
+          s = raw_attrs.include?('s="') ? raw_attrs[ATTR_S, 1] : nil
+          t = raw_attrs.include?('t="') ? raw_attrs[ATTR_T, 1] : nil
+          style_idx = s&.to_i
+          ref = r
           c_idx = if ref
                     expected_letter = COL_LETTERS[col_idx]
                     if expected_letter && ref.start_with?(expected_letter) && ref.getbyte(expected_letter.bytesize)&.between?(48, 57)
@@ -922,9 +925,9 @@ module Xlsxrb
           f = f.strip if f
 
           val = if t == "s"
-                  shared_strings[v.to_i] || ""
+                  v ? (shared_strings[v.to_i] || "") : nil
                 elsif t == "b"
-                  v == "1"
+                  v ? (v == "1") : nil
                 elsif %w[inlineStr str e].include?(t)
                   if is
                     extract_inline_text(is, 0, is.bytesize)
@@ -976,9 +979,9 @@ module Xlsxrb
           f = f.strip if f
 
           val = if t == "s"
-                  shared_strings[v.to_i] || ""
+                  v ? (shared_strings[v.to_i] || "") : nil
                 elsif t == "b"
-                  v == "1"
+                  v ? (v == "1") : nil
                 elsif %w[inlineStr str e].include?(t)
                   if is
                     extract_inline_text(is, 0, is.bytesize)
@@ -1017,10 +1020,13 @@ module Xlsxrb
         matched_any = false
         row_values = []
 
-        chunk.scan(CELL_FAST_RE) do |r, s, t, _f, v, is, self_r, self_s|
+        chunk.scan(CELL_FAST_RE) do |attrs_str, _f, v, is, self_attrs|
           matched_any = true
-          ref = r || self_r
-          s_val = s || self_s
+          raw_attrs = attrs_str || self_attrs || ""
+          r = raw_attrs[ATTR_R, 1]
+          s_val = raw_attrs.include?('s="') ? raw_attrs[ATTR_S, 1] : nil
+          t = raw_attrs.include?('t="') ? raw_attrs[ATTR_T, 1] : nil
+          ref = r
           c_idx = if ref
                     expected_letter = COL_LETTERS[col_idx]
                     if expected_letter && ref.start_with?(expected_letter) && ref.getbyte(expected_letter.bytesize)&.between?(48, 57)
@@ -1038,9 +1044,9 @@ module Xlsxrb
           v = v.strip if v
 
           val = if t == "s"
-                  shared_strings[v.to_i] || ""
+                  v ? (shared_strings[v.to_i] || "") : nil
                 elsif t == "b"
-                  v == "1"
+                  v ? (v == "1") : nil
                 elsif %w[inlineStr str e].include?(t)
                   if is
                     extract_inline_text(is, 0, is.bytesize)
@@ -1095,9 +1101,9 @@ module Xlsxrb
           v = v.strip if v
 
           val = if t == "s"
-                  shared_strings[v.to_i] || ""
+                  v ? (shared_strings[v.to_i] || "") : nil
                 elsif t == "b"
-                  v == "1"
+                  v ? (v == "1") : nil
                 elsif %w[inlineStr str e].include?(t)
                   if is
                     extract_inline_text(is, 0, is.bytesize)

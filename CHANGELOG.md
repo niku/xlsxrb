@@ -6,6 +6,8 @@
 - Strict numeric cell values: a numeric cell (`t="n"` or no `t`) with an empty `<v>` now reads as `nil` instead of `0`, exponent notation such as `1E-3` reads as a Float, and text that is not a number raises `Xlsxrb::ParseError` instead of silently becoming `0`. Inline string and formula string cells without text read as `nil`, and `t="d"` cells read as their ISO 8601 text.
 
 ### Fixed
+- Support arbitrary XML attribute ordering on cells (such as `t` before `s` or `r` after `s`) in streaming fast-scan parsers, ensuring cell types and styles are never dropped regardless of producer attribute sequence.
+- Empty self-closing string cells without `<v>` in fast scan parsers evaluate to `nil` instead of empty string `""`.
 - In-memory SAX listeners (`WorksheetListener` and `SharedStringsListener`) skip phonetic readings (`<rPh>`) and treat empty self-closing string cells (`<c ... t="s"/>`) as nil, matching streaming reader behavior.
 - `extract_inline_text` and `extract_multi_t` strictly distinguish `<t>` elements from other XML tags containing 't' (such as `<rPr>`, `<vertAlign>`, or `<table>`), preventing corrupted inline string parsing in rich text runs.
 - Formulas are serialized strictly when explicitly defined via `Xlsxrb.formula(...)` or `{ formula: ... }`. Plain string cells starting with `=` are always serialized as text cells, preventing formula injection vulnerabilities and unintended 0-value coercions on reload.
@@ -14,6 +16,7 @@
 - Phonetic readings (`<rPh>`) are excluded from shared strings and inline strings, so cells with furigana no longer concatenate phonetic readings to display text.
 
 ### Added
+- Property-based tests for cell XML parsing in `test/pbt/cell_xml_parser_pbt_test.rb`, validating 100% equivalence between streaming fast-scan and SAX listener parsers across random attribute permutations, namespaces, rich text, and phonetic elements.
 - Dedicated exception `Xlsxrb::ZipBombError < Xlsxrb::ZipError` for archive expansion limit violations.
 - Workbook view and calculation properties in in-memory writes: `Xlsxrb.write(workbook)` emits `<bookViews><workbookView activeTab="n"/></bookViews>` and `<calcPr fullCalcOnLoad="1"/>` when the workbook properties carry `active_tab:` and `full_calc_on_load: true`.
 - Autonomous QA agent squad skill definitions and documentation: Added skill playbooks in `.agents/skills/` (`throughput-performance`, `security-resilience`, `api-contract`, `concurrency-safety`, `visual-fidelity`), and updated `docs/QA_AGENTS.md`, `docs/QUALITY_ASSURANCE.md`, `.agents/rules/qa_agents.md`, and `AGENTS.md`.
