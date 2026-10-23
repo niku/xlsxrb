@@ -97,6 +97,7 @@ module Xlsxrb
         end
 
         # Converts a fractional Excel serial number to a Time (1900 or 1904 system, UTC).
+        # Excel serial numbers carry no timezone metadata; returned Time objects are in UTC.
         #: (Numeric serial, ?date1904: bool) -> Time
         def serial_to_datetime(serial, date1904: false)
           int_part, frac = serial.divmod(1)

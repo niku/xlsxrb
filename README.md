@@ -23,7 +23,7 @@ The Ruby ecosystem has several XLSX libraries designed for specific tradeoffs:
 
 
 These libraries make different architectural tradeoffs:
-* Streaming Model: Writes or reads rows sequentially on-the-fly to maintain a constant $O(1)$, low-memory footprint regardless of dataset size.
+* Streaming Model: Writes or reads rows sequentially on-the-fly to maintain a low-memory footprint regardless of dataset size.
 * In-Memory Model: Builds a complete document object model, offering flexible random access, cell updates, and document templates at the cost of memory usage on large spreadsheets.
 
 Maintaining a gem that supports both reading and writing across streaming and in-memory models, alongside OOXML features and specification compatibility, involves significant ongoing maintenance overhead.
@@ -33,7 +33,7 @@ Maintaining a gem that supports both reading and writing across streaming and in
 ### Design Principles
 
 - Zero Runtime Dependencies: Built strictly on the Ruby standard library and bundled gems (`zlib`, `rexml`, etc.) with zero third-party runtime dependencies.
-- Streaming Support: Constant $O(1)$ memory streaming for reading and writing spreadsheets.
+- Streaming Support: Low-memory row streaming for reading and writing spreadsheets ($O(1)$ memory on reads; writes buffer unique shared strings).
 - OpenXML Interoperability: Compliant with ISO/IEC 29500 (ECMA-376) and validated against the Microsoft [Open XML SDK](https://github.com/dotnet/Open-XML-SDK).
 - AI-Assisted Maintenance: Uses AI coding agents for automated quality assurance and verification workflows. Operational guidelines are defined in [AGENTS.md](AGENTS.md).
 - Ruby 4.0+: Requires Ruby 4.0 or higher.
@@ -65,7 +65,7 @@ You can also browse 80+ rendered visual examples across all features in the [Vis
 
 ### Quick Start: Streaming (Recommended for Large Files)
 
-#### Streaming Write ($O(1)$ Memory)
+#### Streaming Write (Low Memory)
 ```ruby
 require "xlsxrb"
 
@@ -77,6 +77,9 @@ Xlsxrb.write("large_output.xlsx") do |writer|
   end
 end
 ```
+
+> [!NOTE]
+> Streaming writes pipe row and cell XML directly to the archive without buffering rows, keeping cell data memory constant. Because shared strings are indexed across the workbook to minimize output file size, memory scales with the count of distinct strings.
 
 #### Streaming Read ($O(1)$ Memory)
 ```ruby
@@ -137,6 +140,22 @@ end
 Xlsxrb.read("confidential.xlsx", password: "SecretPassword123") do |sheet|
   sheet.each_row { |row| puts row.cells.map(&:value) }
 end
+```
+
+### Date and Time Handling
+
+Excel stores dates and times as floating-point serial numbers without timezone information. When reading spreadsheet files, `xlsxrb` returns date-formatted cells as UTC `Time` objects (`Time.utc`).
+
+To interpret an Excel timestamp in a specific application timezone (such as JST or America/New_York), construct a local time using the year, month, day, hour, min, and sec components:
+
+```ruby
+# With ActiveSupport / Rails:
+local_time = Time.zone.local(cell.value.year, cell.value.month, cell.value.day,
+                             cell.value.hour, cell.value.min, cell.value.sec)
+
+# With Ruby standard library:
+local_time = Time.local(cell.value.year, cell.value.month, cell.value.day,
+                        cell.value.hour, cell.value.min, cell.value.sec)
 ```
 
 ### IDE Autocompletion & Ruby LSP Support
