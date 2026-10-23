@@ -168,6 +168,13 @@ namespace :test do
   end
 end
 
+namespace :benchmark do
+  desc "Run hot-path microbenchmarks with benchmark-ips"
+  task :ips do
+    ruby "benchmark/micro_ips.rb"
+  end
+end
+
 task "test:e2e" => %i[build_sdk_runner ensure_reader_fixtures]
 
 require "rubocop/rake_task"
