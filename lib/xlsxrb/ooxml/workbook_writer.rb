@@ -496,6 +496,14 @@ module Xlsxrb
           b.empty_tag("workbookProtection", wp_attrs) unless wp_attrs.empty?
         end
 
+        # Workbook view: which sheet tab is selected when the file is opened
+        active_tab = @workbook_properties&.[](:active_tab)
+        if active_tab
+          b.open_tag("bookViews")
+          b.empty_tag("workbookView", { activeTab: active_tab.to_s })
+          b.close_tag("bookViews")
+        end
+
         b.open_tag("sheets")
         @sheets.each_with_index do |sheet, idx|
           s_name = sheet.respond_to?(:name) ? sheet.name : sheet[:name]
@@ -530,6 +538,9 @@ module Xlsxrb
           end
           b.close_tag("definedNames")
         end
+
+        # Calculation properties: ask Excel to recalculate every formula when the file is opened
+        b.empty_tag("calcPr", { fullCalcOnLoad: "1" }) if @workbook_properties&.[](:full_calc_on_load)
 
         # Pivot caches
         total_pivots = @sheets.sum { |s| (s[:pivot_tables] || []).size }
