@@ -142,7 +142,7 @@ module Xlsxrb
 
             @bytes_read_compressed += raw.bytesize
             @total_uncompressed += raw.bytesize
-            raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{@max_uncompressed_size} bytes" if @total_uncompressed > @max_uncompressed_size
+            raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{@max_uncompressed_size} bytes" if @total_uncompressed > @max_uncompressed_size
 
             raw
           elsif @compression_method == 8
@@ -176,7 +176,7 @@ module Xlsxrb
             @eof = true if @inflater&.finished?
 
             @total_uncompressed += inflated.bytesize
-            raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{@max_uncompressed_size} bytes" if @total_uncompressed > @max_uncompressed_size
+            raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{@max_uncompressed_size} bytes" if @total_uncompressed > @max_uncompressed_size
 
             inflated.empty? && @eof ? nil : inflated
           else
@@ -294,7 +294,7 @@ module Xlsxrb
       #: (String entry_name) -> EntryStreamIO
       def open_entry_io(entry_name)
         entry = lookup_entry(entry_name)
-        raise ArgumentError, "Entry not found in archive: #{entry_name}" unless entry
+        raise ZipError, "Entry not found in archive: #{entry_name}" unless entry
 
         EntryStreamIO.new(io, entry.data_offset, entry.compressed_size, entry.method, max_uncompressed_size: @max_uncompressed_size)
       end
@@ -334,7 +334,7 @@ module Xlsxrb
       #: (String entry_name, ZipWriter writer, ?target_path: String?) -> void
       def copy_to_writer(entry_name, writer, target_path: nil)
         entry = lookup_entry(entry_name)
-        raise ArgumentError, "Entry not found in archive: #{entry_name}" unless entry
+        raise ZipError, "Entry not found in archive: #{entry_name}" unless entry
 
         if entry.compressed_size.zero? && entry.uncompressed_size.positive?
           data = read_entry(entry_name)
@@ -554,7 +554,7 @@ module Xlsxrb
 
               inflated = inflater.inflate(chunk)
               limit = @max_uncompressed_size || MAX_UNCOMPRESSED_SIZE
-              raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
+              raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
 
               result << inflated
             end
@@ -606,13 +606,13 @@ module Xlsxrb
           while offset < raw_len
             chunk = raw.byteslice(offset, chunk_size)
             inflated = inflater.inflate(chunk)
-            raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
+            raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
 
             result << inflated
             offset += chunk_size
           end
           inflated = inflater.finish
-          raise ArgumentError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
+          raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
 
           result << inflated
         ensure

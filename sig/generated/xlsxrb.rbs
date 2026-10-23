@@ -39,6 +39,10 @@ module Xlsxrb
   class ZipError < Error
   end
 
+  # Raised when ZIP decompression exceeds size bounds (ZIP bomb defense).
+  class ZipBombError < ZipError
+  end
+
   # Base exception for encrypted or password-protected XLSX documents.
   class EncryptedFileError < Error
   end
@@ -279,7 +283,7 @@ module Xlsxrb
   #   puts doc_sheet["A1"].value     # coordinate random access
   #
   # @param max_uncompressed_size [Integer, nil] Maximum allowed uncompressed size in bytes per entry (ZIP bomb defense).
-  # @raise [ArgumentError] If an uncompressed entry exceeds max_uncompressed_size.
+  # @raise [ZipBombError] If an uncompressed entry exceeds max_uncompressed_size.
   # @raise [EncryptedFileError] If the file is encrypted and no password was supplied.
   # @raise [InvalidPasswordError] If the supplied password is incorrect.
   # @raise [ParseError] If the spreadsheet XML structure is invalid.

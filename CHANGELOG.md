@@ -12,6 +12,7 @@
 - Phonetic readings (`<rPh>`) are excluded from shared strings and inline strings, so cells with furigana no longer concatenate phonetic readings to display text.
 
 ### Added
+- Dedicated exception `Xlsxrb::ZipBombError < Xlsxrb::ZipError` for archive expansion limit violations.
 - Workbook view and calculation properties in in-memory writes: `Xlsxrb.write(workbook)` emits `<bookViews><workbookView activeTab="n"/></bookViews>` and `<calcPr fullCalcOnLoad="1"/>` when the workbook properties carry `active_tab:` and `full_calc_on_load: true`.
 - Autonomous QA agent squad skill definitions and documentation: Added skill playbooks in `.agents/skills/` (`throughput-performance`, `security-resilience`, `api-contract`, `concurrency-safety`, `visual-fidelity`), and updated `docs/QA_AGENTS.md`, `docs/QUALITY_ASSURANCE.md`, `.agents/rules/qa_agents.md`, and `AGENTS.md`.
 - Visual fidelity and Wasm compatibility verification agent (`visual-fidelity`): Formulated autonomous skill playbook covering headless LibreOffice Calc visual regression testing (`rake test:visual`) and WebAssembly playground asset verification (`rake doc:check`).

@@ -12,7 +12,7 @@ class ZipBombTest < Test::Unit::TestCase
         end
       end
 
-      assert_raise(ArgumentError, "ZIP bomb detected") do
+      assert_raise(Xlsxrb::ZipBombError) do
         Xlsxrb::Ooxml::ZipReader.open(f.path, max_uncompressed_size: 100, &:read_all)
       end
     end
@@ -26,11 +26,16 @@ class ZipBombTest < Test::Unit::TestCase
         end
       end
 
-      assert_raise(ArgumentError, "ZIP bomb detected") do
+      assert_raise(Xlsxrb::ZipBombError) do
         Xlsxrb.read(f.path, max_uncompressed_size: 100) do |sheet|
           sheet.each { |row| assert_not_nil row }
         end
       end
     end
+  end
+
+  test "ZipBombError is a subclass of Xlsxrb::ZipError and Xlsxrb::Error" do
+    assert_operator Xlsxrb::ZipBombError, :<, Xlsxrb::ZipError
+    assert_operator Xlsxrb::ZipBombError, :<, Xlsxrb::Error
   end
 end
