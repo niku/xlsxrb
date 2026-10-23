@@ -39,6 +39,7 @@ module Xlsxrb
       def self.datetime_to_serial: (Time time, ?date1904: bool) -> Float
 
       # Converts a fractional Excel serial number to a Time (1900 or 1904 system, UTC).
+      # Excel serial numbers carry no timezone metadata; returned Time objects are in UTC.
       # : (Numeric serial, ?date1904: bool) -> Time
       def self.serial_to_datetime: (Numeric serial, ?date1904: bool) -> Time
 

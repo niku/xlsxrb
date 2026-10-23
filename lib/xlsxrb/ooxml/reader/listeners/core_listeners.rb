@@ -24,12 +24,15 @@ module Xlsxrb
           @runs = []
           @current_font = {}
           @has_runs = false
+          @inside_rph = false
         end
 
         def start_element(_uri, local_name, qname, attributes)
           name = element_name(local_name, qname)
 
           case name
+          when "rPh"
+            @inside_rph = true
           when "si"
             @inside_si = true
             @text_buffer = +""
@@ -74,7 +77,7 @@ module Xlsxrb
           when "scheme"
             @current_font[:scheme] = attributes["val"] if @inside_rpr
           when "t"
-            @inside_t = @inside_si
+            @inside_t = @inside_si && !@inside_rph
             @text_buffer = +"" if @inside_r
           end
         end
@@ -87,6 +90,8 @@ module Xlsxrb
           name = element_name(local_name, qname)
 
           case name
+          when "rPh"
+            @inside_rph = false
           when "t"
             @inside_t = false
           when "rPr"
@@ -145,12 +150,15 @@ module Xlsxrb
           @is_has_runs = false
           @is_current_font = {}
           @is_run_text = +""
+          @inside_rph = false
         end
 
         def start_element(_uri, local_name, qname, attributes)
           name = element_name(local_name, qname)
 
           case name
+          when "rPh"
+            @inside_rph = true
           when "row"
             parse_row_attributes(attributes)
           when "c"
@@ -231,11 +239,13 @@ module Xlsxrb
           when "scheme"
             @is_current_font[:scheme] = attributes["val"] if @inside_is_rpr
           when "t"
-            if @inside_is_r
-              @is_run_text = +""
-              @inside_inline_text = true
-            elsif @inside_is || (@current_cell_type == "inlineStr" && !@current_cell_ref.nil?)
-              @inside_inline_text = true
+            unless @inside_rph
+              if @inside_is_r
+                @is_run_text = +""
+                @inside_inline_text = true
+              elsif @inside_is || (@current_cell_type == "inlineStr" && !@current_cell_ref.nil?)
+                @inside_inline_text = true
+              end
             end
           end
         end
@@ -256,6 +266,8 @@ module Xlsxrb
           name = element_name(local_name, qname)
 
           case name
+          when "rPh"
+            @inside_rph = false
           when "v"
             @inside_value = false
           when "f"
@@ -336,6 +348,8 @@ module Xlsxrb
                                           @inline_text_buffer.dup
                                         end
           when "s"
+            return if @value_buffer.empty?
+
             index = @value_buffer.to_i
             @cells[@current_cell_ref] = @shared_strings[index] || ""
           when "e"

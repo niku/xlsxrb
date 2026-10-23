@@ -115,6 +115,13 @@ module Xlsxrb
           t_start = xml.index("<t", pos)
           break unless t_start && t_start < to
 
+          # Ensure the tag is actually <t>, <t ...>, or <t/> and not <theme>, <table>, etc.
+          b = xml.getbyte(t_start + 2)
+          unless b == 62 || b == 32 || b == 47 || b == 9 || b == 10 || b == 13
+            pos = t_start + 2
+            next
+          end
+
           # Phonetic runs (<rPh>) hold furigana readings and are not part of the string
           rph_start = xml.index("<rPh", pos)
           if rph_start && rph_start < t_start

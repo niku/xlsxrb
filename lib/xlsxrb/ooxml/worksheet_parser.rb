@@ -434,39 +434,56 @@ module Xlsxrb
         result = +""
         pos = from
         while pos < to
-          t_start = xml.index("<", pos)
-          break unless t_start && t_start < to
+          tag_start = xml.index("<", pos)
+          break unless tag_start && tag_start < to
 
-          # Phonetic runs (<rPh>) hold furigana readings and are not part of the cell text
-          if xml.byteslice(t_start, 4) == "<rPh"
-            rph_end = xml.index("</rPh>", t_start)
-            break unless rph_end
+          # Check self-closing tag or closing tag
+          next_byte = xml.getbyte(tag_start + 1)
+          if next_byte == 47 # </...
+            tag_end = xml.index(">", tag_start + 2)
+            break unless tag_end
 
-            pos = rph_end + 6
+            pos = tag_end + 1
             next
           end
 
-          t_term = xml.index("t", t_start)
-          break unless t_term && t_term < to
+          tag_end = xml.index(">", tag_start + 1)
+          break unless tag_end && tag_end <= to
 
-          t_tag_end = xml.index(">", t_term)
-          break unless t_tag_end && t_tag_end < to
-
-          if xml.getbyte(t_tag_end - 1) == 47 # <t ... />
-            pos = t_tag_end + 1
+          # Skip self-closing tags (<.../>)
+          if xml.getbyte(tag_end - 1) == 47
+            pos = tag_end + 1
             next
           end
 
-          t_close = xml.index("</", t_tag_end + 1)
-          break unless t_close && t_close <= to
+          tag_header = xml.byteslice(tag_start + 1, tag_end - tag_start - 1)
+          tag_name = tag_header.split(/[ \t\r\n]/, 2).first || ""
+          tag_localname = tag_name.include?(":") ? tag_name.split(":", 2).last : tag_name
 
-          t_end = xml.index(">", t_close + 2)
-          break unless t_end && t_end <= to
+          if tag_localname == "rPh"
+            # Skip phonetic readings
+            close_rph = xml.index("</#{tag_name}>", tag_end + 1) || xml.index("</rPh>", tag_end + 1)
+            break unless close_rph && close_rph < to
 
-          text_segment = xml.byteslice(t_tag_end + 1, t_close - t_tag_end - 1).force_encoding("UTF-8")
-          result << normalize_text(text_segment)
+            close_end = xml.index(">", close_rph)
+            break unless close_end
 
-          pos = t_end + 1
+            pos = close_end + 1
+            next
+          elsif tag_localname == "t"
+            close_t = xml.index("</#{tag_name}>", tag_end + 1) || xml.index("</t>", tag_end + 1)
+            break unless close_t && close_t <= to
+
+            close_end = xml.index(">", close_t)
+            break unless close_end
+
+            text_segment = xml.byteslice(tag_end + 1, close_t - tag_end - 1).force_encoding("UTF-8")
+            result << normalize_text(text_segment)
+            pos = close_end + 1
+            next
+          else
+            pos = tag_end + 1
+          end
         end
         result
       end

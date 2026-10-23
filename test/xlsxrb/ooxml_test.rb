@@ -919,4 +919,46 @@ class OoxmlTest < Test::Unit::TestCase
     assert_include(xml, '<c r="A1" t="s"><v>0</v></c>')
     assert_not_include(xml, "<f>")
   end
+
+  test "extract_inline_text parses formatted rich text without confusing formatting tags with t elements" do
+    is_xml = '<is><r><rPr><b/><sz val="11"/><vertAlign val="superscript"/></rPr><t>Bold</t></r><r><t>Normal</t></r></is>'
+    text = Xlsxrb::Ooxml::WorksheetParser.send(:extract_inline_text, is_xml, 0, is_xml.bytesize)
+    assert_equal "BoldNormal", text
+  end
+
+  test "WorksheetListener excludes phonetic readings and ignores empty self-closing string cells" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1" t="inlineStr"><is><t>東京</t><rPh sb="0" eb="2"><t>トウキョウ</t></rPh></is></c>
+            <c r="B1" s="1" t="s"/>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    listener = Xlsxrb::Ooxml::Reader::WorksheetListener.new([])
+    parser = REXML::Parsers::SAX2Parser.new(xml)
+    parser.listen(listener)
+    parser.parse
+
+    assert_equal "東京", listener.cells["A1"]
+    assert_nil listener.cells["B1"]
+  end
+
+  test "SharedStringsListener excludes phonetic readings from parsed strings" do
+    xml = <<~XML
+      <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <si><t>部門1</t><rPh sb="0" eb="2"><t>ブモン</t></rPh></si>
+      </sst>
+    XML
+
+    listener = Xlsxrb::Ooxml::Reader::SharedStringsListener.new
+    parser = REXML::Parsers::SAX2Parser.new(xml)
+    parser.listen(listener)
+    parser.parse
+
+    assert_equal ["部門1"], listener.strings
+  end
 end
