@@ -483,6 +483,26 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(["Prefix: Middle & <special> Suffix"], strings)
   end
 
+  test "shared_strings_parser handles XML namespace prefixes" do
+    xml = <<~XML
+      <?xml version="1.0" encoding="utf-8"?>
+      <x:sst count="3" uniqueCount="3" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <x:si><x:t>First</x:t></x:si>
+        <x:si><x:r><x:t>Rich </x:t></x:r><x:r><x:t>Text</x:t></x:r></x:si>
+        <x:si><x:t>Third</x:t><x:rPh sb="0" eb="2"><x:t>Furigana</x:t></x:rPh></x:si>
+      </x:sst>
+    XML
+
+    strings = Xlsxrb::Ooxml::SharedStringsParser.parse(xml)
+    assert_equal(["First", "Rich Text", "Third"], strings)
+
+    events = Xlsxrb::Ooxml::SharedStringsParser.each_event(xml).to_a
+    assert_equal(3, events.size)
+    assert_equal(["First"], events[0].args)
+    assert_equal(["Rich Text"], events[1].args)
+    assert_equal(["Third"], events[2].args)
+  end
+
   test "shared_strings_parser each_event enumerates events with custom part_name" do
     xml = "<sst><si><t>Item 0</t></si><si><t>Item 1</t></si></sst>"
     events = Xlsxrb::Ooxml::SharedStringsParser.each_event(xml, part_name: "custom/sst.xml").to_a

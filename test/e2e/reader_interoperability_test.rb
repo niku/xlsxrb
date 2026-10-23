@@ -42,6 +42,15 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
 
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "hello", "B1" => "world" }, reader.cells)
+
+    wb = Xlsxrb.read(xlsx_path)
+    s = wb.sheets.first.load
+    assert_equal("hello", s["A1"]&.value)
+    assert_equal("world", s["B1"]&.value)
+
+    stream_rows = []
+    Xlsxrb.read(xlsx_path) { |sheet| stream_rows << sheet.each_row.map(&:values) }
+    assert_equal([[%w[hello world]]], stream_rows)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

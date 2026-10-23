@@ -44,22 +44,42 @@ module Xlsxrb
 
       def self.fast_scan(xml_src)
         xml = xml_src.b
-        sst_start = xml.index("<sst")
+        sst_term = xml.index("sst")
+        return unless sst_term
+
+        sst_start = xml.rindex("<", sst_term)
         return unless sst_start
+
+        prefix = xml.byteslice(sst_start + 1, sst_term - (sst_start + 1))
+        return if !prefix.empty? && !prefix.end_with?(":")
 
         sst_open_end = xml.index(">", sst_start)
         return unless sst_open_end
         return if xml.getbyte(sst_open_end - 1) == 47 # self-closing <sst/>
 
-        sst_end = xml.index("</sst>", sst_open_end)
+        sst_end = xml.index("</#{prefix}sst>", sst_open_end)
         sst_end ||= xml.bytesize
+
+        si_start_pattern = "<#{prefix}si"
+        si_start_len = si_start_pattern.bytesize
+        si_end_tag = "</#{prefix}si>"
+        si_end_len = si_end_tag.bytesize
+
+        t_start_pattern = "<#{prefix}t"
+        t_start_len = t_start_pattern.bytesize
+        t_end_tag = "</#{prefix}t>"
+        t_end_len = t_end_tag.bytesize
+
+        rph_start_pattern = "<#{prefix}rPh"
+        rph_end_tag = "</#{prefix}rPh>"
+        rph_end_len = rph_end_tag.bytesize
 
         pos = sst_open_end + 1
         while pos < sst_end
-          si_start = xml.index("<si", pos)
+          si_start = xml.index(si_start_pattern, pos)
           break unless si_start && si_start < sst_end
 
-          si_open_end = xml.index(">", si_start + 3)
+          si_open_end = xml.index(">", si_start + si_start_len)
           break unless si_open_end
 
           # Self-closing <si/>
@@ -69,23 +89,23 @@ module Xlsxrb
             next
           end
 
-          si_end = xml.index("</si>", si_open_end + 1)
+          si_end = xml.index(si_end_tag, si_open_end + 1)
           break unless si_end
 
           # Fast path: check for simple single <t>...</t> inside <si>
-          first_t = xml.index("<t", si_open_end + 1)
+          first_t = xml.index(t_start_pattern, si_open_end + 1)
           if first_t && first_t < si_end
-            t_open_end = xml.index(">", first_t + 2)
+            t_open_end = xml.index(">", first_t + t_start_len)
             if t_open_end && t_open_end < si_end
               if xml.getbyte(t_open_end - 1) == 47 # <t/>
                 str = ""
               else
-                t_end = xml.index("</t>", t_open_end + 1)
+                t_end = xml.index(t_end_tag, t_open_end + 1)
                 if t_end && t_end <= si_end
-                  next_t = xml.index("<t", t_end + 4)
+                  next_t = xml.index(t_start_pattern, t_end + t_end_len)
                   if next_t && next_t < si_end
                     # Multiple <t> tags (rich text runs)
-                    str = extract_multi_t(xml, si_open_end + 1, si_end)
+                    str = extract_multi_t(xml, si_open_end + 1, si_end, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len)
                   else
                     raw_str = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding("UTF-8")
                     str = XmlBuilder.unescape(raw_str)
@@ -102,39 +122,39 @@ module Xlsxrb
           end
 
           yield normalize_newlines(str).freeze
-          pos = si_end + 5
+          pos = si_end + si_end_len
         end
       end
 
       private_class_method :fast_scan
 
-      def self.extract_multi_t(xml, from, to)
+      def self.extract_multi_t(xml, from, to, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len)
         buf = +""
         pos = from
         while pos < to
-          t_start = xml.index("<t", pos)
+          t_start = xml.index(t_start_pattern, pos)
           break unless t_start && t_start < to
 
           # Ensure the tag is actually <t>, <t ...>, or <t/> and not <theme>, <table>, etc.
-          b = xml.getbyte(t_start + 2)
+          b = xml.getbyte(t_start + t_start_len)
           # rubocop:disable Style/MultipleComparison -- Zero-allocation hot path check
           unless b == 62 || b == 32 || b == 47 || b == 9 || b == 10 || b == 13
-            pos = t_start + 2
+            pos = t_start + t_start_len
             next
           end
           # rubocop:enable Style/MultipleComparison
 
           # Phonetic runs (<rPh>) hold furigana readings and are not part of the string
-          rph_start = xml.index("<rPh", pos)
+          rph_start = xml.index(rph_start_pattern, pos)
           if rph_start && rph_start < t_start
-            rph_end = xml.index("</rPh>", rph_start)
+            rph_end = xml.index(rph_end_tag, rph_start)
             break unless rph_end && rph_end < to
 
-            pos = rph_end + 6
+            pos = rph_end + rph_end_len
             next
           end
 
-          t_open_end = xml.index(">", t_start + 2)
+          t_open_end = xml.index(">", t_start + t_start_len)
           break unless t_open_end
 
           if xml.getbyte(t_open_end - 1) == 47
@@ -142,12 +162,12 @@ module Xlsxrb
             next
           end
 
-          t_end = xml.index("</t>", t_open_end + 1)
+          t_end = xml.index(t_end_tag, t_open_end + 1)
           break unless t_end && t_end <= to
 
           raw_chunk = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding("UTF-8")
           buf << XmlBuilder.unescape(raw_chunk)
-          pos = t_end + 4
+          pos = t_end + t_end_len
         end
         buf
       end
