@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Added
+- Concurrency and Ractor safety verification agent (`concurrency-safety`): Added automated reflection scan testing that 100% of constants in the `Xlsxrb` namespace are `Ractor.shareable?`, deeply froze `EPOCH_1900`, `EPOCH_1904`, `INTEGER_STRINGS`, and `LOCAL_HEADER_SIG`, added Ractor-safe accessors for REXML security settings in `XmlParser`, and added full parallel write/read/modify pipeline verification across concurrent Ractors in `test/concurrent_test.rb`.
+
 ## [0.1.15] - 2026-10-17
 
 ### Added

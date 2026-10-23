@@ -1,5 +1,18 @@
 # Generated from lib/xlsxrb/ooxml/xml_parser.rb with RBS::Inline
 
+# rubocop:disable Style/Documentation
+module ::REXML
+  module Security
+    attr_writer entity_expansion_limit: untyped
+
+    attr_writer entity_expansion_text_limit: untyped
+
+    def self.entity_expansion_limit: () -> untyped
+
+    def self.entity_expansion_text_limit: () -> untyped
+  end
+end
+
 module Xlsxrb
   module Ooxml
     # Thin wrapper around REXML SAX2 parser for streaming XML processing.

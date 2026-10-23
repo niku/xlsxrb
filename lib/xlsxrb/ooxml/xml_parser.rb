@@ -5,6 +5,51 @@
 require "rexml/parsers/sax2parser"
 require "rexml/sax2listener"
 
+# Ensure REXML constants and security limits are accessible across Ractors
+begin
+  if defined?(Ractor)
+    Ractor.make_shareable(REXML::Parsers::BaseParser::DEFAULT_ENTITIES) if defined?(REXML::Parsers::BaseParser::DEFAULT_ENTITIES) && !Ractor.shareable?(REXML::Parsers::BaseParser::DEFAULT_ENTITIES)
+    if defined?(REXML::Source) && REXML::Source.const_defined?(:Private)
+      priv = REXML::Source.const_get(:Private)
+      if priv.const_defined?(:PRE_DEFINED_TERM_PATTERNS)
+        terms = priv.const_get(:PRE_DEFINED_TERM_PATTERNS)
+        Ractor.make_shareable(terms) unless Ractor.shareable?(terms)
+      end
+    end
+    if defined?(REXML::Security)
+      prev_verbose = $VERBOSE
+      $VERBOSE = nil
+      begin
+        # rubocop:disable Style/Documentation
+        module ::REXML
+          module Security
+            @entity_expansion_limit = 10_000
+            @entity_expansion_text_limit = 10_240
+
+            class << self
+              attr_writer :entity_expansion_limit, :entity_expansion_text_limit
+
+              def entity_expansion_limit
+                @entity_expansion_limit || 10_000
+              end
+
+              def entity_expansion_text_limit
+                @entity_expansion_text_limit || 10_240
+              end
+            end
+          end
+        end
+        # rubocop:enable Style/Documentation
+        Ractor.make_shareable(REXML::Security)
+      ensure
+        $VERBOSE = prev_verbose
+      end
+    end
+  end
+rescue StandardError
+  # Best-effort Ractor isolation preparation for standard library REXML
+end
+
 module Xlsxrb
   module Ooxml
     # Thin wrapper around REXML SAX2 parser for streaming XML processing.

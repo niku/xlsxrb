@@ -24,7 +24,7 @@ module Xlsxrb
         result.freeze
       end.freeze
 
-      INTEGER_STRINGS = (0..65_535).map(&:to_s).freeze
+      INTEGER_STRINGS = (0..65_535).map { |n| -n.to_s }.freeze
 
       def initialize(io, date1904: false)
         @io = io

@@ -11,11 +11,11 @@ module Xlsxrb
     # OOXML-specific utility methods and constants.
     module Utils
       # Excel 1900 date system epoch.
-      EPOCH_1900 = Date.new(1899, 12, 31) # serial 1 = Jan 1, 1900
+      EPOCH_1900 = Date.new(1899, 12, 31).freeze # serial 1 = Jan 1, 1900
       EPOCH_1900_JD = EPOCH_1900.jd
 
       # Excel 1904 date system epoch.
-      EPOCH_1904 = Date.new(1904, 1, 1) # serial 0 = Jan 1, 1904
+      EPOCH_1904 = Date.new(1904, 1, 1).freeze # serial 0 = Jan 1, 1904
       EPOCH_1904_JD = EPOCH_1904.jd
 
       # Built-in number format codes defined by SpreadsheetML.
