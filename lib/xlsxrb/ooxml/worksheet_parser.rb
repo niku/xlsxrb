@@ -437,6 +437,15 @@ module Xlsxrb
           t_start = xml.index("<", pos)
           break unless t_start && t_start < to
 
+          # Phonetic runs (<rPh>) hold furigana readings and are not part of the cell text
+          if xml.byteslice(t_start, 4) == "<rPh"
+            rph_end = xml.index("</rPh>", t_start)
+            break unless rph_end
+
+            pos = rph_end + 6
+            next
+          end
+
           t_term = xml.index("t", t_start)
           break unless t_term && t_term < to
 
@@ -470,20 +479,27 @@ module Xlsxrb
           shared_strings[raw.to_i] || ""
         when "b"
           raw == "1"
-        when "e", "str", "inlineStr"
+        when "e", "str", "inlineStr", "d"
           normalize_text(raw.force_encoding("UTF-8"))
         else
-          return nil if raw.empty?
-
-          if raw.include?(".")
-            raw.to_f
-          else
-            raw.to_i
-          end
+          numeric_cell_value(raw)
         end
       end
 
       private_class_method :resolve_fast_value
+
+      # Converts the text of a numeric cell (<c t="n"> or no t attribute) into an Integer or Float.
+      # An empty <v></v> carries no value and yields nil. Text that is not an xsd:double
+      # (e.g. "abc") cannot come from a conforming producer and raises ParseError
+      # instead of silently becoming 0.
+      #: (String raw) -> (Integer | Float)?
+      def self.numeric_cell_value(raw)
+        text = raw.strip
+        return nil if text.empty?
+
+        Integer(text, 10, exception: false) || Float(text, exception: false) ||
+          raise(ParseError, "invalid numeric cell value: #{text.inspect}")
+      end
 
       # SECURITY NOTE: Decodes only standard predefined XML entities in a single pass.
       # This completely prevents "Billion Laughs" attacks (exponential entity expansion)
@@ -846,7 +862,7 @@ module Xlsxrb
         [COL_LETTERS[idx], idx]
       end.freeze
 
-      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\s+r="([A-Za-z0-9]+)"(?:[^>]*?s="(\d+)")?(?:[^>]*?t="([a-zA-Z]+)")?[^>]*>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\s+r="([A-Za-z0-9]+)"(?:[^>]*?s="(\d+)")?[^>]*/>}m
+      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\s+r="([A-Za-z0-9]+)"(?:[^>]*?s="(\d+)")?(?:[^>]*?t="([a-zA-Z]+)")?[^>]*(?<!/)>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\s+r="([A-Za-z0-9]+)"(?:[^>]*?s="(\d+)")?[^>]*/>}m
       CELL_GENERIC_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*?)(?:>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|/>)}m
       ATTR_R = /r="([A-Za-z0-9]+)"/
       ATTR_T = /t="([a-zA-Z]+)"/
@@ -873,7 +889,7 @@ module Xlsxrb
           style_idx = s_val&.to_i
           c_idx = if ref
                     expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && ref.start_with?(expected_letter)
+                    if expected_letter && ref.start_with?(expected_letter) && ref.getbyte(expected_letter.bytesize)&.between?(48, 57)
                       col_idx
                     else
                       c_len = 0
@@ -897,11 +913,11 @@ module Xlsxrb
                     extract_inline_text(is, 0, is.bytesize)
                   elsif v
                     normalize_text(v)
-                  else
-                    ""
                   end
+                elsif t == "d"
+                  v && normalize_text(v)
                 elsif v
-                  v.include?(".") ? v.to_f : v.to_i
+                  numeric_cell_value(v)
                 end
 
           raw_val = if is
@@ -927,7 +943,7 @@ module Xlsxrb
 
           c_idx = if r
                     expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && r.start_with?(expected_letter)
+                    if expected_letter && r.start_with?(expected_letter) && r.getbyte(expected_letter.bytesize)&.between?(48, 57)
                       col_idx
                     else
                       c_len = 0
@@ -951,11 +967,11 @@ module Xlsxrb
                     extract_inline_text(is, 0, is.bytesize)
                   elsif v
                     normalize_text(v)
-                  else
-                    ""
                   end
+                elsif t == "d"
+                  v && normalize_text(v)
                 elsif v
-                  v.include?(".") ? v.to_f : v.to_i
+                  numeric_cell_value(v)
                 end
 
           raw_val = if is
@@ -990,7 +1006,7 @@ module Xlsxrb
           s_val = s || self_s
           c_idx = if ref
                     expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && ref.start_with?(expected_letter)
+                    if expected_letter && ref.start_with?(expected_letter) && ref.getbyte(expected_letter.bytesize)&.between?(48, 57)
                       col_idx
                     else
                       c_len = 0
@@ -1013,11 +1029,11 @@ module Xlsxrb
                     extract_inline_text(is, 0, is.bytesize)
                   elsif v
                     normalize_text(v)
-                  else
-                    ""
                   end
+                elsif t == "d"
+                  v && normalize_text(v)
                 elsif v
-                  v.include?(".") ? v.to_f : v.to_i
+                  numeric_cell_value(v)
                 end
 
           if type_cast && val.is_a?(Numeric) && s_val && styles
@@ -1047,7 +1063,7 @@ module Xlsxrb
 
           c_idx = if r
                     expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && r.start_with?(expected_letter)
+                    if expected_letter && r.start_with?(expected_letter) && r.getbyte(expected_letter.bytesize)&.between?(48, 57)
                       col_idx
                     else
                       c_len = 0
@@ -1070,11 +1086,11 @@ module Xlsxrb
                     extract_inline_text(is, 0, is.bytesize)
                   elsif v
                     normalize_text(v)
-                  else
-                    ""
                   end
+                elsif t == "d"
+                  v && normalize_text(v)
                 elsif v
-                  v.include?(".") ? v.to_f : v.to_i
+                  numeric_cell_value(v)
                 end
 
           if type_cast && val.is_a?(Numeric) && s && styles

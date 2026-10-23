@@ -49,6 +49,13 @@ module Xlsxrb
 
       def self.resolve_fast_value: (untyped raw, untyped type, untyped shared_strings) -> untyped
 
+      # Converts the text of a numeric cell (<c t="n"> or no t attribute) into an Integer or Float.
+      # An empty <v></v> carries no value and yields nil. Text that is not an xsd:double
+      # (e.g. "abc") cannot come from a conforming producer and raises ParseError
+      # instead of silently becoming 0.
+      # : (String raw) -> (Integer | Float)?
+      def self.numeric_cell_value: (String raw) -> (Integer | Float)?
+
       # SECURITY NOTE: Decodes only standard predefined XML entities in a single pass.
       # This completely prevents "Billion Laughs" attacks (exponential entity expansion)
       # because it avoids recursive expansion and ignores custom entities entirely.

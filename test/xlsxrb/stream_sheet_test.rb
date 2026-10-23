@@ -181,7 +181,7 @@ class StreamSheetTest < Test::Unit::TestCase
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
         <sheetData>
           <row r="1">
-            <c r="A1"><v>Link</v></c>
+            <c r="A1" t="str"><v>Link</v></c>
           </row>
         </sheetData>
         <hyperlinks>
@@ -653,5 +653,79 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal([10, nil, 30], vals[0])
     assert_equal([], vals[1])
     assert_equal([nil, "Hello"], vals[2])
+  end
+
+  test "stream_sheet keeps the cell that follows a self-closing empty cell" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1"><c r="A1" s="1"/><c r="B1" s="7" t="s"><v>0</v></c><c r="C1" s="8"/></row>
+          <row r="2"><c r="A2" s="2"/><c r="B2" s="2"><v>1</v></c><c r="C2" s="2" t="s"><v>0</v></c></row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    sheet = Xlsxrb::StreamSheet.new("Data", xml.b, ["Title"])
+
+    assert_equal([[nil, "Title", nil], [nil, 1, "Title"]], sheet.each_row.map(&:values))
+    assert_equal([[nil, "Title", nil], [nil, 1, "Title"]], sheet.each_row.map { |row| row.cells.map(&:value) })
+    assert_equal("Title", sheet.load["B1"].value)
+    assert_equal(1, sheet.load["B2"].value)
+  end
+
+  test "stream_sheet places a row-leading multi-letter column reference in its own column" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1"><c r="AB1"><v>5</v></c></row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    sheet = Xlsxrb::StreamSheet.new("Data", xml.b, [])
+
+    assert_equal(27, sheet.each_row.first.values.index(5))
+    assert_equal([27], sheet.each_row.first.cells.map(&:column_index))
+  end
+
+  test "stream_sheet reads numeric cells strictly" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1"><c r="A1"><v>1E-3</v></c><c r="B1"><v></v></c><c r="C1"><v>1500</v></c><c r="D1" t="inlineStr"></c></row>
+          <row r="2"><c r="A2"><v>abc</v></c></row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    sheet = Xlsxrb::StreamSheet.new("Data", xml.b, [])
+    first, second = sheet.each_row.to_a
+
+    assert_equal([0.001, nil, 1500, nil], first.values)
+    assert_equal([0.001, nil, 1500, nil], first.cells.map(&:value))
+    assert_raise_with_message(Xlsxrb::ParseError, /"abc"/) { second.values }
+    assert_raise_with_message(Xlsxrb::ParseError, /"abc"/) { second.cells }
+  end
+
+  test "stream_sheet excludes phonetic readings from inline strings and shared strings" do
+    sst_xml = <<~XML
+      <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1">
+        <si><t>部門1</t><rPh sb="0" eb="2"><t xml:space="preserve">ブモン </t></rPh><phoneticPr fontId="6"/></si>
+      </sst>
+    XML
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="inlineStr"><is><t>東京</t><rPh sb="0" eb="2"><t>トウキョウ</t></rPh></is></c></row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    shared_strings = Xlsxrb::Ooxml::SharedStringsParser.parse(sst_xml)
+    sheet = Xlsxrb::StreamSheet.new("Data", xml.b, shared_strings)
+
+    assert_equal(["部門1"], shared_strings)
+    assert_equal(%w[部門1 東京], sheet.each_row.first.values)
+    assert_equal(%w[部門1 東京], sheet.each_row.first.cells.map(&:value))
   end
 end

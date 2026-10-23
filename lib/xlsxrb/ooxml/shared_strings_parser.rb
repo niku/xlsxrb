@@ -115,6 +115,16 @@ module Xlsxrb
           t_start = xml.index("<t", pos)
           break unless t_start && t_start < to
 
+          # Phonetic runs (<rPh>) hold furigana readings and are not part of the string
+          rph_start = xml.index("<rPh", pos)
+          if rph_start && rph_start < t_start
+            rph_end = xml.index("</rPh>", rph_start)
+            break unless rph_end && rph_end < to
+
+            pos = rph_end + 6
+            next
+          end
+
           t_open_end = xml.index(">", t_start + 2)
           break unless t_open_end
 

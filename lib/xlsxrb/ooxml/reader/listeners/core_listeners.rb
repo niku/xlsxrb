@@ -356,11 +356,7 @@ module Xlsxrb
         end
 
         def numeric_value(raw)
-          if raw.include?(".")
-            raw.to_f
-          else
-            raw.to_i
-          end
+          Xlsxrb::Ooxml::WorksheetParser.numeric_cell_value(raw)
         end
 
         def element_name(local_name, qname)

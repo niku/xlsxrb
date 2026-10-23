@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+### Changed
+- Strict numeric cell values: a numeric cell (`t="n"` or no `t`) with an empty `<v>` now reads as `nil` instead of `0`, exponent notation such as `1E-3` reads as a Float, and text that is not a number raises `Xlsxrb::ParseError` instead of silently becoming `0`. Inline string and formula string cells without text read as `nil`, and `t="d"` cells read as their ISO 8601 text.
+
+### Fixed
+- Streaming reads no longer drop the cell that follows a self-closing empty cell (`<c r="A1" s="1"/>`) in `StreamRow#values` and `StreamRow#cells`.
+- Streaming reads place a row-leading cell with a multi-letter column reference (`AB1`) in its own column instead of column A.
+- Phonetic readings (`<rPh>`) are excluded from shared strings and inline strings, so cells with furigana no longer concatenate phonetic readings to display text.
+
 ### Added
 - Autonomous QA agent squad skill definitions and documentation: Added skill playbooks in `.agents/skills/` (`throughput-performance`, `security-resilience`, `api-contract`, `concurrency-safety`, `visual-fidelity`), and updated `docs/QA_AGENTS.md`, `docs/QUALITY_ASSURANCE.md`, `.agents/rules/qa_agents.md`, and `AGENTS.md`.
 - Visual fidelity and Wasm compatibility verification agent (`visual-fidelity`): Formulated autonomous skill playbook covering headless LibreOffice Calc visual regression testing (`rake test:visual`) and WebAssembly playground asset verification (`rake doc:check`).
