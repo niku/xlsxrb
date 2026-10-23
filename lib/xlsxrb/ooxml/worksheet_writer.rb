@@ -26,9 +26,12 @@ module Xlsxrb
 
       INTEGER_STRINGS = (0..65_535).map { |n| -n.to_s }.freeze
 
-      def initialize(io, date1904: false)
+      attr_accessor :escape_formulas
+
+      def initialize(io, date1904: false, escape_formulas: false)
         @io = io
         @date1904 = date1904 ? true : false
+        @escape_formulas = escape_formulas ? true : false
         @builder = XmlBuilder.new(@io)
         @row_buffer = String.new(capacity: 65_536)
         @started = false
@@ -138,7 +141,7 @@ module Xlsxrb
               buf << '<c r="' << col_ref << '"><v>' << value.to_s << "</v></c>"
               next
             when String
-              if !value.start_with?("=") && sst_index && (idx = sst_index[value])
+              if (@escape_formulas || !value.start_with?("=")) && sst_index && (idx = sst_index[value])
                 buf << '<c r="' << col_ref << '" t="s"><v>' << idx.to_s << "</v></c>"
                 next
               end
@@ -165,7 +168,7 @@ module Xlsxrb
             next
           end
 
-          if value.is_a?(String) && value.start_with?("=") && !formula
+          if !@escape_formulas && value.is_a?(String) && value.start_with?("=") && !formula
             formula = value
             value = nil
           end
@@ -318,7 +321,7 @@ module Xlsxrb
         buf = @row_buffer ||= String.new(capacity: 65_536)
 
         if styles.nil? && attrs.nil? && @column_styles.nil?
-          buf << "<row r=\"#{row_num_str}\">"
+          buf << '<row r="' << row_num_str << '">'
           col_index = 0
           max_len = values.length
           while col_index < max_len
@@ -331,11 +334,11 @@ module Xlsxrb
             case value
             when Integer
               val_str = value >= 0 && value < 65_536 ? INTEGER_STRINGS[value] : value.to_s
-              buf << "<c r=\"#{col_ref}#{row_num_str}\"><v>#{val_str}</v></c>"
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << val_str << "</v></c>"
             when Float
-              buf << "<c r=\"#{col_ref}#{row_num_str}\"><v>#{value}</v></c>"
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << value.to_s << "</v></c>"
             when String
-              unless value.start_with?("=")
+              if @escape_formulas || !value.start_with?("=")
                 raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.length > 32_767
 
                 idx = (sst_index[value] ||= begin
@@ -343,15 +346,15 @@ module Xlsxrb
                   sst.size - 1
                 end)
                 idx_str = idx < 65_536 ? INTEGER_STRINGS[idx] : idx.to_s
-                buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"s\"><v>#{idx_str}</v></c>"
+                buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx_str << "</v></c>"
                 next
               end
               formula_expr = value[1..]
-              buf << "<c r=\"#{col_ref}#{row_num_str}\"><f>#{escape_xml(formula_expr)}</f><v>0</v></c>"
+              buf << '<c r="' << col_ref << row_num_str << '"><f>' << escape_xml(formula_expr) << "</f><v>0</v></c>"
             when true
-              buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"b\"><v>1</v></c>"
+              buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>1</v></c>'
             when false
-              buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"b\"><v>0</v></c>"
+              buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>0</v></c>'
             when Date
               date_style_id = style_map ? style_map["__xlsxrb_date"] : nil
               buf << if date_style_id
@@ -487,7 +490,7 @@ module Xlsxrb
               col_index += 1
               next
             when String
-              unless value.start_with?("=")
+              if @escape_formulas || !value.start_with?("=")
                 idx = sst_index[value]
                 unless idx
                   sst << value
@@ -565,7 +568,7 @@ module Xlsxrb
               end
             end
           when String
-            if value.start_with?("=") && value.length > 1
+            if !@escape_formulas && value.start_with?("=") && value.length > 1
               formula_expr = value
               xml_val = nil
             elsif sst_index

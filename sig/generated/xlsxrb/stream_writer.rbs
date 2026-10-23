@@ -17,12 +17,16 @@ module Xlsxrb
     # : String?
     attr_reader current_sheet: untyped
 
+    # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+    attr_accessor escape_formulas: untyped
+
     # Initializes a streaming writer context.
     #
     # @param target [String, IO, StringIO] Destination file path or writable IO stream.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
-    # : (untyped target, ?strict_excel_mode: bool) -> void
-    def initialize: (untyped target, ?strict_excel_mode: bool) -> void
+    # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+    # : (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool) -> void
+    def initialize: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool) -> void
 
     # Sets a workbook property.
     #

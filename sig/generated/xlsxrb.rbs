@@ -278,14 +278,16 @@ module Xlsxrb
   #   doc_sheet = sheet.load         # explicitly load into memory
   #   puts doc_sheet["A1"].value     # coordinate random access
   #
+  # @param max_uncompressed_size [Integer, nil] Maximum allowed uncompressed size in bytes per entry (ZIP bomb defense).
+  # @raise [ArgumentError] If an uncompressed entry exceeds max_uncompressed_size.
   # @raise [EncryptedFileError] If the file is encrypted and no password was supplied.
   # @raise [InvalidPasswordError] If the supplied password is incorrect.
   # @raise [ParseError] If the spreadsheet XML structure is invalid.
   # @api public
-  # : (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) { (StreamSheet) -> void } -> void
-  # : (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Workbook
-  def self.read: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) { (StreamSheet) -> void } -> void
-               | (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Workbook
+  # : (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
+  # : (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
+  def self.read: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
+               | (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
 
   alias self.stream self.read
 
@@ -338,10 +340,10 @@ module Xlsxrb
   # @api public
   # : (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
   # : (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-  # : (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
+  # : (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool) ?{ (StreamWriter) -> void } -> untyped
   def self.write: (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
                 | (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-                | (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
+                | (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool) ?{ (StreamWriter) -> void } -> untyped
 
   # Modifies an existing XLSX file in-memory using an immutable transformation block.
   #

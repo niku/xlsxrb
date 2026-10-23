@@ -11,7 +11,7 @@ module Xlsxrb
     # Reads ZIP archives using only stdlib (zlib).
     # Supports streaming entry decompression with bounded memory consumption.
     class ZipReader
-      LOCAL_HEADER_SIG = "PK\x03\x04".b
+      LOCAL_HEADER_SIG = "PK\x03\x04".b.freeze
       MAX_UNCOMPRESSED_SIZE = 500 * 1024 * 1024 # 500MB per file limit
       attr_accessor :max_uncompressed_size
 

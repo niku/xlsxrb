@@ -17,4 +17,20 @@ class ZipBombTest < Test::Unit::TestCase
       end
     end
   end
+
+  test "streaming read (Xlsxrb.read block form) enforces max_uncompressed_size limit" do
+    Tempfile.create(["bomb_streaming", ".xlsx"]) do |f|
+      Xlsxrb.write(f.path) do |w|
+        w.sheet("Sheet1") do |s|
+          s.row(["B" * 2000])
+        end
+      end
+
+      assert_raise(ArgumentError, "ZIP bomb detected") do
+        Xlsxrb.read(f.path, max_uncompressed_size: 100) do |sheet|
+          sheet.each { |row| assert_not_nil row }
+        end
+      end
+    end
+  end
 end

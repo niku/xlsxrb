@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Security and resilience verification agent (`security-resilience`): Added regular expression ReDoS audit tests in `test/security_resilience_test.rb` verifying linear processing under 10k+ character adversarial inputs, supported `max_uncompressed_size` option on `Xlsxrb.read` block form to protect streaming decompression from ZIP bombs, and added `escape_formulas: true` option on `Xlsxrb.write`, `StreamWriter`, and `WorksheetWriter` to prevent formula and CSV injection vulnerabilities.
 - Throughput and complexity verification agent (`throughput-performance`): Added deterministic allocation bounds testing (< 25 objects/row write, < 15 objects/row read for 10k rows) and scaling ratio tests in `test/performance/throughput_test.rb`, hot-path microbenchmarks with `benchmark-ips` (`benchmark/micro_ips.rb`), and corresponding `benchmark:ips` rake task.
 - Concurrency and Ractor safety verification agent (`concurrency-safety`): Added automated reflection scan testing that 100% of constants in the `Xlsxrb` namespace are `Ractor.shareable?`, deeply froze `EPOCH_1900`, `EPOCH_1904`, `INTEGER_STRINGS`, and `LOCAL_HEADER_SIG`, added Ractor-safe accessors for REXML security settings in `XmlParser`, and added full parallel write/read/modify pipeline verification across concurrent Ractors in `test/concurrent_test.rb`.
 

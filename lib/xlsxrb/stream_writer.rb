@@ -28,14 +28,19 @@ module Xlsxrb
     #: String?
     attr_reader :current_sheet
 
+    # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+    attr_accessor :escape_formulas
+
     # Initializes a streaming writer context.
     #
     # @param target [String, IO, StringIO] Destination file path or writable IO stream.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
-    #: (untyped target, ?strict_excel_mode: bool) -> void
-    def initialize(target, strict_excel_mode: true)
+    # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+    #: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool) -> void
+    def initialize(target, strict_excel_mode: true, escape_formulas: false)
       @target = target
       @strict_excel_mode = strict_excel_mode
+      @escape_formulas = escape_formulas ? true : false
       @io = target.is_a?(String) ? File.open(target, "wb") : target
       @owns_io = target.is_a?(String)
       @zip = Ooxml::ZipWriter.new(@io)
@@ -958,7 +963,7 @@ module Xlsxrb
       @current_row_buffer = String.new(capacity: 65_536)
       @current_sheet_io = StringIO.new(@current_row_buffer)
       date1904 = @workbook_properties&.[](:date1904) ? true : false
-      @current_row_writer = Ooxml::WorksheetWriter.new(@current_sheet_io, date1904: date1904)
+      @current_row_writer = Ooxml::WorksheetWriter.new(@current_sheet_io, date1904: date1904, escape_formulas: @escape_formulas)
       @current_row_writer.instance_variable_set(:@started, true)
 
       @current_columns = []
@@ -1026,7 +1031,7 @@ module Xlsxrb
       end
 
       date1904 = @workbook_properties&.[](:date1904) ? true : false
-      @current_row_writer = Ooxml::WorksheetWriter.new(zip_io, date1904: date1904)
+      @current_row_writer = Ooxml::WorksheetWriter.new(zip_io, date1904: date1904, escape_formulas: @escape_formulas)
       @current_row_writer.start(
         columns: @current_columns,
         sheet_properties: @current_sheet_properties.empty? ? nil : @current_sheet_properties,

@@ -383,15 +383,19 @@ module Xlsxrb
   #   doc_sheet = sheet.load         # explicitly load into memory
   #   puts doc_sheet["A1"].value     # coordinate random access
   #
+  # @param max_uncompressed_size [Integer, nil] Maximum allowed uncompressed size in bytes per entry (ZIP bomb defense).
+  # @raise [ArgumentError] If an uncompressed entry exceeds max_uncompressed_size.
   # @raise [EncryptedFileError] If the file is encrypted and no password was supplied.
   # @raise [InvalidPasswordError] If the supplied password is incorrect.
   # @raise [ParseError] If the spreadsheet XML structure is invalid.
   # @api public
-  #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) { (StreamSheet) -> void } -> void
-  #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool) -> Elements::Workbook
-  def self.read(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, &)
+  #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
+  #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
+  def self.read(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil, &)
     prepared_source = prepare_source_io(source, password)
-    zip_reader = Ooxml::ZipReader.open(prepared_source)
+    zip_options = {}
+    zip_options[:max_uncompressed_size] = max_uncompressed_size if max_uncompressed_size
+    zip_reader = Ooxml::ZipReader.open(prepared_source, **zip_options)
     begin
       shared_strings_xml = zip_reader.read_entry("xl/sharedStrings.xml")
       shared_strings = Ooxml::SharedStringsParser.parse(shared_strings_xml)
@@ -537,13 +541,13 @@ module Xlsxrb
   # @api public
   #: (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
   #: (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool) ?{ (StreamWriter) -> void } -> untyped
-  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, &)
+  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool) ?{ (StreamWriter) -> void } -> untyped
+  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, &)
     if block_given?
       if target_or_workbook.equal?(OMITTED_TARGET)
         io = StringIO.new
         io.binmode
-        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, &)
+        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, &)
         return io.string.b
       end
 
@@ -553,7 +557,7 @@ module Xlsxrb
       if password && !password.empty?
         buf = StringIO.new
         buf.binmode
-        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode)
+        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas)
         begin
           yield stream_writer
           stream_writer.close
@@ -568,7 +572,7 @@ module Xlsxrb
           stream_writer.cleanup!
         end
       else
-        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode)
+        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas)
         begin
           yield stream_writer
           stream_writer.close

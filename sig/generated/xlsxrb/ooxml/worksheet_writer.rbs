@@ -13,7 +13,9 @@ module Xlsxrb
 
       INTEGER_STRINGS: untyped
 
-      def initialize: (untyped io, ?date1904: untyped) -> untyped
+      attr_accessor escape_formulas: untyped
+
+      def initialize: (untyped io, ?date1904: untyped, ?escape_formulas: untyped) -> untyped
 
       def set_column_style: (untyped col_index, untyped style_id) -> untyped
 
