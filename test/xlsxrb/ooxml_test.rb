@@ -883,7 +883,7 @@ class OoxmlTest < Test::Unit::TestCase
                        Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, formula: formula_obj),
                        Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, formula: formula_with_val)
                      ])
-    writer.write_row_values(1, ["=A1*2", formula_obj, { formula: "NOW()" }])
+    writer.write_row_values(1, [{ formula: "A1*2" }, formula_obj, { formula: "NOW()" }])
     writer.finish
 
     xml = io.string
@@ -898,10 +898,25 @@ class OoxmlTest < Test::Unit::TestCase
     io = StringIO.new
     writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
     writer.start
-    writer.write_row_values(0, ["=SUM(A1:A5)"], styles: { 0 => "currency" }, style_map: { "currency" => 5 })
+    writer.write_row_values(0, [{ formula: "SUM(A1:A5)" }], styles: { 0 => "currency" }, style_map: { "currency" => 5 })
     writer.finish
 
     xml = io.string
     assert_include(xml, '<c r="A1" s="5"><f>SUM(A1:A5)</f><v>0</v></c>')
+  end
+
+  test "worksheet_writer write_row_values writes formula-prefixed strings as text instead of formulas" do
+    io = StringIO.new
+    sst = []
+    sst_index = {}
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.start
+    writer.write_row_values(0, ["=SUM(A1:A5)"], sst: sst, sst_index: sst_index)
+    writer.finish
+
+    xml = io.string
+    assert_equal ["=SUM(A1:A5)"], sst
+    assert_include(xml, '<c r="A1" t="s"><v>0</v></c>')
+    assert_not_include(xml, "<f>")
   end
 end

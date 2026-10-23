@@ -141,7 +141,7 @@ module Xlsxrb
               buf << '<c r="' << col_ref << '"><v>' << value.to_s << "</v></c>"
               next
             when String
-              if (@escape_formulas || !value.start_with?("=")) && sst_index && (idx = sst_index[value])
+              if sst_index && (idx = sst_index[value])
                 buf << '<c r="' << col_ref << '" t="s"><v>' << idx.to_s << "</v></c>"
                 next
               end
@@ -166,11 +166,6 @@ module Xlsxrb
             buf << ' s="' << style_id.to_s << '"' if style_id
             buf << "/>"
             next
-          end
-
-          if !@escape_formulas && value.is_a?(String) && value.start_with?("=") && !formula
-            formula = value
-            value = nil
           end
 
           xml_val = value
@@ -338,19 +333,18 @@ module Xlsxrb
             when Float
               buf << '<c r="' << col_ref << row_num_str << '"><v>' << value.to_s << "</v></c>"
             when String
-              if @escape_formulas || !value.start_with?("=")
-                raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.length > 32_767
+              raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.length > 32_767
 
+              if sst_index
                 idx = (sst_index[value] ||= begin
                   sst << value
                   sst.size - 1
                 end)
                 idx_str = idx < 65_536 ? INTEGER_STRINGS[idx] : idx.to_s
                 buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx_str << "</v></c>"
-                next
+              else
+                buf << '<c r="' << col_ref << row_num_str << '" t="inlineStr"><is><t>' << escape_xml(value) << "</t></is></c>"
               end
-              formula_expr = value[1..]
-              buf << '<c r="' << col_ref << row_num_str << '"><f>' << escape_xml(formula_expr) << "</f><v>0</v></c>"
             when true
               buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>1</v></c>'
             when false
@@ -490,18 +484,16 @@ module Xlsxrb
               col_index += 1
               next
             when String
-              if @escape_formulas || !value.start_with?("=")
-                idx = sst_index[value]
-                unless idx
-                  sst << value
-                  idx = sst.size - 1
-                  sst_index[value] = idx
-                end
-                idx_str = INTEGER_STRINGS[idx] || idx.to_s
-                buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx_str << "</v></c>"
-                col_index += 1
-                next
+              idx = sst_index[value]
+              unless idx
+                sst << value
+                idx = sst.size - 1
+                sst_index[value] = idx
               end
+              idx_str = INTEGER_STRINGS[idx] || idx.to_s
+              buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx_str << "</v></c>"
+              col_index += 1
+              next
             when true
               buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>1</v></c>'
               col_index += 1
@@ -568,10 +560,7 @@ module Xlsxrb
               end
             end
           when String
-            if !@escape_formulas && value.start_with?("=") && value.length > 1
-              formula_expr = value
-              xml_val = nil
-            elsif sst_index
+            if sst_index
               idx = sst_index[value]
               unless idx
                 sst << value

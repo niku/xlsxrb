@@ -5,6 +5,7 @@
 - Strict numeric cell values: a numeric cell (`t="n"` or no `t`) with an empty `<v>` now reads as `nil` instead of `0`, exponent notation such as `1E-3` reads as a Float, and text that is not a number raises `Xlsxrb::ParseError` instead of silently becoming `0`. Inline string and formula string cells without text read as `nil`, and `t="d"` cells read as their ISO 8601 text.
 
 ### Fixed
+- Formulas are serialized strictly when explicitly defined via `Xlsxrb.formula(...)` or `{ formula: ... }`. Plain string cells starting with `=` are always serialized as text cells, preventing formula injection vulnerabilities and unintended 0-value coercions on reload.
 - Streaming reads no longer drop the cell that follows a self-closing empty cell (`<c r="A1" s="1"/>`) in `StreamRow#values` and `StreamRow#cells`.
 - Streaming reads place a row-leading cell with a multi-letter column reference (`AB1`) in its own column instead of column A.
 - Phonetic readings (`<rPh>`) are excluded from shared strings and inline strings, so cells with furigana no longer concatenate phonetic readings to display text.
