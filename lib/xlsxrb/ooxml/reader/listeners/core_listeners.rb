@@ -151,6 +151,7 @@ module Xlsxrb
           @is_current_font = {}
           @is_run_text = +""
           @inside_rph = false
+          @has_inline_text = false
         end
 
         def start_element(_uri, local_name, qname, attributes)
@@ -165,6 +166,7 @@ module Xlsxrb
             @current_cell_ref = attributes["r"]
             @current_cell_type = attributes["t"]
             @current_cell_ph = %w[1 true].include?(attributes["ph"])
+            @has_inline_text = false
             @value_buffer = +""
             @inline_text_buffer = +""
             @formula_buffer = +""
@@ -196,6 +198,7 @@ module Xlsxrb
             @formula_r1 = attributes["r1"] if attributes["r1"]
             @formula_r2 = attributes["r2"] if attributes["r2"]
           when "is"
+            @has_inline_text = true
             @inside_is = true if @current_cell_type == "inlineStr"
           when "r"
             if @inside_is
@@ -243,8 +246,10 @@ module Xlsxrb
               if @inside_is_r
                 @is_run_text = +""
                 @inside_inline_text = true
+                @has_inline_text = true
               elsif @inside_is || (@current_cell_type == "inlineStr" && !@current_cell_ref.nil?)
                 @inside_inline_text = true
+                @has_inline_text = true
               end
             end
           end
@@ -340,33 +345,25 @@ module Xlsxrb
             return
           end
 
-          case @current_cell_type
-          when "inlineStr"
-            @cells[@current_cell_ref] = if @is_has_runs
-                                          Xlsxrb::Elements::RichText.new(runs: @is_runs.map(&:dup))
-                                        else
-                                          @inline_text_buffer.dup
-                                        end
-          when "s"
-            return if @value_buffer.empty?
-
-            index = @value_buffer.to_i
-            @cells[@current_cell_ref] = @shared_strings[index] || ""
-          when "e"
-            code = @value_buffer.dup
-            @cells[@current_cell_ref] = if Xlsxrb::Elements::VALID_ERROR_CODES.include?(code)
-                                          Xlsxrb::Elements::CellError.new(code:)
-                                        else
-                                          code
-                                        end
-          when "b"
-            @cells[@current_cell_ref] = @value_buffer.strip == "1"
-          when nil, "", "n"
-            return if @value_buffer.empty?
-
-            raw = @value_buffer.dup
-            @cells[@current_cell_ref] = numeric_value(raw)
+          if @current_cell_type == "inlineStr" && @is_has_runs
+            @cells[@current_cell_ref] = Xlsxrb::Elements::RichText.new(runs: @is_runs.map(&:dup))
+            return
           end
+
+          v = if @current_cell_type == "inlineStr"
+                @has_inline_text ? @inline_text_buffer : nil
+              else
+                @value_buffer.empty? ? nil : @value_buffer
+              end
+
+          val = Xlsxrb::Ooxml::WorksheetParser.resolve_cell_value(@current_cell_type, v, nil, @shared_strings)
+          return if val.nil? && (@current_cell_type.nil? || @current_cell_type == "" || @current_cell_type == "n" || @current_cell_type == "s" || @current_cell_type == "inlineStr")
+
+          @cells[@current_cell_ref] = if @current_cell_type == "e" && val && Xlsxrb::Elements::VALID_ERROR_CODES.include?(val)
+                                        Xlsxrb::Elements::CellError.new(code: val)
+                                      else
+                                        val
+                                      end
         end
 
         def numeric_value(raw)

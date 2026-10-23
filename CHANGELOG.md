@@ -6,6 +6,7 @@
 - Strict numeric cell values: a numeric cell (`t="n"` or no `t`) with an empty `<v>` now reads as `nil` instead of `0`, exponent notation such as `1E-3` reads as a Float, and text that is not a number raises `Xlsxrb::ParseError` instead of silently becoming `0`. Inline string and formula string cells without text read as `nil`, and `t="d"` cells read as their ISO 8601 text.
 
 ### Fixed
+- Consolidate cell value interpretation across streaming fast-scan direct, row values, events, and SAX listener parsers into a centralized `Ooxml::WorksheetParser.resolve_cell_value` helper, eliminating redundant logic and preventing parser divergence.
 - Preserve worksheet and workbook attributes during in-memory writes (`Xlsxrb.write(workbook)`): accurately map and serialize `freeze_pane`, `split_pane`, `sheet_view`, `page_setup`, `page_margins`, `header_footer`, `print_options`, `sheet_protection`, `tables`, `merged_cells`, `auto_filter`, `row_breaks`, `col_breaks`, and embedded images from `Elements::Worksheet`, and propagate workbook properties (`core_properties`, `app_properties`, `custom_properties`, `workbook_protection`).
 - Support arbitrary XML attribute ordering on cells (such as `t` before `s` or `r` after `s`) in streaming fast-scan parsers, ensuring cell types and styles are never dropped regardless of producer attribute sequence.
 - Empty self-closing string cells without `<v>` in fast scan parsers evaluate to `nil` instead of empty string `""`.

@@ -47,6 +47,11 @@ module Xlsxrb
 
       def self.extract_inline_text: (untyped xml, untyped from, untyped to) -> untyped
 
+      # Resolves a cell value from its type attribute and parsed XML content (<v> or <is>).
+      # Consolidates parsing across fast-scan direct, row values, events, and listener paths.
+      # : (String? type, String? raw_value, String? is_xml, Array[String] shared_strings) -> untyped
+      def self.resolve_cell_value: (String? type, String? raw_value, String? is_xml, Array[String] shared_strings) -> untyped
+
       def self.resolve_fast_value: (untyped raw, untyped type, untyped shared_strings) -> untyped
 
       # Converts the text of a numeric cell (<c t="n"> or no t attribute) into an Integer or Float.

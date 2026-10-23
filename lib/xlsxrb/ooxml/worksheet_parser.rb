@@ -490,17 +490,30 @@ module Xlsxrb
 
       private_class_method :extract_inline_text
 
-      def self.resolve_fast_value(raw, type, shared_strings)
+      # Resolves a cell value from its type attribute and parsed XML content (<v> or <is>).
+      # Consolidates parsing across fast-scan direct, row values, events, and listener paths.
+      #: (String? type, String? raw_value, String? is_xml, Array[String] shared_strings) -> untyped
+      def self.resolve_cell_value(type, raw_value, is_xml, shared_strings)
         case type
         when "s"
-          shared_strings[raw.to_i] || ""
+          raw_value ? (shared_strings[raw_value.to_i] || "") : nil
         when "b"
-          raw == "1"
-        when "e", "str", "inlineStr", "d"
-          normalize_text(raw.force_encoding("UTF-8"))
+          raw_value ? (raw_value == "1") : nil
+        when "inlineStr", "str", "e"
+          if is_xml
+            extract_inline_text(is_xml, 0, is_xml.bytesize)
+          elsif raw_value
+            normalize_text(raw_value)
+          end
+        when "d"
+          raw_value && normalize_text(raw_value)
         else
-          numeric_cell_value(raw)
+          raw_value ? numeric_cell_value(raw_value) : nil
         end
+      end
+
+      def self.resolve_fast_value(raw, type, shared_strings)
+        resolve_cell_value(type, raw, nil, shared_strings)
       end
 
       private_class_method :resolve_fast_value
@@ -924,21 +937,7 @@ module Xlsxrb
           v = v.strip if v
           f = f.strip if f
 
-          val = if t == "s"
-                  v ? (shared_strings[v.to_i] || "") : nil
-                elsif t == "b"
-                  v ? (v == "1") : nil
-                elsif %w[inlineStr str e].include?(t)
-                  if is
-                    extract_inline_text(is, 0, is.bytesize)
-                  elsif v
-                    normalize_text(v)
-                  end
-                elsif t == "d"
-                  v && normalize_text(v)
-                elsif v
-                  numeric_cell_value(v)
-                end
+          val = resolve_cell_value(t, v, is, shared_strings)
 
           raw_val = if is
                       extract_inline_text(is, 0, is.bytesize)
@@ -978,21 +977,7 @@ module Xlsxrb
           v = v.strip if v
           f = f.strip if f
 
-          val = if t == "s"
-                  v ? (shared_strings[v.to_i] || "") : nil
-                elsif t == "b"
-                  v ? (v == "1") : nil
-                elsif %w[inlineStr str e].include?(t)
-                  if is
-                    extract_inline_text(is, 0, is.bytesize)
-                  elsif v
-                    normalize_text(v)
-                  end
-                elsif t == "d"
-                  v && normalize_text(v)
-                elsif v
-                  numeric_cell_value(v)
-                end
+          val = resolve_cell_value(t, v, is, shared_strings)
 
           raw_val = if is
                       extract_inline_text(is, 0, is.bytesize)
@@ -1043,21 +1028,7 @@ module Xlsxrb
           col_idx = c_idx + 1
           v = v.strip if v
 
-          val = if t == "s"
-                  v ? (shared_strings[v.to_i] || "") : nil
-                elsif t == "b"
-                  v ? (v == "1") : nil
-                elsif %w[inlineStr str e].include?(t)
-                  if is
-                    extract_inline_text(is, 0, is.bytesize)
-                  elsif v
-                    normalize_text(v)
-                  end
-                elsif t == "d"
-                  v && normalize_text(v)
-                elsif v
-                  numeric_cell_value(v)
-                end
+          val = resolve_cell_value(t, v, is, shared_strings)
 
           if type_cast && val.is_a?(Numeric) && s_val && styles
             fmt_type = NumberFormatter.format_type_for(s_val.to_i, styles)
@@ -1100,21 +1071,7 @@ module Xlsxrb
           col_idx = c_idx + 1
           v = v.strip if v
 
-          val = if t == "s"
-                  v ? (shared_strings[v.to_i] || "") : nil
-                elsif t == "b"
-                  v ? (v == "1") : nil
-                elsif %w[inlineStr str e].include?(t)
-                  if is
-                    extract_inline_text(is, 0, is.bytesize)
-                  elsif v
-                    normalize_text(v)
-                  end
-                elsif t == "d"
-                  v && normalize_text(v)
-                elsif v
-                  numeric_cell_value(v)
-                end
+          val = resolve_cell_value(t, v, is, shared_strings)
 
           if type_cast && val.is_a?(Numeric) && s && styles
             fmt_type = NumberFormatter.format_type_for(s.to_i, styles)
