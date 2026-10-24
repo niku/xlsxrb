@@ -62,12 +62,12 @@ module Xlsxrb
           columns.each do |col|
             if col.is_a?(Elements::Column)
               s = col.style_index
-              min = col.index
-              max = col.index
+              min = col.unmapped_data[:min] ? col.unmapped_data[:min] - 1 : col.index
+              max = col.unmapped_data[:max] ? col.unmapped_data[:max] - 1 : col.index
             else
               s = col[:style_index] || col[:style]
-              min = col[:index] || col[:min] || 0
-              max = col[:index] || col[:max] || col[:min] || 0
+              min = col[:min] ? col[:min] - 1 : (col[:index] || 0)
+              max = col[:max] ? col[:max] - 1 : (col[:index] || min)
             end
             next unless s
 
@@ -106,7 +106,7 @@ module Xlsxrb
         cells.each do |cell|
           if cell.is_a?(Elements::Cell)
             value = cell.value
-            style_id = cell.style_index
+            cell_style_id = cell.style_index
             col_ref = cell.ref || "#{column_letter(cell.column_index)}#{row_num_str}"
             col_idx = cell.column_index
             formula = cell.formula
@@ -114,7 +114,7 @@ module Xlsxrb
             cell_type_val = nil
           elsif cell.is_a?(Hash)
             value = cell[:value]
-            style_id = cell[:style_index]
+            cell_style_id = cell[:style_index]
             col_idx = cell[:column_index]
             col_ref = cell[:ref] || (col_idx ? "#{column_letter(col_idx)}#{row_num_str}" : nil)
             formula = cell[:formula]
@@ -122,7 +122,7 @@ module Xlsxrb
             cell_type_val = cell[:type]
           else
             value = cell
-            style_id = nil
+            cell_style_id = nil
             col_idx = nil
             col_ref = nil
             formula = nil
@@ -131,7 +131,7 @@ module Xlsxrb
           end
 
           col_style = @column_styles && col_idx ? @column_styles[col_idx] : nil
-          style_id ||= attrs[:style_index] || col_style
+          style_id = cell_style_id || attrs[:style_index] || col_style
           style_id = nil unless style_id.is_a?(Integer)
 
           # Fast path for common unstyled cells
@@ -162,9 +162,11 @@ module Xlsxrb
           end
 
           if value.nil? && formula.nil?
-            buf << '<c r="' << col_ref << '"'
-            buf << ' s="' << style_id.to_s << '"' if style_id
-            buf << "/>"
+            if cell_style_id.is_a?(Integer)
+              buf << '<c r="' << col_ref << '" s="' << cell_style_id.to_s << '"/>'
+            else
+              buf << '<c r="' << col_ref << '"/>'
+            end
             next
           end
 
@@ -509,26 +511,28 @@ module Xlsxrb
         col_index = 0
         while col_index < max_len
           value = col_index < values.length ? values[col_index] : nil
-          style_id = single_style_id
+          cell_style_id = single_style_id
           if is_styles_collection
             style_name = if styles.is_a?(Array)
                            col_index < styles.length ? styles[col_index] : nil
                          else
                            styles[col_index]
                          end
-            style_id = resolve_style_id(style_name, style_map)
+            cell_style_id = resolve_style_id(style_name, style_map)
           end
 
-          if style_id.nil?
+          if cell_style_id.nil?
             col_style = @column_styles ? @column_styles[col_index] : nil
             col_style_id = resolve_style_id(col_style, style_map)
             style_id = row_style_id || col_style_id
+          else
+            style_id = cell_style_id
           end
 
           col_ref = COLUMN_LETTERS[col_index] || column_letter(col_index)
 
           if value.nil?
-            buf << '<c r="' << col_ref << row_num_str << '" s="' << style_id.to_s << '"/>' if style_id
+            buf << '<c r="' << col_ref << row_num_str << '" s="' << cell_style_id.to_s << '"/>' if cell_style_id
             col_index += 1
             next
           end
@@ -1366,16 +1370,16 @@ module Xlsxrb
         @builder.open_tag("cols")
         columns.each do |col|
           if col.is_a?(Elements::Column)
-            min = col.index + 1
-            max = col.index + 1
+            min = col.unmapped_data[:min] || (col.index + 1)
+            max = col.unmapped_data[:max] || (col.index + 1)
             width = col.width
             hidden = col.hidden
             custom_width = col.custom_width || col.width
             outline_level = col.outline_level
             style_id = col.style_index
           else
-            min = (col[:index] || col[:min] || 0) + 1
-            max = (col[:index] || col[:max] || col[:min] || 0) + 1
+            min = col[:min] || ((col[:index] || 0) + 1)
+            max = col[:max] || ((col[:index] || 0) + 1)
             width = col[:width]
             hidden = col[:hidden]
             custom_width = col[:custom_width] || col[:width]
@@ -1413,10 +1417,16 @@ module Xlsxrb
         attrs[:t] = type if type
         col_idx = cell[:column_index]
         col_style = @column_styles && col_idx ? @column_styles[col_idx] : nil
-        style_id = cell[:style_index] || col_style
+        cell_style_id = cell[:style_index]
+        style_id = cell_style_id || col_style
         attrs[:s] = style_id.to_s if style_id.is_a?(Integer)
 
         if value.nil? && formula.nil?
+          if cell_style_id.is_a?(Integer)
+            attrs[:s] = cell_style_id.to_s
+          else
+            attrs.delete(:s)
+          end
           @builder.empty_tag("c", attrs)
           return
         end

@@ -1163,6 +1163,8 @@ module Xlsxrb
         # Columns from OOXML are 1-based min/max ranges; convert to 0-based
         col_unmapped = {}
         col_unmapped[:style_index] = rc[:style_index] if rc[:style_index]
+        col_unmapped[:min] = rc[:min] if rc[:min]
+        col_unmapped[:max] = rc[:max] if rc[:max]
         Elements::Column.new(
           index: (rc[:min] || 1) - 1,
           width: rc[:width],

@@ -8072,6 +8072,71 @@ class WriterTest < Test::Unit::TestCase
     end
   end
 
+  test "suppresses unstyled empty cell style attribute inheritance" do
+    buf = StringIO.new
+    ws_writer = Xlsxrb::Ooxml::WorksheetWriter.new(buf)
+    ws_writer.start(columns: [{ index: 0, style_index: 3 }])
+
+    # Row with style_index 10:
+    # Cell A1: empty, no cell style -> should emit <c r="A1"/> without s="..."
+    # Cell B1: empty, explicit cell style 5 -> should emit <c r="B1" s="5"/>
+    # Cell C1: value "ok", no cell style -> should inherit row style 10: <c r="C1" s="10"...
+    ws_writer.write_row(0, [
+                          Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: nil),
+                          Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: nil, style_index: 5),
+                          Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 2, value: "ok")
+                        ], attrs: { style_index: 10 })
+
+    # Streaming row: nil cell without explicit style in styled row shouldn't emit <c s="...">
+    ws_writer.write_row_values(1, ["val", nil], styles: [nil, nil], attrs: { style_index: 10 })
+    ws_writer.finish
+
+    xml = buf.string
+    assert_match(%r{<c r="A1"/>}, xml)
+    refute_match(/<c r="A1" s="/, xml)
+    assert_match(%r{<c r="B1" s="5"/>}, xml)
+    assert_match(/<c r="C1" s="10"/, xml)
+    refute_match(/<c r="B2"/, xml)
+  end
+
+  test "preserves column min max ranges on roundtrip" do
+    xml = <<~XML
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <cols>
+          <col min="1" max="10" width="15.5" customWidth="1" style="2"/>
+        </cols>
+        <sheetData>
+          <row r="1">
+            <c r="A1"><v>100</v></c>
+            <c r="J1"><v>200</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    raw_cols = Xlsxrb::Ooxml::WorksheetParser.parse_columns(xml)
+    assert_equal(1, raw_cols.first[:min])
+    assert_equal(10, raw_cols.first[:max])
+    assert_equal(2, raw_cols.first[:style_index])
+
+    sheet = Xlsxrb.send(:build_worksheet, "Sheet1", xml, [], nil)
+    col = sheet.columns.first
+    assert_equal(1, col.unmapped_data[:min])
+    assert_equal(10, col.unmapped_data[:max])
+
+    out = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(out)
+    writer.start(columns: sheet.columns)
+    writer.write_row(0, sheet.rows.first.cells)
+    writer.finish
+
+    res = out.string
+    assert_match(%r{<col min="1" max="10" width="15\.5" customWidth="1" style="2"/>}, res)
+    # Column style 2 should have cascaded to both A1 and J1 (0 and 9)
+    assert_match(%r{<c r="A1" s="2"><v>100</v></c>}, res)
+    assert_match(%r{<c r="J1" s="2"><v>200</v></c>}, res)
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
