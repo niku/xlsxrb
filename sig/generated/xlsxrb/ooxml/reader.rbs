@@ -257,7 +257,13 @@ module Xlsxrb
 
       def load_worksheet_xml: (untyped sheet) -> untyped
 
+      NON_WORKSHEET_REL_SUFFIXES: untyped
+
+      NON_WORKSHEET_TARGET_PREFIXES: untyped
+
       def discover_sheets: () -> untyped
+
+      def non_worksheet_relationship?: (untyped rel_type, untyped target_path) -> untyped
 
       def parse_rels: (untyped rels_xml) -> untyped
 

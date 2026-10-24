@@ -2975,4 +2975,98 @@ class PublicApiTest < Test::Unit::TestCase
       Xlsxrb.build { |w| w.sheet("Err") { |s| s.validate_data { |_dv| nil } } }
     end
   end
+
+  test "Xlsxrb.read, Xlsxrb.modify, and Ooxml::Reader exclude chartsheets from worksheet enumeration" do
+    buf = StringIO.new
+    buf.binmode
+    Xlsxrb::Ooxml::ZipWriter.open(buf) do |zw|
+      zw.add_entry("[Content_Types].xml", <<~XML)
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+          <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+          <Default Extension="xml" ContentType="application/xml"/>
+          <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+          <Override PartName="/xl/chartsheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.chartsheet+xml"/>
+          <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+        </Types>
+      XML
+      zw.add_entry("_rels/.rels", <<~XML)
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+        </Relationships>
+      XML
+      zw.add_entry("xl/workbook.xml", <<~XML)
+        <?xml version="1.0" encoding="UTF-8"?>
+        <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+          <sheets>
+            <sheet name="Chart1" sheetId="1" r:id="rId1"/>
+            <sheet name="DataSheet" sheetId="2" r:id="rId2"/>
+          </sheets>
+        </workbook>
+      XML
+      zw.add_entry("xl/_rels/workbook.xml.rels", <<~XML)
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartsheet" Target="chartsheets/sheet1.xml"/>
+          <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+        </Relationships>
+      XML
+      zw.add_entry("xl/chartsheets/sheet1.xml", <<~XML)
+        <?xml version="1.0" encoding="UTF-8"?>
+        <chartsheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+          <sheetViews><sheetView workbookViewId="0"/></sheetViews>
+          <drawing r:id="rId1" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>
+        </chartsheet>
+      XML
+      zw.add_entry("xl/worksheets/sheet1.xml", <<~XML)
+        <?xml version="1.0" encoding="UTF-8"?>
+        <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+          <sheetData>
+            <row r="1"><c r="A1"><v>42</v></c></row>
+          </sheetData>
+        </worksheet>
+      XML
+    end
+
+    raw_bytes = buf.string.b
+
+    # 1. Xlsxrb.read
+    wb = Xlsxrb.read(raw_bytes)
+    assert_equal(["DataSheet"], wb.sheets.map(&:name))
+    assert_equal([[42]], wb.sheet("DataSheet").each_row_values.to_a)
+    assert_equal(1, wb.unmapped_data[:non_worksheet_sheets].size)
+    assert_equal("Chart1", wb.unmapped_data[:non_worksheet_sheets].first[:name])
+    wb.close
+
+    # 2. Xlsxrb.modify (preserves chartsheet entry without structural rewrite)
+    mod_io = StringIO.new
+    mod_io.binmode
+    Xlsxrb.modify(StringIO.new(raw_bytes), mod_io) do |mwb|
+      assert_equal(["DataSheet"], mwb.sheets.map(&:name))
+      sheet = mwb.sheet("DataSheet")
+      new_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 99)
+      new_row = sheet.row_at(0).with(cells: [new_cell])
+      mwb.with(sheets: [sheet.with(rows: [new_row])])
+    end
+
+    Xlsxrb::Ooxml::ZipReader.open(StringIO.new(mod_io.string.b)) do |zr|
+      assert_equal(true, zr.entry?("xl/chartsheets/sheet1.xml"))
+    end
+    wb_after = Xlsxrb.read(mod_io.string.b)
+    assert_equal(["DataSheet"], wb_after.sheets.map(&:name))
+    assert_equal([[99]], wb_after.sheet("DataSheet").each_row_values.to_a)
+    wb_after.close
+
+    # 3. Ooxml::Reader
+    Tempfile.create(["chartsheet_test", ".xlsx"]) do |tmp|
+      tmp.binmode
+      tmp.write(raw_bytes)
+      tmp.flush
+
+      reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      assert_equal(["DataSheet"], reader.sheet_names)
+      assert_equal({ "A1" => 42 }, reader.cells)
+    end
+  end
 end

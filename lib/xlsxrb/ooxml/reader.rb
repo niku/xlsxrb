@@ -1059,6 +1059,23 @@ module Xlsxrb
         extract_zip_entry(entry_path)
       end
 
+      NON_WORKSHEET_REL_SUFFIXES = %w[
+        /chartsheet
+        /dialogsheet
+        /xlMacrosheet
+        /xlIntlMacrosheet
+        /macrosheet
+      ].freeze
+      NON_WORKSHEET_TARGET_PREFIXES = %w[
+        chartsheets/
+        dialogsheets/
+        macrosheets/
+        xl/chartsheets/
+        xl/dialogsheets/
+        xl/macrosheets/
+      ].freeze
+      private_constant :NON_WORKSHEET_REL_SUFFIXES, :NON_WORKSHEET_TARGET_PREFIXES
+
       def discover_sheets
         wb_path = resolve_workbook_entry
         workbook_xml = extract_zip_entry(wb_path)
@@ -1067,7 +1084,13 @@ module Xlsxrb
         wb_dir = File.dirname(wb_path)
         rels_path = wb_dir == "." ? "_rels/#{File.basename(wb_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(wb_path)}.rels"
         rels_xml = extract_zip_entry(rels_path)
-        rid_to_target = parse_rels(rels_xml)
+        rel_entries = parse_rels_with_types(rels_xml)
+        rid_to_target = {}
+        rid_to_type = {}
+        rel_entries.each do |r|
+          rid_to_target[r[:id]] = r[:target]
+          rid_to_type[r[:id]] = r[:type]
+        end
 
         sheets = []
         parser = REXML::Parsers::SAX2Parser.new(workbook_xml)
@@ -1075,11 +1098,28 @@ module Xlsxrb
         parser.listen(listener)
         parser.parse
 
-        listener.sheets.each_with_index do |s, idx|
-          target = rid_to_target[s[:rid]] || (wb_dir == "." ? "worksheets/sheet#{idx + 1}.xml" : "#{wb_dir}/worksheets/sheet#{idx + 1}.xml")
+        ws_idx = 0
+        listener.sheets.each do |s|
+          raw_target = rid_to_target[s[:rid]]
+          rel_type = rid_to_type[s[:rid]]
+          next if non_worksheet_relationship?(rel_type, raw_target)
+
+          target = raw_target || (wb_dir == "." ? "worksheets/sheet#{ws_idx + 1}.xml" : "#{wb_dir}/worksheets/sheet#{ws_idx + 1}.xml")
+          ws_idx += 1
           sheets << { name: s[:name], rid: s[:rid], target: target, state: s[:state] }
         end
         sheets
+      end
+
+      def non_worksheet_relationship?(rel_type, target_path)
+        return true if rel_type && NON_WORKSHEET_REL_SUFFIXES.any? { |suffix| rel_type.end_with?(suffix) }
+
+        if target_path
+          clean_target = target_path.delete_prefix("/")
+          return true if NON_WORKSHEET_TARGET_PREFIXES.any? { |prefix| clean_target.start_with?(prefix) }
+        end
+
+        false
       end
 
       def parse_rels(rels_xml)

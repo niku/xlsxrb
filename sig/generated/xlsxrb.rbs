@@ -33,6 +33,10 @@ module Xlsxrb
 
   OFFICE_DOC_REL_TYPES: untyped
 
+  NON_WORKSHEET_REL_SUFFIXES: untyped
+
+  NON_WORKSHEET_TARGET_PREFIXES: untyped
+
   # Raised when cell, row, or workbook parameters fail specification validation.
   class ValidationError < Error
   end
@@ -407,6 +411,10 @@ module Xlsxrb
   def self.build: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
   private def self.resolve_workbook_entry: (untyped zip_reader) -> untyped
+
+  private def self.parse_workbook_relationships: (untyped rels_xml) -> untyped
+
+  private def self.non_worksheet_relationship?: (untyped rel_type, untyped target_path) -> untyped
 
   private def self.resolve_part_path: (untyped zip_reader, untyped target_path, untyped wb_dir) -> untyped
 

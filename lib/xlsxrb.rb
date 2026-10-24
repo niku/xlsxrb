@@ -64,7 +64,22 @@ module Xlsxrb
     "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
     "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument"
   ].freeze
-  private_constant :OMITTED_TARGET, :OFFICE_DOC_REL_TYPES
+  NON_WORKSHEET_REL_SUFFIXES = %w[
+    /chartsheet
+    /dialogsheet
+    /xlMacrosheet
+    /xlIntlMacrosheet
+    /macrosheet
+  ].freeze
+  NON_WORKSHEET_TARGET_PREFIXES = %w[
+    chartsheets/
+    dialogsheets/
+    macrosheets/
+    xl/chartsheets/
+    xl/dialogsheets/
+    xl/macrosheets/
+  ].freeze
+  private_constant :OMITTED_TARGET, :OFFICE_DOC_REL_TYPES, :NON_WORKSHEET_REL_SUFFIXES, :NON_WORKSHEET_TARGET_PREFIXES
 
   # Raised when cell, row, or workbook parameters fail specification validation.
   class ValidationError < Error; end
@@ -423,7 +438,7 @@ module Xlsxrb
       wb_dir = File.dirname(workbook_path)
       wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
       rels_xml = zip_reader.read_entry(wb_rels_name)
-      rels = rels_xml ? Ooxml::RelationshipsParser.parse(rels_xml) : {}
+      rels, rel_types = parse_workbook_relationships(rels_xml)
 
       sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
       shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
@@ -438,10 +453,20 @@ module Xlsxrb
       workbook_sheets = wb_parsed[:sheets]
       is_date1904 = wb_parsed[:date1904]
 
-      sheets = workbook_sheets.each_with_index.map do |sheet_info, idx|
-        target = rels[sheet_info[:r_id]]
-        sheet_path = resolve_sheet_entry(zip_reader, target, wb_dir, idx)
-        next nil unless sheet_path
+      non_worksheet_sheets = []
+      ws_idx = 0
+      sheets = workbook_sheets.filter_map do |sheet_info|
+        r_id = sheet_info[:r_id]
+        target = rels[r_id]
+        rel_type = rel_types[r_id]
+        if non_worksheet_relationship?(rel_type, target)
+          non_worksheet_sheets << sheet_info.merge(target: target, type: rel_type)
+          next
+        end
+
+        sheet_path = resolve_sheet_entry(zip_reader, target, wb_dir, ws_idx)
+        ws_idx += 1
+        next unless sheet_path
 
         chunk_supplier = ->(&blk) { zip_reader.each_entry_chunk(sheet_path, &blk) }
 
@@ -458,10 +483,11 @@ module Xlsxrb
           pad_empty_rows: pad_empty_rows,
           pad_empty_cells: pad_empty_cells
         )
-      end.compact
+      end
 
       wb_unmapped = {}
       wb_unmapped[:workbook_properties] = { date1904: true } if is_date1904
+      wb_unmapped[:non_worksheet_sheets] = non_worksheet_sheets unless non_worksheet_sheets.empty?
 
       if workbook_xml&.include?("<workbookProtection")
         prot_match = workbook_xml.match(%r{<workbookProtection\b([^>]*)/>})
@@ -835,7 +861,7 @@ module Xlsxrb
         wb_dir = File.dirname(workbook_path)
         wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
         rels_xml = zip_reader.read_entry(wb_rels_name)
-        rels = rels_xml ? Ooxml::RelationshipsParser.parse(rels_xml) : {}
+        rels, rel_types = parse_workbook_relationships(rels_xml)
 
         sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
         shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
@@ -853,15 +879,20 @@ module Xlsxrb
         workbook_sheets = wb_parsed[:sheets]
 
         sheet_entry_map = {}
-        loaded_sheets = workbook_sheets.each_with_index.map do |sheet_info, idx|
-          target_path = rels[sheet_info[:r_id]]
-          sheet_path = resolve_sheet_entry(zip_reader, target_path, wb_dir, idx)
-          next nil unless sheet_path
+        ws_idx = 0
+        loaded_sheets = workbook_sheets.filter_map do |sheet_info|
+          r_id = sheet_info[:r_id]
+          target_path = rels[r_id]
+          next if non_worksheet_relationship?(rel_types[r_id], target_path)
+
+          sheet_path = resolve_sheet_entry(zip_reader, target_path, wb_dir, ws_idx)
+          ws_idx += 1
+          next unless sheet_path
 
           sheet_entry_map[sheet_info[:name]] = sheet_path
           sheet_xml = zip_reader.read_entry(sheet_path) || ""
           build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles, state: sheet_info[:state] || :visible, zip_reader: zip_reader, entry_name: sheet_path)
-        end.compact
+        end
 
         original_workbook = Elements::Workbook.new(
           sheets: loaded_sheets,
@@ -1027,6 +1058,28 @@ module Xlsxrb
       return "workbook.xml" if zip_reader.entry?("workbook.xml")
 
       "xl/workbook.xml"
+    end
+
+    def parse_workbook_relationships(rels_xml)
+      return [{}, {}] if rels_xml.nil? || rels_xml.empty?
+
+      targets = Ooxml::RelationshipsParser.parse(rels_xml)
+      types = {}
+      Ooxml::RelationshipsParser.parse_entries(rels_xml).each do |entry|
+        types[entry[:id]] = entry[:type] if entry[:id] && entry[:type]
+      end
+      [targets, types]
+    end
+
+    def non_worksheet_relationship?(rel_type, target_path)
+      return true if rel_type && NON_WORKSHEET_REL_SUFFIXES.any? { |suffix| rel_type.end_with?(suffix) }
+
+      if target_path
+        clean_target = target_path.delete_prefix("/")
+        return true if NON_WORKSHEET_TARGET_PREFIXES.any? { |prefix| clean_target.start_with?(prefix) }
+      end
+
+      false
     end
 
     def resolve_part_path(zip_reader, target_path, wb_dir)
