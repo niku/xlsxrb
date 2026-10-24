@@ -14,7 +14,7 @@ module Xlsxrb
       end
 
       def self.parse_with_properties(xml_string)
-        return { sheets: [], date1904: false, defined_names: [], active_tab: nil, full_calc_on_load: nil } if xml_string.nil? || xml_string.empty?
+        return { sheets: [], date1904: false, defined_names: [], active_tab: nil, full_calc_on_load: nil, first_sheet: nil, show_sheet_tabs: nil, tab_ratio: nil } if xml_string.nil? || xml_string.empty?
 
         listener = Listener.new
         XmlParser.parse(xml_string, listener)
@@ -23,7 +23,10 @@ module Xlsxrb
           date1904: listener.date1904,
           defined_names: listener.defined_names,
           active_tab: listener.active_tab,
-          full_calc_on_load: listener.full_calc_on_load
+          full_calc_on_load: listener.full_calc_on_load,
+          first_sheet: listener.first_sheet,
+          show_sheet_tabs: listener.show_sheet_tabs,
+          tab_ratio: listener.tab_ratio
         }
       end
 
@@ -31,7 +34,7 @@ module Xlsxrb
       class Listener
         include REXML::SAX2Listener
 
-        attr_reader :sheets, :date1904, :defined_names, :active_tab, :full_calc_on_load
+        attr_reader :sheets, :date1904, :defined_names, :active_tab, :full_calc_on_load, :first_sheet, :show_sheet_tabs, :tab_ratio
 
         def initialize
           @sheets = []
@@ -39,6 +42,9 @@ module Xlsxrb
           @defined_names = []
           @active_tab = nil
           @full_calc_on_load = nil
+          @first_sheet = nil
+          @show_sheet_tabs = nil
+          @tab_ratio = nil
           @in_defined_name = false
           @current_dn = nil
           @dn_text = +""
@@ -68,6 +74,12 @@ module Xlsxrb
           when "workbookView"
             at = attrs["activeTab"]
             @active_tab = at.to_i if at
+            fs = attrs["firstSheet"]
+            @first_sheet = fs.to_i if fs
+            sst = attrs["showSheetTabs"]
+            @show_sheet_tabs = %w[1 true].include?(sst) unless sst.nil?
+            tr = attrs["tabRatio"]
+            @tab_ratio = tr.to_i if tr
           when "calcPr"
             fcol = attrs["fullCalcOnLoad"]
             @full_calc_on_load = %w[1 true].include?(fcol) unless fcol.nil?

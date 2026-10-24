@@ -95,7 +95,73 @@ module Xlsxrb
       @custom_properties = []
       @workbook_protection = nil
       @workbook_properties = { update_links: "never" }
+      @active_sheet = nil
+      @first_sheet = nil
+      @show_sheet_tabs = nil
+      @tab_ratio = nil
     end
+
+    # Gets or sets the active worksheet tab in the workbook window.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+    def active_sheet(name_or_index = nil)
+      if name_or_index
+        @active_sheet = name_or_index
+      else
+        @active_sheet
+      end
+    end
+    alias active_sheet= active_sheet
+    alias active_tab active_sheet
+    alias active_tab= active_sheet
+
+    # Gets or sets the first sheet tab visible in the sheet tab scroll area.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+    def first_sheet(name_or_index = nil)
+      if name_or_index
+        @first_sheet = name_or_index
+      else
+        @first_sheet
+      end
+    end
+    alias first_sheet= first_sheet
+
+    # Gets or sets whether sheet tabs are visible in the workbook window.
+    #
+    # @param visible [Boolean, nil]
+    # @return [Boolean, nil]
+    # @api public
+    #: (?bool? visible) -> bool?
+    def show_sheet_tabs(visible = nil)
+      if visible.nil?
+        @show_sheet_tabs
+      else
+        @show_sheet_tabs = visible
+      end
+    end
+    alias show_sheet_tabs= show_sheet_tabs
+
+    # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
+    #
+    # @param ratio [Integer, nil]
+    # @return [Integer, nil]
+    # @api public
+    #: (?Integer? ratio) -> Integer?
+    def tab_ratio(ratio = nil)
+      if ratio
+        @tab_ratio = ratio
+      else
+        @tab_ratio
+      end
+    end
+    alias tab_ratio= tab_ratio
 
     # Sets a workbook property.
     #
@@ -538,6 +604,56 @@ module Xlsxrb
         @writer.workbook_property(...)
       end
 
+      # Sets or gets the active sheet in the workbook window.
+      # If called without arguments on the proxy, marks this sheet as the active sheet.
+      #
+      # @param name_or_index [String, Symbol, Integer, nil]
+      # @return [String, Symbol, Integer, nil]
+      # @api public
+      #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+      def active_sheet(name_or_index = @sheet_name)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.active_sheet(name_or_index)
+      end
+      alias active_tab active_sheet
+
+      # Sets or gets the first visible sheet in the tab bar.
+      #
+      # @param name_or_index [String, Symbol, Integer, nil]
+      # @return [String, Symbol, Integer, nil]
+      # @api public
+      #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+      def first_sheet(name_or_index = @sheet_name)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.first_sheet(name_or_index)
+      end
+
+      # Sets or gets whether sheet tabs are visible in the workbook window.
+      #
+      # @param visible [Boolean, nil]
+      # @return [Boolean, nil]
+      # @api public
+      #: (?bool? visible) -> bool?
+      def show_sheet_tabs(visible = nil)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.show_sheet_tabs(visible)
+      end
+
+      # Sets or gets the tab ratio between tab bar and horizontal scrollbar (0-1000).
+      #
+      # @param ratio [Integer, nil]
+      # @return [Integer, nil]
+      # @api public
+      #: (?Integer? ratio) -> Integer?
+      def tab_ratio(ratio = nil)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.tab_ratio(ratio)
+      end
+
       # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
       #
       # @param new_state [Symbol, nil] The new state.
@@ -958,6 +1074,7 @@ module Xlsxrb
       raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)" if name.match?(%r{[\[\]*?/\\]})
       raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
 
+      active = opts.delete(:active)
       state = opts.delete(:state)
       hidden = opts.delete(:hidden)
       state ||= :hidden if hidden
@@ -966,6 +1083,10 @@ module Xlsxrb
       raise ArgumentError, "Invalid sheet state ':#{state}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(state)
 
       internal_sheet_setup(name, state: state)
+      if active
+        @active_sheet = name
+        @current_sheet_view[:tab_selected] = true
+      end
       opts.each { |k, v| sheet_properties(k, v) }
 
       yield WorksheetProxy.new(self, @current_sheet) if block_given?
@@ -1900,6 +2021,11 @@ module Xlsxrb
       }
 
       resolved_names = resolve_defined_names(@defined_names, @sheets)
+
+      @workbook_properties[:active_tab] = @active_sheet unless @active_sheet.nil?
+      @workbook_properties[:first_sheet] = @first_sheet unless @first_sheet.nil?
+      @workbook_properties[:show_sheet_tabs] = @show_sheet_tabs unless @show_sheet_tabs.nil?
+      @workbook_properties[:tab_ratio] = @tab_ratio unless @tab_ratio.nil?
 
       wb_writer = Ooxml::WorkbookWriter.new(
         sheets: @sheets,

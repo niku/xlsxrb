@@ -64,10 +64,21 @@ module Xlsxrb
       def write_to(target)
         preprocess_conditional_formats!
 
+        active_tab_idx = resolve_active_tab_index
+        effective_active_idx = active_tab_idx || 0
+
         ZipWriter.open(target) do |zip|
           @sheets.each_with_index do |sheet, idx|
             info = prepare_sheet_auxiliary(sheet, idx)
             sheet_tables = sheet[:tables] || []
+
+            sv = sheet[:sheet_view]
+            if idx == effective_active_idx
+              sv = (sv || {}).merge(tab_selected: true)
+            elsif sv&.key?(:tab_selected)
+              sv = sv.dup
+              sv.delete(:tab_selected)
+            end
 
             zip.start_entry("xl/worksheets/sheet#{idx + 1}.xml")
             write_worksheet_xml(
@@ -91,7 +102,7 @@ module Xlsxrb
               freeze_pane: sheet[:freeze_pane],
               split_pane: sheet[:split_pane],
               selection: sheet[:selection],
-              sheet_view: sheet[:sheet_view],
+              sheet_view: sv,
               sheet_properties: sheet[:sheet_properties],
               sheet_format: sheet[:sheet_format],
               protected_ranges: sheet[:protected_ranges],
@@ -496,11 +507,23 @@ module Xlsxrb
           b.empty_tag("workbookProtection", wp_attrs) unless wp_attrs.empty?
         end
 
-        # Workbook view: which sheet tab is selected when the file is opened
-        active_tab = @workbook_properties&.[](:active_tab)
-        if active_tab
+        # Workbook view: activeTab, firstSheet, showSheetTabs, tabRatio
+        active_tab_idx = resolve_active_tab_index
+        first_sheet_idx = resolve_first_sheet_index
+        show_sheet_tabs = @workbook_properties&.[](:show_sheet_tabs)
+        tab_ratio = @workbook_properties&.[](:tab_ratio)
+
+        emit_active_tab = !@workbook_properties&.[](:active_tab).nil? || active_tab_idx&.positive?
+
+        has_book_views = emit_active_tab || first_sheet_idx || !show_sheet_tabs.nil? || tab_ratio
+        if has_book_views
+          bv_attrs = {}
+          bv_attrs[:activeTab] = active_tab_idx.to_s if emit_active_tab
+          bv_attrs[:firstSheet] = first_sheet_idx.to_s if first_sheet_idx
+          bv_attrs[:showSheetTabs] = show_sheet_tabs ? "1" : "0" unless show_sheet_tabs.nil?
+          bv_attrs[:tabRatio] = tab_ratio.to_s if tab_ratio
           b.open_tag("bookViews")
-          b.empty_tag("workbookView", { activeTab: active_tab.to_s })
+          b.empty_tag("workbookView", bv_attrs)
           b.close_tag("bookViews")
         end
 
@@ -1288,6 +1311,62 @@ module Xlsxrb
         end
         b.close_tag("Properties")
         io.string
+      end
+
+      def resolve_active_tab_index
+        active_tab = @workbook_properties&.[](:active_tab)
+        if active_tab.nil?
+          first_vis_idx = @sheets.find_index do |s|
+            state = s.respond_to?(:state) ? s.state : s[:state]
+            state.nil? || state.to_sym == :visible
+          end
+          active_tab = first_vis_idx if first_vis_idx&.positive?
+        end
+
+        if active_tab.is_a?(String) || active_tab.is_a?(Symbol)
+          target_name = active_tab.to_s
+          idx = @sheets.find_index do |s|
+            (s.respond_to?(:name) ? s.name : s[:name]) == target_name
+          end
+          raise ArgumentError, "Active sheet '#{target_name}' not found" if idx.nil?
+
+          active_tab = idx
+        end
+
+        if active_tab
+          target_sheet = @sheets[active_tab]
+          raise ArgumentError, "Active sheet index #{active_tab} out of bounds" if target_sheet.nil?
+
+          state = target_sheet.respond_to?(:state) ? target_sheet.state : target_sheet[:state]
+          if state && state.to_sym != :visible
+            name = target_sheet.respond_to?(:name) ? target_sheet.name : target_sheet[:name]
+            raise ArgumentError, "Cannot set hidden sheet '#{name}' as active sheet"
+          end
+        end
+
+        active_tab
+      end
+
+      def resolve_first_sheet_index
+        first_sheet = @workbook_properties&.[](:first_sheet)
+        return nil if first_sheet.nil?
+
+        if first_sheet.is_a?(String) || first_sheet.is_a?(Symbol)
+          target_name = first_sheet.to_s
+          idx = @sheets.find_index do |s|
+            (s.respond_to?(:name) ? s.name : s[:name]) == target_name
+          end
+          raise ArgumentError, "First sheet '#{target_name}' not found" if idx.nil?
+
+          first_sheet = idx
+        end
+
+        if first_sheet
+          target_sheet = @sheets[first_sheet]
+          raise ArgumentError, "First sheet index #{first_sheet} out of bounds" if target_sheet.nil?
+        end
+
+        first_sheet
       end
     end
   end

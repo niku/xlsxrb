@@ -12,14 +12,19 @@ class ApiSymmetryTest < Test::Unit::TestCase
 
   # Workbook-level delegators or stream-lifecycle methods intentionally on WorksheetProxy
   PROXY_ONLY_METHODS = %i[
+    active_sheet
+    active_tab
     app_property
     cleanup!
     core_property
     custom_property
     defined_name
+    first_sheet
     internal_sheet_setup
     properties
     protect_workbook
+    show_sheet_tabs
+    tab_ratio
     workbook_property
   ].freeze
 

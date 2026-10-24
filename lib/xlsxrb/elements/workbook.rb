@@ -89,6 +89,45 @@ module Xlsxrb
         workbook_properties[:active_tab]
       end
 
+      # Returns the active worksheet in the workbook, or the first worksheet if not set.
+      #
+      # @return [Elements::Worksheet, StreamSheet, nil]
+      # @api public
+      #: () -> (Elements::Worksheet | StreamSheet)?
+      def active_sheet
+        idx = active_tab
+        idx ? sheets[idx] : sheets.first
+      end
+
+      # Returns the index of the first sheet tab visible in the sheet tab scroll area.
+      #
+      # @return [Integer, nil]
+      # @api public
+      #: () -> Integer?
+      def first_sheet
+        workbook_properties[:first_sheet]
+      end
+
+      # Returns whether sheet tabs are displayed in the workbook window.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def show_sheet_tabs?
+        val = workbook_properties[:show_sheet_tabs]
+        val != false
+      end
+      alias show_sheet_tabs show_sheet_tabs?
+
+      # Returns the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
+      #
+      # @return [Integer, nil]
+      # @api public
+      #: () -> Integer?
+      def tab_ratio
+        workbook_properties[:tab_ratio]
+      end
+
       # Returns whether Excel is instructed to perform a full recalculation when loading the workbook.
       #
       # @return [Boolean]

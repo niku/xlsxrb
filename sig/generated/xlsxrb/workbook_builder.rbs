@@ -18,6 +18,50 @@ module Xlsxrb
     # : (?strict_excel_mode: bool) -> void
     def initialize: (?strict_excel_mode: bool) -> void
 
+    # Gets or sets the active worksheet tab in the workbook window.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    # : (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+    def active_sheet: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+
+    alias active_sheet= active_sheet
+
+    alias active_tab active_sheet
+
+    alias active_tab= active_sheet
+
+    # Gets or sets the first sheet tab visible in the sheet tab scroll area.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    # : (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+    def first_sheet: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+
+    alias first_sheet= first_sheet
+
+    # Gets or sets whether sheet tabs are visible in the workbook window.
+    #
+    # @param visible [Boolean, nil]
+    # @return [Boolean, nil]
+    # @api public
+    # : (?bool? visible) -> bool?
+    def show_sheet_tabs: (?bool? visible) -> bool?
+
+    alias show_sheet_tabs= show_sheet_tabs
+
+    # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
+    #
+    # @param ratio [Integer, nil]
+    # @return [Integer, nil]
+    # @api public
+    # : (?Integer? ratio) -> Integer?
+    def tab_ratio: (?Integer? ratio) -> Integer?
+
+    alias tab_ratio= tab_ratio
+
     # Sets a workbook-level property.
     #
     # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,

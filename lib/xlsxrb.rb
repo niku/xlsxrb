@@ -490,6 +490,9 @@ module Xlsxrb
       wb_props = {}
       wb_props[:date1904] = true if is_date1904
       wb_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
+      wb_props[:first_sheet] = wb_parsed[:first_sheet] unless wb_parsed[:first_sheet].nil?
+      wb_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
+      wb_props[:tab_ratio] = wb_parsed[:tab_ratio] unless wb_parsed[:tab_ratio].nil?
       wb_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
       wb_unmapped[:workbook_properties] = wb_props unless wb_props.empty?
       wb_unmapped[:non_worksheet_sheets] = non_worksheet_sheets unless non_worksheet_sheets.empty?
@@ -907,6 +910,9 @@ module Xlsxrb
         mod_props = {}
         mod_props[:date1904] = true if wb_parsed[:date1904]
         mod_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
+        mod_props[:first_sheet] = wb_parsed[:first_sheet] unless wb_parsed[:first_sheet].nil?
+        mod_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
+        mod_props[:tab_ratio] = wb_parsed[:tab_ratio] unless wb_parsed[:tab_ratio].nil?
         mod_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
         mod_unmapped[:workbook_properties] = mod_props unless mod_props.empty?
 

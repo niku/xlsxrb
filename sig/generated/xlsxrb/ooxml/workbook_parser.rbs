@@ -23,6 +23,12 @@ module Xlsxrb
 
         attr_reader full_calc_on_load: untyped
 
+        attr_reader first_sheet: untyped
+
+        attr_reader show_sheet_tabs: untyped
+
+        attr_reader tab_ratio: untyped
+
         def initialize: () -> untyped
 
         def start_element: (untyped _uri, untyped localname, untyped _qname, untyped attrs) -> untyped

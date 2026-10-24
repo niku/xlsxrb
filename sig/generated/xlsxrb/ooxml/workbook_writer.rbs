@@ -89,6 +89,10 @@ module Xlsxrb
       def build_app_properties_xml: () -> untyped
 
       def build_custom_properties_xml: () -> untyped
+
+      def resolve_active_tab_index: () -> untyped
+
+      def resolve_first_sheet_index: () -> untyped
     end
   end
 end

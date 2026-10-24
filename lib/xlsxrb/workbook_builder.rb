@@ -30,7 +30,73 @@ module Xlsxrb
       @custom_properties = []
       @workbook_protection = nil
       @workbook_properties = { update_links: "never" }
+      @active_sheet = nil
+      @first_sheet = nil
+      @show_sheet_tabs = nil
+      @tab_ratio = nil
     end
+
+    # Gets or sets the active worksheet tab in the workbook window.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+    def active_sheet(name_or_index = nil)
+      if name_or_index
+        @active_sheet = name_or_index
+      else
+        @active_sheet
+      end
+    end
+    alias active_sheet= active_sheet
+    alias active_tab active_sheet
+    alias active_tab= active_sheet
+
+    # Gets or sets the first sheet tab visible in the sheet tab scroll area.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+    def first_sheet(name_or_index = nil)
+      if name_or_index
+        @first_sheet = name_or_index
+      else
+        @first_sheet
+      end
+    end
+    alias first_sheet= first_sheet
+
+    # Gets or sets whether sheet tabs are visible in the workbook window.
+    #
+    # @param visible [Boolean, nil]
+    # @return [Boolean, nil]
+    # @api public
+    #: (?bool? visible) -> bool?
+    def show_sheet_tabs(visible = nil)
+      if visible.nil?
+        @show_sheet_tabs
+      else
+        @show_sheet_tabs = visible
+      end
+    end
+    alias show_sheet_tabs= show_sheet_tabs
+
+    # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
+    #
+    # @param ratio [Integer, nil]
+    # @return [Integer, nil]
+    # @api public
+    #: (?Integer? ratio) -> Integer?
+    def tab_ratio(ratio = nil)
+      if ratio
+        @tab_ratio = ratio
+      else
+        @tab_ratio
+      end
+    end
+    alias tab_ratio= tab_ratio
 
     # Sets a workbook-level property.
     #
@@ -63,12 +129,15 @@ module Xlsxrb
       raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)" if name.match?(%r{[\[\]*?/\\]})
       raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
 
+      active = opts.delete(:active)
       state = opts.delete(:state)
       hidden = opts.delete(:hidden)
       state ||= :hidden if hidden
       state ||= :visible
       state = state.to_sym
       raise ArgumentError, "Invalid sheet state ':#{state}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(state)
+
+      @active_sheet = name if active
 
       sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state)
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
@@ -259,6 +328,40 @@ module Xlsxrb
         print_area(sb.print_area, sheet: sb.name) if sb.print_area && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sb.name }
         print_titles(rows: sb.print_titles[:rows], cols: sb.print_titles[:cols], sheet: sb.name) if sb.print_titles && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sb.name }
       end
+
+      active_tab_idx = if @active_sheet.is_a?(Integer)
+                         @active_sheet
+                       elsif @active_sheet
+                         idx = processed_sheets.find_index { |s| s.name == @active_sheet.to_s }
+                         raise ArgumentError, "Active sheet '#{@active_sheet}' not found" if idx.nil? && @strict_excel_mode
+
+                         idx || @active_sheet
+                       end
+
+      if active_tab_idx.nil?
+        first_vis_idx = processed_sheets.find_index { |s| s.state == :visible }
+        active_tab_idx = first_vis_idx if first_vis_idx&.positive?
+      end
+
+      if active_tab_idx.is_a?(Integer) && @strict_excel_mode
+        target = processed_sheets[active_tab_idx]
+        raise ArgumentError, "Active sheet index #{active_tab_idx} out of bounds" if target.nil?
+        raise ArgumentError, "Cannot set hidden sheet '#{target.name}' as active sheet" if target.state != :visible
+      end
+
+      first_sheet_idx = if @first_sheet.is_a?(Integer)
+                          @first_sheet
+                        elsif @first_sheet
+                          idx = processed_sheets.find_index { |s| s.name == @first_sheet.to_s }
+                          raise ArgumentError, "First sheet '#{@first_sheet}' not found" if idx.nil? && @strict_excel_mode
+
+                          idx || @first_sheet
+                        end
+
+      @workbook_properties[:active_tab] = active_tab_idx unless active_tab_idx.nil?
+      @workbook_properties[:first_sheet] = first_sheet_idx unless first_sheet_idx.nil?
+      @workbook_properties[:show_sheet_tabs] = @show_sheet_tabs unless @show_sheet_tabs.nil?
+      @workbook_properties[:tab_ratio] = @tab_ratio unless @tab_ratio.nil?
 
       # Store workbook-level metadata in unmapped_data
       wb_meta = {}
