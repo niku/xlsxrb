@@ -396,8 +396,24 @@ class OoxmlTest < Test::Unit::TestCase
     # Mixed entities and text
     assert_equal("Hello <World> & 😀!", Xlsxrb::Ooxml::XmlBuilder.unescape("Hello &lt;World&gt; &amp; &#x1F600;!"))
 
+    # ISO/IEC 29500-1 ST_Xstring (_xHHHH_) escape sequences
+    assert_equal("\r", Xlsxrb::Ooxml::XmlBuilder.unescape("_x000D_"))
+    assert_equal("\n", Xlsxrb::Ooxml::XmlBuilder.unescape("_x000A_"))
+    assert_equal("\t", Xlsxrb::Ooxml::XmlBuilder.unescape("_x0009_"))
+    assert_equal(" ", Xlsxrb::Ooxml::XmlBuilder.unescape("_x0020_"))
+    assert_equal("ABC", Xlsxrb::Ooxml::XmlBuilder.unescape("_x0041__x0042__x0043_"))
+    assert_equal("abc", Xlsxrb::Ooxml::XmlBuilder.unescape("_x0061__x0062__x0063_"))
+    assert_equal("_x000D_", Xlsxrb::Ooxml::XmlBuilder.unescape("_x005F_x000D_"))
+    assert_equal("Line 1\rLine 2", Xlsxrb::Ooxml::XmlBuilder.unescape("Line 1_x000D_Line 2"))
+    assert_equal("AT&T\rLine", Xlsxrb::Ooxml::XmlBuilder.unescape("AT&amp;T_x000D_Line"))
+    assert_equal("_xZZZZ_", Xlsxrb::Ooxml::XmlBuilder.unescape("_xZZZZ_"))
+    assert_equal("_x12_", Xlsxrb::Ooxml::XmlBuilder.unescape("_x12_"))
+    assert_equal("_x12345_", Xlsxrb::Ooxml::XmlBuilder.unescape("_x12345_"))
+
     # WorksheetParser.decode_xml_entities delegation
     assert_equal("Tom & Jerry", Xlsxrb::Ooxml::WorksheetParser.decode_xml_entities("Tom &amp; Jerry"))
+    assert_equal("Tom\rJerry", Xlsxrb::Ooxml::WorksheetParser.decode_xml_entities("Tom_x000D_Jerry"))
+    assert_equal("Tom\nJerry", Xlsxrb::Ooxml::WorksheetParser.normalize_text("Tom_x000D_Jerry"))
   end
 
   test "xml_builder method chaining with declaration and tags" do
@@ -524,6 +540,20 @@ class OoxmlTest < Test::Unit::TestCase
 
     strings = Xlsxrb::Ooxml::SharedStringsParser.parse(xml)
     assert_equal(["A & B < C > \"D\" 'E'", "", "", ""], strings)
+  end
+
+  test "shared_strings_parser decodes ST_Xstring _xHHHH_ sequences and normalizes newlines" do
+    xml = <<~XML
+      <sst>
+        <si><t>Line1_x000D_\nLine2</t></si>
+        <si><t>Line1_x000D_Line2</t></si>
+        <si><t>Literal_x005F_x000D_Escaped</t></si>
+        <si><r><t>Run1_x000D_</t></r><r><t>Run2</t></r></si>
+      </sst>
+    XML
+
+    strings = Xlsxrb::Ooxml::SharedStringsParser.parse(xml)
+    assert_equal(%W[Line1\nLine2 Line1\nLine2 Literal_x000D_Escaped Run1\nRun2], strings)
   end
 
   test "shared_strings_parser handles self-closing sst and empty inputs" do

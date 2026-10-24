@@ -48,7 +48,10 @@ module Xlsxrb
 
       NUM_ENTITY_RE: ::Regexp
 
-      # Unescapes predefined and numeric/hex XML entities in a string.
+      XSTRING_RE: ::Regexp
+
+      # Unescapes predefined and numeric/hex XML entities, as well as
+      # ISO/IEC 29500-1 ST_Xstring (_xHHHH_) control character sequences.
       #
       # @param value [Object]
       # @return [String]

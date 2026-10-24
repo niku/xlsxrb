@@ -30,6 +30,7 @@
 - Phonetic readings (`<rPh>`) are excluded from shared strings and inline strings, so cells with furigana no longer concatenate phonetic readings to display text.
 
 ### Added
+- ISO/IEC 29500-1 ST_Xstring control character decoding: Support decoding `_xHHHH_` hexadecimal escape sequences (such as `_x000D_` carriage returns and `_x005F_` literal underscores) in `XmlBuilder.unescape`, `SharedStringsParser`, and `SharedStringsListener`, correctly normalizing newlines and preserving control character fidelity in cell strings.
 - Record Architecture Decision Record [ADR 0001: Excel Date System Boundary Handling](docs/adr/0001-excel-date-system-boundary-handling.md) documenting date conversion semantics, ecosystem survey, and design rationale across 1900 and 1904 date systems.
 - Date validation and boundary checks: Add `Xlsxrb::Ooxml::Utils.valid_excel_date?` (and delegates on `Xlsxrb::Utils` and `Xlsxrb`) to check if a numeric serial value falls within the supported Excel date boundaries [0, 2,958,465] (1900 system) or [0, 2,957,003] (1904 system).
 - `ZipReader#open_entry_io` and `ZipReader#each_entry_chunk` support an `encoding:` parameter and automatically resolve `.xml` and `.rels` entries to UTF-8 encoding, preventing `Encoding::CompatibilityError` in downstream text and regular expression operations.

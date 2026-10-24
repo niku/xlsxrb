@@ -97,7 +97,9 @@ module Xlsxrb
           when "rPr"
             @inside_rpr = false
           when "r"
-            run = { text: @text_buffer.dup }
+            decoded_text = XmlBuilder.unescape(@text_buffer)
+            decoded_text = decoded_text.gsub("\r\n", "\n").tr("\r", "\n") if decoded_text.include?("\r")
+            run = { text: decoded_text }
             run[:font] = @current_font.dup unless @current_font.empty?
             @runs << run
             @inside_r = false
@@ -105,7 +107,9 @@ module Xlsxrb
             @strings << if @has_runs
                           Xlsxrb::Elements::RichText.new(runs: @runs)
                         else
-                          @text_buffer.dup
+                          decoded_text = XmlBuilder.unescape(@text_buffer)
+                          decoded_text = decoded_text.gsub("\r\n", "\n").tr("\r", "\n") if decoded_text.include?("\r")
+                          decoded_text
                         end
             @inside_si = false
             @text_buffer = +""
