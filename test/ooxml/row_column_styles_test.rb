@@ -56,7 +56,7 @@ class RowColumnStylesTest < Test::Unit::TestCase
       # Verify border color parsed
       parsed_styles = parsed_wb.styles
       refute_nil parsed_styles
-      border = parsed_styles[:borders]&.first
+      border = parsed_styles.borders.first
       assert_equal("FFFF0000", border&.dig(:left, :color, :rgb))
     end
   end
@@ -141,8 +141,8 @@ class RowColumnStylesTest < Test::Unit::TestCase
 
     parsed = Xlsxrb.read(StringIO.new(sw_io.string)).load
     sheet = parsed.sheets.first
-    currency_num_fmt_id = parsed.styles[:num_fmts]&.key("$#,##0.00")
-    currency_id = parsed.styles[:cell_xfs].find_index { |xf| xf[:num_fmt_id] == currency_num_fmt_id }
+    currency_num_fmt_id = parsed.styles.num_fmts.key("$#,##0.00")
+    currency_id = parsed.styles.cell_xfs.find_index { |xf| xf[:num_fmt_id] == currency_num_fmt_id }
     assert_not_nil currency_id
     assert_equal currency_id, sheet["B1"].style_index
 

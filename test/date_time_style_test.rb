@@ -20,8 +20,8 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert time_cell.style_index.positive?
 
     # Ensure numFmt is associated with these styles
-    date_xf = wb.styles[:cell_xfs][date_cell.style_index]
-    time_xf = wb.styles[:cell_xfs][time_cell.style_index]
+    date_xf = wb.styles.cell_xf(date_cell.style_index)
+    time_xf = wb.styles.cell_xf(time_cell.style_index)
 
     assert date_xf[:num_fmt_id].positive?
     assert time_xf[:num_fmt_id].positive?

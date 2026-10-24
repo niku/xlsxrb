@@ -631,7 +631,7 @@ class OoxmlTest < Test::Unit::TestCase
     XML
 
     result = Xlsxrb::Ooxml::StylesParser.parse(xml)
-    assert_equal({ 164 => "yyyy-mm-dd" }, result[:num_fmts])
+    assert_equal({ 164 => "yyyy-mm-dd" }, result.num_fmts)
   end
 
   test "styles_parser parses cellXfs" do
@@ -645,8 +645,8 @@ class OoxmlTest < Test::Unit::TestCase
     XML
 
     result = Xlsxrb::Ooxml::StylesParser.parse(xml)
-    assert_equal(1, result[:cell_xfs].size)
-    assert_equal(0, result[:cell_xfs][0][:num_fmt_id])
+    assert_equal(1, result.cell_xfs.size)
+    assert_equal(0, result.cell_xf(0)[:num_fmt_id])
   end
 
   test "styles_parser parses fonts, fills, borders, alignments, and cellStyleXfs" do
@@ -691,29 +691,29 @@ class OoxmlTest < Test::Unit::TestCase
     XML
 
     result = Xlsxrb::Ooxml::StylesParser.parse(xml)
-    assert_equal(1, result[:fonts].size)
-    assert_equal(true, result[:fonts][0][:bold])
-    assert_equal(true, result[:fonts][0][:italic])
-    assert_equal("double", result[:fonts][0][:underline])
-    assert_equal(14.5, result[:fonts][0][:sz])
-    assert_equal({ rgb: "FFFF0000" }, result[:fonts][0][:color])
-    assert_equal("Calibri", result[:fonts][0][:name])
+    assert_equal(1, result.fonts.size)
+    assert_equal(true, result.font(0)[:bold])
+    assert_equal(true, result.font(0)[:italic])
+    assert_equal("double", result.font(0)[:underline])
+    assert_equal(14.5, result.font(0)[:sz])
+    assert_equal({ rgb: "FFFF0000" }, result.font(0)[:color])
+    assert_equal("Calibri", result.font(0)[:name])
 
-    assert_equal(1, result[:fills].size)
-    assert_equal("solid", result[:fills][0][:pattern])
-    assert_equal({ rgb: "FF00FF00" }, result[:fills][0][:fg_color])
-    assert_equal({ indexed: 64 }, result[:fills][0][:bg_color])
+    assert_equal(1, result.fills.size)
+    assert_equal("solid", result.fill(0)[:pattern])
+    assert_equal({ rgb: "FF00FF00" }, result.fill(0)[:fg_color])
+    assert_equal({ indexed: 64 }, result.fill(0)[:bg_color])
 
-    assert_equal(1, result[:borders].size)
-    assert_equal({ style: "thin" }, result[:borders][0][:left])
-    assert_equal({ style: "thick" }, result[:borders][0][:right])
-    assert_equal({ style: "dashed" }, result[:borders][0][:top])
-    assert_equal({ style: "double" }, result[:borders][0][:bottom])
-    assert_equal({ style: "medium" }, result[:borders][0][:diagonal])
+    assert_equal(1, result.borders.size)
+    assert_equal({ style: "thin" }, result.border(0)[:left])
+    assert_equal({ style: "thick" }, result.border(0)[:right])
+    assert_equal({ style: "dashed" }, result.border(0)[:top])
+    assert_equal({ style: "double" }, result.border(0)[:bottom])
+    assert_equal({ style: "medium" }, result.border(0)[:diagonal])
 
-    assert_equal(1, result[:cell_style_xfs].size)
-    assert_equal(1, result[:cell_xfs].size)
-    xf = result[:cell_xfs][0]
+    assert_equal(1, result.cell_style_xfs.size)
+    assert_equal(1, result.cell_xfs.size)
+    xf = result.cell_xf(0)
     assert_equal(14, xf[:num_fmt_id])
     assert_equal(true, xf[:apply_number_format])
     assert_equal(true, xf[:apply_font])

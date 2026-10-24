@@ -79,8 +79,8 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
       assert_equal 50, sheet.rows.first.cells[0].value
 
       style_index = sheet.rows.first.cells[0].style_index
-      xf = read_wb.styles[:cell_xfs][style_index]
-      num_fmt = read_wb.styles[:num_fmts][xf[:num_fmt_id]]
+      xf = read_wb.styles.cell_xf(style_index)
+      num_fmt = read_wb.styles.num_fmt(xf[:num_fmt_id])
 
       # Xlsxrb's parser doesn't unescape XML entities in num_fmt
       assert_equal "[Red][&lt;=100];[Blue][&gt;100]", num_fmt

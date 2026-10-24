@@ -2,97 +2,258 @@
 
 module Xlsxrb
   module Elements
-    # Represents the workbook stylesheet definitions (fonts, fills, borders, cellXfs, and numFmts).
-    # Composes an internal styles hash while providing precomputed O(1) number format classifications.
+    # Represents the workbook stylesheet definitions (fonts, fills, borders, cellXfs, numFmts, etc.).
+    # Encapsulates stylesheet collections, item lookups, and precomputed O(1) number format classifications.
     #
     # @api public
     class Styles
-      # Initializes the styles container, optionally wrapping an existing styles hash.
+      EMPTY_ARRAY: untyped
+
+      EMPTY_HASH: untyped
+
+      # Initializes the styles container, optionally wrapping an existing styles dictionary.
       #
       # @param initial_hash [Hash, nil] Initial styles dictionary.
       # : (?Hash[untyped, untyped]? initial_hash) -> void
       def initialize: (?Hash[untyped, untyped]? initial_hash) -> void
 
-      # Returns the value associated with the given key.
+      # Returns array of font entries from the styles.
       #
-      # @param key [Object]
-      # @return [Object, nil]
+      # @return [Array<Hash>]
       # @api public
-      # : (untyped key) -> untyped
-      def []: (untyped key) -> untyped
+      # : () -> Array[Hash[Symbol, untyped]]
+      def fonts: () -> Array[Hash[Symbol, untyped]]
 
-      # Sets the value associated with the given key.
+      # Returns array of fill entries from the styles.
       #
-      # @param key [Object]
-      # @param value [Object]
-      # @return [Object]
+      # @return [Array<Hash>]
       # @api public
-      # : (untyped key, untyped value) -> untyped
-      def []=: (untyped key, untyped value) -> untyped
+      # : () -> Array[Hash[Symbol, untyped]]
+      def fills: () -> Array[Hash[Symbol, untyped]]
 
-      # Returns true if the given key exists in the styles hash.
+      # Returns array of border entries from the styles.
       #
-      # @param key [Object]
-      # @return [Boolean]
+      # @return [Array<Hash>]
       # @api public
-      # : (untyped key) -> bool
-      def key?: (untyped key) -> bool
+      # : () -> Array[Hash[Symbol, untyped]]
+      def borders: () -> Array[Hash[Symbol, untyped]]
 
-      # Fetches the value for a key, or default/block if missing.
+      # Returns array of cell format (cellXfs) entries from the styles.
       #
-      # @param key [Object]
-      # @return [Object]
+      # @return [Array<Hash>]
       # @api public
-      def fetch: (untyped key, *untyped) ?{ (?) -> untyped } -> untyped
+      # : () -> Array[Hash[Symbol, untyped]]
+      def cell_xfs: () -> Array[Hash[Symbol, untyped]]
 
-      # Extracts the nested value specified by the sequence of keys.
+      # Returns custom number formats as { numFmtId => formatCode }.
       #
-      # @param keys [Array<Object>]
-      # @return [Object, nil]
+      # @return [Hash<Integer, String>]
       # @api public
-      def dig: (*untyped keys) -> untyped
+      # : () -> Hash[Integer, String]
+      def num_fmts: () -> Hash[Integer, String]
 
-      # Returns array of keys.
+      # Returns array of differential format (dxf) entries from the styles.
       #
-      # @return [Array]
+      # @return [Array<Hash>]
       # @api public
-      # : () -> Array[untyped]
-      def keys: () -> Array[untyped]
+      # : () -> Array[Hash[Symbol, untyped]]
+      def dxfs: () -> Array[Hash[Symbol, untyped]]
 
-      # Returns array of values.
+      # Returns array of cell style format (cellStyleXfs) entries from the styles.
       #
-      # @return [Array]
+      # @return [Array<Hash>]
       # @api public
-      # : () -> Array[untyped]
-      def values: () -> Array[untyped]
+      # : () -> Array[Hash[Symbol, untyped]]
+      def cell_style_xfs: () -> Array[Hash[Symbol, untyped]]
 
-      # Iterates over each key-value pair in the styles.
+      # Returns array of named cell styles from the styles.
       #
-      # @yieldparam key [Object]
-      # @yieldparam value [Object]
+      # @return [Array<Hash>]
       # @api public
-      def each: () ?{ (?) -> untyped } -> untyped
+      # : () -> Array[Hash[Symbol, untyped]]
+      def cell_styles: () -> Array[Hash[Symbol, untyped]]
 
-      # Returns true if the styles hash is empty.
+      # Returns table styles configuration dictionary from the styles.
+      #
+      # @return [Hash, Array]
+      # @api public
+      # : () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
+      def table_styles: () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
+
+      # Returns array of indexed color strings (ARGB hex).
+      #
+      # @return [Array<String>]
+      # @api public
+      # : () -> Array[String]
+      def indexed_colors: () -> Array[String]
+
+      # Returns array of MRU (most recently used) color dictionaries.
+      #
+      # @return [Array<Hash>]
+      # @api public
+      # : () -> Array[Hash[Symbol, untyped]]
+      def mru_colors: () -> Array[Hash[Symbol, untyped]]
+
+      # Returns colors dictionary or palette.
+      #
+      # @return [Hash, Array]
+      # @api public
+      # : () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
+      def colors: () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
+
+      # Looks up a font entry by 0-based index.
+      #
+      # @param id [Integer, nil]
+      # @return [Hash, nil]
+      # @api public
+      # : (Integer? id) -> Hash[Symbol, untyped]?
+      def font: (Integer? id) -> Hash[Symbol, untyped]?
+
+      # Looks up a fill entry by 0-based index.
+      #
+      # @param id [Integer, nil]
+      # @return [Hash, nil]
+      # @api public
+      # : (Integer? id) -> Hash[Symbol, untyped]?
+      def fill: (Integer? id) -> Hash[Symbol, untyped]?
+
+      # Looks up a border entry by 0-based index.
+      #
+      # @param id [Integer, nil]
+      # @return [Hash, nil]
+      # @api public
+      # : (Integer? id) -> Hash[Symbol, untyped]?
+      def border: (Integer? id) -> Hash[Symbol, untyped]?
+
+      # Looks up a cell format (cellXf) entry by 0-based index.
+      #
+      # @param id [Integer, nil]
+      # @return [Hash, nil]
+      # @api public
+      # : (Integer? id) -> Hash[Symbol, untyped]?
+      def cell_xf: (Integer? id) -> Hash[Symbol, untyped]?
+
+      alias xf cell_xf
+
+      # Looks up a custom format code by numFmtId.
+      #
+      # @param id [Integer, nil]
+      # @return [String, nil]
+      # @api public
+      # : (Integer? id) -> String?
+      def num_fmt: (Integer? id) -> String?
+
+      # Looks up a differential format (dxf) entry by 0-based index.
+      #
+      # @param id [Integer, nil]
+      # @return [Hash, nil]
+      # @api public
+      # : (Integer? id) -> Hash[Symbol, untyped]?
+      def dxf: (Integer? id) -> Hash[Symbol, untyped]?
+
+      # Looks up a cell style format (cellStyleXf) entry by 0-based index.
+      #
+      # @param id [Integer, nil]
+      # @return [Hash, nil]
+      # @api public
+      # : (Integer? id) -> Hash[Symbol, untyped]?
+      def cell_style_xf: (Integer? id) -> Hash[Symbol, untyped]?
+
+      # Looks up a named cell style entry by 0-based index.
+      #
+      # @param id [Integer, nil]
+      # @return [Hash, nil]
+      # @api public
+      # : (Integer? id) -> Hash[Symbol, untyped]?
+      def cell_style: (Integer? id) -> Hash[Symbol, untyped]?
+
+      # Appends a font entry to the stylesheet and returns its 0-based index.
+      #
+      # @param spec [Hash, nil]
+      # @return [Integer]
+      # @api public
+      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_font: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+
+      # Appends a fill entry to the stylesheet and returns its 0-based index.
+      #
+      # @param spec [Hash, nil]
+      # @return [Integer]
+      # @api public
+      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_fill: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+
+      # Appends a border entry to the stylesheet and returns its 0-based index.
+      #
+      # @param spec [Hash, nil]
+      # @return [Integer]
+      # @api public
+      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_border: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+
+      # Sets a custom number format code and returns the num_fmt_id.
+      #
+      # @param id [Integer] Format ID (custom formats typically start at 164).
+      # @param code [String] Format code pattern.
+      # @return [Integer]
+      # @api public
+      # : (Integer id, String code) -> Integer
+      def add_num_fmt: (Integer id, String code) -> Integer
+
+      # Appends a cell format (cellXf) entry and returns its 0-based index.
+      #
+      # @param spec [Hash, nil]
+      # @return [Integer]
+      # @api public
+      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_xf: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+
+      # Appends a differential format (dxf) entry and returns its 0-based index.
+      #
+      # @param spec [Hash, nil]
+      # @return [Integer]
+      # @api public
+      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_dxf: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+
+      # Appends a cell style format (cellStyleXf) entry and returns its 0-based index.
+      #
+      # @param spec [Hash, nil]
+      # @return [Integer]
+      # @api public
+      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_cell_style_xf: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+
+      # Appends a named cell style entry and returns its 0-based index.
+      #
+      # @param spec [Hash, nil]
+      # @return [Integer]
+      # @api public
+      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_cell_style: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+
+      # High-level helper to compose and register a cell format (xf), adding subordinate
+      # font, fill, border, and number format definitions as needed. Returns the xf_id.
+      #
+      # @param spec [Hash, nil]
+      # @return [Integer]
+      # @api public
+      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_style: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+
+      # Returns true if the styles container has no registered definitions.
       #
       # @return [Boolean]
       # @api public
       # : () -> bool
       def empty?: () -> bool
 
-      # Merges another hash or Styles into this instance.
-      #
-      # @param other [Hash, Styles]
-      # @return [self]
-      # @api public
-      def merge!: (untyped other) -> untyped
-
       # Converts the styles container to a standard Hash.
       #
       # @return [Hash]
       # @api public
-      # : () -> Hash[untyped, untyped]
-      def to_h: () -> Hash[untyped, untyped]
+      # : () -> Hash[Symbol, untyped]
+      def to_h: () -> Hash[Symbol, untyped]
 
       alias to_hash to_h
 
@@ -173,6 +334,12 @@ module Xlsxrb
       # @api public
       # : () -> self
       def precompute!: () -> self
+
+      private
+
+      def next_num_fmt_id: () -> untyped
+
+      def invalidate_cache!: () -> untyped
     end
   end
 end

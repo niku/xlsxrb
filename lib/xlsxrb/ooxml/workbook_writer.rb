@@ -608,7 +608,11 @@ module Xlsxrb
         b.open_tag("styleSheet", { xmlns: SSML_NS })
 
         # Number formats
-        raw_num_fmts = @styles&.dig(:num_fmts) || []
+        raw_num_fmts = if @styles.respond_to?(:num_fmts)
+                         @styles.num_fmts
+                       else
+                         @styles&.dig(:num_fmts) || []
+                       end
         num_fmts = if raw_num_fmts.is_a?(Hash)
                      raw_num_fmts.map { |k, v| { num_fmt_id: k.to_i, format_code: v.to_s } }
                    elsif raw_num_fmts.is_a?(Array)
@@ -633,7 +637,11 @@ module Xlsxrb
         end
 
         # Fonts
-        fonts = @styles&.dig(:fonts) || []
+        fonts = if @styles.respond_to?(:fonts)
+                  @styles.fonts
+                else
+                  @styles&.dig(:fonts) || []
+                end
         fonts = [{}] if fonts.empty? # At least one default font
         b.tag("fonts", { count: fonts.size.to_s }) do |_|
           fonts.each do |font_props|
@@ -653,7 +661,11 @@ module Xlsxrb
         end
 
         # Fills
-        fills = @styles&.dig(:fills) || []
+        fills = if @styles.respond_to?(:fills)
+                  @styles.fills
+                else
+                  @styles&.dig(:fills) || []
+                end
         fills = [{ pattern: "none" }, { pattern: "gray125" }] if fills.empty?
         b.tag("fills", { count: fills.size.to_s }) do |_|
           fills.each do |fill_props|
@@ -681,7 +693,11 @@ module Xlsxrb
         end
 
         # Borders
-        borders = @styles&.dig(:borders) || []
+        borders = if @styles.respond_to?(:borders)
+                    @styles.borders
+                  else
+                    @styles&.dig(:borders) || []
+                  end
         borders = [{}] if borders.empty?
         b.tag("borders", { count: borders.size.to_s }) do |_|
           borders.each do |border_props|
@@ -710,7 +726,11 @@ module Xlsxrb
         end
 
         # Cell XFs (formatting)
-        xf_entries = @styles&.dig(:cell_xfs) || @styles&.dig(:xf_entries) || []
+        xf_entries = if @styles.respond_to?(:cell_xfs)
+                       @styles.cell_xfs
+                     else
+                       @styles&.dig(:cell_xfs) || @styles&.dig(:xf_entries) || []
+                     end
         xf_count = [xf_entries.size, 1].max
         b.tag("cellXfs", { count: xf_count.to_s }) do |_|
           xf_entries.each do |xf|
@@ -759,7 +779,11 @@ module Xlsxrb
         end
 
         # Differential formats (for conditional formatting)
-        dxfs = @styles&.dig(:dxfs) || []
+        dxfs = if @styles.respond_to?(:dxfs)
+                 @styles.dxfs
+               else
+                 @styles&.dig(:dxfs) || []
+               end
         unless dxfs.empty?
           b.tag("dxfs", { count: dxfs.size.to_s }) do |_|
             dxfs.each do |dxf|
@@ -783,8 +807,6 @@ module Xlsxrb
       end
 
       def preprocess_conditional_formats!
-        @styles[:dxfs] ||= []
-
         @sheets.each do |sheet|
           rules = sheet[:conditional_formats]
           next if rules.nil? || rules.empty?
@@ -796,11 +818,15 @@ module Xlsxrb
             dxf = normalized.delete(:dxf) || extract_dxf_from_rule!(normalized)
             next normalized unless dxf
 
-            dxf_id = @styles[:dxfs].index(dxf)
-            unless dxf_id
-              @styles[:dxfs] << dxf
-              dxf_id = @styles[:dxfs].size - 1
-            end
+            dxf_id = if @styles.respond_to?(:add_dxf)
+                       @styles.dxfs.index(dxf) || @styles.add_dxf(dxf)
+                     else
+                       @styles[:dxfs] ||= []
+                       @styles[:dxfs].index(dxf) || begin
+                         @styles[:dxfs] << dxf
+                         @styles[:dxfs].size - 1
+                       end
+                     end
             normalized[:format_id] = dxf_id
             normalized
           end

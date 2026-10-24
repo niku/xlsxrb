@@ -140,12 +140,12 @@ class StyleTest < Test::Unit::TestCase
       Xlsxrb.write(filepath, wb)
 
       parsed = Xlsxrb.read(filepath).load
-      border = parsed.styles[:borders]&.first
+      border = parsed.styles.borders.first
       assert_equal("FFFF0000", border&.dig(:left, :color, :rgb))
       assert_equal(true, border&.dig(:diagonal_up))
       assert_equal(true, border&.dig(:diagonal_down))
 
-      xf = parsed.styles[:cell_xfs]&.first
+      xf = parsed.styles.cell_xfs.first
       assert_equal(2, xf&.dig(:alignment, :indent))
       assert_equal(true, xf&.dig(:alignment, :shrink_to_fit))
       assert_equal(true, xf&.dig(:protection, :locked))
@@ -166,11 +166,11 @@ class StyleTest < Test::Unit::TestCase
 
     styles = Xlsxrb::Ooxml::StylesParser.parse(styles_xml)
 
-    assert_equal(false, styles[:fonts].first[:bold])
+    assert_equal(false, styles.fonts.first[:bold])
     assert_equal([{ fill: { bg_color: { rgb: "FFBFBFBF" } } },
                   { font: { bold: true, italic: false, color: { auto: true } }, num_fmt: { num_fmt_id: 164, format_code: "0.0" } }],
-                 styles[:dxfs])
-    assert_equal({}, styles[:num_fmts])
+                 styles.dxfs)
+    assert_equal({}, styles.num_fmts)
 
     Dir.mktmpdir do |dir|
       path = File.join(dir, "cf.xlsx")
@@ -186,7 +186,7 @@ class StyleTest < Test::Unit::TestCase
       reread = Xlsxrb.read(out)
       cf = reread.sheets.first.load.conditional_formatting.first
       assert_equal(0, cf[:format_id])
-      assert_equal(1, Xlsxrb::Ooxml::StylesParser.parse(Xlsxrb::Ooxml::ZipReader.open(out) { |z| z.read_entry("xl/styles.xml") })[:dxfs].size)
+      assert_equal(1, Xlsxrb::Ooxml::StylesParser.parse(Xlsxrb::Ooxml::ZipReader.open(out) { |z| z.read_entry("xl/styles.xml") }).dxfs.size)
     end
   end
 
@@ -215,8 +215,8 @@ class StyleTest < Test::Unit::TestCase
       Xlsxrb.write(filepath, wb)
 
       parsed = Xlsxrb::Ooxml::StylesParser.parse(Xlsxrb::Ooxml::ZipReader.open(filepath) { |z| z.read_entry("xl/styles.xml") })
-      assert_equal(1, parsed[:dxfs].size)
-      dxf = parsed[:dxfs].first
+      assert_equal(1, parsed.dxfs.size)
+      dxf = parsed.dxfs.first
       assert_equal(false, dxf.dig(:font, :bold))
       assert_equal(true, dxf.dig(:font, :italic))
       assert_equal(true, dxf.dig(:font, :color, :auto))
@@ -230,5 +230,101 @@ class StyleTest < Test::Unit::TestCase
       assert_equal("FF0000FF", dxf.dig(:border, :bottom, :color, :rgb))
       assert_equal(true, dxf.dig(:protection, :locked))
     end
+  end
+
+  test "Elements::Styles encapsulated collections, lookups, and builder helpers" do
+    styles = Xlsxrb::Elements::Styles.new
+
+    # Empty defaults
+    assert_equal([], styles.fonts)
+    assert_equal([], styles.fills)
+    assert_equal([], styles.borders)
+    assert_equal([], styles.cell_xfs)
+    assert_equal({}, styles.num_fmts)
+    assert_equal([], styles.dxfs)
+    assert_equal([], styles.cell_style_xfs)
+    assert_equal([], styles.cell_styles)
+    assert_equal({}, styles.table_styles)
+    assert_equal([], styles.indexed_colors)
+    assert_equal([], styles.mru_colors)
+    assert_equal({}, styles.colors)
+    assert_true(styles.empty?)
+
+    # Out-of-bounds lookups
+    assert_nil(styles.font(0))
+    assert_nil(styles.font(-1))
+    assert_nil(styles.fill(0))
+    assert_nil(styles.fill(-1))
+    assert_nil(styles.border(0))
+    assert_nil(styles.cell_xf(0))
+    assert_nil(styles.xf(0))
+    assert_nil(styles.num_fmt(164))
+    assert_nil(styles.dxf(0))
+    assert_nil(styles.cell_style_xf(0))
+    assert_nil(styles.cell_style(0))
+
+    # Builders / Mutators
+    font_id = styles.add_font(name: "Arial", sz: 12, bold: true)
+    assert_equal(0, font_id)
+    assert_equal("Arial", styles.font(0)&.[](:name))
+
+    fill_id = styles.add_fill(pattern: "solid", fg_color: "FFFF0000")
+    assert_equal(0, fill_id)
+    assert_equal("solid", styles.fill(0)&.[](:pattern))
+
+    border_id = styles.add_border(bottom: { style: "thin" })
+    assert_equal(0, border_id)
+    assert_equal("thin", styles.border(0)&.dig(:bottom, :style))
+
+    fmt_id = styles.add_num_fmt(165, "$#,##0.00")
+    assert_equal(165, fmt_id)
+    assert_equal("$#,##0.00", styles.num_fmt(165))
+
+    xf_id = styles.add_xf(font_id: font_id, fill_id: fill_id, border_id: border_id, num_fmt_id: fmt_id)
+    assert_equal(0, xf_id)
+    assert_equal(xf_id, styles.cell_xf(0)&.[](:font_id))
+    assert_equal("$#,##0.00", styles.number_format(0))
+    assert_equal(:number, styles.format_type(0))
+
+    dxf_id = styles.add_dxf(font: { italic: true })
+    assert_equal(0, dxf_id)
+    assert_equal(true, styles.dxf(0)&.dig(:font, :italic))
+
+    cs_xf_id = styles.add_cell_style_xf(font_id: 0)
+    assert_equal(0, cs_xf_id)
+    assert_equal(0, styles.cell_style_xf(0)&.[](:font_id))
+
+    cs_id = styles.add_cell_style(name: "Normal", xf_id: 0)
+    assert_equal(0, cs_id)
+    assert_equal("Normal", styles.cell_style(0)&.[](:name))
+
+    # add_style composite helper
+    styled_xf_id = styles.add_style(
+      fill: { pattern: "gray125" },
+      font: { name: "Courier", sz: 10 },
+      border: { top: { style: "thick" } },
+      format_code: "yyyy-mm-dd",
+      alignment: { wrap_text: true }
+    )
+    assert_equal(1, styled_xf_id)
+    assert_equal("yyyy-mm-dd", styles.number_format(1))
+    assert_equal(:date, styles.format_type(1))
+    assert_true(styles.date_format?(1))
+
+    # Hash delegation removed
+    assert_raise(NoMethodError) { styles[:fonts] }
+    assert_raise(NoMethodError) { styles[:fonts] = [] }
+    assert_raise(NoMethodError) { styles.fetch(:fonts) }
+    assert_raise(NoMethodError) { styles.dig(:fonts, :name) }
+    assert_raise(NoMethodError) { styles.each { |_k, _v| nil } }
+    assert_raise(NoMethodError) { styles.keys }
+    assert_raise(NoMethodError) { styles.values }
+
+    # to_h and equality
+    hash = styles.to_h
+    assert_instance_of(Hash, hash)
+    assert_equal(hash, styles.to_h)
+    assert_equal(styles, hash)
+    assert_equal(styles, Xlsxrb::Elements::Styles.new(hash))
   end
 end

@@ -1,7 +1,7 @@
 ## [Unreleased]
 
 ### Changed
-- Refactor `Elements::Styles` to use composition instead of subclassing `Hash`, wrapping internal stylesheet data and delegating standard dictionary accessors while preserving O(1) number format classifications.
+- Encapsulate `Elements::Styles` with dedicated collection readers (`fonts`, `fills`, `borders`, `cell_xfs`, `num_fmts`, `dxfs`, `cell_style_xfs`, `cell_styles`, `table_styles`, `indexed_colors`, `mru_colors`, `colors`) and item lookups (`font`, `fill`, `border`, `cell_xf` / `xf`, `num_fmt`, `dxf`, `cell_style_xf`, `cell_style`), removing public Hash delegation (`[]`, `[]=`, `fetch`, `dig`, `keys`, `values`, `each`, `merge!`), and provide builder helpers (`add_font`, `add_fill`, `add_border`, `add_num_fmt`, `add_xf`, `add_dxf`, `add_cell_style_xf`, `add_cell_style`, `add_style`) that append entries, invalidate memoized caches, and return allocated IDs.
 - Enforce binary encoding (`ASCII-8BIT`) on raw XML buffers in `StreamRow` and document byte vs character indexing consistency policy in `AGENTS.md` to prevent terminal row truncation or byte-offset drift when scanning documents with multibyte UTF-8 characters.
 - Clarify streaming write memory profile and date/time timezone semantics in README and YARD documentation.
 - Reading a file that is not a ZIP archive (including an empty file) raises `Xlsxrb::ZipError` instead of `ArgumentError`.

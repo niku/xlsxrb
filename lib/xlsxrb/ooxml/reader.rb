@@ -118,14 +118,17 @@ module Xlsxrb
         parser.parse
 
         result = {}
+        cell_xfs = styles.respond_to?(:cell_xfs) ? styles.cell_xfs : styles[:cell_xfs]
+        cell_style_xfs = styles.respond_to?(:cell_style_xfs) ? styles.cell_style_xfs : styles[:cell_style_xfs]
+        n_fmts = styles.respond_to?(:num_fmts) ? styles.num_fmts : styles[:num_fmts]
         listener.cell_style_indices.each do |cell_ref, xf_index|
-          xf = resolve_effective_xf(styles[:cell_xfs][xf_index], styles[:cell_style_xfs])
+          xf = resolve_effective_xf(cell_xfs ? cell_xfs[xf_index] : nil, cell_style_xfs)
           next unless xf
 
           fmt_id = xf[:num_fmt_id]
           next unless fmt_id && fmt_id != 0
 
-          format_code = resolve_num_fmt_code(fmt_id, styles[:num_fmts])
+          format_code = resolve_num_fmt_code(fmt_id, n_fmts)
           result[cell_ref] = format_code if format_code
         end
         result
@@ -141,16 +144,23 @@ module Xlsxrb
 
         indices = parse_cell_style_indices(worksheet_xml)
         result = {}
+        cell_xfs = styles.respond_to?(:cell_xfs) ? styles.cell_xfs : styles[:cell_xfs]
+        cell_style_xfs = styles.respond_to?(:cell_style_xfs) ? styles.cell_style_xfs : styles[:cell_style_xfs]
+        fonts_arr = styles.respond_to?(:fonts) ? styles.fonts : styles[:fonts]
+        fills_arr = styles.respond_to?(:fills) ? styles.fills : styles[:fills]
+        borders_arr = styles.respond_to?(:borders) ? styles.borders : styles[:borders]
+        n_fmts = styles.respond_to?(:num_fmts) ? styles.num_fmts : styles[:num_fmts]
+
         indices.each do |cell_ref, xf_index|
-          xf = resolve_effective_xf(styles[:cell_xfs][xf_index], styles[:cell_style_xfs])
+          xf = resolve_effective_xf(cell_xfs ? cell_xfs[xf_index] : nil, cell_style_xfs)
           next unless xf
 
           entry = {}
-          entry[:font] = styles[:fonts][xf[:font_id]] if xf[:font_id]&.positive? && styles[:fonts][xf[:font_id]]
-          entry[:fill] = styles[:fills][xf[:fill_id]] if xf[:fill_id]&.positive? && styles[:fills][xf[:fill_id]]
-          entry[:border] = styles[:borders][xf[:border_id]] if xf[:border_id]&.positive? && styles[:borders][xf[:border_id]]
+          entry[:font] = fonts_arr[xf[:font_id]] if xf[:font_id]&.positive? && fonts_arr && fonts_arr[xf[:font_id]]
+          entry[:fill] = fills_arr[xf[:fill_id]] if xf[:fill_id]&.positive? && fills_arr && fills_arr[xf[:fill_id]]
+          entry[:border] = borders_arr[xf[:border_id]] if xf[:border_id]&.positive? && borders_arr && borders_arr[xf[:border_id]]
           if xf[:num_fmt_id]&.positive?
-            code = resolve_num_fmt_code(xf[:num_fmt_id], styles[:num_fmts])
+            code = resolve_num_fmt_code(xf[:num_fmt_id], n_fmts)
             entry[:num_fmt] = code if code
           end
           entry[:alignment] = xf[:alignment] if xf[:alignment]
@@ -167,7 +177,7 @@ module Xlsxrb
         styles = load_styles
         return [] if styles.empty?
 
-        styles[:dxfs] || []
+        styles.respond_to?(:dxfs) ? styles.dxfs : (styles[:dxfs] || [])
       end
 
       # Returns array of font entries from the styles.
@@ -175,7 +185,7 @@ module Xlsxrb
         styles = load_styles
         return [] if styles.empty?
 
-        styles[:fonts] || []
+        styles.respond_to?(:fonts) ? styles.fonts : (styles[:fonts] || [])
       end
 
       # Returns array of fill entries from the styles.
@@ -183,7 +193,7 @@ module Xlsxrb
         styles = load_styles
         return [] if styles.empty?
 
-        styles[:fills] || []
+        styles.respond_to?(:fills) ? styles.fills : (styles[:fills] || [])
       end
 
       # Returns array of border entries from the styles.
@@ -191,7 +201,7 @@ module Xlsxrb
         styles = load_styles
         return [] if styles.empty?
 
-        styles[:borders] || []
+        styles.respond_to?(:borders) ? styles.borders : (styles[:borders] || [])
       end
 
       # Returns custom number formats as { numFmtId => formatCode }.
@@ -199,7 +209,7 @@ module Xlsxrb
         styles = load_styles
         return {} if styles.empty?
 
-        styles[:num_fmts] || {}
+        styles.respond_to?(:num_fmts) ? styles.num_fmts : (styles[:num_fmts] || {})
       end
 
       # Returns indexed colors palette (array of ARGB hex strings).
@@ -207,7 +217,7 @@ module Xlsxrb
         styles = load_styles
         return [] if styles.empty?
 
-        styles[:indexed_colors] || []
+        styles.respond_to?(:indexed_colors) ? styles.indexed_colors : (styles[:indexed_colors] || [])
       end
 
       # Returns MRU (most recently used) colors (array of color hashes).
@@ -215,7 +225,7 @@ module Xlsxrb
         styles = load_styles
         return [] if styles.empty?
 
-        styles[:mru_colors] || []
+        styles.respond_to?(:mru_colors) ? styles.mru_colors : (styles[:mru_colors] || [])
       end
 
       # Returns table styles configuration hash.
@@ -223,7 +233,7 @@ module Xlsxrb
         styles = load_styles
         return {} if styles.empty?
 
-        styles[:table_styles] || {}
+        styles.respond_to?(:table_styles) ? styles.table_styles : (styles[:table_styles] || {})
       end
 
       # Returns array of cellStyleXfs entries (base style format definitions).
@@ -231,7 +241,7 @@ module Xlsxrb
         styles = load_styles
         return [] if styles.empty?
 
-        styles[:cell_style_xfs] || []
+        styles.respond_to?(:cell_style_xfs) ? styles.cell_style_xfs : (styles[:cell_style_xfs] || [])
       end
 
       # Returns array of cellXfs entries (cell format definitions).
@@ -239,7 +249,7 @@ module Xlsxrb
         styles = load_styles
         return [] if styles.empty?
 
-        styles[:cell_xfs] || []
+        styles.respond_to?(:cell_xfs) ? styles.cell_xfs : (styles[:cell_xfs] || [])
       end
 
       # Returns array of named cell styles (cellStyle elements).
@@ -247,7 +257,7 @@ module Xlsxrb
         styles = load_styles
         return [] if styles.empty?
 
-        styles[:cell_styles] || []
+        styles.respond_to?(:cell_styles) ? styles.cell_styles : (styles[:cell_styles] || [])
       end
 
       # Returns the autoFilter range string (e.g. "A1:B10") or nil.
@@ -1285,17 +1295,21 @@ module Xlsxrb
 
       def resolve_date_cells(raw_cells, cell_style_map, styles)
         is_date1904 = workbook_properties&.[](:date1904) || false
+        cell_xfs = styles.respond_to?(:cell_xfs) ? styles.cell_xfs : styles[:cell_xfs]
+        cell_style_xfs = styles.respond_to?(:cell_style_xfs) ? styles.cell_style_xfs : styles[:cell_style_xfs]
+        n_fmts = styles.respond_to?(:num_fmts) ? styles.num_fmts : styles[:num_fmts]
+
         raw_cells.each do |cell_ref, value|
           next unless value.is_a?(Numeric)
 
           xf_index = cell_style_map[cell_ref]
           next unless xf_index
 
-          xf = resolve_effective_xf(styles[:cell_xfs][xf_index], styles[:cell_style_xfs])
+          xf = resolve_effective_xf(cell_xfs ? cell_xfs[xf_index] : nil, cell_style_xfs)
           next unless xf
 
           fmt_id = xf[:num_fmt_id]
-          next unless date_format?(fmt_id, styles[:num_fmts])
+          next unless date_format?(fmt_id, n_fmts)
 
           raw_cells[cell_ref] = if value.is_a?(Float) && (value % 1).positive?
                                   Xlsxrb::Ooxml::Utils.serial_to_datetime(value, date1904: is_date1904)

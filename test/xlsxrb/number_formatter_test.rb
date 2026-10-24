@@ -210,7 +210,7 @@ class NumberFormatterTest < Test::Unit::TestCase
 
     assert_instance_of(Xlsxrb::Elements::Styles, styles)
     assert_equal(raw_styles, styles.to_h)
-    assert_equal(7, styles[:cell_xfs].size)
+    assert_equal(7, styles.cell_xfs.size)
 
     # Style 0: General
     assert_equal("General", styles.number_format(0))
@@ -296,7 +296,7 @@ class NumberFormatterTest < Test::Unit::TestCase
 
     parsed = Xlsxrb::Ooxml::StylesParser.parse(xml)
     assert_instance_of(Xlsxrb::Elements::Styles, parsed)
-    assert_equal(2, parsed[:cell_xfs].size)
+    assert_equal(2, parsed.cell_xfs.size)
     assert_false(parsed.date_format?(0))
     assert_true(parsed.date_format?(1))
     assert_equal("yyyy-mm-dd", parsed.number_format(1))
