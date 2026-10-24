@@ -158,6 +158,21 @@ module Xlsxrb
       end
     end
 
+    # Checks whether a serial number is a valid Excel date within the supported range.
+    #
+    # @example
+    #   Xlsxrb::Utils.valid_excel_date?(46023) #=> true
+    #   Xlsxrb::Utils.valid_excel_date?(-1)    #=> false
+    #
+    # @param serial [Object] Serial number candidate.
+    # @param date1904 [Boolean] Whether to use the 1904 date system.
+    # @return [Boolean]
+    # @api public
+    #: (untyped serial, ?date1904: bool) -> bool
+    def self.valid_excel_date?(serial, date1904: false)
+      Ooxml::Utils.valid_excel_date?(serial, date1904: date1904)
+    end
+
     # Converts an Excel serial number to a Date.
     #
     # @example

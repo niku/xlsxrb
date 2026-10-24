@@ -14,6 +14,14 @@ module Xlsxrb
 
       EPOCH_1904_JD: untyped
 
+      # Maximum date supported by Excel date systems.
+      MAX_DATE: untyped
+
+      # Maximum serial values supported by Excel date systems (corresponding to 9999-12-31).
+      MAX_SERIAL_1900: ::Integer
+
+      MAX_SERIAL_1904: ::Integer
+
       # Built-in number format codes defined by SpreadsheetML.
       BUILTIN_NUM_FMT_CODES: untyped
 
@@ -25,6 +33,10 @@ module Xlsxrb
 
       # Default date-time format code used by Writer for Time cells.
       DEFAULT_DATETIME_FORMAT: ::String
+
+      # Checks whether a serial number is a valid Excel date within the supported range.
+      # : (untyped serial, ?date1904: bool) -> bool
+      def self.valid_excel_date?: (untyped serial, ?date1904: bool) -> bool
 
       # Converts a Date to an Excel serial number (1900 or 1904 system).
       # : (Date date, ?date1904: bool) -> untyped

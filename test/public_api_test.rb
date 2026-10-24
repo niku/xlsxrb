@@ -2700,6 +2700,12 @@ class PublicApiTest < Test::Unit::TestCase
     st04 = Xlsxrb.datetime_to_serial(t, date1904: true)
     assert_in_delta(44_561.5, st04, 1e-6)
     assert_equal(t, Xlsxrb.serial_to_time(st04, date1904: true))
+
+    # valid_excel_date? validation
+    assert_true(Xlsxrb.valid_excel_date?(s))
+    assert_false(Xlsxrb.valid_excel_date?(-1))
+    assert_true(Xlsxrb.valid_excel_date?(s04, date1904: true))
+    assert_false(Xlsxrb.valid_excel_date?(3_000_000, date1904: true))
   end
 
   test "Xlsxrb.write returns in-memory binary string when target is omitted" do

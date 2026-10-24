@@ -96,4 +96,11 @@ class UtilsTest < Test::Unit::TestCase
     d = Date.new(2026, 1, 1)
     assert_in_delta(46_023.0, Xlsxrb::Utils.datetime_to_serial(d), 1e-6)
   end
+
+  test "valid_excel_date? delegates to Ooxml::Utils" do
+    assert_true(Xlsxrb::Utils.valid_excel_date?(46_023))
+    assert_false(Xlsxrb::Utils.valid_excel_date?(-1))
+    assert_true(Xlsxrb::Utils.valid_excel_date?(44_561, date1904: true))
+    assert_false(Xlsxrb::Utils.valid_excel_date?(3_000_000, date1904: true))
+  end
 end

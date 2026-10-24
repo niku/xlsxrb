@@ -105,8 +105,10 @@ class UtilsTest < Test::Unit::TestCase
 
     # Pre-1904 boundary
     d_pre = Date.new(1903, 12, 31)
-    assert_equal(-1, Xlsxrb::Ooxml::Utils.date_to_serial(d_pre, date1904: true))
-    assert_equal(d_pre, Xlsxrb::Ooxml::Utils.serial_to_date(-1, date1904: true))
+    err1 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.date_to_serial(d_pre, date1904: true) }
+    assert_equal("Date is before the 1904 date system epoch (1904-01-01)", err1.message)
+    err2 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(-1, date1904: true) }
+    assert_equal("Excel serial date must be non-negative", err2.message)
   end
 
   test "converts datetime in 1904 date system" do
@@ -208,5 +210,98 @@ class UtilsTest < Test::Unit::TestCase
     # Edge cases
     assert_equal("", Xlsxrb::Ooxml::Utils.camelize(""))
     assert_equal("", Xlsxrb::Ooxml::Utils.camelize(:""))
+  end
+
+  # --- boundary guards and valid_excel_date? ---
+
+  test "date_to_serial and serial_to_date enforce 1900 date system bounds" do
+    # Day 0: 1899-12-31 is serial 0
+    d0 = Date.new(1899, 12, 31)
+    assert_equal(0, Xlsxrb::Ooxml::Utils.date_to_serial(d0))
+    assert_equal(d0, Xlsxrb::Ooxml::Utils.serial_to_date(0))
+
+    # Pre-epoch dates (< 1899-12-31) raise ArgumentError
+    err1 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.date_to_serial(Date.new(1899, 12, 30)) }
+    assert_equal("Date is before the 1900 date system epoch (1899-12-31)", err1.message)
+    err2 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.date_to_serial(Date.new(1800, 1, 1)) }
+    assert_equal("Date is before the 1900 date system epoch (1899-12-31)", err2.message)
+
+    # Negative serials and NaN raise ArgumentError
+    err_nan = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(Float::NAN) }
+    assert_equal("Excel serial date cannot be NaN", err_nan.message)
+    err3 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(-1) }
+    assert_equal("Excel serial date must be non-negative", err3.message)
+    err4 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(-0.01) }
+    assert_equal("Excel serial date must be non-negative", err4.message)
+
+    # Maximum date: 9999-12-31 is serial 2,958,465
+    d_max = Date.new(9999, 12, 31)
+    assert_equal(2_958_465, Xlsxrb::Ooxml::Utils.date_to_serial(d_max))
+    assert_equal(d_max, Xlsxrb::Ooxml::Utils.serial_to_date(2_958_465))
+
+    # Exceeding maximum date raises ArgumentError
+    err5 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.date_to_serial(Date.new(10_000, 1, 1)) }
+    assert_equal("Date exceeds the maximum supported date (9999-12-31)", err5.message)
+    err5b = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.date_to_serial(Date.new(10_001, 1, 1)) }
+    assert_equal("Date exceeds the maximum supported date (9999-12-31)", err5b.message)
+    err6 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(2_958_466) }
+    assert_equal("Excel serial date exceeds maximum supported date (9999-12-31)", err6.message)
+    err6b = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(2_958_467) }
+    assert_equal("Excel serial date exceeds maximum supported date (9999-12-31)", err6b.message)
+    err6c = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(3_000_000) }
+    assert_equal("Excel serial date exceeds maximum supported date (9999-12-31)", err6c.message)
+  end
+
+  test "date_to_serial and serial_to_date enforce 1904 date system bounds" do
+    # Day 0: 1904-01-01 is serial 0
+    d0 = Date.new(1904, 1, 1)
+    assert_equal(0, Xlsxrb::Ooxml::Utils.date_to_serial(d0, date1904: true))
+    assert_equal(d0, Xlsxrb::Ooxml::Utils.serial_to_date(0, date1904: true))
+
+    # Pre-epoch dates (< 1904-01-01) raise ArgumentError
+    err1 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.date_to_serial(Date.new(1903, 12, 31), date1904: true) }
+    assert_equal("Date is before the 1904 date system epoch (1904-01-01)", err1.message)
+
+    # Negative serials raise ArgumentError
+    err2 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(-1, date1904: true) }
+    assert_equal("Excel serial date must be non-negative", err2.message)
+
+    # Maximum date: 9999-12-31 is serial 2,957,003
+    d_max = Date.new(9999, 12, 31)
+    assert_equal(2_957_003, Xlsxrb::Ooxml::Utils.date_to_serial(d_max, date1904: true))
+    assert_equal(d_max, Xlsxrb::Ooxml::Utils.serial_to_date(2_957_003, date1904: true))
+
+    # Exceeding maximum date raises ArgumentError
+    err3 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.date_to_serial(Date.new(10_000, 1, 1), date1904: true) }
+    assert_equal("Date exceeds the maximum supported date (9999-12-31)", err3.message)
+    err3b = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.date_to_serial(Date.new(10_001, 1, 1), date1904: true) }
+    assert_equal("Date exceeds the maximum supported date (9999-12-31)", err3b.message)
+    err4 = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(2_957_004, date1904: true) }
+    assert_equal("Excel serial date exceeds maximum supported date (9999-12-31)", err4.message)
+    err4b = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(2_957_005, date1904: true) }
+    assert_equal("Excel serial date exceeds maximum supported date (9999-12-31)", err4b.message)
+    err4c = assert_raise(ArgumentError) { Xlsxrb::Ooxml::Utils.serial_to_date(3_000_000, date1904: true) }
+    assert_equal("Excel serial date exceeds maximum supported date (9999-12-31)", err4c.message)
+  end
+
+  test "valid_excel_date? validates numeric serial date ranges" do
+    # 1900 system
+    assert_true(Xlsxrb::Ooxml::Utils.valid_excel_date?(0))
+    assert_true(Xlsxrb::Ooxml::Utils.valid_excel_date?(0.5))
+    assert_true(Xlsxrb::Ooxml::Utils.valid_excel_date?(1))
+    assert_true(Xlsxrb::Ooxml::Utils.valid_excel_date?(2_958_465))
+    assert_true(Xlsxrb::Ooxml::Utils.valid_excel_date?(2_958_465.999))
+    assert_false(Xlsxrb::Ooxml::Utils.valid_excel_date?(2_958_466))
+    assert_false(Xlsxrb::Ooxml::Utils.valid_excel_date?(-1))
+    assert_false(Xlsxrb::Ooxml::Utils.valid_excel_date?(-0.01))
+    assert_false(Xlsxrb::Ooxml::Utils.valid_excel_date?("46023"))
+    assert_false(Xlsxrb::Ooxml::Utils.valid_excel_date?(nil))
+
+    # 1904 system
+    assert_true(Xlsxrb::Ooxml::Utils.valid_excel_date?(0, date1904: true))
+    assert_true(Xlsxrb::Ooxml::Utils.valid_excel_date?(2_957_003, date1904: true))
+    assert_true(Xlsxrb::Ooxml::Utils.valid_excel_date?(2_957_003.999, date1904: true))
+    assert_false(Xlsxrb::Ooxml::Utils.valid_excel_date?(2_957_004, date1904: true))
+    assert_false(Xlsxrb::Ooxml::Utils.valid_excel_date?(-1, date1904: true))
   end
 end

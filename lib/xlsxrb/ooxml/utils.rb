@@ -18,6 +18,13 @@ module Xlsxrb
       EPOCH_1904 = Date.new(1904, 1, 1).freeze # serial 0 = Jan 1, 1904
       EPOCH_1904_JD = EPOCH_1904.jd
 
+      # Maximum date supported by Excel date systems.
+      MAX_DATE = Date.new(9999, 12, 31).freeze
+
+      # Maximum serial values supported by Excel date systems (corresponding to 9999-12-31).
+      MAX_SERIAL_1900 = 2_958_465
+      MAX_SERIAL_1904 = 2_957_003
+
       # Built-in number format codes defined by SpreadsheetML.
       BUILTIN_NUM_FMT_CODES = {
         0 => "General",
@@ -60,12 +67,27 @@ module Xlsxrb
       DEFAULT_DATETIME_FORMAT = "yyyy\\-mm\\-dd\\ hh:mm:ss"
 
       class << self
+        # Checks whether a serial number is a valid Excel date within the supported range.
+        #: (untyped serial, ?date1904: bool) -> bool
+        def valid_excel_date?(serial, date1904: false)
+          return false unless serial.is_a?(Numeric)
+
+          max_serial = date1904 ? MAX_SERIAL_1904 : MAX_SERIAL_1900
+          serial >= 0 && serial < max_serial + 1
+        end
+
         # Converts a Date to an Excel serial number (1900 or 1904 system).
         #: (Date date, ?date1904: bool) -> untyped
         def date_to_serial(date, date1904: false)
           if date1904
+            raise ArgumentError, "Date is before the 1904 date system epoch (1904-01-01)" if date < EPOCH_1904
+            raise ArgumentError, "Date exceeds the maximum supported date (9999-12-31)" if date > MAX_DATE
+
             date.jd - EPOCH_1904_JD
           else
+            raise ArgumentError, "Date is before the 1900 date system epoch (1899-12-31)" if date < EPOCH_1900
+            raise ArgumentError, "Date exceeds the maximum supported date (9999-12-31)" if date > MAX_DATE
+
             serial = date.jd - EPOCH_1900_JD
             # Lotus 1-2-3 bug: serial 60 = Feb 29, 1900 (doesn't exist).
             # Dates on or after Mar 1, 1900 (raw serial >= 60) need +1.
@@ -77,6 +99,11 @@ module Xlsxrb
         # Converts an Excel serial number (1900 or 1904 system) to a Date.
         #: (Numeric serial, ?date1904: bool) -> Date
         def serial_to_date(serial, date1904: false)
+          max_serial = date1904 ? MAX_SERIAL_1904 : MAX_SERIAL_1900
+          raise ArgumentError, "Excel serial date cannot be NaN" if serial.respond_to?(:nan?) && serial.nan?
+          raise ArgumentError, "Excel serial date must be non-negative" if serial.negative?
+          raise ArgumentError, "Excel serial date exceeds maximum supported date (9999-12-31)" if serial >= max_serial + 1
+
           if date1904
             EPOCH_1904 + serial
           else
