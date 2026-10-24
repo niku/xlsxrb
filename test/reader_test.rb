@@ -133,6 +133,52 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "reads boolean cells with true/false string payloads and 1/0 values" do
+    xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1" t="b"><v>1</v></c>
+            <c r="B1" t="b"><v>0</v></c>
+            <c r="C1" t="b"><v>true</v></c>
+            <c r="D1" t="b"><v>TRUE</v></c>
+            <c r="E1" t="b"><v>false</v></c>
+            <c r="F1" t="b"><v>FALSE</v></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    buf = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(buf) do |z|
+      z.add_entry("[Content_Types].xml", %(<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>))
+      z.add_entry("_rels/.rels", %(<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>))
+      z.add_entry("xl/workbook.xml", %(<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>))
+      z.add_entry("xl/_rels/workbook.xml.rels", %(<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>))
+      z.add_entry("xl/worksheets/sheet1.xml", xml)
+    end
+    buf.rewind
+
+    wb = Xlsxrb.read(buf).load
+    sheet = wb.sheet(0)
+    assert_equal(true, sheet.cell("A1").value)
+    assert_equal(false, sheet.cell("B1").value)
+    assert_equal(true, sheet.cell("C1").value)
+    assert_equal(true, sheet.cell("D1").value)
+    assert_equal(false, sheet.cell("E1").value)
+    assert_equal(false, sheet.cell("F1").value)
+
+    buf.rewind
+    rows = []
+    Xlsxrb.read(buf) do |sheet|
+      sheet.each_row do |row|
+        rows << row
+      end
+    end
+    assert_equal([true, false, true, true, false, false], rows.first.map(&:value))
+  end
+
   test "round-trips empty string cells" do
     xlsx_tempfile = Tempfile.new(["xlsxrb-roundtrip", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

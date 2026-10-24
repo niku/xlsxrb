@@ -498,7 +498,10 @@ module Xlsxrb
         when "s"
           raw_value ? (shared_strings[raw_value.to_i] || "") : nil
         when "b"
-          raw_value ? (raw_value == "1") : nil
+          if raw_value
+            v = raw_value.strip
+            v == "1" || v.casecmp?("true")
+          end
         when "inlineStr", "str", "e"
           if is_xml
             extract_inline_text(is_xml, 0, is_xml.bytesize)
