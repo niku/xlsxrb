@@ -8316,6 +8316,49 @@ class WriterTest < Test::Unit::TestCase
     assert_includes sheet_xml, '<ignoredErrors><ignoredError sqref="A1:C5" twoDigitTextYear="1" unlockedFormula="1"/></ignoredErrors>'
   end
 
+  test "WorksheetBuilder and StreamWriter support phonetic_properties authoring and round-trip" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("PhoneticDOM") do |s|
+        s.row(%w[漢字 かんじ])
+        s.phonetic_properties(font_id: 1, type: :hiragana, alignment: :distributed)
+      end
+    end
+
+    props = wb.sheet("PhoneticDOM").phonetic_properties
+    assert_equal 1, props[:font_id]
+    assert_equal "Hiragana", props[:type]
+    assert_equal "distributed", props[:alignment]
+
+    dom_xlsx = Xlsxrb.write(wb)
+    reread_dom = Xlsxrb.read(dom_xlsx)
+    dom_props = reread_dom.sheet(0).phonetic_properties
+    assert_equal 1, dom_props[:font_id]
+    assert_equal "Hiragana", dom_props[:type]
+    assert_equal "distributed", dom_props[:alignment]
+
+    # Test via streaming writer
+    buf = StringIO.new
+    Xlsxrb.write(buf) do |w|
+      w.sheet("PhoneticStream") do |s|
+        s.row(%w[東京 とうきょう])
+        s.phonetic_properties = { font_id: 2, type: :fullwidth_katakana, alignment: :left }
+      end
+    end
+
+    # Test via streaming reader
+    stream_props = nil
+    Xlsxrb.stream(buf.string) do |s|
+      stream_props = s.phonetic_properties
+    end
+    assert_equal 2, stream_props[:font_id]
+    assert_equal "fullwidthKatakana", stream_props[:type]
+    assert_equal "left", stream_props[:alignment]
+
+    # Check XML contains <phoneticPr>
+    sheet_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_includes sheet_xml, '<phoneticPr fontId="2" type="fullwidthKatakana" alignment="left"/>'
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

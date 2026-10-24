@@ -108,6 +108,7 @@ module Xlsxrb
               protected_ranges: sheet[:protected_ranges],
               cell_watches: sheet[:cell_watches],
               ignored_errors: sheet[:ignored_errors],
+              phonetic_pr: sheet[:phonetic_properties] || sheet[:phonetic_pr],
               tables: sheet_tables,
               table_start_rid: info[:table_start_rid],
               legacy_drawing_rid: info[:vml_rid],
@@ -1100,7 +1101,7 @@ module Xlsxrb
                               cell_watches: nil, ignored_errors: nil, freeze_pane: nil, split_pane: nil,
                               selection: nil, sheet_view: nil, sheet_properties: nil,
                               sheet_format: nil, tables: nil, table_start_rid: nil,
-                              legacy_drawing_rid: nil, sparkline_groups: nil)
+                              legacy_drawing_rid: nil, sparkline_groups: nil, phonetic_pr: nil)
         date1904 = @workbook_properties&.[](:date1904) ? true : false
         ws = WorksheetWriter.new(io, date1904: date1904)
         ws.start(
@@ -1156,7 +1157,8 @@ module Xlsxrb
           tables: tables,
           table_start_rid: table_start_rid,
           legacy_drawing_rid: legacy_drawing_rid,
-          sparkline_groups: sparkline_groups
+          sparkline_groups: sparkline_groups,
+          phonetic_pr: phonetic_pr
         )
       end
 

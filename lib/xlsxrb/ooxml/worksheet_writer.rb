@@ -721,7 +721,7 @@ module Xlsxrb
                  hyperlinks: nil, print_options: nil, page_margins: nil,
                  page_setup: nil, header_footer: nil, row_breaks: nil,
                  col_breaks: nil, cell_watches: nil, ignored_errors: nil, tables: nil, table_start_rid: nil,
-                 legacy_drawing_rid: nil, sparkline_groups: nil)
+                 legacy_drawing_rid: nil, sparkline_groups: nil, phonetic_pr: nil)
         return if @finished
 
         start unless @started
@@ -737,6 +737,7 @@ module Xlsxrb
         write_protected_ranges(protected_ranges) if protected_ranges && !protected_ranges.empty?
         write_auto_filter(auto_filter, filter_columns, sort_state) if auto_filter
         write_merge_cells(merge_cells) if merge_cells && !merge_cells.empty?
+        write_phonetic_pr(phonetic_pr) if phonetic_pr
         write_conditional_formatting(conditional_formats) if conditional_formats && !conditional_formats.empty?
         write_data_validations(data_validations) if data_validations && !data_validations.empty?
         write_hyperlinks(hyperlinks) if hyperlinks && !hyperlinks.empty?
@@ -1327,6 +1328,15 @@ module Xlsxrb
           @builder.empty_tag("ignoredError", attrs)
         end
         @builder.close_tag("ignoredErrors")
+      end
+
+      def write_phonetic_pr(props)
+        attrs = { fontId: (props[:font_id] || props["font_id"] || 0).to_s }
+        type = props[:type] || props["type"]
+        attrs[:type] = type.to_s if type
+        align = props[:alignment] || props["alignment"]
+        attrs[:alignment] = align.to_s if align
+        @builder.empty_tag("phoneticPr", attrs)
       end
 
       def write_table_parts(tables, start_rid)

@@ -83,6 +83,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
       very_hidden?
       tab_color
       ignored_errors
+      phonetic_properties
     ]
 
     elem_methods = Xlsxrb::Elements::Worksheet.public_instance_methods(true)

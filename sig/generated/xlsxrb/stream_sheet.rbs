@@ -488,6 +488,15 @@ module Xlsxrb
     # : () -> Array[Hash[Symbol, untyped]]
     def ignored_errors: () -> Array[Hash[Symbol, untyped]]
 
+    # Returns phonetic properties defined for this worksheet, or nil.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    # : () -> Hash[Symbol, untyped]?
+    def phonetic_properties: () -> Hash[Symbol, untyped]?
+
+    alias phonetic_pr phonetic_properties
+
     # Closes any underlying reader resources.
     # : () -> void
     def close: () -> void

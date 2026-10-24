@@ -358,6 +358,7 @@ module Xlsxrb
         protected_ranges: protected_ranges,
         cell_watches: cell_watches,
         ignored_errors: ignored_errors,
+        phonetic_properties: phonetic_properties,
         selection: selection
       )
     end
@@ -758,6 +759,20 @@ module Xlsxrb
                             []
                           end
     end
+
+    # Returns phonetic properties defined for this worksheet, or nil.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    #: () -> Hash[Symbol, untyped]?
+    def phonetic_properties
+      @phonetic_properties ||= if raw_sheet_xml.include?("<phoneticPr")
+                                 listener = Ooxml::Reader::PhoneticPrListener.new
+                                 Ooxml::XmlParser.parse(raw_sheet_xml, listener)
+                                 listener.phonetic_pr
+                               end
+    end
+    alias phonetic_pr phonetic_properties
 
     # Closes any underlying reader resources.
     #: () -> void

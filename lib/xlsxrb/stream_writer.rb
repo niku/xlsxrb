@@ -83,6 +83,7 @@ module Xlsxrb
       @current_protected_ranges = []
       @current_cell_watches = []
       @current_ignored_errors = []
+      @current_phonetic_properties = nil
       @current_cells = {}
       @styles = {} # { style_name => StyleBuilder }
       @style_writer = Ooxml::Writer.new
@@ -1095,6 +1096,19 @@ module Xlsxrb
       def ignored_errors
         @writer.ignored_errors
       end
+
+      # Gets or sets phonetic (furigana) guide properties for the sheet.
+      #
+      # @api public
+      #: (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
+      def phonetic_properties(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.phonetic_properties(...)
+      end
+      alias phonetic_properties= phonetic_properties
+      alias phonetic_pr phonetic_properties
+      alias phonetic_pr= phonetic_properties
     end
 
     # Adds a new sheet to the workbook and starts streaming rows into it.
@@ -1178,6 +1192,7 @@ module Xlsxrb
       @current_protected_ranges = []
       @current_cell_watches = []
       @current_ignored_errors = []
+      @current_phonetic_properties = nil
       @current_cells = {}
 
       return unless block_given?
@@ -1906,6 +1921,40 @@ module Xlsxrb
       @current_ignored_errors.dup
     end
 
+    # Gets or sets phonetic (furigana) guide properties for the current sheet.
+    #
+    # @overload phonetic_properties()
+    #   Returns the current phonetic properties.
+    #   @return [Hash, nil]
+    # @overload phonetic_properties(spec = nil, font_id: nil, type: nil, alignment: nil)
+    #   Sets phonetic properties for the current sheet.
+    #   @param spec [Hash, Integer, nil]
+    #   @param font_id [Integer, nil]
+    #   @param type [Symbol, String, nil]
+    #   @param alignment [Symbol, String, nil]
+    #   @return [Hash, nil]
+    # @api public
+    #: (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
+    def phonetic_properties(spec = nil, font_id: nil, type: nil, alignment: nil, **opts)
+      sheet if @current_sheet.nil?
+      if spec.nil? && font_id.nil? && type.nil? && alignment.nil? && opts.empty?
+        @current_phonetic_properties
+      else
+        props = if spec.is_a?(Hash)
+                  spec.merge(opts)
+                elsif spec.is_a?(Integer)
+                  { font_id: spec, type: type, alignment: alignment }.merge(opts)
+                else
+                  { font_id: font_id, type: type, alignment: alignment }.merge(opts)
+                end
+        props.compact!
+        @current_phonetic_properties = WorksheetBuilder.normalize_phonetic_properties(props)
+      end
+    end
+    alias phonetic_properties= phonetic_properties
+    alias phonetic_pr phonetic_properties
+    alias phonetic_pr= phonetic_properties
+
     # --- Workbook-Level Methods ---
 
     # Adds a defined name.
@@ -2246,7 +2295,8 @@ module Xlsxrb
         col_breaks: @current_col_breaks,
         protected_ranges: @current_protected_ranges,
         cell_watches: @current_cell_watches,
-        ignored_errors: @current_ignored_errors
+        ignored_errors: @current_ignored_errors,
+        phonetic_properties: @current_phonetic_properties
       }
       sheet_data[:cells] = @current_cells if @current_cells && !@current_cells.empty?
       @current_cells = nil
@@ -2273,6 +2323,7 @@ module Xlsxrb
         col_breaks: @current_col_breaks.empty? ? nil : @current_col_breaks,
         cell_watches: @current_cell_watches.empty? ? nil : @current_cell_watches,
         ignored_errors: @current_ignored_errors.empty? ? nil : @current_ignored_errors,
+        phonetic_pr: @current_phonetic_properties,
         tables: @current_tables.empty? ? nil : @current_tables,
         table_start_rid: info[:table_start_rid],
         legacy_drawing_rid: info[:vml_rid],

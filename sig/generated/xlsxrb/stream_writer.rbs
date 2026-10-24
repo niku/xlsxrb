@@ -765,6 +765,18 @@ module Xlsxrb
       # @api public
       # : () -> Array[Hash[Symbol, untyped]]
       def ignored_errors: () -> Array[Hash[Symbol, untyped]]
+
+      # Gets or sets phonetic (furigana) guide properties for the sheet.
+      #
+      # @api public
+      # : (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
+      def phonetic_properties: (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
+
+      alias phonetic_properties= phonetic_properties
+
+      alias phonetic_pr phonetic_properties
+
+      alias phonetic_pr= phonetic_properties
     end
 
     # Adds a new sheet to the workbook and starts streaming rows into it.
@@ -1179,6 +1191,28 @@ module Xlsxrb
     # @api public
     # : () -> Array[Hash[Symbol, untyped]]
     def ignored_errors: () -> Array[Hash[Symbol, untyped]]
+
+    # Gets or sets phonetic (furigana) guide properties for the current sheet.
+    #
+    # @overload phonetic_properties()
+    #   Returns the current phonetic properties.
+    #   @return [Hash, nil]
+    # @overload phonetic_properties(spec = nil, font_id: nil, type: nil, alignment: nil)
+    #   Sets phonetic properties for the current sheet.
+    #   @param spec [Hash, Integer, nil]
+    #   @param font_id [Integer, nil]
+    #   @param type [Symbol, String, nil]
+    #   @param alignment [Symbol, String, nil]
+    #   @return [Hash, nil]
+    # @api public
+    # : (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
+    def phonetic_properties: (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
+
+    alias phonetic_properties= phonetic_properties
+
+    alias phonetic_pr phonetic_properties
+
+    alias phonetic_pr= phonetic_properties
 
     # Adds a defined name.
     #

@@ -50,6 +50,7 @@ module Xlsxrb
       @protected_ranges = []
       @cell_watches = []
       @ignored_errors = []
+      @phonetic_properties = nil
       @print_area = nil
       @print_titles = nil
     end
@@ -912,6 +913,72 @@ module Xlsxrb
       @ignored_errors.dup
     end
 
+    # Gets or sets phonetic (furigana) guide properties for the worksheet.
+    #
+    # @overload phonetic_properties()
+    #   Returns the current phonetic properties.
+    #   @return [Hash, nil]
+    # @overload phonetic_properties(props = nil, font_id: nil, type: nil, alignment: nil)
+    #   Sets phonetic properties.
+    #   @param spec [Hash, Integer, nil]
+    #   @param font_id [Integer, nil]
+    #   @param type [Symbol, String, nil]
+    #   @param alignment [Symbol, String, nil]
+    #   @return [Hash, nil]
+    # @api public
+    #: (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
+    def phonetic_properties(spec = nil, font_id: nil, type: nil, alignment: nil, **opts)
+      if spec.nil? && font_id.nil? && type.nil? && alignment.nil? && opts.empty?
+        @phonetic_properties
+      else
+        props = if spec.is_a?(Hash)
+                  spec.merge(opts)
+                elsif spec.is_a?(Integer)
+                  { font_id: spec, type: type, alignment: alignment }.merge(opts)
+                else
+                  { font_id: font_id, type: type, alignment: alignment }.merge(opts)
+                end
+        props.compact!
+        @phonetic_properties = WorksheetBuilder.normalize_phonetic_properties(props)
+      end
+    end
+    alias phonetic_properties= phonetic_properties
+    alias phonetic_pr phonetic_properties
+    alias phonetic_pr= phonetic_properties
+
+    # Normalizes phonetic properties to OOXML schema values.
+    #
+    # @param props [Hash, nil]
+    # @return [Hash[Symbol, untyped], nil]
+    #: (Hash[untyped, untyped]? props) -> Hash[Symbol, untyped]?
+    def self.normalize_phonetic_properties(props)
+      return nil if props.nil? || props.empty?
+
+      raw_font = props[:font_id] || props["font_id"] || props[:fontId] || props["fontId"] || 0
+      type = props[:type] || props["type"]
+      type_str = case type&.to_s
+                 when "hiragana", "Hiragana" then "Hiragana"
+                 when "halfwidth_katakana", "halfwidthKatakana" then "halfwidthKatakana"
+                 when "fullwidth_katakana", "fullwidthKatakana" then "fullwidthKatakana"
+                 when "no_conversion", "noConversion" then "noConversion"
+                 else type&.to_s
+                 end
+
+      align = props[:alignment] || props["alignment"]
+      align_str = case align&.to_s
+                  when "no_control", "noControl" then "noControl"
+                  when "left" then "left"
+                  when "center" then "center"
+                  when "distributed" then "distributed"
+                  else align&.to_s
+                  end
+
+      res = { font_id: raw_font.to_i }
+      res[:type] = type_str if type_str
+      res[:alignment] = align_str if align_str
+      res
+    end
+
     # Builds and returns the in-memory {Elements::Worksheet}.
     #
     # @return [Elements::Worksheet]
@@ -948,6 +1015,7 @@ module Xlsxrb
       facade_meta[:protected_ranges] = @protected_ranges unless @protected_ranges.empty?
       facade_meta[:cell_watches] = @cell_watches unless @cell_watches.empty?
       facade_meta[:ignored_errors] = @ignored_errors unless @ignored_errors.empty?
+      facade_meta[:phonetic_properties] = @phonetic_properties if @phonetic_properties
       facade_meta[:print_area] = @print_area if @print_area
       facade_meta[:print_titles] = @print_titles if @print_titles
 
@@ -1014,6 +1082,7 @@ module Xlsxrb
         protected_ranges: @protected_ranges,
         cell_watches: @cell_watches,
         ignored_errors: @ignored_errors,
+        phonetic_properties: @phonetic_properties,
         selection: @selection
       )
     end

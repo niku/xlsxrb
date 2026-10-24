@@ -450,4 +450,23 @@ class XsdValidationTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  # 16. Phonetic properties XSD sequence conformance
+  def test_phonetic_properties_xsd_validation
+    tmp = Tempfile.new(["xsd_phonetic", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("PhoneticSheet") do |s|
+          s.row(%w[漢字 かんじ])
+          s.phonetic_properties(font_id: 0, type: :hiragana, alignment: :distributed)
+          s.merge("A1:B1")
+          s.conditional_format("A1:B1", type: :cell_is, operator: "notEqual", formula: ["\"\""], bold: true)
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
 end
