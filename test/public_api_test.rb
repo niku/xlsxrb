@@ -896,6 +896,36 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("<worksheet><sheetData><row/></sheetData><pageMargins/></worksheet>", replaced_sc)
   end
 
+  test "replace_sheet_data handles multibyte comments before sheetData without byte drift" do
+    xml = %(<?xml version="1.0" encoding="UTF-8"?><worksheet><!-- 日本語コメント --><sheetData><row r="1"><c r="A1"><v>1</v></c></row></sheetData><pageMargins/></worksheet>)
+    replaced = Xlsxrb.send(:replace_sheet_data, xml, %(<sheetData><row r="1"><c r="A1"><v>99</v></c></row></sheetData>))
+    assert_includes(replaced, "<!-- 日本語コメント -->")
+    assert_includes(replaced, "<v>99</v>")
+    assert_includes(replaced, "<pageMargins/>")
+  end
+
+  test "update_dimension handles namespace prefixed dimension element" do
+    xml = %(<x:worksheet><x:dimension ref="A1:B2"/><x:sheetData/></x:worksheet>)
+    row = Xlsxrb::Elements::Row.new(
+      index: 0,
+      cells: [
+        Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 1),
+        Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 2, value: 2)
+      ]
+    )
+    res = Xlsxrb.send(:update_dimension, xml, [row])
+    assert_equal(%(<x:worksheet><x:dimension ref="A1:C1"/><x:sheetData/></x:worksheet>), res)
+  end
+
+  test "update_sheet_hyperlinks replaces namespaced hyperlinks tag" do
+    xml = %(<x:worksheet xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><x:sheetData/><x:hyperlinks><x:hyperlink ref="A1" r:id="rId1"/></x:hyperlinks></x:worksheet>)
+    rels_xml = %(<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://old.com" TargetMode="External"/></Relationships>)
+    updated_xml, _updated_rels = Xlsxrb.send(:update_sheet_hyperlinks, xml, rels_xml, { "A1" => { url: "https://new.com" } })
+    assert_includes(updated_xml, "<x:hyperlinks><x:hyperlink")
+    refute_includes(updated_xml, "</hyperlinks>")
+    assert_includes(updated_xml, "</x:hyperlinks>")
+  end
+
   test "Xlsxrb.modify correctly replaces entries when archive casing differs or contains backslashes" do
     buf = StringIO.new
     Xlsxrb::Ooxml::ZipWriter.open(buf) do |z|

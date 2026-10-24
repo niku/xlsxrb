@@ -159,7 +159,7 @@ module Xlsxrb
   # @param ref [String, nil] Target cell or range reference (e.g. "A1:C1").
   # @return [Elements::Formula]
   # @api public
-  #: (String expression, ?cached_value: (String | Numeric | bool | nil), ?type: (Symbol | String)?, ?ref: String?) -> Elements::Formula
+  #: (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?) -> Elements::Formula
   def self.formula(expression, cached_value: nil, type: nil, ref: nil)
     Elements::Formula.new(
       expression: expression,
@@ -411,62 +411,6 @@ module Xlsxrb
   # @raise [InvalidPasswordError] If the supplied password is incorrect.
   # @raise [ParseError] If the spreadsheet XML structure is invalid.
   # @api public
-  def self.resolve_workbook_entry(zip_reader)
-    rels_xml = zip_reader.read_entry("_rels/.rels")
-    if rels_xml
-      entries = Ooxml::RelationshipsParser.parse_entries(rels_xml)
-      doc_rel = entries.find { |e| OFFICE_DOC_REL_TYPES.include?(e[:type]) }
-      if doc_rel
-        clean = doc_rel[:target].delete_prefix("/")
-        return clean if zip_reader.entry?(clean)
-      end
-    end
-    return "xl/workbook.xml" if zip_reader.entry?("xl/workbook.xml")
-    return "workbook.xml" if zip_reader.entry?("workbook.xml")
-
-    "xl/workbook.xml"
-  end
-
-  def self.resolve_part_path(zip_reader, target_path, wb_dir)
-    return nil unless target_path
-
-    clean = target_path.delete_prefix("/")
-    candidates = [
-      wb_dir == "." ? clean : "#{wb_dir}/#{clean}",
-      clean,
-      "xl/#{clean}"
-    ]
-    candidates.find { |c| zip_reader.entry?(c) }
-  end
-
-  def self.resolve_sheet_entry(zip_reader, target_path, wb_dir, index)
-    resolved = resolve_part_path(zip_reader, target_path, wb_dir)
-    return resolved if resolved
-
-    fallbacks = [
-      wb_dir == "." ? "worksheets/sheet#{index + 1}.xml" : "#{wb_dir}/worksheets/sheet#{index + 1}.xml",
-      wb_dir == "." ? "sheet#{index + 1}.xml" : "#{wb_dir}/sheet#{index + 1}.xml",
-      "xl/worksheets/sheet#{index + 1}.xml",
-      "xl/sheet#{index + 1}.xml",
-      "worksheets/sheet#{index + 1}.xml",
-      "sheet#{index + 1}.xml"
-    ]
-    fallbacks.find { |f| zip_reader.entry?(f) }
-  end
-
-  def self.resolve_part_entry(zip_reader, rels, rel_type_sub, fallback_name, wb_dir)
-    target = rels.find { |_id, t| t.include?(rel_type_sub) }&.last
-    resolved = resolve_part_path(zip_reader, target, wb_dir)
-    return resolved if resolved
-
-    fallbacks = [
-      wb_dir == "." ? fallback_name : "#{wb_dir}/#{fallback_name}",
-      "xl/#{fallback_name}",
-      fallback_name
-    ]
-    fallbacks.find { |f| zip_reader.entry?(f) }
-  end
-
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
   def self.read(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil, &)
@@ -1068,6 +1012,62 @@ module Xlsxrb
 
   class << self
     private
+
+    def resolve_workbook_entry(zip_reader)
+      rels_xml = zip_reader.read_entry("_rels/.rels")
+      if rels_xml
+        entries = Ooxml::RelationshipsParser.parse_entries(rels_xml)
+        doc_rel = entries.find { |e| OFFICE_DOC_REL_TYPES.include?(e[:type]) }
+        if doc_rel
+          clean = doc_rel[:target].delete_prefix("/")
+          return clean if zip_reader.entry?(clean)
+        end
+      end
+      return "xl/workbook.xml" if zip_reader.entry?("xl/workbook.xml")
+      return "workbook.xml" if zip_reader.entry?("workbook.xml")
+
+      "xl/workbook.xml"
+    end
+
+    def resolve_part_path(zip_reader, target_path, wb_dir)
+      return nil unless target_path
+
+      clean = target_path.delete_prefix("/")
+      candidates = [
+        wb_dir == "." ? clean : "#{wb_dir}/#{clean}",
+        clean,
+        "xl/#{clean}"
+      ]
+      candidates.find { |c| zip_reader.entry?(c) }
+    end
+
+    def resolve_sheet_entry(zip_reader, target_path, wb_dir, index)
+      resolved = resolve_part_path(zip_reader, target_path, wb_dir)
+      return resolved if resolved
+
+      fallbacks = [
+        wb_dir == "." ? "worksheets/sheet#{index + 1}.xml" : "#{wb_dir}/worksheets/sheet#{index + 1}.xml",
+        wb_dir == "." ? "sheet#{index + 1}.xml" : "#{wb_dir}/sheet#{index + 1}.xml",
+        "xl/worksheets/sheet#{index + 1}.xml",
+        "xl/sheet#{index + 1}.xml",
+        "worksheets/sheet#{index + 1}.xml",
+        "sheet#{index + 1}.xml"
+      ]
+      fallbacks.find { |f| zip_reader.entry?(f) }
+    end
+
+    def resolve_part_entry(zip_reader, rels, rel_type_sub, fallback_name, wb_dir)
+      target = rels.find { |_id, t| t.include?(rel_type_sub) }&.last
+      resolved = resolve_part_path(zip_reader, target, wb_dir)
+      return resolved if resolved
+
+      fallbacks = [
+        wb_dir == "." ? fallback_name : "#{wb_dir}/#{fallback_name}",
+        "xl/#{fallback_name}",
+        fallback_name
+      ]
+      fallbacks.find { |f| zip_reader.entry?(f) }
+    end
 
     #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?) -> Elements::Worksheet
     def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil)
@@ -1766,32 +1766,35 @@ module Xlsxrb
 
     #: (String sheet_xml, String new_sheet_data_xml) -> String
     def replace_sheet_data(sheet_xml, new_sheet_data_xml)
-      sd_term = sheet_xml.index("sheetData")
+      orig_encoding = sheet_xml.encoding
+      sheet_b = sheet_xml.b
+      sd_term = sheet_b.index("sheetData")
       return sheet_xml unless sd_term
 
-      sheet_data_start = sheet_xml.rindex("<", sd_term)
+      sheet_data_start = sheet_b.rindex("<", sd_term)
       return sheet_xml unless sheet_data_start
 
       prefix_len = sd_term - (sheet_data_start + 1)
-      tag_prefix = sheet_xml[sheet_data_start + 1, prefix_len]
+      tag_prefix = sheet_b.byteslice(sheet_data_start + 1, prefix_len).force_encoding(orig_encoding)
 
-      open_tag_end = sheet_xml.index(">", sd_term)
+      open_tag_end = sheet_b.index(">", sd_term)
       return sheet_xml unless open_tag_end
 
-      prefix = sheet_xml[0...sheet_data_start]
-      suffix = if sheet_xml.getbyte(open_tag_end - 1) == 47
-                 sheet_xml[(open_tag_end + 1)..]
+      prefix = sheet_b.byteslice(0...sheet_data_start)
+      suffix = if sheet_b.getbyte(open_tag_end - 1) == 47
+                 sheet_b.byteslice((open_tag_end + 1)..) || "".b
                else
-                 close_tag = "</#{tag_prefix}sheetData>"
-                 close_tag_start = sheet_xml.index(close_tag, open_tag_end)
+                 close_tag = "</#{tag_prefix}sheetData>".b
+                 close_tag_start = sheet_b.index(close_tag, open_tag_end)
                  return sheet_xml unless close_tag_start
 
-                 sheet_xml[(close_tag_start + close_tag.bytesize)..]
+                 sheet_b.byteslice((close_tag_start + close_tag.bytesize)..) || "".b
                end
 
       new_sheet_data_xml = new_sheet_data_xml.gsub(%r{</?(sheetData|row|c|v|f|is|t)\b}) { |m| m.sub(%r{(</?)}, "\\1#{tag_prefix}") } if tag_prefix && !tag_prefix.empty?
 
-      "#{prefix}#{new_sheet_data_xml}#{suffix}"
+      result = prefix << new_sheet_data_xml.b << suffix
+      result.force_encoding(orig_encoding)
     end
 
     #: (String sheet_xml, Array[Elements::Row] rows) -> String
@@ -1810,7 +1813,7 @@ module Xlsxrb
                   "#{min_col_letter}#{min_row + 1}:#{max_col_letter}#{max_row + 1}"
                 end
 
-      sheet_xml.sub(/<dimension\b([^>]*)\bref="[^"]*"/, "<dimension\\1ref=\"#{dim_ref}\"")
+      sheet_xml.sub(/<([a-zA-Z0-9_]+:)?dimension\b([^>]*)\bref="[^"]*"/, "<\\1dimension\\2ref=\"#{dim_ref}\"")
     end
 
     #: (String sheet_xml, String? orig_rels_xml, Hash[String, untyped] new_hyperlinks) -> [String, String?]
@@ -1877,7 +1880,7 @@ module Xlsxrb
       new_hyperlinks_xml = hl_elements.empty? ? "" : "<#{ws_prefix}hyperlinks>#{hl_elements.join}</#{ws_prefix}hyperlinks>"
 
       if updated_sheet_xml =~ /<([a-zA-Z0-9_]+:)?hyperlinks\b/
-        updated_sheet_xml.sub!(%r{<([a-zA-Z0-9_]+:)?hyperlinks\b[^>]*/\s*>|<([a-zA-Z0-9_]+:)?hyperlinks\b[^>]*>.*?</\1?hyperlinks>}m, new_hyperlinks_xml)
+        updated_sheet_xml.sub!(%r{<(([a-zA-Z0-9_]+:)?hyperlinks)\b(?:[^>]*/>|[^>]*>.*?</\1>)}m) { new_hyperlinks_xml }
       elsif hl_elements.any?
         search_start = 0
         %w[sheetData customSheetViews mergeCells conditionalFormatting dataValidations].each do |tag|
@@ -2066,7 +2069,6 @@ module Xlsxrb
           row.cells.each do |cell|
             val = cell.value
             next unless val.is_a?(String) || val.is_a?(Elements::RichText)
-            next if val.is_a?(String) && val.start_with?("=")
             next if sst_index.key?(val)
 
             shared_strings << val

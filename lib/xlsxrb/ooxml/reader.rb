@@ -74,18 +74,7 @@ module Xlsxrb
 
       # Returns hyperlinks as { "A1" => "https://example.com" }.
       def hyperlinks(sheet: nil)
-        sheets = discover_sheets
-        raise ArgumentError, "workbook has no sheets" if sheets.empty?
-
-        target = resolve_sheet_target(sheets, sheet)
-        raise ArgumentError, "sheet not found: #{sheet.inspect}" if target.nil?
-
-        entry_path = if target.start_with?("/")
-                       target.delete_prefix("/")
-                     else
-                       "xl/#{target}"
-                     end
-
+        entry_path = resolve_sheet_entry_path(sheet)
         worksheet_xml = extract_zip_entry(entry_path)
         return {} if worksheet_xml.nil? || worksheet_xml.empty?
 
@@ -1045,7 +1034,7 @@ module Xlsxrb
         }
       end
 
-      def load_worksheet_xml(sheet)
+      def resolve_sheet_entry_path(sheet)
         sheets = discover_sheets
         raise ArgumentError, "workbook has no sheets" if sheets.empty?
 
@@ -1062,12 +1051,12 @@ module Xlsxrb
                          target
                        ]
                      end
+        candidates.find { |c| extract_zip_entry(c) } || candidates.first
+      end
 
-        candidates.each do |c|
-          xml = extract_zip_entry(c)
-          return xml if xml
-        end
-        nil
+      def load_worksheet_xml(sheet)
+        entry_path = resolve_sheet_entry_path(sheet)
+        extract_zip_entry(entry_path)
       end
 
       def discover_sheets

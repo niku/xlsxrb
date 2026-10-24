@@ -253,6 +253,8 @@ module Xlsxrb
 
       def parse_workbook_metadata: () -> untyped
 
+      def resolve_sheet_entry_path: (untyped sheet) -> untyped
+
       def load_worksheet_xml: (untyped sheet) -> untyped
 
       def discover_sheets: () -> untyped
