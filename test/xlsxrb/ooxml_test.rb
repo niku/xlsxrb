@@ -163,6 +163,55 @@ class OoxmlTest < Test::Unit::TestCase
     stream_bom.close
   end
 
+  test "zip_reader streaming yields UTF-8 chunks for XML and rels entries and respects encoding option" do
+    xml_data = "<worksheet><sheetData><row r=\"1\"><c r=\"A1\"><is><t>日本語テスト</t></is></c></row></sheetData></worksheet>"
+    txt_data = "plain binary text"
+
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      w.add_entry("xl/worksheets/sheet1.xml", xml_data)
+      w.add_entry("_rels/.rels", "<Relationships/>")
+      w.add_entry("data.txt", txt_data)
+    end
+    io.rewind
+
+    reader = Xlsxrb::Ooxml::ZipReader.new(io)
+
+    # XML entries default to UTF-8
+    stream = reader.open_entry_io("xl/worksheets/sheet1.xml")
+    chunk = stream.read
+    assert_equal(Encoding::UTF_8, chunk.encoding)
+    assert_match(/日本語/, chunk)
+    stream.close
+
+    # each_entry_chunk defaults to UTF-8 for XML
+    chunks = []
+    reader.each_entry_chunk("xl/worksheets/sheet1.xml", chunk_size: 32) do |c|
+      assert_equal(Encoding::UTF_8, c.encoding)
+      chunks << c
+    end
+    assert_equal(xml_data, chunks.join)
+
+    # .rels defaults to UTF-8
+    rels_stream = reader.open_entry_io("_rels/.rels")
+    assert_equal(Encoding::UTF_8, rels_stream.read.encoding)
+    rels_stream.close
+
+    # Non-XML defaults to binary (ASCII-8BIT)
+    txt_stream = reader.open_entry_io("data.txt")
+    assert_equal(Encoding::ASCII_8BIT, txt_stream.read.encoding)
+    txt_stream.close
+
+    # Explicit encoding option can override
+    raw_xml_stream = reader.open_entry_io("xl/worksheets/sheet1.xml", encoding: false)
+    assert_equal(Encoding::ASCII_8BIT, raw_xml_stream.read.encoding)
+    raw_xml_stream.close
+
+    custom_txt_stream = reader.open_entry_io("data.txt", encoding: "UTF-8")
+    assert_equal(Encoding::UTF_8, custom_txt_stream.read.encoding)
+    custom_txt_stream.close
+  end
+
   # --- ZipWriter ---
 
   test "zip_writer creates valid ZIP with entries" do

@@ -37,14 +37,16 @@ module Xlsxrb
 
         attr_reader :data_offset, :compressed_size, :compression_method
 
-        #: (untyped io, Integer data_offset, Integer compressed_size, Integer compression_method, ?max_uncompressed_size: Integer?) -> void
-        def initialize(io, data_offset, compressed_size, compression_method, max_uncompressed_size: nil)
+        #: (untyped io, Integer data_offset, Integer compressed_size, Integer compression_method, ?max_uncompressed_size: Integer?, ?encoding: Encoding?) -> void
+        def initialize(io, data_offset, compressed_size, compression_method, max_uncompressed_size: nil, encoding: nil)
           @io = io
           @data_offset = data_offset
           @compressed_size = compressed_size
           @compression_method = compression_method
           @max_uncompressed_size = max_uncompressed_size || ZipReader::MAX_UNCOMPRESSED_SIZE
+          @encoding = encoding
           @buffer = +""
+          @buffer.force_encoding(@encoding || Encoding::BINARY)
           @bytes_read_compressed = 0
           @total_uncompressed = 0
           @eof = false
@@ -65,10 +67,11 @@ module Xlsxrb
             while (chunk = fetch_chunk(DEFAULT_CHUNK_SIZE))
               result << chunk
             end
+            result.force_encoding(@encoding) if @encoding
             return result
           end
 
-          return "" if length.zero?
+          return "".force_encoding(@encoding || Encoding::BINARY) if length.zero?
 
           while @buffer.bytesize < length && !@eof
             chunk = fetch_chunk([length - @buffer.bytesize, DEFAULT_CHUNK_SIZE].max)
@@ -79,7 +82,9 @@ module Xlsxrb
 
           return nil if @buffer.empty? && @eof
 
-          @buffer.slice!(0, length)
+          sliced = @buffer.slice!(0, length)
+          sliced.force_encoding(@encoding) if @encoding && sliced
+          sliced
         end
 
         #: (?Integer chunk_size) ?{ (String) -> void } -> (void | Enumerator[String, void])
@@ -144,6 +149,7 @@ module Xlsxrb
             @total_uncompressed += raw.bytesize
             raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{@max_uncompressed_size} bytes" if @total_uncompressed > @max_uncompressed_size
 
+            raw&.force_encoding(@encoding) if @encoding
             raw
           elsif @compression_method == 8
             inflated = +""
@@ -178,7 +184,9 @@ module Xlsxrb
             @total_uncompressed += inflated.bytesize
             raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{@max_uncompressed_size} bytes" if @total_uncompressed > @max_uncompressed_size
 
-            inflated.empty? && @eof ? nil : inflated
+            chunk = inflated.empty? && @eof ? nil : inflated
+            chunk&.force_encoding(@encoding) if @encoding
+            chunk
           else
             @eof = true
             nil
@@ -212,6 +220,7 @@ module Xlsxrb
           elsif raw_b.start_with?("\xEF\xBB\xBF".b)
             @buffer << peek.b.delete_prefix("\xEF\xBB\xBF".b).force_encoding(Encoding::UTF_8)
           else
+            peek.force_encoding(@encoding) if @encoding
             @buffer << peek
           end
         end
@@ -291,20 +300,35 @@ module Xlsxrb
       end
 
       # Opens an EntryStreamIO for an entry by name.
-      #: (String entry_name) -> EntryStreamIO
-      def open_entry_io(entry_name)
+      #: (String entry_name, ?encoding: (Encoding | String | false | nil)) -> EntryStreamIO
+      def open_entry_io(entry_name, encoding: nil)
         entry = lookup_entry(entry_name)
         raise ZipError, "Entry not found in archive: #{entry_name}" unless entry
 
-        EntryStreamIO.new(io, entry.data_offset, entry.compressed_size, entry.method, max_uncompressed_size: @max_uncompressed_size)
+        resolved_encoding = if encoding == false
+                              nil
+                            elsif encoding
+                              encoding.is_a?(String) ? Encoding.find(encoding) : encoding
+                            elsif entry_name.end_with?(".xml", ".rels") || entry.name.end_with?(".xml", ".rels")
+                              Encoding::UTF_8
+                            end
+
+        EntryStreamIO.new(
+          io,
+          entry.data_offset,
+          entry.compressed_size,
+          entry.method,
+          max_uncompressed_size: @max_uncompressed_size,
+          encoding: resolved_encoding
+        )
       end
 
       # Yields inflated binary chunks directly from the compressed stream.
-      #: (String entry_name, ?chunk_size: Integer) ?{ (String) -> void } -> (void | Enumerator[String, void])
-      def each_entry_chunk(entry_name, chunk_size: 65_536, &block)
-        return enum_for(:each_entry_chunk, entry_name, chunk_size: chunk_size) unless block
+      #: (String entry_name, ?chunk_size: Integer, ?encoding: (Encoding | String | false | nil)) ?{ (String) -> void } -> (void | Enumerator[String, void])
+      def each_entry_chunk(entry_name, chunk_size: 65_536, encoding: nil, &block)
+        return enum_for(:each_entry_chunk, entry_name, chunk_size: chunk_size, encoding: encoding) unless block
 
-        stream = open_entry_io(entry_name)
+        stream = open_entry_io(entry_name, encoding: encoding)
         begin
           stream.each_chunk(chunk_size, &block)
         ensure

@@ -41,8 +41,8 @@ module Xlsxrb
 
         attr_reader compression_method: untyped
 
-        # : (untyped io, Integer data_offset, Integer compressed_size, Integer compression_method, ?max_uncompressed_size: Integer?) -> void
-        def initialize: (untyped io, Integer data_offset, Integer compressed_size, Integer compression_method, ?max_uncompressed_size: Integer?) -> void
+        # : (untyped io, Integer data_offset, Integer compressed_size, Integer compression_method, ?max_uncompressed_size: Integer?, ?encoding: Encoding?) -> void
+        def initialize: (untyped io, Integer data_offset, Integer compressed_size, Integer compression_method, ?max_uncompressed_size: Integer?, ?encoding: Encoding?) -> void
 
         # : (?Integer? length) -> String?
         def read: (?Integer? length) -> String?
@@ -86,12 +86,12 @@ module Xlsxrb
       def each_entry: () ?{ (?) -> untyped } -> untyped
 
       # Opens an EntryStreamIO for an entry by name.
-      # : (String entry_name) -> EntryStreamIO
-      def open_entry_io: (String entry_name) -> EntryStreamIO
+      # : (String entry_name, ?encoding: (Encoding | String | false | nil)) -> EntryStreamIO
+      def open_entry_io: (String entry_name, ?encoding: Encoding | String | false | nil) -> EntryStreamIO
 
       # Yields inflated binary chunks directly from the compressed stream.
-      # : (String entry_name, ?chunk_size: Integer) ?{ (String) -> void } -> (void | Enumerator[String, void])
-      def each_entry_chunk: (untyped entry_name, ?chunk_size: untyped) ?{ (?) -> untyped } -> untyped
+      # : (String entry_name, ?chunk_size: Integer, ?encoding: (Encoding | String | false | nil)) ?{ (String) -> void } -> (void | Enumerator[String, void])
+      def each_entry_chunk: (untyped entry_name, ?chunk_size: untyped, ?encoding: untyped) ?{ (?) -> untyped } -> untyped
 
       # Returns true if the archive contains the specified entry.
       # : (String name) -> bool

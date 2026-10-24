@@ -26,6 +26,7 @@
 - Phonetic readings (`<rPh>`) are excluded from shared strings and inline strings, so cells with furigana no longer concatenate phonetic readings to display text.
 
 ### Added
+- `ZipReader#open_entry_io` and `ZipReader#each_entry_chunk` support an `encoding:` parameter and automatically resolve `.xml` and `.rels` entries to UTF-8 encoding, preventing `Encoding::CompatibilityError` in downstream text and regular expression operations.
 - `Xlsxrb::Ooxml::Utils.booleanize` and `Xlsxrb::Ooxml::Utils.camelize` helper methods for OOXML attribute serialization and name casing conversion.
 - Comprehensive round-trip contract tests in `test/contract/round_trip_fidelity_test.rb` verifying that `read -> write -> read` preserves worksheet and workbook attributes across streaming and loaded in-memory representations.
 - Alias `conditional_formatting` to `conditional_formats` on `StreamSheet` for complete API symmetry with `Elements::Worksheet`.
