@@ -31,6 +31,8 @@ module Xlsxrb
 
   OMITTED_TARGET: untyped
 
+  VALID_SHEET_STATES: untyped
+
   OFFICE_DOC_REL_TYPES: untyped
 
   NON_WORKSHEET_REL_SUFFIXES: untyped

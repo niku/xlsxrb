@@ -60,6 +60,7 @@ module Xlsxrb
   class ParseError < Error; end
 
   OMITTED_TARGET = Object.new.freeze
+  VALID_SHEET_STATES = %i[visible hidden very_hidden].freeze
   OFFICE_DOC_REL_TYPES = [
     "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
     "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument"

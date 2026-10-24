@@ -8137,7 +8137,78 @@ class WriterTest < Test::Unit::TestCase
     assert_match(%r{<c r="J1" s="2"><v>200</v></c>}, res)
   end
 
-  private
+  test "StreamWriter supports state: :hidden, :very_hidden, and hidden: true" do
+    buf = StringIO.new
+    Xlsxrb.write(buf) do |w|
+      w.sheet("Visible") { |s| s.row(["a"]) }
+      w.sheet("Hidden1", state: :hidden) { |s| s.row(["h1"]) }
+      w.sheet("Hidden2", hidden: true) { |s| s.row(["h2"]) }
+      w.sheet("VeryHidden", state: :very_hidden) { |s| s.row(["vh"]) }
+      w.sheet("ViaProps") do |s|
+        s.sheet_properties(:state, :hidden)
+        s.row(["p"])
+      end
+      w.sheet("ViaStateMethod") do |s|
+        s.state(:hidden)
+        s.row(["m"])
+      end
+    end
+
+    reread = Xlsxrb.read(buf.string)
+    assert_equal([
+                   ["Visible", :visible],
+                   ["Hidden1", :hidden],
+                   ["Hidden2", :hidden],
+                   ["VeryHidden", :very_hidden],
+                   ["ViaProps", :hidden],
+                   ["ViaStateMethod", :hidden]
+                 ], reread.sheets.map { |s| [s.name, s.state] })
+  end
+
+  test "StreamWriter and WorkbookBuilder reject invalid sheet state" do
+    assert_raise(ArgumentError) do
+      Xlsxrb.write(StringIO.new) do |w|
+        w.sheet("Invalid", state: :foo) { |s| s.row([1]) }
+      end
+    end
+
+    assert_raise(ArgumentError) do
+      Xlsxrb.write(StringIO.new) do |w|
+        w.sheet("Invalid") do |s|
+          s.sheet_properties(:state, :invalid_state)
+        end
+      end
+    end
+
+    assert_raise(ArgumentError) do
+      Xlsxrb.build do |w|
+        w.sheet("Invalid", state: :bar) { |s| s.row([1]) }
+      end
+    end
+  end
+
+  test "enforces at least one visible sheet in strict_excel_mode" do
+    assert_raise(ArgumentError) do
+      Xlsxrb.write(StringIO.new) do |w|
+        w.sheet("HiddenOnly", state: :hidden) { |s| s.row([1]) }
+      end
+    end
+
+    assert_raise(ArgumentError) do
+      Xlsxrb.build do |w|
+        w.sheet("HiddenOnly", state: :hidden) { |s| s.row([1]) }
+      end
+    end
+
+    # Allowed when strict_excel_mode is false
+    non_strict_buf = StringIO.new
+    assert_nothing_raised do
+      Xlsxrb.write(non_strict_buf, strict_excel_mode: false) do |w|
+        w.sheet("HiddenOnly", state: :hidden) { |s| s.row([1]) }
+      end
+    end
+    assert_equal(:hidden, Xlsxrb.read(non_strict_buf.string).sheets.first.state)
+  end
 
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"

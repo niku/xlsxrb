@@ -538,6 +538,18 @@ module Xlsxrb
         @writer.workbook_property(...)
       end
 
+      # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
+      #
+      # @param new_state [Symbol, nil] The new state.
+      # @return [Symbol]
+      # @api public
+      #: (?Symbol? new_state) -> Symbol
+      def state(new_state = nil)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.state(new_state)
+      end
+
       # Sets sheet properties (e.g. tab color, page setup flags).
       #
       # @example
@@ -946,7 +958,14 @@ module Xlsxrb
       raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)" if name.match?(%r{[\[\]*?/\\]})
       raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
 
-      internal_sheet_setup(name)
+      state = opts.delete(:state)
+      hidden = opts.delete(:hidden)
+      state ||= :hidden if hidden
+      state ||= :visible
+      state = state.to_sym
+      raise ArgumentError, "Invalid sheet state ':#{state}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(state)
+
+      internal_sheet_setup(name, state: state)
       opts.each { |k, v| sheet_properties(k, v) }
 
       yield WorksheetProxy.new(self, @current_sheet) if block_given?
@@ -954,11 +973,12 @@ module Xlsxrb
     end
 
     # Internal: Start or switch to a named sheet (internal helper).
-    #: (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
-    def internal_sheet_setup(name = nil)
+    #: (?String? name, ?state: Symbol) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
+    def internal_sheet_setup(name = nil, state: :visible)
       flush_current_sheet
       name ||= "Sheet#{@sheets.size + 1}"
       @current_sheet = name
+      @current_sheet_state = state
       @current_sheet_index = @sheets.size + 1
       @current_row_index = 0
       @sheet_entry_started = false
@@ -1552,6 +1572,22 @@ module Xlsxrb
       @current_shapes << shape
     end
 
+    # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
+    #
+    # @param new_state [Symbol, nil] The new state.
+    # @return [Symbol]
+    # @api public
+    #: (?Symbol? new_state) -> Symbol
+    def state(new_state = nil)
+      sheet if @current_sheet.nil?
+      if new_state
+        sheet_properties(:state, new_state)
+        @current_sheet_state
+      else
+        @current_sheet_state || :visible
+      end
+    end
+
     # Sets a sheet-level property (e.g. tab_color: "FF0000").
     #
     # @param name [Symbol] Property name.
@@ -1561,6 +1597,18 @@ module Xlsxrb
     #: (Symbol name, untyped value) -> void
     def sheet_properties(name, value)
       sheet if @current_sheet.nil?
+      sym = name.to_sym
+      if sym == :state
+        val = value.to_sym
+        raise ArgumentError, "Invalid sheet state ':#{val}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(val)
+
+        @current_sheet_state = val
+        return
+      elsif sym == :hidden
+        @current_sheet_state = value ? :hidden : :visible
+        return
+      end
+
       @current_sheet_properties[name] = value
     end
 
@@ -1840,6 +1888,8 @@ module Xlsxrb
 
       flush_current_sheet
 
+      raise ArgumentError, "Workbook must contain at least one visible sheet (Excel limitation)" if @strict_excel_mode && @sheets.none? { |s| (s.is_a?(Hash) ? s[:state] : s.state) == :visible }
+
       styles_definition = {
         fonts: @style_writer.fonts.dup,
         fills: @style_writer.fills.dup,
@@ -1956,6 +2006,7 @@ module Xlsxrb
 
       sheet_data = {
         name: @current_sheet,
+        state: @current_sheet_state || :visible,
         columns: @current_columns,
         charts: @current_charts,
         hyperlinks: @current_hyperlinks,

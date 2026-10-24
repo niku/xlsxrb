@@ -369,6 +369,14 @@ module Xlsxrb
       # : (**untyped opts) -> void
       def workbook_property: (**untyped opts) -> void
 
+      # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
+      #
+      # @param new_state [Symbol, nil] The new state.
+      # @return [Symbol]
+      # @api public
+      # : (?Symbol? new_state) -> Symbol
+      def state: (?Symbol? new_state) -> Symbol
+
       # Sets sheet properties (e.g. tab color, page setup flags).
       #
       # @example
@@ -663,8 +671,8 @@ module Xlsxrb
     def sheet: (?String? name, **untyped opts) ?{ (WorksheetProxy) -> void } -> untyped
 
     # Internal: Start or switch to a named sheet (internal helper).
-    # : (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
-    def internal_sheet_setup: (?String? name) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
+    # : (?String? name, ?state: Symbol) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
+    def internal_sheet_setup: (?String? name, ?state: Symbol) ?{ (WorksheetProxy) -> void } -> (WorksheetProxy | nil)
 
     def start_sheet_entry: () -> untyped
 
@@ -959,6 +967,14 @@ module Xlsxrb
     # @api public
     # : (**untyped opts) -> void
     def shape: (**untyped opts) -> void
+
+    # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
+    #
+    # @param new_state [Symbol, nil] The new state.
+    # @return [Symbol]
+    # @api public
+    # : (?Symbol? new_state) -> Symbol
+    def state: (?Symbol? new_state) -> Symbol
 
     # Sets a sheet-level property (e.g. tab_color: "FF0000").
     #

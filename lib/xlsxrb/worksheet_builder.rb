@@ -742,12 +742,43 @@ module Xlsxrb
 
     # Sets a sheet-level property (e.g. tab_color: "FF0000").
     #
+    # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
+    #
+    # @param new_state [Symbol, nil] The new state.
+    # @return [Symbol]
+    # @api public
+    #: (?Symbol? new_state) -> Symbol
+    def state(new_state = nil)
+      if new_state
+        val = new_state.to_sym
+        raise ArgumentError, "Invalid sheet state ':#{val}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(val)
+
+        @state = val
+      else
+        @state
+      end
+    end
+
+    # Sets a sheet-level property (e.g. tab_color: "FF0000").
+    #
     # @param name [Symbol] Property name.
     # @param value [Object] Property value.
     # @return [void]
     # @api public
     #: (Symbol name, untyped value) -> void
     def sheet_properties(name, value)
+      sym = name.to_sym
+      if sym == :state
+        val = value.to_sym
+        raise ArgumentError, "Invalid sheet state ':#{val}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(val)
+
+        @state = val
+        return
+      elsif sym == :hidden
+        @state = value ? :hidden : :visible
+        return
+      end
+
       @sheet_properties[name] = value
     end
 

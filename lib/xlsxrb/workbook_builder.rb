@@ -67,6 +67,8 @@ module Xlsxrb
       hidden = opts.delete(:hidden)
       state ||= :hidden if hidden
       state ||= :visible
+      state = state.to_sym
+      raise ArgumentError, "Invalid sheet state ':#{state}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(state)
 
       sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state)
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
@@ -244,7 +246,10 @@ module Xlsxrb
     # @api public
     #: () -> Elements::Workbook
     def build
-      raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @strict_excel_mode && @sheets.empty?
+      if @strict_excel_mode
+        raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @sheets.empty?
+        raise ArgumentError, "Workbook must contain at least one visible sheet (Excel limitation)" if @sheets.none? { |s| s.state == :visible }
+      end
 
       # Process styles from all sheets and collect style definitions
       processed_sheets, styles_definition = process_styles(@sheets)

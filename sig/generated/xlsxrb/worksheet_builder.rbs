@@ -401,6 +401,16 @@ module Xlsxrb
 
     # Sets a sheet-level property (e.g. tab_color: "FF0000").
     #
+    # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
+    #
+    # @param new_state [Symbol, nil] The new state.
+    # @return [Symbol]
+    # @api public
+    # : (?Symbol? new_state) -> Symbol
+    def state: (?Symbol? new_state) -> Symbol
+
+    # Sets a sheet-level property (e.g. tab_color: "FF0000").
+    #
     # @param name [Symbol] Property name.
     # @param value [Object] Property value.
     # @return [void]
