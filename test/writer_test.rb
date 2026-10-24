@@ -8045,6 +8045,33 @@ class WriterTest < Test::Unit::TestCase
     end
   end
 
+  test "write_data_validations serializes showDropDown and imeMode" do
+    buf = StringIO.new
+    ws_writer = Xlsxrb::Ooxml::WorksheetWriter.new(buf)
+    rules = [
+      { sqref: "A1:A10", type: "custom", formula1: "LEN(A1)<=10", show_drop_down: true, ime_mode: "hiragana" }
+    ]
+    ws_writer.send(:write_data_validations, rules)
+    xml = buf.string
+    assert_match(/showDropDown="1"/, xml)
+    assert_match(/imeMode="hiragana"/, xml)
+
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "dv.xlsx")
+      Xlsxrb.write(path) do |w|
+        w.sheet("S") do |s|
+          s.row(["Hello"])
+          s.validate_data("A1:A10", type: "custom", formula1: "LEN(A1)<=10", show_drop_down: true, ime_mode: "off")
+        end
+      end
+
+      wb = Xlsxrb.read(path)
+      dv = wb.sheet(0).data_validations.first
+      assert_equal(true, dv[:show_drop_down])
+      assert_equal("off", dv[:ime_mode])
+    end
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

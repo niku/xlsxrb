@@ -1170,6 +1170,8 @@ module Xlsxrb
           dv_attrs[:error] = dv[:error] if dv[:error]
           dv_attrs[:promptTitle] = dv[:prompt_title] if dv[:prompt_title]
           dv_attrs[:prompt] = dv[:prompt] if dv[:prompt]
+          dv_attrs[:showDropDown] = "1" if dv[:show_drop_down]
+          dv_attrs[:imeMode] = dv[:ime_mode].to_s if dv[:ime_mode]
 
           has_formulas = dv[:formula1] || dv[:formula2]
           if has_formulas
