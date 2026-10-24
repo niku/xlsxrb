@@ -130,7 +130,7 @@ xlsxrb is a pure Ruby library for reading and writing Excel spreadsheets with st
 
 ### 8. Concurrency & Ractor Safety Agent (`concurrency-safety`)
 - Target Quality Attribute: Concurrency Safety & Ractor Isolation
-- Mission: Guarantee zero global mutable state, 100% constant shareability across the `Xlsxrb` namespace, and isolated, deterministic parallel execution across threads and Ruby 4.0+ Ractors.
+- Mission: Enforce zero global mutable state, 100% constant shareability across the `Xlsxrb` namespace, and isolated, deterministic parallel execution across threads and Ruby 4.0+ Ractors.
 - Scope: Constant freezing, Ractor shareability scanning, parallel multi-worker write/read/modify pipelines.
 - Direct Commands:
   ```bash
@@ -219,13 +219,13 @@ When any LLM-powered coding assistant or autonomous agent works on this reposito
 
 ### Detailed Role Playbooks
 Reference playbooks detailing analysis techniques and workflows are available at:
-- Test Rigor: [`.agents/skills/test-rigor/SKILL.md`](file:///workspaces/xlsxrb/.agents/skills/test-rigor/SKILL.md)
-- Type Safety: [`.agents/skills/type-safety/SKILL.md`](file:///workspaces/xlsxrb/.agents/skills/type-safety/SKILL.md)
-- Specification Compliance: [`.agents/skills/spec-compliance/SKILL.md`](file:///workspaces/xlsxrb/.agents/skills/spec-compliance/SKILL.md)
-- Memory Stability: [`.agents/skills/memory-stability/SKILL.md`](file:///workspaces/xlsxrb/.agents/skills/memory-stability/SKILL.md)
-- Throughput & Complexity: [`.agents/skills/throughput-performance/SKILL.md`](file:///workspaces/xlsxrb/.agents/skills/throughput-performance/SKILL.md)
-- Security & Resilience: [`.agents/skills/security-resilience/SKILL.md`](file:///workspaces/xlsxrb/.agents/skills/security-resilience/SKILL.md)
-- API Symmetry & Contract: [`.agents/skills/api-contract/SKILL.md`](file:///workspaces/xlsxrb/.agents/skills/api-contract/SKILL.md)
-- Concurrency & Ractor Safety: [`.agents/skills/concurrency-safety/SKILL.md`](file:///workspaces/xlsxrb/.agents/skills/concurrency-safety/SKILL.md)
-- Visual Fidelity & Wasm: [`.agents/skills/visual-fidelity/SKILL.md`](file:///workspaces/xlsxrb/.agents/skills/visual-fidelity/SKILL.md)
-- Quality & Language Policies: [`.agents/rules/qa_agents.md`](file:///workspaces/xlsxrb/.agents/rules/qa_agents.md)
+- Test Rigor: [`.agents/skills/test-rigor/SKILL.md`](../.agents/skills/test-rigor/SKILL.md)
+- Type Safety: [`.agents/skills/type-safety/SKILL.md`](../.agents/skills/type-safety/SKILL.md)
+- Specification Compliance: [`.agents/skills/spec-compliance/SKILL.md`](../.agents/skills/spec-compliance/SKILL.md)
+- Memory Stability: [`.agents/skills/memory-stability/SKILL.md`](../.agents/skills/memory-stability/SKILL.md)
+- Throughput & Complexity: [`.agents/skills/throughput-performance/SKILL.md`](../.agents/skills/throughput-performance/SKILL.md)
+- Security & Resilience: [`.agents/skills/security-resilience/SKILL.md`](../.agents/skills/security-resilience/SKILL.md)
+- API Symmetry & Contract: [`.agents/skills/api-contract/SKILL.md`](../.agents/skills/api-contract/SKILL.md)
+- Concurrency & Ractor Safety: [`.agents/skills/concurrency-safety/SKILL.md`](../.agents/skills/concurrency-safety/SKILL.md)
+- Visual Fidelity & Wasm: [`.agents/skills/visual-fidelity/SKILL.md`](../.agents/skills/visual-fidelity/SKILL.md)
+- Quality & Language Policies: [`.agents/rules/qa_agents.md`](../.agents/rules/qa_agents.md)
