@@ -8,6 +8,7 @@
 - Strict numeric cell values: an explicit numeric cell (`t="n"`) with an invalid number raises `Xlsxrb::ParseError`, while an empty `<v>` reads as `nil` instead of `0`, exponent notation such as `1E-3` reads as a Float, and non-numeric values in cells without `t` fall back to their string payload. Inline string and formula string cells without text read as `nil`, and `t="d"` cells read as their ISO 8601 text.
 
 ### Fixed
+- Resolve boolean (`t="b"`) formula `cached_value` payloads (`"1"`, `"0"`, `"true"`, `"false"`) to `true` and `false` in `Ooxml::Reader::WorksheetListener#store_cell_value`, matching streaming and DOM cell parsers.
 - Forward `:type`, `:ref`, and `:shared_index` (`:si`) formula attributes when building cells from a formula Hash (`{ formula: ..., type: :array, ref: ... }`) in `WorksheetBuilder#row`, `Xlsxrb.build_raw_cell`, and `Xlsxrb.build_raw_cell_from_value`.
 - Unify `Ooxml::Reader#extract_zip_entry` and `Ooxml::Reader#entry_names` with `Ooxml::ZipReader` to support case-insensitive OPC part name resolution (per ECMA-376 Part 2 §9.1.1.2), ZIP64 archives, and data-descriptor streams uniformly across all reader APIs.
 - Exclude non-worksheet relationship parts (`chartsheet`, `dialogsheet`, `macrosheet`, `xlMacrosheet`, `xlIntlMacrosheet`) and `xl/chartsheets/`, `xl/dialogsheets/`, `xl/macrosheets/` targets from standard worksheet enumeration in `Xlsxrb.read`, `Xlsxrb.modify`, and `Ooxml::Reader#discover_sheets`.

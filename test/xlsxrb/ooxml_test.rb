@@ -1293,4 +1293,49 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(1, wb2.active_tab)
     assert_true(wb2.full_calc_on_load?)
   end
+
+  test "WorksheetListener and Xlsxrb.read preserve boolean true and false on t='b' cells and formula cached values" do
+    bytes = Xlsxrb.write do |w|
+      w.sheet("Booleans") do |s|
+        s.row([
+                true,
+                false,
+                Xlsxrb.formula("1=1", cached_value: true),
+                Xlsxrb.formula("1=2", cached_value: false)
+              ])
+      end
+    end
+
+    Dir.mktmpdir do |dir|
+      xlsx_path = File.join(dir, "booleans.xlsx")
+      File.binwrite(xlsx_path, bytes)
+      reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
+      cells = reader.cells
+      assert_equal(true, cells["A1"])
+      assert_equal(false, cells["B1"])
+      assert_instance_of(Xlsxrb::Elements::Formula, cells["C1"])
+      assert_equal(true, cells["C1"].cached_value)
+      assert_instance_of(Xlsxrb::Elements::Formula, cells["D1"])
+      assert_equal(false, cells["D1"].cached_value)
+    end
+
+    wb = Xlsxrb.read(bytes).load
+    sheet = wb.sheets.first
+    assert_equal(true, sheet["A1"].value)
+    assert_equal("b", sheet["A1"][:type])
+    assert_equal(false, sheet["B1"].value)
+    assert_equal("b", sheet["B1"][:type])
+    assert_equal(true, sheet["C1"].value)
+    assert_equal("b", sheet["C1"][:type])
+    assert_equal(false, sheet["D1"].value)
+    assert_equal("b", sheet["D1"][:type])
+
+    roundtrip_bytes = Xlsxrb.write(wb)
+    wb2 = Xlsxrb.read(roundtrip_bytes).load
+    sheet2 = wb2.sheets.first
+    assert_equal(true, sheet2["A1"].value)
+    assert_equal(false, sheet2["B1"].value)
+    assert_equal(true, sheet2["C1"].value)
+    assert_equal(false, sheet2["D1"].value)
+  end
 end

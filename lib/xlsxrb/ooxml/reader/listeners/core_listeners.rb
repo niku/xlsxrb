@@ -330,7 +330,14 @@ module Xlsxrb
           return if @current_cell_ref.nil?
 
           unless @formula_buffer.empty? && @formula_type.nil?
-            cached = @value_buffer.empty? ? nil : @value_buffer.dup
+            cached = if @value_buffer.empty?
+                       nil
+                     elsif @current_cell_type == "b"
+                       v = @value_buffer.strip
+                       v == "1" || v.casecmp?("true")
+                     else
+                       @value_buffer.dup
+                     end
             f_type = { "shared" => :shared, "array" => :array, "dataTable" => :data_table }[@formula_type]
             @cells[@current_cell_ref] = Xlsxrb::Elements::Formula.new(
               expression: @formula_buffer.dup,
