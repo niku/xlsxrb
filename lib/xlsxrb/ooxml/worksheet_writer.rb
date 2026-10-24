@@ -181,22 +181,40 @@ module Xlsxrb
               formula_type = formula.type
               formula_ref = formula.ref
               formula_si = formula.shared_index
-              xml_val = formula.cached_value.nil? ? (value || nil) : formula.cached_value
+              xml_val = formula.cached_value.nil? ? value : formula.cached_value
             elsif formula.is_a?(Hash)
               formula_expr = formula[:formula] || formula[:expression]
               formula_ca = formula[:calculate_always]
               formula_type = formula[:type]
               formula_ref = formula[:ref]
               formula_si = formula[:si] || formula[:shared_index]
-              xml_val = formula[:value] || formula[:cached_value] || value || nil
+              xml_val = if formula.key?(:value)
+                          formula[:value]
+                        elsif formula.key?(:cached_value)
+                          formula[:cached_value]
+                        else
+                          value
+                        end
             else
               formula_expr = formula
-              xml_val = value || nil
+              xml_val = value
             end
             formula_expr = formula_expr[1..] if formula_expr.is_a?(String) && formula_expr.start_with?("=")
           end
 
-          if !formula_expr && !type
+          if formula_expr
+            case xml_val
+            when true
+              type = "b"
+              xml_val = "1"
+            when false
+              type = "b"
+              xml_val = "0"
+            when Xlsxrb::Elements::CellError
+              type = "e"
+              xml_val = xml_val.code
+            end
+          elsif !type
             case value
             when String
               if sst_index && (idx = sst_index[value])
@@ -288,12 +306,12 @@ module Xlsxrb
             end
             f_attrs << ' ca="1"' if formula_ca
             buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
-            if xml_val
+            if xml_val.nil?
+              buf << "<v>0</v></c>"
+            else
               v_str = xml_val.to_s
               v_str = v_str.dup.force_encoding(Encoding::UTF_8) if v_str.encoding == Encoding::BINARY
               buf << "<v>" << v_str << "</v></c>"
-            else
-              buf << "<v>0</v></c>"
             end
           else
             v_str = xml_val.to_s
@@ -383,8 +401,23 @@ module Xlsxrb
                 end
               end
               f_attrs << ' ca="1"' if value.calculate_always
-              v_val = value.cached_value.nil? ? 0 : value.cached_value
-              buf << "<c r=\"#{col_ref}#{row_num_str}\"><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{v_val}</v></c>"
+              c_type = ""
+              case value.cached_value
+              when true
+                c_type = ' t="b"'
+                v_val = "1"
+              when false
+                c_type = ' t="b"'
+                v_val = "0"
+              when Xlsxrb::Elements::CellError
+                c_type = ' t="e"'
+                v_val = value.cached_value.code
+              when nil
+                v_val = 0
+              else
+                v_val = value.cached_value
+              end
+              buf << "<c r=\"#{col_ref}#{row_num_str}\"#{c_type}><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{v_val}</v></c>"
             when Hash
               if value.key?(:formula)
                 formula_expr = value[:formula] || value[:expression]
@@ -402,8 +435,26 @@ module Xlsxrb
                   end
                 end
                 f_attrs << ' ca="1"' if value[:calculate_always]
-                xml_val = value[:value] || value[:cached_value] || 0
-                buf << "<c r=\"#{col_ref}#{row_num_str}\"><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{xml_val}</v></c>"
+                xml_val = if value.key?(:value)
+                            value[:value]
+                          elsif value.key?(:cached_value)
+                            value[:cached_value]
+                          else
+                            0
+                          end
+                c_type = ""
+                case xml_val
+                when true
+                  c_type = ' t="b"'
+                  xml_val = "1"
+                when false
+                  c_type = ' t="b"'
+                  xml_val = "0"
+                when Xlsxrb::Elements::CellError
+                  c_type = ' t="e"'
+                  xml_val = xml_val.code
+                end
+                buf << "<c r=\"#{col_ref}#{row_num_str}\"#{c_type}><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{xml_val}</v></c>"
               end
             when Xlsxrb::Elements::CellError
               buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"e\"><v>#{value.code}</v></c>"
@@ -551,7 +602,11 @@ module Xlsxrb
               formula_type = value[:type]
               formula_ref = value[:ref]
               formula_si = value[:si] || value[:shared_index]
-              xml_val = value[:value] || value[:cached_value]
+              xml_val = if value.key?(:value)
+                          value[:value]
+                        elsif value.key?(:cached_value)
+                          value[:cached_value]
+                        end
               case xml_val
               when String
                 type = "str"
@@ -614,10 +669,10 @@ module Xlsxrb
             end
             f_attrs << ' ca="1"' if formula_ca
             buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
-            if xml_val
-              buf << "<v>" << xml_val.to_s << "</v></c>"
-            else
+            if xml_val.nil?
               buf << "<v>0</v></c>"
+            else
+              buf << "<v>" << xml_val.to_s << "</v></c>"
             end
           elsif type == "inlineStr"
             buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
@@ -1288,8 +1343,14 @@ module Xlsxrb
 
         value = cell[:value]
         formula = cell[:formula]
-        # For formula cells with cached values, don't infer type from value
-        type = formula ? cell[:type] : (cell[:type] || cell_type(value))
+        # For formula cells with cached values, infer type for booleans and strings
+        type = cell[:type] || if formula
+                                case value
+                                when true, false then "b"
+                                end
+                              else
+                                cell_type(value)
+                              end
         attrs[:t] = type if type
         col_idx = cell[:column_index]
         col_style = @column_styles && col_idx ? @column_styles[col_idx] : nil

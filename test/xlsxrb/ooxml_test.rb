@@ -981,4 +981,67 @@ class OoxmlTest < Test::Unit::TestCase
 
     assert_equal ["部門1"], listener.strings
   end
+
+  test "worksheet_writer correctly formats formula cells with boolean, zero, string, and nil cached_value" do
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.start
+
+    formula_false = Xlsxrb::Elements::Formula.new(expression: "A1>10", cached_value: false)
+    formula_true = Xlsxrb::Elements::Formula.new(expression: "A1>5", cached_value: true)
+    formula_zero = Xlsxrb::Elements::Formula.new(expression: "SUM(B1:B5)", cached_value: 0)
+    formula_str = Xlsxrb::Elements::Formula.new(expression: "CONCAT(A1,B1)", cached_value: "res")
+    formula_nil = Xlsxrb::Elements::Formula.new(expression: "A1+1")
+
+    writer.write_row(0, [
+                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, formula: formula_false),
+                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, formula: formula_true),
+                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 2, formula: formula_zero),
+                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 3, formula: formula_str),
+                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 4, formula: formula_nil)
+                     ])
+
+    writer.write_row_values(1, [
+                              formula_false,
+                              formula_true,
+                              formula_zero,
+                              { formula: "A1>10", value: false },
+                              { formula: "A1>5", value: true },
+                              { formula: "SUM(A1:A5)", value: 0 }
+                            ])
+    writer.finish
+
+    xml = io.string
+    # Row 1 (write_row)
+    assert_include(xml, '<c r="A1" t="b"><f>A1&gt;10</f><v>0</v></c>')
+    assert_include(xml, '<c r="B1" t="b"><f>A1&gt;5</f><v>1</v></c>')
+    assert_include(xml, '<c r="C1"><f>SUM(B1:B5)</f><v>0</v></c>')
+    assert_include(xml, '<c r="D1"><f>CONCAT(A1,B1)</f><v>res</v></c>')
+    assert_include(xml, '<c r="E1"><f>A1+1</f><v>0</v></c>')
+
+    # Row 2 (write_row_values)
+    assert_include(xml, '<c r="A2" t="b"><f>A1&gt;10</f><v>0</v></c>')
+    assert_include(xml, '<c r="B2" t="b"><f>A1&gt;5</f><v>1</v></c>')
+    assert_include(xml, '<c r="C2"><f>SUM(B1:B5)</f><v>0</v></c>')
+    assert_include(xml, '<c r="D2" t="b"><f>A1&gt;10</f><v>0</v></c>')
+    assert_include(xml, '<c r="E2" t="b"><f>A1&gt;5</f><v>1</v></c>')
+    assert_include(xml, '<c r="F2"><f>SUM(A1:A5)</f><v>0</v></c>')
+  end
+
+  test "build_raw_cell_from_value retains false and zero cached_values with proper type" do
+    f_false = Xlsxrb::Elements::Formula.new(expression: "A1>10", cached_value: false)
+    f_zero = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A5)", cached_value: 0)
+    sst = []
+    sst_index = {}
+
+    cell_false = Xlsxrb.build_raw_cell_from_value(0, 0, f_false, sst, sst_index)
+    assert_equal(false, cell_false[:value])
+    assert_equal("b", cell_false[:type])
+    assert_equal("A1>10", cell_false[:formula])
+
+    cell_zero = Xlsxrb.build_raw_cell_from_value(0, 1, f_zero, sst, sst_index)
+    assert_equal(0, cell_zero[:value])
+    assert_nil(cell_zero[:type])
+    assert_equal("SUM(A1:A5)", cell_zero[:formula])
+  end
 end

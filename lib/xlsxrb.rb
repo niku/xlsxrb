@@ -1558,10 +1558,18 @@ module Xlsxrb
         if f.is_a?(Elements::Formula)
           result[:formula] = f.expression
           result[:formula_ca] = true if f.calculate_always
-          if f.cached_value
+          unless f.cached_value.nil?
             # Cached value is written as-is (not through SST)
             result[:value] = f.cached_value
-            result.delete(:type) # Ensure no type is set; cached values are plain text in <v>
+            case f.cached_value
+            when true, false
+              result[:type] = "b"
+            when Elements::CellError
+              result[:type] = "e"
+              result[:value] = f.cached_value.code
+            else
+              result.delete(:type) # Ensure no type is set; cached values are plain text in <v>
+            end
             # simplecov:enable
           end
         else
@@ -2090,7 +2098,17 @@ module Xlsxrb
     when Elements::Formula
       result[:formula] = value.expression
       result[:formula_ca] = true if value.calculate_always
-      result[:value] = value.cached_value if value.cached_value
+      unless value.cached_value.nil?
+        cv = value.cached_value
+        result[:value] = cv
+        case cv
+        when true, false
+          result[:type] = "b"
+        when Xlsxrb::Elements::CellError
+          result[:type] = "e"
+          result[:value] = cv.code
+        end
+      end
     when String, Xlsxrb::Elements::RichText
       idx = sst_index[value] ||= begin
         sst << value
