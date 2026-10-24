@@ -1002,6 +1002,12 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal "BoldNormal", text
   end
 
+  test "extract_inline_text handles UTF-8 strings with multibyte characters without byte drift" do
+    is_xml = "<is><r><t>日本語</t></r><r><t>テスト</t></r></is>"
+    text = Xlsxrb::Ooxml::WorksheetParser.send(:extract_inline_text, is_xml, 0, is_xml.bytesize)
+    assert_equal "日本語テスト", text
+  end
+
   test "WorksheetListener excludes phonetic readings and ignores empty self-closing string cells" do
     xml = <<~XML
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">

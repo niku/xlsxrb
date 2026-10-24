@@ -431,6 +431,7 @@ module Xlsxrb
       private_class_method :fast_scan_cells_events
 
       def self.extract_inline_text(xml, from, to)
+        xml = xml.b
         result = +""
         pos = from
         while pos < to
@@ -490,6 +491,9 @@ module Xlsxrb
 
       private_class_method :extract_inline_text
 
+      STRICT_NUMERIC_RE = /\A[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\z/
+      private_constant :STRICT_NUMERIC_RE
+
       # Resolves a cell value from its type attribute and parsed XML content (<v> or <is>).
       # Consolidates parsing across fast-scan direct, row values, events, and listener paths.
       #: (String? type, String? raw_value, String? is_xml, Array[String | Elements::RichText | untyped] shared_strings) -> untyped
@@ -517,9 +521,13 @@ module Xlsxrb
             text = raw_value.strip
             return nil if text.empty?
 
-            Integer(text, 10, exception: false) ||
-              Float(text, exception: false) ||
+            if text.match?(STRICT_NUMERIC_RE)
+              Integer(text, 10, exception: false) ||
+                Float(text, exception: false) ||
+                normalize_text(raw_value)
+            else
               normalize_text(raw_value)
+            end
           end
         end
       end
@@ -530,7 +538,7 @@ module Xlsxrb
 
       private_class_method :resolve_fast_value
 
-      # Converts the text of a numeric cell (<c t="n"> or no t attribute) into an Integer or Float.
+      # Converts the text of a numeric cell (<c t="n">) into an Integer or Float.
       # An empty <v></v> carries no value and yields nil. Text that is not an xsd:double
       # (e.g. "abc") cannot come from a conforming producer and raises ParseError
       # instead of silently becoming 0.
@@ -538,6 +546,8 @@ module Xlsxrb
       def self.numeric_cell_value(raw)
         text = raw.strip
         return nil if text.empty?
+
+        raise(ParseError, "invalid numeric cell value: #{text.inspect}") unless text.match?(STRICT_NUMERIC_RE)
 
         Integer(text, 10, exception: false) || Float(text, exception: false) ||
           raise(ParseError, "invalid numeric cell value: #{text.inspect}")
@@ -907,9 +917,9 @@ module Xlsxrb
 
       CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*(?<!/))>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\b([^>]*)/?>}m
       CELL_GENERIC_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*?)(?:>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|/>)}m
-      ATTR_R = /r="([A-Za-z0-9]+)"/
-      ATTR_T = /t="([a-zA-Z]+)"/
-      ATTR_S = /s="(\d+)"/
+      ATTR_R = /\br="([A-Za-z0-9]+)"/
+      ATTR_T = /\bt="([a-zA-Z]+)"/
+      ATTR_S = /\bs="(\d+)"/
 
       def self.fast_parse_cells_direct(xml, from, to, shared_strings, row_source, prefix = "")
         cells = []

@@ -47,6 +47,8 @@ module Xlsxrb
 
       def self.extract_inline_text: (untyped xml, untyped from, untyped to) -> untyped
 
+      STRICT_NUMERIC_RE: ::Regexp
+
       # Resolves a cell value from its type attribute and parsed XML content (<v> or <is>).
       # Consolidates parsing across fast-scan direct, row values, events, and listener paths.
       # : (String? type, String? raw_value, String? is_xml, Array[String | Elements::RichText | untyped] shared_strings) -> untyped
@@ -54,7 +56,7 @@ module Xlsxrb
 
       def self.resolve_fast_value: (untyped raw, untyped type, untyped shared_strings) -> untyped
 
-      # Converts the text of a numeric cell (<c t="n"> or no t attribute) into an Integer or Float.
+      # Converts the text of a numeric cell (<c t="n">) into an Integer or Float.
       # An empty <v></v> carries no value and yields nil. Text that is not an xsd:double
       # (e.g. "abc") cannot come from a conforming producer and raises ParseError
       # instead of silently becoming 0.
