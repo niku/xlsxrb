@@ -154,6 +154,21 @@ module Xlsxrb
         @dimension ||= compute_dimension
       end
 
+      # Returns the worksheet tab color specification, or nil if not set.
+      #
+      # @return [String, Hash, nil] RGB hex string (e.g. "FFFF0000") or color hash (e.g. { theme: 3, tint: -0.5 }).
+      # @api public
+      #: () -> (String | Hash[Symbol, untyped])?
+      def tab_color
+        props = sheet_properties
+        return props[:tab_color] if props[:tab_color]
+        return { theme: props[:tab_color_theme], tint: props[:tab_color_tint] } if props[:tab_color_theme]
+        return { indexed: props[:tab_color_indexed] } if props[:tab_color_indexed]
+        return { auto: true } if props[:tab_color_auto]
+
+        nil
+      end
+
       # Iterate over rows in the worksheet.
       #
       # @example

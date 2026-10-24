@@ -740,8 +740,6 @@ module Xlsxrb
       @shapes << shape
     end
 
-    # Sets a sheet-level property (e.g. tab_color: "FF0000").
-    #
     # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
     #
     # @param new_state [Symbol, nil] The new state.
@@ -758,6 +756,32 @@ module Xlsxrb
         @state
       end
     end
+
+    # Gets or sets the worksheet tab color.
+    #
+    # @overload tab_color()
+    #   Returns the current tab color specification.
+    #   @return [String, Hash, nil]
+    # @overload tab_color(spec, **opts)
+    #   Sets the tab color using an RGB hex string or color options.
+    #   @param spec [String, Hash, Symbol, nil] RGB hex string (e.g. "FF0000"), theme/indexed hash, or nil.
+    #   @param opts [Hash] Color keyword arguments (e.g. theme: 1, tint: 0.5, indexed: 9, auto: true).
+    #   @return [String, Hash, nil]
+    # @api public
+    #: (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
+    def tab_color(spec = nil, **opts)
+      if spec.nil? && opts.empty?
+        @sheet_properties[:tab_color]
+      else
+        color = if opts.empty?
+                  spec
+                else
+                  spec.is_a?(Hash) ? spec.merge(opts) : opts
+                end
+        @sheet_properties[:tab_color] = color
+      end
+    end
+    alias tab_color= tab_color
 
     # Sets a sheet-level property (e.g. tab_color: "FF0000").
     #

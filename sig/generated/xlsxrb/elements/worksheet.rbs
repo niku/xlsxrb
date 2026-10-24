@@ -171,6 +171,13 @@ module Xlsxrb
       # : () -> String?
       def dimension: () -> String?
 
+      # Returns the worksheet tab color specification, or nil if not set.
+      #
+      # @return [String, Hash, nil] RGB hex string (e.g. "FFFF0000") or color hash (e.g. { theme: 3, tint: -0.5 }).
+      # @api public
+      # : () -> (String | Hash[Symbol, untyped])?
+      def tab_color: () -> (String | Hash[Symbol, untyped])?
+
       # Iterate over rows in the worksheet.
       #
       # @example

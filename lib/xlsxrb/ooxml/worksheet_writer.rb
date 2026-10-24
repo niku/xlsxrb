@@ -771,10 +771,11 @@ module Xlsxrb
 
       def write_sheet_properties(props)
         attrs = {}
-        has_children = props[:tab_color] || !props[:fit_to_page].nil? || !props[:outline_below].nil? || !props[:outline_right].nil?
+        tc_attrs = build_tab_color_attrs(props)
+        has_children = tc_attrs || !props[:fit_to_page].nil? || !props[:outline_below].nil? || !props[:outline_right].nil?
         if has_children
           @builder.open_tag("sheetPr", attrs)
-          @builder.empty_tag("tabColor", { rgb: props[:tab_color] }) if props[:tab_color]
+          @builder.empty_tag("tabColor", tc_attrs) if tc_attrs
 
           outline_attrs = {}
           outline_attrs[:summaryBelow] = props[:outline_below] ? "1" : "0" unless props[:outline_below].nil?
@@ -788,6 +789,29 @@ module Xlsxrb
           @builder.close_tag("sheetPr")
         else
           @builder.empty_tag("sheetPr", attrs) unless attrs.empty?
+        end
+      end
+
+      def build_tab_color_attrs(props)
+        tc = props[:tab_color]
+        if tc.is_a?(Hash)
+          attrs = {}
+          attrs[:auto] = "1" if tc[:auto]
+          attrs[:indexed] = tc[:indexed].to_s if tc[:indexed]
+          attrs[:rgb] = tc[:rgb].to_s.delete_prefix("#") if tc[:rgb]
+          attrs[:theme] = tc[:theme].to_s if tc[:theme]
+          attrs[:tint] = tc[:tint].to_s if tc[:tint]
+          attrs.empty? ? nil : attrs
+        elsif tc.is_a?(String) || tc.is_a?(Symbol)
+          { rgb: tc.to_s.delete_prefix("#") }
+        elsif props[:tab_color_theme]
+          attrs = { theme: props[:tab_color_theme].to_s }
+          attrs[:tint] = props[:tab_color_tint].to_s if props[:tab_color_tint]
+          attrs
+        elsif props[:tab_color_indexed]
+          { indexed: props[:tab_color_indexed].to_s }
+        elsif props[:tab_color_auto]
+          { auto: "1" }
         end
       end
 

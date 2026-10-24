@@ -2292,8 +2292,17 @@ module Xlsxrb
           sp_attrs << 'published="0"' if sheet_props[:published] == false
           sp_attrs << 'enableFormatConditionsCalculation="0"' if sheet_props[:enable_format_conditions_calculation] == false
           sp_children = []
-          if sheet_props[:tab_color]
-            sp_children << %(<tabColor rgb="#{sheet_props[:tab_color]}"/>)
+          tc = sheet_props[:tab_color]
+          if tc.is_a?(Hash)
+            tc_attrs = []
+            tc_attrs << 'auto="1"' if tc[:auto]
+            tc_attrs << %(indexed="#{tc[:indexed]}") if tc[:indexed]
+            tc_attrs << %(rgb="#{tc[:rgb].to_s.delete_prefix("#")}") if tc[:rgb]
+            tc_attrs << %(theme="#{tc[:theme]}") if tc[:theme]
+            tc_attrs << %(tint="#{tc[:tint]}") if tc[:tint]
+            sp_children << "<tabColor #{tc_attrs.join(" ")}/>" unless tc_attrs.empty?
+          elsif tc
+            sp_children << %(<tabColor rgb="#{tc.to_s.delete_prefix("#")}"/>)
           elsif sheet_props[:tab_color_theme]
             tc_attrs = [%(theme="#{sheet_props[:tab_color_theme]}")]
             tc_attrs << %(tint="#{sheet_props[:tab_color_tint]}") if sheet_props[:tab_color_tint]

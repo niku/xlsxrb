@@ -8210,6 +8210,66 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(:hidden, Xlsxrb.read(non_strict_buf.string).sheets.first.state)
   end
 
+  test "WorksheetBuilder and StreamWriter support tab_color with rgb, theme, indexed, and auto" do
+    buf = StringIO.new
+    Xlsxrb.write(buf) do |w|
+      w.sheet("RGB1", tab_color: "#FF1122") { |s| s.row([1]) }
+      w.sheet("RGB2") do |s|
+        s.tab_color = "00AAFF"
+        s.row([2])
+      end
+      w.sheet("Theme") do |s|
+        s.tab_color(theme: 5, tint: 0.4)
+        s.row([3])
+      end
+      w.sheet("Indexed") do |s|
+        s.tab_color(indexed: 12)
+        s.row([4])
+      end
+      w.sheet("Auto") do |s|
+        s.tab_color(auto: true)
+        s.row([5])
+      end
+    end
+
+    reread = Xlsxrb.read(buf.string)
+    assert_equal("FF1122", reread.sheets[0].tab_color)
+    assert_equal("00AAFF", reread.sheets[1].tab_color)
+    assert_equal(5, reread.sheets[2].tab_color[:theme])
+    assert_in_delta(0.4, reread.sheets[2].tab_color[:tint], 0.001)
+    assert_equal({ indexed: 12 }, reread.sheets[3].tab_color)
+    assert_equal({ auto: true }, reread.sheets[4].tab_color)
+
+    # Test via streaming reader (StreamSheet)
+    streaming_colors = []
+    Xlsxrb.stream(buf.string) do |s|
+      streaming_colors << [s.name, s.tab_color]
+    end
+    assert_equal("FF1122", streaming_colors[0][1])
+    assert_equal("00AAFF", streaming_colors[1][1])
+    assert_equal(5, streaming_colors[2][1][:theme])
+    assert_in_delta(0.4, streaming_colors[2][1][:tint], 0.001)
+    assert_equal({ indexed: 12 }, streaming_colors[3][1])
+    assert_equal({ auto: true }, streaming_colors[4][1])
+
+    # Also test WorkbookBuilder (in-memory DOM write)
+    wb = Xlsxrb.build do |b|
+      b.sheet("RGB_DOM") do |s|
+        s.tab_color = "FFAABB"
+        s.row([10])
+      end
+      b.sheet("Theme_DOM") do |s|
+        s.tab_color(theme: 2, tint: -0.3)
+        s.row([20])
+      end
+    end
+    dom_xlsx = Xlsxrb.write(wb)
+    reread_dom = Xlsxrb.read(dom_xlsx)
+    assert_equal("FFAABB", reread_dom.sheets[0].tab_color)
+    assert_equal(2, reread_dom.sheets[1].tab_color[:theme])
+    assert_in_delta(-0.3, reread_dom.sheets[1].tab_color[:tint], 0.001)
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

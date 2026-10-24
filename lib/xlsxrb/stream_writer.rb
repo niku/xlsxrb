@@ -666,6 +666,20 @@ module Xlsxrb
         @writer.state(new_state)
       end
 
+      # Gets or sets the tab color of this worksheet.
+      #
+      # @param spec [String, Hash, Symbol, nil] Tab color hex string or hash options.
+      # @param opts [Hash] Color keyword arguments (e.g. theme: 1, tint: 0.5).
+      # @return [String, Hash, nil]
+      # @api public
+      #: (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
+      def tab_color(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.tab_color(...)
+      end
+      alias tab_color= tab_color
+
       # Sets sheet properties (e.g. tab color, page setup flags).
       #
       # @example
@@ -1708,6 +1722,28 @@ module Xlsxrb
         @current_sheet_state || :visible
       end
     end
+
+    # Gets or sets the tab color of the current worksheet.
+    #
+    # @param spec [String, Hash, Symbol, nil] Tab color hex string or hash options.
+    # @param opts [Hash] Color keyword arguments (e.g. theme: 1, tint: 0.5).
+    # @return [String, Hash, nil]
+    # @api public
+    #: (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
+    def tab_color(spec = nil, **opts)
+      sheet if @current_sheet.nil?
+      if spec.nil? && opts.empty?
+        @current_sheet_properties[:tab_color]
+      else
+        color = if opts.empty?
+                  spec
+                else
+                  spec.is_a?(Hash) ? spec.merge(opts) : opts
+                end
+        @current_sheet_properties[:tab_color] = color
+      end
+    end
+    alias tab_color= tab_color
 
     # Sets a sheet-level property (e.g. tab_color: "FF0000").
     #

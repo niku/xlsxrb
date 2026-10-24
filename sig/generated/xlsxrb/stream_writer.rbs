@@ -456,6 +456,17 @@ module Xlsxrb
       # : (?Symbol? new_state) -> Symbol
       def state: (?Symbol? new_state) -> Symbol
 
+      # Gets or sets the tab color of this worksheet.
+      #
+      # @param spec [String, Hash, Symbol, nil] Tab color hex string or hash options.
+      # @param opts [Hash] Color keyword arguments (e.g. theme: 1, tint: 0.5).
+      # @return [String, Hash, nil]
+      # @api public
+      # : (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
+      def tab_color: (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
+
+      alias tab_color= tab_color
+
       # Sets sheet properties (e.g. tab color, page setup flags).
       #
       # @example
@@ -1054,6 +1065,17 @@ module Xlsxrb
     # @api public
     # : (?Symbol? new_state) -> Symbol
     def state: (?Symbol? new_state) -> Symbol
+
+    # Gets or sets the tab color of the current worksheet.
+    #
+    # @param spec [String, Hash, Symbol, nil] Tab color hex string or hash options.
+    # @param opts [Hash] Color keyword arguments (e.g. theme: 1, tint: 0.5).
+    # @return [String, Hash, nil]
+    # @api public
+    # : (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
+    def tab_color: (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
+
+    alias tab_color= tab_color
 
     # Sets a sheet-level property (e.g. tab_color: "FF0000").
     #

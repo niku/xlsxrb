@@ -3,6 +3,7 @@
 ### Added
 - Support sheet visibility states (`state:` `:visible`, `:hidden`, `:very_hidden`, and `hidden: true`) across `StreamWriter#sheet`, `WorksheetProxy`, and `WorkbookBuilder#sheet`, propagate state into streaming workbook XML, reject invalid state values with `ArgumentError`, and enforce that at least one visible worksheet exists in `strict_excel_mode`.
 - Add active sheet and workbook view configuration (`active_sheet`, `first_sheet`, `show_sheet_tabs`, `tab_ratio`, and `sheet(..., active: true)`) across `WorkbookBuilder`, `StreamWriter`, and `WorksheetProxy`, resolve active tab indices safely to avoid hidden sheet selection, emit `activeTab`, `firstSheet`, `showSheetTabs`, and `tabRatio` on `<workbookView>`, guarantee single `tabSelected="1"` emission on the active sheet, and expose `active_tab`, `active_sheet`, `first_sheet`, `show_sheet_tabs?`, and `tab_ratio` on `Elements::Workbook`.
+- Enhance worksheet tab color configuration (`tab_color`) across `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` with support for RGB hex strings, theme colors, tint, indexed colors, and auto color, emit full `<tabColor>` attributes in `WorksheetWriter` and `Ooxml::Writer`, and expose `tab_color` readers on `Elements::Worksheet` and `StreamSheet`.
 
 ## [0.1.16] - 2026-10-24
 
