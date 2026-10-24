@@ -1224,4 +1224,23 @@ class OoxmlTest < Test::Unit::TestCase
     assert_nil(cell_zero[:type])
     assert_equal("SUM(A1:A5)", cell_zero[:formula])
   end
+
+  test "Ooxml::Reader resolves case-insensitive part names via ZipReader" do
+    Dir.mktmpdir do |dir|
+      xlsx_path = File.join(dir, "case_insensitive.xlsx")
+      Xlsxrb::Ooxml::ZipWriter.open(xlsx_path) do |zw|
+        zw.add_entry("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/></Types>')
+        zw.add_entry("_rels/.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>')
+        zw.add_entry("xl/WORKBOOK.XML", '<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Main" sheetId="1" r:id="rId1"/></sheets></workbook>')
+        zw.add_entry("xl/_rels/workbook.xml.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>')
+        zw.add_entry("xl/sharedstrings.xml", '<?xml version="1.0" encoding="UTF-8"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1"><si><t>CaseInsensitiveValue</t></si></sst>')
+        zw.add_entry("xl/worksheets/SHEET1.XML", '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c></row></sheetData></worksheet>')
+      end
+
+      reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
+      assert_equal(["Main"], reader.sheet_names)
+      assert_equal({ "A1" => "CaseInsensitiveValue" }, reader.cells)
+      assert_include(reader.entry_names, "xl/sharedstrings.xml")
+    end
+  end
 end

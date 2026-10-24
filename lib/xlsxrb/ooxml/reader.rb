@@ -634,34 +634,15 @@ module Xlsxrb
 
       # Returns all ZIP entry paths in the file.
       def entry_names
-        names = []
-        File.open(@filepath, "rb") do |file|
-          loop do
-            sig = file.read(4)
-            break if sig.nil? || sig.bytesize < 4
-
-            sig_val = sig.unpack1("V")
-            break if [0x02014b50, 0x06054b50].include?(sig_val)
-            break unless sig_val == 0x04034b50
-
-            header = file.read(26)
-            break if header.nil? || header.bytesize < 26
-
-            _ver, flags, _cm, _mt, _md, _crc, comp_size, _unc, fname_len, extra_len = header.unpack("v v v v v V V V v v")
-            break if flags.anybits?(0x0008)
-
-            fname = file.read(fname_len)
-            file.read(extra_len)
-            file.read(comp_size)
-            names << fname
-          end
-        end
-        names
+        ZipReader.open(@filepath, &:entry_names)
       end
 
       # Returns raw bytes for a ZIP entry by path.
       def raw_entry(name)
-        extract_zip_entry(name)
+        data = extract_zip_entry(name)
+        return nil unless data
+
+        name.end_with?(".xml", ".rels", ".txt") && data.valid_encoding? ? data : data.b
       end
 
       # Returns true if the file contains VBA macros (vbaProject.bin).
@@ -1363,51 +1344,7 @@ module Xlsxrb
       end
 
       def extract_zip_entry(entry_name)
-        File.open(@filepath, "rb") do |file|
-          loop do
-            signature = file.read(4)
-            break if signature.nil? || signature.bytesize < 4
-
-            signature_value = signature.unpack1("V")
-            break if [0x02014b50, 0x06054b50].include?(signature_value)
-
-            raise ZipError, "invalid ZIP local header signature" unless signature_value == 0x04034b50
-
-            header = file.read(26)
-            raise ZipError, "truncated ZIP local header" if header.nil? || header.bytesize < 26
-
-            _version, flags, compression_method, _mtime, _mdate, _crc32, compressed_size,
-              _uncompressed_size, file_name_length, extra_field_length = header.unpack("v v v v v V V V v v")
-
-            raise ZipError, "ZIP data descriptor is not supported" if flags.anybits?(0x0008)
-
-            file_name = file.read(file_name_length)
-            raise ZipError, "truncated ZIP file name" if file_name.nil? || file_name.bytesize < file_name_length
-
-            file.read(extra_field_length)
-
-            compressed_data = file.read(compressed_size)
-            raise ZipError, "truncated ZIP entry data" if compressed_data.nil? || compressed_data.bytesize < compressed_size
-
-            next unless file_name == entry_name
-
-            case compression_method
-            when 0
-              return compressed_data
-            when 8
-              inflater = Zlib::Inflate.new(-Zlib::MAX_WBITS)
-              begin
-                return inflater.inflate(compressed_data)
-              ensure
-                inflater.close
-              end
-            else
-              raise ZipError, "unsupported ZIP compression method: #{compression_method}"
-            end
-          end
-        end
-
-        nil
+        ZipReader.open(@filepath) { |zr| zr.read_entry(entry_name) }
       end
 
       def parse_worksheet_cells(xml, shared_strings)
