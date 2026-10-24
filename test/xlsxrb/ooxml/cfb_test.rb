@@ -51,6 +51,23 @@ module Xlsxrb
         assert_raise(Xlsxrb::Error) do
           Cfb::Reader.new(corrupted_short_cfb)
         end
+
+        valid_cfb = Cfb::Writer.write({ "Test" => "Data".b })
+
+        # Corrupted major version
+        corrupted_ver = valid_cfb.dup
+        corrupted_ver[0x1A, 2] = [99].pack("v")
+        assert_raise(Xlsxrb::Error) { Cfb::Reader.new(corrupted_ver) }
+
+        # Corrupted sector shift
+        corrupted_shift = valid_cfb.dup
+        corrupted_shift[0x1E, 2] = [20].pack("v")
+        assert_raise(Xlsxrb::Error) { Cfb::Reader.new(corrupted_shift) }
+
+        # Corrupted mini sector shift
+        corrupted_mini_shift = valid_cfb.dup
+        corrupted_mini_shift[0x20, 2] = [12].pack("v")
+        assert_raise(Xlsxrb::Error) { Cfb::Reader.new(corrupted_mini_shift) }
       end
 
       def test_cfb_dir_entry_predicates

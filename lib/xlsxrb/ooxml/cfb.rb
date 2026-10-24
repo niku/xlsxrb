@@ -100,9 +100,16 @@ module Xlsxrb
           raise Xlsxrb::Error, "CFB file is too small" if @data.bytesize < 512
 
           _, major_ver = @data[0x18, 4].unpack("v2")
+          raise Xlsxrb::Error, "Unsupported CFB major version: #{major_ver}" unless [3, 4].include?(major_ver)
+
           @major_version = major_ver
           @sector_shift = @data[0x1E, 2].unpack1("v")
           @mini_sector_shift = @data[0x20, 2].unpack1("v")
+
+          expected_shift = @major_version == 4 ? 12 : 9
+          raise Xlsxrb::Error, "Invalid CFB sector shift in header: #{@sector_shift}" unless @sector_shift == expected_shift
+          raise Xlsxrb::Error, "Invalid CFB mini sector shift in header: #{@mini_sector_shift}" unless @mini_sector_shift == 6
+
           @sector_size = 1 << @sector_shift
           @mini_sector_size = 1 << @mini_sector_shift
 
@@ -123,6 +130,9 @@ module Xlsxrb
         end
 
         def read_sector(sector_id)
+          max_sectors = (@data.bytesize - 512) / @sector_size
+          return "".b if sector_id.negative? || sector_id >= max_sectors
+
           offset = sector_offset(sector_id)
           @data[offset, @sector_size] || "".b
         end
