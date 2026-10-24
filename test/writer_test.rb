@@ -7982,6 +7982,69 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("한글", c.value)
   end
 
+  test "write_sheet_views omits tabSelected unless tab_selected is true" do
+    buf = StringIO.new
+    ws_writer = Xlsxrb::Ooxml::WorksheetWriter.new(buf)
+    ws_writer.send(:write_sheet_views, freeze_pane: { row: 1, col: 0 })
+    xml = buf.string
+    assert_no_match(/tabSelected=/, xml)
+
+    buf2 = StringIO.new
+    ws_writer2 = Xlsxrb::Ooxml::WorksheetWriter.new(buf2)
+    ws_writer2.send(:write_sheet_views, sheet_view: { tab_selected: true, top_left_cell: "C5", zoom_scale_normal: 100 })
+    xml2 = buf2.string
+    assert_match(/tabSelected="1"/, xml2)
+    assert_match(/topLeftCell="C5"/, xml2)
+    assert_match(/zoomScaleNormal="100"/, xml2)
+  end
+
+  test "sheet view selection round-trips via Xlsxrb.write and Xlsxrb.read" do
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "view_test.xlsx")
+      Xlsxrb.write(path) do |w|
+        w.sheet("Sheet1") do |s|
+          s.row([1, 2, 3])
+          s.freeze_pane(row: 1, col: 1)
+          s.select_cell("B2", sqref: "B2:C3", pane: "bottomRight")
+          s.sheet_view(:top_left_cell, "A1")
+          s.sheet_view(:tab_selected, true)
+          s.sheet_view(:zoom_scale_normal, 120)
+        end
+        w.sheet("Sheet2") do |s|
+          s.row([4, 5, 6])
+          s.sheet_view(:zoom_scale, 85)
+        end
+      end
+
+      # Inspect raw XML
+      Xlsxrb::Ooxml::ZipReader.open(path) do |z|
+        xml1 = z.read_entry("xl/worksheets/sheet1.xml")
+        assert_match(/tabSelected="1"/, xml1)
+        assert_match(/zoomScaleNormal="120"/, xml1)
+        assert_match(%r{<selection pane="bottomRight" activeCell="B2" sqref="B2:C3"/>}, xml1)
+
+        xml2 = z.read_entry("xl/worksheets/sheet2.xml")
+        assert_no_match(/tabSelected=/, xml2)
+        assert_match(/zoomScale="85"/, xml2)
+      end
+
+      # Verify reader
+      wb = Xlsxrb.read(path)
+      s1 = wb.sheets[0]
+      assert_equal({ active_cell: "B2", sqref: "B2:C3", pane: "bottomRight" }, s1.selection)
+      assert_equal(true, s1.sheet_view[:tab_selected])
+      assert_equal(120, s1.sheet_view[:zoom_scale_normal])
+
+      s1_loaded = s1.load
+      assert_equal({ active_cell: "B2", sqref: "B2:C3", pane: "bottomRight" }, s1_loaded.selection)
+
+      s2 = wb.sheets[1]
+      assert_nil(s2.selection)
+      assert_nil(s2.sheet_view[:tab_selected])
+      assert_equal(85, s2.sheet_view[:zoom_scale])
+    end
+  end
+
   private
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

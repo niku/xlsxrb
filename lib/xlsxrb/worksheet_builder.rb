@@ -934,7 +934,8 @@ module Xlsxrb
         row_breaks: @row_breaks,
         col_breaks: @col_breaks,
         protected_ranges: @protected_ranges,
-        cell_watches: @cell_watches
+        cell_watches: @cell_watches,
+        selection: @selection
       )
     end
 

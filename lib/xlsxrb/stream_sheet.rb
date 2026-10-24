@@ -356,7 +356,8 @@ module Xlsxrb
         row_breaks: row_breaks,
         col_breaks: col_breaks,
         protected_ranges: protected_ranges,
-        cell_watches: cell_watches
+        cell_watches: cell_watches,
+        selection: selection
       )
     end
     alias to_worksheet load
@@ -589,6 +590,15 @@ module Xlsxrb
     #: () -> Hash[Symbol, untyped]
     def sheet_view
       sheet_view_data[:view] || {}
+    end
+
+    # Returns selection settings for this worksheet, or nil if none.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    #: () -> Hash[Symbol, untyped]?
+    def selection
+      sheet_view_data[:selection]
     end
 
     # Returns sheet protection settings as a hash, or nil if unprotected.

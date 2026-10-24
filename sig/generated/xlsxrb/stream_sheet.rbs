@@ -390,6 +390,13 @@ module Xlsxrb
     # : () -> Hash[Symbol, untyped]
     def sheet_view: () -> Hash[Symbol, untyped]
 
+    # Returns selection settings for this worksheet, or nil if none.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    # : () -> Hash[Symbol, untyped]?
+    def selection: () -> Hash[Symbol, untyped]?
+
     # Returns sheet protection settings as a hash, or nil if unprotected.
     #
     # @return [Hash[Symbol, untyped], nil]

@@ -716,6 +716,8 @@ module Xlsxrb
       sd[:freeze_pane] ||= ws.freeze_pane if ws.respond_to?(:freeze_pane) && ws.freeze_pane
       sd[:split_pane] ||= ws.split_pane if ws.respond_to?(:split_pane) && ws.split_pane
       sd[:sheet_view] ||= ws.sheet_view if ws.respond_to?(:sheet_view) && ws.sheet_view && !ws.sheet_view.empty?
+      sd[:selection] ||= ws.selection if ws.respond_to?(:selection) && ws.selection
+      sd[:selection] ||= ws.sheet_view[:selection] if ws.respond_to?(:sheet_view) && ws.sheet_view.is_a?(Hash) && ws.sheet_view[:selection]
       sd[:page_setup] ||= ws.page_setup if ws.respond_to?(:page_setup) && ws.page_setup && !ws.page_setup.empty?
       sd[:page_margins] ||= ws.page_margins if ws.respond_to?(:page_margins) && ws.page_margins && !ws.page_margins.empty?
       sd[:header_footer] ||= ws.header_footer if ws.respond_to?(:header_footer) && ws.header_footer && !ws.header_footer.empty?
@@ -1134,8 +1136,8 @@ module Xlsxrb
       fallbacks.find { |f| zip_reader.entry?(f) }
     end
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, selection: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
       if sheet_xml.nil? || sheet_xml.empty?
         return Elements::Worksheet.new(
@@ -1146,7 +1148,7 @@ module Xlsxrb
           page_setup: page_setup || {}, page_margins: page_margins, header_footer: header_footer || {},
           print_options: print_options || {}, sheet_protection: sheet_protection, sheet_view: sheet_view || {},
           sheet_properties: sheet_properties || {}, sheet_format: sheet_format || {}, row_breaks: row_breaks || [], col_breaks: col_breaks || [],
-          protected_ranges: protected_ranges || [], cell_watches: cell_watches || []
+          protected_ranges: protected_ranges || [], cell_watches: cell_watches || [], selection: selection
         )
       end
 
@@ -1205,19 +1207,20 @@ module Xlsxrb
       sheet_tables = tables || resolve_tables(zip_reader: zip_reader, entry_name: entry_name)
       sheet_shapes = shapes || resolve_shapes(zip_reader: zip_reader, entry_name: entry_name)
 
-      sheet_view_data = if freeze_pane.nil? || sheet_view.nil?
+      sheet_view_data = if freeze_pane.nil? || sheet_view.nil? || selection.nil?
                           if sheet_xml.include?("<sheetView")
                             v_listener = Ooxml::Reader::SheetViewListener.new
                             Ooxml::XmlParser.parse(sheet_xml, v_listener)
-                            { view: v_listener.view, pane: v_listener.pane }
+                            { view: v_listener.view, pane: v_listener.pane, selection: v_listener.selection }
                           else
-                            { view: {}, pane: nil }
+                            { view: {}, pane: nil, selection: nil }
                           end
                         else
-                          { view: sheet_view, pane: freeze_pane }
+                          { view: sheet_view, pane: freeze_pane, selection: selection }
                         end
       sheet_freeze_pane = freeze_pane || sheet_view_data[:pane]
       sheet_view_val = sheet_view || sheet_view_data[:view] || {}
+      sheet_selection = selection || sheet_view_data[:selection]
 
       sheet_prot = sheet_protection || if sheet_xml.include?("<sheetProtection")
                                          prot_listener = Ooxml::Reader::SheetProtectionListener.new
@@ -1308,7 +1311,8 @@ module Xlsxrb
         row_breaks: row_breaks || print_data[:row_breaks] || [],
         col_breaks: col_breaks || print_data[:col_breaks] || [],
         protected_ranges: sheet_prot_ranges,
-        cell_watches: sheet_watches
+        cell_watches: sheet_watches,
+        selection: sheet_selection
       )
     end
 

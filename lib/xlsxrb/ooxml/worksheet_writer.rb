@@ -789,12 +789,26 @@ module Xlsxrb
 
       def write_sheet_views(freeze_pane: nil, split_pane: nil, selection: nil, sheet_view: nil)
         @builder.open_tag("sheetViews")
-        sv_attrs = { tabSelected: "1", workbookViewId: "0" }
+        sv_attrs = { workbookViewId: "0" }
         if sheet_view
-          sv_attrs[:showGridLines] = "0" if sheet_view[:show_grid_lines] == false
-          sv_attrs[:showRowColHeaders] = "0" if sheet_view[:show_row_col_headers] == false
-          sv_attrs[:rightToLeft] = "1" if sheet_view[:right_to_left]
+          sv_attrs[:windowProtection] = sheet_view[:window_protection] ? "1" : "0" unless sheet_view[:window_protection].nil?
+          sv_attrs[:showFormulas] = sheet_view[:show_formulas] ? "1" : "0" unless sheet_view[:show_formulas].nil?
+          sv_attrs[:showGridLines] = sheet_view[:show_grid_lines] ? "1" : "0" unless sheet_view[:show_grid_lines].nil?
+          sv_attrs[:showRowColHeaders] = sheet_view[:show_row_col_headers] ? "1" : "0" unless sheet_view[:show_row_col_headers].nil?
+          sv_attrs[:showZeros] = sheet_view[:show_zeros] ? "1" : "0" unless sheet_view[:show_zeros].nil?
+          sv_attrs[:rightToLeft] = sheet_view[:right_to_left] ? "1" : "0" unless sheet_view[:right_to_left].nil?
+          sv_attrs[:tabSelected] = "1" if sheet_view[:tab_selected]
+          sv_attrs[:showRuler] = sheet_view[:show_ruler] ? "1" : "0" unless sheet_view[:show_ruler].nil?
+          sv_attrs[:showOutlineSymbols] = sheet_view[:show_outline_symbols] ? "1" : "0" unless sheet_view[:show_outline_symbols].nil?
+          sv_attrs[:defaultGridColor] = sheet_view[:default_grid_color] ? "1" : "0" unless sheet_view[:default_grid_color].nil?
+          sv_attrs[:showWhiteSpace] = sheet_view[:show_white_space] ? "1" : "0" unless sheet_view[:show_white_space].nil?
+          sv_attrs[:view] = sheet_view[:view].to_s if sheet_view[:view]
+          sv_attrs[:topLeftCell] = sheet_view[:top_left_cell].to_s if sheet_view[:top_left_cell]
+          sv_attrs[:colorId] = sheet_view[:color_id].to_s if sheet_view[:color_id]
           sv_attrs[:zoomScale] = sheet_view[:zoom_scale].to_s if sheet_view[:zoom_scale]
+          sv_attrs[:zoomScaleNormal] = sheet_view[:zoom_scale_normal].to_s if sheet_view[:zoom_scale_normal]
+          sv_attrs[:zoomScaleSheetLayoutView] = sheet_view[:zoom_scale_sheet_layout_view].to_s if sheet_view[:zoom_scale_sheet_layout_view]
+          sv_attrs[:zoomScalePageLayoutView] = sheet_view[:zoom_scale_page_layout_view].to_s if sheet_view[:zoom_scale_page_layout_view]
         end
         @builder.open_tag("sheetView", sv_attrs)
         if freeze_pane
@@ -803,30 +817,38 @@ module Xlsxrb
           pane_attrs[:ySplit] = freeze_pane[:row].to_s if freeze_pane[:row]&.positive?
           top_left_col = column_letter(freeze_pane[:col] || 0)
           top_left_row = (freeze_pane[:row] || 0) + 1
-          pane_attrs[:topLeftCell] = "#{top_left_col}#{top_left_row}"
+          pane_attrs[:topLeftCell] = freeze_pane[:top_left_cell] || "#{top_left_col}#{top_left_row}"
           pane_attrs[:state] = "frozen"
           # Determine active pane
-          pane_attrs[:activePane] = if (freeze_pane[:col] || 0).positive? && (freeze_pane[:row] || 0).positive?
-                                      "bottomRight"
-                                    elsif (freeze_pane[:col] || 0).positive?
-                                      "topRight"
-                                    else
-                                      "bottomLeft"
-                                    end
+          pane_attrs[:activePane] = freeze_pane[:active_pane] || if (freeze_pane[:col] || 0).positive? && (freeze_pane[:row] || 0).positive?
+                                                                   "bottomRight"
+                                                                 elsif (freeze_pane[:col] || 0).positive?
+                                                                   "topRight"
+                                                                 else
+                                                                   "bottomLeft"
+                                                                 end
           @builder.empty_tag("pane", pane_attrs)
         elsif split_pane
           pane_attrs = {}
           pane_attrs[:xSplit] = split_pane[:x_split].to_s if split_pane[:x_split]&.positive?
           pane_attrs[:ySplit] = split_pane[:y_split].to_s if split_pane[:y_split]&.positive?
           pane_attrs[:topLeftCell] = split_pane[:top_left_cell] if split_pane[:top_left_cell]
+          pane_attrs[:activePane] = split_pane[:active_pane] if split_pane[:active_pane]
+          pane_attrs[:state] = split_pane[:state].to_s if split_pane[:state]
           @builder.empty_tag("pane", pane_attrs)
         end
-        if selection
-          sel_attrs = {}
-          sel_attrs[:activeCell] = selection[:active_cell] if selection[:active_cell]
-          sel_attrs[:sqref] = selection[:sqref] || selection[:active_cell] if selection[:active_cell]
-          sel_attrs[:pane] = selection[:pane] if selection[:pane]
-          @builder.empty_tag("selection", sel_attrs)
+        active_selection = selection || (sheet_view[:selection] if sheet_view)
+        if active_selection
+          selections = active_selection.is_a?(Array) ? active_selection : [active_selection]
+          selections.each do |sel|
+            sel_attrs = {}
+            sel_attrs[:pane] = sel[:pane].to_s if sel[:pane]
+            sel_attrs[:activeCell] = sel[:active_cell].to_s if sel[:active_cell]
+            sel_attrs[:activeCellId] = sel[:active_cell_id].to_s if sel[:active_cell_id]
+            sqref = sel[:sqref] || sel[:active_cell]
+            sel_attrs[:sqref] = sqref.to_s if sqref
+            @builder.empty_tag("selection", sel_attrs) unless sel_attrs.empty?
+          end
         end
         @builder.close_tag("sheetView")
         @builder.close_tag("sheetViews")

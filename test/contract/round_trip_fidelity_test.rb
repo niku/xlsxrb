@@ -27,6 +27,7 @@ class RoundTripFidelityTest < Test::Unit::TestCase
       b.sheet("Sheet1") do |s|
         s.freeze_pane(row: 1, col: 1)
         s.sheet_view(:show_grid_lines, false)
+        s.sheet_view(:tab_selected, true)
         s.sheet_view(:zoom_scale, 120)
         s.sheet_properties(:tab_color, "FFFF0000")
         s.sheet_format(default_row_height: 20)
