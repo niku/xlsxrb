@@ -36,7 +36,7 @@ bundle exec rake bundle:audit
    - Never use nested repetitions (e.g. `(a+)+` or `([^>]*)*`) or overlapping disjunctions.
    - All parser regexes must evaluate 10,000+ character non-matching edge-case inputs within milliseconds (< 50ms).
 2. ZIP Decompression Bomb Defense:
-   - Decompression streams must track cumulative uncompressed bytes and raise `ArgumentError` when exceeding `max_uncompressed_size` (default 500MB).
+   - Decompression streams must track cumulative uncompressed bytes and raise `Xlsxrb::ZipBombError` when exceeding `max_uncompressed_size` (default 500MB).
    - Both `ZipReader.open` and streaming facade `Xlsxrb.read` must enforce this invariant.
 3. XML Billion Laughs & Entity Limits:
    - XML parsing through SAX must enforce standard entity expansion caps (10,000 expansions max) via parser security configuration.

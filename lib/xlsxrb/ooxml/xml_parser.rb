@@ -20,26 +20,26 @@ begin
       prev_verbose = $VERBOSE
       $VERBOSE = nil
       begin
-        # rubocop:disable Style/Documentation
-        module ::REXML
-          module Security
-            @entity_expansion_limit = 10_000
-            @entity_expansion_text_limit = 10_240
+        REXML::Security.instance_eval do
+          @entity_expansion_limit = 10_000
+          @entity_expansion_text_limit = 10_240
 
-            class << self
-              attr_writer :entity_expansion_limit, :entity_expansion_text_limit
+          def self.entity_expansion_limit
+            @entity_expansion_limit || 10_000
+          end
 
-              def entity_expansion_limit
-                @entity_expansion_limit || 10_000
-              end
+          def self.entity_expansion_limit=(val)
+            @entity_expansion_limit = val
+          end
 
-              def entity_expansion_text_limit
-                @entity_expansion_text_limit || 10_240
-              end
-            end
+          def self.entity_expansion_text_limit
+            @entity_expansion_text_limit || 10_240
+          end
+
+          def self.entity_expansion_text_limit=(val)
+            @entity_expansion_text_limit = val
           end
         end
-        # rubocop:enable Style/Documentation
         Ractor.make_shareable(REXML::Security)
       ensure
         $VERBOSE = prev_verbose
