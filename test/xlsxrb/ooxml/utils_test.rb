@@ -177,4 +177,36 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal("@", Xlsxrb::Ooxml::Utils::BUILTIN_NUM_FMT_CODES[49])
     assert(Xlsxrb::Ooxml::Utils::BUILTIN_NUM_FMT_CODES.frozen?)
   end
+
+  # --- booleanize ---
+
+  test "booleanize converts booleans to 1 or 0 and passes other values through" do
+    assert_equal("1", Xlsxrb::Ooxml::Utils.booleanize(true))
+    assert_equal("0", Xlsxrb::Ooxml::Utils.booleanize(false))
+    assert_nil(Xlsxrb::Ooxml::Utils.booleanize(nil))
+    assert_equal("custom", Xlsxrb::Ooxml::Utils.booleanize("custom"))
+    assert_equal(123, Xlsxrb::Ooxml::Utils.booleanize(123))
+  end
+
+  # --- camelize ---
+
+  test "camelize converts snake_case to lowerCamelCase and PascalCase" do
+    assert_equal("tabSelected", Xlsxrb::Ooxml::Utils.camelize(:tab_selected))
+    assert_equal("fitToWidth", Xlsxrb::Ooxml::Utils.camelize("fit_to_width"))
+    assert_equal("fullCalcOnLoad", Xlsxrb::Ooxml::Utils.camelize("full_calc_on_load"))
+
+    # capitalize_first: true (PascalCase)
+    assert_equal("TabSelected", Xlsxrb::Ooxml::Utils.camelize(:tab_selected, capitalize_first: true))
+    assert_equal("FitToWidth", Xlsxrb::Ooxml::Utils.camelize("fit_to_width", capitalize_first: true))
+
+    # Single word / already camelCase
+    assert_equal("locked", Xlsxrb::Ooxml::Utils.camelize(:locked))
+    assert_equal("Locked", Xlsxrb::Ooxml::Utils.camelize(:locked, capitalize_first: true))
+    assert_equal("tabSelected", Xlsxrb::Ooxml::Utils.camelize("TabSelected", capitalize_first: false))
+    assert_equal("TabSelected", Xlsxrb::Ooxml::Utils.camelize("tabSelected", capitalize_first: true))
+
+    # Edge cases
+    assert_equal("", Xlsxrb::Ooxml::Utils.camelize(""))
+    assert_equal("", Xlsxrb::Ooxml::Utils.camelize(:""))
+  end
 end

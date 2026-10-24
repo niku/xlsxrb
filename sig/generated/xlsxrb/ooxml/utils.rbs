@@ -47,6 +47,15 @@ module Xlsxrb
       # Returns { algorithm_name:, hash_value:, salt_value:, spin_count: }.
       # Algorithm per ECMA-376 Part 4 §2.4.2.24.
       def self.hash_password: (untyped password, ?algorithm: untyped, ?salt: untyped, ?spin_count: untyped) -> untyped
+
+      # Converts a boolean to "1" or "0" for OOXML schema compliance.
+      # Returns non-boolean values as-is.
+      # : (untyped value) -> untyped
+      def self.booleanize: (untyped value) -> untyped
+
+      # Converts an attribute name to camelCase (or PascalCase) for OOXML attributes.
+      # : (String | Symbol attr_name, ?capitalize_first: bool) -> String
+      def self.camelize: (String | Symbol attr_name, ?capitalize_first: bool) -> String
     end
   end
 end

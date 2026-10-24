@@ -25,6 +25,7 @@
 - Phonetic readings (`<rPh>`) are excluded from shared strings and inline strings, so cells with furigana no longer concatenate phonetic readings to display text.
 
 ### Added
+- `Xlsxrb::Ooxml::Utils.booleanize` and `Xlsxrb::Ooxml::Utils.camelize` helper methods for OOXML attribute serialization and name casing conversion.
 - Comprehensive round-trip contract tests in `test/contract/round_trip_fidelity_test.rb` verifying that `read -> write -> read` preserves worksheet and workbook attributes across streaming and loaded in-memory representations.
 - Alias `conditional_formatting` to `conditional_formats` on `StreamSheet` for complete API symmetry with `Elements::Worksheet`.
 - Property-based tests for cell XML parsing in `test/pbt/cell_xml_parser_pbt_test.rb`, validating 100% equivalence between streaming fast-scan and SAX listener parsers across random attribute permutations, namespaces, rich text, and phonetic elements.

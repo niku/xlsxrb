@@ -134,6 +134,35 @@ module Xlsxrb
             spin_count: spin_count
           }
         end
+
+        # Converts a boolean to "1" or "0" for OOXML schema compliance.
+        # Returns non-boolean values as-is.
+        #: (untyped value) -> untyped
+        def booleanize(value)
+          case value
+          when true then "1"
+          when false then "0"
+          else value
+          end
+        end
+
+        # Converts an attribute name to camelCase (or PascalCase) for OOXML attributes.
+        #: (String | Symbol attr_name, ?capitalize_first: bool) -> String
+        def camelize(attr_name, capitalize_first: false)
+          str = attr_name.to_s
+          return "" if str.empty?
+
+          parts = str.split("_")
+          if parts.empty?
+            ""
+          elsif parts.size == 1
+            capitalize_first ? parts[0].sub(/\A\w/, &:upcase) : parts[0].sub(/\A\w/, &:downcase)
+          else
+            first = capitalize_first ? parts[0].capitalize : parts[0].sub(/\A\w/, &:downcase)
+            rest = parts[1..].map(&:capitalize).join
+            "#{first}#{rest}"
+          end
+        end
       end
     end
   end
