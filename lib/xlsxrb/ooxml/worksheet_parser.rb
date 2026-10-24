@@ -13,6 +13,7 @@ module Xlsxrb
     class WorksheetParser
       EMPTY_ARRAY = [].freeze
       EMPTY_HASH = {}.freeze
+      EMPTY_BINARY = "".b.freeze
       TAG_DELIM_BYTES = [32, 62, 9, 10, 13, 47].freeze
       ROW_ATTR_START_BYTES = [104, 99, 111, 115].freeze
 
@@ -214,10 +215,7 @@ module Xlsxrb
           tag_end = xml.index(">", row_start + row_start_len)
           break unless tag_end
 
-          if xml.getbyte(tag_end - 1) == 47
-            pos = tag_end + 1
-            next
-          end
+          is_self_closing = xml.getbyte(tag_end - 1) == 47
 
           # Row index and attrs from tag substring (bounded search)
           row_tag = xml.byteslice(row_start, tag_end - row_start)
@@ -227,15 +225,25 @@ module Xlsxrb
 
           attrs = extract_row_attrs(row_tag)
 
-          row_end = xml.index(row_end_tag, tag_end + 1)
-          break unless row_end
-
           row_source = { part: part_name, row: row_index }
           block.call(Event.new(
                        type: :row_start,
                        args: [row_index, attrs],
                        source: row_source
                      ))
+
+          if is_self_closing
+            block.call(Event.new(
+                         type: :row_end,
+                         args: [],
+                         source: row_source
+                       ))
+            pos = tag_end + 1
+            next
+          end
+
+          row_end = xml.index(row_end_tag, tag_end + 1)
+          break unless row_end
 
           fast_scan_cells_events(xml, tag_end + 1, row_end, shared_strings, row_source, prefix, &block)
 
@@ -648,10 +656,7 @@ module Xlsxrb
           tag_end = xml.index(">", row_start + row_start_len)
           break unless tag_end
 
-          if xml.getbyte(tag_end - 1) == 47
-            pos = tag_end + 1
-            next
-          end
+          is_self_closing = xml.getbyte(tag_end - 1) == 47
 
           row_index = nil
           has_custom_attrs = false
@@ -686,6 +691,29 @@ module Xlsxrb
                   else
                     EMPTY_HASH
                   end
+
+          if is_self_closing
+            row_obj = StreamRow.fast_create(
+              row_index,
+              EMPTY_BINARY,
+              0,
+              0,
+              shared_strings,
+              prefix,
+              attrs[:height],
+              attrs[:hidden] || false,
+              attrs[:custom_height] || false,
+              attrs[:outline_level],
+              attrs[:style_index],
+              styles,
+              date1904,
+              attrs[:collapsed] || false,
+              pad_empty_cells
+            )
+            block.call(row_obj)
+            pos = tag_end + 1
+            next
+          end
 
           row_end = xml.index(row_end_tag, tag_end + 1)
           break unless row_end
@@ -795,17 +823,15 @@ module Xlsxrb
             tag_end = buffer.index(">", next_pos)
             break if tag_end.nil?
 
-            if buffer.getbyte(tag_end - 1) == 47
-              pos = tag_end + 1
-              last_consumed_pos = pos
-              next
-            end
+            is_self_closing = buffer.getbyte(tag_end - 1) == 47
 
-            row_end = buffer.index(row_end_tag, tag_end + 1)
-            if row_end.nil?
-              raise ArgumentError, "Malformed XML: row size exceeds maximum buffer limit" if buffer.bytesize > 50 * 1024 * 1024
+            unless is_self_closing
+              row_end = buffer.index(row_end_tag, tag_end + 1)
+              if row_end.nil?
+                raise ArgumentError, "Malformed XML: row size exceeds maximum buffer limit" if buffer.bytesize > 50 * 1024 * 1024
 
-              break
+                break
+              end
             end
 
             row_index = nil
@@ -841,6 +867,30 @@ module Xlsxrb
                     else
                       EMPTY_HASH
                     end
+
+            if is_self_closing
+              row_obj = StreamRow.fast_create(
+                row_index,
+                EMPTY_BINARY,
+                0,
+                0,
+                shared_strings,
+                prefix,
+                attrs[:height],
+                attrs[:hidden] || false,
+                attrs[:custom_height] || false,
+                attrs[:outline_level],
+                attrs[:style_index],
+                styles,
+                date1904,
+                attrs[:collapsed] || false,
+                pad_empty_cells
+              )
+              block.call(row_obj)
+              pos = tag_end + 1
+              last_consumed_pos = pos
+              next
+            end
 
             cells_xml = buffer.byteslice(tag_end + 1, row_end - (tag_end + 1))
             row_obj = StreamRow.fast_create(

@@ -868,6 +868,54 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal([[0, 10], [1, 20], [2, 30]], collected)
   end
 
+  test "worksheet_parser handles self-closing row tags preserving attributes and events" do
+    xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1"><c r="A1"><v>100</v></c></row>
+          <row r="2" ht="28.5" hidden="1" customHeight="1"/>
+          <row r="3"><c r="A3"><v>300</v></c></row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    # 1. String source (fast_scan_rows_direct)
+    rows = Xlsxrb::Ooxml::WorksheetParser.each_row(xml).to_a
+    assert_equal(3, rows.size)
+
+    assert_equal(0, rows[0].index)
+    assert_equal([100], rows[0].values)
+
+    assert_equal(1, rows[1].index)
+    assert_equal(28.5, rows[1].height)
+    assert_equal(true, rows[1].hidden?)
+    assert_equal(true, rows[1].custom_height?)
+    assert_empty(rows[1].cells)
+    assert_empty(rows[1].values)
+
+    assert_equal(2, rows[2].index)
+    assert_equal([300], rows[2].values)
+
+    # 2. IO source (scan_rows_stream)
+    io_rows = Xlsxrb::Ooxml::WorksheetParser.each_row(StringIO.new(xml)).to_a
+    assert_equal(3, io_rows.size)
+    assert_equal(1, io_rows[1].index)
+    assert_equal(28.5, io_rows[1].height)
+    assert_equal(true, io_rows[1].hidden?)
+    assert_empty(io_rows[1].values)
+
+    # 3. Events (each_event / fast_scan_events)
+    events = Xlsxrb::Ooxml::WorksheetParser.each_event(xml).to_a
+    row_starts = events.select { |e| e.type == :row_start }
+    assert_equal(3, row_starts.size)
+    assert_equal(1, row_starts[1].args[0])
+    assert_equal(28.5, row_starts[1].args[1][:height])
+    assert_equal(true, row_starts[1].args[1][:hidden])
+    row_ends = events.select { |e| e.type == :row_end }
+    assert_equal(3, row_ends.size)
+  end
+
   test "worksheet_parser parses columns" do
     xml = <<~XML
       <?xml version="1.0" encoding="UTF-8"?>

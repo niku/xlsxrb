@@ -10,6 +10,8 @@ module Xlsxrb
 
       EMPTY_HASH: untyped
 
+      EMPTY_BINARY: untyped
+
       TAG_DELIM_BYTES: untyped
 
       ROW_ATTR_START_BYTES: untyped
