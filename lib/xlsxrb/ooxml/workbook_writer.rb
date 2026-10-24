@@ -958,7 +958,7 @@ module Xlsxrb
               else
                 buf << "<r><t>"
               end
-              buf << escape_xml(run[:text]) << "</t></r>"
+              buf << escape_xml(run[:text].to_s) << "</t></r>"
             end
             buf << "</si>"
           else

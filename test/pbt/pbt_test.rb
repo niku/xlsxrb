@@ -238,12 +238,7 @@ class PbtTest < Test::Unit::TestCase
                 when Integer, true, false
                   assert_equal expected_val, actual_val
                 when String
-                  if expected_val.start_with?("=")
-                    expected_expr = expected_val.delete_prefix("=")
-                    assert_equal expected_expr, actual_formula
-                  else
-                    assert_equal expected_val, actual_val.to_s
-                  end
+                  assert_equal expected_val, actual_val.to_s
                 end
               end
             end

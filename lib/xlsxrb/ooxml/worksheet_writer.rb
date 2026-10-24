@@ -311,6 +311,7 @@ module Xlsxrb
             else
               v_str = xml_val.to_s
               v_str = v_str.dup.force_encoding(Encoding::UTF_8) if v_str.encoding == Encoding::BINARY
+              v_str = escape_xml(v_str) if type == "str" || xml_val.is_a?(String)
               buf << "<v>" << v_str << "</v></c>"
             end
           else
@@ -415,7 +416,7 @@ module Xlsxrb
               when nil
                 v_val = 0
               else
-                v_val = value.cached_value
+                v_val = value.cached_value.is_a?(String) ? escape_xml(value.cached_value) : value.cached_value
               end
               buf << "<c r=\"#{col_ref}#{row_num_str}\"#{c_type}><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{v_val}</v></c>"
             when Hash
@@ -435,9 +436,9 @@ module Xlsxrb
                   end
                 end
                 f_attrs << ' ca="1"' if value[:calculate_always]
-                xml_val = if value.key?(:value)
+                xml_val = if value.key?(:value) && !value[:value].nil?
                             value[:value]
-                          elsif value.key?(:cached_value)
+                          elsif value.key?(:cached_value) && !value[:cached_value].nil?
                             value[:cached_value]
                           else
                             0
@@ -454,6 +455,7 @@ module Xlsxrb
                   c_type = ' t="e"'
                   xml_val = xml_val.code
                 end
+                xml_val = escape_xml(xml_val) if xml_val.is_a?(String)
                 buf << "<c r=\"#{col_ref}#{row_num_str}\"#{c_type}><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{xml_val}</v></c>"
               end
             when Xlsxrb::Elements::CellError
@@ -594,6 +596,9 @@ module Xlsxrb
             when false
               type = "b"
               xml_val = "0"
+            when Xlsxrb::Elements::CellError
+              type = "e"
+              xml_val = value.cached_value.code
             end
           when Hash
             if value.key?(:formula)
@@ -616,6 +621,9 @@ module Xlsxrb
               when false
                 type = "b"
                 xml_val = "0"
+              when Xlsxrb::Elements::CellError
+                type = "e"
+                xml_val = xml_val.code
               end
             end
           when String, Xlsxrb::Elements::RichText
@@ -672,7 +680,9 @@ module Xlsxrb
             if xml_val.nil?
               buf << "<v>0</v></c>"
             else
-              buf << "<v>" << xml_val.to_s << "</v></c>"
+              v_str = xml_val.to_s
+              v_str = escape_xml(v_str) if type == "str" || xml_val.is_a?(String)
+              buf << "<v>" << v_str << "</v></c>"
             end
           elsif type == "inlineStr"
             buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"

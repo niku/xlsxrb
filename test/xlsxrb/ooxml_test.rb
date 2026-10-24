@@ -218,6 +218,16 @@ class OoxmlTest < Test::Unit::TestCase
     Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
       w.add_entry("test.xml", data)
     end
+    io.rewind
+
+    reader = Xlsxrb::Ooxml::ZipReader.new(io)
+    stream = reader.open_entry_io("test.xml", encoding: Encoding::UTF_8)
+    part = stream.read(18)
+    assert_equal(18, part.bytesize)
+    assert_equal(6, part.chars.size)
+    assert_equal("日本語日本語", part)
+    stream.close
+  end
 
   # --- ZipWriter ---
 
@@ -1000,6 +1010,30 @@ class OoxmlTest < Test::Unit::TestCase
     is_xml = '<is><r><rPr><b/><sz val="11"/><vertAlign val="superscript"/></rPr><t>Bold</t></r><r><t>Normal</t></r></is>'
     text = Xlsxrb::Ooxml::WorksheetParser.send(:extract_inline_text, is_xml, 0, is_xml.bytesize)
     assert_equal "BoldNormal", text
+  end
+
+  test "worksheet_writer write_row_values escapes string formula cached_value" do
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.start
+    formula = Xlsxrb.formula("CONCAT(A1, B1)", cached_value: "A & B < C >")
+    writer.write_row_values(0, [formula])
+    writer.finish
+
+    xml = io.string
+    assert_include(xml, '<c r="A1"><f>CONCAT(A1, B1)</f><v>A &amp; B &lt; C &gt;</v></c>')
+  end
+
+  test "worksheet_writer write_row_values properly serializes styled cell error formula" do
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.start
+    formula = Xlsxrb.formula("1/0", cached_value: Xlsxrb::Elements::CellError.new("#DIV/0!"))
+    writer.write_row_values(0, [formula], styles: { 0 => "warn" }, style_map: { "warn" => 3 })
+    writer.finish
+
+    xml = io.string
+    assert_include(xml, '<c r="A1" s="3" t="e"><f>1/0</f><v>#DIV/0!</v></c>')
   end
 
   test "extract_inline_text handles UTF-8 strings with multibyte characters without byte drift" do
