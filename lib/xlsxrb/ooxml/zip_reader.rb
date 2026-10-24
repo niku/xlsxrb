@@ -45,8 +45,7 @@ module Xlsxrb
           @compression_method = compression_method
           @max_uncompressed_size = max_uncompressed_size || ZipReader::MAX_UNCOMPRESSED_SIZE
           @encoding = encoding
-          @buffer = +""
-          @buffer.force_encoding(@encoding || Encoding::BINARY)
+          @buffer = +"".b
           @bytes_read_compressed = 0
           @total_uncompressed = 0
           @eof = false
@@ -62,8 +61,8 @@ module Xlsxrb
           check_bom_encoding!
 
           if length.nil?
-            result = @buffer.dup
-            @buffer.clear
+            result = @buffer.b
+            @buffer = +"".b
             while (chunk = fetch_chunk(DEFAULT_CHUNK_SIZE))
               result << chunk
             end
@@ -149,7 +148,6 @@ module Xlsxrb
             @total_uncompressed += raw.bytesize
             raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{@max_uncompressed_size} bytes" if @total_uncompressed > @max_uncompressed_size
 
-            raw&.force_encoding(@encoding) if @encoding
             raw
           elsif @compression_method == 8
             inflated = +""
@@ -184,9 +182,7 @@ module Xlsxrb
             @total_uncompressed += inflated.bytesize
             raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{@max_uncompressed_size} bytes" if @total_uncompressed > @max_uncompressed_size
 
-            chunk = inflated.empty? && @eof ? nil : inflated
-            chunk&.force_encoding(@encoding) if @encoding
-            chunk
+            inflated.empty? && @eof ? nil : inflated
           else
             @eof = true
             nil
@@ -202,26 +198,25 @@ module Xlsxrb
 
           raw_b = peek.b
           if raw_b.start_with?("\xFF\xFE".b)
-            rest = +""
+            rest = +"".b
             while (chunk = fetch_chunk(DEFAULT_CHUNK_SIZE))
               rest << chunk
             end
             full = (peek + rest).force_encoding(Encoding::UTF_16LE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
-            @buffer = full
+            @buffer = full.b
             @eof = true
           elsif raw_b.start_with?("\xFE\xFF".b)
-            rest = +""
+            rest = +"".b
             while (chunk = fetch_chunk(DEFAULT_CHUNK_SIZE))
               rest << chunk
             end
             full = (peek + rest).force_encoding(Encoding::UTF_16BE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
-            @buffer = full
+            @buffer = full.b
             @eof = true
           elsif raw_b.start_with?("\xEF\xBB\xBF".b)
-            @buffer << peek.b.delete_prefix("\xEF\xBB\xBF".b).force_encoding(Encoding::UTF_8)
+            @buffer << peek.b.delete_prefix("\xEF\xBB\xBF".b)
           else
-            peek.force_encoding(@encoding) if @encoding
-            @buffer << peek
+            @buffer << peek.b
           end
         end
       end

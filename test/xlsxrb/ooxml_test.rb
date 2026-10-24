@@ -212,6 +212,13 @@ class OoxmlTest < Test::Unit::TestCase
     custom_txt_stream.close
   end
 
+  test "EntryStreamIO#read with byte length slices exact bytes on UTF-8 stream" do
+    data = "日本語" * 20
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      w.add_entry("test.xml", data)
+    end
+
   # --- ZipWriter ---
 
   test "zip_writer creates valid ZIP with entries" do
