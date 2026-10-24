@@ -54,6 +54,7 @@ module Xlsxrb
         return if @started
 
         @started = true
+        @sheet_properties = sheet_properties
         @builder.declaration
         @builder.open_tag("worksheet", { xmlns: SSML_NS, "xmlns:r": DOC_REL_NS })
 
@@ -721,7 +722,7 @@ module Xlsxrb
                  hyperlinks: nil, print_options: nil, page_margins: nil,
                  page_setup: nil, header_footer: nil, row_breaks: nil,
                  col_breaks: nil, cell_watches: nil, ignored_errors: nil, tables: nil, table_start_rid: nil,
-                 legacy_drawing_rid: nil, sparkline_groups: nil, phonetic_pr: nil)
+                 legacy_drawing_rid: nil, sparkline_groups: nil, phonetic_pr: nil, sheet_calc_pr: nil)
         return if @finished
 
         start unless @started
@@ -733,6 +734,8 @@ module Xlsxrb
         @builder.close_tag("sheetData")
 
         # Elements must appear in OOXML specification order after sheetData
+        calc_pr = sheet_calc_pr || (@sheet_properties if @sheet_properties && !@sheet_properties[:full_calc_on_load].nil?)
+        write_sheet_calc_pr(calc_pr) if calc_pr
         write_sheet_protection(sheet_protection) if sheet_protection
         write_protected_ranges(protected_ranges) if protected_ranges && !protected_ranges.empty?
         write_auto_filter(auto_filter, filter_columns, sort_state) if auto_filter
@@ -773,6 +776,7 @@ module Xlsxrb
 
       def write_sheet_properties(props)
         attrs = {}
+        attrs[:codeName] = props[:code_name].to_s if props[:code_name]
         tc_attrs = build_tab_color_attrs(props)
         has_children = tc_attrs || !props[:fit_to_page].nil? || !props[:outline_below].nil? || !props[:outline_right].nil?
         if has_children
@@ -1337,6 +1341,14 @@ module Xlsxrb
         align = props[:alignment] || props["alignment"]
         attrs[:alignment] = align.to_s if align
         @builder.empty_tag("phoneticPr", attrs)
+      end
+
+      def write_sheet_calc_pr(props)
+        return unless props
+
+        attrs = {}
+        attrs[:fullCalcOnLoad] = props[:full_calc_on_load] ? "1" : "0" unless props[:full_calc_on_load].nil?
+        @builder.empty_tag("sheetCalcPr", attrs) unless attrs.empty?
       end
 
       def write_table_parts(tables, start_rid)

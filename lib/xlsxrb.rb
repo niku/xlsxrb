@@ -494,6 +494,7 @@ module Xlsxrb
       wb_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
       wb_props[:tab_ratio] = wb_parsed[:tab_ratio] unless wb_parsed[:tab_ratio].nil?
       wb_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
+      wb_props[:code_name] = wb_parsed[:code_name] if wb_parsed[:code_name]
       wb_unmapped[:workbook_properties] = wb_props unless wb_props.empty?
       wb_unmapped[:non_worksheet_sheets] = non_worksheet_sheets unless non_worksheet_sheets.empty?
 
@@ -721,6 +722,7 @@ module Xlsxrb
       sd[:cell_watches] ||= ws.cell_watches if ws.respond_to?(:cell_watches) && !ws.cell_watches.empty?
       sd[:ignored_errors] ||= ws.ignored_errors if ws.respond_to?(:ignored_errors) && !ws.ignored_errors.empty?
       sd[:phonetic_properties] ||= ws.phonetic_properties if ws.respond_to?(:phonetic_properties) && ws.phonetic_properties
+      sd[:sheet_calc_pr] ||= ws.sheet_calc_pr if ws.respond_to?(:sheet_calc_pr) && ws.sheet_calc_pr
       sd[:freeze_pane] ||= ws.freeze_pane if ws.respond_to?(:freeze_pane) && ws.freeze_pane
       sd[:split_pane] ||= ws.split_pane if ws.respond_to?(:split_pane) && ws.split_pane
       sd[:sheet_view] ||= ws.sheet_view if ws.respond_to?(:sheet_view) && ws.sheet_view && !ws.sheet_view.empty?
@@ -1147,8 +1149,8 @@ module Xlsxrb
       fallbacks.find { |f| zip_reader.entry?(f) }
     end
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_pr: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
       if sheet_xml.nil? || sheet_xml.empty?
         return Elements::Worksheet.new(
@@ -1160,7 +1162,7 @@ module Xlsxrb
           print_options: print_options || {}, sheet_protection: sheet_protection, sheet_view: sheet_view || {},
           sheet_properties: sheet_properties || {}, sheet_format: sheet_format || {}, row_breaks: row_breaks || [], col_breaks: col_breaks || [],
           protected_ranges: protected_ranges || [], cell_watches: cell_watches || [], ignored_errors: ignored_errors || [],
-          phonetic_properties: phonetic_properties, selection: selection
+          phonetic_properties: phonetic_properties, selection: selection, sheet_calc_pr: sheet_calc_pr
         )
       end
 
@@ -1242,7 +1244,7 @@ module Xlsxrb
                                          prot_listener.protection
                                        end
 
-      sheet_props = sheet_properties || if sheet_xml.include?("<sheetPr")
+      sheet_props = sheet_properties || if sheet_xml.include?("<sheetPr") || sheet_xml.include?("<sheetCalcPr")
                                           pr_listener = Ooxml::Reader::SheetPropertiesListener.new
                                           Ooxml::XmlParser.parse(sheet_xml, pr_listener)
                                           pr_listener.properties
@@ -1342,7 +1344,8 @@ module Xlsxrb
         cell_watches: sheet_watches,
         ignored_errors: sheet_ignored_errors,
         phonetic_properties: sheet_phonetic,
-        selection: sheet_selection
+        selection: sheet_selection,
+        sheet_calc_pr: sheet_calc_pr
       )
     end
 

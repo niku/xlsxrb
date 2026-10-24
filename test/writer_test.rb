@@ -8359,6 +8359,69 @@ class WriterTest < Test::Unit::TestCase
     assert_includes sheet_xml, '<phoneticPr fontId="2" type="fullwidthKatakana" alignment="left"/>'
   end
 
+  test "WorksheetBuilder and StreamWriter support code_name, fit_to_page, and sheet_calc_pr authoring and round-trip" do
+    wb = Xlsxrb.build do |b|
+      b.code_name = "WorkbookCode"
+      b.sheet("SheetDOM", code_name: "SheetCode") do |s|
+        s.row([1, 2, 3])
+        s.fit_to_page(true, width: 1, height: 2)
+        s.sheet_calc_pr(full_calc_on_load: true)
+      end
+    end
+
+    assert_equal "WorkbookCode", wb.code_name
+    ws = wb.sheet(0)
+    assert_equal "SheetCode", ws.code_name
+    assert_equal true, ws.fit_to_page?
+    assert_equal true, ws.full_calc_on_load?
+    assert_equal({ full_calc_on_load: true }, ws.sheet_calc_pr)
+
+    dom_xlsx = Xlsxrb.write(wb)
+    reread = Xlsxrb.read(dom_xlsx)
+    assert_equal "WorkbookCode", reread.code_name
+    r_ws = reread.sheet(0).load
+    assert_equal "SheetCode", r_ws.code_name
+    assert_equal true, r_ws.fit_to_page?
+    assert_equal true, r_ws.full_calc_on_load?
+    assert_equal({ full_calc_on_load: true }, r_ws.sheet_calc_pr)
+
+    # Test streaming writer & streaming reader
+    buf = StringIO.new
+    Xlsxrb.write(buf) do |w|
+      w.code_name = "StreamWorkbook"
+      w.sheet("StreamSheet") do |s|
+        s.code_name = "StreamSheetCode"
+        s.page_setup(fit_to_width: 2, fit_to_height: 3)
+        s.calc_pr = { full_calc_on_load: true }
+        s.row([10, 20])
+      end
+    end
+
+    stream_read_code = nil
+    stream_read_ftp = nil
+    stream_read_fcol = nil
+    stream_read_calc = nil
+    Xlsxrb.stream(buf.string) do |s|
+      stream_read_code = s.code_name
+      stream_read_ftp = s.fit_to_page?
+      stream_read_fcol = s.full_calc_on_load?
+      stream_read_calc = s.sheet_calc_pr
+    end
+    assert_equal "StreamSheetCode", stream_read_code
+    assert_equal true, stream_read_ftp
+    assert_equal true, stream_read_fcol
+    assert_equal({ full_calc_on_load: true }, stream_read_calc)
+
+    # Check XML output
+    wb_xml = read_xml_from_xlsx(buf.string, "xl/workbook.xml")
+    assert_includes wb_xml, 'codeName="StreamWorkbook"'
+
+    ws_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_includes ws_xml, 'codeName="StreamSheetCode"'
+    assert_includes ws_xml, '<pageSetUpPr fitToPage="1"/>'
+    assert_includes ws_xml, '<sheetCalcPr fullCalcOnLoad="1"/>'
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

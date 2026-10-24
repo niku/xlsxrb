@@ -14,7 +14,7 @@ module Xlsxrb
       end
 
       def self.parse_with_properties(xml_string)
-        return { sheets: [], date1904: false, defined_names: [], active_tab: nil, full_calc_on_load: nil, first_sheet: nil, show_sheet_tabs: nil, tab_ratio: nil } if xml_string.nil? || xml_string.empty?
+        return { sheets: [], date1904: false, defined_names: [], active_tab: nil, full_calc_on_load: nil, first_sheet: nil, show_sheet_tabs: nil, tab_ratio: nil, code_name: nil } if xml_string.nil? || xml_string.empty?
 
         listener = Listener.new
         XmlParser.parse(xml_string, listener)
@@ -26,7 +26,8 @@ module Xlsxrb
           full_calc_on_load: listener.full_calc_on_load,
           first_sheet: listener.first_sheet,
           show_sheet_tabs: listener.show_sheet_tabs,
-          tab_ratio: listener.tab_ratio
+          tab_ratio: listener.tab_ratio,
+          code_name: listener.code_name
         }
       end
 
@@ -34,7 +35,7 @@ module Xlsxrb
       class Listener
         include REXML::SAX2Listener
 
-        attr_reader :sheets, :date1904, :defined_names, :active_tab, :full_calc_on_load, :first_sheet, :show_sheet_tabs, :tab_ratio
+        attr_reader :sheets, :date1904, :defined_names, :active_tab, :full_calc_on_load, :first_sheet, :show_sheet_tabs, :tab_ratio, :code_name
 
         def initialize
           @sheets = []
@@ -45,6 +46,7 @@ module Xlsxrb
           @first_sheet = nil
           @show_sheet_tabs = nil
           @tab_ratio = nil
+          @code_name = nil
           @in_defined_name = false
           @current_dn = nil
           @dn_text = +""
@@ -71,6 +73,7 @@ module Xlsxrb
           when "workbookPr"
             d1904 = attrs["date1904"]
             @date1904 = %w[1 true].include?(d1904) unless d1904.nil?
+            @code_name = attrs["codeName"] if attrs["codeName"]
           when "workbookView"
             at = attrs["activeTab"]
             @active_tab = at.to_i if at

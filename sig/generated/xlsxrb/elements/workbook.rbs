@@ -59,6 +59,13 @@ module Xlsxrb
       # : () -> bool
       def date1904?: () -> bool
 
+      # Returns the internal VBA or application code name of the workbook, or nil if not specified.
+      #
+      # @return [String, nil]
+      # @api public
+      # : () -> String?
+      def code_name: () -> String?
+
       # Returns the 0-based active worksheet tab index from workbookView, or nil if not set.
       #
       # @return [Integer, nil]

@@ -404,12 +404,46 @@ module Xlsxrb
     # : () -> Hash[Symbol, untyped]?
     def sheet_protection: () -> Hash[Symbol, untyped]?
 
-    # Returns sheet-level properties (tabColor, outlinePr) for this worksheet.
+    # Returns sheet-level properties (tabColor, outlinePr, sheetPr) for this worksheet.
     #
     # @return [Hash[Symbol, untyped]]
     # @api public
     # : () -> Hash[Symbol, untyped]
     def sheet_properties: () -> Hash[Symbol, untyped]
+
+    # Returns the internal VBA or application code name of the worksheet, or nil if not specified.
+    #
+    # @return [String, nil]
+    # @api public
+    # : () -> String?
+    def code_name: () -> String?
+
+    # Returns whether fit-to-page is enabled for page setup on this worksheet.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def fit_to_page?: () -> bool
+
+    alias fit_to_page fit_to_page?
+
+    # Returns whether full calculation on load is enabled on this worksheet.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def full_calc_on_load?: () -> bool
+
+    alias full_calc_on_load full_calc_on_load?
+
+    # Returns sheet calculation properties (<sheetCalcPr>), or nil if not present.
+    #
+    # @return [Hash, nil]
+    # @api public
+    # : () -> Hash[Symbol, untyped]?
+    def sheet_calc_pr: () -> Hash[Symbol, untyped]?
+
+    alias calc_pr sheet_calc_pr
 
     # Returns the worksheet tab color specification, or nil if not set.
     #

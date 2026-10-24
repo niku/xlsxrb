@@ -36,7 +36,7 @@ module Xlsxrb
 
       # Write the worksheet footer. Call once after all rows.
       # Options for post-sheetData elements (in OOXML order):
-      def finish: (?drawing_rid: untyped, ?sheet_protection: untyped, ?protected_ranges: untyped, ?auto_filter: untyped, ?filter_columns: untyped, ?sort_state: untyped, ?merge_cells: untyped, ?conditional_formats: untyped, ?data_validations: untyped, ?hyperlinks: untyped, ?print_options: untyped, ?page_margins: untyped, ?page_setup: untyped, ?header_footer: untyped, ?row_breaks: untyped, ?col_breaks: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?tables: untyped, ?table_start_rid: untyped, ?legacy_drawing_rid: untyped, ?sparkline_groups: untyped, ?phonetic_pr: untyped) -> untyped
+      def finish: (?drawing_rid: untyped, ?sheet_protection: untyped, ?protected_ranges: untyped, ?auto_filter: untyped, ?filter_columns: untyped, ?sort_state: untyped, ?merge_cells: untyped, ?conditional_formats: untyped, ?data_validations: untyped, ?hyperlinks: untyped, ?print_options: untyped, ?page_margins: untyped, ?page_setup: untyped, ?header_footer: untyped, ?row_breaks: untyped, ?col_breaks: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?tables: untyped, ?table_start_rid: untyped, ?legacy_drawing_rid: untyped, ?sparkline_groups: untyped, ?phonetic_pr: untyped, ?sheet_calc_pr: untyped) -> untyped
 
       private
 
@@ -83,6 +83,8 @@ module Xlsxrb
       def write_ignored_errors: (untyped errors) -> untyped
 
       def write_phonetic_pr: (untyped props) -> untyped
+
+      def write_sheet_calc_pr: (untyped props) -> untyped
 
       def write_table_parts: (untyped tables, untyped start_rid) -> untyped
 

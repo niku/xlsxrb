@@ -469,4 +469,24 @@ class XsdValidationTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  # 17. Code name, fit-to-page, and sheetCalcPr XSD sequence conformance
+  def test_code_name_fit_to_page_and_sheet_calc_pr_xsd_validation
+    tmp = Tempfile.new(["xsd_sheet_props", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.code_name = "ThisWorkbook"
+        w.sheet("Sheet1", code_name: "Sheet1Code") do |s|
+          s.row([1, 2, 3])
+          s.fit_to_page(true, width: 1, height: 2)
+          s.sheet_calc_pr(full_calc_on_load: true)
+          s.protect_sheet(password: "secret")
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
 end

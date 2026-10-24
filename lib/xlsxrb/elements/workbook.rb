@@ -80,6 +80,15 @@ module Xlsxrb
         workbook_properties[:date1904] ? true : false
       end
 
+      # Returns the internal VBA or application code name of the workbook, or nil if not specified.
+      #
+      # @return [String, nil]
+      # @api public
+      #: () -> String?
+      def code_name
+        workbook_properties[:code_name]
+      end
+
       # Returns the 0-based active worksheet tab index from workbookView, or nil if not set.
       #
       # @return [Integer, nil]

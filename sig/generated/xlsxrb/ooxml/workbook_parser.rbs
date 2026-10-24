@@ -29,6 +29,8 @@ module Xlsxrb
 
         attr_reader tab_ratio: untyped
 
+        attr_reader code_name: untyped
+
         def initialize: () -> untyped
 
         def start_element: (untyped _uri, untyped localname, untyped _qname, untyped attrs) -> untyped

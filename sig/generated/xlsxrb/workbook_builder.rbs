@@ -62,6 +62,16 @@ module Xlsxrb
 
     alias tab_ratio= tab_ratio
 
+    # Gets or sets the internal code name of the workbook.
+    #
+    # @param name [String, Symbol, nil] The code name.
+    # @return [String, nil]
+    # @api public
+    # : (?String | Symbol | nil name) -> String?
+    def code_name: (?String | Symbol | nil name) -> String?
+
+    alias code_name= code_name
+
     # Sets a workbook-level property.
     #
     # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,

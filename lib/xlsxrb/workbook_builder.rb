@@ -98,6 +98,21 @@ module Xlsxrb
     end
     alias tab_ratio= tab_ratio
 
+    # Gets or sets the internal code name of the workbook.
+    #
+    # @param name [String, Symbol, nil] The code name.
+    # @return [String, nil]
+    # @api public
+    #: (?String | Symbol | nil name) -> String?
+    def code_name(name = nil)
+      if name
+        @workbook_properties[:code_name] = name.to_s
+      else
+        @workbook_properties[:code_name]
+      end
+    end
+    alias code_name= code_name
+
     # Sets a workbook-level property.
     #
     # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
@@ -132,6 +147,7 @@ module Xlsxrb
       active = opts.delete(:active)
       state = opts.delete(:state)
       hidden = opts.delete(:hidden)
+      code_name = opts.delete(:code_name)
       state ||= :hidden if hidden
       state ||= :visible
       state = state.to_sym
@@ -140,6 +156,7 @@ module Xlsxrb
       @active_sheet = name if active
 
       sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state)
+      sheet_builder.code_name(code_name) if code_name
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
       yield sheet_builder if block_given?
       @sheet_builders << sheet_builder

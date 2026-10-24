@@ -51,6 +51,7 @@ module Xlsxrb
       @cell_watches = []
       @ignored_errors = []
       @phonetic_properties = nil
+      @sheet_calc_pr = nil
       @print_area = nil
       @print_titles = nil
     end
@@ -580,7 +581,31 @@ module Xlsxrb
     #: (**untyped opts) -> void
     def page_setup(**opts)
       @page_setup.merge!(opts)
+      return unless (opts.key?(:fit_to_width) || opts.key?(:fit_to_height)) && !@sheet_properties.key?(:fit_to_page)
+
+      @sheet_properties[:fit_to_page] = true
     end
+
+    # Configures whether page setup fits content to page width/height.
+    # When enabled, optionally sets fit_to_width and/or fit_to_height on page_setup.
+    #
+    # @param enabled [Boolean, nil] Whether to fit to page.
+    # @param width [Integer, nil] Pages wide to fit to.
+    # @param height [Integer, nil] Pages tall to fit to.
+    # @return [Boolean, void]
+    # @api public
+    #: (?bool? enabled, ?width: Integer?, ?height: Integer?) -> (bool | void)
+    def fit_to_page(enabled = nil, width: nil, height: nil)
+      if enabled.nil? && width.nil? && height.nil?
+        return @sheet_properties[:fit_to_page] ? true : false
+      end
+
+      @sheet_properties[:fit_to_page] = (enabled.nil? || (enabled ? true : false))
+      page_setup(fit_to_width: width) if width
+      page_setup(fit_to_height: height) if height
+    end
+    alias fit_to_page= fit_to_page
+    alias fit_to_page? fit_to_page
 
     # Configures headers and footers for printing.
     #
@@ -979,6 +1004,44 @@ module Xlsxrb
       res
     end
 
+    # Sets or gets the internal code name of the worksheet.
+    #
+    # @param val [String, Symbol, nil] The code name.
+    # @return [String, nil]
+    # @api public
+    #: (?String | Symbol | nil val) -> String?
+    def code_name(val = nil)
+      return @sheet_properties[:code_name] if val.nil?
+
+      @sheet_properties[:code_name] = val.to_s
+    end
+    alias code_name= code_name
+
+    # Configures worksheet calculation properties (<sheetCalcPr>).
+    #
+    # @example Instruct Excel to recalculate formulas when loading sheet
+    #   sheet.sheet_calc_pr(full_calc_on_load: true)
+    #
+    # @param spec [Hash, nil] Calculation properties hash.
+    # @param full_calc_on_load [Boolean, nil] Whether to recalculate when loading.
+    # @return [Hash, nil]
+    # @api public
+    #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+    def sheet_calc_pr(spec = nil, full_calc_on_load: nil, **opts)
+      if spec.nil? && full_calc_on_load.nil? && opts.empty?
+        return @sheet_calc_pr || (@sheet_properties[:full_calc_on_load] ? { full_calc_on_load: true } : nil)
+      end
+
+      pr = spec.is_a?(Hash) ? spec.dup : {}
+      pr[:full_calc_on_load] = full_calc_on_load unless full_calc_on_load.nil?
+      pr.merge!(opts) unless opts.empty?
+      @sheet_properties[:full_calc_on_load] = pr[:full_calc_on_load] unless pr[:full_calc_on_load].nil?
+      @sheet_calc_pr = pr
+    end
+    alias sheet_calc_pr= sheet_calc_pr
+    alias calc_pr sheet_calc_pr
+    alias calc_pr= sheet_calc_pr
+
     # Builds and returns the in-memory {Elements::Worksheet}.
     #
     # @return [Elements::Worksheet]
@@ -1016,6 +1079,7 @@ module Xlsxrb
       facade_meta[:cell_watches] = @cell_watches unless @cell_watches.empty?
       facade_meta[:ignored_errors] = @ignored_errors unless @ignored_errors.empty?
       facade_meta[:phonetic_properties] = @phonetic_properties if @phonetic_properties
+      facade_meta[:sheet_calc_pr] = @sheet_calc_pr if @sheet_calc_pr
       facade_meta[:print_area] = @print_area if @print_area
       facade_meta[:print_titles] = @print_titles if @print_titles
 
@@ -1083,7 +1147,8 @@ module Xlsxrb
         cell_watches: @cell_watches,
         ignored_errors: @ignored_errors,
         phonetic_properties: @phonetic_properties,
-        selection: @selection
+        selection: @selection,
+        sheet_calc_pr: @sheet_calc_pr
       )
     end
 

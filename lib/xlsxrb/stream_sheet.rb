@@ -359,7 +359,8 @@ module Xlsxrb
         cell_watches: cell_watches,
         ignored_errors: ignored_errors,
         phonetic_properties: phonetic_properties,
-        selection: selection
+        selection: selection,
+        sheet_calc_pr: sheet_calc_pr
       )
     end
     alias to_worksheet load
@@ -616,13 +617,13 @@ module Xlsxrb
                             end
     end
 
-    # Returns sheet-level properties (tabColor, outlinePr) for this worksheet.
+    # Returns sheet-level properties (tabColor, outlinePr, sheetPr) for this worksheet.
     #
     # @return [Hash[Symbol, untyped]]
     # @api public
     #: () -> Hash[Symbol, untyped]
     def sheet_properties
-      @sheet_properties ||= if raw_sheet_xml.include?("<sheetPr")
+      @sheet_properties ||= if raw_sheet_xml.include?("<sheetPr") || raw_sheet_xml.include?("<sheetCalcPr")
                               listener = Ooxml::Reader::SheetPropertiesListener.new
                               Ooxml::XmlParser.parse(raw_sheet_xml, listener)
                               listener.properties
@@ -630,6 +631,45 @@ module Xlsxrb
                               {}
                             end
     end
+
+    # Returns the internal VBA or application code name of the worksheet, or nil if not specified.
+    #
+    # @return [String, nil]
+    # @api public
+    #: () -> String?
+    def code_name
+      sheet_properties[:code_name]
+    end
+
+    # Returns whether fit-to-page is enabled for page setup on this worksheet.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def fit_to_page?
+      sheet_properties[:fit_to_page] ? true : false
+    end
+    alias fit_to_page fit_to_page?
+
+    # Returns whether full calculation on load is enabled on this worksheet.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def full_calc_on_load?
+      sheet_properties[:full_calc_on_load] ? true : false
+    end
+    alias full_calc_on_load full_calc_on_load?
+
+    # Returns sheet calculation properties (<sheetCalcPr>), or nil if not present.
+    #
+    # @return [Hash, nil]
+    # @api public
+    #: () -> Hash[Symbol, untyped]?
+    def sheet_calc_pr
+      sheet_properties[:full_calc_on_load] ? { full_calc_on_load: true } : nil
+    end
+    alias calc_pr sheet_calc_pr
 
     # Returns the worksheet tab color specification, or nil if not set.
     #

@@ -84,6 +84,7 @@ module Xlsxrb
       @current_cell_watches = []
       @current_ignored_errors = []
       @current_phonetic_properties = nil
+      @current_sheet_calc_pr = nil
       @current_cells = {}
       @styles = {} # { style_name => StyleBuilder }
       @style_writer = Ooxml::Writer.new
@@ -1109,6 +1110,52 @@ module Xlsxrb
       alias phonetic_properties= phonetic_properties
       alias phonetic_pr phonetic_properties
       alias phonetic_pr= phonetic_properties
+
+      # Sets or gets the internal code name of the worksheet.
+      #
+      # @param val [String, Symbol, nil] The code name.
+      # @return [String, nil]
+      # @api public
+      #: (?String | Symbol | nil val) -> String?
+      def code_name(val = nil)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.code_name(val)
+      end
+      alias code_name= code_name
+
+      # Configures whether page setup fits content to page width/height.
+      # When enabled, optionally sets fit_to_width and/or fit_to_height on page_setup.
+      #
+      # @param enabled [Boolean, nil] Whether to fit to page.
+      # @param width [Integer, nil] Pages wide to fit to.
+      # @param height [Integer, nil] Pages tall to fit to.
+      # @return [Boolean, void]
+      # @api public
+      #: (?bool? enabled, ?width: Integer?, ?height: Integer?) -> (bool | void)
+      def fit_to_page(enabled = nil, width: nil, height: nil)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.fit_to_page(enabled, width: width, height: height)
+      end
+      alias fit_to_page= fit_to_page
+      alias fit_to_page? fit_to_page
+
+      # Configures worksheet calculation properties (<sheetCalcPr>).
+      #
+      # @param spec [Hash, nil] Calculation properties hash.
+      # @param full_calc_on_load [Boolean, nil] Whether to recalculate when loading.
+      # @return [Hash, nil]
+      # @api public
+      #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+      def sheet_calc_pr(spec = nil, full_calc_on_load: nil, **)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sheet_calc_pr(spec, full_calc_on_load: full_calc_on_load, **)
+      end
+      alias sheet_calc_pr= sheet_calc_pr
+      alias calc_pr sheet_calc_pr
+      alias calc_pr= sheet_calc_pr
     end
 
     # Adds a new sheet to the workbook and starts streaming rows into it.
@@ -1193,6 +1240,7 @@ module Xlsxrb
       @current_cell_watches = []
       @current_ignored_errors = []
       @current_phonetic_properties = nil
+      @current_sheet_calc_pr = nil
       @current_cells = {}
 
       return unless block_given?
@@ -1672,6 +1720,9 @@ module Xlsxrb
     def page_setup(**opts)
       sheet if @current_sheet.nil?
       @current_page_setup.merge!(opts)
+      return unless (opts.key?(:fit_to_width) || opts.key?(:fit_to_height)) && !@current_sheet_properties.key?(:fit_to_page)
+
+      @current_sheet_properties[:fit_to_page] = true
     end
 
     # Configures headers and footers for printing.
@@ -1954,6 +2005,75 @@ module Xlsxrb
     alias phonetic_properties= phonetic_properties
     alias phonetic_pr phonetic_properties
     alias phonetic_pr= phonetic_properties
+
+    # Sets or gets the internal code name of the current worksheet (or workbook if no sheet is open).
+    #
+    # @param val [String, Symbol, nil] The code name.
+    # @return [String, nil]
+    # @api public
+    #: (?String | Symbol | nil val) -> String?
+    def code_name(val = nil)
+      if @current_sheet.nil?
+        if val.nil?
+          @workbook_properties[:code_name]
+        else
+          @workbook_properties[:code_name] = val.to_s
+        end
+      elsif val.nil?
+        @current_sheet_properties[:code_name]
+      else
+        @current_sheet_properties[:code_name] = val.to_s
+      end
+    end
+    alias code_name= code_name
+
+    # Configures whether page setup fits content to page width/height for the current sheet.
+    # When enabled, optionally sets fit_to_width and/or fit_to_height on page_setup.
+    #
+    # @param enabled [Boolean, nil] Whether to fit to page.
+    # @param width [Integer, nil] Pages wide to fit to.
+    # @param height [Integer, nil] Pages tall to fit to.
+    # @return [Boolean, void]
+    # @api public
+    #: (?bool? enabled, ?width: Integer?, ?height: Integer?) -> (bool | void)
+    def fit_to_page(enabled = nil, width: nil, height: nil)
+      sheet if @current_sheet.nil?
+      if enabled.nil? && width.nil? && height.nil?
+        return @current_sheet_properties[:fit_to_page] ? true : false
+      end
+
+      @current_sheet_properties[:fit_to_page] = (enabled.nil? || (enabled ? true : false))
+      page_setup(fit_to_width: width) if width
+      page_setup(fit_to_height: height) if height
+    end
+    alias fit_to_page= fit_to_page
+    alias fit_to_page? fit_to_page
+
+    # Configures worksheet calculation properties (<sheetCalcPr>) for the current sheet.
+    #
+    # @example Instruct Excel to recalculate formulas when loading sheet
+    #   w.sheet_calc_pr(full_calc_on_load: true)
+    #
+    # @param spec [Hash, nil] Calculation properties hash.
+    # @param full_calc_on_load [Boolean, nil] Whether to recalculate when loading.
+    # @return [Hash, nil]
+    # @api public
+    #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+    def sheet_calc_pr(spec = nil, full_calc_on_load: nil, **opts)
+      sheet if @current_sheet.nil?
+      if spec.nil? && full_calc_on_load.nil? && opts.empty?
+        return @current_sheet_calc_pr || (@current_sheet_properties[:full_calc_on_load] ? { full_calc_on_load: true } : nil)
+      end
+
+      pr = spec.is_a?(Hash) ? spec.dup : {}
+      pr[:full_calc_on_load] = full_calc_on_load unless full_calc_on_load.nil?
+      pr.merge!(opts) unless opts.empty?
+      @current_sheet_properties[:full_calc_on_load] = pr[:full_calc_on_load] unless pr[:full_calc_on_load].nil?
+      @current_sheet_calc_pr = pr
+    end
+    alias sheet_calc_pr= sheet_calc_pr
+    alias calc_pr sheet_calc_pr
+    alias calc_pr= sheet_calc_pr
 
     # --- Workbook-Level Methods ---
 
@@ -2296,7 +2416,8 @@ module Xlsxrb
         protected_ranges: @current_protected_ranges,
         cell_watches: @current_cell_watches,
         ignored_errors: @current_ignored_errors,
-        phonetic_properties: @current_phonetic_properties
+        phonetic_properties: @current_phonetic_properties,
+        sheet_calc_pr: @current_sheet_calc_pr
       }
       sheet_data[:cells] = @current_cells if @current_cells && !@current_cells.empty?
       @current_cells = nil
@@ -2324,6 +2445,7 @@ module Xlsxrb
         cell_watches: @current_cell_watches.empty? ? nil : @current_cell_watches,
         ignored_errors: @current_ignored_errors.empty? ? nil : @current_ignored_errors,
         phonetic_pr: @current_phonetic_properties,
+        sheet_calc_pr: @current_sheet_calc_pr,
         tables: @current_tables.empty? ? nil : @current_tables,
         table_start_rid: info[:table_start_rid],
         legacy_drawing_rid: info[:vml_rid],
