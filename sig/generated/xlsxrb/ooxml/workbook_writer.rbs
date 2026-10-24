@@ -58,6 +58,12 @@ module Xlsxrb
 
       def write_dxf_fill: (untyped builder, untyped fill) -> untyped
 
+      def write_dxf_alignment: (untyped builder, untyped alignment) -> untyped
+
+      def write_dxf_border: (untyped builder, untyped border) -> untyped
+
+      def write_dxf_protection: (untyped builder, untyped protection) -> untyped
+
       # : (untyped rgb) -> ::String?
       def format_rgb_hex: (untyped rgb) -> untyped
 

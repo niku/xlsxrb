@@ -34,7 +34,8 @@ module Xlsxrb
             fills: [],
             borders: [],
             cell_xfs: [],
-            cell_style_xfs: []
+            cell_style_xfs: [],
+            dxfs: []
           }
           @context = []
           @current_font = nil
@@ -45,6 +46,7 @@ module Xlsxrb
           @current_xf = nil
           @in_cell_xfs = false
           @in_cell_style_xfs = false
+          @current_dxf = nil
         end
 
         def start_element(_uri, localname, _qname, attrs)
@@ -53,13 +55,29 @@ module Xlsxrb
           when "numFmt"
             id = attrs["numFmtId"]&.to_i
             code = attrs["formatCode"]
-            @result[:num_fmts][id] = code if id && code
+            if @current_dxf
+              @current_dxf[:num_fmt] = { num_fmt_id: id, format_code: code } if id && code
+            elsif parent_context?("numFmts") && id && code
+              @result[:num_fmts][id] = code
+            end
+          when "dxf"
+            @current_dxf = {} if parent_context?("dxfs")
           when "font"
-            @current_font = {} if parent_context?("fonts")
+            @current_font = {} if parent_context?("fonts") || (@current_dxf && parent_context?("dxf"))
           when "b"
-            @current_font[:bold] = true if @current_font
+            @current_font[:bold] = truthy_val?(attrs) if @current_font
           when "i"
-            @current_font[:italic] = true if @current_font
+            @current_font[:italic] = truthy_val?(attrs) if @current_font
+          when "strike"
+            @current_font[:strike] = truthy_val?(attrs) if @current_font
+          when "shadow"
+            @current_font[:shadow] = truthy_val?(attrs) if @current_font
+          when "outline"
+            @current_font[:outline] = truthy_val?(attrs) if @current_font
+          when "condense"
+            @current_font[:condense] = truthy_val?(attrs) if @current_font
+          when "extend"
+            @current_font[:extend] = truthy_val?(attrs) if @current_font
           when "u"
             @current_font[:underline] = attrs["val"] || "single" if @current_font
           when "sz"
@@ -69,13 +87,13 @@ module Xlsxrb
           when "name"
             @current_font[:name] = attrs["val"] if @current_font
           when "fill"
-            @current_fill = {} if parent_context?("fills")
+            @current_fill = {} if parent_context?("fills") || (@current_dxf && parent_context?("dxf"))
           when "patternFill"
             @current_fill_pattern = attrs["patternType"] if @current_fill
           when "fgColor", "bgColor"
             handle_fill_color(localname, attrs) if @current_fill
           when "border"
-            if parent_context?("borders")
+            if parent_context?("borders") || (@current_dxf && parent_context?("dxf"))
               @current_border = {}
               @current_border[:diagonal_up] = true if attrs["diagonalUp"] == "1"
               @current_border[:diagonal_down] = true if attrs["diagonalDown"] == "1"
@@ -99,19 +117,36 @@ module Xlsxrb
           case localname
           when "font"
             if @current_font
-              @result[:fonts] << @current_font
+              if @current_dxf
+                @current_dxf[:font] = @current_font
+              else
+                @result[:fonts] << @current_font
+              end
               @current_font = nil
             end
           when "fill"
             if @current_fill
               @current_fill[:pattern] = @current_fill_pattern if @current_fill_pattern
-              @result[:fills] << @current_fill
+              if @current_dxf
+                @current_dxf[:fill] = @current_fill
+              else
+                @result[:fills] << @current_fill
+              end
               @current_fill = nil
               @current_fill_pattern = nil
             end
+          when "dxf"
+            if @current_dxf
+              (@result[:dxfs] ||= []) << @current_dxf
+              @current_dxf = nil
+            end
           when "border"
             if @current_border
-              @result[:borders] << @current_border
+              if @current_dxf
+                @current_dxf[:border] = @current_border
+              else
+                @result[:borders] << @current_border
+              end
               @current_border = nil
             end
           when "left", "right", "top", "bottom", "diagonal"
@@ -179,8 +214,14 @@ module Xlsxrb
           }
         end
 
+        def truthy_val?(attrs)
+          val = attrs["val"]
+          val.nil? || (val != "0" && val.downcase != "false")
+        end
+
         def handle_alignment(attrs)
-          return unless @current_xf
+          target = @current_xf || (@current_dxf if parent_context?("dxf"))
+          return unless target
 
           alignment = {}
           alignment[:horizontal] = attrs["horizontal"] if attrs["horizontal"]
@@ -189,16 +230,17 @@ module Xlsxrb
           alignment[:text_rotation] = attrs["textRotation"]&.to_i if attrs["textRotation"]
           alignment[:indent] = attrs["indent"]&.to_i if attrs["indent"]
           alignment[:shrink_to_fit] = true if attrs["shrinkToFit"] == "1"
-          @current_xf[:alignment] = alignment unless alignment.empty?
+          target[:alignment] = alignment unless alignment.empty?
         end
 
         def handle_protection(attrs)
-          return unless @current_xf
+          target = @current_xf || (@current_dxf if parent_context?("dxf"))
+          return unless target
 
           protection = {}
           protection[:locked] = attrs["locked"] == "1" unless attrs["locked"].nil?
           protection[:hidden] = attrs["hidden"] == "1" unless attrs["hidden"].nil?
-          @current_xf[:protection] = protection unless protection.empty?
+          target[:protection] = protection unless protection.empty?
         end
 
         def finalize_xf
@@ -214,6 +256,7 @@ module Xlsxrb
 
         def extract_color(attrs)
           color = {}
+          color[:auto] = true if %w[1 true].include?(attrs["auto"])
           color[:rgb] = attrs["rgb"] if attrs["rgb"]
           color[:theme] = attrs["theme"]&.to_i if attrs["theme"]
           color[:indexed] = attrs["indexed"]&.to_i if attrs["indexed"]

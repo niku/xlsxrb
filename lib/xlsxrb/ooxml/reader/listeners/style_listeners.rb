@@ -135,19 +135,19 @@ module Xlsxrb
           when "font"
             @current_font = {} if @inside_fonts || @inside_dxfs
           when "b"
-            @current_font[:bold] = true if @current_font
+            @current_font[:bold] = truthy_val?(attributes) if @current_font
           when "i"
-            @current_font[:italic] = true if @current_font
+            @current_font[:italic] = truthy_val?(attributes) if @current_font
           when "strike"
-            @current_font[:strike] = true if @current_font
+            @current_font[:strike] = truthy_val?(attributes) if @current_font
           when "shadow"
-            @current_font[:shadow] = true if @current_font
+            @current_font[:shadow] = truthy_val?(attributes) if @current_font
           when "outline"
-            @current_font[:outline] = true if @current_font
+            @current_font[:outline] = truthy_val?(attributes) if @current_font
           when "condense"
-            @current_font[:condense] = true if @current_font
+            @current_font[:condense] = truthy_val?(attributes) if @current_font
           when "extend"
-            @current_font[:extend] = true if @current_font
+            @current_font[:extend] = truthy_val?(attributes) if @current_font
           when "u"
             if @current_font
               val = attributes["val"]
@@ -302,6 +302,11 @@ module Xlsxrb
         end
 
         private
+
+        def truthy_val?(attributes)
+          val = attributes["val"]
+          val.nil? || (val != "0" && val.downcase != "false")
+        end
 
         def parse_color(attributes)
           if @inside_mru_colors

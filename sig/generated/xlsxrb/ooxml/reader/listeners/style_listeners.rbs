@@ -37,6 +37,8 @@ module Xlsxrb
 
         private
 
+        def truthy_val?: (untyped attributes) -> untyped
+
         def parse_color: (untyped attributes) -> untyped
 
         def parse_fill_color: (untyped key, untyped attributes) -> untyped

@@ -770,6 +770,9 @@ module Xlsxrb
                   b.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id].to_s, formatCode: nf[:format_code].to_s })
                 end
                 write_dxf_fill(b, dxf[:fill]) if dxf[:fill]
+                write_dxf_alignment(b, dxf[:alignment]) if dxf[:alignment]
+                write_dxf_border(b, dxf[:border]) if dxf[:border]
+                write_dxf_protection(b, dxf[:protection]) if dxf[:protection]
               end
             end
           end
@@ -825,10 +828,17 @@ module Xlsxrb
 
       def write_dxf_font(builder, font)
         builder.tag("font") do |_|
-          builder.empty_tag("b") if font[:bold]
-          builder.empty_tag("i") if font[:italic]
+          if font.key?(:bold)
+            font[:bold] ? builder.empty_tag("b") : builder.empty_tag("b", { val: "0" })
+          end
+          if font.key?(:italic)
+            font[:italic] ? builder.empty_tag("i") : builder.empty_tag("i", { val: "0" })
+          end
+          if font.key?(:strike)
+            font[:strike] ? builder.empty_tag("strike") : builder.empty_tag("strike", { val: "0" })
+          end
           if font[:underline]
-            if font[:underline] == true
+            if [true, "single"].include?(font[:underline])
               builder.empty_tag("u")
             else
               builder.empty_tag("u", { val: font[:underline] })
@@ -843,14 +853,68 @@ module Xlsxrb
 
       def write_dxf_fill(builder, fill)
         builder.tag("fill") do |_|
-          pattern = fill[:pattern] || "solid"
-          builder.tag("patternFill", { patternType: pattern }) do |_|
+          pattern_attrs = {}
+          pattern_attrs[:patternType] = fill[:pattern] if fill[:pattern]
+          builder.tag("patternFill", pattern_attrs) do |_|
             fg_attrs = color_tag_attrs(fill[:fg_color])
             builder.empty_tag("fgColor", fg_attrs) if fg_attrs
             bg_attrs = color_tag_attrs(fill[:bg_color])
             builder.empty_tag("bgColor", bg_attrs) if bg_attrs
           end
         end
+      end
+
+      def write_dxf_alignment(builder, alignment)
+        return if alignment.nil? || alignment.empty?
+
+        align_attrs = {}
+        align_attrs[:horizontal] = alignment[:horizontal] if alignment[:horizontal]
+        align_attrs[:vertical] = alignment[:vertical] if alignment[:vertical]
+        align_attrs[:wrapText] = "1" if alignment[:wrap_text]
+        align_attrs[:textRotation] = alignment[:text_rotation].to_s if alignment[:text_rotation]
+        align_attrs[:indent] = alignment[:indent].to_s if alignment[:indent]
+        align_attrs[:relativeIndent] = alignment[:relative_indent].to_s if alignment[:relative_indent]
+        align_attrs[:shrinkToFit] = "1" if alignment[:shrink_to_fit]
+        align_attrs[:readingOrder] = alignment[:reading_order].to_s if alignment[:reading_order]
+        align_attrs[:justifyLastLine] = "1" if alignment[:justify_last_line]
+        builder.empty_tag("alignment", align_attrs) unless align_attrs.empty?
+      end
+
+      def write_dxf_border(builder, border)
+        return if border.nil? || border.empty?
+
+        border_attrs = {}
+        border_attrs[:diagonalUp] = "1" if border[:diagonal_up]
+        border_attrs[:diagonalDown] = "1" if border[:diagonal_down]
+
+        builder.tag("border", border_attrs) do |_|
+          %i[left right top bottom diagonal].each do |side|
+            side_data = border[side]
+            next unless side_data
+
+            tag_attrs = {}
+            tag_attrs[:style] = side_data[:style] if side_data[:style]
+            c_attrs = color_tag_attrs(side_data[:color])
+            if c_attrs
+              builder.tag(side.to_s, tag_attrs) do |_|
+                builder.empty_tag("color", c_attrs)
+              end
+            elsif !tag_attrs.empty?
+              builder.empty_tag(side.to_s, tag_attrs)
+            else
+              builder.empty_tag(side.to_s)
+            end
+          end
+        end
+      end
+
+      def write_dxf_protection(builder, protection)
+        return if protection.nil? || protection.empty?
+
+        prot_attrs = {}
+        prot_attrs[:locked] = protection[:locked] ? "1" : "0" unless protection[:locked].nil?
+        prot_attrs[:hidden] = protection[:hidden] ? "1" : "0" unless protection[:hidden].nil?
+        builder.empty_tag("protection", prot_attrs) unless prot_attrs.empty?
       end
 
       # : (untyped rgb) -> ::String?

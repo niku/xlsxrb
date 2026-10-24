@@ -152,4 +152,83 @@ class StyleTest < Test::Unit::TestCase
       assert_equal(false, xf&.dig(:protection, :hidden))
     end
   end
+
+  test "differential formats referenced by conditional formatting survive modify" do
+    styles_xml = <<~XML
+      <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <fonts count="1"><font><b val="0"/><sz val="10"/><name val="Arial"/></font></fonts>
+        <dxfs count="2">
+          <dxf><fill><patternFill><bgColor rgb="FFBFBFBF"/></patternFill></fill></dxf>
+          <dxf><font><b/><i val="0"/><color auto="1"/></font><numFmt numFmtId="164" formatCode="0.0"/></dxf>
+        </dxfs>
+      </styleSheet>
+    XML
+
+    styles = Xlsxrb::Ooxml::StylesParser.parse(styles_xml)
+
+    assert_equal(false, styles[:fonts].first[:bold])
+    assert_equal([{ fill: { bg_color: { rgb: "FFBFBFBF" } } },
+                  { font: { bold: true, italic: false, color: { auto: true } }, num_fmt: { num_fmt_id: 164, format_code: "0.0" } }],
+                 styles[:dxfs])
+    assert_equal({}, styles[:num_fmts])
+
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "cf.xlsx")
+      Xlsxrb.write(path) do |w|
+        w.sheet("S") do |s|
+          s.row([1, 20])
+          s.conditional_format("A1:B1", type: :cell_is, operator: :greaterThan, formula: "15", priority: 1, fill_color: "FFBFBFBF")
+        end
+      end
+      out = File.join(dir, "out.xlsx")
+      Xlsxrb.modify(path, out) { |wb| wb.with(sheets: wb.sheets + [Xlsxrb::Elements::Worksheet.new(name: "Added")]) }
+
+      reread = Xlsxrb.read(out)
+      cf = reread.sheets.first.load.conditional_formatting.first
+      assert_equal(0, cf[:format_id])
+      assert_equal(1, Xlsxrb::Ooxml::StylesParser.parse(Xlsxrb::Ooxml::ZipReader.open(out) { |z| z.read_entry("xl/styles.xml") })[:dxfs].size)
+    end
+  end
+
+  test "differential formats round-trip with font, alignment, border, and protection" do
+    Dir.mktmpdir do |dir|
+      filepath = File.join(dir, "dxf_all.xlsx")
+      wb = Xlsxrb::Elements::Workbook.new(
+        sheets: [Xlsxrb::Elements::Worksheet.new(name: "Sheet1")],
+        styles: Xlsxrb::Elements::Styles.new(
+          fonts: [{ name: "Calibri", sz: 11 }],
+          fills: [{ pattern: "none" }, { pattern: "gray125" }],
+          borders: [{}],
+          cell_xfs: [{ num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0 }],
+          dxfs: [
+            {
+              font: { bold: false, italic: true, color: { auto: true } },
+              num_fmt: { num_fmt_id: 164, format_code: "0.00" },
+              fill: { pattern: "solid", fg_color: "FFFF0000" },
+              alignment: { horizontal: "center", wrap_text: true },
+              border: { bottom: { style: "thin", color: "FF0000FF" } },
+              protection: { locked: true }
+            }
+          ]
+        )
+      )
+      Xlsxrb.write(filepath, wb)
+
+      parsed = Xlsxrb::Ooxml::StylesParser.parse(Xlsxrb::Ooxml::ZipReader.open(filepath) { |z| z.read_entry("xl/styles.xml") })
+      assert_equal(1, parsed[:dxfs].size)
+      dxf = parsed[:dxfs].first
+      assert_equal(false, dxf.dig(:font, :bold))
+      assert_equal(true, dxf.dig(:font, :italic))
+      assert_equal(true, dxf.dig(:font, :color, :auto))
+      assert_equal(164, dxf.dig(:num_fmt, :num_fmt_id))
+      assert_equal("0.00", dxf.dig(:num_fmt, :format_code))
+      assert_equal("solid", dxf.dig(:fill, :pattern))
+      assert_equal("FFFF0000", dxf.dig(:fill, :fg_color, :rgb))
+      assert_equal("center", dxf.dig(:alignment, :horizontal))
+      assert_equal(true, dxf.dig(:alignment, :wrap_text))
+      assert_equal("thin", dxf.dig(:border, :bottom, :style))
+      assert_equal("FF0000FF", dxf.dig(:border, :bottom, :color, :rgb))
+      assert_equal(true, dxf.dig(:protection, :locked))
+    end
+  end
 end
