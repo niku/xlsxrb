@@ -896,6 +896,46 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("<worksheet><sheetData><row/></sheetData><pageMargins/></worksheet>", replaced_sc)
   end
 
+  test "Xlsxrb.modify correctly replaces entries when archive casing differs or contains backslashes" do
+    buf = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(buf) do |z|
+      z.add_entry("[Content_Types].xml", %(<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>))
+      z.add_entry("_rels/.rels", %(<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>))
+      z.add_entry("xl/workbook.xml", %(<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>))
+      z.add_entry("xl/_rels/workbook.xml.rels", %(<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="SharedStrings.xml"/></Relationships>))
+      z.add_entry("xl/SharedStrings.xml", %(<?xml version="1.0" encoding="UTF-8"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1"><si><t>Initial</t></si></sst>))
+      z.add_entry("xl\\worksheets\\sheet1.xml", %(<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c></row></sheetData></worksheet>))
+    end
+    buf.rewind
+
+    out_buf = StringIO.new
+    Xlsxrb.modify(buf, out_buf) do |wb|
+      wb.update_sheet(0) do |sheet|
+        sheet.update_cell("A1", value: "Updated")
+      end
+    end
+    out_buf.rewind
+
+    reloaded = Xlsxrb.read(out_buf)
+    assert_equal "Updated", reloaded.sheet(0).cell("A1")&.value
+
+    out_buf.rewind
+    entry_names = []
+    Xlsxrb::Ooxml::ZipReader.open(out_buf) do |zr|
+      entry_names = zr.entry_names
+    end
+    assert(entry_names.none? { |e| e.include?("\\") })
+    assert_equal entry_names.size, entry_names.map(&:downcase).uniq.size
+  end
+
+  test "Xlsxrb.modify avoids duplicate xmlns:r and nested hyperlinks in customSheetViews" do
+    sheet_xml = %(<?xml version="1.0" encoding="UTF-8"?><x:worksheet xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><x:customSheetViews><x:customSheetView><x:pageMargins/></x:customSheetView></x:customSheetViews><x:sheetData><x:row r="1"><x:c r="A1"><x:v>1</x:v></x:c></x:row></x:sheetData><x:pageMargins/><x:pageSetup/></x:worksheet>)
+    updated_xml, = Xlsxrb.send(:update_sheet_hyperlinks, sheet_xml, nil, { "A1" => "https://example.com" })
+
+    assert_equal 1, updated_xml.scan("xmlns:r=").size
+    assert_match(%r{</x:sheetData><x:hyperlinks><x:hyperlink ref="A1" r:id="rId1"/></x:hyperlinks>}, updated_xml)
+  end
+
   # 1. Workbook#update_sheet
   test "Workbook#update_sheet creates a new workbook with the updated sheet" do
     wb = Xlsxrb::Elements::Workbook.new(

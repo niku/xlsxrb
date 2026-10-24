@@ -1640,19 +1640,35 @@ module Xlsxrb
 
     #: (untyped dest, Ooxml::ZipReader zip_reader, Hash[String, String] replaced_entries, ?password: String?) -> void
     def perform_modify_write(dest, zip_reader, replaced_entries, password: nil)
+      norm_replaced = {}
+      replaced_entries.each do |k, v|
+        norm_replaced[k.tr("\\", "/").downcase] = [k.tr("\\", "/"), v]
+      end
+
       write_zip = lambda do |zip_out|
         Ooxml::ZipWriter.open(zip_out) do |zip_writer|
+          written_keys = Set.new
+
           zip_reader.entry_names.each do |name|
-            if replaced_entries.key?(name)
-              zip_writer.add_entry(name, replaced_entries[name])
+            norm_name = name.tr("\\", "/").downcase
+            next if written_keys.include?(norm_name)
+
+            written_keys << norm_name
+            canonical_path = name.tr("\\", "/")
+
+            if norm_replaced.key?(norm_name)
+              _orig_key, content = norm_replaced[norm_name]
+              zip_writer.add_entry(canonical_path, content)
             else
-              zip_reader.copy_to_writer(name, zip_writer)
+              zip_reader.copy_to_writer(name, zip_writer, target_path: canonical_path)
             end
           end
-          replaced_entries.each do |name, content|
-            next if zip_reader.entry?(name)
 
-            zip_writer.add_entry(name, content)
+          norm_replaced.each do |norm_name, (canonical_name, content)|
+            next if written_keys.include?(norm_name)
+
+            written_keys << norm_name
+            zip_writer.add_entry(canonical_name, content)
           end
         end
       end
@@ -1676,32 +1692,36 @@ module Xlsxrb
     def append_to_shared_strings_xml(sst_xml, new_strings)
       return sst_xml if new_strings.nil? || new_strings.empty?
 
+      sst_match = sst_xml.match(/<([a-zA-Z0-9_]+:)?sst\b([^>]*)>/)
+      prefix_with_colon = sst_match ? (sst_match[1] || "") : ""
+      si_tag = "#{prefix_with_colon}si"
+      t_tag = "#{prefix_with_colon}t"
+
       new_si_tags = +""
       new_strings.each do |str|
         s = str.to_s
-        needs_space = s.start_with?(" ", "\t", "\n") || s.end_with?(" ", "\t", "\n")
-        space_attr = needs_space ? ' xml:space="preserve"' : ""
-        new_si_tags << "<si><t#{space_attr}>#{Ooxml::XmlBuilder.escape(s)}</t></si>"
+        new_si_tags << "<#{si_tag}><#{t_tag}>#{Ooxml::XmlBuilder.escape(s)}</#{t_tag}></#{si_tag}>"
       end
 
-      sst_close = sst_xml.rindex("</sst>")
+      close_tag = "</#{prefix_with_colon}sst>"
+      sst_close = sst_xml.rindex(close_tag)
       updated_xml = if sst_close
                       prefix = sst_xml[0...sst_close]
                       suffix = sst_xml[sst_close..]
                       "#{prefix}#{new_si_tags}#{suffix}"
                     else
-                      sst_start = sst_xml.index("<sst")
-                      return sst_xml unless sst_start
+                      self_closing = sst_xml.match(%r{<#{Regexp.escape(prefix_with_colon)}sst\b[^>]*/>})
+                      return sst_xml unless self_closing
 
-                      sst_open_end = sst_xml.index("/>", sst_start)
-                      return sst_xml unless sst_open_end
-
-                      prefix = sst_xml[0...sst_open_end]
-                      suffix = sst_xml[(sst_open_end + 2)..]
-                      "#{prefix}>#{new_si_tags}</sst#{suffix}"
+                      sc_idx = self_closing.begin(0)
+                      sc_end = self_closing.end(0)
+                      opening = self_closing[0].sub(%r{/>\z}, ">")
+                      prefix = sst_xml[0...sc_idx]
+                      suffix = sst_xml[sc_end..]
+                      "#{prefix}#{opening}#{new_si_tags}#{close_tag}#{suffix}"
                     end
 
-      updated_xml.sub(/<sst\b([^>]*)>/) do
+      updated_xml.sub(/<#{Regexp.escape(prefix_with_colon)}sst\b([^>]*)>/) do
         attrs = Regexp.last_match(1)
         if attrs =~ /\bcount="(\d+)"/
           old_count = Regexp.last_match(1).to_i
@@ -1717,7 +1737,7 @@ module Xlsxrb
         else
           attrs = "#{attrs} uniqueCount=\"#{new_strings.size}\""
         end
-        "<sst#{attrs}>"
+        "<#{prefix_with_colon}sst#{attrs}>"
       end
     end
 
@@ -1745,6 +1765,8 @@ module Xlsxrb
 
                  sheet_xml[(close_tag_start + close_tag.bytesize)..]
                end
+
+      new_sheet_data_xml = new_sheet_data_xml.gsub(%r{</?(sheetData|row|c|v|f|is|t)\b}) { |m| m.sub(%r{(</?)}, "\\1#{tag_prefix}") } if tag_prefix && !tag_prefix.empty?
 
       "#{prefix}#{new_sheet_data_xml}#{suffix}"
     end
@@ -1791,6 +1813,8 @@ module Xlsxrb
       cur_rid = max_rid_num
       hl_elements = []
 
+      ws_prefix = sheet_xml[/<([a-zA-Z0-9_]+:)?worksheet\b/, 1] || ""
+
       new_hyperlinks.each do |cell_ref, link|
         entry = link.is_a?(Hash) ? link.dup : { url: link.to_s }
         url = entry[:url]
@@ -1820,19 +1844,38 @@ module Xlsxrb
 
         attrs << %( display="#{Ooxml::XmlBuilder.escape(display)}") if display
         attrs << %( tooltip="#{Ooxml::XmlBuilder.escape(tooltip)}") if tooltip
-        hl_elements << "<hyperlink #{attrs}/>"
+        hl_elements << "<#{ws_prefix}hyperlink #{attrs}/>"
       end
 
       updated_sheet_xml = sheet_xml.dup
-      updated_sheet_xml.sub!(/<worksheet\b/, '<worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"') if hl_elements.any? && !updated_sheet_xml.include?('xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"')
+      root_tag = updated_sheet_xml[/\A\s*(?:<\?xml[^>]*\?>\s*)?<([a-zA-Z0-9_]+:)?worksheet\b[^>]*/, 0]
+      updated_sheet_xml.sub!(/<([a-zA-Z0-9_]+:)?worksheet\b/, '\0 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"') if hl_elements.any? && (root_tag.nil? || !root_tag.match?(/\bxmlns:r\s*=/))
 
-      new_hyperlinks_xml = hl_elements.empty? ? "" : "<hyperlinks>#{hl_elements.join}</hyperlinks>"
+      new_hyperlinks_xml = hl_elements.empty? ? "" : "<#{ws_prefix}hyperlinks>#{hl_elements.join}</#{ws_prefix}hyperlinks>"
 
-      if updated_sheet_xml.include?("<hyperlinks")
-        updated_sheet_xml.sub!(%r{<hyperlinks\b[^>]*/\s*>|<hyperlinks\b[^>]*>.*?</hyperlinks>}m, new_hyperlinks_xml)
+      if updated_sheet_xml =~ /<([a-zA-Z0-9_]+:)?hyperlinks\b/
+        updated_sheet_xml.sub!(%r{<([a-zA-Z0-9_]+:)?hyperlinks\b[^>]*/\s*>|<([a-zA-Z0-9_]+:)?hyperlinks\b[^>]*>.*?</\1?hyperlinks>}m, new_hyperlinks_xml)
       elsif hl_elements.any?
-        insert_pattern = %r{<(?:printOptions|pageMargins|pageSetup|headerFooter|rowBreaks|colBreaks|customProperties|cellWatches|ignoredErrors|smartTags|drawing|legacyDrawing|legacyDrawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst)\b|</worksheet>}
-        match = updated_sheet_xml.match(insert_pattern)
+        search_start = 0
+        %w[sheetData customSheetViews mergeCells conditionalFormatting dataValidations].each do |tag|
+          pattern = if ws_prefix.empty?
+                      %r{</#{tag}>|<#{tag}\b[^>]*/\s*>}
+                    else
+                      %r{</#{Regexp.escape(ws_prefix)}#{tag}>|<#{Regexp.escape(ws_prefix)}#{tag}\b[^>]*/\s*>}
+                    end
+          if (m = updated_sheet_xml.match(pattern))
+            end_pos = m.end(0)
+            search_start = end_pos if end_pos > search_start
+          end
+        end
+
+        tags_sub = "printOptions|pageMargins|pageSetup|headerFooter|rowBreaks|colBreaks|customProperties|cellWatches|ignoredErrors|smartTags|drawing|legacyDrawing|legacyDrawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst"
+        insert_pattern = if ws_prefix.empty?
+                           %r{<(?:#{tags_sub})\b|</worksheet>}
+                         else
+                           %r{<#{Regexp.escape(ws_prefix)}(?:#{tags_sub})\b|</#{Regexp.escape(ws_prefix)}worksheet>}
+                         end
+        match = updated_sheet_xml.match(insert_pattern, search_start)
         if match
           updated_sheet_xml.insert(match.begin(0), new_hyperlinks_xml)
         else
@@ -1922,10 +1965,30 @@ module Xlsxrb
           target: "../drawings/vmlDrawing#{comment_file_num}.vml"
         }
 
-        unless updated_sheet_xml.include?("<legacyDrawing")
-          legacy_tag = %(<legacyDrawing r:id="#{vml_rid}"/>)
-          insert_pattern = %r{<(?:picture|oleObjects|controls|webPublishItems|tableParts|extLst)\b|</worksheet>}
-          match = updated_sheet_xml.match(insert_pattern)
+        ws_prefix = updated_sheet_xml[/<([a-zA-Z0-9_]+:)?worksheet\b/, 1] || ""
+        legacy_pattern = ws_prefix.empty? ? /<legacyDrawing\b/ : /<#{Regexp.escape(ws_prefix)}legacyDrawing\b/
+        unless updated_sheet_xml =~ legacy_pattern
+          legacy_tag = %(<#{ws_prefix}legacyDrawing r:id="#{vml_rid}"/>)
+          search_start = 0
+          %w[sheetData customSheetViews mergeCells conditionalFormatting dataValidations hyperlinks pageMargins pageSetup].each do |tag|
+            pattern = if ws_prefix.empty?
+                        %r{</#{tag}>|<#{tag}\b[^>]*/\s*>}
+                      else
+                        %r{</#{Regexp.escape(ws_prefix)}#{tag}>|<#{Regexp.escape(ws_prefix)}#{tag}\b[^>]*/\s*>}
+                      end
+            if (m = updated_sheet_xml.match(pattern))
+              end_pos = m.end(0)
+              search_start = end_pos if end_pos > search_start
+            end
+          end
+
+          tags_sub = "legacyDrawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst"
+          insert_pattern = if ws_prefix.empty?
+                             %r{<(?:#{tags_sub})\b|</worksheet>}
+                           else
+                             %r{<#{Regexp.escape(ws_prefix)}(?:#{tags_sub})\b|</#{Regexp.escape(ws_prefix)}worksheet>}
+                           end
+          match = updated_sheet_xml.match(insert_pattern, search_start)
           if match
             updated_sheet_xml.insert(match.begin(0), legacy_tag)
           else
@@ -1933,7 +1996,8 @@ module Xlsxrb
           end
         end
 
-        updated_sheet_xml.sub!(/<worksheet\b/, '<worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"') unless updated_sheet_xml.include?('xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"')
+        root_tag = updated_sheet_xml[/\A\s*(?:<\?xml[^>]*\?>\s*)?<([a-zA-Z0-9_]+:)?worksheet\b[^>]*/, 0]
+        updated_sheet_xml.sub!(/<([a-zA-Z0-9_]+:)?worksheet\b/, '\0 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"') if root_tag.nil? || !root_tag.match?(/\bxmlns:r\s*=/)
 
         ct_xml = replaced_entries["[Content_Types].xml"] || zip_reader.read_entry("[Content_Types].xml")
         if ct_xml && !ct_xml.include?("comments#{comment_file_num}.xml")
