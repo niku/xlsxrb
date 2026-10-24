@@ -156,7 +156,14 @@ class RowColumnStylesTest < Test::Unit::TestCase
     end
 
     dom_sheet = wb_built.sheets.first
-    assert_equal :highlight, dom_sheet.columns.first.style_index
+    assert_equal 1, dom_sheet.columns.first.style_index
+    assert_equal 1, dom_sheet["B1"].style_index
+
+    wb_io = StringIO.new
+    Xlsxrb.write(wb_io, wb_built)
+    parsed_dom = Xlsxrb.read(StringIO.new(wb_io.string)).load
+    assert_equal 1, parsed_dom.sheets.first.columns.first.style_index
+    assert_equal 1, parsed_dom.sheets.first["B1"].style_index
   end
 
   def test_unresolved_style_name_does_not_emit_invalid_string_attribute
@@ -173,5 +180,96 @@ class RowColumnStylesTest < Test::Unit::TestCase
     assert_no_match(/<c r="B1"[^>]* s="nonexistent"/, xml)
     # C1 (raw integer 5) must have s="5"
     assert_match(/<c r="C1"[^>]* s="5"/, xml)
+  end
+
+  def test_column_and_row_style_inheritance_dom_and_streaming
+    # 1. DOM builder
+    wb = Xlsxrb.build do |b|
+      b.sheet("Inheritance") do |ws|
+        ws.style(:currency, number_format: "$#,##0.00")
+        ws.style(:row_hl, font: { bold: true })
+        ws.style(:cell_override, font: { color: "FF0000" })
+
+        # Col 0 has named style :currency, Col 1 has inline style { italic: true }
+        ws.column(0, style: :currency)
+        ws.column(1, style: { italic: true })
+
+        # Row 0: no row style. Cell A1 unstyled -> inherits Col 0. Cell B1 unstyled -> inherits Col 1.
+        ws.row([100, "ItalicText"])
+
+        # Row 1: row style :row_hl.
+        # Cell A2 unstyled -> inherits Row 1 (:row_hl) over Col 0.
+        # Cell B2 explicit :cell_override -> overrides Row 1 and Col 1.
+        ws.row([200, "OverrideText"], styles: [nil, :cell_override], style: :row_hl)
+
+        # Row 2: inline row style { fill_color: "FFFF00" }
+        ws.row([300, "RowInline"], style: { fill_color: "FFFF00" })
+      end
+    end
+
+    dom_sheet = wb.sheets.first
+    currency_id = dom_sheet.columns[0].style_index
+    col1_inline_id = dom_sheet.columns[1].style_index
+    assert_kind_of Integer, currency_id
+    assert_kind_of Integer, col1_inline_id
+
+    # Cell A1 inherits currency_id and format_code
+    assert_equal currency_id, dom_sheet["A1"].style_index
+    assert_equal "$#,##0.00", dom_sheet["A1"].format_code
+
+    # Cell B1 inherits col1_inline_id
+    assert_equal col1_inline_id, dom_sheet["B1"].style_index
+
+    # Row 1 has resolved row style
+    row1_style_id = dom_sheet.rows[1].style_index
+    assert_kind_of Integer, row1_style_id
+
+    # Cell A2 inherits row style over column style
+    assert_equal row1_style_id, dom_sheet["A2"].style_index
+
+    # Cell B2 keeps explicit cell style
+    refute_equal row1_style_id, dom_sheet["B2"].style_index
+    refute_equal col1_inline_id, dom_sheet["B2"].style_index
+
+    # Serialize and check XML for row and col style attributes
+    io = StringIO.new
+    Xlsxrb.write(io, wb)
+    entries = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(io.string), &:read_all)
+    ws_xml = entries["xl/worksheets/sheet1.xml"]
+
+    # Verify <col style="..."> uses integer IDs
+    assert_match(/<col[^>]*style="#{currency_id}"/, ws_xml)
+    assert_match(/<col[^>]*style="#{col1_inline_id}"/, ws_xml)
+
+    # Verify <row s="..." customFormat="1"> is emitted on Row 2
+    assert_match(/<row r="2"[^>]*s="#{row1_style_id}" customFormat="1"/, ws_xml)
+
+    # Roundtrip load
+    parsed = Xlsxrb.read(StringIO.new(io.string)).load
+    parsed_sheet = parsed.sheets.first
+    assert_equal currency_id, parsed_sheet["A1"].style_index
+    assert_equal col1_inline_id, parsed_sheet["B1"].style_index
+    assert_equal row1_style_id, parsed_sheet["A2"].style_index
+
+    # 2. Streaming builder
+    sw_io = StringIO.new
+    Xlsxrb.write(sw_io) do |w|
+      w.style(:header, font: { bold: true })
+      w.sheet("Stream") do |s|
+        s.column(0, width: 20.0, style: { italic: true })
+        s.row(%w[ColInherited Normal])
+        s.row(%w[RowInherited RowInherited2], style: :header)
+      end
+    end
+
+    stream_entries = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(sw_io.string), &:read_all)
+    stream_ws_xml = stream_entries["xl/worksheets/sheet1.xml"]
+    assert_match(/<row r="2"[^>]*s="\d+" customFormat="1"/, stream_ws_xml)
+
+    parsed_stream = Xlsxrb.read(StringIO.new(sw_io.string)).load
+    ps = parsed_stream.sheets.first
+    assert_kind_of Integer, ps.columns.first.style_index
+    assert_equal ps.columns.first.style_index, ps["A1"].style_index
+    assert_equal ps.rows[1].style_index, ps["A2"].style_index
   end
 end

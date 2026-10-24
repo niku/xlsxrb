@@ -130,32 +130,22 @@ module Xlsxrb
       #: (untyped value) -> String
       def self.unescape(value)
         str = value.to_s
-        has_amp = str.include?("&")
-        has_x = str.include?("_x")
-        return str unless has_amp || has_x
+        return str unless str.include?("&") || str.include?("_x")
 
-        res = str
-        if has_amp
-          res = res.gsub(UNESCAPE_RE, UNESCAPE_MAP)
-          res = res.gsub(NUM_ENTITY_RE) do |match|
-            dec = Regexp.last_match(1)
-            codepoint = dec ? Integer(dec) : Integer(Regexp.last_match(2), 16)
-            codepoint.chr(Encoding::UTF_8)
-          rescue RangeError
-            match
-          end
+        res = str.gsub(UNESCAPE_RE, UNESCAPE_MAP)
+        res = res.gsub(NUM_ENTITY_RE) do |match|
+          dec = Regexp.last_match(1)
+          codepoint = dec ? Integer(dec) : Integer(Regexp.last_match(2), 16)
+          codepoint.chr(Encoding::UTF_8)
+        rescue RangeError
+          match
         end
-
-        if has_x
-          res = res.gsub(XSTRING_RE) do |match|
-            codepoint = Integer(Regexp.last_match(1), 16)
-            codepoint.chr(Encoding::UTF_8)
-          rescue RangeError
-            match
-          end
+        res.gsub(XSTRING_RE) do |match|
+          codepoint = Integer(Regexp.last_match(1), 16)
+          codepoint.chr(Encoding::UTF_8)
+        rescue RangeError
+          match
         end
-
-        res
       end
 
       private

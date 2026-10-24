@@ -19,12 +19,12 @@ module Xlsxrb
 
       # @param sheets [Array<Elements::Worksheet, StreamSheet>] Worksheets in the workbook.
       # @param shared_strings [Array<String>] Shared strings table.
-      # @param styles [Hash] Styles definition.
+      # @param styles [Elements::Styles, Hash] Styles definition.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
       # @param defined_names [Array<Hash>, nil] Defined names list.
       # @param date1904 [Boolean] Whether the workbook uses the 1904 date system.
-      #: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[Hash[Symbol, untyped]]?, ?date1904: bool) -> void
+      #: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Elements::Styles | Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[Hash[Symbol, untyped]]?, ?date1904: bool) -> void
       def initialize(sheets: [], shared_strings: [], styles: {}, unmapped_data: {}, errors: nil, defined_names: nil, date1904: false)
         dns = defined_names || unmapped_data[:defined_names] || unmapped_data.dig(:facade, :defined_names) || []
         computed_errors = errors || self.class.validate(sheets)

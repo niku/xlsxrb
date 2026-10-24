@@ -300,7 +300,34 @@ module Xlsxrb
       all_style_builders = {}
       @sheet_builders.each do |sheet_builder|
         sheet_builder.styles.each do |style_name, style_builder|
-          all_style_builders[style_name] = style_builder
+          all_style_builders[style_name.to_s] = style_builder
+        end
+      end
+
+      # Also collect inline styles from columns and rows
+      sheets.each do |sheet|
+        sheet.columns.each do |col|
+          raw_col_style = col.style_index
+          next unless raw_col_style.is_a?(Hash)
+
+          inline_name = "__inline_col_#{raw_col_style.hash}"
+          next if all_style_builders.key?(inline_name)
+
+          sb = StyleBuilder.new(inline_name)
+          sb.apply_options!(**raw_col_style)
+          all_style_builders[inline_name] = sb
+        end
+
+        sheet.rows.each do |row|
+          raw_row_style = row.unmapped_data&.[](:style_index)
+          next unless raw_row_style.is_a?(Hash)
+
+          inline_name = "__inline_row_#{raw_row_style.hash}"
+          next if all_style_builders.key?(inline_name)
+
+          sb = StyleBuilder.new(inline_name)
+          sb.apply_options!(**raw_row_style)
+          all_style_builders[inline_name] = sb
         end
       end
 
@@ -311,31 +338,103 @@ module Xlsxrb
       style_name_to_id = {}
       all_style_builders.each do |name, builder|
         style_id = builder.register_with(temp_writer)
-        style_name_to_id[name] = style_id
+        style_name_to_id[name.to_s] = style_id
       end
 
       # Capture the style definitions from the temporary writer
       styles_definition = extract_styles_from_writer(temp_writer)
 
-      # Update all cells with their resolved style IDs
+      # Update all sheets with resolved style IDs and style inheritance
       updated_sheets = sheets.map do |sheet|
+        col_style_map = {}
+        col_fmt_map = {}
+
+        new_columns = sheet.columns.map do |col|
+          raw_col_style = col.style_index
+          resolved_col_style = if raw_col_style.is_a?(Hash)
+                                 inline_name = "__inline_col_#{raw_col_style.hash}"
+                                 sb = all_style_builders[inline_name]
+                                 if sb&.num_fmt_id
+                                   col_fmt_map[col.index] = sb.num_fmt_id.is_a?(String) ? sb.num_fmt_id : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[sb.num_fmt_id]
+                                 end
+                                 style_name_to_id[inline_name]
+                               elsif (raw_col_style.is_a?(String) || raw_col_style.is_a?(Symbol)) && style_name_to_id.key?(raw_col_style.to_s)
+                                 sb = all_style_builders[raw_col_style.to_s]
+                                 if sb&.num_fmt_id
+                                   col_fmt_map[col.index] = sb.num_fmt_id.is_a?(String) ? sb.num_fmt_id : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[sb.num_fmt_id]
+                                 end
+                                 style_name_to_id[raw_col_style.to_s]
+                               else
+                                 raw_col_style
+                               end
+
+          col_style_map[col.index] = resolved_col_style if resolved_col_style
+          if resolved_col_style == col.style_index
+            col
+          else
+            unmapped = (col.unmapped_data || {}).dup
+            unmapped[:style_name] = raw_col_style
+            unmapped[:style_index] = resolved_col_style if resolved_col_style
+            Elements::Column.new(
+              index: col.index,
+              width: col.width,
+              hidden: col.hidden,
+              custom_width: col.custom_width,
+              outline_level: col.outline_level,
+              style_index: resolved_col_style,
+              unmapped_data: unmapped,
+              errors: col.errors
+            )
+          end
+        end
+
         new_rows = sheet.rows.map do |row|
+          raw_row_style = row.unmapped_data&.[](:style_index)
+          resolved_row_style = if raw_row_style.is_a?(Hash)
+                                 inline_name = "__inline_row_#{raw_row_style.hash}"
+                                 style_name_to_id[inline_name]
+                               elsif (raw_row_style.is_a?(String) || raw_row_style.is_a?(Symbol)) && style_name_to_id.key?(raw_row_style.to_s)
+                                 style_name_to_id[raw_row_style.to_s]
+                               elsif raw_row_style.is_a?(Integer)
+                                 raw_row_style
+                               end
+          row_unmapped = row.unmapped_data
+          if resolved_row_style && resolved_row_style != raw_row_style
+            row_unmapped = (row.unmapped_data || {}).dup
+            row_unmapped[:style_index] = resolved_row_style
+          end
+
           new_cells = row.cells.map do |cell|
-            # If style_index is a string (style name), resolve it to a numeric ID
-            if cell.style_index.is_a?(String) && style_name_to_id.key?(cell.style_index)
+            raw_cell_style = cell.style_index
+            resolved_cell_style = if (raw_cell_style.is_a?(String) || raw_cell_style.is_a?(Symbol)) && style_name_to_id.key?(raw_cell_style.to_s)
+                                    style_name_to_id[raw_cell_style.to_s]
+                                  elsif raw_cell_style.nil?
+                                    resolved_row_style || col_style_map[cell.column_index]
+                                  else
+                                    raw_cell_style
+                                  end
+
+            target_fmt = cell.format_code || col_fmt_map[cell.column_index]
+
+            if resolved_cell_style == cell.style_index && target_fmt == cell.format_code
+              cell
+            else
               Elements::Cell.new(
                 row_index: cell.row_index,
                 column_index: cell.column_index,
                 value: cell.value,
                 formula: cell.formula,
-                style_index: style_name_to_id[cell.style_index],
+                style_index: resolved_cell_style,
+                hyperlink: cell.hyperlink,
+                comment: cell.comment,
+                raw_value: cell.raw_value,
+                format_code: target_fmt,
                 unmapped_data: cell.unmapped_data,
                 errors: cell.errors
               )
-            else
-              cell
             end
           end
+
           Elements::Row.new(
             index: row.index,
             cells: new_cells,
@@ -344,11 +443,12 @@ module Xlsxrb
             custom_height: row.custom_height,
             collapsed: row.collapsed,
             outline_level: row.outline_level,
-            unmapped_data: row.unmapped_data,
+            unmapped_data: row_unmapped,
             errors: row.errors
           )
         end
-        sheet.with(rows: new_rows)
+
+        sheet.with(columns: new_columns, rows: new_rows)
       end
 
       [updated_sheets, styles_definition]

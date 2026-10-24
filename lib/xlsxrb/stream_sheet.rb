@@ -38,9 +38,9 @@ module Xlsxrb
     #: Symbol
     attr_reader :state
 
-    # @return [Hash, nil] The parsed styles definition hash.
+    # @return [Elements::Styles, Hash, nil] The parsed styles definition.
     # @api public
-    #: Hash[untyped, untyped]?
+    #: (Elements::Styles | Hash[untyped, untyped])?
     attr_reader :styles
 
     # Initializes a streaming worksheet context.
@@ -48,7 +48,7 @@ module Xlsxrb
     # @param name [String] The sheet name.
     # @param sheet_source [String, Proc, IO, nil] Raw XML content or chunk supplier/stream.
     # @param shared_strings [Array<String>] Shared strings table.
-    # @param styles [Hash, nil] Optional parsed styles hash.
+    # @param styles [Elements::Styles, Hash, nil] Optional parsed styles.
     # @param zip_reader [Ooxml::ZipReader, nil] Optional ZipReader context.
     # @param entry_name [String, nil] Archive entry name for this sheet.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
@@ -57,7 +57,7 @@ module Xlsxrb
     # @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
     # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
     # @param images [Array<Elements::Image>, nil] Optional preloaded images array.
-    #: (String name, untyped sheet_source, Array[String] shared_strings, ?Hash[untyped, untyped]? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?images: Array[Elements::Image]?) -> void
+    #: (String name, untyped sheet_source, Array[String] shared_strings, ?(Elements::Styles | Hash[untyped, untyped])? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?images: Array[Elements::Image]?) -> void
     def initialize(name, sheet_source, shared_strings, styles = nil, zip_reader: nil, entry_name: nil, state: :visible, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, images: nil)
       @name = name
       @sheet_source = sheet_source

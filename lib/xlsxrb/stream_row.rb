@@ -33,9 +33,10 @@ module Xlsxrb
     # @param collapsed [Boolean] Whether the row is collapsed.
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
+    # @param styles [Elements::Styles, Hash, nil] Optional parsed styles.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
     # @param pad_empty_cells [Boolean] Whether missing cells in this row are padded.
-    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?pad_empty_cells: bool) -> void
+    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?pad_empty_cells: bool) -> void
     def initialize(index:, xml_bytes:, from:, to:, shared_strings:, prefix: "", height: nil, hidden: false,
                    custom_height: false, collapsed: false, outline_level: nil, style_index: nil, styles: nil, date1904: false, pad_empty_cells: false)
       @index = index

@@ -409,6 +409,8 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("_xZZZZ_", Xlsxrb::Ooxml::XmlBuilder.unescape("_xZZZZ_"))
     assert_equal("_x12_", Xlsxrb::Ooxml::XmlBuilder.unescape("_x12_"))
     assert_equal("_x12345_", Xlsxrb::Ooxml::XmlBuilder.unescape("_x12345_"))
+    assert_equal("あ", Xlsxrb::Ooxml::XmlBuilder.unescape("_x3042_"))
+    assert_equal("_xD800_", Xlsxrb::Ooxml::XmlBuilder.unescape("_xD800_"))
 
     # WorksheetParser.decode_xml_entities delegation
     assert_equal("Tom & Jerry", Xlsxrb::Ooxml::WorksheetParser.decode_xml_entities("Tom &amp; Jerry"))

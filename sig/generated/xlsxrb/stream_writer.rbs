@@ -128,10 +128,11 @@ module Xlsxrb
       # @param custom_height [Boolean] Whether to flag as custom height.
       # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
       # @param collapsed [Boolean] Whether the row is collapsed.
+      # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
       # @return [void]
       # @api public
-      # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
-      def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+      # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
+      def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
 
       alias add_row row
 
@@ -158,10 +159,11 @@ module Xlsxrb
       # @param custom_width [Boolean] Whether to flag as custom width.
       # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
       # @param collapsed [Boolean] Whether the outline group is collapsed.
+      # @param style [Integer, Symbol, String, Hash, nil] Column style format or index.
       # @return [void]
       # @api public
-      # : (Integer | String | Symbol | Range[Integer | String] | Array[Integer | String] col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
-      def column: (Integer | String | Symbol | Range[Integer | String] | Array[Integer | String] col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
+      # : (Integer | String | Symbol | Range[Integer | String] | Array[Integer | String] col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
+      def column: (Integer | String | Symbol | Range[Integer | String] | Array[Integer | String] col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
 
       # Adds a chart to the active sheet.
       #
@@ -674,10 +676,11 @@ module Xlsxrb
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom row height is set.
     # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
+    # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
     # @return [void]
     # @api public
-    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
-    def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
+    def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
 
     alias add_row row
 
@@ -697,11 +700,11 @@ module Xlsxrb
     # @param index [Integer, String, Range, Array] Column index (0-based) or letter ("A".."D").
     # @param width [Float, Integer, nil] Column width in character units (0 - 255).
     # @param hidden [Boolean] Whether the column is hidden.
-    # @param style [Integer, Symbol, String, nil] Column style format or index.
+    # @param style [Integer, Symbol, String, Hash, nil] Column style format or index.
     # @return [void]
     # @api public
-    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String)?) -> void
-    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String)?) -> void
+    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
+    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
 
     # Adds a chart to the current worksheet.
     #

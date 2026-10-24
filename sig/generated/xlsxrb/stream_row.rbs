@@ -43,10 +43,11 @@ module Xlsxrb
     # @param collapsed [Boolean] Whether the row is collapsed.
     # @param outline_level [Integer, nil] Grouping/outline level.
     # @param style_index [Integer, nil] Style index.
+    # @param styles [Elements::Styles, Hash, nil] Optional parsed styles.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
     # @param pad_empty_cells [Boolean] Whether missing cells in this row are padded.
-    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?pad_empty_cells: bool) -> void
-    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: Hash[untyped, untyped]?, ?date1904: bool, ?pad_empty_cells: bool) -> void
+    # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?pad_empty_cells: bool) -> void
+    def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?pad_empty_cells: bool) -> void
 
     # rubocop:disable Style/OptionalBooleanParameter
     def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index, ?untyped styles, ?untyped date1904, ?untyped collapsed, ?untyped pad_empty_cells) -> untyped

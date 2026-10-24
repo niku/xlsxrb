@@ -230,13 +230,14 @@ module Xlsxrb
       # @param custom_height [Boolean] Whether to flag as custom height.
       # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
       # @param collapsed [Boolean] Whether the row is collapsed.
+      # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
       # @return [void]
       # @api public
-      #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
-      def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
+      #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
+      def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style: nil)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.row(values, styles: styles, height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level)
+        @writer.row(values, styles: styles, height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level, style: style)
       end
       alias add_row row
 
@@ -266,9 +267,10 @@ module Xlsxrb
       # @param custom_width [Boolean] Whether to flag as custom width.
       # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
       # @param collapsed [Boolean] Whether the outline group is collapsed.
+      # @param style [Integer, Symbol, String, Hash, nil] Column style format or index.
       # @return [void]
       # @api public
-      #: (Integer | String | Symbol | Range[Integer | String] | Array[Integer | String] col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool) -> void
+      #: (Integer | String | Symbol | Range[Integer | String] | Array[Integer | String] col_index, ?width: Float | Integer | nil, ?hidden: bool, ?best_fit: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
       def column(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1053,10 +1055,11 @@ module Xlsxrb
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom row height is set.
     # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
+    # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
     # @return [void]
     # @api public
-    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
-    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
+    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
+    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style: nil)
       sheet if @current_sheet.nil?
 
       row_index = @current_row_index
@@ -1079,14 +1082,23 @@ module Xlsxrb
 
       raise ArgumentError, "Row contains #{values.length} columns, exceeding Excel limit of 16_384 columns" if @strict_excel_mode && values.length > 16_384
 
+      row_style_id = if style.is_a?(Hash)
+                       inline_name = "__inline_row_#{style.hash}"
+                       style(inline_name, **style) unless @style_name_to_id.key?(inline_name)
+                       @style_name_to_id[inline_name]
+                     else
+                       style
+                     end
+
       attrs = nil
-      if height || hidden || outline_level || collapsed
+      if height || hidden || outline_level || collapsed || row_style_id
         attrs = {}
         attrs[:height] = height if height
         attrs[:hidden] = true if hidden
         attrs[:custom_height] = custom_height || !height.nil?
         attrs[:collapsed] = true if collapsed
         attrs[:outline_level] = outline_level if outline_level
+        attrs[:style_index] = row_style_id if row_style_id
       end
 
       @current_row_writer.write_row_values(row_index, values, styles: styles, style_map: @style_name_to_id, sst: @sst, sst_index: @sst_index, attrs: attrs)
@@ -1113,16 +1125,20 @@ module Xlsxrb
     # @param index [Integer, String, Range, Array] Column index (0-based) or letter ("A".."D").
     # @param width [Float, Integer, nil] Column width in character units (0 - 255).
     # @param hidden [Boolean] Whether the column is hidden.
-    # @param style [Integer, Symbol, String, nil] Column style format or index.
+    # @param style [Integer, Symbol, String, Hash, nil] Column style format or index.
     # @return [void]
     # @api public
-    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String)?) -> void
+    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil, style: nil)
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
       sheet if @current_sheet.nil?
 
-      style_id = if @style_name_to_id && style
+      style_id = if style.is_a?(Hash)
+                   inline_name = "__inline_col_#{style.hash}"
+                   style(inline_name, **style) unless @style_name_to_id.key?(inline_name)
+                   @style_name_to_id[inline_name]
+                 elsif @style_name_to_id && style
                    @style_name_to_id[style] || @style_name_to_id[style.to_s] || style
                  else
                    style

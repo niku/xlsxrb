@@ -91,11 +91,12 @@ module Xlsxrb
     # @param custom_height [Boolean] Whether custom row height is enforced.
     # @param outline_level [Integer, nil] Grouping/outline hierarchy level.
     # @param collapsed [Boolean] Whether the row is collapsed.
+    # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
     # @return [void]
     # @raise [ArgumentError] If limits are exceeded when strict_excel_mode is enabled.
     # @api public
-    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
-    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
+    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
+    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style: nil)
       row_index = @rows.size
       DslHelpers.validate_row_bounds!(row_index, height, strict_excel_mode: @strict_excel_mode)
 
@@ -207,6 +208,7 @@ module Xlsxrb
       end
 
       cells.compact!
+      unmapped = style ? { style_index: style } : {}
       @rows << Elements::Row.new(
         index: row_index,
         cells: cells,
@@ -214,7 +216,8 @@ module Xlsxrb
         hidden: hidden,
         custom_height: custom_height || !height.nil?,
         collapsed: collapsed,
-        outline_level: outline_level
+        outline_level: outline_level,
+        unmapped_data: unmapped
       )
     end
     alias add_row row

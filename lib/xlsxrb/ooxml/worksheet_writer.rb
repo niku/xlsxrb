@@ -483,9 +483,17 @@ module Xlsxrb
         is_styles_collection = styles && (styles.is_a?(Array) || styles.is_a?(Hash))
         single_style_id = resolve_style_id(styles, style_map) unless is_styles_collection
 
+        row_style = attrs ? attrs[:style_index] : nil
+        row_style_id = resolve_style_id(row_style, style_map)
+
         buf << '<row r="' << row_num_str << '"'
+        buf << ' s="' << row_style_id.to_s << '" customFormat="1"' if row_style_id.is_a?(Integer)
         if attrs
-          buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"' if attrs[:height]
+          if attrs[:height]
+            buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"'
+          elsif attrs[:custom_height]
+            buf << ' customHeight="1"'
+          end
           buf << ' hidden="1"' if attrs[:hidden]
           buf << ' collapsed="1"' if attrs[:collapsed]
           buf << ' outlineLevel="' << attrs[:outline_level].to_s << '"' if attrs[:outline_level]
@@ -497,9 +505,6 @@ module Xlsxrb
           styles_len = styles.is_a?(Array) ? styles.length : (styles.keys.max || -1) + 1
           max_len = [max_len, styles_len].max
         end
-
-        row_style = attrs ? attrs[:style_index] : nil
-        row_style_id = resolve_style_id(row_style, style_map)
 
         col_index = 0
         while col_index < max_len
@@ -541,14 +546,18 @@ module Xlsxrb
               col_index += 1
               next
             when String
-              idx = sst_index[value]
-              unless idx
-                sst << value
-                idx = sst.size - 1
-                sst_index[value] = idx
+              if sst_index
+                idx = sst_index[value]
+                unless idx
+                  sst << value
+                  idx = sst.size - 1
+                  sst_index[value] = idx
+                end
+                idx_str = INTEGER_STRINGS[idx] || idx.to_s
+                buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx_str << "</v></c>"
+              else
+                buf << '<c r="' << col_ref << row_num_str << '" t="inlineStr"><is><t>' << escape_xml(value) << "</t></is></c>"
               end
-              idx_str = INTEGER_STRINGS[idx] || idx.to_s
-              buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx_str << "</v></c>"
               col_index += 1
               next
             when true
@@ -1332,16 +1341,32 @@ module Xlsxrb
       def write_columns(columns)
         @builder.open_tag("cols")
         columns.each do |col|
+          if col.is_a?(Elements::Column)
+            min = col.index + 1
+            max = col.index + 1
+            width = col.width
+            hidden = col.hidden
+            custom_width = col.custom_width || col.width
+            outline_level = col.outline_level
+            style_id = col.style_index
+          else
+            min = (col[:index] || col[:min] || 0) + 1
+            max = (col[:index] || col[:max] || col[:min] || 0) + 1
+            width = col[:width]
+            hidden = col[:hidden]
+            custom_width = col[:custom_width] || col[:width]
+            outline_level = col[:outline_level]
+            style_id = col[:style_index] || col[:style]
+          end
           attrs = {
-            min: ((col[:index] || col[:min] || 0) + 1).to_s,
-            max: ((col[:index] || col[:max] || col[:min] || 0) + 1).to_s
+            min: min.to_s,
+            max: max.to_s
           }
-          attrs[:width] = col[:width].to_s if col[:width]
-          attrs[:hidden] = "1" if col[:hidden]
-          attrs[:customWidth] = "1" if col[:custom_width] || col[:width]
-          attrs[:outlineLevel] = col[:outline_level].to_s if col[:outline_level]
-          style_id = col[:style_index] || col[:style]
-          attrs[:style] = style_id.to_s if style_id
+          attrs[:width] = width.to_s if width
+          attrs[:hidden] = "1" if hidden
+          attrs[:customWidth] = "1" if custom_width
+          attrs[:outlineLevel] = outline_level.to_s if outline_level
+          attrs[:style] = style_id.to_s if style_id.is_a?(Integer)
           @builder.empty_tag("col", attrs)
         end
         @builder.close_tag("cols")
