@@ -360,7 +360,8 @@ module Xlsxrb
         ignored_errors: ignored_errors,
         phonetic_properties: phonetic_properties,
         selection: selection,
-        sheet_calc_pr: sheet_calc_pr
+        sheet_calc_pr: sheet_calc_pr,
+        background_image: background_image
       )
     end
     alias to_worksheet load
@@ -813,6 +814,17 @@ module Xlsxrb
                                end
     end
     alias phonetic_pr phonetic_properties
+
+    # Returns the background image configured for this worksheet, or nil.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    #: () -> Hash[Symbol, untyped]?
+    def background_image
+      @background_image ||= Xlsxrb.send(:resolve_background_image, raw_sheet_xml, zip_reader: @zip_reader, entry_name: @entry_name)
+    end
+    alias background_picture background_image
+    alias picture background_image
 
     # Closes any underlying reader resources.
     #: () -> void

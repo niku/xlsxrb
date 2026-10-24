@@ -400,6 +400,32 @@ module Xlsxrb
     # : (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
     def image: (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
 
+    # Configures the worksheet background image (<picture>).
+    #
+    # @example Set background image from binary data
+    #   sheet.background_image(png_bytes, ext: "png")
+    #
+    # @example Set background image from file path
+    #   sheet.background_image("path/to/background.png")
+    #
+    # @param file_data [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
+    # @param ext [String, nil] Image extension ("png", "jpeg", "jpg", "gif", etc.).
+    # @param opts [Hash] Additional image options.
+    # @return [Hash, nil]
+    # @api public
+    # : (?untyped file_data, ?ext: ::String?, **untyped opts) -> Hash[Symbol, untyped]?
+    def background_image: (?untyped file_data, ?ext: ::String?, **untyped opts) -> Hash[Symbol, untyped]?
+
+    alias background_picture background_image
+
+    alias picture background_image
+
+    def background_image=: (untyped val) -> untyped
+
+    alias background_picture= background_image=
+
+    alias picture= background_image=
+
     # Inserts a drawing shape (e.g. rectangle, callout, arrow).
     #
     # @param preset [String] Shape preset name (e.g. "rect", "roundRect").

@@ -52,6 +52,7 @@ module Xlsxrb
       @ignored_errors = []
       @phonetic_properties = nil
       @sheet_calc_pr = nil
+      @background_image = nil
       @print_area = nil
       @print_titles = nil
     end
@@ -748,6 +749,64 @@ module Xlsxrb
       @images << img
     end
 
+    # Configures the worksheet background image (<picture>).
+    #
+    # @example Set background image from binary data
+    #   sheet.background_image(png_bytes, ext: "png")
+    #
+    # @example Set background image from file path
+    #   sheet.background_image("path/to/background.png")
+    #
+    # @param file_data [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
+    # @param ext [String, nil] Image extension ("png", "jpeg", "jpg", "gif", etc.).
+    # @param opts [Hash] Additional image options.
+    # @return [Hash, nil]
+    # @api public
+    #: (?untyped file_data, ?ext: ::String?, **untyped opts) -> Hash[Symbol, untyped]?
+    def background_image(file_data = nil, ext: nil, **opts)
+      return @background_image if file_data.nil? && ext.nil? && opts.empty?
+
+      data = file_data
+      inferred_ext = nil
+      if data.is_a?(String) && !data.include?("\x00") && File.file?(data)
+        inferred_ext = File.extname(data).delete_prefix(".").downcase
+        data = File.binread(data)
+      elsif data.is_a?(Hash)
+        inferred_ext = data[:ext] || (data[:filename] && File.extname(data[:filename]).delete_prefix("."))
+        data = data[:file_data] || data[:data]
+      elsif data.is_a?(Elements::Image)
+        inferred_ext = File.extname(data.filename).delete_prefix(".").downcase
+        data = data.data
+      end
+
+      final_ext = (ext || inferred_ext || opts[:ext] || "png").to_s.delete_prefix(".").downcase
+      mime = case final_ext
+             when "png" then "image/png"
+             when "jpg", "jpeg" then "image/jpeg"
+             when "gif" then "image/gif"
+             when "bmp" then "image/bmp"
+             when "emf" then "image/x-emf"
+             when "wmf" then "image/x-wmf"
+             else "application/octet-stream"
+             end
+
+      @background_image = {
+        data: data&.b,
+        file_data: data&.b,
+        ext: final_ext,
+        filename: "background.#{final_ext}",
+        content_type: mime
+      }.merge(opts).freeze
+    end
+    alias background_picture background_image
+    alias picture background_image
+
+    def background_image=(val)
+      background_image(val)
+    end
+    alias background_picture= background_image=
+    alias picture= background_image=
+
     # Inserts a drawing shape (e.g. rectangle, callout, arrow).
     #
     # @param preset [String] Shape preset name (e.g. "rect", "roundRect").
@@ -1080,6 +1139,7 @@ module Xlsxrb
       facade_meta[:ignored_errors] = @ignored_errors unless @ignored_errors.empty?
       facade_meta[:phonetic_properties] = @phonetic_properties if @phonetic_properties
       facade_meta[:sheet_calc_pr] = @sheet_calc_pr if @sheet_calc_pr
+      facade_meta[:background_image] = @background_image if @background_image
       facade_meta[:print_area] = @print_area if @print_area
       facade_meta[:print_titles] = @print_titles if @print_titles
 
@@ -1148,7 +1208,8 @@ module Xlsxrb
         ignored_errors: @ignored_errors,
         phonetic_properties: @phonetic_properties,
         selection: @selection,
-        sheet_calc_pr: @sheet_calc_pr
+        sheet_calc_pr: @sheet_calc_pr,
+        background_image: @background_image
       )
     end
 

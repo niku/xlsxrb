@@ -716,7 +716,7 @@ module Xlsxrb
 
       # Write the worksheet footer. Call once after all rows.
       # Options for post-sheetData elements (in OOXML order):
-      def finish(drawing_rid: nil, sheet_protection: nil, protected_ranges: nil, auto_filter: nil,
+      def finish(drawing_rid: nil, picture_rid: nil, sheet_protection: nil, protected_ranges: nil, auto_filter: nil,
                  filter_columns: nil, sort_state: nil, merge_cells: nil,
                  conditional_formats: nil, data_validations: nil,
                  hyperlinks: nil, print_options: nil, page_margins: nil,
@@ -754,6 +754,7 @@ module Xlsxrb
         write_ignored_errors(ignored_errors) if ignored_errors && !ignored_errors.empty?
         @builder.empty_tag("drawing", { "r:id": drawing_rid }) if drawing_rid
         @builder.empty_tag("legacyDrawing", { "r:id": legacy_drawing_rid }) if legacy_drawing_rid
+        @builder.empty_tag("picture", { "r:id": picture_rid }) if picture_rid
         write_table_parts(tables, table_start_rid) if tables && !tables.empty?
         write_sparklines(sparkline_groups) if sparkline_groups && !sparkline_groups.empty?
         @builder.close_tag("worksheet")

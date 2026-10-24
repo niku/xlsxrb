@@ -531,6 +531,17 @@ module Xlsxrb
 
     alias phonetic_pr phonetic_properties
 
+    # Returns the background image configured for this worksheet, or nil.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    # : () -> Hash[Symbol, untyped]?
+    def background_image: () -> Hash[Symbol, untyped]?
+
+    alias background_picture background_image
+
+    alias picture background_image
+
     # Closes any underlying reader resources.
     # : () -> void
     def close: () -> void

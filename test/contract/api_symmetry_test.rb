@@ -88,6 +88,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
       fit_to_page?
       full_calc_on_load?
       sheet_calc_pr
+      background_image
     ]
 
     elem_methods = Xlsxrb::Elements::Worksheet.public_instance_methods(true)

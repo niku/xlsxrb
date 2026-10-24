@@ -85,6 +85,7 @@ module Xlsxrb
       @current_ignored_errors = []
       @current_phonetic_properties = nil
       @current_sheet_calc_pr = nil
+      @current_background_image = nil
       @current_cells = {}
       @styles = {} # { style_name => StyleBuilder }
       @style_writer = Ooxml::Writer.new
@@ -989,6 +990,33 @@ module Xlsxrb
         @writer.image(...)
       end
 
+      # Configures the worksheet background image (<picture>).
+      #
+      # @example Set background image from binary data
+      #   sheet.background_image(png_bytes, ext: "png")
+      #
+      # @param file_data [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
+      # @param ext [String, nil] Image extension.
+      # @param opts [Hash] Additional options.
+      # @return [Hash, nil]
+      # @api public
+      #: (?untyped file_data, ?ext: String?, **untyped opts) -> Hash[Symbol, untyped]?
+      def background_image(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.background_image(...)
+      end
+      alias background_picture background_image
+      alias picture background_image
+
+      def background_image=(val)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.background_image = val
+      end
+      alias background_picture= background_image=
+      alias picture= background_image=
+
       # Configures sheet view settings (zoom scale, grid lines visibility).
       #
       # @param name [Symbol, String] View setting name.
@@ -1241,6 +1269,7 @@ module Xlsxrb
       @current_ignored_errors = []
       @current_phonetic_properties = nil
       @current_sheet_calc_pr = nil
+      @current_background_image = nil
       @current_cells = {}
 
       return unless block_given?
@@ -1777,6 +1806,66 @@ module Xlsxrb
       img.merge!(opts)
       @current_images << img
     end
+
+    # Configures the worksheet background image (<picture>).
+    #
+    # @example Set background image from binary data
+    #   sheet.background_image(png_bytes, ext: "png")
+    #
+    # @example Set background image from file path
+    #   sheet.background_image("path/to/background.png")
+    #
+    # @param file_data [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
+    # @param ext [String, nil] Image extension ("png", "jpeg", "jpg", "gif", etc.).
+    # @param opts [Hash] Additional image options.
+    # @return [Hash, nil]
+    # @api public
+    #: (?untyped file_data, ?ext: ::String?, **untyped opts) -> Hash[Symbol, untyped]?
+    def background_image(file_data = nil, ext: nil, **opts)
+      return @current_background_image if file_data.nil? && ext.nil? && opts.empty?
+
+      sheet if @current_sheet.nil?
+
+      data = file_data
+      inferred_ext = nil
+      if data.is_a?(String) && !data.include?("\x00") && File.file?(data)
+        inferred_ext = File.extname(data).delete_prefix(".").downcase
+        data = File.binread(data)
+      elsif data.is_a?(Hash)
+        inferred_ext = data[:ext] || (data[:filename] && File.extname(data[:filename]).delete_prefix("."))
+        data = data[:file_data] || data[:data]
+      elsif data.is_a?(Elements::Image)
+        inferred_ext = File.extname(data.filename).delete_prefix(".").downcase
+        data = data.data
+      end
+
+      final_ext = (ext || inferred_ext || opts[:ext] || "png").to_s.delete_prefix(".").downcase
+      mime = case final_ext
+             when "png" then "image/png"
+             when "jpg", "jpeg" then "image/jpeg"
+             when "gif" then "image/gif"
+             when "bmp" then "image/bmp"
+             when "emf" then "image/x-emf"
+             when "wmf" then "image/x-wmf"
+             else "application/octet-stream"
+             end
+
+      @current_background_image = {
+        data: data&.b,
+        file_data: data&.b,
+        ext: final_ext,
+        filename: "background.#{final_ext}",
+        content_type: mime
+      }.merge(opts).freeze
+    end
+    alias background_picture background_image
+    alias picture background_image
+
+    def background_image=(val)
+      background_image(val)
+    end
+    alias background_picture= background_image=
+    alias picture= background_image=
 
     # Inserts a drawing shape.
     #
@@ -2417,7 +2506,8 @@ module Xlsxrb
         cell_watches: @current_cell_watches,
         ignored_errors: @current_ignored_errors,
         phonetic_properties: @current_phonetic_properties,
-        sheet_calc_pr: @current_sheet_calc_pr
+        sheet_calc_pr: @current_sheet_calc_pr,
+        background_image: @current_background_image
       }
       sheet_data[:cells] = @current_cells if @current_cells && !@current_cells.empty?
       @current_cells = nil
@@ -2427,6 +2517,7 @@ module Xlsxrb
 
       @current_row_writer.finish(
         drawing_rid: info[:drawing_rid],
+        picture_rid: info[:picture_rid],
         sheet_protection: @current_sheet_protection,
         protected_ranges: @current_protected_ranges.empty? ? nil : @current_protected_ranges,
         auto_filter: @current_auto_filter,

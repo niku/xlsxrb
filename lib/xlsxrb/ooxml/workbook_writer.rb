@@ -85,6 +85,7 @@ module Xlsxrb
               ZipEntryIO.new(zip),
               sheet,
               drawing_rid: info[:drawing_rid],
+              picture_rid: info[:picture_rid],
               sheet_protection: sheet[:sheet_protection],
               auto_filter: sheet[:auto_filter],
               filter_columns: sheet[:filter_columns],
@@ -122,7 +123,7 @@ module Xlsxrb
         end
       end
 
-      def prepare_sheet_auxiliary(sheet, _idx)
+      def prepare_sheet_auxiliary(sheet, idx)
         sheet_images = sheet[:images] || []
         sheet_charts = sheet[:charts] || []
         sheet_shapes = sheet[:shapes] || []
@@ -136,6 +137,7 @@ module Xlsxrb
         drawing_rid = nil
         vml_rid = nil
         table_start_rid = nil
+        picture_rid = nil
         hyperlink_rels = []
 
         if has_drawing
@@ -192,6 +194,33 @@ module Xlsxrb
           end
         end
 
+        bg_img = sheet[:background_image] || sheet[:background_picture] || sheet[:picture]
+        if bg_img
+          bg_data = if bg_img.is_a?(Hash)
+                      bg_img[:file_data] || bg_img[:data]
+                    else
+                      (bg_img.respond_to?(:data) ? bg_img.data : bg_img)
+                    end
+          if bg_data.is_a?(String) && !bg_data.include?("\x00") && File.file?(bg_data)
+            bg_ext = File.extname(bg_data).delete_prefix(".").downcase
+            bg_data = File.binread(bg_data)
+          else
+            bg_ext = if bg_img.is_a?(Hash)
+                       (bg_img[:ext] || (bg_img[:filename] && File.extname(bg_img[:filename]).delete_prefix(".")) || "png").to_s.downcase
+                     elsif bg_img.respond_to?(:filename)
+                       File.extname(bg_img.filename).delete_prefix(".").downcase
+                     else
+                       "png"
+                     end
+          end
+          if bg_data && !bg_data.empty?
+            p_rid_num = sheet_rels.size + 1
+            picture_rid = "rId#{p_rid_num}"
+            sheet_rels << { id: picture_rid, type: "#{DOC_REL}/image", target: "../media/sheet#{idx + 1}_bg.#{bg_ext}" }
+            sheet[:_bg_media] = { path: "xl/media/sheet#{idx + 1}_bg.#{bg_ext}", data: bg_data.b, ext: bg_ext }
+          end
+        end
+
         sheet[:_prepared_rels] = sheet_rels
         sheet[:_enriched_hyperlinks] = enriched_hyperlinks
 
@@ -199,6 +228,7 @@ module Xlsxrb
           drawing_rid: drawing_rid,
           vml_rid: vml_rid,
           table_start_rid: table_start_rid,
+          picture_rid: picture_rid,
           enriched_hyperlinks: enriched_hyperlinks,
           sheet_rels: sheet_rels
         }
@@ -322,6 +352,8 @@ module Xlsxrb
             end
           end
 
+          zip.add_binary_entry(sheet[:_bg_media][:path], sheet[:_bg_media][:data]) if sheet[:_bg_media]
+
           zip.add_entry("xl/worksheets/_rels/sheet#{idx + 1}.xml.rels", build_sheet_rels_from_list(sheet_rels)) unless sheet_rels.empty?
         end
       end
@@ -418,6 +450,23 @@ module Xlsxrb
                      end
               b.empty_tag("Default", { Extension: ext, ContentType: mime })
               image_exts[ext] = true
+            end
+          end
+
+          if sheet[:_bg_media]
+            bg_ext = sheet[:_bg_media][:ext]
+            unless image_exts[bg_ext]
+              mime = case bg_ext
+                     when "png" then "image/png"
+                     when "jpg", "jpeg" then "image/jpeg"
+                     when "gif" then "image/gif"
+                     when "bmp" then "image/bmp"
+                     when "emf" then "image/x-emf"
+                     when "wmf" then "image/x-wmf"
+                     else "application/octet-stream"
+                     end
+              b.empty_tag("Default", { Extension: bg_ext, ContentType: mime })
+              image_exts[bg_ext] = true
             end
           end
 
@@ -1094,7 +1143,7 @@ module Xlsxrb
         zip.finish_entry
       end
 
-      def write_worksheet_xml(io, sheet, drawing_rid: nil, sheet_protection: nil,
+      def write_worksheet_xml(io, sheet, drawing_rid: nil, picture_rid: nil, sheet_protection: nil,
                               protected_ranges: nil, auto_filter: nil, filter_columns: nil,
                               sort_state: nil, merge_cells: nil, conditional_formats: nil,
                               data_validations: nil, hyperlinks: nil,
@@ -1140,6 +1189,7 @@ module Xlsxrb
         end
         ws.finish(
           drawing_rid: drawing_rid,
+          picture_rid: picture_rid,
           sheet_protection: sheet_protection,
           protected_ranges: protected_ranges,
           auto_filter: auto_filter,

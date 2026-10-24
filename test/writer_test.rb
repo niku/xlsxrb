@@ -8422,6 +8422,104 @@ class WriterTest < Test::Unit::TestCase
     assert_includes ws_xml, '<sheetCalcPr fullCalcOnLoad="1"/>'
   end
 
+  test "supports worksheet background image in WorksheetBuilder and Elements::Worksheet round-trip" do
+    dummy_png = [
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+      0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+      0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+      0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+      0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+      0x42, 0x60, 0x82
+    ].pack("C*")
+
+    wb = Xlsxrb.build do |w|
+      w.sheet("BgSheet") do |s|
+        s.row(%w[Hello World])
+        s.background_image(dummy_png, ext: "png")
+      end
+    end
+
+    sheet = wb.sheets.first
+    assert_not_nil sheet.background_image
+    assert_equal "png", sheet.background_image[:ext]
+    assert_equal dummy_png.b, sheet.background_image[:data]
+
+    # Write out and re-read
+    buf = StringIO.new
+    buf.binmode
+    Xlsxrb.write(buf, wb)
+
+    ws_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<picture r:id="rId\d+"/>}, ws_xml)
+
+    rels_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/_rels/sheet1.xml.rels")
+    assert_includes rels_xml, 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"'
+    assert_includes rels_xml, 'Target="../media/sheet1_bg.png"'
+
+    ct_xml = read_xml_from_xlsx(buf.string, "[Content_Types].xml")
+    assert_includes ct_xml, '<Default Extension="png" ContentType="image/png"/>'
+
+    # DOM Read
+    read_wb = Xlsxrb.read(buf.string)
+    read_sheet = read_wb.sheets.first
+    assert_not_nil read_sheet.background_image
+    assert_equal dummy_png.b, read_sheet.background_image[:data]
+    assert_equal "png", read_sheet.background_image[:ext]
+    assert_equal "image/png", read_sheet.background_image[:content_type]
+
+    # Lossless round-trip write
+    buf2 = StringIO.new
+    buf2.binmode
+    Xlsxrb.write(buf2, read_wb)
+    ws_xml2 = read_xml_from_xlsx(buf2.string, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<picture r:id="rId\d+"/>}, ws_xml2)
+  end
+
+  test "supports worksheet background image in StreamWriter, streaming read, and file path" do
+    dummy_png = [
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+      0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+      0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+      0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+      0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+      0x42, 0x60, 0x82
+    ].pack("C*")
+
+    tmp_img = Tempfile.new(["bg_dummy", ".png"])
+    tmp_img.binmode
+    tmp_img.write(dummy_png)
+    tmp_img.close
+
+    buf = StringIO.new
+    buf.binmode
+    Xlsxrb.write(buf) do |w|
+      w.sheet("StreamBg") do |s|
+        s.row(["Cell1"])
+        s.background_picture = tmp_img.path
+      end
+    end
+
+    ws_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<picture r:id="rId\d+"/>}, ws_xml)
+
+    # Stream read
+    bg_from_stream = nil
+    Xlsxrb.stream(buf.string) do |s|
+      bg_from_stream = s.background_image
+    end
+    assert_not_nil bg_from_stream
+    assert_equal dummy_png.b, bg_from_stream[:data]
+    assert_equal "png", bg_from_stream[:ext]
+  ensure
+    tmp_img&.close!
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

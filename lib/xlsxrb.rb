@@ -738,6 +738,7 @@ module Xlsxrb
       sd[:auto_filter] ||= ws.auto_filter if ws.respond_to?(:auto_filter) && ws.auto_filter
       sd[:row_breaks] ||= ws.row_breaks if ws.respond_to?(:row_breaks) && ws.row_breaks && !ws.row_breaks.empty?
       sd[:col_breaks] ||= ws.col_breaks if ws.respond_to?(:col_breaks) && ws.col_breaks && !ws.col_breaks.empty?
+      sd[:background_image] ||= ws.background_image if ws.respond_to?(:background_image) && ws.background_image
       if ws.respond_to?(:images) && ws.images && !ws.images.empty?
         sd[:images] ||= ws.images.map do |img|
           if img.is_a?(Elements::Image)
@@ -1149,8 +1150,8 @@ module Xlsxrb
       fallbacks.find { |f| zip_reader.entry?(f) }
     end
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_pr: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_pr: nil, background_image: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
       if sheet_xml.nil? || sheet_xml.empty?
         return Elements::Worksheet.new(
@@ -1162,7 +1163,8 @@ module Xlsxrb
           print_options: print_options || {}, sheet_protection: sheet_protection, sheet_view: sheet_view || {},
           sheet_properties: sheet_properties || {}, sheet_format: sheet_format || {}, row_breaks: row_breaks || [], col_breaks: col_breaks || [],
           protected_ranges: protected_ranges || [], cell_watches: cell_watches || [], ignored_errors: ignored_errors || [],
-          phonetic_properties: phonetic_properties, selection: selection, sheet_calc_pr: sheet_calc_pr
+          phonetic_properties: phonetic_properties, selection: selection, sheet_calc_pr: sheet_calc_pr,
+          background_image: background_image
         )
       end
 
@@ -1345,7 +1347,8 @@ module Xlsxrb
         ignored_errors: sheet_ignored_errors,
         phonetic_properties: sheet_phonetic,
         selection: sheet_selection,
-        sheet_calc_pr: sheet_calc_pr
+        sheet_calc_pr: sheet_calc_pr,
+        background_image: background_image || (sheet_xml.include?("<picture") ? resolve_background_image(sheet_xml, zip_reader: zip_reader, entry_name: entry_name) : nil)
       )
     end
 
@@ -1496,6 +1499,52 @@ module Xlsxrb
           unmapped_data: raw_img
         )
       end
+    end
+
+    #: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Hash[Symbol, untyped]?
+    def resolve_background_image(sheet_xml, zip_reader: nil, entry_name: nil)
+      return nil unless sheet_xml && zip_reader && entry_name
+      return nil unless sheet_xml.include?("<picture")
+
+      m = sheet_xml.match(/<(?:[a-zA-Z0-9_]+:)?picture\b[^>]*\br:id=["']([^"']+)["']/)
+      return nil unless m
+
+      picture_rid = m[1]
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return nil if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = Ooxml::Reader::RelsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      pic_rel = listener.relationships.find { |r| r[:id] == picture_rid }
+      return nil unless pic_rel
+
+      base_dir = File.dirname(entry_name)
+      target_path = resolve_relative_path(base_dir, pic_rel[:target])
+      data = zip_reader.read_entry(target_path)
+      return nil unless data
+
+      ext = File.extname(target_path).delete_prefix(".").downcase
+      mime = case ext
+             when "png" then "image/png"
+             when "jpg", "jpeg" then "image/jpeg"
+             when "gif" then "image/gif"
+             when "bmp" then "image/bmp"
+             when "emf" then "image/x-emf"
+             when "wmf" then "image/x-wmf"
+             else "application/octet-stream"
+             end
+
+      {
+        data: data.b,
+        file_data: data.b,
+        ext: ext,
+        filename: File.basename(target_path),
+        content_type: mime
+      }.freeze
     end
 
     #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]

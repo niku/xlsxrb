@@ -17,11 +17,13 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups, :merged_cells, :auto_filter, :tables, :shapes, :freeze_pane, :page_setup, :page_margins, :header_footer, :print_options, :sheet_protection, :sheet_view, :sheet_properties, :sheet_format, :row_breaks, :col_breaks, :protected_ranges, :cell_watches, :ignored_errors, :phonetic_properties, :selection, :sheet_calc_pr
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups, :merged_cells, :auto_filter, :tables, :shapes, :freeze_pane, :page_setup, :page_margins, :header_footer, :print_options, :sheet_protection, :sheet_view, :sheet_properties, :sheet_format, :row_breaks, :col_breaks, :protected_ranges, :cell_watches, :ignored_errors, :phonetic_properties, :selection, :sheet_calc_pr, :background_image
       attr_writer :dimension
       alias conditional_formats conditional_formatting
       alias phonetic_pr phonetic_properties
       alias calc_pr sheet_calc_pr
+      alias background_picture background_image
+      alias picture background_image
 
       # @param name [String] The worksheet name (max 31 characters).
       # @param rows [Array<Elements::Row>] Rows in the sheet.
@@ -65,8 +67,9 @@ module Xlsxrb
       # @param phonetic_properties [Hash, nil] Phonetic text properties.
       # @param selection [Hash, Array<Hash>, nil] Active cell and selection settings.
       # @param sheet_calc_pr [Hash, nil] Worksheet calculation properties.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, untyped], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]], ?shapes: Array[Hash[Symbol, untyped]], ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped], ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped], ?print_options: Hash[Symbol, untyped], ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped], ?sheet_properties: Hash[Symbol, untyped], ?sheet_format: Hash[Symbol, untyped], ?row_breaks: Array[untyped], ?col_breaks: Array[untyped], ?protected_ranges: Array[Hash[Symbol, untyped]], ?cell_watches: Array[String], ?ignored_errors: Array[Hash[Symbol, untyped]], ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil, tables: [], shapes: [], freeze_pane: nil, page_setup: {}, page_margins: nil, header_footer: {}, print_options: {}, sheet_protection: nil, sheet_view: {}, sheet_properties: {}, sheet_format: {}, row_breaks: [], col_breaks: [], protected_ranges: [], cell_watches: [], ignored_errors: [], phonetic_properties: nil, selection: nil, sheet_calc_pr: nil)
+      # @param background_image [Hash, nil] Worksheet background image specification.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, untyped], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]], ?shapes: Array[Hash[Symbol, untyped]], ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped], ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped], ?print_options: Hash[Symbol, untyped], ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped], ?sheet_properties: Hash[Symbol, untyped], ?sheet_format: Hash[Symbol, untyped], ?row_breaks: Array[untyped], ?col_breaks: Array[untyped], ?protected_ranges: Array[Hash[Symbol, untyped]], ?cell_watches: Array[String], ?ignored_errors: Array[Hash[Symbol, untyped]], ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil, tables: [], shapes: [], freeze_pane: nil, page_setup: {}, page_margins: nil, header_footer: {}, print_options: {}, sheet_protection: nil, sheet_view: {}, sheet_properties: {}, sheet_format: {}, row_breaks: [], col_breaks: [], protected_ranges: [], cell_watches: [], ignored_errors: [], phonetic_properties: nil, selection: nil, sheet_calc_pr: nil, background_image: nil)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -111,6 +114,7 @@ module Xlsxrb
         @phonetic_properties = (phonetic_properties || unmapped_data[:phonetic_properties] || unmapped_data.dig(:facade, :phonetic_properties))&.freeze
         @selection = selection&.freeze
         @sheet_calc_pr = (sheet_calc_pr || unmapped_data[:sheet_calc_pr] || unmapped_data.dig(:facade, :sheet_calc_pr) || (@sheet_properties[:full_calc_on_load] ? { full_calc_on_load: true } : nil))&.freeze
+        @background_image = (background_image || unmapped_data[:background_image] || unmapped_data.dig(:facade, :background_image))&.freeze
       end
 
       # Returns whether trailing empty rows are omitted during iteration.
@@ -612,6 +616,15 @@ module Xlsxrb
                                   end
         new_selection = changes.key?(:selection) ? changes[:selection] : selection
         new_sheet_calc_pr = changes.key?(:sheet_calc_pr) ? changes[:sheet_calc_pr] : sheet_calc_pr
+        new_background_image = if changes.key?(:background_image)
+                                 changes[:background_image]
+                               elsif changes.key?(:background_picture)
+                                 changes[:background_picture]
+                               elsif changes.key?(:picture)
+                                 changes[:picture]
+                               else
+                                 background_image
+                               end
 
         self.class.new(
           name: new_name,
@@ -652,7 +665,8 @@ module Xlsxrb
           ignored_errors: new_ignored_errors,
           phonetic_properties: new_phonetic_properties,
           selection: new_selection,
-          sheet_calc_pr: new_sheet_calc_pr
+          sheet_calc_pr: new_sheet_calc_pr,
+          background_image: new_background_image
         )
       end
 
@@ -702,7 +716,10 @@ module Xlsxrb
           selection: selection,
           sheet_calc_pr: sheet_calc_pr,
           calc_pr: sheet_calc_pr,
-          code_name: code_name
+          code_name: code_name,
+          background_image: background_image,
+          background_picture: background_image,
+          picture: background_image
         }
       end
 
@@ -723,7 +740,8 @@ module Xlsxrb
           row_breaks == other.row_breaks && col_breaks == other.col_breaks &&
           protected_ranges == other.protected_ranges && cell_watches == other.cell_watches &&
           ignored_errors == other.ignored_errors && phonetic_properties == other.phonetic_properties &&
-          selection == other.selection && sheet_calc_pr == other.sheet_calc_pr
+          selection == other.selection && sheet_calc_pr == other.sheet_calc_pr &&
+          background_image == other.background_image
       end
       alias eql? ==
 
@@ -734,7 +752,7 @@ module Xlsxrb
           state, hyperlinks, comments, merged_cells, auto_filter, tables, shapes, freeze_pane,
           page_setup, page_margins, header_footer, print_options, sheet_protection, sheet_view,
           sheet_properties, sheet_format, row_breaks, col_breaks, protected_ranges,
-          cell_watches, ignored_errors, phonetic_properties, selection, sheet_calc_pr
+          cell_watches, ignored_errors, phonetic_properties, selection, sheet_calc_pr, background_image
         ].hash
       end
 
