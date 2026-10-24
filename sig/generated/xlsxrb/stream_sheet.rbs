@@ -481,6 +481,13 @@ module Xlsxrb
     # : () -> Array[String]
     def cell_watches: () -> Array[String]
 
+    # Returns ignored error rules defined for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Array[Hash[Symbol, untyped]]
+    def ignored_errors: () -> Array[Hash[Symbol, untyped]]
+
     # Closes any underlying reader resources.
     # : () -> void
     def close: () -> void

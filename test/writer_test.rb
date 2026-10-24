@@ -8270,6 +8270,52 @@ class WriterTest < Test::Unit::TestCase
     assert_in_delta(-0.3, reread_dom.sheets[1].tab_color[:tint], 0.001)
   end
 
+  test "WorksheetBuilder and StreamWriter support ignored_errors authoring and round-trip" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("DOMSheet") do |s|
+        s.row(["0123", 456])
+        s.ignore_error("A1:A10", number_stored_as_text: true)
+        s.add_ignored_error("B1:B10", eval_error: true, formula_range: true)
+      end
+    end
+    assert_equal 2, wb.sheet("DOMSheet").ignored_errors.size
+    assert_equal "A1:A10", wb.sheet("DOMSheet").ignored_errors[0][:sqref]
+    assert_equal true, wb.sheet("DOMSheet").ignored_errors[0][:number_stored_as_text]
+
+    dom_xlsx = Xlsxrb.write(wb)
+    reread_dom = Xlsxrb.read(dom_xlsx)
+    assert_equal 2, reread_dom.sheet(0).ignored_errors.size
+    assert_equal "A1:A10", reread_dom.sheet(0).ignored_errors[0][:sqref]
+    assert_equal true, reread_dom.sheet(0).ignored_errors[0][:number_stored_as_text]
+    assert_equal "B1:B10", reread_dom.sheet(0).ignored_errors[1][:sqref]
+    assert_equal true, reread_dom.sheet(0).ignored_errors[1][:eval_error]
+    assert_equal true, reread_dom.sheet(0).ignored_errors[1][:formula_range]
+
+    # Test via streaming writer
+    buf = StringIO.new
+    Xlsxrb.write(buf) do |w|
+      w.sheet("StreamSheet") do |s|
+        s.row(["999", 888])
+        s.ignore_error("A1:C5", two_digit_text_year: true, unlocked_formula: true)
+      end
+    end
+
+    # Test via streaming reader
+    stream_read_errors = []
+    Xlsxrb.stream(buf.string) do |s|
+      stream_read_errors << s.ignored_errors
+    end
+    assert_equal 1, stream_read_errors.size
+    assert_equal 1, stream_read_errors[0].size
+    assert_equal "A1:C5", stream_read_errors[0][0][:sqref]
+    assert_equal true, stream_read_errors[0][0][:two_digit_text_year]
+    assert_equal true, stream_read_errors[0][0][:unlocked_formula]
+
+    # Check XML contains <ignoredErrors>
+    sheet_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_includes sheet_xml, '<ignoredErrors><ignoredError sqref="A1:C5" twoDigitTextYear="1" unlockedFormula="1"/></ignoredErrors>'
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

@@ -496,6 +496,24 @@ module Xlsxrb
 
     alias add_cell_watch cell_watch
 
+    # Adds an ignored error entry for the worksheet.
+    #
+    # @param sqref [String] Cell range reference (e.g. "A1" or "A1:B10").
+    # @param opts [Hash] Error check flags to ignore (e.g. number_stored_as_text: true, eval_error: true).
+    # @return [void]
+    # @api public
+    # : (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+    def ignore_error: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+
+    alias add_ignored_error ignore_error
+
+    # Returns ignored error rules configured for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Array[Hash[Symbol, untyped]]
+    def ignored_errors: () -> Array[Hash[Symbol, untyped]]
+
     # Builds and returns the in-memory {Elements::Worksheet}.
     #
     # @return [Elements::Worksheet]

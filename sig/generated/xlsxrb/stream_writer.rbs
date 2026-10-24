@@ -747,6 +747,24 @@ module Xlsxrb
       def cell_watch: (String ref) -> void
 
       alias add_cell_watch cell_watch
+
+      # Adds an ignored error entry to the sheet.
+      #
+      # @param sqref [String] Cell range reference (e.g. "A1" or "A1:B10").
+      # @param opts [Hash] Error check flags to ignore.
+      # @return [void]
+      # @api public
+      # : (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+      def ignore_error: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+
+      alias add_ignored_error ignore_error
+
+      # Returns the ignored error entries configured for this sheet.
+      #
+      # @return [Array<Hash[Symbol, untyped]>]
+      # @api public
+      # : () -> Array[Hash[Symbol, untyped]]
+      def ignored_errors: () -> Array[Hash[Symbol, untyped]]
     end
 
     # Adds a new sheet to the workbook and starts streaming rows into it.
@@ -1143,6 +1161,24 @@ module Xlsxrb
     def cell_watch: (String ref) -> void
 
     alias add_cell_watch cell_watch
+
+    # Adds an ignored error entry to the current sheet.
+    #
+    # @param sqref [String] Cell range reference (e.g. "A1" or "A1:B10").
+    # @param opts [Hash] Error check flags to ignore.
+    # @return [void]
+    # @api public
+    # : (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+    def ignore_error: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+
+    alias add_ignored_error ignore_error
+
+    # Returns the ignored error entries configured for the current sheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    # : () -> Array[Hash[Symbol, untyped]]
+    def ignored_errors: () -> Array[Hash[Symbol, untyped]]
 
     # Adds a defined name.
     #

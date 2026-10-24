@@ -49,6 +49,7 @@ module Xlsxrb
       @col_breaks = []
       @protected_ranges = []
       @cell_watches = []
+      @ignored_errors = []
       @print_area = nil
       @print_titles = nil
     end
@@ -890,6 +891,27 @@ module Xlsxrb
     end
     alias add_cell_watch cell_watch
 
+    # Adds an ignored error entry for the worksheet.
+    #
+    # @param sqref [String] Cell range reference (e.g. "A1" or "A1:B10").
+    # @param opts [Hash] Error check flags to ignore (e.g. number_stored_as_text: true, eval_error: true).
+    # @return [void]
+    # @api public
+    #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+    def ignore_error(sqref, **opts)
+      @ignored_errors << { sqref: sqref.to_s }.merge(opts)
+    end
+    alias add_ignored_error ignore_error
+
+    # Returns ignored error rules configured for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def ignored_errors
+      @ignored_errors.dup
+    end
+
     # Builds and returns the in-memory {Elements::Worksheet}.
     #
     # @return [Elements::Worksheet]
@@ -925,6 +947,7 @@ module Xlsxrb
       facade_meta[:col_breaks] = @col_breaks unless @col_breaks.empty?
       facade_meta[:protected_ranges] = @protected_ranges unless @protected_ranges.empty?
       facade_meta[:cell_watches] = @cell_watches unless @cell_watches.empty?
+      facade_meta[:ignored_errors] = @ignored_errors unless @ignored_errors.empty?
       facade_meta[:print_area] = @print_area if @print_area
       facade_meta[:print_titles] = @print_titles if @print_titles
 
@@ -990,6 +1013,7 @@ module Xlsxrb
         col_breaks: @col_breaks,
         protected_ranges: @protected_ranges,
         cell_watches: @cell_watches,
+        ignored_errors: @ignored_errors,
         selection: @selection
       )
     end

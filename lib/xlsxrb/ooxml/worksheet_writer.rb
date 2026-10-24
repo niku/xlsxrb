@@ -720,7 +720,7 @@ module Xlsxrb
                  conditional_formats: nil, data_validations: nil,
                  hyperlinks: nil, print_options: nil, page_margins: nil,
                  page_setup: nil, header_footer: nil, row_breaks: nil,
-                 col_breaks: nil, cell_watches: nil, tables: nil, table_start_rid: nil,
+                 col_breaks: nil, cell_watches: nil, ignored_errors: nil, tables: nil, table_start_rid: nil,
                  legacy_drawing_rid: nil, sparkline_groups: nil)
         return if @finished
 
@@ -747,6 +747,7 @@ module Xlsxrb
         write_row_breaks(row_breaks) if row_breaks && !row_breaks.empty?
         write_col_breaks(col_breaks) if col_breaks && !col_breaks.empty?
         write_cell_watches(cell_watches) if cell_watches && !cell_watches.empty?
+        write_ignored_errors(ignored_errors) if ignored_errors && !ignored_errors.empty?
         @builder.empty_tag("drawing", { "r:id": drawing_rid }) if drawing_rid
         @builder.empty_tag("legacyDrawing", { "r:id": legacy_drawing_rid }) if legacy_drawing_rid
         write_table_parts(tables, table_start_rid) if tables && !tables.empty?
@@ -1308,6 +1309,24 @@ module Xlsxrb
           @builder.empty_tag("cellWatch", { r: w.to_s })
         end
         @builder.close_tag("cellWatches")
+      end
+
+      def write_ignored_errors(errors)
+        @builder.open_tag("ignoredErrors")
+        errors.each do |ie|
+          attrs = { sqref: ie[:sqref].to_s }
+          attrs[:evalError] = "1" if ie[:eval_error]
+          attrs[:twoDigitTextYear] = "1" if ie[:two_digit_text_year]
+          attrs[:numberStoredAsText] = "1" if ie[:number_stored_as_text]
+          attrs[:formula] = "1" if ie[:formula]
+          attrs[:formulaRange] = "1" if ie[:formula_range]
+          attrs[:unlockedFormula] = "1" if ie[:unlocked_formula]
+          attrs[:emptyCellReference] = "1" if ie[:empty_cell_reference]
+          attrs[:listDataValidation] = "1" if ie[:list_data_validation]
+          attrs[:calculatedColumn] = "1" if ie[:calculated_column]
+          @builder.empty_tag("ignoredError", attrs)
+        end
+        @builder.close_tag("ignoredErrors")
       end
 
       def write_table_parts(tables, start_rid)

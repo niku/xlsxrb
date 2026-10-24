@@ -82,6 +82,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
       visible?
       very_hidden?
       tab_color
+      ignored_errors
     ]
 
     elem_methods = Xlsxrb::Elements::Worksheet.public_instance_methods(true)

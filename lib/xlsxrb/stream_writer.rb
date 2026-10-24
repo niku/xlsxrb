@@ -82,6 +82,7 @@ module Xlsxrb
       @current_col_breaks = []
       @current_protected_ranges = []
       @current_cell_watches = []
+      @current_ignored_errors = []
       @current_cells = {}
       @styles = {} # { style_name => StyleBuilder }
       @style_writer = Ooxml::Writer.new
@@ -1071,6 +1072,29 @@ module Xlsxrb
         @writer.cell_watch(...)
       end
       alias add_cell_watch cell_watch
+
+      # Adds an ignored error entry to the sheet.
+      #
+      # @param sqref [String] Cell range reference (e.g. "A1" or "A1:B10").
+      # @param opts [Hash] Error check flags to ignore.
+      # @return [void]
+      # @api public
+      #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+      def ignore_error(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.ignore_error(...)
+      end
+      alias add_ignored_error ignore_error
+
+      # Returns the ignored error entries configured for this sheet.
+      #
+      # @return [Array<Hash[Symbol, untyped]>]
+      # @api public
+      #: () -> Array[Hash[Symbol, untyped]]
+      def ignored_errors
+        @writer.ignored_errors
+      end
     end
 
     # Adds a new sheet to the workbook and starts streaming rows into it.
@@ -1153,6 +1177,7 @@ module Xlsxrb
       @current_col_breaks = []
       @current_protected_ranges = []
       @current_cell_watches = []
+      @current_ignored_errors = []
       @current_cells = {}
 
       return unless block_given?
@@ -1859,6 +1884,28 @@ module Xlsxrb
     end
     alias add_cell_watch cell_watch
 
+    # Adds an ignored error entry to the current sheet.
+    #
+    # @param sqref [String] Cell range reference (e.g. "A1" or "A1:B10").
+    # @param opts [Hash] Error check flags to ignore.
+    # @return [void]
+    # @api public
+    #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+    def ignore_error(sqref, **opts)
+      sheet if @current_sheet.nil?
+      @current_ignored_errors << { sqref: sqref.to_s }.merge(opts)
+    end
+    alias add_ignored_error ignore_error
+
+    # Returns the ignored error entries configured for the current sheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def ignored_errors
+      @current_ignored_errors.dup
+    end
+
     # --- Workbook-Level Methods ---
 
     # Adds a defined name.
@@ -2198,7 +2245,8 @@ module Xlsxrb
         row_breaks: @current_row_breaks,
         col_breaks: @current_col_breaks,
         protected_ranges: @current_protected_ranges,
-        cell_watches: @current_cell_watches
+        cell_watches: @current_cell_watches,
+        ignored_errors: @current_ignored_errors
       }
       sheet_data[:cells] = @current_cells if @current_cells && !@current_cells.empty?
       @current_cells = nil
@@ -2224,6 +2272,7 @@ module Xlsxrb
         row_breaks: @current_row_breaks.empty? ? nil : @current_row_breaks,
         col_breaks: @current_col_breaks.empty? ? nil : @current_col_breaks,
         cell_watches: @current_cell_watches.empty? ? nil : @current_cell_watches,
+        ignored_errors: @current_ignored_errors.empty? ? nil : @current_ignored_errors,
         tables: @current_tables.empty? ? nil : @current_tables,
         table_start_rid: info[:table_start_rid],
         legacy_drawing_rid: info[:vml_rid],

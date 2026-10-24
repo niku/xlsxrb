@@ -357,6 +357,7 @@ module Xlsxrb
         col_breaks: col_breaks,
         protected_ranges: protected_ranges,
         cell_watches: cell_watches,
+        ignored_errors: ignored_errors,
         selection: selection
       )
     end
@@ -741,6 +742,21 @@ module Xlsxrb
                         else
                           []
                         end
+    end
+
+    # Returns ignored error rules defined for this worksheet.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def ignored_errors
+      @ignored_errors ||= if raw_sheet_xml.include?("<ignoredErrors")
+                            listener = Ooxml::Reader::IgnoredErrorsListener.new
+                            Ooxml::XmlParser.parse(raw_sheet_xml, listener)
+                            listener.errors
+                          else
+                            []
+                          end
     end
 
     # Closes any underlying reader resources.

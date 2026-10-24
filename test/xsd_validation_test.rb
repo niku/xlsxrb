@@ -432,4 +432,22 @@ class XsdValidationTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  # 15. Ignored errors XSD sequence conformance
+  def test_ignored_errors_and_sheet_properties_xsd_validation
+    tmp = Tempfile.new(["xsd_ignored_errors", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("IgnoredErrorsSheet") do |s|
+          s.row(["0123", "=1/0"])
+          s.ignore_error("A1:A10", number_stored_as_text: true)
+          s.ignore_error("B1", eval_error: true, unlocked_formula: true)
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
 end
