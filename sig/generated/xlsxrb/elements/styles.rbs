@@ -3,16 +3,115 @@
 module Xlsxrb
   module Elements
     # Represents the workbook stylesheet definitions (fonts, fills, borders, cellXfs, and numFmts).
-    # Inherits from Hash for backward compatibility with existing styles hash structures,
-    # while providing precomputed O(1) number format classifications.
+    # Composes an internal styles hash while providing precomputed O(1) number format classifications.
     #
     # @api public
-    class Styles < Hash[untyped, untyped]
+    class Styles
       # Initializes the styles container, optionally wrapping an existing styles hash.
       #
       # @param initial_hash [Hash, nil] Initial styles dictionary.
       # : (?Hash[untyped, untyped]? initial_hash) -> void
       def initialize: (?Hash[untyped, untyped]? initial_hash) -> void
+
+      # Returns the value associated with the given key.
+      #
+      # @param key [Object]
+      # @return [Object, nil]
+      # @api public
+      # : (untyped key) -> untyped
+      def []: (untyped key) -> untyped
+
+      # Sets the value associated with the given key.
+      #
+      # @param key [Object]
+      # @param value [Object]
+      # @return [Object]
+      # @api public
+      # : (untyped key, untyped value) -> untyped
+      def []=: (untyped key, untyped value) -> untyped
+
+      # Returns true if the given key exists in the styles hash.
+      #
+      # @param key [Object]
+      # @return [Boolean]
+      # @api public
+      # : (untyped key) -> bool
+      def key?: (untyped key) -> bool
+
+      # Fetches the value for a key, or default/block if missing.
+      #
+      # @param key [Object]
+      # @return [Object]
+      # @api public
+      def fetch: (untyped key, *untyped) ?{ (?) -> untyped } -> untyped
+
+      # Extracts the nested value specified by the sequence of keys.
+      #
+      # @param keys [Array<Object>]
+      # @return [Object, nil]
+      # @api public
+      def dig: (*untyped keys) -> untyped
+
+      # Returns array of keys.
+      #
+      # @return [Array]
+      # @api public
+      # : () -> Array[untyped]
+      def keys: () -> Array[untyped]
+
+      # Returns array of values.
+      #
+      # @return [Array]
+      # @api public
+      # : () -> Array[untyped]
+      def values: () -> Array[untyped]
+
+      # Iterates over each key-value pair in the styles.
+      #
+      # @yieldparam key [Object]
+      # @yieldparam value [Object]
+      # @api public
+      def each: () ?{ (?) -> untyped } -> untyped
+
+      # Returns true if the styles hash is empty.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def empty?: () -> bool
+
+      # Merges another hash or Styles into this instance.
+      #
+      # @param other [Hash, Styles]
+      # @return [self]
+      # @api public
+      def merge!: (untyped other) -> untyped
+
+      # Converts the styles container to a standard Hash.
+      #
+      # @return [Hash]
+      # @api public
+      # : () -> Hash[untyped, untyped]
+      def to_h: () -> Hash[untyped, untyped]
+
+      alias to_hash to_h
+
+      # Equality check against another Styles or Hash.
+      #
+      # @param other [Object]
+      # @return [Boolean]
+      # @api public
+      # : (untyped other) -> bool
+      def ==: (untyped other) -> bool
+
+      alias eql? ==
+
+      # Computes hash code based on underlying data.
+      #
+      # @return [Integer]
+      # @api public
+      # : () -> Integer
+      def hash: () -> Integer
 
       # Returns the format code string for a given style index.
       #

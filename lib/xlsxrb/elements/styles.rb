@@ -8,23 +8,162 @@ require_relative "../ooxml/utils"
 module Xlsxrb
   module Elements
     # Represents the workbook stylesheet definitions (fonts, fills, borders, cellXfs, and numFmts).
-    # Inherits from Hash for backward compatibility with existing styles hash structures,
-    # while providing precomputed O(1) number format classifications.
+    # Composes an internal styles hash while providing precomputed O(1) number format classifications.
     #
     # @api public
-    class Styles < Hash #[untyped, untyped]
+    class Styles
+      [Enumerable].each { |m| include m }
+
       # Initializes the styles container, optionally wrapping an existing styles hash.
       #
       # @param initial_hash [Hash, nil] Initial styles dictionary.
       #: (?Hash[untyped, untyped]? initial_hash) -> void
       def initialize(initial_hash = nil)
-        super()
-        merge!(initial_hash) if initial_hash.is_a?(Hash)
+        @data = initial_hash.is_a?(Hash) ? initial_hash.dup : {}
         @format_codes = nil
         @format_types = nil
         @date_flags = nil
         @datetime_flags = nil
         @time_flags = nil
+      end
+
+      # Returns the value associated with the given key.
+      #
+      # @param key [Object]
+      # @return [Object, nil]
+      # @api public
+      #: (untyped key) -> untyped
+      def [](key)
+        @data[key]
+      end
+
+      # Sets the value associated with the given key.
+      #
+      # @param key [Object]
+      # @param value [Object]
+      # @return [Object]
+      # @api public
+      #: (untyped key, untyped value) -> untyped
+      def []=(key, value)
+        @data[key] = value
+      end
+
+      # Returns true if the given key exists in the styles hash.
+      #
+      # @param key [Object]
+      # @return [Boolean]
+      # @api public
+      #: (untyped key) -> bool
+      def key?(key)
+        @data.key?(key)
+      end
+
+      # Fetches the value for a key, or default/block if missing.
+      #
+      # @param key [Object]
+      # @return [Object]
+      # @api public
+      def fetch(key, *, &)
+        @data.fetch(key, *, &)
+      end
+
+      # Extracts the nested value specified by the sequence of keys.
+      #
+      # @param keys [Array<Object>]
+      # @return [Object, nil]
+      # @api public
+      def dig(*keys)
+        @data.dig(*keys)
+      end
+
+      # Returns array of keys.
+      #
+      # @return [Array]
+      # @api public
+      #: () -> Array[untyped]
+      def keys
+        @data.keys
+      end
+
+      # Returns array of values.
+      #
+      # @return [Array]
+      # @api public
+      #: () -> Array[untyped]
+      def values
+        @data.values
+      end
+
+      # Iterates over each key-value pair in the styles.
+      #
+      # @yieldparam key [Object]
+      # @yieldparam value [Object]
+      # @api public
+      def each(&block)
+        return to_enum(:each) unless block
+
+        @data.each(&block)
+      end
+
+      # Returns true if the styles hash is empty.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def empty?
+        @data.empty?
+      end
+
+      # Merges another hash or Styles into this instance.
+      #
+      # @param other [Hash, Styles]
+      # @return [self]
+      # @api public
+      def merge!(other)
+        hash = other.is_a?(Styles) ? other.to_h : other
+        @data.merge!(hash) if hash.is_a?(Hash)
+        @format_codes = nil
+        @format_types = nil
+        @date_flags = nil
+        @datetime_flags = nil
+        @time_flags = nil
+        self
+      end
+
+      # Converts the styles container to a standard Hash.
+      #
+      # @return [Hash]
+      # @api public
+      #: () -> Hash[untyped, untyped]
+      def to_h
+        @data.dup
+      end
+      alias to_hash to_h
+
+      # Equality check against another Styles or Hash.
+      #
+      # @param other [Object]
+      # @return [Boolean]
+      # @api public
+      #: (untyped other) -> bool
+      def ==(other)
+        if other.is_a?(Styles)
+          @data == other.to_h
+        elsif other.is_a?(Hash)
+          @data == other
+        else
+          false
+        end
+      end
+      alias eql? ==
+
+      # Computes hash code based on underlying data.
+      #
+      # @return [Integer]
+      # @api public
+      #: () -> Integer
+      def hash
+        @data.hash
       end
 
       # Returns the format code string for a given style index.

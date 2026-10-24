@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Changed
+- Refactor `Elements::Styles` to use composition instead of subclassing `Hash`, wrapping internal stylesheet data and delegating standard dictionary accessors while preserving O(1) number format classifications.
 - Enforce binary encoding (`ASCII-8BIT`) on raw XML buffers in `StreamRow` and document byte vs character indexing consistency policy in `AGENTS.md` to prevent terminal row truncation or byte-offset drift when scanning documents with multibyte UTF-8 characters.
 - Clarify streaming write memory profile and date/time timezone semantics in README and YARD documentation.
 - Reading a file that is not a ZIP archive (including an empty file) raises `Xlsxrb::ZipError` instead of `ArgumentError`.

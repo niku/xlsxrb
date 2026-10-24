@@ -208,7 +208,8 @@ class NumberFormatterTest < Test::Unit::TestCase
     styles = Xlsxrb::Elements::Styles.new(raw_styles)
     styles.precompute!
 
-    assert_true(styles.is_a?(Hash))
+    assert_instance_of(Xlsxrb::Elements::Styles, styles)
+    assert_equal(raw_styles, styles.to_h)
     assert_equal(7, styles[:cell_xfs].size)
 
     # Style 0: General
