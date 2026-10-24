@@ -14,23 +14,31 @@ module Xlsxrb
       end
 
       def self.parse_with_properties(xml_string)
-        return { sheets: [], date1904: false, defined_names: [] } if xml_string.nil? || xml_string.empty?
+        return { sheets: [], date1904: false, defined_names: [], active_tab: nil, full_calc_on_load: nil } if xml_string.nil? || xml_string.empty?
 
         listener = Listener.new
         XmlParser.parse(xml_string, listener)
-        { sheets: listener.sheets, date1904: listener.date1904, defined_names: listener.defined_names }
+        {
+          sheets: listener.sheets,
+          date1904: listener.date1904,
+          defined_names: listener.defined_names,
+          active_tab: listener.active_tab,
+          full_calc_on_load: listener.full_calc_on_load
+        }
       end
 
       # SAX listener for workbook.xml sheets, properties, and defined names.
       class Listener
         include REXML::SAX2Listener
 
-        attr_reader :sheets, :date1904, :defined_names
+        attr_reader :sheets, :date1904, :defined_names, :active_tab, :full_calc_on_load
 
         def initialize
           @sheets = []
           @date1904 = false
           @defined_names = []
+          @active_tab = nil
+          @full_calc_on_load = nil
           @in_defined_name = false
           @current_dn = nil
           @dn_text = +""
@@ -57,6 +65,12 @@ module Xlsxrb
           when "workbookPr"
             d1904 = attrs["date1904"]
             @date1904 = %w[1 true].include?(d1904) unless d1904.nil?
+          when "workbookView"
+            at = attrs["activeTab"]
+            @active_tab = at.to_i if at
+          when "calcPr"
+            fcol = attrs["fullCalcOnLoad"]
+            @full_calc_on_load = %w[1 true].include?(fcol) unless fcol.nil?
           when "definedName"
             @in_defined_name = true
             @current_dn = {

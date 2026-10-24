@@ -45,12 +45,35 @@ module Xlsxrb
       # : () -> bool
       def valid?: () -> bool
 
+      # Returns workbook-level properties (e.g. date1904, active_tab, full_calc_on_load), or an empty hash.
+      #
+      # @return [Hash<Symbol, untyped>]
+      # @api public
+      # : () -> Hash[Symbol, untyped]
+      def workbook_properties: () -> Hash[Symbol, untyped]
+
       # Returns whether the workbook uses the 1904 date system.
       #
       # @return [Boolean]
       # @api public
       # : () -> bool
       def date1904?: () -> bool
+
+      # Returns the 0-based active worksheet tab index from workbookView, or nil if not set.
+      #
+      # @return [Integer, nil]
+      # @api public
+      # : () -> Integer?
+      def active_tab: () -> Integer?
+
+      # Returns whether Excel is instructed to perform a full recalculation when loading the workbook.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def full_calc_on_load?: () -> bool
+
+      alias full_calc_on_load full_calc_on_load?
 
       # Returns core document properties (e.g. title, creator, created), or an empty hash.
       #

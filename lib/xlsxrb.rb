@@ -486,7 +486,11 @@ module Xlsxrb
       end
 
       wb_unmapped = {}
-      wb_unmapped[:workbook_properties] = { date1904: true } if is_date1904
+      wb_props = {}
+      wb_props[:date1904] = true if is_date1904
+      wb_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
+      wb_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
+      wb_unmapped[:workbook_properties] = wb_props unless wb_props.empty?
       wb_unmapped[:non_worksheet_sheets] = non_worksheet_sheets unless non_worksheet_sheets.empty?
 
       if workbook_xml&.include?("<workbookProtection")
@@ -894,10 +898,18 @@ module Xlsxrb
           build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles, state: sheet_info[:state] || :visible, zip_reader: zip_reader, entry_name: sheet_path)
         end
 
+        mod_unmapped = {}
+        mod_props = {}
+        mod_props[:date1904] = true if wb_parsed[:date1904]
+        mod_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
+        mod_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
+        mod_unmapped[:workbook_properties] = mod_props unless mod_props.empty?
+
         original_workbook = Elements::Workbook.new(
           sheets: loaded_sheets,
           shared_strings: shared_strings,
           styles: styles,
+          unmapped_data: mod_unmapped,
           defined_names: wb_parsed[:defined_names] || []
         )
         mutable_shared_strings = shared_strings.dup

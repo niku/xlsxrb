@@ -1272,4 +1272,25 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("D1:D5", raw_from_cell[:formula_ref])
     assert_equal(0, raw_from_cell[:formula_si])
   end
+
+  test "WorkbookParser and Xlsxrb.read extract and round-trip activeTab and fullCalcOnLoad" do
+    bytes = Xlsxrb.write do |w|
+      w.workbook_property(:active_tab, 1)
+      w.workbook_property(:full_calc_on_load, true)
+      w.sheet("First") { |s| s.row(["A"]) }
+      w.sheet("Second") { |s| s.row(["B"]) }
+    end
+
+    wb = Xlsxrb.read(bytes).load
+    assert_equal(1, wb.active_tab)
+    assert_true(wb.full_calc_on_load?)
+    assert_true(wb.full_calc_on_load)
+    assert_equal(1, wb.workbook_properties[:active_tab])
+    assert_equal(true, wb.workbook_properties[:full_calc_on_load])
+
+    roundtrip_bytes = Xlsxrb.write(wb)
+    wb2 = Xlsxrb.read(roundtrip_bytes).load
+    assert_equal(1, wb2.active_tab)
+    assert_true(wb2.full_calc_on_load?)
+  end
 end

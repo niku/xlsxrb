@@ -19,6 +19,10 @@ module Xlsxrb
 
         attr_reader defined_names: untyped
 
+        attr_reader active_tab: untyped
+
+        attr_reader full_calc_on_load: untyped
+
         def initialize: () -> untyped
 
         def start_element: (untyped _uri, untyped localname, untyped _qname, untyped attrs) -> untyped

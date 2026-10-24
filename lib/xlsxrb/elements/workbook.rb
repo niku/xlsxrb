@@ -62,15 +62,42 @@ module Xlsxrb
         errors.empty?
       end
 
+      # Returns workbook-level properties (e.g. date1904, active_tab, full_calc_on_load), or an empty hash.
+      #
+      # @return [Hash<Symbol, untyped>]
+      # @api public
+      #: () -> Hash[Symbol, untyped]
+      def workbook_properties
+        unmapped_data[:workbook_properties] || unmapped_data.dig(:facade, :workbook_properties) || {}
+      end
+
       # Returns whether the workbook uses the 1904 date system.
       #
       # @return [Boolean]
       # @api public
       #: () -> bool
       def date1904?
-        props = unmapped_data[:workbook_properties] || unmapped_data.dig(:facade, :workbook_properties)
-        props&.[](:date1904) ? true : false
+        workbook_properties[:date1904] ? true : false
       end
+
+      # Returns the 0-based active worksheet tab index from workbookView, or nil if not set.
+      #
+      # @return [Integer, nil]
+      # @api public
+      #: () -> Integer?
+      def active_tab
+        workbook_properties[:active_tab]
+      end
+
+      # Returns whether Excel is instructed to perform a full recalculation when loading the workbook.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def full_calc_on_load?
+        workbook_properties[:full_calc_on_load] ? true : false
+      end
+      alias full_calc_on_load full_calc_on_load?
 
       # Returns core document properties (e.g. title, creator, created), or an empty hash.
       #

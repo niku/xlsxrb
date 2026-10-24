@@ -33,6 +33,7 @@
 - Phonetic readings (`<rPh>`) are excluded from shared strings and inline strings, so cells with furigana no longer concatenate phonetic readings to display text.
 
 ### Added
+- Extract and preserve `activeTab` (`<workbookView>`) and `fullCalcOnLoad` (`<calcPr>`) in `Ooxml::WorkbookParser`, `Xlsxrb.read`, and `Xlsxrb.modify`, and expose `workbook_properties`, `active_tab`, and `full_calc_on_load?` (`full_calc_on_load`) readers on `Elements::Workbook`.
 - Support self-closing row tags (`<row r="N" .../>`): Extract row indices and custom row attributes (`ht`, `hidden`, `customHeight`, `outlineLevel`, `collapsed`, `s`) and emit `:row_start` / `:row_end` events and empty `StreamRow` instances across direct and streaming worksheet parsers.
 - ISO/IEC 29500-1 ST_Xstring control character decoding: Support decoding `_xHHHH_` hexadecimal escape sequences (such as `_x000D_` carriage returns and `_x005F_` literal underscores) in `XmlBuilder.unescape`, `SharedStringsParser`, and `SharedStringsListener`, correctly normalizing newlines and preserving control character fidelity in cell strings.
 - Record Architecture Decision Record [ADR 0001: Excel Date System Boundary Handling](docs/adr/0001-excel-date-system-boundary-handling.md) documenting date conversion semantics, ecosystem survey, and design rationale across 1900 and 1904 date systems.
