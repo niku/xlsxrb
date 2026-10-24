@@ -683,7 +683,9 @@ module Xlsxrb
         # simplecov:disable
         # Edge case / untested delegation block
         style_idx = col.unmapped_data&.[](:style_index) || col.unmapped_data&.[](:style) || (col.respond_to?(:style_index) && col.style_index)
-        { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width, outline_level: col.outline_level, style_index: style_idx }
+        min = col.unmapped_data&.[](:min)
+        max = col.unmapped_data&.[](:max)
+        { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width, outline_level: col.outline_level, style_index: style_idx, min: min, max: max }
         # simplecov:enable
       end
       sd = { name: ws.name, rows: ws.rows, columns: columns }
