@@ -1625,6 +1625,9 @@ module Xlsxrb
         f = cell.formula
         if f.is_a?(Elements::Formula)
           result[:formula] = f.expression
+          result[:formula_type] = f.type if f.type
+          result[:formula_ref] = f.ref if f.ref
+          result[:formula_si] = f.shared_index if f.shared_index
           result[:formula_ca] = true if f.calculate_always
           unless f.cached_value.nil?
             # Cached value is written as-is (not through SST)
@@ -2167,6 +2170,9 @@ module Xlsxrb
     case value
     when Elements::Formula
       result[:formula] = value.expression
+      result[:formula_type] = value.type if value.type
+      result[:formula_ref] = value.ref if value.ref
+      result[:formula_si] = value.shared_index if value.shared_index
       result[:formula_ca] = true if value.calculate_always
       unless value.cached_value.nil?
         cv = value.cached_value
@@ -2177,6 +2183,26 @@ module Xlsxrb
         when Xlsxrb::Elements::CellError
           result[:type] = "e"
           result[:value] = cv.code
+        end
+      end
+    when Hash
+      if value.key?(:formula)
+        result[:formula] = value[:formula]
+        result[:formula_type] = value[:type] if value[:type]
+        result[:formula_ref] = value[:ref] if value[:ref]
+        si = value[:shared_index] || value[:si]
+        result[:formula_si] = si if si
+        result[:formula_ca] = true if value[:calculate_always]
+        cv = value.key?(:value) ? value[:value] : value[:cached_value]
+        unless cv.nil?
+          result[:value] = cv
+          case cv
+          when true, false
+            result[:type] = "b"
+          when Xlsxrb::Elements::CellError
+            result[:type] = "e"
+            result[:value] = cv.code
+          end
         end
       end
     when String, Xlsxrb::Elements::RichText

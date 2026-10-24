@@ -1243,4 +1243,33 @@ class OoxmlTest < Test::Unit::TestCase
       assert_include(reader.entry_names, "xl/sharedstrings.xml")
     end
   end
+
+  test "WorksheetBuilder#row and build_raw_cell forward formula type, ref, and shared_index from Hash" do
+    dom_bytes = Xlsxrb.write do |wb|
+      wb.sheet("S1") do |s|
+        s.row([
+                { formula: "A2:C2*10", type: :array, ref: "A1:C1", value: 10 },
+                { formula: "A2*2", type: :shared, ref: "D1:D5", shared_index: 0, value: 2 }
+              ])
+      end
+    end
+
+    dom_sheet_xml = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(dom_bytes)) { |zr| zr.read_entry("xl/worksheets/sheet1.xml") }
+    assert_include(dom_sheet_xml, '<f t="array" ref="A1:C1">A2:C2*10</f>')
+    assert_include(dom_sheet_xml, '<f t="shared" si="0" ref="D1:D5">A2*2</f>')
+
+    sst = []
+    sst_index = {}
+    raw_from_hash = Xlsxrb.build_raw_cell_from_value(0, 0, { formula: "A2:C2*10", type: :array, ref: "A1:C1", value: 10 }, sst, sst_index)
+    assert_equal(:array, raw_from_hash[:formula_type])
+    assert_equal("A1:C1", raw_from_hash[:formula_ref])
+    assert_equal(10, raw_from_hash[:value])
+
+    f_obj = Xlsxrb::Elements::Formula.new(expression: "A2*2", type: :shared, ref: "D1:D5", shared_index: 0, cached_value: 2)
+    cell_obj = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 3, formula: f_obj, value: 2)
+    raw_from_cell = Xlsxrb.send(:build_raw_cell, cell_obj, sst, sst_index)
+    assert_equal(:shared, raw_from_cell[:formula_type])
+    assert_equal("D1:D5", raw_from_cell[:formula_ref])
+    assert_equal(0, raw_from_cell[:formula_si])
+  end
 end

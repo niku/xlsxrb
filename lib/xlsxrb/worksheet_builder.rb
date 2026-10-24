@@ -175,18 +175,22 @@ module Xlsxrb
                                format_code: fmt_code
                              )
                            elsif val.is_a?(Hash) && val.key?(:formula)
+                             cached_val = val.key?(:value) ? val[:value] : val[:cached_value]
                              f_obj = Elements::Formula.new(
                                expression: val[:formula],
-                               cached_value: val[:value],
+                               cached_value: cached_val,
+                               type: val[:type],
+                               ref: val[:ref],
+                               shared_index: val[:shared_index] || val[:si],
                                calculate_always: val[:calculate_always]
                              )
                              Elements::Cell.new(
                                row_index: row_index,
                                column_index: col_index,
-                               value: val[:value],
+                               value: cached_val,
                                formula: f_obj,
                                style_index: style_name,
-                               raw_value: val[:value]&.to_s,
+                               raw_value: cached_val&.to_s,
                                format_code: fmt_code
                              )
                            else
