@@ -10,6 +10,9 @@ module Xlsxrb
     # SAX-based parser for xl/sharedStrings.xml.
     # Returns an Array of strings (index = SST index).
     class SharedStringsParser
+      TAG_DELIM_BYTES = [62, 32, 47, 9, 10, 13].freeze # '>', ' ', '/', '\t', '\n', '\r'
+      private_constant :TAG_DELIM_BYTES
+
       # Parses all shared strings and returns an Array of strings.
       def self.parse(xml_string, _part_name: "xl/sharedStrings.xml")
         return [] if xml_string.nil? || xml_string.empty?
@@ -73,6 +76,7 @@ module Xlsxrb
         rph_start_pattern = "<#{prefix}rPh"
         rph_end_tag = "</#{prefix}rPh>"
         rph_end_len = rph_end_tag.bytesize
+        has_rph = xml.include?(rph_start_pattern)
 
         pos = sst_open_end + 1
         while pos < sst_end
@@ -95,27 +99,37 @@ module Xlsxrb
           # Fast path: check for simple single <t>...</t> inside <si>
           first_t = xml.index(t_start_pattern, si_open_end + 1)
           if first_t && first_t < si_end
-            t_open_end = xml.index(">", first_t + t_start_len)
-            if t_open_end && t_open_end < si_end
-              if xml.getbyte(t_open_end - 1) == 47 # <t/>
-                str = ""
-              else
-                t_end = xml.index(t_end_tag, t_open_end + 1)
-                if t_end && t_end <= si_end
-                  next_t = xml.index(t_start_pattern, t_end + t_end_len)
-                  if next_t && next_t < si_end
-                    # Multiple <t> tags (rich text runs)
-                    str = extract_multi_t(xml, si_open_end + 1, si_end, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len)
-                  else
-                    raw_str = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding("UTF-8")
-                    str = XmlBuilder.unescape(raw_str)
-                  end
+            tb = xml.getbyte(first_t + t_start_len)
+            if TAG_DELIM_BYTES.include?(tb)
+              t_open_end = xml.index(">", first_t + t_start_len)
+              if t_open_end && t_open_end < si_end
+                if xml.getbyte(t_open_end - 1) == 47 # <t/>
+                  next_t = xml.index(t_start_pattern, t_open_end + 1)
+                  str = if next_t && next_t < si_end
+                          extract_multi_t(xml, si_open_end + 1, si_end, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len, has_rph: has_rph)
+                        else
+                          ""
+                        end
                 else
-                  str = ""
+                  t_end = xml.index(t_end_tag, t_open_end + 1)
+                  if t_end && t_end <= si_end
+                    next_t = xml.index(t_start_pattern, t_end + t_end_len)
+                    if next_t && next_t < si_end
+                      # Multiple <t> tags (rich text runs)
+                      str = extract_multi_t(xml, si_open_end + 1, si_end, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len, has_rph: has_rph)
+                    else
+                      raw_str = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding("UTF-8")
+                      str = XmlBuilder.unescape(raw_str)
+                    end
+                  else
+                    str = ""
+                  end
                 end
+              else
+                str = ""
               end
             else
-              str = ""
+              str = extract_multi_t(xml, si_open_end + 1, si_end, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len, has_rph: has_rph)
             end
           else
             str = ""
@@ -128,7 +142,7 @@ module Xlsxrb
 
       private_class_method :fast_scan
 
-      def self.extract_multi_t(xml, from, to, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len)
+      def self.extract_multi_t(xml, from, to, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len, has_rph: false)
         buf = +""
         pos = from
         while pos < to
@@ -144,14 +158,16 @@ module Xlsxrb
           end
           # rubocop:enable Style/MultipleComparison
 
-          # Phonetic runs (<rPh>) hold furigana readings and are not part of the string
-          rph_start = xml.index(rph_start_pattern, pos)
-          if rph_start && rph_start < t_start
-            rph_end = xml.index(rph_end_tag, rph_start)
-            break unless rph_end && rph_end < to
+          if has_rph
+            # Phonetic runs (<rPh>) hold furigana readings and are not part of the string
+            rph_start = xml.index(rph_start_pattern, pos)
+            if rph_start && rph_start < t_start
+              rph_end = xml.index(rph_end_tag, rph_start)
+              break unless rph_end && rph_end < to
 
-            pos = rph_end + rph_end_len
-            next
+              pos = rph_end + rph_end_len
+              next
+            end
           end
 
           t_open_end = xml.index(">", t_start + t_start_len)

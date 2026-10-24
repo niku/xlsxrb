@@ -1008,6 +1008,12 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal "日本語テスト", text
   end
 
+  test "SharedStringsParser handles rich text when first t is self-closing" do
+    xml = %(<sst count="1" uniqueCount="1"><si><r><t/></r><r><t>Hello</t></r></si></sst>)
+    strings = Xlsxrb::Ooxml::SharedStringsParser.parse(xml)
+    assert_equal ["Hello"], strings
+  end
+
   test "WorksheetListener excludes phonetic readings and ignores empty self-closing string cells" do
     xml = <<~XML
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
