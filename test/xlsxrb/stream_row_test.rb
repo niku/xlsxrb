@@ -311,4 +311,26 @@ class StreamRowTest < Test::Unit::TestCase
     )
     assert_false(val_row.empty?)
   end
+
+  test "stream_row handles multibyte UTF-8 input strings without byte offset drift" do
+    # Multi-byte UTF-8 encoded XML string passed directly
+    utf8_xml = %(<c r="A1" t="inlineStr"><is><t>日本語と絵文字🎉</t></is></c><c r="B1"><v>100</v></c>)
+    assert_equal(Encoding::UTF_8, utf8_xml.encoding)
+
+    row = Xlsxrb::StreamRow.new(
+      index: 0,
+      xml_bytes: utf8_xml,
+      from: 0,
+      to: utf8_xml.bytesize,
+      shared_strings: []
+    )
+
+    assert_equal("日本語と絵文字🎉", row[0].value)
+    assert_equal(100, row[1].value)
+
+    # fast_create path
+    fast_row = Xlsxrb::StreamRow.fast_create(0, utf8_xml, 0, utf8_xml.bytesize, [])
+    assert_equal("日本語と絵文字🎉", fast_row[0].value)
+    assert_equal(100, fast_row[1].value)
+  end
 end

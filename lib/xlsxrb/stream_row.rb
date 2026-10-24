@@ -39,7 +39,7 @@ module Xlsxrb
     def initialize(index:, xml_bytes:, from:, to:, shared_strings:, prefix: "", height: nil, hidden: false,
                    custom_height: false, collapsed: false, outline_level: nil, style_index: nil, styles: nil, date1904: false, pad_empty_cells: false)
       @index = index
-      @xml = xml_bytes
+      @xml = xml_bytes.encoding == Encoding::BINARY ? xml_bytes : xml_bytes.b
       @from = from
       @to = to
       @shared_strings = shared_strings
@@ -60,7 +60,7 @@ module Xlsxrb
     def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil, date1904 = false, collapsed = false, pad_empty_cells = false)
       inst = allocate
       inst.instance_variable_set(:@index, index)
-      inst.instance_variable_set(:@xml, xml_bytes)
+      inst.instance_variable_set(:@xml, xml_bytes.encoding == Encoding::BINARY ? xml_bytes : xml_bytes.b)
       inst.instance_variable_set(:@from, from)
       inst.instance_variable_set(:@to, to)
       inst.instance_variable_set(:@shared_strings, shared_strings)

@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Changed
+- Enforce binary encoding (`ASCII-8BIT`) on raw XML buffers in `StreamRow` and document byte vs character indexing consistency policy in `AGENTS.md` to prevent terminal row truncation or byte-offset drift when scanning documents with multibyte UTF-8 characters.
 - Clarify streaming write memory profile and date/time timezone semantics in README and YARD documentation.
 - Reading a file that is not a ZIP archive (including an empty file) raises `Xlsxrb::ZipError` instead of `ArgumentError`.
 - Strict numeric cell values: an explicit numeric cell (`t="n"`) with an invalid number raises `Xlsxrb::ParseError`, while an empty `<v>` reads as `nil` instead of `0`, exponent notation such as `1E-3` reads as a Float, and non-numeric values in cells without `t` fall back to their string payload. Inline string and formula string cells without text read as `nil`, and `t="d"` cells read as their ISO 8601 text.
