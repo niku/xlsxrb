@@ -13,6 +13,7 @@
 - Add `skip_rows` (and alias `skip_row`) to `StreamWriter`, `WorksheetProxy`, and `WorksheetBuilder` to advance the row cursor without writing empty `<row>` XML elements.
 - Support configurable workbook-wide default font (`default_font: { name:, size: }`, `default_font(name, size, **opts)`, `set_default_font`) across `StreamWriter`, `WorksheetProxy`, `WorkbookBuilder`, `Xlsxrb.write`, and `Xlsxrb.build`, serializing name, size, family, charset, and scheme onto the base font (font 0).
 - Support inline strings option (`shared_strings: false`) across `StreamWriter` and `Xlsxrb.write`, writing cells directly as `<c t="inlineStr"><is><t>...</t></is></c>` and omitting `xl/sharedStrings.xml` and package relationships to maintain flat $O(1)$ constant memory during streaming write.
+- Support configurable ZIP deflate compression level (`compression_level: 0..9`) across `StreamWriter`, `Ooxml::ZipWriter`, `Ooxml::WorkbookWriter`, and `Xlsxrb.write`, allowing performance tuning between compression speed (e.g. level 4 for 20-40% faster writes) and archive size.
 
 ### Fixed
 - Support `xsd:boolean` representations (`"true"`, `"false"`, `"1"`, `"0"`) across `StylesParser`, `StylesListener`, and column definitions in `WorksheetParser`.

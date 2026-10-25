@@ -603,13 +603,16 @@ module Xlsxrb
   #   When set to `false`, strings are emitted directly as inline strings (`<c t="inlineStr">`), providing flat
   #   $O(1)$ constant memory during streaming write. Disabling shared strings is recommended when streaming
   #   large datasets where cells contain unique text (e.g. log exports, transaction details).
-  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool) ?{ (StreamWriter) -> void } -> untyped
-  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, &)
+  # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION).
+  #   Level 6 is standard. Level 4 accelerates compression by 20-40% with an ~10% size tradeoff,
+  #   recommended for high-throughput streaming exports. Level 0 disables compression (store only).
+  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
+  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, compression_level: Zlib::DEFAULT_COMPRESSION, &)
     if block_given?
       if target_or_workbook.equal?(OMITTED_TARGET)
         io = StringIO.new
         io.binmode
-        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings, &)
+        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings, compression_level: compression_level, &)
         return io.string.b
       end
 
@@ -619,7 +622,7 @@ module Xlsxrb
       if password && !password.empty?
         buf = StringIO.new
         buf.binmode
-        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings)
+        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings, compression_level: compression_level)
         begin
           yield stream_writer
           stream_writer.close
@@ -634,7 +637,7 @@ module Xlsxrb
           stream_writer.cleanup!
         end
       else
-        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings)
+        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings, compression_level: compression_level)
         begin
           yield stream_writer
           stream_writer.close
@@ -653,7 +656,7 @@ module Xlsxrb
 
       io = StringIO.new
       io.binmode
-      write(io, wb, password: password, encryption_mode: encryption_mode, shared_strings: shared_strings)
+      write(io, wb, password: password, encryption_mode: encryption_mode, shared_strings: shared_strings, compression_level: compression_level)
       return io.string.b
     end
 
@@ -812,7 +815,8 @@ module Xlsxrb
         app_properties: wb_app,
         custom_properties: wb_custom,
         workbook_protection: wb_prot,
-        workbook_properties: wb_properties
+        workbook_properties: wb_properties,
+        compression_level: compression_level
       )
       encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password, mode: encryption_mode)
       if target.is_a?(String)
@@ -832,7 +836,8 @@ module Xlsxrb
         app_properties: wb_app,
         custom_properties: wb_custom,
         workbook_protection: wb_prot,
-        workbook_properties: wb_properties
+        workbook_properties: wb_properties,
+        compression_level: compression_level
       )
     end
   end

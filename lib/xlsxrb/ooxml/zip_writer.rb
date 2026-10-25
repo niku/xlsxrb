@@ -9,9 +9,9 @@ module Xlsxrb
     # Writes ZIP archives using only stdlib (zlib).
     # Supports streaming: entries are written sequentially, central directory at close.
     class ZipWriter
-      def self.open(target, &block)
+      def self.open(target, compression_level: Zlib::DEFAULT_COMPRESSION, &block)
         io = target.is_a?(String) ? File.open(target, "wb") : target
-        writer = new(io)
+        writer = new(io, compression_level: compression_level)
         if block
           begin
             yield writer
@@ -24,8 +24,18 @@ module Xlsxrb
         end
       end
 
-      def initialize(io)
+      # @return [Integer] Deflate compression level (0..9).
+      attr_reader :compression_level
+
+      # @param io [IO, StringIO] Destination IO stream.
+      # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION).
+      #: (untyped io, ?compression_level: Integer | nil) -> void
+      def initialize(io, compression_level: Zlib::DEFAULT_COMPRESSION)
+        level = compression_level.nil? ? Zlib::DEFAULT_COMPRESSION : compression_level
+        raise ArgumentError, "Invalid compression_level: #{compression_level.inspect}. Must be an Integer between 0 and 9 (or Zlib::DEFAULT_COMPRESSION)." unless level.is_a?(Integer) && (level == Zlib::DEFAULT_COMPRESSION || (0..9).cover?(level))
+
         @io = io
+        @compression_level = level
         @entries = []
         @closed = false
         @bytes_written = 0
@@ -56,7 +66,7 @@ module Xlsxrb
         @entry_path = path
         @entry_offset = @bytes_written
         @entry_gp_flag = @seekable ? 0 : 0x0008
-        @entry_deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
+        @entry_deflater = Zlib::Deflate.new(@compression_level, -Zlib::MAX_WBITS)
         @entry_crc = Zlib.crc32
         @entry_uncompressed_size = 0
         @entry_compressed_size = 0
@@ -191,7 +201,7 @@ module Xlsxrb
       end
 
       def deflate(content)
-        deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
+        deflater = Zlib::Deflate.new(@compression_level, -Zlib::MAX_WBITS)
         begin
           deflater.deflate(content, Zlib::FINISH)
         ensure

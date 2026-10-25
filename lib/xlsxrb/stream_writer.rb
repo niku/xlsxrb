@@ -35,6 +35,9 @@ module Xlsxrb
     attr_reader :shared_strings
     alias shared_strings? shared_strings
 
+    # @return [Integer] The ZIP deflate compression level (0..9).
+    attr_reader :compression_level
+
     # Initializes a streaming writer context.
     #
     # @param target [String, IO, StringIO] Destination file path or writable IO stream.
@@ -45,15 +48,19 @@ module Xlsxrb
     #   When set to `false`, strings are written directly as inline strings (`<c t="inlineStr">`), maintaining flat
     #   $O(1)$ constant memory regardless of row count or unique string cardinality. Note that disabling shared strings
     #   may slightly increase archive size (typically 3-5%) on datasets with high repetition.
-    #: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool) -> void
-    def initialize(target, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true)
+    # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION).
+    #   Level 6 is standard. Level 4 accelerates compression by 20-40% with an ~10% size tradeoff,
+    #   recommended for high-throughput streaming exports. Level 0 disables compression (store only).
+    #: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) -> void
+    def initialize(target, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, compression_level: Zlib::DEFAULT_COMPRESSION)
       @target = target
       @strict_excel_mode = strict_excel_mode
       @escape_formulas = escape_formulas ? true : false
       @shared_strings = shared_strings ? true : false
+      @compression_level = compression_level || Zlib::DEFAULT_COMPRESSION
       @io = target.is_a?(String) ? File.open(target, "wb") : target
       @owns_io = target.is_a?(String)
-      @zip = Ooxml::ZipWriter.new(@io)
+      @zip = Ooxml::ZipWriter.new(@io, compression_level: @compression_level)
       if @shared_strings
         @sst = []
         @sst_index = {}

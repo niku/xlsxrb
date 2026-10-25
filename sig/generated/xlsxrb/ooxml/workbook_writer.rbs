@@ -22,9 +22,9 @@ module Xlsxrb
         alias << write
       end
 
-      def self.write: (untyped target, sheets: untyped, ?shared_strings: untyped, ?shared_strings_index: untyped, ?styles: untyped, ?defined_names: untyped, ?core_properties: untyped, ?app_properties: untyped, ?custom_properties: untyped, ?workbook_protection: untyped, ?workbook_properties: untyped) -> untyped
+      def self.write: (untyped target, sheets: untyped, ?shared_strings: untyped, ?shared_strings_index: untyped, ?styles: untyped, ?defined_names: untyped, ?core_properties: untyped, ?app_properties: untyped, ?custom_properties: untyped, ?workbook_protection: untyped, ?workbook_properties: untyped, ?compression_level: untyped) -> untyped
 
-      def initialize: (sheets: untyped, ?shared_strings: untyped, ?shared_strings_index: untyped, ?styles: untyped, ?defined_names: untyped, ?core_properties: untyped, ?app_properties: untyped, ?custom_properties: untyped, ?workbook_protection: untyped, ?workbook_properties: untyped) -> untyped
+      def initialize: (sheets: untyped, ?shared_strings: untyped, ?shared_strings_index: untyped, ?styles: untyped, ?defined_names: untyped, ?core_properties: untyped, ?app_properties: untyped, ?custom_properties: untyped, ?workbook_protection: untyped, ?workbook_properties: untyped, ?compression_level: untyped) -> untyped
 
       def write_to: (untyped target) -> untyped
 

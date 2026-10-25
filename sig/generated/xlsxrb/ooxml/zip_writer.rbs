@@ -5,9 +5,15 @@ module Xlsxrb
     # Writes ZIP archives using only stdlib (zlib).
     # Supports streaming: entries are written sequentially, central directory at close.
     class ZipWriter
-      def self.open: (untyped target) ?{ (?) -> untyped } -> untyped
+      def self.open: (untyped target, ?compression_level: untyped) ?{ (?) -> untyped } -> untyped
 
-      def initialize: (untyped io) -> untyped
+      # @return [Integer] Deflate compression level (0..9).
+      attr_reader compression_level: untyped
+
+      # @param io [IO, StringIO] Destination IO stream.
+      # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION).
+      # : (untyped io, ?compression_level: Integer | nil) -> void
+      def initialize: (untyped io, ?compression_level: Integer | nil) -> void
 
       # Add a file entry with string content.
       def add_entry: (untyped path, untyped content) -> untyped

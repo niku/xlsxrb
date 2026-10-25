@@ -8834,6 +8834,83 @@ class WriterTest < Test::Unit::TestCase
     assert_equal([%w[Hello World], [123, true]], read_sheet.rows.map { |r| r.cells.map(&:value) })
   end
 
+  test "StreamWriter supports configurable compression_level" do
+    sample_data = Array.new(200) { |i| ["Product #{i}", i * 10, i * 1.5, "Category #{i % 5}"] }
+
+    buf_fast = StringIO.new
+    buf_fast.binmode
+    Xlsxrb.write(buf_fast, compression_level: 1) do |w|
+      assert_equal(1, w.compression_level)
+      w.sheet("Sheet1") do |s|
+        sample_data.each { |row| s.row(row) }
+      end
+    end
+
+    buf_best = StringIO.new
+    buf_best.binmode
+    Xlsxrb.write(buf_best, compression_level: 9) do |w|
+      assert_equal(9, w.compression_level)
+      w.sheet("Sheet1") do |s|
+        sample_data.each { |row| s.row(row) }
+      end
+    end
+
+    # Level 1 should be larger than level 9 on repetitive data
+    assert_operator buf_fast.string.bytesize, :>, buf_best.string.bytesize
+
+    # Verify both archives read back identically
+    rows_fast = []
+    Xlsxrb.stream(buf_fast.string) do |s|
+      s.each { |r| rows_fast << r.values }
+    end
+    assert_equal(sample_data, rows_fast)
+
+    rows_best = []
+    Xlsxrb.stream(buf_best.string) do |s|
+      s.each { |r| rows_best << r.values }
+    end
+    assert_equal(sample_data, rows_best)
+
+    # Test level 4
+    buf_lvl4 = StringIO.new
+    buf_lvl4.binmode
+    Xlsxrb.write(buf_lvl4, compression_level: 4) do |w|
+      assert_equal(4, w.compression_level)
+      w.sheet("Sheet1") { |s| s.row(["Test", 123]) }
+    end
+    wb_read = Xlsxrb.read(buf_lvl4.string)
+    assert_equal([["Test", 123]], wb_read.sheets.first.load.rows.map { |r| r.cells.map(&:value) })
+
+    # Invalid compression levels raise ArgumentError
+    assert_raise(ArgumentError) do
+      Xlsxrb.write(StringIO.new, compression_level: 10) { |w| w.sheet("S") { |s| s.row([1]) } }
+    end
+    assert_raise(ArgumentError) do
+      Xlsxrb.write(StringIO.new, compression_level: -5) { |w| w.sheet("S") { |s| s.row([1]) } }
+    end
+  end
+
+  test "Xlsxrb.write in-memory supports configurable compression_level" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("Sheet1") do |s|
+        100.times { |i| s.row(["Row #{i}", i]) }
+      end
+    end
+
+    buf_lvl1 = StringIO.new
+    buf_lvl1.binmode
+    Xlsxrb.write(buf_lvl1, wb, compression_level: 1)
+
+    buf_lvl9 = StringIO.new
+    buf_lvl9.binmode
+    Xlsxrb.write(buf_lvl9, wb, compression_level: 9)
+
+    assert_operator buf_lvl1.string.bytesize, :>, buf_lvl9.string.bytesize
+
+    read_wb = Xlsxrb.read(buf_lvl1.string)
+    assert_equal(100, read_wb.sheets.first.load.rows.size)
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
