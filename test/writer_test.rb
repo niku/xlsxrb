@@ -8520,6 +8520,24 @@ class WriterTest < Test::Unit::TestCase
     tmp_img&.close!
   end
 
+  test "WorksheetWriter#write_row_values safely writes strings as inlineStr when sst_index is nil" do
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.start
+    rt1 = Xlsxrb::Elements::RichText.new(runs: [Xlsxrb::Elements::RichTextRun.new(text: "rt_unstyled")])
+    rt2 = Xlsxrb::Elements::RichText.new(runs: [Xlsxrb::Elements::RichTextRun.new(text: "rt_styled")])
+    writer.write_row_values(0, ["hello", rt1, 123], sst: nil, sst_index: nil)
+    writer.write_row_values(1, ["world", rt2], styles: [1, 2], sst: nil, sst_index: nil)
+    writer.finish
+
+    xml = io.string
+    assert_match(%r{<c r="A1" t="inlineStr"><is><t>hello</t></is></c>}, xml)
+    assert_match(%r{<c r="B1" t="inlineStr"><is><t>rt_unstyled</t></is></c>}, xml)
+    assert_match(%r{<c r="C1"><v>123</v></c>}, xml)
+    assert_match(%r{<c r="A2" s="1" t="inlineStr"><is><t>world</t></is></c>}, xml)
+    assert_match(%r{<c r="B2" s="2" t="inlineStr"><is><t>rt_styled</t></is></c>}, xml)
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

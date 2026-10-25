@@ -466,12 +466,16 @@ module Xlsxrb
             when BigDecimal
               buf << "<c r=\"#{col_ref}#{row_num_str}\"><v>#{value.to_s("F")}</v></c>"
             else
-              idx = (sst_index[value] ||= begin
-                sst << value
-                sst.size - 1
-              end)
-              idx_str = idx < 65_536 ? INTEGER_STRINGS[idx] : idx.to_s
-              buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"s\"><v>#{idx_str}</v></c>"
+              if sst_index
+                idx = (sst_index[value] ||= begin
+                  sst << value
+                  sst.size - 1
+                end)
+                idx_str = idx < 65_536 ? INTEGER_STRINGS[idx] : idx.to_s
+                buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"s\"><v>#{idx_str}</v></c>"
+              else
+                buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"inlineStr\"><is><t>#{escape_xml(value.to_s)}</t></is></c>"
+              end
             end
           end
 

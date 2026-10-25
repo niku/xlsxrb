@@ -12,6 +12,7 @@
 
 ### Fixed
 - Support `xsd:boolean` representations (`"true"`, `"false"`, `"1"`, `"0"`) across `StylesParser`, `StylesListener`, and column definitions in `WorksheetParser`.
+- Safely handle `nil` shared strings table index (`sst_index: nil`) across unstyled fast path and general cell paths in `WorksheetWriter#write_row_values`, writing string values as inline strings (`t="inlineStr"`) without error.
 
 ## [0.1.16] - 2026-10-24
 
