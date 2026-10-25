@@ -31,21 +31,36 @@ module Xlsxrb
     # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
     attr_accessor :escape_formulas
 
+    # @return [Boolean] Whether the shared strings table is enabled.
+    attr_reader :shared_strings
+    alias shared_strings? shared_strings
+
     # Initializes a streaming writer context.
     #
     # @param target [String, IO, StringIO] Destination file path or writable IO stream.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
+    # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
     # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
-    #: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) -> void
-    def initialize(target, strict_excel_mode: true, escape_formulas: false, default_font: nil)
+    # @param shared_strings [Boolean] Whether to intern strings into a shared strings table (`xl/sharedStrings.xml`).
+    #   When set to `false`, strings are written directly as inline strings (`<c t="inlineStr">`), maintaining flat
+    #   $O(1)$ constant memory regardless of row count or unique string cardinality. Note that disabling shared strings
+    #   may slightly increase archive size (typically 3-5%) on datasets with high repetition.
+    #: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool) -> void
+    def initialize(target, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true)
       @target = target
       @strict_excel_mode = strict_excel_mode
       @escape_formulas = escape_formulas ? true : false
+      @shared_strings = shared_strings ? true : false
       @io = target.is_a?(String) ? File.open(target, "wb") : target
       @owns_io = target.is_a?(String)
       @zip = Ooxml::ZipWriter.new(@io)
-      @sst = []
-      @sst_index = {}
+      if @shared_strings
+        @sst = []
+        @sst_index = {}
+      else
+        @sst = nil
+        @sst_index = nil
+      end
       @sheets = []
       @current_sheet = nil
       @current_sheet_index = 0

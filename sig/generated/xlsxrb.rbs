@@ -363,12 +363,12 @@ module Xlsxrb
   #   binary_data = Xlsxrb.write(workbook)
   #
   # @api public
-  # : (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
-  # : (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-  # : (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (StreamWriter) -> void } -> untyped
-  def self.write: (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
-                | (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-                | (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (StreamWriter) -> void } -> untyped
+  # @param shared_strings [Boolean] Whether to intern strings in a shared strings table (`xl/sharedStrings.xml`).
+  #   When set to `false`, strings are emitted directly as inline strings (`<c t="inlineStr">`), providing flat
+  #   $O(1)$ constant memory during streaming write. Disabling shared strings is recommended when streaming
+  #   large datasets where cells contain unique text (e.g. log exports, transaction details).
+  # : (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool) ?{ (StreamWriter) -> void } -> untyped
+  def self.write: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool) ?{ (StreamWriter) -> void } -> untyped
 
   # Modifies an existing XLSX file in-memory using an immutable transformation block.
   #

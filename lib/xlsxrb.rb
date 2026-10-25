@@ -599,15 +599,17 @@ module Xlsxrb
   #   binary_data = Xlsxrb.write(workbook)
   #
   # @api public
-  #: (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
-  #: (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (StreamWriter) -> void } -> untyped
-  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, default_font: nil, &)
+  # @param shared_strings [Boolean] Whether to intern strings in a shared strings table (`xl/sharedStrings.xml`).
+  #   When set to `false`, strings are emitted directly as inline strings (`<c t="inlineStr">`), providing flat
+  #   $O(1)$ constant memory during streaming write. Disabling shared strings is recommended when streaming
+  #   large datasets where cells contain unique text (e.g. log exports, transaction details).
+  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool) ?{ (StreamWriter) -> void } -> untyped
+  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, &)
     if block_given?
       if target_or_workbook.equal?(OMITTED_TARGET)
         io = StringIO.new
         io.binmode
-        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, &)
+        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings, &)
         return io.string.b
       end
 
@@ -617,7 +619,7 @@ module Xlsxrb
       if password && !password.empty?
         buf = StringIO.new
         buf.binmode
-        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font)
+        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings)
         begin
           yield stream_writer
           stream_writer.close
@@ -632,7 +634,7 @@ module Xlsxrb
           stream_writer.cleanup!
         end
       else
-        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font)
+        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings)
         begin
           yield stream_writer
           stream_writer.close
@@ -651,7 +653,7 @@ module Xlsxrb
 
       io = StringIO.new
       io.binmode
-      write(io, wb, password: password, encryption_mode: encryption_mode)
+      write(io, wb, password: password, encryption_mode: encryption_mode, shared_strings: shared_strings)
       return io.string.b
     end
 
@@ -660,27 +662,34 @@ module Xlsxrb
     raise Error, "target is required" if target.nil?
     raise Error, "workbook must be an Elements::Workbook" unless workbook.is_a?(Elements::Workbook)
 
-    sst = []
-    sst_index = {}
+    if shared_strings
+      sst = []
+      sst_index = {}
 
-    if workbook.shared_strings && !workbook.shared_strings.empty?
-      workbook.shared_strings.each do |val|
-        if (val.is_a?(String) || val.is_a?(Elements::RichText)) && !sst_index.key?(val)
-          sst << val
-          sst_index[val] = sst.size - 1
+      if workbook.shared_strings && !workbook.shared_strings.empty?
+        workbook.shared_strings.each do |val|
+          if (val.is_a?(String) || val.is_a?(Elements::RichText)) && !sst_index.key?(val)
+            sst << val
+            sst_index[val] = sst.size - 1
+          end
         end
       end
+    else
+      sst = nil
+      sst_index = nil
     end
 
     # Collect shared strings and build index without allocating new Hashes
     sheet_data = workbook.sheets.map do |raw_ws|
       ws = raw_ws.respond_to?(:load) ? raw_ws.load : raw_ws
-      ws.rows.each do |row|
-        row.cells.each do |cell|
-          val = cell.value
-          if (val.is_a?(String) || val.is_a?(Elements::RichText)) && !sst_index.key?(val)
-            sst << val
-            sst_index[val] = sst.size - 1
+      if sst_index
+        ws.rows.each do |row|
+          row.cells.each do |cell|
+            val = cell.value
+            if (val.is_a?(String) || val.is_a?(Elements::RichText)) && !sst_index.key?(val)
+              sst << val
+              sst_index[val] = sst.size - 1
+            end
           end
         end
       end

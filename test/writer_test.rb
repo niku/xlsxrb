@@ -8757,6 +8757,83 @@ class WriterTest < Test::Unit::TestCase
     assert_match(/<name val="Arial"/, styles_xml2)
   end
 
+  test "StreamWriter with shared_strings: false writes inline strings and omits sharedStrings.xml" do
+    buf = StringIO.new
+    buf.binmode
+    Xlsxrb.write(buf, shared_strings: false) do |w|
+      assert_equal(false, w.shared_strings)
+      w.sheet("Data") do |s|
+        s.style(:header, bold: true)
+        s.row(%w[Item Count Price], styles: [:header, nil, nil])
+        s.row(["Widget", 42, 19.99])
+        s.row(["Gadget", 100, 5.50])
+      end
+    end
+
+    assert_nil(read_xml_from_xlsx(buf.string, "xl/sharedStrings.xml"))
+
+    rels_xml = read_xml_from_xlsx(buf.string, "xl/_rels/workbook.xml.rels")
+    refute_match(/sharedStrings/, rels_xml)
+
+    ct_xml = read_xml_from_xlsx(buf.string, "[Content_Types].xml")
+    refute_match(/sharedStrings/, ct_xml)
+
+    ws_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_match(%r{t="inlineStr"><is><t>Item</t></is></c>}, ws_xml)
+    assert_match(%r{t="inlineStr"><is><t>Widget</t></is></c>}, ws_xml)
+    refute_match(/t="s"/, ws_xml)
+
+    # Read back with in-memory reader
+    wb = Xlsxrb.read(buf.string)
+    sheet = wb.sheets.first.load
+    assert_equal([
+                   %w[Item Count Price],
+                   ["Widget", 42, 19.99],
+                   ["Gadget", 100, 5.50]
+                 ], sheet.rows.map { |r| r.cells.map(&:value) })
+
+    # Read back with streaming reader
+    stream_rows = []
+    Xlsxrb.stream(buf.string) do |s|
+      s.each { |r| stream_rows << r.values }
+    end
+    assert_equal([
+                   %w[Item Count Price],
+                   ["Widget", 42, 19.99],
+                   ["Gadget", 100, 5.50]
+                 ], stream_rows)
+  end
+
+  test "Xlsxrb.write in-memory with shared_strings: false writes inline strings and omits sharedStrings.xml" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("Data") do |s|
+        s.row(%w[Hello World])
+        s.row([123, true])
+      end
+    end
+
+    buf = StringIO.new
+    buf.binmode
+    Xlsxrb.write(buf, wb, shared_strings: false)
+
+    assert_nil(read_xml_from_xlsx(buf.string, "xl/sharedStrings.xml"))
+
+    rels_xml = read_xml_from_xlsx(buf.string, "xl/_rels/workbook.xml.rels")
+    refute_match(/sharedStrings/, rels_xml)
+
+    ct_xml = read_xml_from_xlsx(buf.string, "[Content_Types].xml")
+    refute_match(/sharedStrings/, ct_xml)
+
+    ws_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_match(%r{t="inlineStr"><is><t>Hello</t></is></c>}, ws_xml)
+    assert_match(%r{t="inlineStr"><is><t>World</t></is></c>}, ws_xml)
+    refute_match(/t="s"/, ws_xml)
+
+    read_wb = Xlsxrb.read(buf.string)
+    read_sheet = read_wb.sheets.first.load
+    assert_equal([%w[Hello World], [123, true]], read_sheet.rows.map { |r| r.cells.map(&:value) })
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

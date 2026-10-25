@@ -12,6 +12,7 @@
 - Support hierarchical differential format Hash (`dxf: { font: ..., fill: ... }`) in `conditional_format` and `add_conditional_format` across `StreamWriter`, `WorksheetProxy`, `WorksheetBuilder`, and `Ooxml::Writer` with automatic deduplication, emit `<b val="0"/>`, `<i val="0"/>`, `<strike val="0"/>` on boolean `false` font properties, and support automatic/theme/tint font and background colors and `pattern: "none"` pattern fills.
 - Add `skip_rows` (and alias `skip_row`) to `StreamWriter`, `WorksheetProxy`, and `WorksheetBuilder` to advance the row cursor without writing empty `<row>` XML elements.
 - Support configurable workbook-wide default font (`default_font: { name:, size: }`, `default_font(name, size, **opts)`, `set_default_font`) across `StreamWriter`, `WorksheetProxy`, `WorkbookBuilder`, `Xlsxrb.write`, and `Xlsxrb.build`, serializing name, size, family, charset, and scheme onto the base font (font 0).
+- Support inline strings option (`shared_strings: false`) across `StreamWriter` and `Xlsxrb.write`, writing cells directly as `<c t="inlineStr"><is><t>...</t></is></c>` and omitting `xl/sharedStrings.xml` and package relationships to maintain flat $O(1)$ constant memory during streaming write.
 
 ### Fixed
 - Support `xsd:boolean` representations (`"true"`, `"false"`, `"1"`, `"0"`) across `StylesParser`, `StylesListener`, and column definitions in `WorksheetParser`.

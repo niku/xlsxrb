@@ -44,7 +44,7 @@ module Xlsxrb
                      defined_names: nil, core_properties: nil, app_properties: nil,
                      custom_properties: nil, workbook_protection: nil, workbook_properties: nil)
         @sheets = sheets
-        @shared_strings = shared_strings
+        @shared_strings = shared_strings || []
         @shared_strings_index = shared_strings_index
         @styles = styles || {}
         @defined_names = defined_names || []
