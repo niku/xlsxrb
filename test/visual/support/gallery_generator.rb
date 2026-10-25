@@ -92,7 +92,8 @@ module Xlsxrb
         "sheet_protection" => "Demonstrates locking and password-protecting worksheets against modifications while configuring user interaction permissions.",
         "drawing_shapes" => "Demonstrates embedding vector shapes (rectangles, rounded rectangles, block arrows) with labels in worksheet drawings.",
         "pivot_table" => "Demonstrates embedding native Excel Pivot Tables summarizing regional data across quarters with sum aggregation.",
-        "table_styles" => "Demonstrates creating native Excel formatted tables (ListObjects) with named table styles, headers, and column definitions."
+        "table_styles" => "Demonstrates creating native Excel formatted tables (ListObjects) with named table styles, headers, and column definitions.",
+        "sheet_properties" => "Demonstrates advanced worksheet and workbook properties, including tab colors, active tab, fit to page, code names, calculation options, error check suppression, phonetic properties, and background images."
       }.freeze
 
       CATEGORIES = {
@@ -121,7 +122,7 @@ module Xlsxrb
           page_orientation_landscape page_paper_size_a3 page_margins_narrow page_margins_wide page_header_footer page_grid_lines_print page_headings_print page_repeat_rows
         ],
         "Interactive & Sheet Features" => %w[
-          hyperlinks sheet_protection interactive_autofilter interactive_comments interactive_validation_list interactive_validation_range interactive_validation_date interactive_validation_time interactive_validation_text_length interactive_validation_custom view_show_grid_lines view_zoom_scale workbook_three_sheets
+          hyperlinks sheet_protection sheet_properties interactive_autofilter interactive_comments interactive_validation_list interactive_validation_range interactive_validation_date interactive_validation_time interactive_validation_text_length interactive_validation_custom view_show_grid_lines view_zoom_scale workbook_three_sheets
         ]
       }.freeze
 
@@ -138,7 +139,8 @@ module Xlsxrb
         "cell_num_currency_jpy" => "number_formats",
         "conditional_formatting" => "conditional_formatting",
         "hyperlinks" => "hyperlinks",
-        "japanese_text" => "japanese_text"
+        "japanese_text" => "japanese_text",
+        "sheet_properties" => "sheet_properties"
       }.freeze
 
       def self.generate

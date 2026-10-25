@@ -508,6 +508,11 @@ This gallery showcases `xlsxrb` DSL usage side-by-side with the visual rendering
 <td align="center"><a href="#sheet-protection">View Code</a><br/><a href="../preview.html">Live Playground</a></td>
 </tr>
 <tr>
+<td>Sheet Properties</td>
+<td align="center"><img src="../../test/visual/baselines/sheet_properties/page-1.png" width="160" alt="Sheet Properties"/></td>
+<td align="center"><a href="#sheet-properties">View Code</a><br/><a href="../preview.html?example=sheet_properties">Live Playground</a></td>
+</tr>
+<tr>
 <td>Interactive Autofilter</td>
 <td align="center"><img src="../../test/visual/baselines/interactive_autofilter/page-1.png" width="160" alt="Interactive Autofilter"/></td>
 <td align="center"><a href="#interactive-autofilter">View Code</a><br/><a href="../preview.html">Live Playground</a></td>
@@ -3261,6 +3266,81 @@ Xlsxrb.write(output_path) do |wb|
 
     # Protect worksheet against unauthorized edits
     s.protect_sheet(password: "secret", select_locked_cells: true, select_unlocked_cells: true)
+  end
+end
+```
+
+<hr/>
+
+## Sheet Properties
+
+[👉 Run and edit in Live Playground](../preview.html?example=sheet_properties)
+
+Demonstrates advanced worksheet and workbook properties, including tab colors, active tab, fit to page, code names, calculation options, error check suppression, phonetic properties, and background images.
+
+### Rendered Output (LibreOffice Calc)
+
+<div><img src="../../test/visual/baselines/sheet_properties/page-1.png" width="100%" alt="Preview"/></div>
+
+<div><img src="../../test/visual/baselines/sheet_properties/page-2.png" width="100%" alt="Preview"/></div>
+
+### DSL Code
+
+```ruby
+# frozen_string_literal: true
+
+require "xlsxrb"
+
+output_path = ARGV[0] || "sheet_properties.xlsx"
+
+# 1x1 subtle neutral pixel as background image
+subtle_bg = [
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+].pack("m")
+
+Xlsxrb.write(output_path) do |wb|
+  wb.tab_ratio(600)
+  wb.active_sheet("Active Summary")
+
+  wb.style(:header, font: { bold: true, color: "FFFFFF" }, fill_color: "1E3A8A", align_horizontal: :center)
+  wb.style(:meta_hdr, font: { bold: true, color: "FFFFFF" }, fill_color: "047857", align_horizontal: :center)
+  wb.style(:border_cell, border_all: { style: :thin, color: "CBD5E1" })
+
+  # Sheet 1: Active Summary with tab color, fit to page, code name, and ignored errors
+  wb.sheet("Active Summary", tab_color: { rgb: "FF2563EB" }, fit_to_page: true, code_name: "SheetSummary") do |s|
+    s.column(0, width: 16)
+    s.column(1, width: 28)
+    s.column(2, width: 16)
+
+    s.phonetic_properties(font_id: 0, type: :no_conversion, alignment: :left)
+    s.ignore_error("A2:A4", number_stored_as_text: true)
+
+    s.row(["Code", "Product Description", "Inventory"], styles: :header)
+    s.row(["00101", "Compact Mechanical Keyboard", 42], styles: :border_cell)
+    s.row(["00102", "Ergonomic Vertical Mouse", 78], styles: :border_cell)
+    s.row(["00103", "Ultra-wide Monitor Stand", 15], styles: :border_cell)
+  end
+
+  # Sheet 2: Secondary sheet with green tab, sheet calculation pr, and background image
+  wb.sheet("Calculations & Notes", tab_color: { rgb: "FF10B981" }) do |s|
+    s.column(0, width: 22)
+    s.column(1, width: 20)
+
+    s.sheet_calc_pr(full_calc_on_load: true)
+    s.background_image(subtle_bg)
+
+    s.row(%w[Metric Calculation], styles: :meta_hdr)
+    s.row(["Total Units", "=SUM('Active Summary'!C2:C4)"], styles: :border_cell)
+    s.row(["Average Stock", "=AVERAGE('Active Summary'!C2:C4)"], styles: :border_cell)
+  end
+
+  # Sheet 3: Hidden configuration sheet
+  wb.sheet("Internal Config", state: :hidden) do |s|
+    s.column(0, width: 20)
+    s.column(1, width: 20)
+    s.row(["Config Key", "Value"])
+    s.row(%w[environment production])
+    s.row(%w[telemetry_enabled true])
   end
 end
 ```
