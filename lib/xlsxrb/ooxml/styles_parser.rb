@@ -95,8 +95,8 @@ module Xlsxrb
           when "border"
             if parent_context?("borders") || (@current_dxf && parent_context?("dxf"))
               @current_border = {}
-              @current_border[:diagonal_up] = true if attrs["diagonalUp"] == "1"
-              @current_border[:diagonal_down] = true if attrs["diagonalDown"] == "1"
+              @current_border[:diagonal_up] = true if boolean_val(attrs["diagonalUp"])
+              @current_border[:diagonal_down] = true if boolean_val(attrs["diagonalDown"])
             end
           when "left", "right", "top", "bottom", "diagonal"
             handle_border_side(localname, attrs)
@@ -206,12 +206,18 @@ module Xlsxrb
             fill_id: attrs["fillId"]&.to_i,
             border_id: attrs["borderId"]&.to_i,
             xf_id: attrs["xfId"]&.to_i,
-            apply_number_format: attrs["applyNumberFormat"] == "1",
-            apply_font: attrs["applyFont"] == "1",
-            apply_fill: attrs["applyFill"] == "1",
-            apply_border: attrs["applyBorder"] == "1",
-            apply_alignment: attrs["applyAlignment"] == "1"
+            apply_number_format: boolean_val(attrs["applyNumberFormat"]),
+            apply_font: boolean_val(attrs["applyFont"]),
+            apply_fill: boolean_val(attrs["applyFill"]),
+            apply_border: boolean_val(attrs["applyBorder"]),
+            apply_alignment: boolean_val(attrs["applyAlignment"]),
+            apply_protection: boolean_val(attrs["applyProtection"])
           }
+        end
+
+        #: (untyped val) -> bool
+        def boolean_val(val)
+          val == "1" || (val&.casecmp?("true") || false)
         end
 
         def truthy_val?(attrs)
@@ -226,10 +232,10 @@ module Xlsxrb
           alignment = {}
           alignment[:horizontal] = attrs["horizontal"] if attrs["horizontal"]
           alignment[:vertical] = attrs["vertical"] if attrs["vertical"]
-          alignment[:wrap_text] = true if attrs["wrapText"] == "1"
+          alignment[:wrap_text] = true if boolean_val(attrs["wrapText"])
           alignment[:text_rotation] = attrs["textRotation"]&.to_i if attrs["textRotation"]
           alignment[:indent] = attrs["indent"]&.to_i if attrs["indent"]
-          alignment[:shrink_to_fit] = true if attrs["shrinkToFit"] == "1"
+          alignment[:shrink_to_fit] = true if boolean_val(attrs["shrinkToFit"])
           target[:alignment] = alignment unless alignment.empty?
         end
 
@@ -238,8 +244,8 @@ module Xlsxrb
           return unless target
 
           protection = {}
-          protection[:locked] = attrs["locked"] == "1" unless attrs["locked"].nil?
-          protection[:hidden] = attrs["hidden"] == "1" unless attrs["hidden"].nil?
+          protection[:locked] = !%w[0 false].include?(attrs["locked"]&.downcase) unless attrs["locked"].nil?
+          protection[:hidden] = boolean_val(attrs["hidden"]) unless attrs["hidden"].nil?
           target[:protection] = protection unless protection.empty?
         end
 

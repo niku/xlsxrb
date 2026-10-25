@@ -598,8 +598,8 @@ module Xlsxrb
               min: attrs["min"]&.to_i,
               max: attrs["max"]&.to_i,
               width: attrs["width"]&.to_f,
-              hidden: attrs["hidden"] == "1",
-              custom_width: attrs["customWidth"] == "1",
+              hidden: attrs["hidden"] == "1" || (attrs["hidden"]&.casecmp?("true") || false),
+              custom_width: attrs["customWidth"] == "1" || (attrs["customWidth"]&.casecmp?("true") || false),
               outline_level: attrs["outlineLevel"]&.to_i,
               style_index: attrs["style"]&.to_i
             }

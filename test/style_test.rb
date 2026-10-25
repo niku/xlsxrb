@@ -327,4 +327,57 @@ class StyleTest < Test::Unit::TestCase
     assert_equal(styles, hash)
     assert_equal(styles, Xlsxrb::Elements::Styles.new(hash))
   end
+
+  test "StylesParser and StyleListeners parse xsd:boolean attributes ('true'/'false' and '1'/'0')" do
+    xml = <<~XML
+      <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <fonts count="1">
+          <font><sz val="11"/><name val="Calibri"/></font>
+        </fonts>
+        <fills count="2">
+          <fill><patternFill patternType="none"/></fill>
+          <fill><patternFill patternType="gray125"/></fill>
+        </fills>
+        <borders count="1">
+          <border diagonalUp="true" diagonalDown="false">
+            <left/><right/><top/><bottom/><diagonal/>
+          </border>
+        </borders>
+        <cellXfs count="1">
+          <xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="true" applyProtection="false">
+            <alignment wrapText="true" shrinkToFit="false"/>
+            <protection locked="false" hidden="true"/>
+          </xf>
+        </cellXfs>
+      </styleSheet>
+    XML
+
+    # Direct StylesParser
+    parsed = Xlsxrb::Ooxml::StylesParser.parse(xml)
+    assert_true(parsed.borders[0][:diagonal_up])
+    assert_nil(parsed.borders[0][:diagonal_down])
+    xf = parsed.cell_xfs[0]
+    assert_true(xf[:apply_alignment])
+    assert_false(xf[:apply_protection])
+    assert_true(xf[:alignment][:wrap_text])
+    assert_nil(xf[:alignment][:shrink_to_fit])
+    assert_false(xf[:protection][:locked])
+    assert_true(xf[:protection][:hidden])
+
+    # SAX StylesListener
+    listener = Xlsxrb::Ooxml::Reader::StylesListener.new
+    REXML::Parsers::SAX2Parser.new(xml).tap do |parser|
+      parser.listen(listener)
+      parser.parse
+    end
+    assert_true(listener.borders[0][:diagonal_up])
+    assert_nil(listener.borders[0][:diagonal_down])
+    sax_xf = listener.cell_xfs[0]
+    assert_true(sax_xf[:apply_alignment])
+    assert_false(sax_xf[:apply_protection])
+    assert_true(sax_xf[:alignment][:wrap_text])
+    assert_nil(sax_xf[:alignment][:shrink_to_fit])
+    assert_false(sax_xf[:protection][:locked])
+    assert_true(sax_xf[:protection][:hidden])
+  end
 end

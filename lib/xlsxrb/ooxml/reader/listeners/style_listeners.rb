@@ -85,12 +85,12 @@ module Xlsxrb
             }
             %w[applyNumberFormat applyFont applyFill applyBorder applyAlignment applyProtection].each do |attr|
               key = attr.gsub(/[A-Z]/) { |m| "_#{m.downcase}" }.to_sym
-              xf_entry[key] = attributes[attr] == "1" unless attributes[attr].nil?
+              xf_entry[key] = boolean_val(attributes[attr]) unless attributes[attr].nil?
             end
             if @inside_cell_xfs
               xf_entry[:xf_id] = attributes["xfId"]&.to_i
-              xf_entry[:quote_prefix] = true if attributes["quotePrefix"] == "1"
-              xf_entry[:pivot_button] = true if attributes["pivotButton"] == "1"
+              xf_entry[:quote_prefix] = true if boolean_val(attributes["quotePrefix"])
+              xf_entry[:pivot_button] = true if boolean_val(attributes["pivotButton"])
               @cell_xfs << xf_entry
               @current_xf = xf_entry
             elsif @inside_cell_style_xfs
@@ -103,15 +103,15 @@ module Xlsxrb
             alignment = {}
             alignment[:horizontal] = attributes["horizontal"] if attributes["horizontal"]
             alignment[:vertical] = attributes["vertical"] if attributes["vertical"]
-            alignment[:wrap_text] = true if attributes["wrapText"] == "1"
+            alignment[:wrap_text] = true if boolean_val(attributes["wrapText"])
             alignment[:text_rotation] = attributes["textRotation"].to_i if attributes["textRotation"]
             alignment[:indent] = attributes["indent"].to_i if attributes["indent"]
             ri = attributes["relativeIndent"]
             alignment[:relative_indent] = ri.to_i if ri
-            alignment[:shrink_to_fit] = true if attributes["shrinkToFit"] == "1"
+            alignment[:shrink_to_fit] = true if boolean_val(attributes["shrinkToFit"])
             ro = attributes["readingOrder"]
             alignment[:reading_order] = ro.to_i if ro
-            alignment[:justify_last_line] = true if attributes["justifyLastLine"] == "1"
+            alignment[:justify_last_line] = true if boolean_val(attributes["justifyLastLine"])
             unless alignment.empty?
               if @inside_dxfs && @current_dxf
                 @current_dxf[:alignment] = alignment
@@ -121,8 +121,8 @@ module Xlsxrb
             end
           when "protection"
             protection = {}
-            protection[:locked] = attributes["locked"] != "0" if attributes.key?("locked")
-            protection[:hidden] = attributes["hidden"] == "1" if attributes.key?("hidden")
+            protection[:locked] = !%w[0 false].include?(attributes["locked"]&.downcase) if attributes.key?("locked")
+            protection[:hidden] = boolean_val(attributes["hidden"]) if attributes.key?("hidden")
             unless protection.empty?
               if @inside_dxfs && @current_dxf
                 @current_dxf[:protection] = protection
@@ -194,10 +194,10 @@ module Xlsxrb
           when "border"
             if @inside_borders || @inside_dxfs
               @current_border = {}
-              @current_border[:diagonal_up] = true if attributes["diagonalUp"] == "1"
-              @current_border[:diagonal_down] = true if attributes["diagonalDown"] == "1"
+              @current_border[:diagonal_up] = true if boolean_val(attributes["diagonalUp"])
+              @current_border[:diagonal_down] = true if boolean_val(attributes["diagonalDown"])
               ol = attributes["outline"]
-              @current_border[:outline] = %w[1 true].include?(ol) unless ol.nil?
+              @current_border[:outline] = boolean_val(ol) unless ol.nil?
             end
           when "left", "right", "top", "bottom", "diagonal", "vertical", "horizontal", "start", "end"
             if @current_border
@@ -302,6 +302,11 @@ module Xlsxrb
         end
 
         private
+
+        #: (untyped val) -> bool
+        def boolean_val(val)
+          val == "1" || (val&.casecmp?("true") || false)
+        end
 
         def truthy_val?(attributes)
           val = attributes["val"]

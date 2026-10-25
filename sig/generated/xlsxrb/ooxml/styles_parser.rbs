@@ -34,6 +34,9 @@ module Xlsxrb
 
         def handle_xf: (untyped attrs) -> untyped
 
+        # : (untyped val) -> bool
+        def boolean_val: (untyped val) -> bool
+
         def truthy_val?: (untyped attrs) -> untyped
 
         def handle_alignment: (untyped attrs) -> untyped

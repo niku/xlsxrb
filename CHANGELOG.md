@@ -10,6 +10,9 @@
 - Support worksheet background image (`<picture r:id="..."/>`) via `background_image` (with aliases `background_picture`, `picture`, `background_image=`, `background_picture=`, `picture=`) across `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy`, serialize relationship in `xl/worksheets/_rels/sheet{N}.xml.rels` and binary media in `xl/media/sheet{N}_bg.{ext}`, register image extension in `[Content_Types].xml`, emit schema-compliant `<picture>` element in `WorksheetWriter` conforming to ECMA-376 Part 4 schema sequence, and expose `background_image` query readers on `Elements::Worksheet` and `StreamSheet` with full round-trip fidelity.
 - Add visual regression test example, Visual Gallery section, and WebAssembly Live Playground preset for worksheet views and advanced properties (`sheet_properties`).
 
+### Fixed
+- Support `xsd:boolean` representations (`"true"`, `"false"`, `"1"`, `"0"`) across `StylesParser`, `StylesListener`, and column definitions in `WorksheetParser`.
+
 ## [0.1.16] - 2026-10-24
 
 ### Changed
