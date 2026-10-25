@@ -191,6 +191,22 @@ module Xlsxrb
       # : (Array[untyped] | Hash[untyped, untyped] values) -> self
       def <<: (Array[untyped] | Hash[untyped, untyped] values) -> self
 
+      # Advances the row cursor by count without writing empty row elements.
+      #
+      # @example Skip one row
+      #   s.skip_row
+      #
+      # @example Skip multiple rows
+      #   s.skip_rows(3)
+      #
+      # @param count [Integer] Number of rows to skip (must be >= 1).
+      # @return [void]
+      # @api public
+      # : (?Integer count) -> void
+      def skip_rows: (?Integer count) -> void
+
+      alias skip_row skip_rows
+
       # Configures column width and properties.
       #
       # @example Set column A width
@@ -891,6 +907,22 @@ module Xlsxrb
     # @api public
     # : (Array[untyped] | Hash[untyped, untyped] values) -> self
     def <<: (Array[untyped] | Hash[untyped, untyped] values) -> self
+
+    # Advances the row cursor by count without writing empty row elements.
+    #
+    # @example Skip one row
+    #   w.skip_row
+    #
+    # @example Skip multiple rows
+    #   w.skip_rows(3)
+    #
+    # @param count [Integer] Number of rows to skip (must be >= 1).
+    # @return [void]
+    # @api public
+    # : (?Integer count) -> void
+    def skip_rows: (?Integer count) -> void
+
+    alias skip_row skip_rows
 
     # Sets column formatting and properties for one or multiple columns.
     #

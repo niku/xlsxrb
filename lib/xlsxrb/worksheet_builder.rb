@@ -17,6 +17,7 @@ module Xlsxrb
       @name = name
       @strict_excel_mode = strict_excel_mode
       @state = state ? state.to_sym : :visible
+      @next_row_index = 0
       @rows = []
       @columns = []
       @charts = []
@@ -101,8 +102,9 @@ module Xlsxrb
     # @api public
     #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
     def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style: nil)
-      row_index = @rows.size
+      row_index = @next_row_index
       DslHelpers.validate_row_bounds!(row_index, height, strict_excel_mode: @strict_excel_mode)
+      @next_row_index += 1
 
       values = DslHelpers.normalize_row_values(values)
       styles = DslHelpers.normalize_row_styles(styles)
@@ -239,6 +241,25 @@ module Xlsxrb
       row(values)
       self
     end
+
+    # Advances the row cursor by count without writing empty row elements.
+    #
+    # @example Skip one row
+    #   sheet.skip_row
+    #
+    # @example Skip multiple rows
+    #   sheet.skip_rows(3)
+    #
+    # @param count [Integer] Number of rows to skip (must be >= 1).
+    # @return [void]
+    # @api public
+    #: (?Integer count) -> void
+    def skip_rows(count = 1)
+      raise ArgumentError, "count must be positive: #{count.inspect}" if !count.is_a?(Integer) || count < 1
+
+      @next_row_index += count
+    end
+    alias skip_row skip_rows
 
     # Sets column formatting and properties for one or multiple columns.
     #

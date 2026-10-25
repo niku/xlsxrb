@@ -8608,6 +8608,79 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(1, writer.dxfs.size)
   end
 
+  test "StreamWriter#skip_rows and skip_row advance row cursor without writing empty row tags" do
+    buf = StringIO.new
+    buf.binmode
+    Xlsxrb.write(buf) do |w|
+      w.sheet("Sheet1") do |s|
+        s.row(["Row 1"])
+        s.skip_row
+        s.row(["Row 3"])
+        s.skip_rows(2)
+        s.row(["Row 6"])
+      end
+    end
+
+    ws_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_match(/<row r="1">/, ws_xml)
+    refute_match(/<row r="2"/, ws_xml)
+    assert_match(/<row r="3">/, ws_xml)
+    refute_match(/<row r="4"/, ws_xml)
+    refute_match(/<row r="5"/, ws_xml)
+    assert_match(/<row r="6">/, ws_xml)
+
+    rows = []
+    Xlsxrb.stream(buf.string) do |s|
+      s.each { |r| rows << [r.index, r.values] }
+    end
+    assert_equal([[0, ["Row 1"]], [2, ["Row 3"]], [5, ["Row 6"]]], rows)
+
+    assert_raise(ArgumentError) do
+      Xlsxrb.write(StringIO.new) do |w|
+        w.sheet("S") { |s| s.skip_rows(0) }
+      end
+    end
+    assert_raise(ArgumentError) do
+      Xlsxrb.write(StringIO.new) do |w|
+        w.sheet("S") { |s| s.skip_rows(-2) }
+      end
+    end
+  end
+
+  test "WorksheetBuilder#skip_rows and skip_row advance row indices without writing empty row tags" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("Sheet1") do |s|
+        s.row(["Row 1"])
+        s.skip_row
+        s.row(["Row 3"])
+        s.skip_rows(2)
+        s.row(["Row 6"])
+      end
+    end
+
+    sheet = wb.sheets.first
+    assert_equal(3, sheet.rows.size)
+    assert_equal(0, sheet.rows[0].index)
+    assert_equal(2, sheet.rows[1].index)
+    assert_equal(5, sheet.rows[2].index)
+
+    buf = StringIO.new
+    buf.binmode
+    Xlsxrb.write(buf, wb)
+
+    ws_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_match(/<row r="1"/, ws_xml)
+    refute_match(/<row r="2"/, ws_xml)
+    assert_match(/<row r="3"/, ws_xml)
+    refute_match(/<row r="4"/, ws_xml)
+    refute_match(/<row r="5"/, ws_xml)
+    assert_match(/<row r="6"/, ws_xml)
+
+    assert_raise(ArgumentError) do
+      Xlsxrb.build { |b| b.sheet("S") { |s| s.skip_rows(0) } }
+    end
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

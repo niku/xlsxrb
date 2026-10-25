@@ -325,6 +325,25 @@ module Xlsxrb
         self
       end
 
+      # Advances the row cursor by count without writing empty row elements.
+      #
+      # @example Skip one row
+      #   s.skip_row
+      #
+      # @example Skip multiple rows
+      #   s.skip_rows(3)
+      #
+      # @param count [Integer] Number of rows to skip (must be >= 1).
+      # @return [void]
+      # @api public
+      #: (?Integer count) -> void
+      def skip_rows(count = 1)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.skip_rows(count)
+      end
+      alias skip_row skip_rows
+
       # Configures column width and properties.
       #
       # @example Set column A width
@@ -1397,6 +1416,26 @@ module Xlsxrb
       row(values)
       self
     end
+
+    # Advances the row cursor by count without writing empty row elements.
+    #
+    # @example Skip one row
+    #   w.skip_row
+    #
+    # @example Skip multiple rows
+    #   w.skip_rows(3)
+    #
+    # @param count [Integer] Number of rows to skip (must be >= 1).
+    # @return [void]
+    # @api public
+    #: (?Integer count) -> void
+    def skip_rows(count = 1)
+      raise ArgumentError, "count must be positive: #{count.inspect}" if !count.is_a?(Integer) || count < 1
+
+      sheet if @current_sheet.nil?
+      @current_row_index += count
+    end
+    alias skip_row skip_rows
 
     # Sets column formatting and properties for one or multiple columns.
     #
