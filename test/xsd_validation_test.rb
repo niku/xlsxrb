@@ -303,6 +303,28 @@ class XsdValidationTest < Test::Unit::TestCase
     end
   end
 
+  def test_rich_text_inline_strings_validation
+    tmp = Tempfile.new(["xsd_inline_rich_text", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path, shared_strings: false) do |w|
+        w.sheet("RichTextSheet") do |s|
+          s.style(:header, bold: true)
+          rt = Xlsxrb.rich_text(
+            { text: "Bold Part", font: { bold: true, color: "FFFF0000" } },
+            { text: " and " },
+            { text: "Italic Part", font: { italic: true, color: "FF0000FF" } }
+          )
+          s.row([rt, "Normal String"])
+          s.row([rt, "Styled String"], styles: [:header, nil])
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
+
   # 11. Protected ranges and cell watches XML schema validation
   def test_protected_ranges_and_cell_watches_validation
     tmp = Tempfile.new(["xsd_prot_ranges_watches", ".xlsx"])

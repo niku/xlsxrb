@@ -1833,6 +1833,52 @@ class ContractTest < Test::Unit::TestCase
   end
 
   data(API_PATHS)
+  test "dsl: rich text with shared_strings: false" do |api_path|
+    tmp = Tempfile.new(["contract_inline_rt", ".xlsx"])
+    case api_path
+    when :streaming
+      Xlsxrb.write(tmp.path, shared_strings: false) do |w|
+        w.sheet("RichTextSheet") do |s|
+          rt = Xlsxrb.rich_text(
+            { text: "BoldRed", font: { bold: true, color: "FFFF0000" } },
+            { text: " and " },
+            { text: "ItalicBlue", font: { italic: true, color: "FF0000FF" } }
+          )
+          s.row([rt, "Standard"])
+        end
+      end
+    when :in_memory
+      wb = Xlsxrb.build do |w|
+        w.sheet("RichTextSheet") do |s|
+          rt = Xlsxrb.rich_text(
+            { text: "BoldRed", font: { bold: true, color: "FFFF0000" } },
+            { text: " and " },
+            { text: "ItalicBlue", font: { italic: true, color: "FF0000FF" } }
+          )
+          s.row([rt, "Standard"])
+        end
+      end
+      Xlsxrb.write(tmp.path, wb, shared_strings: false)
+    end
+
+    reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+    rt_val = reader.cells["A1"]
+    assert_instance_of(Xlsxrb::Elements::RichText, rt_val)
+    assert_equal(3, rt_val.runs.size)
+    assert_equal("BoldRed", rt_val.runs[0][:text])
+    assert_equal(true, rt_val.runs[0][:font][:bold])
+    assert_equal("FFFF0000", rt_val.runs[0][:font][:color])
+
+    wb = Xlsxrb.read(tmp.path).load
+    sheet = wb.sheet(0)
+    rt_cell = sheet["A1"]
+    assert_not_nil(rt_cell)
+    assert_equal("BoldRed and ItalicBlue", rt_cell.value.to_s)
+  ensure
+    tmp&.close!
+  end
+
+  data(API_PATHS)
   test "dsl: unified properties with core, app, and custom metadata" do |api_path|
     tmp = case api_path
           when :streaming

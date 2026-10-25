@@ -258,39 +258,7 @@ module Xlsxrb
 
           if type == "inlineStr"
             if xml_val.is_a?(Xlsxrb::Elements::RichText)
-              buf << "><is>"
-              xml_val.runs.each do |run|
-                font = run[:font]
-                if font && !font.empty?
-                  buf << "<r><rPr>"
-                  buf << "<b/>" if font[:bold]
-                  buf << "<i/>" if font[:italic]
-                  buf << "<strike/>" if font[:strike]
-                  if font[:underline]
-                    if font[:underline] == true
-                      buf << "<u/>"
-                    else
-                      buf << '<u val="' << font[:underline].to_s << '"/>'
-                    end
-                  end
-                  buf << '<vertAlign val="' << font[:vert_align].to_s << '"/>' if font[:vert_align]
-                  buf << '<sz val="' << font[:sz].to_s << '"/>' if font[:sz]
-                  if font[:color]
-                    buf << '<color rgb="' << font[:color].to_s << '"/>'
-                  elsif font[:theme]
-                    tint_attr = font[:tint] ? " tint=\"#{font[:tint]}\"" : ""
-                    buf << '<color theme="' << font[:theme].to_s << '"' << tint_attr << "/>"
-                  end
-                  buf << '<rFont val="' << escape_xml(font[:name]) << '"/>' if font[:name]
-                  buf << '<family val="' << font[:family].to_s << '"/>' if font[:family]
-                  buf << '<scheme val="' << font[:scheme].to_s << '"/>' if font[:scheme]
-                  buf << "</rPr><t>"
-                else
-                  buf << "<r><t>"
-                end
-                buf << escape_xml(run[:text]) << "</t></r>"
-              end
-              buf << "</is></c>"
+              write_inline_rich_text(buf, xml_val)
             else
               buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
             end
@@ -473,6 +441,9 @@ module Xlsxrb
                 end)
                 idx_str = idx < 65_536 ? INTEGER_STRINGS[idx] : idx.to_s
                 buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"s\"><v>#{idx_str}</v></c>"
+              elsif value.is_a?(Xlsxrb::Elements::RichText)
+                buf << '<c r="' << col_ref << row_num_str << '" t="inlineStr"'
+                write_inline_rich_text(buf, value)
               else
                 buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"inlineStr\"><is><t>#{escape_xml(value.to_s)}</t></is></c>"
               end
@@ -703,7 +674,11 @@ module Xlsxrb
               buf << "<v>" << v_str << "</v></c>"
             end
           elsif type == "inlineStr"
-            buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
+            if xml_val.is_a?(Xlsxrb::Elements::RichText)
+              write_inline_rich_text(buf, xml_val)
+            else
+              buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
+            end
           else
             buf << "><v>" << xml_val.to_s << "</v></c>"
           end
@@ -1559,6 +1534,61 @@ module Xlsxrb
 
       def column_letter(index)
         Xlsxrb::Elements::Cell.column_letter(index)
+      end
+
+      #: (String buf, Elements::RichText rich_text) -> void
+      def write_inline_rich_text(buf, rich_text)
+        buf << "><is>"
+        rich_text.runs.each do |run|
+          font = run[:font]
+          if font && !font.empty?
+            buf << "<r><rPr>"
+            buf << "<b/>" if font[:bold]
+            buf << "<i/>" if font[:italic]
+            buf << "<strike/>" if font[:strike]
+            if font[:underline]
+              if font[:underline] == true
+                buf << "<u/>"
+              else
+                buf << '<u val="' << font[:underline].to_s << '"/>'
+              end
+            end
+            buf << '<vertAlign val="' << font[:vert_align].to_s << '"/>' if font[:vert_align]
+            buf << '<sz val="' << font[:sz].to_s << '"/>' if font[:sz]
+            if font[:color]
+              if font[:color].is_a?(Hash)
+                c_hash = font[:color]
+                if c_hash[:rgb]
+                  buf << '<color rgb="' << c_hash[:rgb].to_s << '"/>'
+                elsif c_hash[:theme]
+                  tint_attr = c_hash[:tint] ? %( tint="#{c_hash[:tint]}") : ""
+                  buf << '<color theme="' << c_hash[:theme].to_s << '"' << tint_attr << "/>"
+                elsif c_hash[:indexed]
+                  buf << '<color indexed="' << c_hash[:indexed].to_s << '"/>'
+                elsif c_hash[:auto]
+                  buf << '<color auto="1"/>'
+                end
+              else
+                buf << '<color rgb="' << font[:color].to_s << '"/>'
+              end
+            elsif font[:theme]
+              tint_attr = font[:tint] ? %( tint="#{font[:tint]}") : ""
+              buf << '<color theme="' << font[:theme].to_s << '"' << tint_attr << "/>"
+            elsif font[:indexed]
+              buf << '<color indexed="' << font[:indexed].to_s << '"/>'
+            elsif font[:auto]
+              buf << '<color auto="1"/>'
+            end
+            buf << '<rFont val="' << escape_xml(font[:name]) << '"/>' if font[:name]
+            buf << '<family val="' << font[:family].to_s << '"/>' if font[:family]
+            buf << '<scheme val="' << font[:scheme].to_s << '"/>' if font[:scheme]
+            buf << "</rPr><t>"
+          else
+            buf << "<r><t>"
+          end
+          buf << escape_xml(run[:text].to_s) << "</t></r>"
+        end
+        buf << "</is></c>"
       end
 
       INVALID_XML_CHARS_RE = /[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/

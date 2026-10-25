@@ -275,7 +275,7 @@ module Xlsxrb
     # @return [void]
     # @raise [ArgumentError] If width exceeds 255 in strict mode.
     # @api public
-    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String)?) -> void
+    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
     def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil, style: nil)
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 

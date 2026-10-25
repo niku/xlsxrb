@@ -19,10 +19,10 @@ module Xlsxrb
       # @param hidden [Boolean] Whether the column is hidden.
       # @param custom_width [Boolean] Whether custom width flag is set.
       # @param outline_level [Integer, nil] Grouping/outline level.
-      # @param style_index [Integer, String, nil] Optional style identifier.
+      # @param style_index [Integer, String, Symbol, Hash, nil] Optional style identifier or inline style.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      #: (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      #: (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize(index:, width: nil, hidden: false, custom_width: false, outline_level: nil,
                      style_index: nil, unmapped_data: {}, errors: nil)
         style_idx = style_index || unmapped_data[:style_index] || unmapped_data[:style]

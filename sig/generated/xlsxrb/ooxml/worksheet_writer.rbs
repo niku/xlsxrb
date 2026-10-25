@@ -104,6 +104,9 @@ module Xlsxrb
 
       def column_letter: (untyped index) -> untyped
 
+      # : (String buf, Elements::RichText rich_text) -> void
+      def write_inline_rich_text: (String buf, Elements::RichText rich_text) -> void
+
       INVALID_XML_CHARS_RE: ::Regexp
 
       ESCAPE_RE: ::Regexp

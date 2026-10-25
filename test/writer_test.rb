@@ -8532,10 +8532,10 @@ class WriterTest < Test::Unit::TestCase
 
     xml = io.string
     assert_match(%r{<c r="A1" t="inlineStr"><is><t>hello</t></is></c>}, xml)
-    assert_match(%r{<c r="B1" t="inlineStr"><is><t>rt_unstyled</t></is></c>}, xml)
+    assert_match(%r{<c r="B1" t="inlineStr"><is><r><t>rt_unstyled</t></r></is></c>}, xml)
     assert_match(%r{<c r="C1"><v>123</v></c>}, xml)
     assert_match(%r{<c r="A2" s="1" t="inlineStr"><is><t>world</t></is></c>}, xml)
-    assert_match(%r{<c r="B2" s="2" t="inlineStr"><is><t>rt_styled</t></is></c>}, xml)
+    assert_match(%r{<c r="B2" s="2" t="inlineStr"><is><r><t>rt_styled</t></r></is></c>}, xml)
   end
 
   test "StreamWriter supports hierarchical dxf Hash with boolean false and auto/theme colors" do
@@ -8909,6 +8909,53 @@ class WriterTest < Test::Unit::TestCase
 
     read_wb = Xlsxrb.read(buf_lvl1.string)
     assert_equal(100, read_wb.sheets.first.load.rows.size)
+  end
+
+  test "StreamWriter with shared_strings: false preserves formatted runs in RichText across unstyled and styled rows" do
+    buf = StringIO.new
+    buf.binmode
+    rt_unstyled = Xlsxrb.rich_text(
+      { text: "Bold", font: { bold: true, color: "FFFF0000" } },
+      { text: " Normal" }
+    )
+    rt_styled = Xlsxrb.rich_text(
+      { text: "Italic", font: { italic: true } },
+      { text: " Blue", font: { color: { rgb: "FF0000FF" } } }
+    )
+    Xlsxrb.write(buf, shared_strings: false) do |w|
+      w.sheet("RichTextSheet") do |s|
+        s.style(:header, fill_color: "FFEEEEEE")
+        s.row([rt_unstyled, "Plain"])
+        s.row([rt_styled, "PlainStyled"], styles: [:header, nil])
+      end
+    end
+
+    ws_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<c r="A1" t="inlineStr"><is><r><rPr><b/><color rgb="FFFF0000"/></rPr><t>Bold</t></r><r><t> Normal</t></r></is></c>}, ws_xml)
+    assert_match(%r{<c r="A2" s="[0-9]+" t="inlineStr"><is><r><rPr><i/></rPr><t>Italic</t></r><r><rPr><color rgb="FF0000FF"/></rPr><t> Blue</t></r></is></c>}, ws_xml)
+    refute_match(%r{<is><t>Bold Normal</t></is>}, ws_xml)
+    refute_match(%r{<is><t>Italic Blue</t></is>}, ws_xml)
+
+    # Read back with Ooxml::Reader
+    reader = Xlsxrb::Ooxml::Reader.new(buf.string)
+    read_rt1 = reader.cells["A1"]
+    assert_instance_of(Xlsxrb::Elements::RichText, read_rt1)
+    assert_equal(2, read_rt1.runs.size)
+    assert_equal("Bold", read_rt1.runs[0][:text])
+    assert_equal(true, read_rt1.runs[0][:font][:bold])
+    assert_equal(" Normal", read_rt1.runs[1][:text])
+
+    read_rt2 = reader.cells["A2"]
+    assert_instance_of(Xlsxrb::Elements::RichText, read_rt2)
+    assert_equal(2, read_rt2.runs.size)
+    assert_equal("Italic", read_rt2.runs[0][:text])
+    assert_equal(true, read_rt2.runs[0][:font][:italic])
+
+    # Read back with streaming reader returns concatenated text
+    wb = Xlsxrb.read(buf.string).load
+    sheet = wb.sheet(0)
+    assert_equal("Bold Normal", sheet["A1"].value.to_s)
+    assert_equal("Italic Blue", sheet["A2"].value.to_s)
   end
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

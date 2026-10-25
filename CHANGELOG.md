@@ -19,6 +19,7 @@
 - Support `xsd:boolean` representations (`"true"`, `"false"`, `"1"`, `"0"`) across `StylesParser`, `StylesListener`, and column definitions in `WorksheetParser`.
 - Safely handle `nil` shared strings table index (`sst_index: nil`) across unstyled fast path and general cell paths in `WorksheetWriter#write_row_values`, writing string values as inline strings (`t="inlineStr"`) without error.
 - Include `test/ooxml/**/*_test.rb` in Rake test tasks and update custom number format assertions to use `Elements::Styles#num_fmt`.
+- Preserve formatted text runs (`<r><rPr>...</rPr><t>...</t></r>`) in inline strings (`<c t="inlineStr">`) for `Elements::RichText` cells across unstyled fast path and general row paths in `WorksheetWriter#write_row_values` when `shared_strings: false` is used.
 
 ## [0.1.16] - 2026-10-24
 

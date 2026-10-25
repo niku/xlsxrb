@@ -22,7 +22,7 @@ module Xlsxrb
       # @param column_index [Integer] 0-based column index.
       # @param value [Object, nil] The cell's value.
       # @param formula [Elements::Formula, nil] Optional formula.
-      # @param style_index [Integer, String, nil] Style identifier.
+      # @param style_index [Integer, String, Symbol, Hash, nil] Style identifier or inline style.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
       # @param hyperlink [Hash, String, Elements::Hyperlink, nil] Optional hyperlink metadata or URL.
@@ -30,7 +30,7 @@ module Xlsxrb
       # @param raw_value [String, nil] Optional unparsed raw string value.
       # @param format_code [String, nil] Optional OpenXML number/date format code.
       # @param date1904 [Boolean] Whether the cell belongs to a 1904 date system workbook.
-      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String)?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool) -> void
+      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool) -> void
       def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil, comment: nil, raw_value: nil, format_code: nil, date1904: false)
         @row_index = row_index
         @column_index = column_index
