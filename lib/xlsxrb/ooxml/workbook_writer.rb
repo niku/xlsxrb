@@ -956,7 +956,8 @@ module Xlsxrb
       def write_dxf_fill(builder, fill)
         builder.tag("fill") do |_|
           pattern_attrs = {}
-          pattern_attrs[:patternType] = fill[:pattern] if fill[:pattern]
+          pattern = fill[:pattern] || fill[:pattern_type]
+          pattern_attrs[:patternType] = pattern if pattern
           builder.tag("patternFill", pattern_attrs) do |_|
             fg_attrs = color_tag_attrs(fill[:fg_color])
             builder.empty_tag("fgColor", fg_attrs) if fg_attrs

@@ -374,6 +374,8 @@ module Xlsxrb
     #
     # @param sqref [String] Target cell range reference (e.g. "C2:C50").
     # @param opts [Hash] Rule options (e.g. type: :cellIs, operator: :greaterThan, formula: "100").
+    # @option opts [Hash] :dxf Hierarchical differential format specification (e.g. `dxf: { font: { bold: false }, fill: { pattern: "none" } }`).
+    # @option opts [Integer] :format_id Pre-registered differential format index (dxfId).
     # @return [void]
     # @api public
     #: (String sqref, **untyped opts) -> void

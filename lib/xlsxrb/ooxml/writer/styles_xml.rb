@@ -231,9 +231,15 @@ module Xlsxrb
         # : (untyped font) -> untyped
         def emit_font_xml(font)
           parts = ["<font>"]
-          parts << "<b/>" if font[:bold]
-          parts << "<i/>" if font[:italic]
-          parts << "<strike/>" if font[:strike]
+          if font.key?(:bold)
+            parts << (font[:bold] ? "<b/>" : '<b val="0"/>')
+          end
+          if font.key?(:italic)
+            parts << (font[:italic] ? "<i/>" : '<i val="0"/>')
+          end
+          if font.key?(:strike)
+            parts << (font[:strike] ? "<strike/>" : '<strike val="0"/>')
+          end
           parts << "<shadow/>" if font[:shadow]
           parts << "<outline/>" if font[:outline]
           parts << "<condense/>" if font[:condense]

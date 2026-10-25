@@ -469,9 +469,15 @@ module Xlsxrb
       # @example Highlight values greater than 100
       #   s.conditional_format("A1:A10", type: "cellIs", operator: "greaterThan", formula: 100, style: :highlight)
       #
+      # @example Hierarchical differential format (dxf)
+      #   s.conditional_format("B2:B20", type: :cell_is, operator: "equal", formula: "0",
+      #                        dxf: { font: { bold: false, color: { auto: true } }, fill: { pattern: "none", bg_color: "FFFF00" } })
+      #
       # @param range [String] The cell range (e.g. "A1:A10").
       # @param type [String, Symbol] Rule type ("cellIs", "colorScale", "dataBar", "expression").
       # @param opts [Hash] Rule options.
+      # @option opts [Hash] :dxf Hierarchical differential format specification.
+      # @option opts [Integer] :format_id Pre-registered differential format index (dxfId).
       # @return [void]
       # @api public
       #: (String range, ?type: String | Symbol, **untyped opts) -> void
@@ -1533,8 +1539,10 @@ module Xlsxrb
 
     # Adds a conditional formatting rule.
     #
-    # @param sqref [String] Cell range.
-    # @param opts [Hash] Rule options.
+    # @param sqref [String] Cell range (e.g. "A1:A10").
+    # @param opts [Hash] Rule options (e.g. `type:`, `operator:`, `formula:`, `dxf:`, `format_id:`, `font_color:`, `fill_color:`, `bold:`, `italic:`).
+    # @option opts [Hash] :dxf Hierarchical differential format specification (e.g. `dxf: { font: { bold: false, color: { auto: true } }, fill: { pattern: "none", bg_color: "FFFF00" } }`).
+    # @option opts [Integer] :format_id Pre-registered differential format index (dxfId).
     # @return [void]
     # @api public
     #: (untyped sqref, **untyped opts) -> void
@@ -2442,22 +2450,26 @@ module Xlsxrb
           next rule if rule[:format_id]
 
           normalized = rule.dup
-          font = {}
-          font[:color] = normalized.delete(:font_color) if normalized.key?(:font_color)
-          font[:bold] = normalized.delete(:bold) if normalized.key?(:bold)
-          font[:italic] = normalized.delete(:italic) if normalized.key?(:italic)
-          font[:underline] = normalized.delete(:underline) if normalized.key?(:underline)
+          dxf = normalized.delete(:dxf)
+          unless dxf
+            font = {}
+            font[:color] = normalized.delete(:font_color) if normalized.key?(:font_color)
+            font[:bold] = normalized.delete(:bold) if normalized.key?(:bold)
+            font[:italic] = normalized.delete(:italic) if normalized.key?(:italic)
+            font[:underline] = normalized.delete(:underline) if normalized.key?(:underline)
 
-          fill = {}
-          if normalized.key?(:fill_color)
-            fill[:pattern] = "solid"
-            fill[:fg_color] = normalized.delete(:fill_color)
+            fill = {}
+            if normalized.key?(:fill_color)
+              fill[:pattern] = "solid"
+              fill[:fg_color] = normalized.delete(:fill_color)
+            end
+
+            dxf = {}
+            dxf[:font] = font unless font.empty?
+            dxf[:fill] = fill unless fill.empty?
           end
 
-          dxf = {}
-          dxf[:font] = font unless font.empty?
-          dxf[:fill] = fill unless fill.empty?
-          next normalized if dxf.empty?
+          next normalized if dxf.nil? || dxf.empty?
 
           dxf_id = @dxfs.index(dxf)
           unless dxf_id

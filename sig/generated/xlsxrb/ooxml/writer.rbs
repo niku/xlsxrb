@@ -48,6 +48,8 @@ module Xlsxrb
 
       attr_reader num_fmts: untyped
 
+      attr_reader dxfs: untyped
+
       # : () -> void
       def initialize: () -> untyped
 

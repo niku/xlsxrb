@@ -8538,6 +8538,76 @@ class WriterTest < Test::Unit::TestCase
     assert_match(%r{<c r="B2" s="2" t="inlineStr"><is><t>rt_styled</t></is></c>}, xml)
   end
 
+  test "StreamWriter supports hierarchical dxf Hash with boolean false and auto/theme colors" do
+    buf = StringIO.new
+    buf.binmode
+    Xlsxrb.write(buf) do |w|
+      w.sheet("Sheet1") do |s|
+        s.row([10, 20])
+        # First rule with custom dxf
+        s.conditional_format("A1:A10", type: :cell_is, operator: "greaterThan", formula: "15", priority: 1,
+                                       dxf: {
+                                         font: { bold: false, italic: false, color: { auto: true } },
+                                         fill: { pattern: "none", bg_color: "FFFF00" }
+                                       })
+        # Second rule with identical dxf (should reuse dxfId 0)
+        s.conditional_format("B1:B10", type: :cell_is, operator: "lessThan", formula: "5", priority: 2,
+                                       dxf: {
+                                         font: { bold: false, italic: false, color: { auto: true } },
+                                         fill: { pattern: "none", bg_color: "FFFF00" }
+                                       })
+        # Third rule with theme/tint color in dxf
+        s.conditional_format("C1:C10", type: :expression, formula: "C1>0", priority: 3,
+                                       dxf: {
+                                         font: { color: { theme: 1, tint: -0.25 } },
+                                         fill: { pattern: "solid", fg_color: "00FF00" }
+                                       })
+      end
+    end
+
+    styles_xml = read_xml_from_xlsx(buf.string, "xl/styles.xml")
+    assert_match(/<dxfs count="2">/, styles_xml)
+    # DXF 0 font: bold=0, italic=0, color auto=1
+    assert_match(%r{<b val="0"/>}, styles_xml)
+    assert_match(%r{<i val="0"/>}, styles_xml)
+    assert_match(%r{<color auto="1"/>}, styles_xml)
+    # DXF 0 fill: patternType="none", bgColor FFFFFF00
+    assert_match(%r{<patternFill patternType="none">\s*<bgColor rgb="FFFFFF00"/>\s*</patternFill>}, styles_xml)
+    # DXF 1 font: color theme="1" tint="-0.25"
+    assert_match(%r{<color theme="1" tint="-0.25"/>}, styles_xml)
+
+    ws_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
+    assert_match(/<cfRule type="cellIs" priority="1" operator="greaterThan" dxfId="0">/, ws_xml)
+    assert_match(/<cfRule type="cellIs" priority="2" operator="lessThan" dxfId="0">/, ws_xml)
+    assert_match(/<cfRule type="expression" priority="3" dxfId="1">/, ws_xml)
+
+    wb = Xlsxrb.read(buf.string)
+    assert_equal(2, wb.styles.dxfs.size)
+    assert_equal(false, wb.styles.dxfs[0][:font][:bold])
+    assert_equal(false, wb.styles.dxfs[0][:font][:italic])
+    assert_equal(true, wb.styles.dxfs[0][:font][:color][:auto])
+    assert_equal("none", wb.styles.dxfs[0][:fill][:pattern])
+    assert_equal("FFFFFF00", wb.styles.dxfs[0][:fill][:bg_color][:rgb])
+    assert_equal(1, wb.styles.dxfs[1][:font][:color][:theme])
+    assert_equal(-0.25, wb.styles.dxfs[1][:font][:color][:tint])
+  end
+
+  test "Ooxml::Writer#add_conditional_format supports dxf option and deduplication" do
+    writer = Xlsxrb::Ooxml::Writer.new
+    dxf_spec = {
+      font: { bold: false, strike: false, color: { auto: true } },
+      fill: { pattern: "none", bg_color: "FF0000" }
+    }
+    writer.add_conditional_format("A1:A10", type: :cell_is, operator: "equal", formula: "0", dxf: dxf_spec)
+    writer.add_conditional_format("B1:B10", type: :cell_is, operator: "equal", formula: "1", dxf: dxf_spec)
+
+    cfs = writer.conditional_formats
+    assert_equal(2, cfs.size)
+    assert_equal(0, cfs[0][:format_id])
+    assert_equal(0, cfs[1][:format_id])
+    assert_equal(1, writer.dxfs.size)
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
