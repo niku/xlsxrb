@@ -732,6 +732,9 @@ module Xlsxrb
               color_attrs = color_tag_attrs(font_props[:color] || (font_props.key?(:rgb) || font_props.key?(:theme) || font_props.key?(:indexed) ? font_props : nil))
               b.empty_tag("color", color_attrs) if color_attrs
               b.empty_tag("name", { val: font_props[:name] || "Calibri" })
+              b.empty_tag("family", { val: font_props[:family].to_s }) if font_props[:family]
+              b.empty_tag("charset", { val: font_props[:charset].to_s }) if font_props[:charset]
+              b.empty_tag("scheme", { val: font_props[:scheme].to_s }) if font_props[:scheme]
             end
           end
         end

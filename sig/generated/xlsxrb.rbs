@@ -365,10 +365,10 @@ module Xlsxrb
   # @api public
   # : (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
   # : (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-  # : (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool) ?{ (StreamWriter) -> void } -> untyped
+  # : (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (StreamWriter) -> void } -> untyped
   def self.write: (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
                 | (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-                | (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool) ?{ (StreamWriter) -> void } -> untyped
+                | (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (StreamWriter) -> void } -> untyped
 
   # Modifies an existing XLSX file in-memory using an immutable transformation block.
   #
@@ -409,8 +409,8 @@ module Xlsxrb
   # @yieldparam builder [Xlsxrb::WorkbookBuilder]
   # @return [Elements::Workbook] The compiled in-memory workbook.
   # @api public
-  # : (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
-  def self.build: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
+  # : (?strict_excel_mode: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
+  def self.build: (?strict_excel_mode: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
   private def self.resolve_workbook_entry: (untyped zip_reader) -> untyped
 

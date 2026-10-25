@@ -15,8 +15,21 @@ module Xlsxrb
   # @api public
   class WorkbookBuilder
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specifications.
-    # : (?strict_excel_mode: bool) -> void
-    def initialize: (?strict_excel_mode: bool) -> void
+    # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
+    # : (?strict_excel_mode: bool, ?default_font: untyped?) -> void
+    def initialize: (?strict_excel_mode: bool, ?default_font: untyped?) -> void
+
+    # Sets or configures the workbook-wide default font.
+    #
+    # @param name [String, Hash, nil] Font name or font options Hash.
+    # @param size [Float, Integer, nil] Font size in points.
+    # @param opts [Hash] Additional font options (e.g. `bold:`, `italic:`, `family:`, `charset:`, `color:`).
+    # @return [void]
+    # @api public
+    # : (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+    def default_font: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+
+    alias set_default_font default_font
 
     # Gets or sets the active worksheet tab in the workbook window.
     #

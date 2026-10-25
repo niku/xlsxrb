@@ -50,8 +50,8 @@ module Xlsxrb
 
       attr_reader dxfs: untyped
 
-      # : () -> void
-      def initialize: () -> untyped
+      # : (?default_font: untyped?) -> void
+      def initialize: (?default_font: untyped) -> untyped
 
       # Adds a new sheet. Raises if name is already taken.
       # : (untyped name) -> untyped
@@ -209,6 +209,18 @@ module Xlsxrb
       # Opts: font (hash), fill (hash), border (hash), num_fmt (hash).
       # : (**untyped opts) -> untyped
       def add_dxf: (**untyped opts) -> untyped
+
+      # Sets the workbook-wide default font (font 0).
+      #
+      # @param name [String, Hash, nil] Font name or font options Hash.
+      # @param size [Float, Integer, nil] Font size in points.
+      # @param opts [Hash] Additional font options (e.g. `bold:`, `italic:`, `family:`, `charset:`, `color:`).
+      # @return [void]
+      # @api public
+      # : (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+      def default_font: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+
+      alias set_default_font default_font
 
       # Sets the indexed colors palette (array of ARGB hex strings, e.g. ["FF000000", "FFFFFFFF"]).
       # rubocop:disable Naming/AccessorMethodName

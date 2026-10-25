@@ -601,13 +601,13 @@ module Xlsxrb
   # @api public
   #: (Elements::Workbook workbook, ?password: String?, ?encryption_mode: Symbol) -> String
   #: (untyped target, Elements::Workbook | untyped workbook, ?password: String?, ?encryption_mode: Symbol) -> void
-  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool) ?{ (StreamWriter) -> void } -> untyped
-  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, &)
+  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (StreamWriter) -> void } -> untyped
+  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, default_font: nil, &)
     if block_given?
       if target_or_workbook.equal?(OMITTED_TARGET)
         io = StringIO.new
         io.binmode
-        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, &)
+        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, &)
         return io.string.b
       end
 
@@ -617,7 +617,7 @@ module Xlsxrb
       if password && !password.empty?
         buf = StringIO.new
         buf.binmode
-        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas)
+        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font)
         begin
           yield stream_writer
           stream_writer.close
@@ -632,7 +632,7 @@ module Xlsxrb
           stream_writer.cleanup!
         end
       else
-        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas)
+        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font)
         begin
           yield stream_writer
           stream_writer.close
@@ -1060,11 +1060,11 @@ module Xlsxrb
   # @yieldparam builder [Xlsxrb::WorkbookBuilder]
   # @return [Elements::Workbook] The compiled in-memory workbook.
   # @api public
-  #: (?strict_excel_mode: bool) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
-  def self.build(strict_excel_mode: true)
+  #: (?strict_excel_mode: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
+  def self.build(strict_excel_mode: true, default_font: nil)
     raise Error, "block is required" unless block_given?
 
-    builder = WorkbookBuilder.new(strict_excel_mode: strict_excel_mode)
+    builder = WorkbookBuilder.new(strict_excel_mode: strict_excel_mode, default_font: default_font)
     yield builder
     builder.build
   end

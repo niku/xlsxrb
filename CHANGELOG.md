@@ -11,6 +11,7 @@
 - Add visual regression test example, Visual Gallery section, and WebAssembly Live Playground preset for worksheet views and advanced properties (`sheet_properties`).
 - Support hierarchical differential format Hash (`dxf: { font: ..., fill: ... }`) in `conditional_format` and `add_conditional_format` across `StreamWriter`, `WorksheetProxy`, `WorksheetBuilder`, and `Ooxml::Writer` with automatic deduplication, emit `<b val="0"/>`, `<i val="0"/>`, `<strike val="0"/>` on boolean `false` font properties, and support automatic/theme/tint font and background colors and `pattern: "none"` pattern fills.
 - Add `skip_rows` (and alias `skip_row`) to `StreamWriter`, `WorksheetProxy`, and `WorksheetBuilder` to advance the row cursor without writing empty `<row>` XML elements.
+- Support configurable workbook-wide default font (`default_font: { name:, size: }`, `default_font(name, size, **opts)`, `set_default_font`) across `StreamWriter`, `WorksheetProxy`, `WorkbookBuilder`, `Xlsxrb.write`, and `Xlsxrb.build`, serializing name, size, family, charset, and scheme onto the base font (font 0).
 
 ### Fixed
 - Support `xsd:boolean` representations (`"true"`, `"false"`, `"1"`, `"0"`) across `StylesParser`, `StylesListener`, and column definitions in `WorksheetParser`.

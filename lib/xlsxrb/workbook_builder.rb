@@ -19,9 +19,11 @@ module Xlsxrb
   # @api public
   class WorkbookBuilder
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specifications.
-    #: (?strict_excel_mode: bool) -> void
-    def initialize(strict_excel_mode: true)
+    # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
+    #: (?strict_excel_mode: bool, ?default_font: untyped?) -> void
+    def initialize(strict_excel_mode: true, default_font: nil)
       @strict_excel_mode = strict_excel_mode
+      @default_font = default_font
       @sheets = []
       @sheet_builders = [] # Keep track of sheet builders for style processing
       @defined_names = []
@@ -35,6 +37,26 @@ module Xlsxrb
       @show_sheet_tabs = nil
       @tab_ratio = nil
     end
+
+    # Sets or configures the workbook-wide default font.
+    #
+    # @param name [String, Hash, nil] Font name or font options Hash.
+    # @param size [Float, Integer, nil] Font size in points.
+    # @param opts [Hash] Additional font options (e.g. `bold:`, `italic:`, `family:`, `charset:`, `color:`).
+    # @return [void]
+    # @api public
+    #: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+    def default_font(name = nil, size = nil, **opts)
+      existing = @default_font.is_a?(Hash) ? @default_font.dup : {}
+      if name.is_a?(Hash)
+        opts = name.merge(opts)
+        name = opts[:name]
+      end
+      existing[:name] = name if name
+      existing[:size] = size if size
+      @default_font = existing.merge(opts)
+    end
+    alias set_default_font default_font
 
     # Gets or sets the active worksheet tab in the workbook window.
     #
@@ -456,10 +478,16 @@ module Xlsxrb
         end
       end
 
-      return [sheets, {}] if all_style_builders.empty?
+      if all_style_builders.empty?
+        if @default_font
+          temp_writer = Ooxml::Writer.new(default_font: @default_font)
+          return [sheets, extract_styles_from_writer(temp_writer)]
+        end
+        return [sheets, {}]
+      end
 
       # Create a temporary writer to register styles and get numeric IDs
-      temp_writer = Ooxml::Writer.new
+      temp_writer = Ooxml::Writer.new(default_font: @default_font)
       style_name_to_id = {}
       all_style_builders.each do |name, builder|
         style_id = builder.register_with(temp_writer)

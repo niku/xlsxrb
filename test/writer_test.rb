@@ -8681,6 +8681,82 @@ class WriterTest < Test::Unit::TestCase
     end
   end
 
+  test "StreamWriter and WorksheetProxy support default_font configuration" do
+    buf1 = StringIO.new
+    buf1.binmode
+    Xlsxrb.write(buf1, default_font: { name: "Noto Sans CJK JP", size: 10, family: 2 }) do |w|
+      w.sheet("Sheet1") { |s| s.row(["Hello"]) }
+    end
+
+    styles_xml1 = read_xml_from_xlsx(buf1.string, "xl/styles.xml")
+    assert_match(/<sz val="10"/, styles_xml1)
+    assert_match(/<name val="Noto Sans CJK JP"/, styles_xml1)
+    assert_match(/<family val="2"/, styles_xml1)
+
+    wb1 = Xlsxrb.read(buf1.string)
+    assert_equal("Noto Sans CJK JP", wb1.styles.fonts[0][:name])
+    assert_equal(10.0, wb1.styles.fonts[0][:sz].to_f)
+
+    # Calling default_font on StreamWriter
+    buf2 = StringIO.new
+    buf2.binmode
+    Xlsxrb.write(buf2) do |w|
+      w.default_font("Arial", 12, bold: true)
+      w.sheet("Sheet1") { |s| s.row(["Hello"]) }
+    end
+
+    styles_xml2 = read_xml_from_xlsx(buf2.string, "xl/styles.xml")
+    assert_match(%r{<b/>}, styles_xml2)
+    assert_match(/<sz val="12"/, styles_xml2)
+    assert_match(/<name val="Arial"/, styles_xml2)
+
+    # Calling default_font on WorksheetProxy
+    buf3 = StringIO.new
+    buf3.binmode
+    Xlsxrb.write(buf3) do |w|
+      w.sheet("Sheet1") do |s|
+        s.default_font(name: "Yu Gothic", size: 11)
+        s.row(["Hello"])
+      end
+    end
+
+    styles_xml3 = read_xml_from_xlsx(buf3.string, "xl/styles.xml")
+    assert_match(/<sz val="11"/, styles_xml3)
+    assert_match(/<name val="Yu Gothic"/, styles_xml3)
+  end
+
+  test "WorkbookBuilder supports default_font configuration" do
+    wb1 = Xlsxrb.build(default_font: { name: "Noto Sans CJK JP", size: 10, family: 2 }) do |b|
+      b.sheet("Sheet1") { |s| s.row(["Hello"]) }
+    end
+
+    buf1 = StringIO.new
+    buf1.binmode
+    Xlsxrb.write(buf1, wb1)
+
+    styles_xml1 = read_xml_from_xlsx(buf1.string, "xl/styles.xml")
+    assert_match(/<sz val="10"/, styles_xml1)
+    assert_match(/<name val="Noto Sans CJK JP"/, styles_xml1)
+    assert_match(/<family val="2"/, styles_xml1)
+
+    wb_read = Xlsxrb.read(buf1.string)
+    assert_equal("Noto Sans CJK JP", wb_read.styles.fonts[0][:name])
+    assert_equal(10.0, wb_read.styles.fonts[0][:sz].to_f)
+
+    wb2 = Xlsxrb.build do |b|
+      b.default_font("Arial", 12)
+      b.sheet("Sheet1") { |s| s.row(["Hello"]) }
+    end
+
+    buf2 = StringIO.new
+    buf2.binmode
+    Xlsxrb.write(buf2, wb2)
+
+    styles_xml2 = read_xml_from_xlsx(buf2.string, "xl/styles.xml")
+    assert_match(/<sz val="12"/, styles_xml2)
+    assert_match(/<name val="Arial"/, styles_xml2)
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

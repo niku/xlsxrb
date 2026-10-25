@@ -35,9 +35,9 @@ module Xlsxrb
     #
     # @param target [String, IO, StringIO] Destination file path or writable IO stream.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
-    # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
-    #: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool) -> void
-    def initialize(target, strict_excel_mode: true, escape_formulas: false)
+    # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
+    #: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) -> void
+    def initialize(target, strict_excel_mode: true, escape_formulas: false, default_font: nil)
       @target = target
       @strict_excel_mode = strict_excel_mode
       @escape_formulas = escape_formulas ? true : false
@@ -88,7 +88,7 @@ module Xlsxrb
       @current_background_image = nil
       @current_cells = {}
       @styles = {} # { style_name => StyleBuilder }
-      @style_writer = Ooxml::Writer.new
+      @style_writer = Ooxml::Writer.new(default_font: default_font)
       @style_name_to_id = {}
       style("__xlsxrb_date", number_format: "yyyy-mm-dd")
       style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss")
@@ -202,6 +202,19 @@ module Xlsxrb
       style_builder
     end
 
+    # Sets or configures the workbook-wide default font.
+    #
+    # @param name [String, Hash, nil] Font name or font options Hash.
+    # @param size [Float, Integer, nil] Font size in points.
+    # @param opts [Hash] Additional font options (e.g. `bold:`, `italic:`, `family:`, `charset:`, `color:`).
+    # @return [void]
+    # @api public
+    #: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+    def default_font(name = nil, size = nil, **)
+      @style_writer.default_font(name, size, **)
+    end
+    alias set_default_font default_font
+
     # Proxy object yielded by the `sheet` method to prevent writing to inactive sheets in streaming mode.
     #
     # @api public
@@ -212,6 +225,19 @@ module Xlsxrb
         @writer = writer
         @sheet_name = sheet_name
       end
+
+      # Sets or configures the workbook-wide default font.
+      #
+      # @param name [String, Hash, nil] Font name or font options Hash.
+      # @param size [Float, Integer, nil] Font size in points.
+      # @param opts [Hash] Additional font options.
+      # @return [void]
+      # @api public
+      #: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+      def default_font(...)
+        @writer.default_font(...)
+      end
+      alias set_default_font default_font
 
       # Defines or configures a named cell style on the active sheet.
       #

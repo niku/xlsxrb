@@ -18,11 +18,13 @@ class ApiSymmetryTest < Test::Unit::TestCase
     cleanup!
     core_property
     custom_property
+    default_font
     defined_name
     first_sheet
     internal_sheet_setup
     properties
     protect_workbook
+    set_default_font
     show_sheet_tabs
     tab_ratio
     workbook_property

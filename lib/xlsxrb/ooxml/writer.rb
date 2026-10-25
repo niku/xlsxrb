@@ -35,8 +35,8 @@ module Xlsxrb
 
       attr_reader :fonts, :fills, :borders, :xf_entries, :num_fmts, :dxfs
 
-      # : () -> void
-      def initialize
+      # : (?default_font: untyped?) -> void
+      def initialize(default_font: nil)
         @sheets = { "Sheet1" => {} }
         @column_widths = { "Sheet1" => {} }
         @column_attrs = { "Sheet1" => {} }
@@ -50,6 +50,7 @@ module Xlsxrb
         @sort_state = { "Sheet1" => nil }
         @num_fmts = []
         @fonts = [{ sz: 11, name: "Calibri" }]
+        default_font(default_font) if default_font
         @fills = [{ pattern: "none" }, { pattern: "gray125" }]
         @borders = [{ left: nil, right: nil, top: nil, bottom: nil }]
         @xf_entries = [{ num_fmt_id: 0, font_id: 0, fill_id: 0, border_id: 0 }]
@@ -541,6 +542,36 @@ module Xlsxrb
         @dxfs << opts
         @dxfs.size - 1
       end
+
+      # Sets the workbook-wide default font (font 0).
+      #
+      # @param name [String, Hash, nil] Font name or font options Hash.
+      # @param size [Float, Integer, nil] Font size in points.
+      # @param opts [Hash] Additional font options (e.g. `bold:`, `italic:`, `family:`, `charset:`, `color:`).
+      # @return [void]
+      # @api public
+      #: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+      def default_font(name = nil, size = nil, **opts)
+        if name.is_a?(Hash)
+          opts = name.merge(opts)
+          name = opts[:name]
+        end
+
+        font = @fonts[0] ? @fonts[0].dup : { name: "Calibri", sz: 11 }
+        font[:name] = (name || opts[:name]).to_s if name || opts[:name]
+        font[:sz] = size || opts[:size] || opts[:sz] if size || opts[:size] || opts[:sz]
+        font[:family] = opts[:family] if opts.key?(:family)
+        font[:charset] = opts[:charset] if opts.key?(:charset)
+        font[:scheme] = opts[:scheme].to_s if opts.key?(:scheme)
+        font[:color] = opts[:color] if opts.key?(:color)
+        font[:bold] = opts[:bold] if opts.key?(:bold)
+        font[:italic] = opts[:italic] if opts.key?(:italic)
+        font[:strike] = opts[:strike] if opts.key?(:strike)
+        font[:underline] = opts[:underline] if opts.key?(:underline)
+
+        @fonts[0] = font
+      end
+      alias set_default_font default_font
 
       # Sets the indexed colors palette (array of ARGB hex strings, e.g. ["FF000000", "FFFFFFFF"]).
       # rubocop:disable Naming/AccessorMethodName
