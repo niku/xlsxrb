@@ -93,7 +93,7 @@ end
 Rake::TestTask.new(test: :ensure_reader_fixtures) do |t|
   t.libs << "test"
   t.libs << "lib"
-  t.test_files = FileList["test/xlsxrb/**/*_test.rb", "test/*_test.rb", "test/contract/**/*_test.rb"]
+  t.test_files = FileList["test/xlsxrb/**/*_test.rb", "test/ooxml/**/*_test.rb", "test/*_test.rb", "test/contract/**/*_test.rb"]
   workers = ENV.fetch("TEST_WORKERS", [Etc.nprocessors, 4].min)
   t.options = "--parallel --n-workers=#{workers}"
 end
@@ -108,7 +108,7 @@ namespace :test do
   Rake::TestTask.new(:unit) do |t|
     t.libs << "test"
     t.libs << "lib"
-    t.test_files = FileList["test/xlsxrb/**/*_test.rb", "test/*_test.rb"]
+    t.test_files = FileList["test/xlsxrb/**/*_test.rb", "test/ooxml/**/*_test.rb", "test/*_test.rb"]
     workers = ENV.fetch("TEST_WORKERS", Etc.nprocessors)
     t.options = "--parallel --n-workers=#{workers}"
   end

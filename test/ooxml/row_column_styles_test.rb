@@ -76,7 +76,7 @@ class RowColumnStylesTest < Test::Unit::TestCase
       assert_match(%r{<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0\.00"/></numFmts>}, styles_xml)
 
       parsed = Xlsxrb.read(filepath_hash).load
-      assert_equal("#,##0.00", parsed.styles.dig(:num_fmts, 164))
+      assert_equal("#,##0.00", parsed.styles.num_fmt(164))
 
       # Test with Array format
       filepath_arr = File.join(dir, "arr_styles.xlsx")
