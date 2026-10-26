@@ -280,17 +280,39 @@ module Xlsxrb
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
       DslHelpers.normalize_column_indices(index).each do |idx|
-        unmapped = style ? { style_index: style } : {}
-        @columns << Elements::Column.new(
-          index: idx,
-          width: width,
-          hidden: hidden,
-          custom_width: custom_width || !width.nil?,
-          outline_level: outline_level,
-          style_index: style,
-          unmapped_data: unmapped
-        )
+        existing_idx = @columns.find_index { |c| c.index == idx }
+        if existing_idx
+          prev = @columns[existing_idx]
+          new_width = width.nil? ? prev.width : width
+          new_custom_width = (custom_width || !width.nil?) || prev.custom_width
+          new_hidden = hidden || prev.hidden
+          new_outline = outline_level.nil? ? prev.outline_level : outline_level
+          new_style = style.nil? ? prev.style_index : style
+          unmapped = prev.unmapped_data ? prev.unmapped_data.dup : {}
+          unmapped[:style_index] = new_style if new_style
+          @columns[existing_idx] = Elements::Column.new(
+            index: idx,
+            width: new_width,
+            hidden: new_hidden,
+            custom_width: new_custom_width,
+            outline_level: new_outline,
+            style_index: new_style,
+            unmapped_data: unmapped
+          )
+        else
+          unmapped = style ? { style_index: style } : {}
+          @columns << Elements::Column.new(
+            index: idx,
+            width: width,
+            hidden: hidden,
+            custom_width: custom_width || !width.nil?,
+            outline_level: outline_level,
+            style_index: style,
+            unmapped_data: unmapped
+          )
+        end
       end
+      @columns.sort_by!(&:index)
     end
 
     # Adds a chart to the worksheet.

@@ -9019,6 +9019,76 @@ class WriterTest < Test::Unit::TestCase
     assert_include(sheet_xml, "<formula1>&quot;High,Medium,Low&quot;</formula1>")
   end
 
+  test "multiple sheet.column calls merge attributes and maintain column sorting in in-memory mode" do
+    doc = Xlsxrb.build do |w|
+      w.sheet("Cols") do |s|
+        s.column(2, width: 30.0)
+        s.column(0, width: 10.0)
+        s.column(0, style: :heading, hidden: true)
+        s.column(1, width: 20.0)
+        s.row(%w[A B C])
+      end
+    end
+
+    sheet = doc.sheet("Cols")
+    cols = sheet.columns
+    assert_equal([0, 1, 2], cols.map(&:index))
+    assert_equal(10.0, cols[0].width)
+    assert_equal(:heading, cols[0].style_index)
+    assert_equal(true, cols[0].hidden)
+    assert_equal(20.0, cols[1].width)
+    assert_equal(30.0, cols[2].width)
+  end
+
+  test "multiple sheet.column calls merge attributes and maintain column sorting in streaming mode" do
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.style(:header, bold: true)
+      w.sheet("StreamCols") do |s|
+        s.column(1, width: 25.0)
+        s.column(0, width: 15.0)
+        s.column(0, style: :header)
+        s.row(["Col 0", "Col 1"])
+      end
+    end
+
+    sheet_xml = read_xml_from_xlsx(io.string.b, "xl/worksheets/sheet1.xml")
+    assert_match(%r{<col min="1" max="1" width="15\.0" customWidth="1" style="\d+"/>}, sheet_xml)
+    assert_include(sheet_xml, '<col min="2" max="2" width="25.0" customWidth="1"/>')
+    assert_operator(sheet_xml.index('min="1"'), :<, sheet_xml.index('min="2"'))
+  end
+
+  test "column with style inherits default_col_width from sheet_format" do
+    doc = Xlsxrb.build do |w|
+      w.sheet("FormatCols") do |s|
+        s.style(:highlight, fill_color: "FFFF00")
+        s.sheet_format(default_col_width: 18.5)
+        s.column(0, style: :highlight)
+        s.row(["Styled Column"])
+      end
+    end
+
+    data = Xlsxrb.write(doc)
+    sheet_xml = read_xml_from_xlsx(data, "xl/worksheets/sheet1.xml")
+    assert_include(sheet_xml, '<col min="1" max="1" width="18.5" customWidth="1"')
+  end
+
+  test "cell style :default or :none produces s=\"0\" overriding column style" do
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.style(:col_style, bold: true)
+      w.sheet("Override") do |s|
+        s.column(0, style: :col_style)
+        s.row(["Overridden"], styles: [:default])
+        s.row(["Inherited"])
+      end
+    end
+
+    sheet_xml = read_xml_from_xlsx(io.string.b, "xl/worksheets/sheet1.xml")
+    assert_include(sheet_xml, '<c r="A1" s="0"')
+    assert_include(sheet_xml, '<c r="A2" s="3"')
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

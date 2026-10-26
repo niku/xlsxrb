@@ -55,6 +55,7 @@ module Xlsxrb
 
         @started = true
         @sheet_properties = sheet_properties
+        @sheet_format = sheet_format
         @builder.declaration
         @builder.open_tag("worksheet", { xmlns: SSML_NS, "xmlns:r": DOC_REL_NS })
 
@@ -131,8 +132,11 @@ module Xlsxrb
             cell_type_val = nil
           end
 
+          cell_style_id = resolve_style_id(cell_style_id, nil)
           col_style = @column_styles && col_idx ? @column_styles[col_idx] : nil
-          style_id = cell_style_id || attrs[:style_index] || col_style
+          col_style = resolve_style_id(col_style, nil)
+          row_style = resolve_style_id(attrs[:style_index], nil)
+          style_id = cell_style_id.nil? ? (row_style || col_style) : cell_style_id
           style_id = nil unless style_id.is_a?(Integer)
 
           # Fast path for common unstyled cells
@@ -748,6 +752,8 @@ module Xlsxrb
           mapped = style_map[style] || style_map[style.to_s]
           return mapped if mapped
         end
+
+        return 0 if [:default, :none, "default", "none"].include?(style)
 
         style.is_a?(Integer) ? style : nil
       end
@@ -1424,24 +1430,25 @@ module Xlsxrb
       # --- Columns ---
 
       def write_columns(columns)
+        default_width = @sheet_format ? (@sheet_format[:default_col_width] || @sheet_format["default_col_width"]) : nil
         @builder.open_tag("cols")
         columns.each do |col|
           if col.is_a?(Elements::Column)
             min = col.unmapped_data[:min] || (col.index + 1)
             max = col.unmapped_data[:max] || (col.index + 1)
-            width = col.width
-            hidden = col.hidden
-            custom_width = col.custom_width || col.width
-            outline_level = col.outline_level
             style_id = col.style_index
+            width = col.width || (style_id ? default_width : nil)
+            hidden = col.hidden
+            custom_width = col.custom_width || !width.nil?
+            outline_level = col.outline_level
           else
             min = col[:min] || ((col[:index] || 0) + 1)
             max = col[:max] || ((col[:index] || 0) + 1)
-            width = col[:width]
-            hidden = col[:hidden]
-            custom_width = col[:custom_width] || col[:width]
-            outline_level = col[:outline_level]
             style_id = col[:style_index] || col[:style]
+            width = col[:width] || (style_id ? default_width : nil)
+            hidden = col[:hidden]
+            custom_width = col[:custom_width] || !width.nil?
+            outline_level = col[:outline_level]
           end
           attrs = {
             min: min.to_s,
@@ -1449,7 +1456,7 @@ module Xlsxrb
           }
           attrs[:width] = width.to_s if width
           attrs[:hidden] = "1" if hidden
-          attrs[:customWidth] = "1" if custom_width
+          attrs[:customWidth] = "1" if custom_width && width
           attrs[:outlineLevel] = outline_level.to_s if outline_level
           attrs[:style] = style_id.to_s if style_id.is_a?(Integer)
           @builder.empty_tag("col", attrs)

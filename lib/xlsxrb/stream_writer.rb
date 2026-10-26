@@ -1509,13 +1509,26 @@ module Xlsxrb
                    style
                  end
       DslHelpers.normalize_column_indices(index).each do |idx|
-        entry = { index: idx, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
-        if style_id
-          entry[:style] = style_id
-          @current_row_writer&.set_column_style(idx, style_id)
+        existing = @current_columns.find { |c| c[:index] == idx }
+        if existing
+          existing[:width] = width unless width.nil?
+          existing[:custom_width] = true if custom_width || !width.nil?
+          existing[:hidden] = hidden if hidden
+          existing[:outline_level] = outline_level unless outline_level.nil?
+          if style_id
+            existing[:style] = style_id
+            @current_row_writer&.set_column_style(idx, style_id)
+          end
+        else
+          entry = { index: idx, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
+          if style_id
+            entry[:style] = style_id
+            @current_row_writer&.set_column_style(idx, style_id)
+          end
+          @current_columns << entry
         end
-        @current_columns << entry
       end
+      @current_columns.sort_by! { |c| c[:index] }
     end
 
     # Adds a chart to the current worksheet.
