@@ -9134,6 +9134,23 @@ class WriterTest < Test::Unit::TestCase
     assert_include(sheet_xml, '<color rgb="FF0000FF"/>')
   end
 
+  test "conditional formatting dxf supports fill_color: and fill: { color: ... }" do
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.sheet("CF") do |s|
+        s.row([50])
+        s.row([150])
+        s.conditional_format("A1:A2", type: :cellIs, operator: :greaterThan, formula: "100",
+                                      fill_color: "FFFF00", font: { bold: true, size: 12 })
+      end
+    end
+
+    styles_xml = read_xml_from_xlsx(io.string.b, "xl/styles.xml")
+    assert_include(styles_xml, "<dxf>")
+    assert_include(styles_xml, '<sz val="12"/>')
+    assert_include(styles_xml, '<patternFill patternType="solid"><fgColor rgb="FFFFFF00"/></patternFill>')
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

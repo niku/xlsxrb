@@ -2545,13 +2545,15 @@ module Xlsxrb
           normalized = rule.dup
           dxf = normalized.delete(:dxf)
           unless dxf
-            font = {}
+            font = (normalized.delete(:font) || {}).dup
             font[:color] = normalized.delete(:font_color) if normalized.key?(:font_color)
             font[:bold] = normalized.delete(:bold) if normalized.key?(:bold)
             font[:italic] = normalized.delete(:italic) if normalized.key?(:italic)
             font[:underline] = normalized.delete(:underline) if normalized.key?(:underline)
+            font[:size] = normalized.delete(:size) if normalized.key?(:size)
+            font[:sz] = normalized.delete(:sz) if normalized.key?(:sz)
 
-            fill = {}
+            fill = (normalized.delete(:fill) || {}).dup
             if normalized.key?(:fill_color)
               fill[:pattern] = "solid"
               fill[:fg_color] = normalized.delete(:fill_color)

@@ -917,13 +917,15 @@ module Xlsxrb
       end
 
       def extract_dxf_from_rule!(rule)
-        font = {}
+        font = (rule.delete(:font) || {}).dup
         font[:color] = rule.delete(:font_color) if rule.key?(:font_color)
         font[:bold] = rule.delete(:bold) if rule.key?(:bold)
         font[:italic] = rule.delete(:italic) if rule.key?(:italic)
         font[:underline] = rule.delete(:underline) if rule.key?(:underline)
+        font[:size] = rule.delete(:size) if rule.key?(:size)
+        font[:sz] = rule.delete(:sz) if rule.key?(:sz)
 
-        fill = {}
+        fill = (rule.delete(:fill) || {}).dup
         if rule.key?(:fill_color)
           fill[:pattern] = "solid"
           fill[:fg_color] = rule.delete(:fill_color)
@@ -956,7 +958,8 @@ module Xlsxrb
           color_attrs = color_tag_attrs(font[:color] || font)
           builder.empty_tag("color", color_attrs) if color_attrs
           builder.empty_tag("name", { val: font[:name] }) if font[:name]
-          builder.empty_tag("sz", { val: font[:sz].to_s }) if font[:sz]
+          sz_val = font[:sz] || font[:size]
+          builder.empty_tag("sz", { val: sz_val.to_s }) if sz_val
         end
       end
 
@@ -964,9 +967,11 @@ module Xlsxrb
         builder.tag("fill") do |_|
           pattern_attrs = {}
           pattern = fill[:pattern] || fill[:pattern_type]
+          pattern ||= "solid" if (fill[:color] || fill[:fill_color] || fill[:fg_color]) && !fill[:bg_color]
           pattern_attrs[:patternType] = pattern if pattern
           builder.tag("patternFill", pattern_attrs) do |_|
-            fg_attrs = color_tag_attrs(fill[:fg_color])
+            fg = fill[:fg_color] || fill[:color] || fill[:fill_color]
+            fg_attrs = color_tag_attrs(fg)
             builder.empty_tag("fgColor", fg_attrs) if fg_attrs
             bg_attrs = color_tag_attrs(fill[:bg_color])
             builder.empty_tag("bgColor", bg_attrs) if bg_attrs

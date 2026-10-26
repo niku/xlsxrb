@@ -1,6 +1,8 @@
 ## [Unreleased]
 
 ### Added
+- Support `fill: { color: ... }` and `fill_color:` in conditional formatting rules and `extract_dxf_from_rule!`.
+- Support `size:` alongside `sz:` in conditional formatting differential formatting (`dxf`) fonts.
 - Support `base_font:` in `Xlsxrb.rich_text(*runs, base_font: ...)` to merge base font attributes across text runs.
 - Support `size:` alongside `sz:` in `RichTextRun`, inline rich text, and shared strings XML fonts.
 - Add coordinate-based targeting (`columns:`, `rows:`, `except_rows:`, `col:`, `row:`) to `validate_data` and `DataValidationBuilder` with interval run compression (`compress_runs`), complement calculation (`complement_runs`), and automatic chunking into multiple `<dataValidation>` entries when reference counts exceed 32,767 (`Xlsxrb::MAX_REFS_PER_VALIDATION`).
