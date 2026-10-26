@@ -35,9 +35,39 @@ bundle exec rubocop
 echo "2/4 Running Steep Type Check..."
 bundle exec rake typecheck
 
-echo "3/4 Verifying RBS is in sync..."
+echo "3/4 Verifying RBS sync and commit hygiene..."
 bundle exec rake sig
 git diff --exit-code sig/
+
+untracked_files="$(git ls-files --others --exclude-standard lib/ test/ sig/)"
+if [ -n "$untracked_files" ]; then
+  echo "Error: Untracked files detected in lib/, test/, or sig/:" >&2
+  echo "$untracked_files" >&2
+  exit 1
+fi
+
+if git rev-parse --verify origin/main >/dev/null 2>&1; then
+  base_ref="$(git merge-base origin/main HEAD 2>/dev/null || true)"
+  if [ -n "$base_ref" ]; then
+    while IFS= read -r sha; do
+      [ -z "$sha" ] && continue
+      subject="$(git log -1 --format=%s "$sha")"
+      if echo "$subject" | grep -Eq '^(feat|fix)(\([^)]+\))?:'; then
+        commit_files="$(git diff-tree --no-commit-id --name-only -r "$sha")"
+        if echo "$commit_files" | grep -Eq '^lib/'; then
+          if ! echo "$commit_files" | grep -Eq '^test/'; then
+            echo "Error: Commit $sha ($subject) modifies lib/ without corresponding test/ changes." >&2
+            exit 1
+          fi
+          if ! echo "$commit_files" | grep -Eq '^CHANGELOG\.md$'; then
+            echo "Error: Commit $sha ($subject) modifies lib/ without updating CHANGELOG.md." >&2
+            exit 1
+          fi
+        fi
+      fi
+    done < <(git rev-list "${base_ref}..HEAD")
+  fi
+fi
 
 echo "4/4 Running Unit & Contract Tests..."
 bundle exec rake test:unit test:contract

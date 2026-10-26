@@ -60,18 +60,98 @@ class ApiSymmetryTest < Test::Unit::TestCase
     ]
 
     common_methods.each do |method_name|
-      next if workbook_scoped_methods.include?(method_name)
-
       builder_params = Xlsxrb::WorksheetBuilder.instance_method(method_name).parameters
       stream_params = Xlsxrb::StreamWriter.instance_method(method_name).parameters
 
-      # Ensure required parameters match exactly
-      builder_req = builder_params.filter_map { |type, name| name if type == :req }
-      stream_req = stream_params.filter_map { |type, name| name if type == :req }
+      if workbook_scoped_methods.include?(method_name)
+        # Ensure all keyword parameters supported by WorksheetBuilder are also supported by StreamWriter
+        builder_keys = builder_params.filter_map { |type, name| name if %i[key keyreq].include?(type) }
+        stream_keys = stream_params.filter_map { |type, name| name if %i[key keyreq].include?(type) }
+        missing_keys = builder_keys - stream_keys
+        assert_empty missing_keys,
+                     "Keyword parameters on WorksheetBuilder##{method_name} missing from StreamWriter##{method_name}: #{missing_keys.inspect}"
+        next
+      end
 
-      assert_equal builder_req, stream_req,
-                   "Required parameter mismatch for method :#{method_name} (Builder: #{builder_req.inspect}, Stream: #{stream_req.inspect})"
+      # Ensure required, optional, and keyword parameters match
+      builder_sig = builder_params.select { |param| %i[req opt key keyreq].include?(param.first) }
+      stream_sig = stream_params.select { |param| %i[req opt key keyreq].include?(param.first) }
+
+      assert_equal builder_sig, stream_sig,
+                   "Parameter signature mismatch for method :#{method_name} (Builder: #{builder_sig.inspect}, Stream: #{stream_sig.inspect})"
     end
+
+    # Ensure WorksheetProxy methods that define explicit parameters match WorksheetBuilder
+    common_proxy_methods = (Xlsxrb::WorksheetBuilder.public_instance_methods(false).reject { |m| m.to_s.include?("__RBS_TEST_") } &
+                            Xlsxrb::StreamWriter::WorksheetProxy.public_instance_methods(false).reject { |m| m.to_s.include?("__RBS_TEST_") })
+    common_proxy_methods.each do |method_name|
+      proxy_params = Xlsxrb::StreamWriter::WorksheetProxy.instance_method(method_name).parameters
+      # Skip generic `...` delegators ([[:rest, :*], [:keyrest, :**], [:block, :&]])
+      next if proxy_params.any? { |type, _| type == :rest }
+
+      builder_params = Xlsxrb::WorksheetBuilder.instance_method(method_name).parameters
+      builder_sig = builder_params.select { |param| %i[req opt key keyreq].include?(param.first) }
+      proxy_sig = proxy_params.select { |param| %i[req opt key keyreq].include?(param.first) }
+
+      assert_equal builder_sig, proxy_sig,
+                   "WorksheetProxy##{method_name} signature mismatch with WorksheetBuilder##{method_name}"
+    end
+  end
+
+  def test_workbook_builder_and_stream_writer_symmetry
+    workbook_only_methods = %i[[] build]
+    wb_methods = Xlsxrb::WorkbookBuilder.public_instance_methods(false).reject { |m| m.to_s.include?("__RBS_TEST_") } - workbook_only_methods
+    sw_methods = Xlsxrb::StreamWriter.public_instance_methods(false).reject { |m| m.to_s.include?("__RBS_TEST_") }
+
+    missing_in_stream = wb_methods - sw_methods
+    assert_empty missing_in_stream,
+                 "Workbook-level methods in WorkbookBuilder missing from StreamWriter: #{missing_in_stream.inspect}"
+
+    wb_methods.each do |method_name|
+      wb_params = Xlsxrb::WorkbookBuilder.instance_method(method_name).parameters
+      sw_params = Xlsxrb::StreamWriter.instance_method(method_name).parameters
+
+      wb_req_count = wb_params.count { |type, _| type == :req }
+      sw_req_count = sw_params.count { |type, _| type == :req }
+      assert_equal wb_req_count, sw_req_count,
+                   "Required parameter count mismatch on WorkbookBuilder##{method_name} vs StreamWriter##{method_name}"
+
+      wb_keys = wb_params.filter_map { |type, name| name if %i[key keyreq].include?(type) }.sort
+      sw_keys = sw_params.filter_map { |type, name| name if %i[key keyreq].include?(type) }.sort
+      assert_equal wb_keys, sw_keys,
+                   "Keyword parameter mismatch on WorkbookBuilder##{method_name} vs StreamWriter##{method_name}"
+    end
+  end
+
+  def test_defined_name_inmemory_and_streaming_xml_parity
+    author_defined_names = lambda do |w|
+      w.sheet("Master's Data") do |s|
+        s.row(["Category"])
+        s.row(["Alpha"])
+        s.defined_name("GLOBAL_RANGE", range: "A2:A10")
+        s.defined_name("COORDS_RANGE", col: 0, rows: 2..5)
+        s.defined_name("LOCAL_RANGE", "A2:A10", local: true)
+      end
+      # Workbook-level defined name after sheet block must remain global (no localSheetId leak)
+      w.defined_name("WORKBOOK_CONST", "0.08")
+    end
+
+    mem_doc = Xlsxrb.build(&author_defined_names)
+    mem_bytes = Xlsxrb.write(mem_doc)
+
+    stream_io = StringIO.new
+    Xlsxrb.write(stream_io, &author_defined_names)
+    stream_bytes = stream_io.string.b
+
+    mem_wb_xml = Xlsxrb::Ooxml::Reader.new(mem_bytes).raw_entry("xl/workbook.xml")
+    stream_wb_xml = Xlsxrb::Ooxml::Reader.new(stream_bytes).raw_entry("xl/workbook.xml")
+
+    mem_dn = mem_wb_xml[%r{<definedNames>.*</definedNames>}m]
+    stream_dn = stream_wb_xml[%r{<definedNames>.*</definedNames>}m]
+
+    assert_not_nil mem_dn
+    assert_equal mem_dn, stream_dn,
+                 "In-memory and streaming definedNames XML must be identical"
   end
 
   def test_sheet_reader_query_interface_symmetry

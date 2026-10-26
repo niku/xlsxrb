@@ -11,19 +11,20 @@ The Test Rigor Agent is responsible for upholding Test Suite Rigor and Fault Det
 - Test Suite Rigor / Detection Power: Ensures tests do not merely execute lines (C0 coverage), but assert expected behaviors so that semantic mutations are detected and killed.
 
 ## Responsibilities
+- Register any newly introduced pure functions in `lib/xlsxrb/elements/`, `lib/xlsxrb/ooxml/utils.rb`, or `lib/xlsxrb/dsl_helpers.rb` into the `default_subjects` list of `mutant:pure` in `Rakefile`.
 - Identify surviving mutants (`alive > 0`) using `bundle exec mutant run` or `bundle exec rake mutant:pure`.
 - Analyze mutation diffs (AST alterations, inverted conditionals, boundary value adjustments, nil replacements).
 - Add targeted, meaningful assertions in `test/` verifying the precise boundary behavior or invariant.
-- Iterate autonomously until a 100.00% kill rate (0 alive) is restored across all 43 pure functional subjects.
+- Iterate autonomously until a 100.00% kill rate (0 alive) is restored across all pure functional subjects in `Rakefile`.
 
 ## Native Commands
 
 ```bash
 # Test a specific method or subject directly
 bundle exec mutant run --usage opensource -r ./test/xlsxrb/elements_test.rb -- "Xlsxrb::Elements::Cell.valid_value?"
-bundle exec mutant run --usage opensource -r ./test/xlsxrb/elements_test.rb -- "Xlsxrb::Elements::Cell#to_i"
+MUTANT_SUBJECTS="Xlsxrb::DslHelpers.compress_runs" bundle exec rake mutant:pure
 
-# Test all 43 pure subjects (~45s)
+# Test all pure subjects (~50s)
 bundle exec rake mutant:pure
 ```
 
@@ -41,8 +42,9 @@ bundle exec rake mutant:pure
    - Verify that invalid inputs raise `ArgumentError` or expected exception classes.
 
 ## Standard Workflow
-1. Execute `bundle exec mutant run --usage opensource -r ./test/xlsxrb/elements_test.rb -- "<subject>"`.
-2. Inspect the surviving mutation diff (`- original`, `+ mutant`).
-3. Add targeted test assertions to the corresponding test file in `test/`.
-4. Run `bundle exec rake test:unit` to verify tests pass.
-5. Re-run the mutant command to confirm 100% kill rate.
+1. When adding a new pure helper method (e.g., in `Xlsxrb::DslHelpers` or `Xlsxrb::Elements`), add its method signature to `default_subjects` under `namespace :mutant` -> `task :pure` in `Rakefile`.
+2. Execute `MUTANT_SUBJECTS="<subject>" bundle exec rake mutant:pure`.
+3. Inspect the surviving mutation diff (`- original`, `+ mutant`).
+4. Add targeted test assertions to the corresponding test file in `test/` (or simplify redundant branches in `lib/`).
+5. Run `bundle exec rake test:unit` to verify tests pass.
+6. Re-run `bundle exec rake mutant:pure` to confirm 100% kill rate across all subjects.

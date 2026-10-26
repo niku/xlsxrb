@@ -29,7 +29,7 @@ When modifying specific parts of the codebase, the following verification standa
 1. Pure algorithms and coordinate logic (`lib/xlsxrb/elements/`, `lib/xlsxrb/ooxml/utils.rb`, `lib/xlsxrb/dsl_helpers.rb`):
    - Quality Attribute: Test Suite Rigor / Detection Power
    - Verification: `bundle exec rake mutant:pure`
-   - Requirement: Maintain a 100.00% mutation kill rate across all 43 subjects. Do not accept surviving mutants.
+   - Requirement: Maintain a 100.00% mutation kill rate across all 50 subjects. Do not accept surviving mutants.
 
 2. Public interfaces and method signatures (`lib/`, `sig/`):
    - Quality Attribute: Type Safety (Static & Dynamic)
