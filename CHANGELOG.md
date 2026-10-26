@@ -1,6 +1,8 @@
 ## [Unreleased]
 
 ### Added
+- Support `base_font:` in `Xlsxrb.rich_text(*runs, base_font: ...)` to merge base font attributes across text runs.
+- Support `size:` alongside `sz:` in `RichTextRun`, inline rich text, and shared strings XML fonts.
 - Add coordinate-based targeting (`columns:`, `rows:`, `except_rows:`, `col:`, `row:`) to `validate_data` and `DataValidationBuilder` with interval run compression (`compress_runs`), complement calculation (`complement_runs`), and automatic chunking into multiple `<dataValidation>` entries when reference counts exceed 32,767 (`Xlsxrb::MAX_REFS_PER_VALIDATION`).
 - Expose spreadsheet dimension limits `Xlsxrb::MAX_ROW = 1_048_576`, `Xlsxrb::MAX_COL = 16_384`, and `Xlsxrb::MAX_REFS_PER_VALIDATION = 32_767`.
 - Support direct array in `validate_data(..., in: [...])` converting to `type: "list"` with quoted CSV `formula1`.

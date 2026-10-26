@@ -9089,6 +9089,51 @@ class WriterTest < Test::Unit::TestCase
     assert_include(sheet_xml, '<c r="A2" s="3"')
   end
 
+  test "Xlsxrb.rich_text merges base_font into runs" do
+    base = { name: "Noto Sans", size: 11, color: "FF000000" }
+    rt = Xlsxrb.rich_text("Normal ", ["Bold ", { bold: true }], ["Red", { color: "FFFF0000" }], base_font: base)
+    runs = rt.runs
+    assert_equal(3, runs.size)
+
+    assert_equal("Noto Sans", runs[0].font[:name])
+    assert_equal(11, runs[0].font[:size])
+    assert_equal("FF000000", runs[0].font[:color])
+
+    assert_equal(true, runs[1].font[:bold])
+    assert_equal("Noto Sans", runs[1].font[:name])
+
+    assert_equal("FFFF0000", runs[2].font[:color])
+    assert_equal("Noto Sans", runs[2].font[:name])
+  end
+
+  test "rich text size: keyword produces sz val in sharedStrings XML" do
+    rt = Xlsxrb.rich_text({ text: "Large text", font: { size: 16, color: "FF0000" } })
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.sheet("RT") do |s|
+        s.row([rt])
+      end
+    end
+
+    sst_xml = read_xml_from_xlsx(io.string.b, "xl/sharedStrings.xml")
+    assert_include(sst_xml, '<sz val="16"/>')
+    assert_include(sst_xml, '<color rgb="FFFF0000"/>')
+  end
+
+  test "rich text size: keyword produces sz val in inlineStr XML when shared_strings: false" do
+    rt = Xlsxrb.rich_text({ text: "Inline Large text", font: { size: 14, color: "0000FF" } })
+    io = StringIO.new
+    Xlsxrb.write(io, shared_strings: false) do |w|
+      w.sheet("RTInline") do |s|
+        s.row([rt])
+      end
+    end
+
+    sheet_xml = read_xml_from_xlsx(io.string.b, "xl/worksheets/sheet1.xml")
+    assert_include(sheet_xml, '<sz val="14"/>')
+    assert_include(sheet_xml, '<color rgb="FF0000FF"/>')
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

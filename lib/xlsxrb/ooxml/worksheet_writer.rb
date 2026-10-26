@@ -1573,12 +1573,14 @@ module Xlsxrb
               end
             end
             buf << '<vertAlign val="' << font[:vert_align].to_s << '"/>' if font[:vert_align]
-            buf << '<sz val="' << font[:sz].to_s << '"/>' if font[:sz]
+            font_sz = font[:sz] || font[:size]
+            buf << '<sz val="' << font_sz.to_s << '"/>' if font_sz
             if font[:color]
               if font[:color].is_a?(Hash)
                 c_hash = font[:color]
                 if c_hash[:rgb]
-                  buf << '<color rgb="' << c_hash[:rgb].to_s << '"/>'
+                  norm = StyleBuilder.normalize_color(c_hash[:rgb], alpha: true) || c_hash[:rgb].to_s
+                  buf << '<color rgb="' << norm << '"/>'
                 elsif c_hash[:theme]
                   tint_attr = c_hash[:tint] ? %( tint="#{c_hash[:tint]}") : ""
                   buf << '<color theme="' << c_hash[:theme].to_s << '"' << tint_attr << "/>"
@@ -1588,7 +1590,9 @@ module Xlsxrb
                   buf << '<color auto="1"/>'
                 end
               else
-                buf << '<color rgb="' << font[:color].to_s << '"/>'
+                raw_color = font[:color]
+                norm_color = StyleBuilder.normalize_color(raw_color, alpha: true) || raw_color.to_s
+                buf << '<color rgb="' << norm_color << '"/>'
               end
             elsif font[:theme]
               tint_attr = font[:tint] ? %( tint="#{font[:tint]}") : ""

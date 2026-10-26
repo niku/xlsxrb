@@ -125,15 +125,26 @@ module Xlsxrb
   #
   # @param runs [Array<Hash, String, Array, Elements::RichTextRun, Object>] Optional array of rich text run items.
   # @param text [String, nil] Plain text string (convenience parameter).
+  # @param base_font [Hash, Object, nil] Base font properties to merge into all runs.
   # @param font_props [Hash] Inline font styling options (e.g. bold: true, color: "FF0000").
   # @return [Elements::RichText] The compiled rich text element.
   # @api public
-  #: (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, **untyped font_props) -> Elements::RichText
-  def self.rich_text(*runs, text: nil, **font_props)
+  #: (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, ?base_font: untyped, **untyped font_props) -> Elements::RichText
+  def self.rich_text(*runs, text: nil, base_font: nil, **font_props)
+    base = if base_font.respond_to?(:to_font_hash)
+             base_font.to_font_hash
+           elsif base_font.respond_to?(:to_h)
+             base_font.to_h
+           else
+             base_font
+           end
     if text
-      runs = [Elements::RichTextRun.new(text: text, font: font_props.empty? ? nil : font_props)]
+      f = font_props.empty? ? nil : font_props
+      f = base.merge(f || {}) if base.is_a?(Hash)
+      runs = [Elements::RichTextRun.new(text: text, font: f)]
     elsif runs.size == 1 && runs.first.is_a?(String) && !font_props.empty?
-      runs = [Elements::RichTextRun.new(text: runs.first, font: font_props)]
+      f = base.is_a?(Hash) ? base.merge(font_props) : font_props
+      runs = [Elements::RichTextRun.new(text: runs.first, font: f)]
     else
       normalized_runs = []
       pending_font = nil
@@ -163,6 +174,12 @@ module Xlsxrb
           pending_font = nil
         else
           normalized_runs << Elements::RichTextRun.new(text: item.to_s)
+        end
+      end
+      if base.is_a?(Hash) && !base.empty?
+        normalized_runs = normalized_runs.map do |run|
+          merged_font = run.font ? base.merge(run.font) : base.dup
+          Elements::RichTextRun.new(text: run.text, font: merged_font)
         end
       end
       runs = normalized_runs

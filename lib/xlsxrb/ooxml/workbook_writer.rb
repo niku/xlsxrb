@@ -1119,7 +1119,8 @@ module Xlsxrb
                   end
                 end
                 buf << '<vertAlign val="' << font[:vert_align].to_s << '"/>' if font[:vert_align]
-                buf << '<sz val="' << font[:sz].to_s << '"/>' if font[:sz]
+                font_sz = font[:sz] || font[:size]
+                buf << '<sz val="' << font_sz.to_s << '"/>' if font_sz
                 color_attrs = color_tag_attrs(font[:color] || font)
                 if color_attrs
                   attrs_str = color_attrs.map { |k, v| %(#{k}="#{v}") }.join(" ")

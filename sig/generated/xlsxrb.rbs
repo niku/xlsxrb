@@ -88,11 +88,12 @@ module Xlsxrb
   #
   # @param runs [Array<Hash, String, Array, Elements::RichTextRun, Object>] Optional array of rich text run items.
   # @param text [String, nil] Plain text string (convenience parameter).
+  # @param base_font [Hash, Object, nil] Base font properties to merge into all runs.
   # @param font_props [Hash] Inline font styling options (e.g. bold: true, color: "FF0000").
   # @return [Elements::RichText] The compiled rich text element.
   # @api public
-  # : (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, **untyped font_props) -> Elements::RichText
-  def self.rich_text: (*Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped runs, ?text: String?, **untyped font_props) -> Elements::RichText
+  # : (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, ?base_font: untyped, **untyped font_props) -> Elements::RichText
+  def self.rich_text: (*Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped runs, ?text: String?, ?base_font: untyped, **untyped font_props) -> Elements::RichText
 
   # Creates an {Elements::Formula} object for use in cell values.
   #
