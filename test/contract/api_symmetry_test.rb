@@ -6,6 +6,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
   # Non-authoring or builder-lifecycle methods that are intentionally specific to WorksheetBuilder
   BUILDER_ONLY_METHODS = %i[
     build
+    defined_names
     name
     styles
   ].freeze
@@ -19,7 +20,6 @@ class ApiSymmetryTest < Test::Unit::TestCase
     core_property
     custom_property
     default_font
-    defined_name
     first_sheet
     internal_sheet_setup
     properties
@@ -56,6 +56,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
       print_titles
       repeat_rows
       repeat_columns
+      defined_name
     ]
 
     common_methods.each do |method_name|

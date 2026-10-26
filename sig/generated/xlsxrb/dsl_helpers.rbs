@@ -89,7 +89,8 @@ module Xlsxrb
     # : (Integer row_index, Float | Integer | nil height, ?strict_excel_mode: bool) -> void
     def self.validate_row_bounds!: (Integer row_index, Float | Integer | nil height, ?strict_excel_mode: bool) -> void
 
-    # Compresses an array of integers or ranges into a minimal sorted list of disjoint [first, last] inclusive pairs.
+    # Compresses a sorted or unsorted collection of integers and/or ranges into minimal disjoint [start, finish] runs.
+    # Operates on intervals directly without expanding ranges into individual integer arrays.
     #
     # @param values [Integer, Range, Enumerable, nil]
     # @return [Array<Array(Integer, Integer)>]
@@ -123,6 +124,33 @@ module Xlsxrb
     # @return [Array<String>]
     # : (Array[Array[Integer]] col_runs, Array[Array[Integer]] row_runs, ?Integer max_per_validation) -> Array[String]
     def self.chunked_sqrefs: (Array[Array[Integer]] col_runs, Array[Array[Integer]] row_runs, ?Integer max_per_validation) -> Array[String]
+
+    # Quotes a sheet name for use in formula and defined name references, escaping single quotes with double single quotes.
+    #
+    # @param sheet_name [String, Object]
+    # @return [String]
+    # : (untyped sheet_name) -> String
+    def self.quote_sheet_name: (untyped sheet_name) -> String
+
+    # Converts a cell reference, rectangular cell range, column range, or row range to absolute $ form.
+    # Returns nil if the input is not a coordinate or range.
+    #
+    # @param ref [String]
+    # @return [String, nil]
+    # : (String ref) -> String?
+    def self.format_absolute_reference: (String ref) -> String?
+
+    # Normalizes defined name value, auto-formatting bare coordinates and ranges with sheet quotes and absolute dollar references.
+    # Leaves constants, formulas, and already-qualified references untouched.
+    #
+    # @param value [Object, nil]
+    # @param sheet [String, nil]
+    # @param col [Integer, String, nil]
+    # @param rows [Integer, Range, nil]
+    # @param range [String, nil]
+    # @return [String]
+    # : (?untyped value, ?sheet: untyped, ?col: untyped, ?rows: untyped, ?range: untyped) -> String
+    def self.normalize_defined_name_value: (?untyped value, ?sheet: untyped, ?col: untyped, ?rows: untyped, ?range: untyped) -> String
 
     # Normalizes data validation arguments (sqref, coordinate targeting, list arrays, input/error message inference).
     #

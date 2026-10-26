@@ -779,16 +779,25 @@ module Xlsxrb
       #   s.defined_name("TaxRate", "0.10")
       #
       # @param name [String] The name.
-      # @param formula [String] The formula or range expression.
-      # @param sheet_id [Integer, nil] Optional sheet scope.
-      # @param hidden [Boolean] Whether the name is hidden.
+      # Adds a defined name (named range or formula) scoped to this sheet or workbook.
+      # Bare cell references and coordinate keywords are automatically formatted with sheet quotes and absolute $ references.
+      #
+      # @param name [String] Defined name identifier.
+      # @param value [Object, nil] Value or formula expression.
+      # @param hidden [Boolean] Whether the defined name is hidden.
+      # @param col [Integer, String, nil] Column index or letter for coordinate-based reference.
+      # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+      # @param range [String, nil] Cell range reference.
+      # @param sheet [String, nil] Target sheet name (defaults to current sheet).
       # @return [void]
       # @api public
-      #: (String name, String formula, ?sheet_id: Integer | nil, ?hidden: bool) -> void
-      def defined_name(...)
+      #: (String name, ?untyped value, ?hidden: bool, ?col: untyped, ?rows: untyped, ?range: untyped, ?sheet: String?, ?local: bool) -> void
+      def defined_name(name, value = nil, hidden: false, col: nil, rows: nil, range: nil, sheet: nil, local: false)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.defined_name(...)
+        ref_sheet = sheet || @sheet_name
+        local_sheet = local ? (@sheet_name || sheet) : sheet
+        @writer.defined_name(name, value, sheet: local_sheet, hidden: hidden, col: col, rows: rows, range: range, ref_sheet: ref_sheet)
       end
 
       # Freezes rows and/or columns for scrolling.
@@ -2270,17 +2279,23 @@ module Xlsxrb
     # Adds a defined name.
     #
     # @param name [String] The defined name.
-    # @param value [String] The formula or value expression.
+    # @param value [Object, nil] The formula or value expression.
     # @param sheet [String, nil] Local sheet name.
     # @param hidden [Boolean] Whether the defined name is hidden.
+    # @param col [Integer, String, nil] Column index or letter for coordinate-based reference.
+    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param range [String, nil] Cell range reference.
     # @return [void]
     # @api public
-    #: (String name, String value, ?sheet: String?, ?hidden: bool) -> void
-    def defined_name(name, value, sheet: nil, hidden: false)
-      entry = { name: name, value: value, hidden: hidden }
-      if sheet
+    #: (String name, ?untyped value, ?sheet: String?, ?hidden: bool, ?col: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
+    def defined_name(name, value = nil, sheet: nil, hidden: false, col: nil, rows: nil, range: nil, ref_sheet: nil, local: false)
+      target_ref_sheet = ref_sheet || sheet
+      normalized_val = DslHelpers.normalize_defined_name_value(value, sheet: target_ref_sheet, col: col, rows: rows, range: range)
+      entry = { name: name, value: normalized_val, hidden: hidden }
+      local_sheet = sheet if sheet || local
+      if local_sheet
         # local_sheet_id will be resolved at close time
-        entry[:local_sheet_name] = sheet
+        entry[:local_sheet_name] = local_sheet
       end
       @defined_names << entry
     end

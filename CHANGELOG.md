@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Support `sheet.defined_name` symmetrically across `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy`, automatically quoting sheet names with single quote escaping and generating absolute `$` coordinate references.
 - Support `fill: { color: ... }` and `fill_color:` in conditional formatting rules and `extract_dxf_from_rule!`.
 - Support `size:` alongside `sz:` in conditional formatting differential formatting (`dxf`) fonts.
 - Support `base_font:` in `Xlsxrb.rich_text(*runs, base_font: ...)` to merge base font attributes across text runs.

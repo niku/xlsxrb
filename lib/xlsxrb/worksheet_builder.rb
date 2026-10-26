@@ -56,9 +56,10 @@ module Xlsxrb
       @background_image = nil
       @print_area = nil
       @print_titles = nil
+      @defined_names = []
     end
 
-    attr_reader :name
+    attr_reader :name, :defined_names
 
     # Defines or configures a named cell style.
     #
@@ -665,6 +666,28 @@ module Xlsxrb
     #: (Symbol name, untyped value) -> void
     def print_options(name, value)
       @print_options[name] = value
+    end
+
+    # Adds a defined name (named range or formula) scoped to this sheet or workbook.
+    # Bare cell references and coordinate keywords are automatically formatted with sheet quotes and absolute $ references.
+    #
+    # @param name [String] Defined name identifier.
+    # @param value [Object, nil] Cell reference, formula, or constant.
+    # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
+    # @param col [Integer, String, nil] Column index or letter for coordinate-based reference.
+    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param range [String, nil] Cell range reference (e.g. "A1:A10").
+    # @param sheet [String, nil] Target sheet name (defaults to current sheet).
+    # @return [void]
+    # @api public
+    #: (String name, ?untyped value, ?hidden: bool, ?col: untyped, ?rows: untyped, ?range: untyped, ?sheet: String?, ?local: bool) -> void
+    def defined_name(name, value = nil, hidden: false, col: nil, rows: nil, range: nil, sheet: nil, local: false)
+      ref_sheet = sheet || @name
+      normalized_val = DslHelpers.normalize_defined_name_value(value, sheet: ref_sheet, col: col, rows: rows, range: range)
+      entry = { name: name, value: normalized_val, hidden: hidden }
+      local_sheet = local ? (@name || sheet) : sheet
+      entry[:local_sheet_name] = local_sheet if local_sheet
+      @defined_names << entry
     end
 
     # Sets or gets the print area for the worksheet.

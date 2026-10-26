@@ -181,6 +181,8 @@ module Xlsxrb
       sheet_builder.code_name(code_name) if code_name
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
       yield sheet_builder if block_given?
+      @defined_names.concat(sheet_builder.defined_names)
+      sheet_builder.defined_names.clear
       @sheet_builders << sheet_builder
       @sheets << sheet_builder.build
     end
@@ -192,14 +194,25 @@ module Xlsxrb
     #
     # @param name [String] Defined name (e.g. "TaxRate").
     # @param value [String] Formula expression or range reference (e.g. "Sheet1!$B$2").
+    # Adds a defined name (named range or formula) to the workbook.
+    # Bare cell references and coordinate keywords are automatically formatted with sheet quotes and absolute $ references.
+    #
+    # @param name [String] Defined name identifier.
+    # @param value [Object, nil] Value or formula expression.
     # @param sheet [String, nil] Optional sheet name for sheet-scoped defined names.
     # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
+    # @param col [Integer, String, nil] Column index or letter for coordinate-based reference.
+    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param range [String, nil] Cell range reference.
     # @return [void]
     # @api public
-    #: (String name, String value, ?sheet: String?, ?hidden: bool) -> void
-    def defined_name(name, value, sheet: nil, hidden: false)
-      entry = { name: name, value: value, hidden: hidden }
-      entry[:local_sheet_name] = sheet if sheet
+    #: (String name, ?untyped value, ?sheet: String?, ?hidden: bool, ?col: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
+    def defined_name(name, value = nil, sheet: nil, hidden: false, col: nil, rows: nil, range: nil, ref_sheet: nil, local: false)
+      target_ref_sheet = ref_sheet || sheet
+      normalized_val = DslHelpers.normalize_defined_name_value(value, sheet: target_ref_sheet, col: col, rows: rows, range: range)
+      entry = { name: name, value: normalized_val, hidden: hidden }
+      local_sheet = sheet if sheet || local
+      entry[:local_sheet_name] = local_sheet if local_sheet
       @defined_names << entry
     end
 
@@ -366,6 +379,9 @@ module Xlsxrb
       @sheet_builders.each do |sb|
         print_area(sb.print_area, sheet: sb.name) if sb.print_area && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sb.name }
         print_titles(rows: sb.print_titles[:rows], cols: sb.print_titles[:cols], sheet: sb.name) if sb.print_titles && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sb.name }
+        sb.defined_names&.each do |dn|
+          @defined_names << dn
+        end
       end
 
       active_tab_idx = if @active_sheet.is_a?(Integer)

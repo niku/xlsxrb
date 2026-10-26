@@ -9178,6 +9178,54 @@ class WriterTest < Test::Unit::TestCase
     end
   end
 
+  test "sheet.defined_name formats coordinates and bare ranges in in-memory and streaming modes" do
+    # In-memory build
+    doc = Xlsxrb.build do |w|
+      w.sheet("Master's List") do |s|
+        s.row(["Header"])
+        s.row(["Item 1"])
+        s.defined_name("CATEGORIES", range: "A2:A10")
+        s.defined_name("FIRST_ITEM", "A2")
+        s.defined_name("COORDINATES", col: 0, rows: 2..5)
+        s.defined_name("LOCAL_ITEM", "A2", local: true)
+        s.defined_name("TAX_RATE", "0.10")
+      end
+      # Workbook-level defined name
+      w.defined_name("GLOBAL_DISCOUNT", "0.05")
+    end
+
+    data = Xlsxrb.write(doc)
+    workbook_xml = read_xml_from_xlsx(data, "xl/workbook.xml")
+
+    # Global defined names: target sheet is quoted/escaped, NO localSheetId
+    assert_include(workbook_xml, '<definedName name="CATEGORIES">&apos;Master&apos;&apos;s List&apos;!$A$2:$A$10</definedName>')
+    assert_include(workbook_xml, '<definedName name="FIRST_ITEM">&apos;Master&apos;&apos;s List&apos;!$A$2</definedName>')
+    assert_include(workbook_xml, '<definedName name="COORDINATES">&apos;Master&apos;&apos;s List&apos;!$A$2:$A$5</definedName>')
+    assert_include(workbook_xml, '<definedName name="TAX_RATE">0.10</definedName>')
+    assert_include(workbook_xml, '<definedName name="GLOBAL_DISCOUNT">0.05</definedName>')
+
+    # Local defined name has localSheetId="0"
+    assert_include(workbook_xml, '<definedName name="LOCAL_ITEM" localSheetId="0">&apos;Master&apos;&apos;s List&apos;!$A$2</definedName>')
+
+    # Streaming mode
+    stream_io = StringIO.new
+    Xlsxrb.write(stream_io) do |w|
+      w.sheet("StreamSheet") do |s|
+        s.row([1, 2, 3])
+        s.defined_name("TOTAL_RANGE", "A1:C1")
+        s.defined_name("LOCAL_RANGE", "A1:C1", local: true)
+        s.defined_name("DISCOUNT", "0.05")
+      end
+      w.defined_name("STREAM_GLOBAL", "100")
+    end
+
+    stream_wb_xml = read_xml_from_xlsx(stream_io.string.b, "xl/workbook.xml")
+    assert_include(stream_wb_xml, '<definedName name="TOTAL_RANGE">&apos;StreamSheet&apos;!$A$1:$C$1</definedName>')
+    assert_include(stream_wb_xml, '<definedName name="DISCOUNT">0.05</definedName>')
+    assert_include(stream_wb_xml, '<definedName name="STREAM_GLOBAL">100</definedName>')
+    assert_include(stream_wb_xml, '<definedName name="LOCAL_RANGE" localSheetId="0">&apos;StreamSheet&apos;!$A$1:$C$1</definedName>')
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

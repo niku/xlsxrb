@@ -231,13 +231,30 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal([[2, 10]], Xlsxrb::DslHelpers.compress_runs(2..10))
     assert_equal([[2, 9]], Xlsxrb::DslHelpers.compress_runs(2...10))
     assert_equal([], Xlsxrb::DslHelpers.compress_runs(10..2))
+    assert_equal([[3, 3]], Xlsxrb::DslHelpers.compress_runs(3..3))
 
     assert_equal([[1, 3], [5, 6], [8, 8]], Xlsxrb::DslHelpers.compress_runs([1, 2, 3, 5, 6, 8]))
     assert_equal([[1, 5], [8, 10]], Xlsxrb::DslHelpers.compress_runs([8..10, 1..3, 3..5]))
+    # Contained interval (e <= merged.last[1]) and non-integer element
+    assert_equal([[1, 10]], Xlsxrb::DslHelpers.compress_runs([1..10, 3..5, 2...4, "ignored"]))
+
+    # Subclass support for Array and Range
+    subclass_range = Class.new(Range).new(1, 3)
+    subclass_array = Class.new(Array).new([1, 2, 5])
+    assert_equal([[1, 3]], Xlsxrb::DslHelpers.compress_runs(subclass_range))
+    assert_equal([[1, 3]], Xlsxrb::DslHelpers.compress_runs([subclass_range]))
+    assert_equal([[1, 2], [5, 5]], Xlsxrb::DslHelpers.compress_runs(subclass_array))
   end
 
   test "complement_runs computes intervals not in excluded" do
     assert_equal([[4, 4], [7, 8], [10, 10]], Xlsxrb::DslHelpers.complement_runs([2, 3, 5, 6, 9, 11], 2, 11))
+    assert_equal([[3, 5]], Xlsxrb::DslHelpers.complement_runs([2], 2, 5))
+    assert_equal([[1, 4]], Xlsxrb::DslHelpers.complement_runs([5], 1, 5))
+    assert_equal([[5, 5]], Xlsxrb::DslHelpers.complement_runs([1..4], 1, 5))
+    assert_equal([[6, 10]], Xlsxrb::DslHelpers.complement_runs([1..5], 5, 10))
+    assert_equal([[1, 4]], Xlsxrb::DslHelpers.complement_runs([5..10], 1, 5))
+    assert_equal([[1, 5]], Xlsxrb::DslHelpers.complement_runs([6, 8], 1, 5))
+    assert_equal([[5, 10]], Xlsxrb::DslHelpers.complement_runs([1, 2], 5, 10))
     assert_equal([[1, 10]], Xlsxrb::DslHelpers.complement_runs([], 1, 10))
     assert_equal([[1, 10]], Xlsxrb::DslHelpers.complement_runs(nil, 1, 10))
     assert_equal([], Xlsxrb::DslHelpers.complement_runs(1..10, 1, 10))
@@ -249,6 +266,8 @@ class DslHelpersTest < Test::Unit::TestCase
 
   test "area_ref formats single cell and rectangular range" do
     assert_equal("A1", Xlsxrb::DslHelpers.area_ref([0, 0], [1, 1]))
+    assert_equal("A1:A5", Xlsxrb::DslHelpers.area_ref([0, 0], [1, 5]))
+    assert_equal("A1:C1", Xlsxrb::DslHelpers.area_ref([0, 2], [1, 1]))
     assert_equal("B2:C5", Xlsxrb::DslHelpers.area_ref([1, 2], [2, 5]))
   end
 
@@ -259,6 +278,57 @@ class DslHelpersTest < Test::Unit::TestCase
     # 2 cols * 2 rows = 4 areas: A2:A3, A5:A6, C2:C3, C5:C6
     assert_equal(["A2:A3 A5:A6 C2:C3 C5:C6"], Xlsxrb::DslHelpers.chunked_sqrefs(col_runs, row_runs))
     assert_equal(["A2:A3 A5:A6", "C2:C3 C5:C6"], Xlsxrb::DslHelpers.chunked_sqrefs(col_runs, row_runs, 2))
+  end
+
+  # --- quote_sheet_name, format_absolute_reference & normalize_defined_name_value ---
+
+  test "quote_sheet_name wraps and escapes single quotes" do
+    assert_equal("'Sheet1'", Xlsxrb::DslHelpers.quote_sheet_name("Sheet1"))
+    assert_equal("'Sheet1'", Xlsxrb::DslHelpers.quote_sheet_name(:Sheet1))
+    assert_equal("'O''Connor'", Xlsxrb::DslHelpers.quote_sheet_name("O'Connor"))
+    assert_equal("'O''Connor''s Pub'", Xlsxrb::DslHelpers.quote_sheet_name("O'Connor's Pub"))
+  end
+
+  test "format_absolute_reference converts valid coordinates and rejects non-coordinates" do
+    assert_equal("$A$1", Xlsxrb::DslHelpers.format_absolute_reference("a1"))
+    assert_equal("$A$1:$B$2", Xlsxrb::DslHelpers.format_absolute_reference("a1:b2"))
+    assert_equal("$XFD$1:$XFD$1048576", Xlsxrb::DslHelpers.format_absolute_reference("xfd1:xfd1048576"))
+    assert_equal("$XFD$1048576", Xlsxrb::DslHelpers.format_absolute_reference("$xfd$1048576"))
+    assert_equal("$A:$B", Xlsxrb::DslHelpers.format_absolute_reference("a:b"))
+    assert_equal("$XFD:$XFD", Xlsxrb::DslHelpers.format_absolute_reference("$xfd:$xfd"))
+    assert_equal("$1:$10", Xlsxrb::DslHelpers.format_absolute_reference("1:10"))
+    assert_equal("$10:$20", Xlsxrb::DslHelpers.format_absolute_reference("$10:$20"))
+
+    assert_nil(Xlsxrb::DslHelpers.format_absolute_reference("ABCD1"))
+    assert_nil(Xlsxrb::DslHelpers.format_absolute_reference("A1:ABCD2"))
+    assert_nil(Xlsxrb::DslHelpers.format_absolute_reference("ABCD:B"))
+    assert_nil(Xlsxrb::DslHelpers.format_absolute_reference("A:ABCD"))
+    assert_nil(Xlsxrb::DslHelpers.format_absolute_reference("A1\nB2"))
+    assert_nil(Xlsxrb::DslHelpers.format_absolute_reference("A:B\nC:D"))
+    assert_nil(Xlsxrb::DslHelpers.format_absolute_reference("1:10\n2:20"))
+    assert_nil(Xlsxrb::DslHelpers.format_absolute_reference("0.05"))
+  end
+
+  test "normalize_defined_name_value auto-formats bare references and coordinates" do
+    assert_equal("", Xlsxrb::DslHelpers.normalize_defined_name_value)
+    assert_equal("$A$1:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value("A1:A10"))
+    assert_equal("'Data'!$A$1:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value("A1:A10", sheet: "Data"))
+    assert_equal("'Data'!$A$1", Xlsxrb::DslHelpers.normalize_defined_name_value("A1", sheet: "Data"))
+    assert_equal("'O''Connor'!$A$1:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value(range: :"A1:A10", sheet: "O'Connor"))
+    assert_equal("'Sheet1'!$A$2:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value(col: 0, rows: 2..10, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$C$2:$C$9", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", rows: 2...10, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$A$2:$A$5", Xlsxrb::DslHelpers.normalize_defined_name_value(rows: Class.new(Range).new(2, 5), sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$C$5", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", rows: 5, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$A$5", Xlsxrb::DslHelpers.normalize_defined_name_value(rows: 5, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$C:$C", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$A:$B", Xlsxrb::DslHelpers.normalize_defined_name_value("A:B", sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$1:$10", Xlsxrb::DslHelpers.normalize_defined_name_value("1:10", sheet: "Sheet1"))
+
+    # Leaves formulas, constants, and already-qualified references untouched
+    assert_equal("0.10", Xlsxrb::DslHelpers.normalize_defined_name_value("0.10", sheet: "Data"))
+    assert_equal("=SUM($A$1:$A$10)", Xlsxrb::DslHelpers.normalize_defined_name_value("=SUM($A$1:$A$10)", sheet: "Data"))
+    assert_equal("Sheet1!$A$1:$B$2", Xlsxrb::DslHelpers.normalize_defined_name_value("Sheet1!$A$1:$B$2"))
+    assert_equal("'Other'!$A$1:$B$2", Xlsxrb::DslHelpers.normalize_defined_name_value("'Other'!$A$1:$B$2", sheet: "Data"))
   end
 
   # --- normalize_data_validation ---

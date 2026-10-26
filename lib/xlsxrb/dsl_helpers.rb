@@ -172,42 +172,33 @@ module Xlsxrb
       raise ArgumentError, "Row height #{height} must be between 0 and 409 points (Excel limitation)" if height && (height.negative? || height > 409)
     end
 
-    # Compresses an array of integers or ranges into a minimal sorted list of disjoint [first, last] inclusive pairs.
+    # Compresses a sorted or unsorted collection of integers and/or ranges into minimal disjoint [start, finish] runs.
+    # Operates on intervals directly without expanding ranges into individual integer arrays.
     #
     # @param values [Integer, Range, Enumerable, nil]
     # @return [Array<Array(Integer, Integer)>]
     #: (untyped values) -> Array[[Integer, Integer]]
     def self.compress_runs(values)
-      return [] if values.nil?
-
       intervals = []
-      if values.is_a?(Integer)
-        intervals << [values, values]
-      elsif values.is_a?(Range)
-        first = values.begin.to_i
-        last = values.exclude_end? ? values.end.to_i - 1 : values.end.to_i
-        intervals << [first, last] if first <= last
-      else
-        values.each do |item|
-          if item.is_a?(Range)
-            first = item.begin.to_i
-            last = item.exclude_end? ? item.end.to_i - 1 : item.end.to_i
-            intervals << [first, last] if first <= last
-          elsif item.is_a?(Integer)
-            intervals << [item, item]
-          end
+      items = values.is_a?(Array) ? values : [values]
+      items.each do |item|
+        case item
+        when Range
+          first = item.begin
+          last = item.exclude_end? ? item.end - 1 : item.end
+          intervals << [first, last] if first <= last
+        when Integer
+          intervals << [item, item]
         end
       end
 
-      return [] if intervals.empty?
-
-      intervals.sort_by!(&:first)
       merged = []
-      intervals.each do |s, e|
-        if !merged.empty? && s <= merged.last[1] + 1
-          merged.last[1] = [merged.last[1], e].max
-        else
+      intervals.sort.each do |s, e|
+        last = merged.last
+        if !last || s > last.last + 1
           merged << [s, e]
+        else
+          last[1] = [last.last, e].max
         end
       end
       merged
@@ -224,11 +215,10 @@ module Xlsxrb
       runs = []
       start_pt = min
       compress_runs(excluded).each do |e_start, e_end|
-        next if e_end < start_pt
-        break if e_start > max
-
-        runs << [start_pt, e_start - 1] if e_start > start_pt
-        start_pt = [start_pt, e_end + 1].max
+        if e_end >= start_pt && e_start <= max
+          runs << [start_pt, e_start - 1] if e_start > start_pt
+          start_pt = e_end + 1
+        end
       end
       runs << [start_pt, max] if start_pt <= max
       runs
@@ -242,15 +232,10 @@ module Xlsxrb
     # @return [String]
     #: (Array[Integer] col_run, Array[Integer] row_run) -> String
     def self.area_ref(col_run, row_run)
-      c1 = Elements::Cell.column_letter(col_run[0])
-      r1 = row_run[0]
-      c2 = Elements::Cell.column_letter(col_run[1])
-      r2 = row_run[1]
-      if col_run[0] == col_run[1] && r1 == r2
-        "#{c1}#{r1}"
-      else
-        "#{c1}#{r1}:#{c2}#{r2}"
-      end
+      c1, c2 = col_run
+      r1, r2 = row_run
+      ref1 = "#{Elements::Cell.column_letter(c1)}#{r1}"
+      c1 == c2 && r1 == r2 ? ref1 : "#{ref1}:#{Elements::Cell.column_letter(c2)}#{r2}"
     end
 
     # Combines column intervals and row intervals into chunked space-delimited sqref strings
@@ -261,13 +246,68 @@ module Xlsxrb
     # @param max_per_validation [Integer]
     # @return [Array<String>]
     #: (Array[Array[Integer]] col_runs, Array[Array[Integer]] row_runs, ?Integer max_per_validation) -> Array[String]
-    def self.chunked_sqrefs(col_runs, row_runs, max_per_validation = Xlsxrb::MAX_REFS_PER_VALIDATION)
-      areas = col_runs.flat_map do |col_run|
-        row_runs.map { |row_run| area_ref(col_run, row_run) }
-      end
-      return [] if areas.empty?
+    def self.chunked_sqrefs(col_runs, row_runs, max_per_validation = MAX_REFS_PER_VALIDATION)
+      refs = col_runs.flat_map { |col_run| row_runs.map { |row_run| area_ref(col_run, row_run) } }
+      refs.each_slice(max_per_validation).map { |chunk| chunk.join(" ") }
+    end
 
-      areas.each_slice(max_per_validation).map { |chunk| chunk.join(" ") }
+    # Quotes a sheet name for use in formula and defined name references, escaping single quotes with double single quotes.
+    #
+    # @param sheet_name [String, Object]
+    # @return [String]
+    #: (untyped sheet_name) -> String
+    def self.quote_sheet_name(sheet_name)
+      "'#{sheet_name.to_s.gsub("'", "''")}'"
+    end
+
+    # Converts a cell reference, rectangular cell range, column range, or row range to absolute $ form.
+    # Returns nil if the input is not a coordinate or range.
+    #
+    # @param ref [String]
+    # @return [String, nil]
+    #: (String ref) -> String?
+    def self.format_absolute_reference(ref)
+      u = ref.upcase
+      case u
+      when /\A\$?[A-Z]{1,3}\$?\d+(?::\$?[A-Z]{1,3}\$?\d+)?\z/
+        absolute_range(u)
+      when /\A\$?([A-Z]{1,3}):\$?([A-Z]{1,3})\z/, /\A\$?(\d+):\$?(\d+)\z/
+        "$#{Regexp.last_match(1)}:$#{Regexp.last_match(2)}"
+      end
+    end
+
+    # Normalizes defined name value, auto-formatting bare coordinates and ranges with sheet quotes and absolute dollar references.
+    # Leaves constants, formulas, and already-qualified references untouched.
+    #
+    # @param value [Object, nil]
+    # @param sheet [String, nil]
+    # @param col [Integer, String, nil]
+    # @param rows [Integer, Range, nil]
+    # @param range [String, nil]
+    # @return [String]
+    #: (?untyped value, ?sheet: untyped, ?col: untyped, ?rows: untyped, ?range: untyped) -> String
+    def self.normalize_defined_name_value(value = nil, sheet: nil, col: nil, rows: nil, range: nil)
+      if range
+        value = range
+      elsif col || rows
+        c_letter = Elements::Cell.column_letter(col ? Elements::Cell.column_index(col) : 0)
+        value = if rows.is_a?(Range)
+                  r2 = rows.exclude_end? ? rows.end - 1 : rows.end
+                  "$#{c_letter}$#{rows.begin}:$#{c_letter}$#{r2}"
+                elsif rows
+                  "$#{c_letter}$#{rows}"
+                else
+                  "$#{c_letter}:$#{c_letter}"
+                end
+      end
+
+      str = value.to_s
+      abs = format_absolute_reference(str)
+      if abs
+        sheet ? "#{quote_sheet_name(sheet)}!#{abs}" : abs
+      else
+        str
+      end
     end
 
     # Normalizes data validation arguments (sqref, coordinate targeting, list arrays, input/error message inference).
