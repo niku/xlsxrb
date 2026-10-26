@@ -371,24 +371,17 @@ module Xlsxrb
       @sort_state = { ref: ref, sort_conditions: sort_conditions }.merge(opts)
     end
 
-    # Adds a data validation rule to a cell or range.
+    # Adds a data validation rule to a cell, range, or coordinates.
     #
     # @param sqref [String, nil] Target cell or range reference (e.g. "B2:B100").
-    # @param opts [Hash] Validation configuration (e.g. type: :list, formula1: '"Option1,Option2"').
+    # @param opts [Hash] Validation configuration (e.g. type: :list, formula1: '"Option1,Option2"', or coordinate options `columns:`, `rows:`, `except_rows:`, `in:`).
     # @yield [data_validation_builder] Optional configuration block.
     # @return [void]
     # @api public
     #: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
-    def validate_data(sqref = nil, **opts)
-      if block_given?
-        builder = DataValidationBuilder.new(sqref, **opts)
-        yield builder
-        opts = builder.to_h
-        sqref = opts.delete(:sqref) || sqref
-      end
-      raise ArgumentError, "data validation sqref must be provided" unless sqref
-
-      @data_validations << opts.merge(sqref: sqref)
+    def validate_data(sqref = nil, **, &)
+      normalized_list = DslHelpers.normalize_data_validation(sqref, **, &)
+      @data_validations.concat(normalized_list)
     end
 
     # Adds a conditional formatting rule to a cell range.
@@ -1467,6 +1460,66 @@ module Xlsxrb
     end
     alias range sqref
     alias range= sqref=
+
+    #: (?untyped val) -> untyped
+    def columns(val = nil)
+      if val
+        @options[:columns] = val
+      else
+        @options[:columns]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def columns=(val)
+      @options[:columns] = val
+    end
+    alias col columns
+    alias col= columns=
+
+    #: (?untyped val) -> untyped
+    def rows(val = nil)
+      if val
+        @options[:rows] = val
+      else
+        @options[:rows]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def rows=(val)
+      @options[:rows] = val
+    end
+    alias row rows
+    alias row= rows=
+
+    #: (?untyped val) -> untyped
+    def except_rows(val = nil)
+      if val
+        @options[:except_rows] = val
+      else
+        @options[:except_rows]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def except_rows=(val)
+      @options[:except_rows] = val
+    end
+
+    #: (?Array[untyped]? val) -> untyped
+    def in(val = nil)
+      if val
+        @options[:in] = val
+      else
+        @options[:in]
+      end
+    end
+
+    #: (Array[untyped] val) -> untyped
+    def in=(val)
+      @options[:in] = val
+    end
 
     #: (?untyped val) -> untyped
     def type(val = nil)

@@ -144,10 +144,10 @@ module Xlsxrb
     # : (String ref, Array[Hash[untyped, untyped]] sort_conditions, **untyped opts) -> Hash[untyped, untyped]
     def sort_state: (String ref, Array[Hash[untyped, untyped]] sort_conditions, **untyped opts) -> Hash[untyped, untyped]
 
-    # Adds a data validation rule to a cell or range.
+    # Adds a data validation rule to a cell, range, or coordinates.
     #
     # @param sqref [String, nil] Target cell or range reference (e.g. "B2:B100").
-    # @param opts [Hash] Validation configuration (e.g. type: :list, formula1: '"Option1,Option2"').
+    # @param opts [Hash] Validation configuration (e.g. type: :list, formula1: '"Option1,Option2"', or coordinate options `columns:`, `rows:`, `except_rows:`, `in:`).
     # @yield [data_validation_builder] Optional configuration block.
     # @return [void]
     # @api public
@@ -759,6 +759,38 @@ module Xlsxrb
     alias range sqref
 
     alias range= sqref=
+
+    # : (?untyped val) -> untyped
+    def columns: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def columns=: (untyped val) -> untyped
+
+    alias col columns
+
+    alias col= columns=
+
+    # : (?untyped val) -> untyped
+    def rows: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def rows=: (untyped val) -> untyped
+
+    alias row rows
+
+    alias row= rows=
+
+    # : (?untyped val) -> untyped
+    def except_rows: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def except_rows=: (untyped val) -> untyped
+
+    # : (?Array[untyped]? val) -> untyped
+    def in: (?Array[untyped]? val) -> untyped
+
+    # : (Array[untyped] val) -> untyped
+    def in=: (Array[untyped] val) -> untyped
 
     # : (?untyped val) -> untyped
     def type: (?untyped val) -> untyped

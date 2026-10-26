@@ -8958,6 +8958,67 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("Italic Blue", sheet["A2"].value.to_s)
   end
 
+  test "validate_data with coordinates, in: array, and multiline prompt/error in in-memory build" do
+    doc = Xlsxrb.build do |w|
+      w.sheet("Data") do |s|
+        s.row(["Header 1", "Header 2"])
+        s.row(["Val 1", "Val 2"])
+        s.validate_data(columns: 0, rows: 2..10, except_rows: [5, 6],
+                        in: %w[Active Inactive],
+                        allow_blank: true,
+                        prompt: "Choose status:\nActive or Inactive",
+                        error: "Invalid selection!\r\nPlease select from dropdown.")
+      end
+    end
+
+    data = Xlsxrb.write(doc)
+    sheet_xml = read_xml_from_xlsx(data, "xl/worksheets/sheet1.xml")
+    assert_include(sheet_xml, 'sqref="A2:A4 A7:A10"')
+    assert_include(sheet_xml, 'type="list"')
+    assert_include(sheet_xml, 'allowBlank="1"')
+    assert_include(sheet_xml, 'showInputMessage="1"')
+    assert_include(sheet_xml, 'showErrorMessage="1"')
+    assert_include(sheet_xml, 'prompt="Choose status:_x000a_Active or Inactive"')
+    assert_include(sheet_xml, 'error="Invalid selection!_x000a_Please select from dropdown."')
+    assert_include(sheet_xml, "<formula1>&quot;Active,Inactive&quot;</formula1>")
+  end
+
+  test "validate_data with coordinates in streaming mode" do
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.sheet("StreamData") do |s|
+        s.row(["Header"])
+        s.row(["Data"])
+        s.validate_data(col: 0, row: 2, in: %w[Yes No])
+      end
+    end
+
+    sheet_xml = read_xml_from_xlsx(io.string.b, "xl/worksheets/sheet1.xml")
+    assert_include(sheet_xml, '<dataValidation sqref="A2" type="list">')
+    assert_include(sheet_xml, "<formula1>&quot;Yes,No&quot;</formula1>")
+  end
+
+  test "validate_data block syntax supports columns, rows, except_rows, and in=" do
+    doc = Xlsxrb.build do |w|
+      w.sheet("BlockData") do |s|
+        s.validate_data do |dv|
+          dv.col = 1
+          dv.rows = 2..5
+          dv.except_rows = 3
+          dv.in = %w[High Medium Low]
+          dv.prompt = "Select priority"
+        end
+      end
+    end
+
+    data = Xlsxrb.write(doc)
+    sheet_xml = read_xml_from_xlsx(data, "xl/worksheets/sheet1.xml")
+    assert_include(sheet_xml, '<dataValidation sqref="B2 B4:B5" type="list"')
+    assert_include(sheet_xml, 'showInputMessage="1"')
+    assert_include(sheet_xml, 'prompt="Select priority"')
+    assert_include(sheet_xml, "<formula1>&quot;High,Medium,Low&quot;</formula1>")
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

@@ -7,6 +7,15 @@
 #
 # @api public
 module Xlsxrb
+  # Maximum number of rows supported by Excel / OpenXML.
+  MAX_ROW: ::Integer
+
+  # Maximum number of columns supported by Excel / OpenXML.
+  MAX_COL: ::Integer
+
+  # Maximum number of individual cell/range references allowed in a single data validation element by Excel.
+  MAX_REFS_PER_VALIDATION: ::Integer
+
   # Base class for all exceptions raised by Xlsxrb.
   # Predefined cell error constants are exposed on this class for convenience.
   class Error < StandardError

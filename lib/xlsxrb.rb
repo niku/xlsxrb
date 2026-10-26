@@ -44,6 +44,15 @@ require_relative "xlsxrb/utils"
 #
 # @api public
 module Xlsxrb
+  # Maximum number of rows supported by Excel / OpenXML.
+  MAX_ROW = 1_048_576
+
+  # Maximum number of columns supported by Excel / OpenXML.
+  MAX_COL = 16_384
+
+  # Maximum number of individual cell/range references allowed in a single data validation element by Excel.
+  MAX_REFS_PER_VALIDATION = 32_767
+
   # Base class for all exceptions raised by Xlsxrb.
   # Predefined cell error constants are exposed on this class for convenience.
   class Error < StandardError

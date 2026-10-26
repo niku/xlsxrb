@@ -221,4 +221,73 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_nil(Xlsxrb::DslHelpers.validate_row_bounds!(2_000_000, 1000, strict_excel_mode: false))
     assert_nil(Xlsxrb::DslHelpers.validate_row_bounds!(2_000_000, -10, strict_excel_mode: false))
   end
+
+  # --- compress_runs & complement_runs ---
+
+  test "compress_runs compresses integers and ranges into minimal disjoint runs" do
+    assert_equal([], Xlsxrb::DslHelpers.compress_runs(nil))
+    assert_equal([], Xlsxrb::DslHelpers.compress_runs([]))
+    assert_equal([[5, 5]], Xlsxrb::DslHelpers.compress_runs(5))
+    assert_equal([[2, 10]], Xlsxrb::DslHelpers.compress_runs(2..10))
+    assert_equal([[2, 9]], Xlsxrb::DslHelpers.compress_runs(2...10))
+    assert_equal([], Xlsxrb::DslHelpers.compress_runs(10..2))
+
+    assert_equal([[1, 3], [5, 6], [8, 8]], Xlsxrb::DslHelpers.compress_runs([1, 2, 3, 5, 6, 8]))
+    assert_equal([[1, 5], [8, 10]], Xlsxrb::DslHelpers.compress_runs([8..10, 1..3, 3..5]))
+  end
+
+  test "complement_runs computes intervals not in excluded" do
+    assert_equal([[4, 4], [7, 8], [10, 10]], Xlsxrb::DslHelpers.complement_runs([2, 3, 5, 6, 9, 11], 2, 11))
+    assert_equal([[1, 10]], Xlsxrb::DslHelpers.complement_runs([], 1, 10))
+    assert_equal([[1, 10]], Xlsxrb::DslHelpers.complement_runs(nil, 1, 10))
+    assert_equal([], Xlsxrb::DslHelpers.complement_runs(1..10, 1, 10))
+    assert_equal([[1, 2], [5, 6]], Xlsxrb::DslHelpers.complement_runs([3..4], 1, 6))
+    assert_equal([[1, 10]], Xlsxrb::DslHelpers.complement_runs([15..20, -5..0], 1, 10))
+  end
+
+  # --- area_ref & chunked_sqrefs ---
+
+  test "area_ref formats single cell and rectangular range" do
+    assert_equal("A1", Xlsxrb::DslHelpers.area_ref([0, 0], [1, 1]))
+    assert_equal("B2:C5", Xlsxrb::DslHelpers.area_ref([1, 2], [2, 5]))
+  end
+
+  test "chunked_sqrefs chunks references by limit" do
+    assert_equal([], Xlsxrb::DslHelpers.chunked_sqrefs([], []))
+    col_runs = [[0, 0], [2, 2]]
+    row_runs = [[2, 3], [5, 6]]
+    # 2 cols * 2 rows = 4 areas: A2:A3, A5:A6, C2:C3, C5:C6
+    assert_equal(["A2:A3 A5:A6 C2:C3 C5:C6"], Xlsxrb::DslHelpers.chunked_sqrefs(col_runs, row_runs))
+    assert_equal(["A2:A3 A5:A6", "C2:C3 C5:C6"], Xlsxrb::DslHelpers.chunked_sqrefs(col_runs, row_runs, 2))
+  end
+
+  # --- normalize_data_validation ---
+
+  test "normalize_data_validation handles list array and message newlines" do
+    res = Xlsxrb::DslHelpers.normalize_data_validation("A1:A10", in: %w[Active Inactive], prompt: "Line1\nLine2", error: "Err1\r\nErr2")
+    assert_equal(1, res.size)
+    dv = res.first
+    assert_equal("A1:A10", dv[:sqref])
+    assert_equal("list", dv[:type])
+    assert_equal('"Active,Inactive"', dv[:formula1])
+    assert_equal("Line1_x000a_Line2", dv[:prompt])
+    assert_equal("Err1_x000a_Err2", dv[:error])
+    assert_equal(true, dv[:show_input_message])
+    assert_equal(true, dv[:show_error_message])
+  end
+
+  test "normalize_data_validation respects explicit show_message false" do
+    res = Xlsxrb::DslHelpers.normalize_data_validation("A1", prompt: "Hello", show_input_message: false)
+    assert_equal(false, res.first[:show_input_message])
+  end
+
+  test "normalize_data_validation handles coordinates and except_rows and deletes both col and columns keys" do
+    res = Xlsxrb::DslHelpers.normalize_data_validation(columns: 0, col: 0, rows: 2..5, row: 2..5, except_rows: 3, in: %w[Yes No])
+    assert_equal(1, res.size)
+    assert_equal("A2 A4:A5", res.first[:sqref])
+    assert_nil(res.first[:columns])
+    assert_nil(res.first[:col])
+    assert_nil(res.first[:rows])
+    assert_nil(res.first[:row])
+  end
 end

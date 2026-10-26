@@ -1177,13 +1177,25 @@ module Xlsxrb
           dv_attrs[:type] = dv_type.to_s if dv_type
           dv_attrs[:operator] = dv[:operator].to_s if dv[:operator]
           dv_attrs[:allowBlank] = "1" if dv[:allow_blank]
-          dv_attrs[:showInputMessage] = "1" if dv[:show_input_message]
-          dv_attrs[:showErrorMessage] = "1" if dv[:show_error_message]
+          show_input = if dv.key?(:show_input_message)
+                         dv[:show_input_message]
+                       else
+                         !dv[:prompt].nil? || !dv[:prompt_title].nil?
+                       end
+          dv_attrs[:showInputMessage] = "1" if show_input
+
+          show_error = if dv.key?(:show_error_message)
+                         dv[:show_error_message]
+                       else
+                         !dv[:error].nil? || !dv[:error_title].nil?
+                       end
+          dv_attrs[:showErrorMessage] = "1" if show_error
+
           dv_attrs[:errorStyle] = dv[:error_style].to_s if dv[:error_style]
-          dv_attrs[:errorTitle] = dv[:error_title] if dv[:error_title]
-          dv_attrs[:error] = dv[:error] if dv[:error]
-          dv_attrs[:promptTitle] = dv[:prompt_title] if dv[:prompt_title]
-          dv_attrs[:prompt] = dv[:prompt] if dv[:prompt]
+          dv_attrs[:errorTitle] = dv[:error_title].to_s.gsub(/\r\n|\r|\n/, "_x000a_") if dv[:error_title]
+          dv_attrs[:error] = dv[:error].to_s.gsub(/\r\n|\r|\n/, "_x000a_") if dv[:error]
+          dv_attrs[:promptTitle] = dv[:prompt_title].to_s.gsub(/\r\n|\r|\n/, "_x000a_") if dv[:prompt_title]
+          dv_attrs[:prompt] = dv[:prompt].to_s.gsub(/\r\n|\r|\n/, "_x000a_") if dv[:prompt]
           dv_attrs[:showDropDown] = "1" if dv[:show_drop_down]
           dv_attrs[:imeMode] = dv[:ime_mode].to_s if dv[:ime_mode]
 

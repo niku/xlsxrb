@@ -1027,7 +1027,7 @@ module Xlsxrb
     # Adds a data validation rule.
     #
     # @param sqref [String, nil] Cell range.
-    # @param opts [Hash] Validation options.
+    # @param opts [Hash] Validation options (or coordinate keywords: `columns:`, `rows:`, `except_rows:`, `in:`).
     # @yield [data_validation_builder] Optional configuration block.
     # @return [void]
     # @api public

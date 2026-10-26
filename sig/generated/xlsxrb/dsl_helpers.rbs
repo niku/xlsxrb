@@ -88,5 +88,49 @@ module Xlsxrb
     # @return [void]
     # : (Integer row_index, Float | Integer | nil height, ?strict_excel_mode: bool) -> void
     def self.validate_row_bounds!: (Integer row_index, Float | Integer | nil height, ?strict_excel_mode: bool) -> void
+
+    # Compresses an array of integers or ranges into a minimal sorted list of disjoint [first, last] inclusive pairs.
+    #
+    # @param values [Integer, Range, Enumerable, nil]
+    # @return [Array<Array(Integer, Integer)>]
+    # : (untyped values) -> Array[[Integer, Integer]]
+    def self.compress_runs: (untyped values) -> Array[[ Integer, Integer ]]
+
+    # Returns minimal disjoint runs within min..max that are NOT present in excluded.
+    #
+    # @param excluded [Integer, Range, Enumerable, nil]
+    # @param min [Integer]
+    # @param max [Integer]
+    # @return [Array<Array(Integer, Integer)>]
+    # : (untyped excluded, Integer min, Integer max) -> Array[[Integer, Integer]]
+    def self.complement_runs: (untyped excluded, Integer min, Integer max) -> Array[[ Integer, Integer ]]
+
+    # Builds an A1-style reference from a column interval [col_start, col_end] (0-based)
+    # and a row interval [row_start, row_end] (1-based Excel row number).
+    #
+    # @param col_run [Array(Integer, Integer)]
+    # @param row_run [Array(Integer, Integer)]
+    # @return [String]
+    # : (Array[Integer] col_run, Array[Integer] row_run) -> String
+    def self.area_ref: (Array[Integer] col_run, Array[Integer] row_run) -> String
+
+    # Combines column intervals and row intervals into chunked space-delimited sqref strings
+    # respecting the maximum reference limit per dataValidation tag (default 32,767).
+    #
+    # @param col_runs [Array<Array(Integer, Integer)>]
+    # @param row_runs [Array<Array(Integer, Integer)>]
+    # @param max_per_validation [Integer]
+    # @return [Array<String>]
+    # : (Array[Array[Integer]] col_runs, Array[Array[Integer]] row_runs, ?Integer max_per_validation) -> Array[String]
+    def self.chunked_sqrefs: (Array[Array[Integer]] col_runs, Array[Array[Integer]] row_runs, ?Integer max_per_validation) -> Array[String]
+
+    # Normalizes data validation arguments (sqref, coordinate targeting, list arrays, input/error message inference).
+    #
+    # @param sqref [String, nil]
+    # @param opts [Hash]
+    # @yield [DataValidationBuilder]
+    # @return [Array<Hash>]
+    # : (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> Array[Hash[Symbol, untyped]]
+    def self.normalize_data_validation: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> Array[Hash[Symbol, untyped]]
   end
 end

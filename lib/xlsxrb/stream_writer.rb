@@ -1606,22 +1606,15 @@ module Xlsxrb
     # Adds a data validation rule.
     #
     # @param sqref [String, nil] Cell range.
-    # @param opts [Hash] Validation options.
+    # @param opts [Hash] Validation options (or coordinate keywords: `columns:`, `rows:`, `except_rows:`, `in:`).
     # @yield [data_validation_builder] Optional configuration block.
     # @return [void]
     # @api public
     #: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
-    def validate_data(sqref = nil, **opts)
+    def validate_data(sqref = nil, **, &)
       sheet if @current_sheet.nil?
-      if block_given?
-        builder = DataValidationBuilder.new(sqref, **opts)
-        yield builder
-        opts = builder.to_h
-        sqref = opts.delete(:sqref) || sqref
-      end
-      raise ArgumentError, "data validation sqref must be provided" unless sqref
-
-      @current_data_validations << opts.merge(sqref: sqref)
+      normalized_list = DslHelpers.normalize_data_validation(sqref, **, &)
+      @current_data_validations.concat(normalized_list)
     end
 
     # Adds a conditional formatting rule.
