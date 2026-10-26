@@ -27,6 +27,7 @@
 - Support configurable ZIP deflate compression level (`compression_level: 0..9`) across `StreamWriter`, `Ooxml::ZipWriter`, `Ooxml::WorkbookWriter`, and `Xlsxrb.write`, allowing performance tuning between compression speed (e.g. level 4 for 20-40% faster writes) and archive size.
 
 ### Fixed
+- Guard against non-finite Float values (`Float::INFINITY`, `Float::NAN`, and non-finite cached formula values) in `StreamWriter#row` and `WorksheetWriter#write_row_values`, raising `ArgumentError` to prevent corrupt XML output.
 - Support `xsd:boolean` representations (`"true"`, `"false"`, `"1"`, `"0"`) across `StylesParser`, `StylesListener`, and column definitions in `WorksheetParser`.
 - Safely handle `nil` shared strings table index (`sst_index: nil`) across unstyled fast path and general cell paths in `WorksheetWriter#write_row_values`, writing string values as inline strings (`t="inlineStr"`) without error.
 - Include `test/ooxml/**/*_test.rb` in Rake test tasks and update custom number format assertions to use `Elements::Styles#num_fmt`.

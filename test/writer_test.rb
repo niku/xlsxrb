@@ -9151,6 +9151,33 @@ class WriterTest < Test::Unit::TestCase
     assert_include(styles_xml, '<patternFill patternType="solid"><fgColor rgb="FFFFFF00"/></patternFill>')
   end
 
+  test "StreamWriter#row raises ArgumentError on Float::INFINITY and Float::NAN" do
+    io = StringIO.new
+    assert_raises(ArgumentError) do
+      Xlsxrb.write(io) do |w|
+        w.sheet("Floats") do |s|
+          s.row([1.0, Float::INFINITY])
+        end
+      end
+    end
+
+    assert_raises(ArgumentError) do
+      Xlsxrb.write(io) do |w|
+        w.sheet("Floats") do |s|
+          s.row([Float::NAN])
+        end
+      end
+    end
+
+    assert_raises(ArgumentError) do
+      Xlsxrb.write(io) do |w|
+        w.sheet("Floats") do |s|
+          s.row([Xlsxrb.formula("1/0", cached_value: Float::INFINITY)])
+        end
+      end
+    end
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

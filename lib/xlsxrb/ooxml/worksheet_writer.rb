@@ -139,6 +139,8 @@ module Xlsxrb
           style_id = cell_style_id.nil? ? (row_style || col_style) : cell_style_id
           style_id = nil unless style_id.is_a?(Integer)
 
+          raise ArgumentError, "Non-finite Float #{value} is not supported in XLSX" if value.is_a?(Float) && !value.finite?
+
           # Fast path for common unstyled cells
           if !formula && !style_id && !cell_type_val
             case value
@@ -208,6 +210,8 @@ module Xlsxrb
             end
             formula_expr = formula_expr[1..] if formula_expr.is_a?(String) && formula_expr.start_with?("=")
           end
+
+          raise ArgumentError, "Non-finite Float #{xml_val} is not supported in XLSX" if xml_val.is_a?(Float) && !xml_val.finite?
 
           if formula_expr
             case xml_val
@@ -329,6 +333,8 @@ module Xlsxrb
               val_str = value >= 0 && value < 65_536 ? INTEGER_STRINGS[value] : value.to_s
               buf << '<c r="' << col_ref << row_num_str << '"><v>' << val_str << "</v></c>"
             when Float
+              raise ArgumentError, "Non-finite Float #{value} is not supported in XLSX" unless value.finite?
+
               buf << '<c r="' << col_ref << row_num_str << '"><v>' << value.to_s << "</v></c>"
             when String
               raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.length > 32_767
@@ -362,6 +368,8 @@ module Xlsxrb
                        "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)}</v></c>"
                      end
             when Xlsxrb::Elements::Formula
+              raise ArgumentError, "Non-finite Float #{value.cached_value} is not supported in XLSX" if value.cached_value.is_a?(Float) && !value.cached_value.finite?
+
               formula_expr = value.expression
               formula_expr = formula_expr[1..] if formula_expr.start_with?("=")
               f_attrs = +""
@@ -418,6 +426,8 @@ module Xlsxrb
                           else
                             0
                           end
+                raise ArgumentError, "Non-finite Float #{xml_val} is not supported in XLSX" if xml_val.is_a?(Float) && !xml_val.finite?
+
                 c_type = ""
                 case xml_val
                 when true
@@ -516,6 +526,8 @@ module Xlsxrb
             col_index += 1
             next
           end
+
+          raise ArgumentError, "Non-finite Float #{value} is not supported in XLSX" if value.is_a?(Float) && !value.finite?
 
           # Fast path: unstyled numbers, booleans, and simple strings (majority of cells)
           if style_id.nil? && !value.is_a?(Xlsxrb::Elements::Formula) && !value.is_a?(Hash)
@@ -649,6 +661,8 @@ module Xlsxrb
             xml_val = value.code
             type = "e"
           end
+
+          raise ArgumentError, "Non-finite Float #{xml_val} is not supported in XLSX" if xml_val.is_a?(Float) && !xml_val.finite?
 
           formula_expr = formula_expr[1..] if formula_expr&.start_with?("=")
 
