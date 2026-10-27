@@ -766,7 +766,7 @@ module Xlsxrb
       end
       alias to_worksheet load
 
-      FORBIDDEN_NAME_CHARS = %r{[\\/?*\[\]]}
+      FORBIDDEN_NAME_CHARS = %r{[\\/?*\[\]:]|[\x00-\x08\x0B\x0C\x0E-\x1F]}
 
       # Returns whether the worksheet name is valid according to OOXML specifications (1..31 chars, no forbidden chars).
       #
@@ -776,7 +776,7 @@ module Xlsxrb
       def self.valid_name?(name)
         case name
         when String
-          !name.empty? && name.size <= 31 && !name.match?(FORBIDDEN_NAME_CHARS)
+          !name.empty? && name.size <= 31 && !name.match?(FORBIDDEN_NAME_CHARS) && !name.start_with?("'") && !name.end_with?("'") && !name.casecmp?("History")
         else
           false
         end
@@ -794,7 +794,9 @@ module Xlsxrb
           errs << "worksheet name must be a non-empty String (got #{name.inspect})"
         else
           errs << "worksheet name cannot exceed 31 characters (got #{name.size})" if name.size > 31
-          errs << "worksheet name cannot contain \\, /, ?, *, [, or ]" if name.match?(FORBIDDEN_NAME_CHARS)
+          errs << "worksheet name cannot contain \\, /, ?, *, [, ], or :" if name.match?(FORBIDDEN_NAME_CHARS)
+          errs << "worksheet name cannot start or end with an apostrophe" if name.start_with?("'") || name.end_with?("'")
+          errs << "worksheet name 'History' is reserved by Excel" if name.casecmp?("History")
         end
         errs << "rows must be an Array (got #{rows.class})" unless rows.is_a?(Array)
         if rows.is_a?(Array)

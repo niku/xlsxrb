@@ -150,9 +150,18 @@ module Xlsxrb
       @workbook_properties[name] = value
     end
 
+    # Returns the list of worksheet names added to this workbook so far.
+    #
+    # @return [Array<String>] Worksheet names.
+    # @api public
+    #: () -> Array[String]
+    def sheet_names
+      (@sheets.map { |s| s.respond_to?(:name) ? s.name : s.to_s } + @sheet_builders.map(&:name)).uniq
+    end
+
     # Adds a new worksheet to the workbook.
     #
-    # @param name [String, nil] Sheet name (max 31 chars, no forbidden chars `[ ] * ? / \`).
+    # @param name [String, nil] Sheet name (max 31 chars, no forbidden chars `[ ] * ? / \ :`).
     # @param opts [Hash] Sheet properties.
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
@@ -161,10 +170,15 @@ module Xlsxrb
     # @api public
     #: (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
     def sheet(name = nil, **opts)
-      name ||= "Sheet#{@sheets.size + 1}"
+      sheet_count = [@sheets.size, @sheet_builders.size].max
+      name ||= "Sheet#{sheet_count + 1}"
       raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
-      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)" if name.match?(%r{[\[\]*?/\\]})
-      raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
+      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (Excel limitation)" if name.match?(Elements::Worksheet::FORBIDDEN_NAME_CHARS)
+      raise ArgumentError, "Sheet name '#{name}' cannot start or end with an apostrophe (Excel limitation)" if @strict_excel_mode && (name.start_with?("'") || name.end_with?("'"))
+      raise ArgumentError, "Sheet name '#{name}' is reserved by Excel (Excel limitation)" if @strict_excel_mode && name.casecmp?("History")
+
+      existing_names = @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase } + @sheet_builders.map { |sb| sb.name.downcase }
+      raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && existing_names.include?(name.downcase)
 
       active = opts.delete(:active)
       state = opts.delete(:state)
@@ -180,10 +194,10 @@ module Xlsxrb
       sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state)
       sheet_builder.code_name(code_name) if code_name
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
+      @sheet_builders << sheet_builder
       yield sheet_builder if block_given?
       @defined_names.concat(sheet_builder.defined_names)
       sheet_builder.defined_names.clear
-      @sheet_builders << sheet_builder
       @sheets << sheet_builder.build
     end
     alias [] sheet

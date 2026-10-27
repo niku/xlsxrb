@@ -261,6 +261,15 @@ module Xlsxrb
       end
       alias set_default_font default_font
 
+      # Returns the list of worksheet names created in this workbook so far.
+      #
+      # @return [Array<String>] Worksheet names.
+      # @api public
+      #: () -> Array[String]
+      def sheet_names
+        @writer.sheet_names
+      end
+
       # Defines or configures a named cell style on the active sheet.
       #
       # @example
@@ -1268,6 +1277,17 @@ module Xlsxrb
       alias calc_pr= sheet_calc_pr
     end
 
+    # Returns the list of worksheet names created in this workbook so far.
+    #
+    # @return [Array<String>] Worksheet names.
+    # @api public
+    #: () -> Array[String]
+    def sheet_names
+      names = @sheets.map { |s| s.respond_to?(:name) ? s.name : s[:name].to_s }
+      names << @current_sheet if @current_sheet
+      names
+    end
+
     # Adds a new sheet to the workbook and starts streaming rows into it.
     #
     # @param name [String, nil] Sheet name (max 31 characters).
@@ -1278,10 +1298,16 @@ module Xlsxrb
     # @api public
     #: (?String? name, **untyped opts) ?{ (WorksheetProxy) -> void } -> untyped
     def sheet(name = nil, **opts)
-      name ||= "Sheet#{@sheets.size + 1}"
+      sheet_count = @sheets.size + (@current_sheet ? 1 : 0)
+      name ||= "Sheet#{sheet_count + 1}"
       raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
-      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (ECMA-376 OOXML specification)" if name.match?(%r{[\[\]*?/\\]})
-      raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s.to_s.downcase }.include?(name.downcase)
+      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (Excel limitation)" if name.match?(Elements::Worksheet::FORBIDDEN_NAME_CHARS)
+      raise ArgumentError, "Sheet name '#{name}' cannot start or end with an apostrophe (Excel limitation)" if @strict_excel_mode && (name.start_with?("'") || name.end_with?("'"))
+      raise ArgumentError, "Sheet name '#{name}' is reserved by Excel (Excel limitation)" if @strict_excel_mode && name.casecmp?("History")
+
+      existing_names = @sheets.map { |s| s.respond_to?(:name) ? s.name.downcase : s[:name].to_s.downcase }
+      existing_names << @current_sheet.downcase if @current_sheet
+      raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && existing_names.include?(name.downcase)
 
       active = opts.delete(:active)
       state = opts.delete(:state)

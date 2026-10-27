@@ -991,7 +991,8 @@ namespace :mutant do
       "Xlsxrb::DslHelpers.chunked_sqrefs",
       "Xlsxrb::DslHelpers.quote_sheet_name",
       "Xlsxrb::DslHelpers.format_absolute_reference",
-      "Xlsxrb::DslHelpers.normalize_defined_name_value"
+      "Xlsxrb::DslHelpers.normalize_defined_name_value",
+      "Xlsxrb::DslHelpers.sanitize_sheet_name"
     ].join(" ")
     subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
     test_files = [

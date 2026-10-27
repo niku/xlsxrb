@@ -360,4 +360,55 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_nil(res.first[:rows])
     assert_nil(res.first[:row])
   end
+
+  # --- sheet_name ---
+
+  test "sanitize_sheet_name with nil, empty string, or whitespace defaults to 'Sheet'" do
+    assert_equal("Sheet", Xlsxrb::DslHelpers.sanitize_sheet_name(nil))
+    assert_equal("Sheet", Xlsxrb::DslHelpers.sanitize_sheet_name(""))
+    assert_equal("Sheet", Xlsxrb::DslHelpers.sanitize_sheet_name("   "))
+    assert_equal("Sales", Xlsxrb::DslHelpers.sanitize_sheet_name("  Sales  "))
+    # Alias sheet_name
+    assert_equal("Sheet", Xlsxrb::DslHelpers.sheet_name(""))
+  end
+
+  test "sanitize_sheet_name replaces forbidden characters and control characters" do
+    assert_equal("Data_1__2026_10_24__", Xlsxrb::DslHelpers.sanitize_sheet_name("Data[1]:2026/10/24*?"))
+    assert_equal("Back_slash", Xlsxrb::DslHelpers.sanitize_sheet_name('Back\slash'))
+    assert_equal("Ctrl_char", Xlsxrb::DslHelpers.sanitize_sheet_name("Ctrl\x00char"))
+    assert_equal("Ctrl_char", Xlsxrb::DslHelpers.sanitize_sheet_name("Ctrl\x08char"))
+    assert_equal("Ctrl_char", Xlsxrb::DslHelpers.sanitize_sheet_name("Ctrl\x1Fchar"))
+  end
+
+  test "sanitize_sheet_name replaces leading and trailing apostrophes but keeps inner apostrophes" do
+    assert_equal("_Sales_", Xlsxrb::DslHelpers.sanitize_sheet_name("'Sales'"))
+    assert_equal("__Sales__", Xlsxrb::DslHelpers.sanitize_sheet_name("''Sales''"))
+    assert_equal("John's Sales", Xlsxrb::DslHelpers.sanitize_sheet_name("John's Sales"))
+    assert_equal("_", Xlsxrb::DslHelpers.sanitize_sheet_name("'"))
+    assert_equal("__", Xlsxrb::DslHelpers.sanitize_sheet_name("''"))
+  end
+
+  test "sanitize_sheet_name truncates to 31 chars without premature truncation" do
+    long_name = "A" * 50
+    assert_equal("A" * 31, Xlsxrb::DslHelpers.sanitize_sheet_name(long_name))
+
+    # Replaces trailing apostrophe if 31-char truncation leaves one at the end
+    trunc_apostrophe = "#{"A" * 30}'DEF"
+    assert_equal("#{"A" * 30}_", Xlsxrb::DslHelpers.sanitize_sheet_name(trunc_apostrophe))
+    trunc_multi_apostrophe = "#{"A" * 29}''DEF"
+    assert_equal("#{"A" * 29}__", Xlsxrb::DslHelpers.sanitize_sheet_name(trunc_multi_apostrophe))
+  end
+
+  test "sanitize_sheet_name avoids reserved name History by appending replace_char" do
+    assert_equal("History_", Xlsxrb::DslHelpers.sanitize_sheet_name("History"))
+    assert_equal("history_", Xlsxrb::DslHelpers.sanitize_sheet_name("history"))
+    assert_equal("HISTORY_", Xlsxrb::DslHelpers.sanitize_sheet_name("HISTORY"))
+    assert_equal("History-", Xlsxrb::DslHelpers.sanitize_sheet_name("History", replace_char: "-"))
+  end
+
+  test "sanitize_sheet_name supports custom replace_char" do
+    assert_equal("Sales-2026", Xlsxrb::DslHelpers.sanitize_sheet_name("Sales:2026", replace_char: "-"))
+    assert_equal("-Sales", Xlsxrb::DslHelpers.sanitize_sheet_name("'Sales", replace_char: "-"))
+    assert_equal("--Sales", Xlsxrb::DslHelpers.sanitize_sheet_name("''Sales", replace_char: "-"))
+  end
 end

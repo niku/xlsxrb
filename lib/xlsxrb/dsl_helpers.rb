@@ -380,5 +380,32 @@ module Xlsxrb
 
       sqrefs.map { |ref| opts.merge(sqref: ref) }
     end
+
+    FORBIDDEN_SHEET_CHARS = %r{[\\/?*\[\]:]|[\x00-\x08\x0B\x0C\x0E-\x1F]}
+    MAX_SHEET_NAME_LENGTH = 31
+
+    # Sanitizes a worksheet name to ensure it conforms to Excel constraints within 31 characters.
+    # Replaces forbidden characters (\ / ? * [ ] : and control characters),
+    # replaces leading/trailing apostrophes, and replaces reserved 'History' with 'History_'.
+    #
+    # @param name [Object] Desired worksheet name.
+    # @param replace_char [String] Replacement character for invalid characters.
+    # @return [String] Excel-compliant worksheet name.
+    #: (untyped name, ?replace_char: String) -> String
+    def self.sanitize_sheet_name(name, replace_char: "_")
+      raw = name.to_s.strip
+      str = raw.gsub(FORBIDDEN_SHEET_CHARS, replace_char)
+      str = str.sub(/\A'+/) { replace_char * Regexp.last_match(0).length }
+      str = "Sheet" if str.empty?
+
+      base = str[0, MAX_SHEET_NAME_LENGTH].sub(/'+\z/) { replace_char * Regexp.last_match(0).length }
+      return "#{base}#{replace_char}" if base.casecmp?("History")
+
+      base
+    end
+
+    class << self
+      alias sheet_name sanitize_sheet_name
+    end
   end
 end

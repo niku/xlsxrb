@@ -1,6 +1,8 @@
 ## [Unreleased]
 
 ### Added
+- Add worksheet name sanitization utility via `Xlsxrb.sanitize_sheet_name` (aliased as `Xlsxrb.sheet_name` and `DslHelpers.sanitize_sheet_name`), sanitizing forbidden characters (`\`, `/`, `?`, `*`, `[`, `]`, `:`, control characters), replacing leading/trailing apostrophes, appending `replace_char` to the reserved `History` sheet name, and truncating names to 31 characters.
+- Add `sheet_names` to `StreamWriter`, `WorksheetProxy`, and `WorkbookBuilder` returning an array of worksheet names currently registered in the workbook.
 - Support `sheet.defined_name` symmetrically across `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy`, automatically quoting sheet names with single quote escaping and generating absolute `$` coordinate references.
 - Support `fill: { color: ... }` and `fill_color:` in conditional formatting rules and `extract_dxf_from_rule!`.
 - Support `size:` alongside `sz:` in conditional formatting differential formatting (`dxf`) fonts.
@@ -28,6 +30,7 @@
 - Support configurable ZIP deflate compression level (`compression_level: 0..9`) across `StreamWriter`, `Ooxml::ZipWriter`, `Ooxml::WorkbookWriter`, and `Xlsxrb.write`, allowing performance tuning between compression speed (e.g. level 4 for 20-40% faster writes) and archive size.
 
 ### Fixed
+- Enforce strict Excel worksheet name rules in `StreamWriter#sheet`, `WorkbookBuilder#sheet`, and `Elements::Worksheet.valid_name?` / `validate`, rejecting colons (`:`), leading/trailing apostrophes (`'`), and the case-insensitive reserved name `History`, updating validation error messages to reference Excel constraints.
 - Guard against non-finite Float values (`Float::INFINITY`, `Float::NAN`, and non-finite cached formula values) in `StreamWriter#row` and `WorksheetWriter#write_row_values`, raising `ArgumentError` to prevent corrupt XML output.
 - Support `xsd:boolean` representations (`"true"`, `"false"`, `"1"`, `"0"`) across `StylesParser`, `StylesListener`, and column definitions in `WorksheetParser`.
 - Safely handle `nil` shared strings table index (`sst_index: nil`) across unstyled fast path and general cell paths in `WorksheetWriter#write_row_values`, writing string values as inline strings (`t="inlineStr"`) without error.

@@ -407,6 +407,27 @@ module Xlsxrb
     alias color_to_hex to_hex_color
   end
 
+  # Sanitizes a worksheet name to ensure it conforms to Excel constraints within 31 characters.
+  # Replaces forbidden characters (\ / ? * [ ] : and control characters),
+  # replaces leading/trailing apostrophes, and replaces reserved 'History' with 'History_'.
+  #
+  # @example
+  #   Xlsxrb.sanitize_sheet_name("Sales: 2026") #=> "Sales_ 2026"
+  #   Xlsxrb.sanitize_sheet_name("'Report'")    #=> "_Report_"
+  #
+  # @param name [Object] Desired worksheet name.
+  # @param replace_char [String] Replacement character for invalid characters.
+  # @return [String] Excel-compliant worksheet name.
+  # @api public
+  #: (untyped name, ?replace_char: String) -> String
+  def self.sanitize_sheet_name(name, replace_char: "_")
+    DslHelpers.sanitize_sheet_name(name, replace_char: replace_char)
+  end
+
+  class << self
+    alias sheet_name sanitize_sheet_name
+  end
+
   # Reads an XLSX file (streaming and lazy-loaded by default) from a file path, IO stream, or binary String.
   #
   # Sheets and rows are streamed lazily with O(1) constant memory. If a block is given,

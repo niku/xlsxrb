@@ -3069,4 +3069,109 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal({ "A1" => 42 }, reader.cells)
     end
   end
+
+  # --- sheet_name & Validation ---
+
+  test "Xlsxrb.sanitize_sheet_name and Xlsxrb.sheet_name public facade" do
+    assert_equal("Sales_2026", Xlsxrb.sanitize_sheet_name("Sales:2026"))
+    assert_equal("Sales_2026", Xlsxrb.sheet_name("Sales:2026"))
+    assert_equal("History_", Xlsxrb.sanitize_sheet_name("History"))
+    assert_equal("History-", Xlsxrb.sheet_name("History", replace_char: "-"))
+  end
+
+  test "StreamWriter#sheet_names and WorksheetProxy#sheet_names report workbook sheets" do
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      assert_equal([], w.sheet_names)
+      w.sheet("Sheet1") do |s|
+        s.row(["Hello"])
+        assert_equal(["Sheet1"], s.sheet_names)
+      end
+      assert_equal(["Sheet1"], w.sheet_names)
+
+      name = Xlsxrb.sanitize_sheet_name("Sales: 2026")
+      assert_equal("Sales_ 2026", name)
+      w.sheet(name) do |s|
+        s.row([1])
+        assert_equal(["Sheet1", "Sales_ 2026"], s.sheet_names)
+      end
+      assert_equal(["Sheet1", "Sales_ 2026"], w.sheet_names)
+    end
+
+    wb = Xlsxrb.read(io.string.b)
+    assert_equal(["Sheet1", "Sales_ 2026"], wb.sheets.map(&:name))
+  end
+
+  test "WorkbookBuilder#sheet_names reports in-memory workbook sheets" do
+    wb = Xlsxrb.build do |w|
+      assert_equal([], w.sheet_names)
+      w.sheet("Summary") do |s|
+        s.row([1])
+        assert_equal(["Summary"], w.sheet_names)
+      end
+      assert_equal(["Summary"], w.sheet_names)
+
+      name = Xlsxrb.sanitize_sheet_name("Data [Q1]")
+      assert_equal("Data _Q1_", name)
+      w.sheet(name) { |s| s.row([2]) }
+      assert_equal(["Summary", "Data _Q1_"], w.sheet_names)
+    end
+    assert_equal(["Summary", "Data _Q1_"], wb.sheets.map(&:name))
+  end
+
+  test "StreamWriter#sheet and WorkbookBuilder#sheet enforce Excel restrictions on colon, quotes, duplicates, and History" do
+    # StreamWriter
+    assert_raises(ArgumentError) do
+      Xlsxrb.write(StringIO.new) { |w| w.sheet("Bad:Name") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.write(StringIO.new) { |w| w.sheet("'BadQuote") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.write(StringIO.new) { |w| w.sheet("BadQuote'") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.write(StringIO.new) { |w| w.sheet("History") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.write(StringIO.new) { |w| w.sheet("history") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.write(StringIO.new) do |w|
+        w.sheet("Sales") { |s| s.row([1]) }
+        w.sheet("sales") { |s| s.row([2]) }
+      end
+    end
+
+    # Default consecutive sheet numbering in StreamWriter
+    default_io = StringIO.new
+    Xlsxrb.write(default_io) do |w|
+      w.sheet { |s| s.row([1]) }
+      w.sheet { |s| s.row([2]) }
+    end
+    assert_equal(%w[Sheet1 Sheet2], Xlsxrb.read(default_io.string.b).sheets.map(&:name))
+
+    # WorkbookBuilder
+    assert_raises(ArgumentError) do
+      Xlsxrb.build { |w| w.sheet("Bad:Name") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.build { |w| w.sheet("'BadQuote") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.build { |w| w.sheet("BadQuote'") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.build { |w| w.sheet("History") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.build { |w| w.sheet("history") }
+    end
+    assert_raises(ArgumentError) do
+      Xlsxrb.build do |w|
+        w.sheet("Sales") { |s| s.row([1]) }
+        w.sheet("sales") { |s| s.row([2]) }
+      end
+    end
+  end
 end

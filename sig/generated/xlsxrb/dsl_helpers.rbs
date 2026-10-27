@@ -160,5 +160,21 @@ module Xlsxrb
     # @return [Array<Hash>]
     # : (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> Array[Hash[Symbol, untyped]]
     def self.normalize_data_validation: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> Array[Hash[Symbol, untyped]]
+
+    FORBIDDEN_SHEET_CHARS: ::Regexp
+
+    MAX_SHEET_NAME_LENGTH: ::Integer
+
+    # Sanitizes a worksheet name to ensure it conforms to Excel constraints within 31 characters.
+    # Replaces forbidden characters (\ / ? * [ ] : and control characters),
+    # replaces leading/trailing apostrophes, and replaces reserved 'History' with 'History_'.
+    #
+    # @param name [Object] Desired worksheet name.
+    # @param replace_char [String] Replacement character for invalid characters.
+    # @return [String] Excel-compliant worksheet name.
+    # : (untyped name, ?replace_char: String) -> String
+    def self.sanitize_sheet_name: (untyped name, ?replace_char: String) -> String
+
+    alias self.sheet_name self.sanitize_sheet_name
   end
 end

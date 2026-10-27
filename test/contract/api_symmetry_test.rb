@@ -25,6 +25,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
     properties
     protect_workbook
     set_default_font
+    sheet_names
     show_sheet_tabs
     tab_ratio
     workbook_property

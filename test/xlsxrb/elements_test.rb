@@ -714,11 +714,23 @@ class ElementsTest < Test::Unit::TestCase
     # Exactly 31 characters is valid
     assert_empty(Xlsxrb::Elements::Worksheet.validate("A" * 31, []))
 
-    # Forbidden characters: \ / ? * [ ]
-    %w[\\ / ? * [ ]].each do |char|
+    # Forbidden characters: \ / ? * [ ] :
+    %w[\\ / ? * [ ] :].each do |char|
       errs_char = Xlsxrb::Elements::Worksheet.validate("Sheet#{char}1", [])
-      assert(errs_char.any? { |e| e.include?("cannot contain \\, /, ?, *, [, or ]") }, "Expected error for character: #{char}")
+      assert(errs_char.any? { |e| e.include?("cannot contain \\, /, ?, *, [, ], or :") }, "Expected error for character: #{char}")
     end
+
+    # Apostrophe at start or end
+    errs_start_quote = Xlsxrb::Elements::Worksheet.validate("'Sheet1", [])
+    assert(errs_start_quote.any? { |e| e.include?("cannot start or end with an apostrophe") })
+    errs_end_quote = Xlsxrb::Elements::Worksheet.validate("Sheet1'", [])
+    assert(errs_end_quote.any? { |e| e.include?("cannot start or end with an apostrophe") })
+
+    # Reserved History name
+    errs_history = Xlsxrb::Elements::Worksheet.validate("History", [])
+    assert(errs_history.any? { |e| e.include?("'History' is reserved") })
+    errs_history_lower = Xlsxrb::Elements::Worksheet.validate("history", [])
+    assert(errs_history_lower.any? { |e| e.include?("'History' is reserved") })
 
     # Non-array rows
     errs_rows = Xlsxrb::Elements::Worksheet.validate("Sheet1", "invalid_rows")
@@ -733,9 +745,15 @@ class ElementsTest < Test::Unit::TestCase
     assert_false(Xlsxrb::Elements::Worksheet.valid_name?(nil))
     assert_false(Xlsxrb::Elements::Worksheet.valid_name?(123))
     assert_false(Xlsxrb::Elements::Worksheet.valid_name?(:Sheet1))
-    %w[\\ / ? * [ ]].each do |char|
+    %w[\\ / ? * [ ] :].each do |char|
       assert_false(Xlsxrb::Elements::Worksheet.valid_name?("Sheet#{char}1"))
     end
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?("'Sheet1"))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?("Sheet1'"))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?("History"))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?("history"))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?("Sheet\x001"))
+    assert_true(Xlsxrb::Elements::Worksheet.valid_name?("John's Sheet"))
   end
 
   test "worksheet update_cell creates or modifies cells in rows" do

@@ -628,7 +628,7 @@ class PbtTest < Test::Unit::TestCase
       # 5. Invalid sheet characters
       invalid_chars_arb = Pbt.one_of(
         Pbt.constant("["), Pbt.constant("]"), Pbt.constant("*"),
-        Pbt.constant("?"), Pbt.constant("/"), Pbt.constant("\\")
+        Pbt.constant("?"), Pbt.constant("/"), Pbt.constant("\\"), Pbt.constant(":")
       )
       Pbt.property(invalid_chars_arb) do |bad_char|
         assert_raise(ArgumentError) do
@@ -670,9 +670,7 @@ class PbtTest < Test::Unit::TestCase
       end
 
       # 4. Valid sheet name lengths (1..31) and characters
-      # rubocop:disable Style/SelectByRegexp
-      valid_sheet_arb = Pbt.printable_ascii_string(min: 1, max: 31).filter { |s| !s.match?(%r{[\[\]*?/\\]}) }
-      # rubocop:enable Style/SelectByRegexp
+      valid_sheet_arb = Pbt.printable_ascii_string(min: 1, max: 31).filter { |s| Xlsxrb::Elements::Worksheet.valid_name?(s) }
       Pbt.property(valid_sheet_arb) do |good_sheet_name|
         Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet(good_sheet_name) }
       end

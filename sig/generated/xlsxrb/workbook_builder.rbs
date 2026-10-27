@@ -98,9 +98,16 @@ module Xlsxrb
     # : (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
     def workbook_property: (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
 
+    # Returns the list of worksheet names added to this workbook so far.
+    #
+    # @return [Array<String>] Worksheet names.
+    # @api public
+    # : () -> Array[String]
+    def sheet_names: () -> Array[String]
+
     # Adds a new worksheet to the workbook.
     #
-    # @param name [String, nil] Sheet name (max 31 chars, no forbidden chars `[ ] * ? / \`).
+    # @param name [String, nil] Sheet name (max 31 chars, no forbidden chars `[ ] * ? / \ :`).
     # @param opts [Hash] Sheet properties.
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
