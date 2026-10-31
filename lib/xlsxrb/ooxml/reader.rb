@@ -926,6 +926,57 @@ module Xlsxrb
         listener.comments
       end
 
+      # Returns all persons registered in xl/persons/person.xml.
+      # Each hash: { id:, display_name:, user_id:, provider_id: }
+      # : () -> Array[Hash[Symbol, untyped]]
+      def persons
+        @persons ||= begin
+          xml = extract_zip_entry("xl/persons/person.xml")
+          if xml.nil? || xml.empty?
+            wb_rels_xml = extract_zip_entry("xl/_rels/workbook.xml.rels")
+            if wb_rels_xml && !wb_rels_xml.empty?
+              rels = parse_rels_with_types(wb_rels_xml)
+              p_rel = rels.find { |r| r[:type]&.end_with?("person") }
+              xml = extract_zip_entry(normalize_xl_path(p_rel[:target], "xl")) if p_rel
+            end
+          end
+          if xml && !xml.empty?
+            parser = REXML::Parsers::SAX2Parser.new(xml)
+            listener = PersonListListener.new
+            parser.listen(listener)
+            parser.parse
+            listener.persons
+          else
+            []
+          end
+        end
+      end
+      alias person_list persons
+
+      # Returns threaded comments for the given sheet as an array of hashes.
+      # Each hash: { ref:, text:, author:, person_id:, id:, parent_id:, dt:, done: }
+      # : (?sheet: untyped?) -> Array[Hash[Symbol, untyped]]
+      def threaded_comments(sheet: nil)
+        sheet_index = resolve_sheet_index(sheet)
+        tc_path = find_sheet_rel_target(sheet_index, "threadedComment")
+        return [] unless tc_path
+
+        xml = extract_zip_entry(tc_path)
+        return [] if xml.nil? || xml.empty?
+
+        parser = REXML::Parsers::SAX2Parser.new(xml)
+        listener = ThreadedCommentsListener.new
+        parser.listen(listener)
+        parser.parse
+
+        persons_map = persons.to_h { |p| [p[:id], p[:display_name]] }
+        listener.threaded_comments.map do |tc|
+          tc_author = persons_map[tc[:person_id]]
+          tc[:author] = tc_author if tc_author
+          tc
+        end
+      end
+
       # Returns pivot tables for the given sheet as an array of hashes.
       # Each hash: { name:, ref:, cache_id:, fields:, row_fields:, col_fields:, data_fields:, cache: }
       def pivot_tables(sheet: nil)

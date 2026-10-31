@@ -334,6 +334,7 @@ module Xlsxrb
         entry_name: @entry_name,
         hyperlinks: hyperlinks,
         comments: comments,
+        threaded_comments: threaded_comments,
         images: images,
         date1904: @date1904,
         dimension: dimension,
@@ -425,6 +426,43 @@ module Xlsxrb
       @comments_by_ref ||= comments.each_with_object({}) do |c, acc|
         r = c[:ref] || c[:cell]
         acc[r.to_s.upcase] = c if r
+      end
+    end
+
+    # Returns threaded comments configured for this worksheet as an Array of comment hashes.
+    #
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: () -> Array[Hash[Symbol, untyped]]
+    def threaded_comments
+      @threaded_comments ||= Xlsxrb.send(:resolve_threaded_comments, zip_reader: @zip_reader, entry_name: @entry_name)
+    end
+
+    # Returns threaded comments for a specific cell reference, or empty array.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, nil] Optional 0-based column index.
+    # @return [Array<Hash[Symbol, untyped]>]
+    # @api public
+    #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Hash[Symbol, untyped]]
+    def threaded_comment(ref_or_row, col = nil)
+      ref = if col
+              "#{Elements::Cell.column_letter(col)}#{ref_or_row.to_i + 1}"
+            else
+              ref_or_row.to_s.upcase
+            end
+      threaded_comments_by_ref[ref] || []
+    end
+
+    # Returns threaded comments indexed by cell reference.
+    #
+    # @return [Hash<String, Array<Hash[Symbol, untyped]>>]
+    # @api public
+    #: () -> Hash[String, Array[Hash[Symbol, untyped]]]
+    def threaded_comments_by_ref
+      @threaded_comments_by_ref ||= threaded_comments.each_with_object({}) do |c, acc|
+        r = c[:ref] || c[:cell]
+        (acc[r.to_s.upcase] ||= []) << c if r
       end
     end
 

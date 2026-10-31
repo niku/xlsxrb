@@ -7,6 +7,7 @@ module Xlsxrb
     EMPTY_ERRORS = [].freeze
     EMPTY_HASH = {}.freeze
     EMPTY_CELLS = [].freeze
+    EMPTY_ARRAY = [].freeze
 
     # Represents an Excel formula with an optional cached value and calculation properties.
     #

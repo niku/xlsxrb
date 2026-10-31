@@ -611,6 +611,26 @@ module Xlsxrb
       # : (?sheet: untyped?) -> untyped
       def comments: (?sheet: untyped) -> untyped
 
+      # Adds a threaded comment to a cell in the given sheet.
+      # : (String | Integer cell_address, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?, ?sheet: untyped?) -> Hash[Symbol, untyped]
+      def add_threaded_comment: (untyped cell_address, untyped text, ?author: untyped, ?timestamp: untyped, ?id: untyped, ?parent_id: untyped, ?done: untyped, ?user_id: untyped, ?provider_id: untyped, ?sheet: untyped) -> untyped
+
+      alias threaded_comment add_threaded_comment
+
+      # Returns threaded comments for the first (or given) sheet.
+      # : (?sheet: untyped?) -> Array[Hash[Symbol, untyped]]
+      def threaded_comments: (?sheet: untyped) -> untyped
+
+      # Registers a person in the workbook person list.
+      # : (String name, ?id: String?, ?user_id: String?, ?provider_id: String?) -> Hash[Symbol, untyped]
+      def add_person: (untyped name, ?id: untyped, ?user_id: untyped, ?provider_id: untyped) -> untyped
+
+      # Returns the workbook person list.
+      # : () -> Array[Hash[Symbol, untyped]]
+      def persons: () -> untyped
+
+      alias person_list persons
+
       # Adds a pivot table to the given sheet.
       # source_ref: data source range (e.g. "Sheet1!A1:C4").
       # row_fields: array of 0-based field indices for row axis.
@@ -695,8 +715,8 @@ module Xlsxrb
       # : (untyped sheet_hyperlinks, ?untyped sheet_tables, ?::Integer table_start_index) -> untyped
       def generate_worksheet_rels: (untyped sheet_hyperlinks, ?untyped sheet_tables, ?untyped table_start_index) -> untyped
 
-      # : (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count) -> untyped
-      def build_sheet_rels_parts_v2: (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count) -> untyped
+      # : (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count, ?untyped? threaded_comment_idx) -> untyped
+      def build_sheet_rels_parts_v2: (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count, ?untyped threaded_comment_idx) -> untyped
 
       # : (untyped rels_data) -> untyped
       def generate_generic_rels: (untyped rels_data) -> untyped

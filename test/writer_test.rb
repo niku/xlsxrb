@@ -9226,6 +9226,104 @@ class WriterTest < Test::Unit::TestCase
     assert_include(stream_wb_xml, '<definedName name="LOCAL_RANGE" localSheetId="0">&apos;StreamSheet&apos;!$A$1:$C$1</definedName>')
   end
 
+  test "threaded comments in writer and round-trip via reader and workbook builder" do
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", "Task item")
+    root_id = "{11111111-2222-3333-4444-555555555555}"
+    reply_id = "{66666666-7777-8888-9999-000000000000}"
+    writer.add_threaded_comment("A1", "Is this complete?", author: "Alice", id: root_id, timestamp: "2026-06-01T10:00:00Z")
+    writer.add_threaded_comment("A1", "Yes, done!", author: "Bob", id: reply_id, parent_id: root_id, done: true, timestamp: "2026-06-01T11:00:00Z")
+
+    xlsx_tempfile = Tempfile.new(["xlsxrb-tc", ".xlsx"])
+    xlsx_path = xlsx_tempfile.path
+    xlsx_tempfile.close
+    writer.write(xlsx_path)
+
+    tc_xml = read_xml_from_xlsx(xlsx_path, "xl/threadedComments/threadedComment1.xml")
+    assert_match(%r{<ThreadedComments\b[^>]*xmlns="http://schemas.microsoft.com/office/spreadsheetml/2018/threadedcomments"}, tc_xml)
+    assert_include(tc_xml, 'ref="A1"')
+    assert_include(tc_xml, 'dT="2026-06-01T10:00:00Z"')
+    assert_include(tc_xml, "<text>Is this complete?</text>")
+    assert_include(tc_xml, 'parentId="{11111111-2222-3333-4444-555555555555}"')
+    assert_include(tc_xml, 'done="true"')
+    assert_include(tc_xml, "<text>Yes, done!</text>")
+
+    p_xml = read_xml_from_xlsx(xlsx_path, "xl/persons/person.xml")
+    assert_match(%r{<personList\b[^>]*xmlns="http://schemas.microsoft.com/office/spreadsheetml/2018/threadedcomments"}, p_xml)
+    assert_match(/displayName="Alice"/, p_xml)
+    assert_match(/displayName="Bob"/, p_xml)
+
+    # Reader API verification
+    reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
+    persons = reader.persons
+    assert_equal(2, persons.size)
+    assert_equal("Alice", persons[0][:display_name])
+    assert_equal("Bob", persons[1][:display_name])
+
+    tcs = reader.threaded_comments
+    assert_equal(2, tcs.size)
+    assert_equal("A1", tcs[0][:ref])
+    assert_equal("Alice", tcs[0][:author])
+    assert_equal("Is this complete?", tcs[0][:text])
+    assert_equal(root_id, tcs[0][:id])
+
+    assert_equal("A1", tcs[1][:ref])
+    assert_equal("Bob", tcs[1][:author])
+    assert_equal("Yes, done!", tcs[1][:text])
+    assert_equal(root_id, tcs[1][:parent_id])
+    assert_true(tcs[1][:done])
+
+    # DOM / Elements verification
+    doc = Xlsxrb.read(xlsx_path).load
+    sheet = doc.sheets.first
+    assert_equal(2, sheet.threaded_comments.size)
+    assert_equal(2, sheet.threaded_comment("A1").size)
+    cell = sheet["A1"]
+    assert_true(cell.threaded_comments?)
+    assert_equal(2, cell.threaded_comments.size)
+    assert_equal("Is this complete?", cell.threaded_comment[:text])
+    assert_equal("Alice", cell.threaded_comment[:author])
+  ensure
+    File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
+  end
+
+  test "threaded comments in streaming mode and workbook builder round-trip" do
+    stream_io = StringIO.new
+    Xlsxrb.write(stream_io) do |w|
+      w.sheet("Report") do |s|
+        s.row(["Revenue", 1000])
+        s.threaded_comment("B1", "Verified against ERP", author: "Auditor", done: true)
+      end
+    end
+
+    stream_bytes = stream_io.string.b
+    reader = Xlsxrb::Ooxml::Reader.new(stream_bytes)
+    tcs = reader.threaded_comments
+    assert_equal(1, tcs.size)
+    assert_equal("B1", tcs[0][:ref])
+    assert_equal("Auditor", tcs[0][:author])
+    assert_equal("Verified against ERP", tcs[0][:text])
+    assert_true(tcs[0][:done])
+
+    doc = Xlsxrb.read(stream_bytes).load
+    sheet = doc["Report"]
+    assert_equal(1, sheet.threaded_comments.size)
+    cell = sheet["B1"]
+    assert_true(cell.threaded_comments?)
+    assert_equal("Auditor", cell.threaded_comment[:author])
+
+    # In-memory WorksheetBuilder
+    wb = Xlsxrb.build do |book|
+      book.sheet("Sheet1") do |ws|
+        ws.row(["Quarterly Data"])
+        ws.threaded_comment("A1", "Q3 target reviewed", author: "CFO")
+      end
+    end
+    ws = wb.sheets.first
+    assert_equal(1, ws.threaded_comments.size)
+    assert_equal("CFO", ws.threaded_comment("A1").first[:author])
+  end
+
   def read_xml_from_xlsx(xlsx_path, entry_name)
     require "xlsxrb/ooxml/reader"
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)

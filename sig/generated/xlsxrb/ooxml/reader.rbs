@@ -233,6 +233,18 @@ module Xlsxrb
       # Each hash: { ref:, author:, text: }
       def comments: (?sheet: untyped) -> untyped
 
+      # Returns all persons registered in xl/persons/person.xml.
+      # Each hash: { id:, display_name:, user_id:, provider_id: }
+      # : () -> Array[Hash[Symbol, untyped]]
+      def persons: () -> untyped
+
+      alias person_list persons
+
+      # Returns threaded comments for the given sheet as an array of hashes.
+      # Each hash: { ref:, text:, author:, person_id:, id:, parent_id:, dt:, done: }
+      # : (?sheet: untyped?) -> Array[Hash[Symbol, untyped]]
+      def threaded_comments: (?sheet: untyped) -> untyped
+
       # Returns pivot tables for the given sheet as an array of hashes.
       # Each hash: { name:, ref:, cache_id:, fields:, row_fields:, col_fields:, data_fields:, cache: }
       def pivot_tables: (?sheet: untyped) -> untyped

@@ -75,6 +75,20 @@ module Xlsxrb
 
         # : (untyped cell_ref) -> (::Array[0] | ::Array[untyped])
         def cell_to_col_row: (untyped cell_ref) -> untyped
+
+        THREADED_COMMENTS_NS: ::String
+
+        # Formats or generates a GUID in standard uppercase braced format {UUID}.
+        # : (?String? val) -> String
+        def format_guid: (?untyped val) -> untyped
+
+        # Generates XML for xl/threadedComments/threadedComment{N}.xml.
+        # : (Array[Hash[Symbol, untyped]] sheet_threaded_comments) -> String
+        def generate_threaded_comments_xml: (untyped sheet_threaded_comments) -> untyped
+
+        # Generates XML for xl/persons/person.xml.
+        # : (Array[Hash[Symbol, untyped]] persons) -> String
+        def generate_persons_xml: (untyped persons) -> untyped
       end
     end
   end

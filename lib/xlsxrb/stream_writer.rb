@@ -86,6 +86,7 @@ module Xlsxrb
       @current_pivot_tables = []
       @current_sparkline_groups = []
       @current_comments = []
+      @current_threaded_comments = []
       @current_merge_cells = []
       @current_freeze_pane = nil
       @current_split_pane = nil
@@ -681,6 +682,22 @@ module Xlsxrb
 
         @writer.comment(...)
       end
+
+      # Adds a threaded comment to a cell.
+      #
+      # @param cell [String, Integer] The cell reference (e.g. "A1").
+      # @param text [String] The comment text.
+      # @param author [String] The author name.
+      # @param opts [Hash] Options: timestamp, id, parent_id, done, user_id, provider_id.
+      # @return [void]
+      # @api public
+      #: (String | Integer cell, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?) -> void
+      def threaded_comment(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.threaded_comment(...)
+      end
+      alias add_threaded_comment threaded_comment
 
       # Adds a Pivot Table to the sheet.
       #
@@ -1421,6 +1438,7 @@ module Xlsxrb
       @current_pivot_tables = []
       @current_sparkline_groups = []
       @current_comments = []
+      @current_threaded_comments = []
       @current_merge_cells = []
       @current_freeze_pane = nil
       @current_split_pane = nil
@@ -1916,6 +1934,36 @@ module Xlsxrb
       sheet if @current_sheet.nil?
       @current_comments << { cell: cell, text: text, author: author }
     end
+
+    # Adds a threaded comment to a cell.
+    #
+    # @param cell [String, Integer] Cell coordinate (e.g. "A1").
+    # @param text [String] Comment text.
+    # @param author [String] Author name.
+    # @param timestamp [String, Time, nil] Optional ISO 8601 timestamp.
+    # @param id [String, nil] Optional GUID for this comment.
+    # @param parent_id [String, nil] Optional parent comment GUID for replies.
+    # @param done [Boolean, nil] Optional resolved flag.
+    # @param user_id [String, nil] Optional user ID.
+    # @param provider_id [String, nil] Optional provider ID.
+    # @return [void]
+    # @api public
+    #: (String | Integer cell, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?) -> void
+    def threaded_comment(cell, text, author: "Author", timestamp: nil, id: nil, parent_id: nil, done: false, user_id: nil, provider_id: nil)
+      sheet if @current_sheet.nil?
+      @current_threaded_comments << {
+        cell: cell,
+        text: text,
+        author: author,
+        timestamp: timestamp,
+        id: id,
+        parent_id: parent_id,
+        done: done ? true : false,
+        user_id: user_id,
+        provider_id: provider_id
+      }.compact
+    end
+    alias add_threaded_comment threaded_comment
 
     # Adds a sparkline group.
     #
@@ -2783,6 +2831,7 @@ module Xlsxrb
         pivot_tables: @current_pivot_tables,
         sparkline_groups: @current_sparkline_groups,
         comments: @current_comments,
+        threaded_comments: @current_threaded_comments,
         merge_cells: @current_merge_cells,
         freeze_pane: @current_freeze_pane,
         split_pane: @current_split_pane,

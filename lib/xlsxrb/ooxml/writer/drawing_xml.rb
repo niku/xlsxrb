@@ -1676,6 +1676,68 @@ module Xlsxrb
           row = m[2].to_i - 1
           [col, row]
         end
+
+        THREADED_COMMENTS_NS = "http://schemas.microsoft.com/office/spreadsheetml/2018/threadedcomments"
+
+        # Formats or generates a GUID in standard uppercase braced format {UUID}.
+        # : (?String? val) -> String
+        def format_guid(val = nil)
+          return "{#{SecureRandom.uuid.upcase}}" if val.nil? || val.to_s.empty?
+
+          str = val.to_s.strip
+          str = "{#{str}}" unless str.start_with?("{") && str.end_with?("}")
+          str.upcase
+        end
+
+        # Generates XML for xl/threadedComments/threadedComment{N}.xml.
+        # : (Array[Hash[Symbol, untyped]] sheet_threaded_comments) -> String
+        def generate_threaded_comments_xml(sheet_threaded_comments)
+          parts = [
+            XML_HEADER,
+            %(<ThreadedComments xmlns="#{THREADED_COMMENTS_NS}">)
+          ]
+          sheet_threaded_comments.each do |c|
+            ref = c[:ref] || c[:cell]
+            dt = c[:timestamp] || c[:dt]
+            dt_str = case dt
+                     when Time, DateTime
+                       dt.to_time.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+                     when String
+                       dt
+                     else
+                       Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+                     end
+            person_id = c[:person_id] || c[:author_id] || "{00000000-0000-0000-0000-000000000000}"
+            comment_id = c[:id] || format_guid(nil)
+
+            attrs = %(ref="#{ref}" dT="#{dt_str}" personId="#{person_id}" id="#{comment_id}")
+            attrs << %( parentId="#{c[:parent_id]}") if c[:parent_id]
+            attrs << %( done="true") if [true, "true", "1"].include?(c[:done])
+
+            text_val = c[:text].to_s
+            parts << "<threadedComment #{attrs}><text>#{xml_escape(text_val)}</text></threadedComment>"
+          end
+          parts << "</ThreadedComments>"
+          parts.join
+        end
+
+        # Generates XML for xl/persons/person.xml.
+        # : (Array[Hash[Symbol, untyped]] persons) -> String
+        def generate_persons_xml(persons)
+          parts = [
+            XML_HEADER,
+            %(<personList xmlns="#{THREADED_COMMENTS_NS}">)
+          ]
+          persons.each do |p|
+            p_id = p[:id] || format_guid(nil)
+            name = xml_escape(p[:display_name] || p[:name] || "Author")
+            user_id = xml_escape(p[:user_id] || "AD:#{p[:display_name] || p[:name] || "Author"}")
+            provider_id = xml_escape(p[:provider_id] || "AD")
+            parts << %(<person displayName="#{name}" id="#{p_id}" userId="#{user_id}" providerId="#{provider_id}"/>)
+          end
+          parts << "</personList>"
+          parts.join
+        end
       end
     end
   end

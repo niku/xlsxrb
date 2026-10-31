@@ -1243,8 +1243,8 @@ module Xlsxrb
       fallbacks.find { |f| zip_reader.entry?(f) }
     end
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_pr: nil, background_image: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_pr: nil, background_image: nil, threaded_comments: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
       if sheet_xml.nil? || sheet_xml.empty?
         return Elements::Worksheet.new(
@@ -1257,17 +1257,19 @@ module Xlsxrb
           sheet_properties: sheet_properties || {}, sheet_format: sheet_format || {}, row_breaks: row_breaks || [], col_breaks: col_breaks || [],
           protected_ranges: protected_ranges || [], cell_watches: cell_watches || [], ignored_errors: ignored_errors || [],
           phonetic_properties: phonetic_properties, selection: selection, sheet_calc_pr: sheet_calc_pr,
-          background_image: background_image
+          background_image: background_image,
+          threaded_comments: threaded_comments || []
         )
       end
 
       sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
       sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
+      sheet_threaded_comments = threaded_comments || resolve_threaded_comments(zip_reader: zip_reader, entry_name: entry_name)
       sheet_images = images || resolve_images(zip_reader: zip_reader, entry_name: entry_name)
       raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings, styles: styles)
       raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
 
-      rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks, sheet_comments, styles, date1904: date1904) }
+      rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks, sheet_comments, styles, date1904: date1904, threaded_comments: sheet_threaded_comments) }
       columns = raw_columns.map do |rc|
         # Columns from OOXML are 1-based min/max ranges; convert to 0-based
         col_unmapped = {}
@@ -1441,7 +1443,8 @@ module Xlsxrb
         phonetic_properties: sheet_phonetic,
         selection: sheet_selection,
         sheet_calc_pr: sheet_calc_pr,
-        background_image: background_image || (sheet_xml.include?("<picture") ? resolve_background_image(sheet_xml, zip_reader: zip_reader, entry_name: entry_name) : nil)
+        background_image: background_image || (sheet_xml.include?("<picture") ? resolve_background_image(sheet_xml, zip_reader: zip_reader, entry_name: entry_name) : nil),
+        threaded_comments: sheet_threaded_comments
       )
     end
 
@@ -1517,6 +1520,69 @@ module Xlsxrb
       c_parser.listen(c_listener)
       c_parser.parse
       c_listener.comments
+    end
+
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
+    def resolve_threaded_comments(zip_reader: nil, entry_name: nil)
+      return [] unless zip_reader && entry_name
+
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = Ooxml::Reader::RelsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      rel = listener.relationships.find { |r| r[:type]&.end_with?("/threadedComment") }
+      return [] unless rel
+
+      base_dir = File.dirname(entry_name)
+      tc_path = resolve_relative_path(base_dir, rel[:target])
+
+      xml = zip_reader.read_entry(tc_path)
+      return [] if xml.nil? || xml.empty?
+
+      tc_parser = REXML::Parsers::SAX2Parser.new(xml)
+      tc_listener = Ooxml::Reader::ThreadedCommentsListener.new
+      tc_parser.listen(tc_listener)
+      tc_parser.parse
+
+      persons_map = resolve_persons_map(zip_reader: zip_reader)
+      tc_listener.threaded_comments.map do |tc|
+        tc_author = persons_map[tc[:person_id]]
+        tc[:author] = tc_author if tc_author && !tc[:author]
+        tc
+      end
+    end
+
+    #: (?zip_reader: Ooxml::ZipReader?) -> Hash[String, String]
+    def resolve_persons_map(zip_reader: nil)
+      return {} unless zip_reader
+
+      xml = zip_reader.read_entry("xl/persons/person.xml")
+      if xml.nil? || xml.empty?
+        wb_rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
+        if wb_rels_xml && !wb_rels_xml.empty?
+          parser = REXML::Parsers::SAX2Parser.new(wb_rels_xml)
+          listener = Ooxml::Reader::RelsListener.new
+          parser.listen(listener)
+          parser.parse
+          p_rel = listener.relationships.find { |r| r[:type]&.end_with?("/person") }
+          if p_rel
+            p_path = resolve_relative_path("xl", p_rel[:target])
+            xml = zip_reader.read_entry(p_path)
+          end
+        end
+      end
+      return {} if xml.nil? || xml.empty?
+
+      p_parser = REXML::Parsers::SAX2Parser.new(xml)
+      p_listener = Ooxml::Reader::PersonListListener.new
+      p_parser.listen(p_listener)
+      p_parser.parse
+      p_listener.persons.to_h { |p| [p[:id], p[:display_name]] }
     end
 
     #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::Image]
@@ -1698,8 +1764,8 @@ module Xlsxrb
       d_listener.shapes
     end
 
-    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool) -> (Elements::Row | untyped)
-    def build_row_from_raw(raw_row, hyperlinks = {}, comments = [], styles = nil, date1904: false)
+    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool, ?threaded_comments: (Array[Hash[Symbol, untyped]] | Hash[String, Array[Hash[Symbol, untyped]]])) -> (Elements::Row | untyped)
+    def build_row_from_raw(raw_row, hyperlinks = {}, comments = [], styles = nil, date1904: false, threaded_comments: [])
       return raw_row if raw_row.is_a?(Elements::Row)
 
       comments_map = if comments.is_a?(Hash)
@@ -1708,14 +1774,30 @@ module Xlsxrb
                        comments.each_with_object({}) { |c, acc| (r = c[:ref] || c[:cell]) && (acc[r.to_s.upcase] = c) }
                      end
 
+      threaded_comments_map = if threaded_comments.is_a?(Hash)
+                                threaded_comments
+                              else
+                                threaded_comments.each_with_object({}) do |c, acc|
+                                  r = c[:ref] || c[:cell]
+                                  (acc[r.to_s.upcase] ||= []) << c if r
+                                end
+                              end
+
       raw_cells = raw_row[:cells]
       cells = raw_cells.map do |rc|
         if rc.is_a?(Elements::Cell)
           hl = hyperlinks && !hyperlinks.empty? ? hyperlinks[rc.ref] : nil
           cm = comments_map && !comments_map.empty? ? comments_map[rc.ref] : nil
+          tcs = threaded_comments_map && !threaded_comments_map.empty? ? threaded_comments_map[rc.ref] : nil
           fmt = rc.format_code || (NumberFormatter.format_code_for(rc.style_index, styles) if styles && rc.style_index)
-          if hl || cm || (fmt && rc.format_code != fmt) || (date1904 && !rc.date1904?)
-            rc.with(hyperlink: hl || rc.hyperlink, comment: cm || rc.comment, format_code: fmt || rc.format_code, date1904: date1904 || rc.date1904?)
+          if hl || cm || tcs || (fmt && rc.format_code != fmt) || (date1904 && !rc.date1904?)
+            rc.with(
+              hyperlink: hl || rc.hyperlink,
+              comment: cm || rc.comment,
+              format_code: fmt || rc.format_code,
+              date1904: date1904 || rc.date1904?,
+              threaded_comments: (tcs ? (rc.threaded_comments + tcs) : rc.threaded_comments)
+            )
           else
             rc
           end
@@ -1726,6 +1808,7 @@ module Xlsxrb
           ref = rc[:ref] || "#{Elements::Cell.column_letter(col_idx)}#{row_idx + 1}"
           hl = hyperlinks ? hyperlinks[ref] : nil
           cm = comments_map ? comments_map[ref] : nil
+          tcs = threaded_comments_map ? threaded_comments_map[ref] : nil
           fmt = rc[:format_code] || (NumberFormatter.format_code_for(rc[:style_index], styles) if styles && rc[:style_index])
 
           val = rc[:value]
@@ -1748,7 +1831,8 @@ module Xlsxrb
             raw_value: raw_val,
             format_code: fmt,
             errors: cell_errors,
-            date1904: date1904
+            date1904: date1904,
+            threaded_comments: tcs
           )
         end
       end

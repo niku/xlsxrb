@@ -1813,6 +1813,103 @@ module Xlsxrb
           end
         end
       end
+
+      # SAX2 listener for parsing <personList> element in xl/persons/person.xml.
+      class PersonListListener
+        include REXML::SAX2Listener
+
+        attr_reader :persons
+
+        def initialize
+          @persons = []
+        end
+
+        def start_element(_uri, local_name, qname, attributes)
+          name = element_name(local_name, qname)
+          return unless name == "person"
+
+          @persons << {
+            id: attributes["id"],
+            display_name: attributes["displayName"],
+            user_id: attributes["userId"],
+            provider_id: attributes["providerId"]
+          }.compact
+        end
+
+        def end_element(_uri, _local_name, _qname); end
+
+        private
+
+        def element_name(local_name, qname)
+          if local_name.nil? || local_name.empty?
+            qname.to_s.split(":").last
+          else
+            local_name
+          end
+        end
+      end
+
+      # SAX2 listener for parsing <ThreadedComments> element in xl/threadedComments/threadedComment{N}.xml.
+      class ThreadedCommentsListener
+        include REXML::SAX2Listener
+
+        attr_reader :threaded_comments
+
+        def initialize
+          @threaded_comments = []
+          @current_comment = nil
+          @inside_text = false
+          @text_buffer = +""
+        end
+
+        def start_element(_uri, local_name, qname, attributes)
+          name = element_name(local_name, qname)
+          case name
+          when "threadedComment"
+            @current_comment = {
+              ref: attributes["ref"],
+              dt: attributes["dT"] || attributes["dt"],
+              person_id: attributes["personId"],
+              id: attributes["id"]
+            }
+            @current_comment[:parent_id] = attributes["parentId"] if attributes["parentId"]
+            @current_comment[:done] = %w[1 true].include?(attributes["done"]) if attributes.key?("done")
+          when "text"
+            if @current_comment
+              @inside_text = true
+              @text_buffer = +""
+            end
+          end
+        end
+
+        def characters(text)
+          @text_buffer << text if @inside_text
+        end
+
+        def end_element(_uri, local_name, qname)
+          name = element_name(local_name, qname)
+          case name
+          when "text"
+            if @current_comment && @inside_text
+              @current_comment[:text] = @text_buffer.dup
+              @inside_text = false
+            end
+          when "threadedComment"
+            @threaded_comments << @current_comment if @current_comment
+            @current_comment = nil
+          end
+        end
+
+        private
+
+        def element_name(local_name, qname)
+          if local_name.nil? || local_name.empty?
+            qname.to_s.split(":").last
+          else
+            local_name
+          end
+        end
+      end
     end
   end
 end

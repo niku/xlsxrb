@@ -275,6 +275,24 @@ module Xlsxrb
     # : (String | Integer cell, String text, ?author: ::String) -> void
     def comment: (String | Integer cell, String text, ?author: ::String) -> void
 
+    # Adds a threaded comment to a cell.
+    #
+    # @param cell [String, Integer] Cell reference (e.g. "B2").
+    # @param text [String] The comment text.
+    # @param author [String] Author display name.
+    # @param timestamp [String, Time, nil] Optional ISO 8601 timestamp.
+    # @param id [String, nil] Optional GUID for this comment.
+    # @param parent_id [String, nil] Optional parent comment GUID for replies.
+    # @param done [Boolean, nil] Optional resolved flag.
+    # @param user_id [String, nil] Optional user ID.
+    # @param provider_id [String, nil] Optional provider ID.
+    # @return [void]
+    # @api public
+    # : (String | Integer cell, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?) -> void
+    def threaded_comment: (String | Integer cell, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?) -> void
+
+    alias add_threaded_comment threaded_comment
+
     # Adds a sparkline group to the sheet.
     #
     # @param sparklines [Array<Hash>] List of { data_ref:, location_ref: } items.

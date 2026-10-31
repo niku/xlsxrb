@@ -8,6 +8,8 @@ module Xlsxrb
 
     EMPTY_CELLS: untyped
 
+    EMPTY_ARRAY: untyped
+
     # Represents an Excel formula with an optional cached value and calculation properties.
     #
     # @example Create a formula

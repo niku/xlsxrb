@@ -186,9 +186,9 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(c1.formula, c1_modified.formula)
 
     # pattern matching (deconstruct & deconstruct_keys)
-    assert_equal([1, 1, 10, "A1", 1, {}, [], nil, nil, nil, nil], c1.deconstruct)
+    assert_equal([1, 1, 10, "A1", 1, {}, [], nil, nil, nil, nil, []], c1.deconstruct)
     assert_equal({ row_index: 1, value: 10 }, c1.deconstruct_keys(%i[row_index value]))
-    assert_equal({ row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1, unmapped_data: {}, errors: [], hyperlink: nil, comment: nil, raw_value: nil, format_code: nil }, c1.deconstruct_keys(nil))
+    assert_equal({ row_index: 1, column_index: 1, value: 10, formula: "A1", style_index: 1, unmapped_data: {}, errors: [], hyperlink: nil, comment: nil, raw_value: nil, format_code: nil, threaded_comments: [] }, c1.deconstruct_keys(nil))
   end
 
   test "cell hyperlink predicate and url accessor" do
@@ -1706,5 +1706,71 @@ class ElementsTest < Test::Unit::TestCase
     keys = ws.deconstruct_keys(nil)
     assert_equal(sgs, keys[:sparkline_groups])
     assert_equal("A1:F10", keys[:print_area])
+  end
+
+  test "cell threaded_comments accessors, fast_create, equality, with, deconstruct, and index access" do
+    tc1 = { text: "Hello", author: "Alice", id: "{11111111-1111-1111-1111-111111111111}" }
+    tc2 = { text: "World", author: "Bob", parent_id: "{11111111-1111-1111-1111-111111111111}" }
+    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, threaded_comments: [tc1, tc2])
+
+    assert_true(cell.threaded_comments?)
+    assert_equal([tc1, tc2], cell.threaded_comments)
+    assert_equal(tc1, cell.threaded_comment)
+    assert_equal([tc1, tc2], cell[:threaded_comments])
+    assert_equal(tc1, cell[:threaded_comment])
+
+    empty_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42)
+    assert_false(empty_cell.threaded_comments?)
+    assert_equal([], empty_cell.threaded_comments)
+    assert_nil(empty_cell.threaded_comment)
+    assert_equal([], empty_cell[:threaded_comments])
+    assert_nil(empty_cell[:threaded_comment])
+
+    fast_cell = Xlsxrb::Elements::Cell.fast_create(0, 0, 42, nil, nil)
+    assert_false(fast_cell.threaded_comments?)
+    assert_equal([], fast_cell.threaded_comments)
+
+    cell_clone = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, threaded_comments: [tc1, tc2])
+    assert_equal(cell, cell_clone)
+    assert_equal(cell.hash, cell_clone.hash)
+    refute_equal(cell, empty_cell)
+
+    with_cell = empty_cell.with(threaded_comments: [tc1])
+    assert_equal([tc1], with_cell.threaded_comments)
+    assert_equal(tc1, with_cell.threaded_comment)
+
+    assert_equal([0, 0, 42, nil, nil, {}, [], nil, nil, nil, nil, [tc1, tc2]], cell.deconstruct)
+    keys = cell.deconstruct_keys([:threaded_comments])
+    assert_equal({ threaded_comments: [tc1, tc2] }, keys)
+  end
+
+  test "worksheet threaded_comments accessors, ref lookup, with, equality, and hash" do
+    tc1 = { ref: "B2", text: "Note 1", author: "Alice" }
+    tc2 = { cell: "B2", text: "Reply 1", author: "Bob" }
+    tc3 = { ref: "C3", text: "Other", author: "Charlie" }
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", threaded_comments: [tc1, tc2, tc3])
+
+    assert_equal([tc1, tc2, tc3], ws.threaded_comments)
+    assert_equal([tc1, tc2], ws.threaded_comment("B2"))
+    assert_equal([tc1, tc2], ws.threaded_comment(1, 1)) # row 1, col 1 is B2
+    assert_equal([tc3], ws.threaded_comment("C3"))
+    assert_equal([], ws.threaded_comment("A1"))
+
+    by_ref = ws.threaded_comments_by_ref
+    assert_equal([tc1, tc2], by_ref["B2"])
+    assert_equal([tc3], by_ref["C3"])
+
+    ws_copy = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", threaded_comments: [tc1, tc2, tc3])
+    assert_equal(ws, ws_copy)
+    assert_equal(ws.hash, ws_copy.hash)
+
+    ws_empty = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
+    refute_equal(ws, ws_empty)
+
+    ws_with = ws_empty.with(threaded_comments: [tc3])
+    assert_equal([tc3], ws_with.threaded_comments)
+
+    keys = ws.deconstruct_keys(nil)
+    assert_equal([tc1, tc2, tc3], keys[:threaded_comments])
   end
 end

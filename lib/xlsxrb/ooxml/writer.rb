@@ -97,6 +97,9 @@ module Xlsxrb
         @charts_data = { "Sheet1" => [] }
         @shapes_data = { "Sheet1" => [] }
         @comments_data = { "Sheet1" => [] }
+        @threaded_comments_data = { "Sheet1" => [] }
+        @threaded_comment_count = 0
+        @persons_data = []
         @pivot_tables_data = { "Sheet1" => [] }
         @extra_entries = {}
         @extra_ct_defaults = {}
@@ -147,6 +150,7 @@ module Xlsxrb
         @charts_data[name] = []
         @shapes_data[name] = []
         @comments_data[name] = []
+        @threaded_comments_data[name] = []
         @pivot_tables_data[name] = []
         @sheet_protection[name] = nil
         @protected_ranges[name] = []
@@ -1677,6 +1681,81 @@ module Xlsxrb
         @comments_data[sheet_name] || []
       end
 
+      # Adds a threaded comment to a cell in the given sheet.
+      # : (String | Integer cell_address, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?, ?sheet: untyped?) -> Hash[Symbol, untyped]
+      def add_threaded_comment(cell_address, text, author: "Author", timestamp: nil, id: nil, parent_id: nil, done: false, user_id: nil, provider_id: nil, sheet: nil)
+        sheet_name = sheet || @sheet_order.first
+        raise ArgumentError, "unknown sheet: #{sheet_name}" unless @threaded_comments_data.key?(sheet_name)
+
+        person = if author.is_a?(Hash)
+                   add_person(author[:display_name] || author[:name] || "Author", id: author[:id], user_id: author[:user_id], provider_id: author[:provider_id])
+                 else
+                   add_person(author, user_id: user_id, provider_id: provider_id)
+                 end
+
+        dt = case timestamp
+             when Time, DateTime
+               timestamp.to_time.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+             when String
+               timestamp
+             else
+               Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+             end
+
+        comment_id = format_guid(id)
+        parent_guid = parent_id ? format_guid(parent_id) : nil
+
+        entry = {
+          cell: cell_address.to_s.upcase,
+          ref: cell_address.to_s.upcase,
+          text: text.to_s,
+          author: person[:display_name],
+          person_id: person[:id],
+          id: comment_id,
+          parent_id: parent_guid,
+          timestamp: dt,
+          dt: dt,
+          done: done ? true : false
+        }.compact
+        @threaded_comments_data[sheet_name] << entry
+        entry
+      end
+      alias threaded_comment add_threaded_comment
+
+      # Returns threaded comments for the first (or given) sheet.
+      # : (?sheet: untyped?) -> Array[Hash[Symbol, untyped]]
+      def threaded_comments(sheet: nil)
+        sheet_name = sheet || @sheet_order.first
+        @threaded_comments_data[sheet_name] || []
+      end
+
+      # Registers a person in the workbook person list.
+      # : (String name, ?id: String?, ?user_id: String?, ?provider_id: String?) -> Hash[Symbol, untyped]
+      def add_person(name, id: nil, user_id: nil, provider_id: nil)
+        person_name = name.to_s
+        person_id = id ? format_guid(id) : nil
+        existing = @persons_data.find do |p|
+          (person_id && p[:id] == person_id) || p[:display_name] == person_name
+        end
+        return existing if existing
+
+        person = {
+          id: person_id || format_guid(nil),
+          display_name: person_name,
+          user_id: user_id || "AD:#{person_name}",
+          provider_id: provider_id || "AD"
+        }
+        @persons_data << person
+        person
+      end
+
+      # Returns the workbook person list.
+      # : () -> Array[Hash[Symbol, untyped]]
+      def persons
+        @persons_data
+      end
+      alias person_list persons
+
       # Adds a pivot table to the given sheet.
       # source_ref: data source range (e.g. "Sheet1!A1:C4").
       # row_fields: array of 0-based field indices for row axis.
@@ -1823,13 +1902,16 @@ module Xlsxrb
           sheet_charts = @charts_data[sheet_name] || []
           sheet_shapes = @shapes_data[sheet_name] || []
           sheet_comments = @comments_data[sheet_name] || []
+          sheet_threaded_comments = @threaded_comments_data[sheet_name] || []
           sheet_pivots = @pivot_tables_data[sheet_name] || []
           has_drawing = sheet_images.any? || sheet_charts.any? || sheet_shapes.any?
           has_comments = sheet_comments.any?
+          has_tc = sheet_threaded_comments.any?
 
           # Pre-increment counters so rels reference correct paths.
           sheet_drawing_idx = has_drawing ? (@drawing_count += 1) : nil
           sheet_comment_idx = has_comments ? (@comment_count += 1) : nil
+          sheet_tc_idx = has_tc ? (@threaded_comment_count += 1) : nil
           sheet_pivot_start = @pivot_table_count
           sheet_cache_start = @pivot_cache_count
           sheet_pivots.each do
@@ -1842,7 +1924,8 @@ module Xlsxrb
           sheet_rels_parts = build_sheet_rels_parts_v2(
             sheet_name, sheet_tables, table_index,
             sheet_drawing_idx, sheet_comment_idx,
-            sheet_pivot_start, sheet_pivots.size
+            sheet_pivot_start, sheet_pivots.size,
+            sheet_tc_idx
           )
 
           # Calculate the legacyDrawing rId if comments exist.
@@ -1911,6 +1994,9 @@ module Xlsxrb
             entries["xl/drawings/vmlDrawing#{sheet_comment_idx}.vml"] = generate_vml_drawing_xml(sheet_comments)
           end
 
+          # Generate threaded comments XML.
+          entries["xl/threadedComments/threadedComment#{sheet_tc_idx}.xml"] = generate_threaded_comments_xml(sheet_threaded_comments) if has_tc
+
           # Generate pivot table + cache entries.
           sheet_pivots.each_with_index do |pt, pi|
             cache_idx = sheet_cache_start + pi + 1
@@ -1941,6 +2027,9 @@ module Xlsxrb
           entries["xl/externalLinks/externalLink#{link_num}.xml"] = generate_external_link_xml(el)
           entries["xl/externalLinks/_rels/externalLink#{link_num}.xml.rels"] = generate_external_link_rels(el)
         end
+
+        # Generate persons entry if any persons registered.
+        entries["xl/persons/person.xml"] = generate_persons_xml(@persons_data) if @persons_data.any?
 
         # Generate workbook rels (needs to know pivot cache count).
         entries["xl/_rels/workbook.xml.rels"] = generate_workbook_rels(has_calc_chain: entries.key?("xl/calcChain.xml"))
@@ -2067,6 +2156,14 @@ module Xlsxrb
         (1..@comment_count.to_i).each do |c|
           overrides["/xl/comments#{c}.xml"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"
         end
+
+        # Threaded comments.
+        (1..@threaded_comment_count.to_i).each do |tc|
+          overrides["/xl/threadedComments/threadedComment#{tc}.xml"] = "application/vnd.ms-excel.threadedcomments+xml"
+        end
+
+        # Persons.
+        overrides["/xl/persons/person.xml"] = "application/vnd.ms-excel.person+xml" if @persons_data.any?
 
         # Pivot tables and cache.
         (1..@pivot_table_count.to_i).each do |p|
@@ -2354,6 +2451,10 @@ module Xlsxrb
         end
         if has_calc_chain
           parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/calcChain" Target="calcChain.xml"/>)
+          next_rid += 1
+        end
+        if @persons_data.any?
+          parts << %(<Relationship Id="rId#{next_rid}" Type="http://schemas.microsoft.com/office/2017/10/relationships/person" Target="persons/person.xml"/>)
           next_rid += 1
         end
         parts << "</Relationships>"
@@ -3118,8 +3219,8 @@ module Xlsxrb
         parts.join
       end
 
-      # : (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count) -> untyped
-      def build_sheet_rels_parts_v2(sheet_name, sheet_tables, table_start_index, drawing_idx, comment_idx, pivot_start, pivot_count)
+      # : (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count, ?untyped? threaded_comment_idx) -> untyped
+      def build_sheet_rels_parts_v2(sheet_name, sheet_tables, table_start_index, drawing_idx, comment_idx, pivot_start, pivot_count, threaded_comment_idx = nil)
         rels = []
         @hyperlinks[sheet_name].each do |(_cell_ref, link)|
           next unless link[:url]
@@ -3133,6 +3234,7 @@ module Xlsxrb
           rels << { type: "#{DOC_REL_NS}/comments", target: "../comments#{comment_idx}.xml" }
           rels << { type: "#{DOC_REL_NS}/vmlDrawing", target: "../drawings/vmlDrawing#{comment_idx}.vml" }
         end
+        rels << { type: "http://schemas.microsoft.com/office/2017/10/relationships/threadedComment", target: "../threadedComments/threadedComment#{threaded_comment_idx}.xml" } if threaded_comment_idx
         rels << { type: "#{DOC_REL_NS}/drawing", target: "../drawings/drawing#{drawing_idx}.xml" } if drawing_idx
         pivot_count.times do |i|
           pt_idx = pivot_start + i + 1

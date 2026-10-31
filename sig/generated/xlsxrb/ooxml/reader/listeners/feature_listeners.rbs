@@ -437,6 +437,42 @@ module Xlsxrb
 
         def element_name: (untyped local_name, untyped qname) -> untyped
       end
+
+      # SAX2 listener for parsing <personList> element in xl/persons/person.xml.
+      class PersonListListener
+        include REXML::SAX2Listener
+
+        attr_reader persons: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def end_element: (untyped _uri, untyped _local_name, untyped _qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
+
+      # SAX2 listener for parsing <ThreadedComments> element in xl/threadedComments/threadedComment{N}.xml.
+      class ThreadedCommentsListener
+        include REXML::SAX2Listener
+
+        attr_reader threaded_comments: untyped
+
+        def initialize: () -> untyped
+
+        def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped
+
+        def characters: (untyped text) -> untyped
+
+        def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
+
+        private
+
+        def element_name: (untyped local_name, untyped qname) -> untyped
+      end
     end
   end
 end

@@ -63,6 +63,8 @@ module Xlsxrb
         @table_count = 0
         @pivot_cache_count = 0
         @pivot_table_count = 0
+        @threaded_comment_count = 0
+        @persons = []
       end
 
       def write_to(target)
@@ -132,10 +134,12 @@ module Xlsxrb
         sheet_charts = sheet[:charts] || []
         sheet_shapes = sheet[:shapes] || []
         sheet_comments = sheet[:comments] || []
+        sheet_threaded_comments = sheet[:threaded_comments] || []
         sheet_tables = sheet[:tables] || []
         sheet_hyperlinks = sheet[:hyperlinks] || []
         has_drawing = sheet_images.any? || sheet_charts.any? || sheet_shapes.any?
         has_comments = sheet_comments.any?
+        has_threaded_comments = sheet_threaded_comments.any?
 
         sheet_rels = []
         drawing_rid = nil
@@ -158,6 +162,12 @@ module Xlsxrb
           vml_rid_num = sheet_rels.size + 1
           sheet_rels << { id: "rId#{vml_rid_num}", type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing", target: "../drawings/vmlDrawing#{@comment_count}.vml" }
           vml_rid = "rId#{vml_rid_num}"
+        end
+
+        if has_threaded_comments
+          @threaded_comment_count += 1
+          tc_rid_num = sheet_rels.size + 1
+          sheet_rels << { id: "rId#{tc_rid_num}", type: "http://schemas.microsoft.com/office/2017/10/relationships/threadedComment", target: "../threadedComments/threadedComment#{@threaded_comment_count}.xml" }
         end
 
         sheet_hyperlinks.each do |link|
@@ -241,6 +251,7 @@ module Xlsxrb
       def write_auxiliary_parts(zip)
         drawing_idx = 0
         comment_idx = 0
+        tc_idx = 0
         table_idx = 0
         pivot_cache_idx = 0
         pivot_table_idx = 0
@@ -316,6 +327,29 @@ module Xlsxrb
             zip.add_entry("xl/drawings/vmlDrawing#{comment_idx}.vml", comment_writer.send(:generate_vml_drawing_xml, comment_writer.comments))
           end
 
+          sheet_threaded_comments = sheet[:threaded_comments] || []
+          if sheet_threaded_comments.any?
+            tc_idx += 1
+            tc_writer = Xlsxrb::Ooxml::Writer.new
+            sheet_threaded_comments.each do |c|
+              tc_writer.add_threaded_comment(
+                c[:cell] || c[:ref],
+                c[:text],
+                author: c[:author] || "Author",
+                timestamp: c[:timestamp] || c[:dt],
+                id: c[:id],
+                parent_id: c[:parent_id],
+                done: c[:done],
+                user_id: c[:user_id],
+                provider_id: c[:provider_id]
+              )
+            end
+            tc_writer.persons.each do |p|
+              @persons << p unless @persons.any? { |ep| ep[:id] == p[:id] || ep[:display_name] == p[:display_name] }
+            end
+            zip.add_entry("xl/threadedComments/threadedComment#{tc_idx}.xml", tc_writer.send(:generate_threaded_comments_xml, tc_writer.threaded_comments))
+          end
+
           sheet_tables.each do |tbl|
             table_idx += 1
             zip.add_entry("xl/tables/table#{table_idx}.xml", build_table_xml(tbl, table_idx))
@@ -360,6 +394,11 @@ module Xlsxrb
 
           zip.add_entry("xl/worksheets/_rels/sheet#{idx + 1}.xml.rels", build_sheet_rels_from_list(sheet_rels)) unless sheet_rels.empty?
         end
+
+        return unless @persons.any?
+
+        p_writer = Xlsxrb::Ooxml::Writer.new
+        zip.add_entry("xl/persons/person.xml", p_writer.send(:generate_persons_xml, @persons))
       end
 
       def write_package_metadata(zip)
@@ -492,6 +531,11 @@ module Xlsxrb
             b.empty_tag("Override", { PartName: "/xl/pivotCache/pivotCacheRecords#{pivot_cache_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheRecords+xml" })
             b.empty_tag("Override", { PartName: "/xl/pivotTables/pivotTable#{pivot_table_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml" })
           end
+        end
+
+        b.empty_tag("Override", { PartName: "/xl/persons/person.xml", ContentType: "application/vnd.ms-excel.person+xml" }) if @persons.any?
+        (1..@threaded_comment_count).each do |tc|
+          b.empty_tag("Override", { PartName: "/xl/threadedComments/threadedComment#{tc}.xml", ContentType: "application/vnd.ms-excel.threadedcomments+xml" })
         end
 
         b.close_tag("Types")
@@ -674,6 +718,15 @@ module Xlsxrb
                         Id: "rId#{rid}",
                         Type: "#{DOC_REL}/pivotCacheDefinition",
                         Target: "pivotCache/pivotCacheDefinition#{i + 1}.xml"
+                      })
+        end
+
+        if @persons.any?
+          rid += 1
+          b.empty_tag("Relationship", {
+                        Id: "rId#{rid}",
+                        Type: "http://schemas.microsoft.com/office/2017/10/relationships/person",
+                        Target: "persons/person.xml"
                       })
         end
 

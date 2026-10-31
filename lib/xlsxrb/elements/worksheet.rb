@@ -17,7 +17,7 @@ module Xlsxrb
     class Worksheet
       [Enumerable, CoordinateAccess].each { |m| include m }
 
-      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups, :merged_cells, :auto_filter, :tables, :shapes, :freeze_pane, :page_setup, :page_margins, :header_footer, :print_options, :sheet_protection, :sheet_view, :sheet_properties, :sheet_format, :row_breaks, :col_breaks, :protected_ranges, :cell_watches, :ignored_errors, :phonetic_properties, :selection, :sheet_calc_pr, :background_image
+      attr_reader :name, :rows, :columns, :charts, :conditional_formatting, :data_validations, :unmapped_data, :errors, :state, :hyperlinks, :comments, :images, :styles, :date1904, :print_area, :print_titles, :sparkline_groups, :merged_cells, :auto_filter, :tables, :shapes, :freeze_pane, :page_setup, :page_margins, :header_footer, :print_options, :sheet_protection, :sheet_view, :sheet_properties, :sheet_format, :row_breaks, :col_breaks, :protected_ranges, :cell_watches, :ignored_errors, :phonetic_properties, :selection, :sheet_calc_pr, :background_image, :threaded_comments
       attr_writer :dimension
       alias conditional_formats conditional_formatting
       alias phonetic_pr phonetic_properties
@@ -68,8 +68,9 @@ module Xlsxrb
       # @param selection [Hash, Array<Hash>, nil] Active cell and selection settings.
       # @param sheet_calc_pr [Hash, nil] Worksheet calculation properties.
       # @param background_image [Hash, nil] Worksheet background image specification.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, untyped], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]], ?shapes: Array[Hash[Symbol, untyped]], ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped], ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped], ?print_options: Hash[Symbol, untyped], ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped], ?sheet_properties: Hash[Symbol, untyped], ?sheet_format: Hash[Symbol, untyped], ?row_breaks: Array[untyped], ?col_breaks: Array[untyped], ?protected_ranges: Array[Hash[Symbol, untyped]], ?cell_watches: Array[String], ?ignored_errors: Array[Hash[Symbol, untyped]], ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil, tables: [], shapes: [], freeze_pane: nil, page_setup: {}, page_margins: nil, header_footer: {}, print_options: {}, sheet_protection: nil, sheet_view: {}, sheet_properties: {}, sheet_format: {}, row_breaks: [], col_breaks: [], protected_ranges: [], cell_watches: [], ignored_errors: [], phonetic_properties: nil, selection: nil, sheet_calc_pr: nil, background_image: nil)
+      # @param threaded_comments [Array<Hash>] Threaded comments in the sheet.
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[Hash[Symbol, untyped]], ?conditional_formatting: Array[Hash[Symbol, untyped]]?, ?data_validations: Array[Hash[Symbol, untyped]], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[Hash[Symbol, untyped]]?, ?state: Symbol, ?hyperlinks: Hash[String, untyped], ?comments: Array[Hash[Symbol, untyped]], ?images: Array[Elements::Image], ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: Hash[Symbol, untyped]?, ?sparkline_groups: Array[Hash[Symbol, untyped]], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]], ?shapes: Array[Hash[Symbol, untyped]], ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped], ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped], ?print_options: Hash[Symbol, untyped], ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped], ?sheet_properties: Hash[Symbol, untyped], ?sheet_format: Hash[Symbol, untyped], ?row_breaks: Array[untyped], ?col_breaks: Array[untyped], ?protected_ranges: Array[Hash[Symbol, untyped]], ?cell_watches: Array[String], ?ignored_errors: Array[Hash[Symbol, untyped]], ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil, tables: [], shapes: [], freeze_pane: nil, page_setup: {}, page_margins: nil, header_footer: {}, print_options: {}, sheet_protection: nil, sheet_view: {}, sheet_properties: {}, sheet_format: {}, row_breaks: [], col_breaks: [], protected_ranges: [], cell_watches: [], ignored_errors: [], phonetic_properties: nil, selection: nil, sheet_calc_pr: nil, background_image: nil, threaded_comments: [])
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
@@ -93,6 +94,7 @@ module Xlsxrb
         @trim_empty_rows = trim_empty_rows ? true : false
         @pad_empty_rows = pad_empty_rows ? true : false
         @pad_empty_cells = pad_empty_cells ? true : false
+        @threaded_comments = (threaded_comments || []).freeze
         @merged_cells = (merged_cells || []).freeze
         @auto_filter = auto_filter
         @tables = (tables || []).freeze
@@ -491,6 +493,34 @@ module Xlsxrb
         end
       end
 
+      # Returns threaded comments for the given cell reference, or empty array.
+      #
+      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+      # @param col [Integer, nil] Optional 0-based column index.
+      # @return [Array<Hash[Symbol, untyped]>]
+      # @api public
+      #: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Hash[Symbol, untyped]]
+      def threaded_comment(ref_or_row, col = nil)
+        ref = if col
+                "#{Cell.column_letter(col)}#{ref_or_row.to_i + 1}"
+              else
+                ref_or_row.to_s.upcase
+              end
+        threaded_comments_by_ref[ref] || []
+      end
+
+      # Returns threaded comments indexed by cell reference.
+      #
+      # @return [Hash<String, Array<Hash[Symbol, untyped]>>]
+      # @api public
+      #: () -> Hash[String, Array[Hash[Symbol, untyped]]]
+      def threaded_comments_by_ref
+        @threaded_comments_by_ref ||= @threaded_comments.each_with_object({}) do |c, acc|
+          r = c[:ref] || c[:cell]
+          (acc[r.to_s.upcase] ||= []) << c if r
+        end
+      end
+
       # Access a cell by reference or 0-based coordinates.
       #
       # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
@@ -643,6 +673,7 @@ module Xlsxrb
                                else
                                  background_image
                                end
+        new_threaded_comments = changes.key?(:threaded_comments) ? changes[:threaded_comments] : threaded_comments
 
         self.class.new(
           name: new_name,
@@ -684,7 +715,8 @@ module Xlsxrb
           phonetic_properties: new_phonetic_properties,
           selection: new_selection,
           sheet_calc_pr: new_sheet_calc_pr,
-          background_image: new_background_image
+          background_image: new_background_image,
+          threaded_comments: new_threaded_comments
         )
       end
 
@@ -704,6 +736,7 @@ module Xlsxrb
           state: state,
           hyperlinks: hyperlinks,
           comments: comments,
+          threaded_comments: threaded_comments,
           styles: styles,
           date1904: date1904,
           dimension: dimension,
@@ -749,6 +782,7 @@ module Xlsxrb
         name == other.name && rows == other.rows && columns == other.columns && charts == other.charts &&
           conditional_formatting == other.conditional_formatting && data_validations == other.data_validations &&
           state == other.state && hyperlinks == other.hyperlinks && comments == other.comments &&
+          threaded_comments == other.threaded_comments &&
           merged_cells == other.merged_cells && auto_filter == other.auto_filter &&
           tables == other.tables && shapes == other.shapes && freeze_pane == other.freeze_pane &&
           page_setup == other.page_setup && page_margins == other.page_margins &&
@@ -767,7 +801,7 @@ module Xlsxrb
       def hash
         [
           self.class, name, rows, columns, charts, conditional_formatting, data_validations,
-          state, hyperlinks, comments, merged_cells, auto_filter, tables, shapes, freeze_pane,
+          state, hyperlinks, comments, threaded_comments, merged_cells, auto_filter, tables, shapes, freeze_pane,
           page_setup, page_margins, header_footer, print_options, sheet_protection, sheet_view,
           sheet_properties, sheet_format, row_breaks, col_breaks, protected_ranges,
           cell_watches, ignored_errors, phonetic_properties, selection, sheet_calc_pr, background_image

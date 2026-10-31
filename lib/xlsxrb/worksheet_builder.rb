@@ -31,6 +31,7 @@ module Xlsxrb
       @conditional_formats = []
       @tables = []
       @comments = []
+      @threaded_comments = []
       @sparkline_groups = []
       @merge_cells_ranges = []
       @freeze_pane = nil
@@ -617,6 +618,36 @@ module Xlsxrb
     def comment(cell, text, author: "Author")
       @comments << { cell: cell, text: text, author: author }
     end
+
+    # Adds a threaded comment to a cell.
+    #
+    # @param cell [String, Integer] Cell reference (e.g. "B2").
+    # @param text [String] The comment text.
+    # @param author [String] Author display name.
+    # @param timestamp [String, Time, nil] Optional ISO 8601 timestamp.
+    # @param id [String, nil] Optional GUID for this comment.
+    # @param parent_id [String, nil] Optional parent comment GUID for replies.
+    # @param done [Boolean, nil] Optional resolved flag.
+    # @param user_id [String, nil] Optional user ID.
+    # @param provider_id [String, nil] Optional provider ID.
+    # @return [void]
+    # @api public
+    #: (String | Integer cell, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?) -> void
+    def threaded_comment(cell, text, author: "Author", timestamp: nil, id: nil, parent_id: nil, done: false, user_id: nil, provider_id: nil)
+      entry = {
+        cell: cell,
+        text: text,
+        author: author,
+        timestamp: timestamp,
+        id: id,
+        parent_id: parent_id,
+        done: done ? true : false,
+        user_id: user_id,
+        provider_id: provider_id
+      }.compact
+      @threaded_comments << entry
+    end
+    alias add_threaded_comment threaded_comment
 
     # Adds a sparkline group to the sheet.
     #
@@ -1311,6 +1342,7 @@ module Xlsxrb
       facade_meta[:tables] = @tables unless @tables.empty?
       facade_meta[:pivot_tables] = @pivot_tables unless (@pivot_tables || []).empty?
       facade_meta[:comments] = @comments unless @comments.empty?
+      facade_meta[:threaded_comments] = @threaded_comments unless @threaded_comments.empty?
       facade_meta[:sparkline_groups] = @sparkline_groups unless @sparkline_groups.empty?
       facade_meta[:merge_cells] = @merge_cells_ranges unless @merge_cells_ranges.empty?
       facade_meta[:freeze_pane] = @freeze_pane if @freeze_pane
@@ -1354,15 +1386,26 @@ module Xlsxrb
         cm_hash[ref] = c
       end
 
-      rows = if hl_hash.empty? && cm_hash.empty?
+      tc_hash = {}
+      @threaded_comments.each do |c|
+        ref = (c[:ref] || c[:cell]).to_s.upcase
+        (tc_hash[ref] ||= []) << c
+      end
+
+      rows = if hl_hash.empty? && cm_hash.empty? && tc_hash.empty?
                @rows
              else
                @rows.map do |row|
                  new_cells = row.cells.map do |cell|
                    hl = hl_hash[cell.ref]
                    cm = cm_hash[cell.ref]
-                   if hl || cm
-                     cell.with(hyperlink: hl || cell.hyperlink, comment: cm || cell.comment)
+                   tcs = tc_hash[cell.ref]
+                   if hl || cm || tcs
+                     cell.with(
+                       hyperlink: hl || cell.hyperlink,
+                       comment: cm || cell.comment,
+                       threaded_comments: (tcs ? (cell.threaded_comments + tcs) : cell.threaded_comments)
+                     )
                    else
                      cell
                    end
@@ -1379,6 +1422,7 @@ module Xlsxrb
         state: @state,
         hyperlinks: hl_hash,
         comments: @comments,
+        threaded_comments: @threaded_comments,
         print_area: @print_area,
         print_titles: @print_titles,
         sparkline_groups: @sparkline_groups,

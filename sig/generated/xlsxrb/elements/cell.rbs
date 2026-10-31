@@ -38,6 +38,8 @@ module Xlsxrb
 
       attr_reader date1904: untyped
 
+      attr_reader threaded_comments: untyped
+
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
       # @param value [Object, nil] The cell's value.
@@ -50,8 +52,9 @@ module Xlsxrb
       # @param raw_value [String, nil] Optional unparsed raw string value.
       # @param format_code [String, nil] Optional OpenXML number/date format code.
       # @param date1904 [Boolean] Whether the cell belongs to a 1904 date system workbook.
-      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool) -> void
-      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool) -> void
+      # @param threaded_comments [Array<Hash>, nil] Optional threaded comments.
+      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> void
+      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> void
 
       # rubocop:disable Style/OptionalBooleanParameter
       def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula, ?untyped raw_value, ?untyped format_code, ?untyped date1904) -> untyped
@@ -131,6 +134,20 @@ module Xlsxrb
       # @api public
       # : () -> String?
       def comment_text: () -> String?
+
+      # Returns whether the cell contains any threaded comments.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def threaded_comments?: () -> bool
+
+      # Returns the root threaded comment for this cell, or nil.
+      #
+      # @return [Hash[Symbol, untyped], nil]
+      # @api public
+      # : () -> Hash[Symbol, untyped]?
+      def threaded_comment: () -> Hash[Symbol, untyped]?
 
       # Returns the formatted string representation of the cell value according to its format code.
       #

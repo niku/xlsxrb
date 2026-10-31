@@ -16,7 +16,7 @@ module Xlsxrb
     #
     # @api public
     class Cell
-      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors, :hyperlink, :comment, :raw_value, :format_code, :date1904
+      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors, :hyperlink, :comment, :raw_value, :format_code, :date1904, :threaded_comments
 
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
@@ -30,8 +30,9 @@ module Xlsxrb
       # @param raw_value [String, nil] Optional unparsed raw string value.
       # @param format_code [String, nil] Optional OpenXML number/date format code.
       # @param date1904 [Boolean] Whether the cell belongs to a 1904 date system workbook.
-      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool) -> void
-      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil, comment: nil, raw_value: nil, format_code: nil, date1904: false)
+      # @param threaded_comments [Array<Hash>, nil] Optional threaded comments.
+      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> void
+      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil, comment: nil, raw_value: nil, format_code: nil, date1904: false, threaded_comments: nil)
         @row_index = row_index
         @column_index = column_index
         @value = value
@@ -45,6 +46,7 @@ module Xlsxrb
         @raw_value = raw_value
         @format_code = format_code
         @date1904 = date1904 ? true : false
+        @threaded_comments = (threaded_comments || EMPTY_ARRAY).freeze
       end
 
       # rubocop:disable Style/OptionalBooleanParameter
@@ -62,6 +64,7 @@ module Xlsxrb
         inst.instance_variable_set(:@raw_value, raw_value)
         inst.instance_variable_set(:@format_code, format_code)
         inst.instance_variable_set(:@date1904, date1904 ? true : false)
+        inst.instance_variable_set(:@threaded_comments, EMPTY_ARRAY)
         inst
       end
       # rubocop:enable Style/OptionalBooleanParameter
@@ -78,22 +81,23 @@ module Xlsxrb
           hyperlink == other.hyperlink &&
           comment == other.comment &&
           raw_value == other.raw_value &&
-          format_code == other.format_code
+          format_code == other.format_code &&
+          threaded_comments == other.threaded_comments
       end
       alias eql? ==
 
       def hash
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment, raw_value, format_code].hash
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment, raw_value, format_code, threaded_comments].hash
       end
 
       def deconstruct
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment, raw_value, format_code]
+        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment, raw_value, format_code, threaded_comments]
       end
 
       def deconstruct_keys(keys)
         h = { row_index: row_index, column_index: column_index, value: value, formula: formula,
               style_index: style_index, unmapped_data: unmapped_data, errors: errors, hyperlink: hyperlink,
-              comment: comment, raw_value: raw_value, format_code: format_code }
+              comment: comment, raw_value: raw_value, format_code: format_code, threaded_comments: threaded_comments }
         keys ? h.slice(*keys) : h
       end
 
@@ -110,7 +114,8 @@ module Xlsxrb
           comment: changes.fetch(:comment, comment),
           raw_value: changes.fetch(:raw_value, raw_value),
           format_code: changes.fetch(:format_code, format_code),
-          date1904: changes.fetch(:date1904, @date1904 || false)
+          date1904: changes.fetch(:date1904, @date1904 || false),
+          threaded_comments: changes.fetch(:threaded_comments, threaded_comments)
         )
       end
 
@@ -230,6 +235,24 @@ module Xlsxrb
         end
       end
 
+      # Returns whether the cell contains any threaded comments.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def threaded_comments?
+        !@threaded_comments.empty?
+      end
+
+      # Returns the root threaded comment for this cell, or nil.
+      #
+      # @return [Hash[Symbol, untyped], nil]
+      # @api public
+      #: () -> Hash[Symbol, untyped]?
+      def threaded_comment
+        @threaded_comments.first
+      end
+
       # Returns the formatted string representation of the cell value according to its format code.
       #
       # @param custom_format_code [String, nil] Optional format code override.
@@ -261,6 +284,8 @@ module Xlsxrb
         when :url then url
         when :tooltip then tooltip
         when :comment then comment
+        when :threaded_comments then threaded_comments
+        when :threaded_comment then threaded_comment
         when :raw_value then raw_value
         when :format_code then format_code
         when :formatted_value then formatted_value
