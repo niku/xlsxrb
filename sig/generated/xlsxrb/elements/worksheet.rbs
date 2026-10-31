@@ -223,6 +223,15 @@ module Xlsxrb
 
       alias full_calc_on_load full_calc_on_load?
 
+      # Returns the outline and grouping properties of the worksheet, or an empty hash if none configured.
+      #
+      # @return [Hash]
+      # @api public
+      # : () -> Hash[Symbol, untyped]
+      def outline_properties: () -> Hash[Symbol, untyped]
+
+      alias outline_pr outline_properties
+
       # Iterate over rows in the worksheet.
       #
       # @example

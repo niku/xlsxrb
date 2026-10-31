@@ -590,4 +590,28 @@ class XsdValidationTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  # 20. Outline properties (<outlinePr>) and row/column grouping XSD sequence conformance
+  def test_outlines_and_grouping_xsd_validation
+    tmp = Tempfile.new(["xsd_outlines", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("OutlinesSheet") do |s|
+          s.outline_properties(apply_styles: true, summary_below: true, summary_right: false, show_symbols: true)
+          s.group_columns(0..2, level: 1, collapsed: true)
+
+          s.row(%w[A B C D])
+          s.group_rows(level: 1, collapsed: true) do
+            s.row([1, 2, 3, 4])
+            s.row([5, 6, 7, 8])
+          end
+          s.row([6, 8, 10, 12])
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
 end

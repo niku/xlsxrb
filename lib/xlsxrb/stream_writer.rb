@@ -108,6 +108,9 @@ module Xlsxrb
       @current_phonetic_properties = nil
       @current_sheet_calc_pr = nil
       @current_background_image = nil
+      @current_row_outline_level = nil
+      @current_row_collapsed = false
+      @current_row_hidden = false
       @current_cells = {}
       @styles = {} # { style_name => StyleBuilder }
       @style_writer = Ooxml::Writer.new(default_font: default_font)
@@ -422,6 +425,67 @@ module Xlsxrb
 
         @writer.column(...)
       end
+
+      # Groups multiple columns together with outline hierarchy.
+      #
+      # @param index [Integer, String, Range, Array] Column index, letter, range, or array.
+      # @param level [Integer] Grouping outline level (1 to 7).
+      # @param collapsed [Boolean] Whether the group is collapsed.
+      # @param hidden [Boolean] Whether the columns are hidden.
+      # @param width [Float, Integer, nil] Optional column width.
+      # @param style [Integer, Symbol, String, nil] Optional column style.
+      # @return [void]
+      # @api public
+      #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?level: Integer, ?collapsed: bool, ?hidden: bool, ?width: Float | Integer | nil, ?style: untyped) -> void
+      def group_columns(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.group_columns(...)
+      end
+      alias group_column group_columns
+      alias group_cols group_columns
+      alias group_col group_columns
+
+      # Groups multiple rows with outline hierarchy with a block.
+      #
+      # @param rows [Range, Array, Integer, nil] Unused in streaming write.
+      # @param level [Integer] Grouping outline level (1 to 7).
+      # @param collapsed [Boolean] Whether the group is collapsed.
+      # @param hidden [Boolean] Whether the rows are hidden.
+      # @yield Optional block executed with active group outline settings.
+      # @return [void]
+      # @api public
+      #: (?untyped rows, ?level: Integer, ?collapsed: bool, ?hidden: bool) ?{ (self) -> void } -> void
+      def group_rows(rows = nil, level: 1, collapsed: false, hidden: false)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        if block_given?
+          @writer.group_rows(rows, level: level, collapsed: collapsed, hidden: hidden) do
+            yield self
+          end
+        else
+          @writer.group_rows(rows, level: level, collapsed: collapsed, hidden: hidden)
+        end
+      end
+      alias group_row group_rows
+
+      # Configures worksheet-level outline and grouping view properties.
+      #
+      # @param summary_below [Boolean, nil] Summary rows below detail rows.
+      # @param summary_right [Boolean, nil] Summary columns to the right of detail columns.
+      # @param show_outline_symbols [Boolean, nil] Outline symbols visible.
+      # @param show_symbols [Boolean, nil] Alias for show_outline_symbols.
+      # @param apply_styles [Boolean, nil] Automatic styles applied.
+      # @param opts [Hash] Additional options.
+      # @return [Hash]
+      # @api public
+      #: (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?show_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> Hash[Symbol, untyped]
+      def outline_properties(...)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.outline_properties(...)
+      end
+      alias outline_pr outline_properties
 
       # Adds a chart to the active sheet.
       #
@@ -1379,6 +1443,9 @@ module Xlsxrb
       @current_phonetic_properties = nil
       @current_sheet_calc_pr = nil
       @current_background_image = nil
+      @current_row_outline_level = nil
+      @current_row_collapsed = false
+      @current_row_hidden = false
       @current_cells = {}
 
       return unless block_given?
@@ -1471,14 +1538,18 @@ module Xlsxrb
                        style
                      end
 
+      effective_outline = outline_level || @current_row_outline_level
+      effective_collapsed = collapsed || @current_row_collapsed
+      effective_hidden = hidden || @current_row_hidden
+
       attrs = nil
-      if height || hidden || outline_level || collapsed || row_style_id
+      if height || effective_hidden || effective_outline || effective_collapsed || row_style_id
         attrs = {}
         attrs[:height] = height if height
-        attrs[:hidden] = true if hidden
+        attrs[:hidden] = true if effective_hidden
         attrs[:custom_height] = custom_height || !height.nil?
-        attrs[:collapsed] = true if collapsed
-        attrs[:outline_level] = outline_level if outline_level
+        attrs[:collapsed] = true if effective_collapsed
+        attrs[:outline_level] = effective_outline if effective_outline
         attrs[:style_index] = row_style_id if row_style_id
       end
 
@@ -1526,11 +1597,12 @@ module Xlsxrb
     # @param index [Integer, String, Range, Array] Column index (0-based) or letter ("A".."D").
     # @param width [Float, Integer, nil] Column width in character units (0 - 255).
     # @param hidden [Boolean] Whether the column is hidden.
+    # @param collapsed [Boolean] Whether the column is collapsed.
     # @param style [Integer, Symbol, String, Hash, nil] Column style format or index.
     # @return [void]
     # @api public
-    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
-    def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil, style: nil)
+    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
+    def column(index, width: nil, hidden: false, custom_width: false, outline_level: nil, collapsed: false, style: nil)
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
       sheet if @current_sheet.nil?
@@ -1551,12 +1623,14 @@ module Xlsxrb
           existing[:custom_width] = true if custom_width || !width.nil?
           existing[:hidden] = hidden if hidden
           existing[:outline_level] = outline_level unless outline_level.nil?
+          existing[:collapsed] = true if collapsed
           if style_id
             existing[:style] = style_id
             @current_row_writer&.set_column_style(idx, style_id)
           end
         else
           entry = { index: idx, width: width, hidden: hidden, custom_width: custom_width || !width.nil?, outline_level: outline_level }
+          entry[:collapsed] = true if collapsed
           if style_id
             entry[:style] = style_id
             @current_row_writer&.set_column_style(idx, style_id)
@@ -1566,6 +1640,97 @@ module Xlsxrb
       end
       @current_columns.sort_by! { |c| c[:index] }
     end
+
+    # Groups multiple columns together with outline hierarchy.
+    #
+    # @example Group columns B through D
+    #   sheet.group_columns("B".."D", level: 1)
+    #
+    # @example Group columns 1 through 3 and collapse
+    #   sheet.group_columns(1..3, level: 1, collapsed: true)
+    #
+    # @param index [Integer, String, Range, Array] Column index (0-based), letter, range, or array.
+    # @param level [Integer] Grouping outline level (1 to 7).
+    # @param collapsed [Boolean] Whether the group is collapsed.
+    # @param hidden [Boolean] Whether the columns are hidden.
+    # @param width [Float, Integer, nil] Optional column width.
+    # @param style [Integer, Symbol, String, nil] Optional column style.
+    # @return [void]
+    # @api public
+    #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?level: Integer, ?collapsed: bool, ?hidden: bool, ?width: Float | Integer | nil, ?style: untyped) -> void
+    def group_columns(index, level: 1, collapsed: false, hidden: false, width: nil, style: nil)
+      column(index, outline_level: level, collapsed: collapsed, hidden: hidden, width: width, style: style)
+    end
+    alias group_column group_columns
+    alias group_cols group_columns
+    alias group_col group_columns
+
+    # Groups multiple rows with outline hierarchy with a block.
+    #
+    # @example Group rows with a block
+    #   sheet.group_rows(level: 1, collapsed: true) do
+    #     sheet.row(["Subtotal Item 1"])
+    #     sheet.row(["Subtotal Item 2"])
+    #   end
+    #
+    # @param rows [Range, Array, Integer, nil] Unused in streaming write (streaming rows are written on the fly).
+    # @param level [Integer] Grouping outline level (1 to 7).
+    # @param collapsed [Boolean] Whether the group is collapsed.
+    # @param hidden [Boolean] Whether the rows are hidden.
+    # @yield Optional block executed with active group outline settings.
+    # @return [void]
+    # @api public
+    #: (?untyped rows, ?level: Integer, ?collapsed: bool, ?hidden: bool) ?{ (self) -> void } -> void
+    def group_rows(rows = nil, level: 1, collapsed: false, hidden: false)
+      _ = rows
+      return unless block_given?
+
+      prev_level = @current_row_outline_level
+      prev_collapsed = @current_row_collapsed
+      prev_hidden = @current_row_hidden
+      @current_row_outline_level = level
+      @current_row_collapsed = collapsed
+      @current_row_hidden = hidden
+      begin
+        yield(self)
+      ensure
+        @current_row_outline_level = prev_level
+        @current_row_collapsed = prev_collapsed
+        @current_row_hidden = prev_hidden
+      end
+    end
+    alias group_row group_rows
+
+    # Configures worksheet-level outline and grouping view properties.
+    #
+    # @example Show summary row below detail rows
+    #   sheet.outline_properties(summary_below: true, summary_right: true)
+    #
+    # @param summary_below [Boolean, nil] Flag indicating if summary rows appear below detail rows.
+    # @param summary_right [Boolean, nil] Flag indicating if summary columns appear to the right of detail columns.
+    # @param show_outline_symbols [Boolean, nil] Flag indicating whether outline symbols are visible.
+    # @param show_symbols [Boolean, nil] Alias for show_outline_symbols.
+    # @param apply_styles [Boolean, nil] Flag indicating whether automatic styles apply to outlines.
+    # @param opts [Hash] Additional options.
+    # @return [Hash]
+    # @api public
+    #: (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?show_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> Hash[Symbol, untyped]
+    def outline_properties(summary_below: nil, summary_right: nil, show_outline_symbols: nil, show_symbols: nil, apply_styles: nil, **opts)
+      sheet if @current_sheet.nil?
+
+      props = (@current_sheet_properties[:outline_properties] || {}).dup
+      props[:summary_below] = summary_below unless summary_below.nil?
+      props[:summary_right] = summary_right unless summary_right.nil?
+      symbols = show_outline_symbols.nil? ? show_symbols : show_outline_symbols
+      props[:show_outline_symbols] = symbols unless symbols.nil?
+      props[:apply_styles] = apply_styles unless apply_styles.nil?
+      props.merge!(opts)
+      @current_sheet_properties[:outline_properties] = props
+      @current_sheet_properties[:summary_below] = props[:summary_below] unless props[:summary_below].nil?
+      @current_sheet_properties[:summary_right] = props[:summary_right] unless props[:summary_right].nil?
+      props
+    end
+    alias outline_pr outline_properties
 
     # Adds a chart to the current worksheet.
     #

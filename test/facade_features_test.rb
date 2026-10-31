@@ -1644,4 +1644,87 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  test "row and column grouping and outline_properties in streaming write" do
+    tmp = Tempfile.new(["facade_outline_stream", ".xlsx"])
+    Xlsxrb.write(tmp.path) do |w|
+      w.sheet("GroupSheet") do |s|
+        s.outline_properties(summary_below: true, summary_right: false, show_symbols: true, apply_styles: true)
+        s.group_columns("B".."D", level: 1, collapsed: true)
+
+        s.row(["Header A", "B", "C", "D"])
+        s.group_rows(level: 1, collapsed: true) do
+          s.row(["Detail 1", 10, 20, 30])
+          s.row(["Detail 2", 40, 50, 60])
+        end
+        s.row(["Summary", 50, 70, 90])
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    # OutlinePr
+    assert_match(/<outlinePr[^>]+applyStyles="1"/, sheet_xml)
+    assert_match(/<outlinePr[^>]+summaryBelow="1"/, sheet_xml)
+    assert_match(/<outlinePr[^>]+summaryRight="0"/, sheet_xml)
+    assert_match(/<outlinePr[^>]+showOutlineSymbols="1"/, sheet_xml)
+
+    # Columns
+    assert_match(/<col[^>]+min="2"[^>]+max="2"[^>]+outlineLevel="1"[^>]+collapsed="1"/, sheet_xml)
+    assert_match(/<col[^>]+min="4"[^>]+max="4"[^>]+outlineLevel="1"[^>]+collapsed="1"/, sheet_xml)
+
+    # Rows (rows 2 and 3 are grouped)
+    assert_match(/<row[^>]+r="2"[^>]+collapsed="1"[^>]+outlineLevel="1"/, sheet_xml)
+    assert_match(/<row[^>]+r="3"[^>]+collapsed="1"[^>]+outlineLevel="1"/, sheet_xml)
+
+    # Reader inspection
+    reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+    outline_pr = reader.outline_properties(sheet: 0)
+    assert_equal(true, outline_pr[:summary_below])
+    assert_equal(false, outline_pr[:summary_right])
+    assert_equal(true, outline_pr[:show_outline_symbols])
+    assert_equal(true, outline_pr[:apply_styles])
+
+    # Streaming read
+    Xlsxrb.read(tmp.path) do |sheet|
+      assert_equal(outline_pr, sheet.outline_properties)
+    end
+  ensure
+    tmp&.close!
+  end
+
+  test "row and column grouping and outline_properties in in-memory build" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("BuildGroupSheet") do |s|
+        s.outline_pr(summary_below: false, summary_right: true, show_outline_symbols: false)
+        s.group_columns(0..2, level: 2, collapsed: false)
+
+        s.row(["Header 1", "Header 2", "Header 3"])
+        s.group_rows(level: 1, collapsed: true) do
+          s.row(["Row 1", "R1C2", "R1C3"])
+          s.row(["Row 2", "R2C2", "R2C3"])
+        end
+        s.row(["Summary Row", "", ""])
+      end
+    end
+
+    tmp = Tempfile.new(["facade_outline_build", ".xlsx"])
+    Xlsxrb.write(tmp.path, wb)
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    assert_match(/<outlinePr[^>]+summaryBelow="0"/, sheet_xml)
+    assert_match(/<outlinePr[^>]+summaryRight="1"/, sheet_xml)
+    assert_match(/<outlinePr[^>]+showOutlineSymbols="0"/, sheet_xml)
+
+    # DOM inspection
+    ws = wb.sheets.first
+    assert_equal(false, ws.outline_properties[:summary_below])
+    assert_equal(true, ws.outline_properties[:summary_right])
+    assert_equal(false, ws.outline_properties[:show_outline_symbols])
+  ensure
+    tmp&.close!
+  end
 end

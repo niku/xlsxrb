@@ -778,15 +778,27 @@ module Xlsxrb
         attrs = {}
         attrs[:codeName] = props[:code_name].to_s if props[:code_name]
         tc_attrs = build_tab_color_attrs(props)
-        has_children = tc_attrs || !props[:fit_to_page].nil? || !props[:outline_below].nil? || !props[:outline_right].nil?
+
+        outline_props = props[:outline_properties] || props[:outline_pr] || props
+        apply_styles = props.fetch(:apply_styles, outline_props[:apply_styles])
+        summary_below = props.fetch(:summary_below, props.fetch(:outline_below, outline_props[:summary_below]))
+        summary_right = props.fetch(:summary_right, props.fetch(:outline_right, outline_props[:summary_right]))
+        show_outline_symbols = props.fetch(:show_outline_symbols, props.fetch(:show_symbols, outline_props[:show_outline_symbols]))
+        has_outline = !apply_styles.nil? || !summary_below.nil? || !summary_right.nil? || !show_outline_symbols.nil?
+
+        has_children = tc_attrs || !props[:fit_to_page].nil? || has_outline
         if has_children
           @builder.open_tag("sheetPr", attrs)
           @builder.empty_tag("tabColor", tc_attrs) if tc_attrs
 
-          outline_attrs = {}
-          outline_attrs[:summaryBelow] = props[:outline_below] ? "1" : "0" unless props[:outline_below].nil?
-          outline_attrs[:summaryRight] = props[:outline_right] ? "1" : "0" unless props[:outline_right].nil?
-          @builder.empty_tag("outlinePr", outline_attrs) unless outline_attrs.empty?
+          if has_outline
+            outline_attrs = {}
+            outline_attrs[:applyStyles] = apply_styles ? "1" : "0" unless apply_styles.nil?
+            outline_attrs[:summaryBelow] = summary_below ? "1" : "0" unless summary_below.nil?
+            outline_attrs[:summaryRight] = summary_right ? "1" : "0" unless summary_right.nil?
+            outline_attrs[:showOutlineSymbols] = show_outline_symbols ? "1" : "0" unless show_outline_symbols.nil?
+            @builder.empty_tag("outlinePr", outline_attrs) unless outline_attrs.empty?
+          end
 
           unless props[:fit_to_page].nil?
             @builder.empty_tag("pageSetUpPr", { fitToPage: props[:fit_to_page] ? "1" : "0" })
@@ -1476,6 +1488,7 @@ module Xlsxrb
             hidden = col.hidden
             custom_width = col.custom_width || !width.nil?
             outline_level = col.outline_level
+            collapsed = col.unmapped_data[:collapsed]
           else
             min = col[:min] || ((col[:index] || 0) + 1)
             max = col[:max] || ((col[:index] || 0) + 1)
@@ -1484,6 +1497,7 @@ module Xlsxrb
             hidden = col[:hidden]
             custom_width = col[:custom_width] || !width.nil?
             outline_level = col[:outline_level]
+            collapsed = col[:collapsed]
           end
           attrs = {
             min: min.to_s,
@@ -1493,6 +1507,7 @@ module Xlsxrb
           attrs[:hidden] = "1" if hidden
           attrs[:customWidth] = "1" if custom_width && width
           attrs[:outlineLevel] = outline_level.to_s if outline_level
+          attrs[:collapsed] = "1" if collapsed
           attrs[:style] = style_id.to_s if style_id.is_a?(Integer)
           @builder.empty_tag("col", attrs)
         end

@@ -452,6 +452,15 @@ module Xlsxrb
     # : () -> (String | Hash[Symbol, untyped])?
     def tab_color: () -> (String | Hash[Symbol, untyped])?
 
+    # Returns the outline and grouping properties of the worksheet, or an empty hash if none configured.
+    #
+    # @return [Hash]
+    # @api public
+    # : () -> Hash[Symbol, untyped]
+    def outline_properties: () -> Hash[Symbol, untyped]
+
+    alias outline_pr outline_properties
+
     # Returns sheet format properties (defaultRowHeight, defaultColWidth, baseColWidth) for this worksheet.
     #
     # @return [Hash[Symbol, untyped]]

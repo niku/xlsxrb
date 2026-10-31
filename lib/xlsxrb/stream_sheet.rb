@@ -687,6 +687,24 @@ module Xlsxrb
       nil
     end
 
+    # Returns the outline and grouping properties of the worksheet, or an empty hash if none configured.
+    #
+    # @return [Hash]
+    # @api public
+    #: () -> Hash[Symbol, untyped]
+    def outline_properties
+      props = sheet_properties
+      return props[:outline_properties] if props[:outline_properties]
+
+      res = {}
+      res[:summary_below] = props[:summary_below] unless props[:summary_below].nil?
+      res[:summary_right] = props[:summary_right] unless props[:summary_right].nil?
+      res[:show_outline_symbols] = props[:show_outline_symbols] unless props[:show_outline_symbols].nil?
+      res[:apply_styles] = props[:apply_styles] unless props[:apply_styles].nil?
+      res
+    end
+    alias outline_pr outline_properties
+
     # Returns sheet format properties (defaultRowHeight, defaultColWidth, baseColWidth) for this worksheet.
     #
     # @return [Hash[Symbol, untyped]]

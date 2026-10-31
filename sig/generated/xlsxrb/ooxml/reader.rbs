@@ -92,6 +92,11 @@ module Xlsxrb
       # Returns sheet-level properties (tabColor, outlinePr) for the given sheet.
       def sheet_properties: (?sheet: untyped) -> untyped
 
+      # Returns outline and grouping properties (<outlinePr>) for the given sheet.
+      def outline_properties: (?sheet: untyped) -> untyped
+
+      alias outline_pr outline_properties
+
       # Returns phonetic properties for the given sheet, or nil if not present.
       def phonetic_properties: (?sheet: untyped) -> untyped
 

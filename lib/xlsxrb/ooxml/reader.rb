@@ -323,6 +323,18 @@ module Xlsxrb
         parse_worksheet_properties(worksheet_xml)
       end
 
+      # Returns outline and grouping properties (<outlinePr>) for the given sheet.
+      def outline_properties(sheet: nil)
+        props = sheet_properties(sheet: sheet)
+        props[:outline_properties] || {
+          apply_styles: props[:apply_styles],
+          summary_below: props[:summary_below],
+          summary_right: props[:summary_right],
+          show_outline_symbols: props[:show_outline_symbols]
+        }.compact
+      end
+      alias outline_pr outline_properties
+
       # Returns phonetic properties for the given sheet, or nil if not present.
       def phonetic_properties(sheet: nil)
         worksheet_xml = load_worksheet_xml(sheet)
