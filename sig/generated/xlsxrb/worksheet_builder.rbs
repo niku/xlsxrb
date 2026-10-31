@@ -157,15 +157,17 @@ module Xlsxrb
     def validate_data: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
 
     # Adds a conditional formatting rule to a cell range.
+    # Supports block configuration via {ConditionalFormatBuilder} and coordinate targeting (:columns, :rows).
     #
-    # @param sqref [String] Target cell range reference (e.g. "C2:C50").
+    # @param sqref [String, nil] Target cell range reference (e.g. "C2:C50").
     # @param opts [Hash] Rule options (e.g. type: :cellIs, operator: :greaterThan, formula: "100").
     # @option opts [Hash] :dxf Hierarchical differential format specification (e.g. `dxf: { font: { bold: false }, fill: { pattern: "none" } }`).
     # @option opts [Integer] :format_id Pre-registered differential format index (dxfId).
+    # @yield [conditional_format_builder] Optional block for configuration.
     # @return [void]
     # @api public
-    # : (String sqref, **untyped opts) -> void
-    def conditional_format: (String sqref, **untyped opts) -> void
+    # : (?String? sqref, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
+    def conditional_format: (?String? sqref, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
 
     # Adds an Excel Table (ListObject) to the sheet.
     #
@@ -693,10 +695,11 @@ module Xlsxrb
 
     # Appends a single column name or column definition.
     #
-    # @param col [String, Hash] Column header name or definition.
+    # @param col [String, Hash, Symbol] Column header name or definition.
+    # @param opts [Hash] Column options (e.g. totals_row_function, totals_row_label).
     # @return [void]
-    # : (String | Hash[Symbol, untyped] col) -> void
-    def column: (String | Hash[Symbol, untyped] col) -> void
+    # : (String | Symbol | Hash[Symbol, untyped] col, **untyped opts) -> void
+    def column: (String | Symbol | Hash[Symbol, untyped] col, **untyped opts) -> void
 
     alias add_column column
 
@@ -745,8 +748,27 @@ module Xlsxrb
     # : (?Integer? val) -> Integer?
     def total_row_count: (?Integer? val) -> Integer?
 
+    alias totals_row_count total_row_count
+
     # : (Integer val) -> Integer
     def total_row_count=: (Integer val) -> Integer
+
+    alias totals_row_count= total_row_count=
+
+    # : (?bool? val) -> bool?
+    def total_row: (?bool? val) -> bool?
+
+    alias total_row= total_row
+
+    alias totals_row total_row
+
+    alias totals_row= total_row
+
+    # : (?bool? val) -> bool?
+    def auto_filter: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def auto_filter=: (bool val) -> bool
 
     # : () -> Hash[Symbol, untyped]
     def to_h: () -> Hash[Symbol, untyped]
@@ -888,6 +910,179 @@ module Xlsxrb
 
     # : (untyped val) -> untyped
     def error_style=: (untyped val) -> untyped
+
+    # : () -> Hash[Symbol, untyped]
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+
+  # Builder context for configuring conditional formatting rules in block form.
+  #
+  # @api public
+  class ConditionalFormatBuilder
+    # @param sqref [String, nil] Target cell or range reference.
+    # @param opts [Hash] Additional conditional formatting properties.
+    # : (?String? sqref, **untyped opts) -> void
+    def initialize: (?String? sqref, **untyped opts) -> void
+
+    # : (untyped key) -> untyped
+    def []: (untyped key) -> untyped
+
+    # : (untyped key, untyped value) -> untyped
+    def []=: (untyped key, untyped value) -> untyped
+
+    # : (?String? val) -> String?
+    def sqref: (?String? val) -> String?
+
+    # : (String val) -> String
+    def sqref=: (String val) -> String
+
+    alias range sqref
+
+    alias range= sqref=
+
+    # : (?untyped val) -> untyped
+    def columns: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def columns=: (untyped val) -> untyped
+
+    alias col columns
+
+    alias col= columns=
+
+    # : (?untyped val) -> untyped
+    def rows: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def rows=: (untyped val) -> untyped
+
+    alias row rows
+
+    alias row= rows=
+
+    # : (?untyped val) -> untyped
+    def except_rows: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def except_rows=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def type: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def type=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def operator: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def operator=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def formula: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def formula=: (untyped val) -> untyped
+
+    # : (*untyped vals) -> untyped
+    def formulas: (*untyped vals) -> untyped
+
+    # : (untyped vals) -> untyped
+    def formulas=: (untyped vals) -> untyped
+
+    # : (?untyped val) -> untyped
+    def font: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def font=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def fill: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def fill=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def fill_color: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def fill_color=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def font_color: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def font_color=: (untyped val) -> untyped
+
+    # : (?bool? val) -> bool?
+    def bold: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def bold=: (bool val) -> bool
+
+    # : (?bool? val) -> bool?
+    def italic: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def italic=: (bool val) -> bool
+
+    # : (?untyped val) -> untyped
+    def underline: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def underline=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def size: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def size=: (untyped val) -> untyped
+
+    alias sz size
+
+    alias sz= size=
+
+    # : (?bool? val) -> bool?
+    def stop_if_true: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def stop_if_true=: (bool val) -> bool
+
+    # : (?Integer? val) -> Integer?
+    def priority: (?Integer? val) -> Integer?
+
+    # : (Integer val) -> Integer
+    def priority=: (Integer val) -> Integer
+
+    # : (?untyped val) -> untyped
+    def color_scale: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def color_scale=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def data_bar: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def data_bar=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def icon_set: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def icon_set=: (untyped val) -> untyped
+
+    # : (?untyped val) -> untyped
+    def dxf: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def dxf=: (untyped val) -> untyped
+
+    # : (?Integer? val) -> Integer?
+    def format_id: (?Integer? val) -> Integer?
+
+    # : (Integer val) -> Integer
+    def format_id=: (Integer val) -> Integer
 
     # : () -> Hash[Symbol, untyped]
     def to_h: () -> Hash[Symbol, untyped]

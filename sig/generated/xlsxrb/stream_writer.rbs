@@ -374,15 +374,16 @@ module Xlsxrb
       #   s.conditional_format("B2:B20", type: :cell_is, operator: "equal", formula: "0",
       #                        dxf: { font: { bold: false, color: { auto: true } }, fill: { pattern: "none", bg_color: "FFFF00" } })
       #
-      # @param range [String] The cell range (e.g. "A1:A10").
-      # @param type [String, Symbol] Rule type ("cellIs", "colorScale", "dataBar", "expression").
+      # @param sqref [String, nil] The cell range (e.g. "A1:A10").
+      # @param type [String, Symbol, nil] Rule type ("cellIs", "colorScale", "dataBar", "expression").
       # @param opts [Hash] Rule options.
       # @option opts [Hash] :dxf Hierarchical differential format specification.
       # @option opts [Integer] :format_id Pre-registered differential format index (dxfId).
+      # @yield [conditional_format_builder] Optional block for configuration.
       # @return [void]
       # @api public
-      # : (String range, ?type: String | Symbol, **untyped opts) -> void
-      def conditional_format: (String range, ?type: String | Symbol, **untyped opts) -> void
+      # : (?String? sqref, ?type: String | Symbol, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
+      def conditional_format: (?String? sqref, ?type: String | Symbol, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
 
       # Adds a formatted Excel Table to the sheet.
       #
@@ -1056,15 +1057,17 @@ module Xlsxrb
     def validate_data: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
 
     # Adds a conditional formatting rule.
+    # Supports block configuration via {ConditionalFormatBuilder} and coordinate targeting (:columns, :rows).
     #
-    # @param sqref [String] Cell range (e.g. "A1:A10").
+    # @param sqref [String, nil] Cell range (e.g. "A1:A10").
     # @param opts [Hash] Rule options (e.g. `type:`, `operator:`, `formula:`, `dxf:`, `format_id:`, `font_color:`, `fill_color:`, `bold:`, `italic:`).
     # @option opts [Hash] :dxf Hierarchical differential format specification (e.g. `dxf: { font: { bold: false, color: { auto: true } }, fill: { pattern: "none", bg_color: "FFFF00" } }`).
     # @option opts [Integer] :format_id Pre-registered differential format index (dxfId).
+    # @yield [conditional_format_builder] Optional block for configuration.
     # @return [void]
     # @api public
-    # : (untyped sqref, **untyped opts) -> void
-    def conditional_format: (untyped sqref, **untyped opts) -> void
+    # : (?String? sqref, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
+    def conditional_format: (?String? sqref, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
 
     # Adds an Excel Table (ListObject).
     #

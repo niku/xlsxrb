@@ -549,18 +549,19 @@ module Xlsxrb
       #   s.conditional_format("B2:B20", type: :cell_is, operator: "equal", formula: "0",
       #                        dxf: { font: { bold: false, color: { auto: true } }, fill: { pattern: "none", bg_color: "FFFF00" } })
       #
-      # @param range [String] The cell range (e.g. "A1:A10").
-      # @param type [String, Symbol] Rule type ("cellIs", "colorScale", "dataBar", "expression").
+      # @param sqref [String, nil] The cell range (e.g. "A1:A10").
+      # @param type [String, Symbol, nil] Rule type ("cellIs", "colorScale", "dataBar", "expression").
       # @param opts [Hash] Rule options.
       # @option opts [Hash] :dxf Hierarchical differential format specification.
       # @option opts [Integer] :format_id Pre-registered differential format index (dxfId).
+      # @yield [conditional_format_builder] Optional block for configuration.
       # @return [void]
       # @api public
-      #: (String range, ?type: String | Symbol, **untyped opts) -> void
-      def conditional_format(...)
+      #: (?String? sqref, ?type: String | Symbol, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
+      def conditional_format(sqref = nil, **opts, &)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.conditional_format(...)
+        @writer.conditional_format(sqref, **opts, &)
       end
 
       # Adds a formatted Excel Table to the sheet.
@@ -1666,17 +1667,20 @@ module Xlsxrb
     end
 
     # Adds a conditional formatting rule.
+    # Supports block configuration via {ConditionalFormatBuilder} and coordinate targeting (:columns, :rows).
     #
-    # @param sqref [String] Cell range (e.g. "A1:A10").
+    # @param sqref [String, nil] Cell range (e.g. "A1:A10").
     # @param opts [Hash] Rule options (e.g. `type:`, `operator:`, `formula:`, `dxf:`, `format_id:`, `font_color:`, `fill_color:`, `bold:`, `italic:`).
     # @option opts [Hash] :dxf Hierarchical differential format specification (e.g. `dxf: { font: { bold: false, color: { auto: true } }, fill: { pattern: "none", bg_color: "FFFF00" } }`).
     # @option opts [Integer] :format_id Pre-registered differential format index (dxfId).
+    # @yield [conditional_format_builder] Optional block for configuration.
     # @return [void]
     # @api public
-    #: (untyped sqref, **untyped opts) -> void
-    def conditional_format(sqref, **opts)
+    #: (?String? sqref, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
+    def conditional_format(sqref = nil, **opts, &)
       sheet if @current_sheet.nil?
-      @current_conditional_formats << opts.merge(sqref: sqref)
+      normalized_list = DslHelpers.normalize_conditional_format(sqref, **opts, &)
+      @current_conditional_formats.concat(normalized_list)
     end
 
     # Adds an Excel Table (ListObject).
@@ -2584,27 +2588,7 @@ module Xlsxrb
           next rule if rule[:format_id]
 
           normalized = rule.dup
-          dxf = normalized.delete(:dxf)
-          unless dxf
-            font = (normalized.delete(:font) || {}).dup
-            font[:color] = normalized.delete(:font_color) if normalized.key?(:font_color)
-            font[:bold] = normalized.delete(:bold) if normalized.key?(:bold)
-            font[:italic] = normalized.delete(:italic) if normalized.key?(:italic)
-            font[:underline] = normalized.delete(:underline) if normalized.key?(:underline)
-            font[:size] = normalized.delete(:size) if normalized.key?(:size)
-            font[:sz] = normalized.delete(:sz) if normalized.key?(:sz)
-
-            fill = (normalized.delete(:fill) || {}).dup
-            if normalized.key?(:fill_color)
-              fill[:pattern] = "solid"
-              fill[:fg_color] = normalized.delete(:fill_color)
-            end
-
-            dxf = {}
-            dxf[:font] = font unless font.empty?
-            dxf[:fill] = fill unless fill.empty?
-          end
-
+          dxf = normalized.delete(:dxf) || DslHelpers.extract_dxf_from_rule!(normalized)
           next normalized if dxf.nil? || dxf.empty?
 
           dxf_id = @dxfs.index(dxf)

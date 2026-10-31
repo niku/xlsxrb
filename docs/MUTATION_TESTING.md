@@ -2,7 +2,7 @@
 
 To verify test assertion strength and avoid tests that execute code without asserting behavior, `xlsxrb` adopts mutation testing via [`mbj/mutant`](https://github.com/mbj/mutant) with `test-unit` integration.
 
-As of the current release, the test suite achieves 100.00% kill rate (1,528 / 1,528 mutations killed, 0 alive) across all 43 pure functional subjects.
+As of the current release, the test suite achieves 100.00% kill rate (2,549 / 2,549 mutations killed, 0 alive) across all 51 pure functional subjects.
 
 ## Motivation & Strategy
 
@@ -37,6 +37,9 @@ Running mutation testing across the entire codebase (which includes heavy file I
    - Range string absolute coordinate formatting (`DslHelpers.absolute_range`).
    - Row values and styles normalization (`DslHelpers.normalize_row_values`, `DslHelpers.normalize_row_styles`).
    - Strict row bounds validation (`DslHelpers.validate_row_bounds!`).
+   - Coordinate compression, intervals, complement runs, and area references (`compress_runs`, `complement_runs`, `area_ref`, `chunked_sqrefs`).
+   - Defined names, sheet quoting, and absolute coordinates (`quote_sheet_name`, `format_absolute_reference`, `normalize_defined_name_value`).
+   - Sheet name sanitization and forbidden characters truncation (`sanitize_sheet_name`).
 
 ### Excluded Scope (Non-Targets)
 
@@ -47,7 +50,7 @@ Running mutation testing across the entire codebase (which includes heavy file I
 ## Running Mutation Testing
 
 ```bash
-# Run full mutation testing suite (43 subjects, ~50 seconds)
+# Run full mutation testing suite (51 subjects, ~90 seconds)
 bundle exec rake mutant:pure
 
 # Or run mutant against a specific class or method using .mutant.yml configuration

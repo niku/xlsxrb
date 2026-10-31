@@ -408,16 +408,19 @@ module Xlsxrb
     end
 
     # Adds a conditional formatting rule to a cell range.
+    # Supports block configuration via {ConditionalFormatBuilder} and coordinate targeting (:columns, :rows).
     #
-    # @param sqref [String] Target cell range reference (e.g. "C2:C50").
+    # @param sqref [String, nil] Target cell range reference (e.g. "C2:C50").
     # @param opts [Hash] Rule options (e.g. type: :cellIs, operator: :greaterThan, formula: "100").
     # @option opts [Hash] :dxf Hierarchical differential format specification (e.g. `dxf: { font: { bold: false }, fill: { pattern: "none" } }`).
     # @option opts [Integer] :format_id Pre-registered differential format index (dxfId).
+    # @yield [conditional_format_builder] Optional block for configuration.
     # @return [void]
     # @api public
-    #: (String sqref, **untyped opts) -> void
-    def conditional_format(sqref, **opts)
-      @conditional_formats << opts.merge(sqref: sqref)
+    #: (?String? sqref, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
+    def conditional_format(sqref = nil, **opts, &)
+      normalized_list = DslHelpers.normalize_conditional_format(sqref, **opts, &)
+      @conditional_formats.concat(normalized_list)
     end
 
     # Adds an Excel Table (ListObject) to the sheet.
@@ -1342,11 +1345,19 @@ module Xlsxrb
 
     # Appends a single column name or column definition.
     #
-    # @param col [String, Hash] Column header name or definition.
+    # @param col [String, Hash, Symbol] Column header name or definition.
+    # @param opts [Hash] Column options (e.g. totals_row_function, totals_row_label).
     # @return [void]
-    #: (String | Hash[Symbol, untyped] col) -> void
-    def column(col)
-      (@options[:columns] ||= []) << col
+    #: (String | Symbol | Hash[Symbol, untyped] col, **untyped opts) -> void
+    def column(col, **opts)
+      col_spec = if opts.empty?
+                   col
+                 elsif col.is_a?(Hash)
+                   col.merge(opts)
+                 else
+                   opts.merge(name: col.to_s)
+                 end
+      (@options[:columns] ||= []) << col_spec
     end
     alias add_column column
 
@@ -1451,15 +1462,44 @@ module Xlsxrb
     #: (?Integer? val) -> Integer?
     def total_row_count(val = nil)
       if val.nil?
-        @options[:total_row_count]
+        @options[:totals_row_count] || @options[:total_row_count]
       else
-        @options[:total_row_count] = val.to_i
+        @options[:totals_row_count] = val.to_i
       end
     end
+    alias totals_row_count total_row_count
 
     #: (Integer val) -> Integer
     def total_row_count=(val)
-      @options[:total_row_count] = val.to_i
+      @options[:totals_row_count] = val.to_i
+    end
+    alias totals_row_count= total_row_count=
+
+    #: (?bool? val) -> bool?
+    def total_row(val = nil)
+      if val.nil?
+        rc = @options[:totals_row_count] || @options[:total_row_count]
+        rc ? rc.positive? : @options[:total_row]
+      else
+        @options[:totals_row_count] = val ? 1 : 0
+      end
+    end
+    alias total_row= total_row
+    alias totals_row total_row
+    alias totals_row= total_row
+
+    #: (?bool? val) -> bool?
+    def auto_filter(val = nil)
+      if val.nil?
+        @options[:auto_filter]
+      else
+        @options[:auto_filter] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def auto_filter=(val)
+      @options[:auto_filter] = val ? true : false
     end
 
     #: () -> Hash[Symbol, untyped]
@@ -1736,6 +1776,366 @@ module Xlsxrb
     #: (untyped val) -> untyped
     def error_style=(val)
       @options[:error_style] = val
+    end
+
+    #: () -> Hash[Symbol, untyped]
+    def to_h
+      @options.dup
+    end
+  end
+
+  # Builder context for configuring conditional formatting rules in block form.
+  #
+  # @api public
+  class ConditionalFormatBuilder
+    # @param sqref [String, nil] Target cell or range reference.
+    # @param opts [Hash] Additional conditional formatting properties.
+    #: (?String? sqref, **untyped opts) -> void
+    def initialize(sqref = nil, **opts)
+      @options = opts.dup
+      @options[:sqref] = sqref if sqref
+    end
+
+    #: (untyped key) -> untyped
+    def [](key)
+      @options[key.to_sym]
+    end
+
+    #: (untyped key, untyped value) -> untyped
+    def []=(key, value)
+      @options[key.to_sym] = value
+    end
+
+    #: (?String? val) -> String?
+    def sqref(val = nil)
+      if val
+        @options[:sqref] = val.to_s
+      else
+        @options[:sqref]
+      end
+    end
+
+    #: (String val) -> String
+    def sqref=(val)
+      @options[:sqref] = val.to_s
+    end
+    alias range sqref
+    alias range= sqref=
+
+    #: (?untyped val) -> untyped
+    def columns(val = nil)
+      if val
+        @options[:columns] = val
+      else
+        @options[:columns]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def columns=(val)
+      @options[:columns] = val
+    end
+    alias col columns
+    alias col= columns=
+
+    #: (?untyped val) -> untyped
+    def rows(val = nil)
+      if val
+        @options[:rows] = val
+      else
+        @options[:rows]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def rows=(val)
+      @options[:rows] = val
+    end
+    alias row rows
+    alias row= rows=
+
+    #: (?untyped val) -> untyped
+    def except_rows(val = nil)
+      if val
+        @options[:except_rows] = val
+      else
+        @options[:except_rows]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def except_rows=(val)
+      @options[:except_rows] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def type(val = nil)
+      if val
+        @options[:type] = val
+      else
+        @options[:type]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def type=(val)
+      @options[:type] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def operator(val = nil)
+      if val
+        @options[:operator] = val
+      else
+        @options[:operator]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def operator=(val)
+      @options[:operator] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def formula(val = nil)
+      if val
+        @options[:formula] = val
+      else
+        @options[:formula]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def formula=(val)
+      @options[:formula] = val
+    end
+
+    #: (*untyped vals) -> untyped
+    def formulas(*vals)
+      if vals.empty?
+        @options[:formulas]
+      elsif vals.size == 1 && vals.first.is_a?(Array)
+        @options[:formulas] = vals.first
+      else
+        @options[:formulas] = vals
+      end
+    end
+
+    #: (untyped vals) -> untyped
+    def formulas=(vals)
+      @options[:formulas] = vals.is_a?(Array) ? vals : [vals]
+    end
+
+    #: (?untyped val) -> untyped
+    def font(val = nil)
+      if val
+        @options[:font] = val
+      else
+        @options[:font]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def font=(val)
+      @options[:font] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def fill(val = nil)
+      if val
+        @options[:fill] = val
+      else
+        @options[:fill]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def fill=(val)
+      @options[:fill] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def fill_color(val = nil)
+      if val
+        @options[:fill_color] = val
+      else
+        @options[:fill_color]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def fill_color=(val)
+      @options[:fill_color] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def font_color(val = nil)
+      if val
+        @options[:font_color] = val
+      else
+        @options[:font_color]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def font_color=(val)
+      @options[:font_color] = val
+    end
+
+    #: (?bool? val) -> bool?
+    def bold(val = nil)
+      if val.nil?
+        @options[:bold]
+      else
+        @options[:bold] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def bold=(val)
+      @options[:bold] = val ? true : false
+    end
+
+    #: (?bool? val) -> bool?
+    def italic(val = nil)
+      if val.nil?
+        @options[:italic]
+      else
+        @options[:italic] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def italic=(val)
+      @options[:italic] = val ? true : false
+    end
+
+    #: (?untyped val) -> untyped
+    def underline(val = nil)
+      if val.nil?
+        @options[:underline]
+      else
+        @options[:underline] = val
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def underline=(val)
+      @options[:underline] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def size(val = nil)
+      if val
+        @options[:size] = val
+      else
+        @options[:size]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def size=(val)
+      @options[:size] = val
+    end
+    alias sz size
+    alias sz= size=
+
+    #: (?bool? val) -> bool?
+    def stop_if_true(val = nil)
+      if val.nil?
+        @options[:stop_if_true]
+      else
+        @options[:stop_if_true] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def stop_if_true=(val)
+      @options[:stop_if_true] = val ? true : false
+    end
+
+    #: (?Integer? val) -> Integer?
+    def priority(val = nil)
+      if val
+        @options[:priority] = val.to_i
+      else
+        @options[:priority]
+      end
+    end
+
+    #: (Integer val) -> Integer
+    def priority=(val)
+      @options[:priority] = val.to_i
+    end
+
+    #: (?untyped val) -> untyped
+    def color_scale(val = nil)
+      if val
+        @options[:color_scale] = val
+      else
+        @options[:color_scale]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def color_scale=(val)
+      @options[:color_scale] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def data_bar(val = nil)
+      if val
+        @options[:data_bar] = val
+      else
+        @options[:data_bar]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def data_bar=(val)
+      @options[:data_bar] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def icon_set(val = nil)
+      if val
+        @options[:icon_set] = val
+      else
+        @options[:icon_set]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def icon_set=(val)
+      @options[:icon_set] = val
+    end
+
+    #: (?untyped val) -> untyped
+    def dxf(val = nil)
+      if val
+        @options[:dxf] = val
+      else
+        @options[:dxf]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def dxf=(val)
+      @options[:dxf] = val
+    end
+
+    #: (?Integer? val) -> Integer?
+    def format_id(val = nil)
+      if val
+        @options[:format_id] = val.to_i
+      else
+        @options[:format_id]
+      end
+    end
+
+    #: (Integer val) -> Integer
+    def format_id=(val)
+      @options[:format_id] = val.to_i
     end
 
     #: () -> Hash[Symbol, untyped]

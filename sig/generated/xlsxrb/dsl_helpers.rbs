@@ -45,17 +45,19 @@ module Xlsxrb
     # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> Hash[Symbol, Float]
     def self.normalize_page_margins: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> Hash[Symbol, Float]
 
+    TOTALS_ROW_FUNCTIONS: untyped
+
     # Normalizes table options hash.
     #
     # @param ref [String]
-    # @param columns [Array<String>, Array<Hash>]
+    # @param columns [Array<String>, Array<Hash>, Array<Symbol>]
     # @param name [String, nil]
     # @param display_name [String, nil]
-    # @param style [String, nil]
+    # @param style [String, Hash, nil]
     # @param opts [Hash]
     # @return [Hash]
-    # : (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> Hash[Symbol, untyped]
-    def self.normalize_table_options: (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> Hash[Symbol, untyped]
+    # : (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: (String | Hash[Symbol, untyped])?, **untyped opts) -> Hash[Symbol, untyped]
+    def self.normalize_table_options: (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: (String | Hash[Symbol, untyped])?, **untyped opts) -> Hash[Symbol, untyped]
 
     # Converts a cell range (e.g. "A1:B2" or "A1") to an absolute reference format (e.g. "$A$1:$B$2" or "$A$1").
     #
@@ -160,6 +162,29 @@ module Xlsxrb
     # @return [Array<Hash>]
     # : (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> Array[Hash[Symbol, untyped]]
     def self.normalize_data_validation: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> Array[Hash[Symbol, untyped]]
+
+    CF_OPERATORS: untyped
+
+    CF_TYPES: untyped
+
+    CF_ICON_SETS: untyped
+
+    # Extracts a differential format (dxf) hash from a conditional formatting rule hash.
+    # Mutates the rule hash by deleting extracted font and fill keys.
+    #
+    # @param rule [Hash]
+    # @return [Hash, nil]
+    # : (Hash[Symbol, untyped] rule) -> Hash[Symbol, untyped]?
+    def self.extract_dxf_from_rule!: (Hash[Symbol, untyped] rule) -> Hash[Symbol, untyped]?
+
+    # Normalizes conditional format arguments (sqref, coordinate targeting, types, operators, color scales, icon sets).
+    #
+    # @param sqref [String, nil]
+    # @param opts [Hash]
+    # @yield [ConditionalFormatBuilder]
+    # @return [Array<Hash>]
+    # : (?String? sqref, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> Array[Hash[Symbol, untyped]]
+    def self.normalize_conditional_format: (?String? sqref, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> Array[Hash[Symbol, untyped]]
 
     FORBIDDEN_SHEET_CHARS: ::Regexp
 

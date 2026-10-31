@@ -94,21 +94,67 @@ module Xlsxrb
       { left: left, right: right, top: top, bottom: bottom, header: header, footer: footer }.compact
     end
 
+    TOTALS_ROW_FUNCTIONS = {
+      sum: "sum",
+      average: "average",
+      count: "count",
+      count_nums: "countNums",
+      countnums: "countNums",
+      max: "max",
+      min: "min",
+      std_dev: "stdDev",
+      stddev: "stdDev",
+      var: "var",
+      custom: "custom"
+    }.freeze
+
     # Normalizes table options hash.
     #
     # @param ref [String]
-    # @param columns [Array<String>, Array<Hash>]
+    # @param columns [Array<String>, Array<Hash>, Array<Symbol>]
     # @param name [String, nil]
     # @param display_name [String, nil]
-    # @param style [String, nil]
+    # @param style [String, Hash, nil]
     # @param opts [Hash]
     # @return [Hash]
-    #: (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> Hash[Symbol, untyped]
+    #: (String ref, columns: untyped, ?name: String?, ?display_name: String?, ?style: (String | Hash[Symbol, untyped])?, **untyped opts) -> Hash[Symbol, untyped]
     def self.normalize_table_options(ref, columns:, name: nil, display_name: nil, style: nil, **opts)
-      tbl = { ref: ref, columns: columns }
-      tbl[:name] = name if name
-      tbl[:display_name] = display_name if display_name
+      tbl = { ref: ref }
+      cols = columns.is_a?(Array) ? columns : [columns]
+      tbl[:columns] = cols.map do |c|
+        if c.is_a?(Hash)
+          col = c.dup
+          col[:name] = col[:name].to_s if col.key?(:name)
+          if col.key?(:totals_row_function)
+            fn = col[:totals_row_function]
+            col[:totals_row_function] = TOTALS_ROW_FUNCTIONS[fn.to_sym] || fn.to_s
+          end
+          col
+        else
+          c.to_s
+        end
+      end
+      tbl[:name] = name.to_s if name
+      tbl[:display_name] = display_name.to_s if display_name
       tbl[:style] = style if style
+
+      # Normalize total row options
+      if opts.key?(:total_row) || opts.key?(:totals_row)
+        tr = opts.delete(:total_row)
+        tr = opts.delete(:totals_row) if tr.nil?
+        tbl[:totals_row_count] = if tr == true
+                                   1
+                                 elsif tr == false
+                                   0
+                                 else
+                                   tr.to_i
+                                 end
+      elsif opts.key?(:total_row_count)
+        tbl[:totals_row_count] = opts.delete(:total_row_count).to_i
+      elsif opts.key?(:totals_row_count)
+        tbl[:totals_row_count] = opts.delete(:totals_row_count).to_i
+      end
+
       tbl.merge!(opts)
       tbl
     end
@@ -377,6 +423,199 @@ module Xlsxrb
       end
 
       raise ArgumentError, "data validation sqref or coordinates (columns/rows) must be provided" if sqrefs.empty?
+
+      sqrefs.map { |ref| opts.merge(sqref: ref) }
+    end
+
+    CF_OPERATORS = {
+      greater_than: "greaterThan",
+      less_than: "lessThan",
+      equal: "equal",
+      not_equal: "notEqual",
+      greater_than_or_equal: "greaterThanOrEqual",
+      less_than_or_equal: "lessThanOrEqual",
+      between: "between",
+      not_between: "notBetween",
+      contains_text: "containsText",
+      not_contains: "notContains",
+      begins_with: "beginsWith",
+      ends_with: "endsWith"
+    }.freeze
+
+    CF_TYPES = {
+      cell_is: "cellIs",
+      expression: "expression",
+      color_scale: "colorScale",
+      data_bar: "dataBar",
+      icon_set: "iconSet",
+      above_average: "aboveAverage",
+      top10: "top10",
+      duplicate_values: "duplicateValues",
+      unique_values: "uniqueValues",
+      contains_text: "containsText",
+      not_contains_text: "notContainsText",
+      begins_with: "beginsWith",
+      ends_with: "endsWith",
+      contains_blanks: "containsBlanks",
+      not_contains_blanks: "notContainsBlanks",
+      time_period: "timePeriod"
+    }.freeze
+
+    CF_ICON_SETS = {
+      three_arrows: "3Arrows",
+      three_arrows_gray: "3ArrowsGray",
+      three_flags: "3Flags",
+      three_traffic_lights1: "3TrafficLights1",
+      three_traffic_lights2: "3TrafficLights2",
+      three_signs: "3Signs",
+      three_symbols: "3Symbols",
+      three_symbols2: "3Symbols2",
+      four_arrows: "4Arrows",
+      four_arrows_gray: "4ArrowsGray",
+      four_red_to_black: "4RedToBlack",
+      four_rating: "4Rating",
+      four_traffic_lights: "4TrafficLights",
+      five_arrows: "5Arrows",
+      five_arrows_gray: "5ArrowsGray",
+      five_rating: "5Rating",
+      five_quarters: "5Quarters"
+    }.freeze
+
+    # Extracts a differential format (dxf) hash from a conditional formatting rule hash.
+    # Mutates the rule hash by deleting extracted font and fill keys.
+    #
+    # @param rule [Hash]
+    # @return [Hash, nil]
+    #: (Hash[Symbol, untyped] rule) -> Hash[Symbol, untyped]?
+    def self.extract_dxf_from_rule!(rule)
+      font = (rule.delete(:font) || {}).dup
+      font[:color] = rule.delete(:font_color) if rule.key?(:font_color)
+      font[:bold] = rule.delete(:bold) if rule.key?(:bold)
+      font[:italic] = rule.delete(:italic) if rule.key?(:italic)
+      font[:underline] = rule.delete(:underline) if rule.key?(:underline)
+      font[:size] = rule.delete(:size) if rule.key?(:size)
+      font[:sz] = rule.delete(:sz) if rule.key?(:sz)
+
+      fill = (rule.delete(:fill) || {}).dup
+      if rule.key?(:fill_color)
+        fill[:pattern] = "solid"
+        fill[:fg_color] = rule.delete(:fill_color)
+      end
+
+      dxf = {}
+      dxf[:font] = font unless font.empty?
+      dxf[:fill] = fill unless fill.empty?
+      dxf.empty? ? nil : dxf
+    end
+
+    # Normalizes conditional format arguments (sqref, coordinate targeting, types, operators, color scales, icon sets).
+    #
+    # @param sqref [String, nil]
+    # @param opts [Hash]
+    # @yield [ConditionalFormatBuilder]
+    # @return [Array<Hash>]
+    #: (?String? sqref, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> Array[Hash[Symbol, untyped]]
+    def self.normalize_conditional_format(sqref = nil, **opts)
+      if block_given?
+        builder = ConditionalFormatBuilder.new(sqref, **opts)
+        yield builder
+        opts = builder.to_h
+      else
+        opts = opts.dup
+      end
+      sqref = opts.delete(:sqref) || sqref
+
+      # Determine sqrefs
+      sqrefs = []
+      has_coords = opts.key?(:columns) || opts.key?(:col) || opts.key?(:rows) || opts.key?(:row)
+      if sqref.nil? && has_coords
+        cols_val = opts.delete(:columns)
+        col_val = opts.delete(:col)
+        raw_cols = cols_val || col_val || 0
+
+        rows_val = opts.delete(:rows)
+        row_val = opts.delete(:row)
+        raw_rows = rows_val || row_val || (1..Xlsxrb::MAX_ROW)
+
+        except_rows = opts.delete(:except_rows)
+
+        col_indices = normalize_column_indices(raw_cols)
+        col_runs = compress_runs(col_indices)
+        row_runs = compress_runs(raw_rows)
+        row_runs = row_runs.flat_map { |s, e| complement_runs(except_rows, s, e) } if except_rows
+        sqrefs = chunked_sqrefs(col_runs, row_runs)
+      elsif sqref
+        opts.delete(:columns)
+        opts.delete(:col)
+        opts.delete(:rows)
+        opts.delete(:row)
+        opts.delete(:except_rows)
+        str_sqref = sqref.to_s
+        refs = str_sqref.split
+        sqrefs = if refs.size > Xlsxrb::MAX_REFS_PER_VALIDATION
+                   refs.each_slice(Xlsxrb::MAX_REFS_PER_VALIDATION).map { |chunk| chunk.join(" ") }
+                 else
+                   [str_sqref]
+                 end
+      end
+
+      raise ArgumentError, "conditional format sqref or coordinates (columns/rows) must be provided" if sqrefs.empty?
+
+      type_str = opts[:type].to_s
+      # Normalize color_scale
+      if opts.key?(:color_scale) || type_str == "colorScale" || type_str == "color_scale"
+        cs = (opts[:color_scale] || {}).dup
+        colors = cs[:colors] || opts.delete(:colors)
+        if colors.is_a?(Array)
+          colors = colors.map do |c|
+            c.is_a?(String) && c =~ /\A[0-9A-Fa-f]{6}\z/ ? "FF#{c.upcase}" : c
+          end
+          cs[:colors] = colors
+          if !cs.key?(:cfvo) || cs[:cfvo].nil?
+            cs[:cfvo] = if colors.size == 2
+                          [{ type: "min" }, { type: "max" }]
+                        else
+                          [{ type: "min" }, { type: "percent", val: "50" }, { type: "max" }]
+                        end
+          end
+        end
+        opts[:color_scale] = cs unless cs.empty?
+      end
+
+      # Normalize icon_set
+      if opts.key?(:icon_set) || type_str == "iconSet" || type_str == "icon_set"
+        is = (opts[:icon_set] || {}).dup
+        style_name = is[:icon_set] || opts.delete(:icon_style) || is[:icon_style]
+        if style_name
+          mapped_style = CF_ICON_SETS[style_name.to_sym] || style_name.to_s
+          is[:icon_set] = mapped_style
+          if !is.key?(:cfvo) || is[:cfvo].nil?
+            is[:cfvo] = if mapped_style.start_with?("4")
+                          [
+                            { type: "percent", val: "0" },
+                            { type: "percent", val: "25" },
+                            { type: "percent", val: "50" },
+                            { type: "percent", val: "75" }
+                          ]
+                        elsif mapped_style.start_with?("5")
+                          [
+                            { type: "percent", val: "0" },
+                            { type: "percent", val: "20" },
+                            { type: "percent", val: "40" },
+                            { type: "percent", val: "60" },
+                            { type: "percent", val: "80" }
+                          ]
+                        else
+                          [
+                            { type: "percent", val: "0" },
+                            { type: "percent", val: "33" },
+                            { type: "percent", val: "67" }
+                          ]
+                        end
+          end
+        end
+        opts[:icon_set] = is unless is.empty?
+      end
 
       sqrefs.map { |ref| opts.merge(sqref: ref) }
     end

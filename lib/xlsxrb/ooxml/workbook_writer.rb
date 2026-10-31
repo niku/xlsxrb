@@ -917,24 +917,7 @@ module Xlsxrb
       end
 
       def extract_dxf_from_rule!(rule)
-        font = (rule.delete(:font) || {}).dup
-        font[:color] = rule.delete(:font_color) if rule.key?(:font_color)
-        font[:bold] = rule.delete(:bold) if rule.key?(:bold)
-        font[:italic] = rule.delete(:italic) if rule.key?(:italic)
-        font[:underline] = rule.delete(:underline) if rule.key?(:underline)
-        font[:size] = rule.delete(:size) if rule.key?(:size)
-        font[:sz] = rule.delete(:sz) if rule.key?(:sz)
-
-        fill = (rule.delete(:fill) || {}).dup
-        if rule.key?(:fill_color)
-          fill[:pattern] = "solid"
-          fill[:fg_color] = rule.delete(:fill_color)
-        end
-
-        dxf = {}
-        dxf[:font] = font unless font.empty?
-        dxf[:fill] = fill unless fill.empty?
-        dxf.empty? ? nil : dxf
+        DslHelpers.extract_dxf_from_rule!(rule)
       end
 
       def write_dxf_font(builder, font)
@@ -1245,8 +1228,8 @@ module Xlsxrb
         t_attrs[:totalsRowCount] = tbl[:totals_row_count].to_s if tbl[:totals_row_count]&.positive?
         b.open_tag("table", t_attrs)
 
-        # Auto filter for the table range
-        b.empty_tag("autoFilter", { ref: tbl[:ref] })
+        # Auto filter for the table range unless auto_filter: false
+        b.empty_tag("autoFilter", { ref: tbl[:ref] }) unless tbl[:auto_filter] == false
 
         # Table columns
         columns = tbl[:columns] || []

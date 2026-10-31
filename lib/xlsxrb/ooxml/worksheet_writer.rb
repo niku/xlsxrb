@@ -1063,7 +1063,10 @@ module Xlsxrb
                       end
 
             r_attrs = { type: cf_type, priority: (rule[:priority] || (idx + 1)).to_s }
-            r_attrs[:operator] = rule[:operator].to_s if rule[:operator]
+            if rule[:operator]
+              op = rule[:operator]
+              r_attrs[:operator] = DslHelpers::CF_OPERATORS[op.to_sym] || op.to_s
+            end
             r_attrs[:dxfId] = rule[:format_id].to_s if rule[:format_id]
             r_attrs[:stopIfTrue] = "1" if rule[:stop_if_true]
             r_attrs[:aboveAverage] = "0" if rule[:above_average] == false
@@ -1079,16 +1082,12 @@ module Xlsxrb
             when :color_scale
               @builder.open_tag("cfRule", r_attrs)
               cs = rule[:color_scale] || {}
-              cfvos = cs[:cfvo] || [
-                { type: "min" },
-                { type: "percent", val: "50" },
-                { type: "max" }
-              ]
               colors = cs[:colors] || [
                 "FFF8696B", # Red
                 "FFFFEB84", # Yellow
                 "FF63BE7B"  # Green
               ]
+              cfvos = cs[:cfvo] || (colors.size == 2 ? [{ type: "min" }, { type: "max" }] : [{ type: "min" }, { type: "percent", val: "50" }, { type: "max" }])
               @builder.tag("colorScale") do |b|
                 cfvos.each do |cfvo|
                   cfvo_attrs = { type: cfvo[:type] }
@@ -1145,11 +1144,28 @@ module Xlsxrb
               @builder.open_tag("cfRule", r_attrs)
               is = rule[:icon_set] || {}
               icon_style = is[:icon_set] || rule[:icon_style] || "3Arrows"
-              cfvos = is[:cfvo] || [
-                { type: "percent", val: "0" },
-                { type: "percent", val: "33" },
-                { type: "percent", val: "67" }
-              ]
+              cfvos = is[:cfvo] || if icon_style.to_s.start_with?("4")
+                                     [
+                                       { type: "percent", val: "0" },
+                                       { type: "percent", val: "25" },
+                                       { type: "percent", val: "50" },
+                                       { type: "percent", val: "75" }
+                                     ]
+                                   elsif icon_style.to_s.start_with?("5")
+                                     [
+                                       { type: "percent", val: "0" },
+                                       { type: "percent", val: "20" },
+                                       { type: "percent", val: "40" },
+                                       { type: "percent", val: "60" },
+                                       { type: "percent", val: "80" }
+                                     ]
+                                   else
+                                     [
+                                       { type: "percent", val: "0" },
+                                       { type: "percent", val: "33" },
+                                       { type: "percent", val: "67" }
+                                     ]
+                                   end
               is_attrs = { iconSet: icon_style }
               is_attrs[:reverse] = is[:reverse] ? "1" : "0" unless is[:reverse].nil?
               is_attrs[:percent] = is[:percent] ? "1" : "0" unless is[:percent].nil?

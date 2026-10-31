@@ -116,6 +116,50 @@ class DslHelpersTest < Test::Unit::TestCase
     refute(min_tbl.key?(:name))
     refute(min_tbl.key?(:display_name))
     refute(min_tbl.key?(:style))
+
+    # Symbol columns and total_row normalization
+    sym_tbl = Xlsxrb::DslHelpers.normalize_table_options(
+      "A1:C10",
+      columns: [:id, { name: :total, totals_row_function: :sum }, "status"],
+      total_row: true,
+      auto_filter: false
+    )
+    assert_equal("A1:C10", sym_tbl[:ref])
+    assert_equal("id", sym_tbl[:columns][0])
+    assert_equal({ name: "total", totals_row_function: "sum" }, sym_tbl[:columns][1])
+    assert_equal("status", sym_tbl[:columns][2])
+    assert_equal(1, sym_tbl[:totals_row_count])
+    assert_equal(false, sym_tbl[:auto_filter])
+
+    # total_row: false sets totals_row_count: 0
+    tr_false = Xlsxrb::DslHelpers.normalize_table_options("A1:B2", columns: %w[A B], total_row: false)
+    assert_equal(0, tr_false[:totals_row_count])
+
+    # totals_row: true / false
+    trs_true = Xlsxrb::DslHelpers.normalize_table_options("A1:B2", columns: %w[A B], totals_row: true)
+    assert_equal(1, trs_true[:totals_row_count])
+
+    # total_row_count / totals_row_count integer
+    tr_cnt = Xlsxrb::DslHelpers.normalize_table_options("A1:B2", columns: %w[A B], total_row_count: 2)
+    assert_equal(2, tr_cnt[:totals_row_count])
+
+    # Single column not in array
+    single_col_tbl = Xlsxrb::DslHelpers.normalize_table_options("A1:A2", columns: "OnlyCol")
+    assert_equal(["OnlyCol"], single_col_tbl[:columns])
+
+    # totals_row_function fallback for unknown symbol or string
+    unknown_fn_tbl = Xlsxrb::DslHelpers.normalize_table_options(
+      "A1:A2",
+      columns: [{ name: "C", totals_row_function: "unknownFn" }, { name: "D", totals_row_function: :custom_unknown }]
+    )
+    assert_equal("unknownFn", unknown_fn_tbl[:columns][0][:totals_row_function])
+    assert_equal("custom_unknown", unknown_fn_tbl[:columns][1][:totals_row_function])
+
+    # Column function mapping for all known symbols
+    Xlsxrb::DslHelpers::TOTALS_ROW_FUNCTIONS.each do |sym, expected_str|
+      col_tbl = Xlsxrb::DslHelpers.normalize_table_options("A1:A5", columns: [{ name: "Col", totals_row_function: sym }])
+      assert_equal(expected_str, col_tbl[:columns].first[:totals_row_function])
+    end
   end
 
   # --- absolute_range ---
@@ -410,5 +454,136 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal("Sales-2026", Xlsxrb::DslHelpers.sanitize_sheet_name("Sales:2026", replace_char: "-"))
     assert_equal("-Sales", Xlsxrb::DslHelpers.sanitize_sheet_name("'Sales", replace_char: "-"))
     assert_equal("--Sales", Xlsxrb::DslHelpers.sanitize_sheet_name("''Sales", replace_char: "-"))
+  end
+
+  # --- extract_dxf_from_rule! ---
+
+  test "extract_dxf_from_rule! extracts font and fill styles from rule" do
+    rule = {
+      type: :cell_is,
+      font_color: "FF0000",
+      bold: true,
+      italic: false,
+      underline: "single",
+      size: 12,
+      fill_color: "FFFF00",
+      formula: "100"
+    }
+    dxf = Xlsxrb::DslHelpers.extract_dxf_from_rule!(rule)
+    assert_equal({ color: "FF0000", bold: true, italic: false, underline: "single", size: 12 }, dxf[:font])
+    assert_equal({ pattern: "solid", fg_color: "FFFF00" }, dxf[:fill])
+    assert_equal({ type: :cell_is, formula: "100" }, rule)
+
+    # With sz key
+    rule_sz = { sz: 14 }
+    dxf_sz = Xlsxrb::DslHelpers.extract_dxf_from_rule!(rule_sz)
+    assert_equal({ sz: 14 }, dxf_sz[:font])
+
+    # Empty when no font or fill
+    empty_rule = { type: :cell_is, formula: "50" }
+    assert_nil(Xlsxrb::DslHelpers.extract_dxf_from_rule!(empty_rule))
+  end
+
+  # --- normalize_conditional_format ---
+
+  test "normalize_conditional_format with sqref and symbol options" do
+    rules = Xlsxrb::DslHelpers.normalize_conditional_format(
+      "A1:A10",
+      type: :cell_is,
+      operator: :greater_than,
+      formula: 100
+    )
+    assert_equal(1, rules.size)
+    assert_equal("A1:A10", rules.first[:sqref])
+    assert_equal(:cell_is, rules.first[:type])
+    assert_equal(:greater_than, rules.first[:operator])
+    assert_equal(100, rules.first[:formula])
+  end
+
+  test "normalize_conditional_format with coordinate targeting" do
+    rules = Xlsxrb::DslHelpers.normalize_conditional_format(
+      columns: 0..1,
+      rows: 2..10,
+      type: :cell_is,
+      operator: :less_than,
+      formula: 50
+    )
+    assert_equal(1, rules.size)
+    assert_equal("A2:B10", rules.first[:sqref])
+    assert_equal(:cell_is, rules.first[:type])
+    assert_equal(:less_than, rules.first[:operator])
+
+    # with except_rows
+    rules_exc = Xlsxrb::DslHelpers.normalize_conditional_format(
+      col: 2,
+      rows: 1..5,
+      except_rows: 3,
+      type: :expression,
+      formula: "C1>0"
+    )
+    assert_equal("C1:C2 C4:C5", rules_exc.first[:sqref])
+  end
+
+  test "normalize_conditional_format auto-completes 2-color and 3-color scales" do
+    # 2-color scale
+    rules2 = Xlsxrb::DslHelpers.normalize_conditional_format(
+      "B1:B20",
+      type: :color_scale,
+      colors: %w[FFFFFF 5B9BD5]
+    )
+    cs2 = rules2.first[:color_scale]
+    assert_equal(%w[FFFFFFFF FF5B9BD5], cs2[:colors])
+    assert_equal([{ type: "min" }, { type: "max" }], cs2[:cfvo])
+
+    # 3-color scale
+    rules3 = Xlsxrb::DslHelpers.normalize_conditional_format(
+      "B1:B20",
+      color_scale: { colors: %w[F8696B FFEB84 63BE7B] }
+    )
+    cs3 = rules3.first[:color_scale]
+    assert_equal(%w[FFF8696B FFFFEB84 FF63BE7B], cs3[:colors])
+    assert_equal([{ type: "min" }, { type: "percent", val: "50" }, { type: "max" }], cs3[:cfvo])
+  end
+
+  test "normalize_conditional_format auto-completes icon_set with 3, 4, 5 icons" do
+    rules3 = Xlsxrb::DslHelpers.normalize_conditional_format("A1:A5", type: :icon_set, icon_style: :three_arrows)
+    is3 = rules3.first[:icon_set]
+    assert_equal("3Arrows", is3[:icon_set])
+    assert_equal(3, is3[:cfvo].size)
+
+    rules4 = Xlsxrb::DslHelpers.normalize_conditional_format("A1:A5", type: :icon_set, icon_style: :four_rating)
+    is4 = rules4.first[:icon_set]
+    assert_equal("4Rating", is4[:icon_set])
+    assert_equal(4, is4[:cfvo].size)
+    assert_equal(%w[0 25 50 75], is4[:cfvo].map { |c| c[:val] })
+
+    rules5 = Xlsxrb::DslHelpers.normalize_conditional_format("A1:A5", type: :icon_set, icon_style: :five_quarters)
+    is5 = rules5.first[:icon_set]
+    assert_equal("5Quarters", is5[:icon_set])
+    assert_equal(5, is5[:cfvo].size)
+    assert_equal(%w[0 20 40 60 80], is5[:cfvo].map { |c| c[:val] })
+  end
+
+  test "normalize_conditional_format with block form" do
+    rules = Xlsxrb::DslHelpers.normalize_conditional_format("C1:C10") do |cf|
+      cf.type = :cell_is
+      cf.operator = :greater_than
+      cf.formula = 100
+      cf.bold = true
+      cf.fill_color = "FF0000"
+    end
+    assert_equal(1, rules.size)
+    assert_equal("C1:C10", rules.first[:sqref])
+    assert_equal(:cell_is, rules.first[:type])
+    assert_equal(:greater_than, rules.first[:operator])
+    assert_equal(100, rules.first[:formula])
+    assert_equal(true, rules.first[:bold])
+    assert_equal("FF0000", rules.first[:fill_color])
+  end
+
+  test "normalize_conditional_format raises when neither sqref nor coordinates provided" do
+    assert_raises(ArgumentError) do
+      Xlsxrb::DslHelpers.normalize_conditional_format(type: :cell_is)
+    end
   end
 end

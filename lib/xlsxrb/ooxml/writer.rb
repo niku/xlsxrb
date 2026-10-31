@@ -914,18 +914,19 @@ module Xlsxrb
       # Adds a conditional formatting rule to the specified range.
       # Options: type (:cell_is, :expression, :color_scale, :data_bar, :icon_set),
       # operator, priority, formula/formulas, format_id, color_scale, data_bar, icon_set.
-      # : (untyped sqref, ?sheet: untyped?, **untyped opts) -> untyped
-      def add_conditional_format(sqref, sheet: nil, **opts)
+      # : (?untyped sqref, ?sheet: untyped?, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> untyped
+      def add_conditional_format(sqref = nil, sheet: nil, **opts, &)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @conditional_formats.key?(sheet_name)
 
-        if opts[:dxf] && opts[:format_id].nil?
-          opts = opts.dup
-          dxf = opts.delete(:dxf)
-          opts[:format_id] = @dxfs.index(dxf) || add_dxf(**dxf)
+        normalized_list = DslHelpers.normalize_conditional_format(sqref, **opts, &)
+        normalized_list.each do |rule|
+          if (rule[:dxf] || rule[:font_color] || rule[:fill_color] || rule[:bold] || rule[:italic]) && rule[:format_id].nil?
+            dxf = rule.delete(:dxf) || DslHelpers.extract_dxf_from_rule!(rule)
+            rule[:format_id] = @dxfs.index(dxf) || add_dxf(**dxf) if dxf
+          end
+          @conditional_formats[sheet_name] << rule
         end
-
-        @conditional_formats[sheet_name] << opts.merge(sqref: sqref)
       end
 
       # Returns conditional formatting rules for the first (or given) sheet.
@@ -953,7 +954,8 @@ module Xlsxrb
         %i[header_row_count published comment insert_row insert_row_shift
            header_row_dxf_id data_dxf_id totals_row_dxf_id
            header_row_border_dxf_id table_border_dxf_id totals_row_border_dxf_id
-           header_row_cell_style totals_row_cell_style connection_id table_type].each do |key|
+           header_row_cell_style totals_row_cell_style connection_id table_type
+           auto_filter show_first_column show_last_column show_row_stripes show_column_stripes].each do |key|
           tbl[key] = opts[key] if opts.key?(key)
         end
         @tables[sheet_name] << tbl
@@ -2966,10 +2968,10 @@ module Xlsxrb
         table_attrs << %( tableType="#{xml_escape(tbl[:table_type])}") if tbl[:table_type]
         parts = [
           XML_HEADER,
-          "<table #{table_attrs}>",
-          %(<autoFilter ref="#{tbl[:ref]}"/>),
-          %(<tableColumns count="#{tbl[:columns].size}">)
+          "<table #{table_attrs}>"
         ]
+        parts << %(<autoFilter ref="#{tbl[:ref]}"/>) unless tbl[:auto_filter] == false
+        parts << %(<tableColumns count="#{tbl[:columns].size}">)
         tbl[:columns].each_with_index do |col, i|
           col_name = col.is_a?(Hash) ? col[:name] : col
           col_attrs = %(id="#{i + 1}" name="#{xml_escape(col_name)}")
@@ -2993,16 +2995,30 @@ module Xlsxrb
           end
         end
         parts << "</tableColumns>"
-        style = tbl[:style] || {}
+        raw_style = tbl[:style]
+        style = if raw_style.is_a?(Hash)
+                  raw_style
+                elsif raw_style
+                  { name: raw_style.to_s }
+                else
+                  {}
+                end
         style_name = style[:name] || "TableStyleMedium2"
-        sfc = style[:show_first_column] ? "1" : "0"
-        slc = style[:show_last_column] ? "1" : "0"
-        srs = if style.key?(:show_row_stripes)
-                style[:show_row_stripes] ? "1" : "0"
-              else
-                "1"
-              end
-        scs = style[:show_column_stripes] ? "1" : "0"
+        show_first_column = style.key?(:show_first_column) ? style[:show_first_column] : tbl[:show_first_column]
+        show_last_column = style.key?(:show_last_column) ? style[:show_last_column] : tbl[:show_last_column]
+        show_row_stripes = if style.key?(:show_row_stripes)
+                             style[:show_row_stripes]
+                           elsif tbl.key?(:show_row_stripes)
+                             tbl[:show_row_stripes]
+                           else
+                             true
+                           end
+        show_column_stripes = style.key?(:show_column_stripes) ? style[:show_column_stripes] : tbl[:show_column_stripes]
+
+        sfc = show_first_column ? "1" : "0"
+        slc = show_last_column ? "1" : "0"
+        srs = show_row_stripes ? "1" : "0"
+        scs = show_column_stripes ? "1" : "0"
         parts << %(<tableStyleInfo name="#{xml_escape(style_name)}" showFirstColumn="#{sfc}" showLastColumn="#{slc}" showRowStripes="#{srs}" showColumnStripes="#{scs}"/>)
         parts << "</table>"
         parts.join

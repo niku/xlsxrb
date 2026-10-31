@@ -396,8 +396,8 @@ module Xlsxrb
       # Adds a conditional formatting rule to the specified range.
       # Options: type (:cell_is, :expression, :color_scale, :data_bar, :icon_set),
       # operator, priority, formula/formulas, format_id, color_scale, data_bar, icon_set.
-      # : (untyped sqref, ?sheet: untyped?, **untyped opts) -> untyped
-      def add_conditional_format: (untyped sqref, ?sheet: untyped, **untyped opts) -> untyped
+      # : (?untyped sqref, ?sheet: untyped?, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> untyped
+      def add_conditional_format: (?untyped sqref, ?sheet: untyped, **untyped opts) ?{ (?) -> untyped } -> untyped
 
       # Returns conditional formatting rules for the first (or given) sheet.
       # : (?sheet: untyped?) -> untyped

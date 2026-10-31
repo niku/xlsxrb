@@ -287,6 +287,58 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
+  test "table with block builder, symbols, totals row, and auto_filter: false" do
+    tmp = Tempfile.new(["table_block", ".xlsx"])
+    Xlsxrb.write(tmp.path) do |w|
+      w.sheet("Data") do |s|
+        s.row(%w[Item Qty Price])
+        s.row(["Widget", 10, 5.0])
+        s.row(["Gadget", 20, 15.0])
+        s.row(["Total", 30, 20.0])
+        s.table("A1:C4") do |t|
+          t.name = "Sales"
+          t.display_name = "SalesSummary"
+          t.column(:item)
+          t.column(:qty, totals_row_function: :sum)
+          t.column(:price, totals_row_function: :average)
+          t.style = "TableStyleLight1"
+          t.total_row = true
+          t.auto_filter = false
+          t.show_column_stripes = true
+        end
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    tbl_xml = entries["xl/tables/table1.xml"]
+    assert_not_nil(tbl_xml)
+    assert_match(/totalsRowCount="1"/, tbl_xml)
+    refute_match(/<autoFilter/, tbl_xml)
+    assert_match(/totalsRowFunction="sum"/, tbl_xml)
+    assert_match(/totalsRowFunction="average"/, tbl_xml)
+    assert_match(/tableStyleInfo[^>]*name="TableStyleLight1"/, tbl_xml)
+    assert_match(/showColumnStripes="1"/, tbl_xml)
+  ensure
+    tmp&.close!
+  end
+
+  test "Ooxml::Writer directly generates table xml with string style and auto_filter: false" do
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.add_table("A1:C5",
+                     columns: ["ID", "Name", { name: "Amount", totals_row_function: "sum" }],
+                     name: "RawTable",
+                     style: "TableStyleDark1",
+                     show_first_column: true,
+                     auto_filter: false,
+                     totals_row_count: 1)
+    tbl = writer.tables.first
+    xml = writer.send(:generate_table_xml, tbl)
+    assert_match(/totalsRowCount="1"/, xml)
+    refute_match(/<autoFilter/, xml)
+    assert_match(/tableStyleInfo[^>]*name="TableStyleDark1"/, xml)
+    assert_match(/showFirstColumn="1"/, xml)
+  end
+
   # =====================================================
   # Comments
   # =====================================================
@@ -1442,6 +1494,79 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     assert_match(/x14:sparklineGroup[^>]*type="stacked"/, sheet_xml)
     assert_match(%r{<xm:f>A1:D1</xm:f>}, sheet_xml)
     assert_match(%r{<xm:sqref>E1</xm:sqref>}, sheet_xml)
+  ensure
+    tmp&.close!
+  end
+
+  test "conditional_format with block builder and coordinate targeting in build API" do
+    workbook = Xlsxrb.build do |w|
+      w.sheet("Formatting") do |s|
+        (1..10).each { |i| s.row([i, i * 10]) }
+        # Block builder with coordinate targeting
+        s.conditional_format(columns: 0..1, rows: 2..10) do |cf|
+          cf.type = :cell_is
+          cf.operator = :greater_than
+          cf.formula = 50
+          cf.bold = true
+          cf.fill_color = "FFC7CE"
+          cf.font_color = "9C0006"
+        end
+        # 2-color scale
+        s.conditional_format(col: 0, rows: 1..10) do |cf|
+          cf.type = :color_scale
+          cf.color_scale = { colors: %w[FFFFFF 5B9BD5] }
+        end
+        # 4-arrows icon set
+        s.conditional_format(col: 1, rows: 1..10) do |cf|
+          cf.type = :icon_set
+          cf.icon_set = { icon_set: :four_arrows }
+        end
+      end
+    end
+
+    tmp = Tempfile.new(["facade_cf_block", ".xlsx"])
+    Xlsxrb.write(tmp.path, workbook)
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    assert_match(/sqref="A2:B10"/, sheet_xml)
+    assert_match(/type="cellIs"/, sheet_xml)
+    assert_match(/operator="greaterThan"/, sheet_xml)
+    assert_match(%r{<formula>50</formula>}, sheet_xml)
+    # 2-color scale has 2 cfvos
+    assert_match(/sqref="A1:A10"/, sheet_xml)
+    assert_match(/type="colorScale"/, sheet_xml)
+    assert_match(/rgb="FFFFFFFF"/, sheet_xml)
+    assert_match(/rgb="FF5B9BD5"/, sheet_xml)
+    # 4-arrows icon set has 4 cfvos
+    assert_match(/iconSet="4Arrows"/, sheet_xml)
+    assert_match(/val="75"/, sheet_xml)
+  ensure
+    tmp&.close!
+  end
+
+  test "conditional_format with block builder in stream API" do
+    tmp = Tempfile.new(["facade_cf_stream_block", ".xlsx"])
+    Xlsxrb.write(tmp.path) do |w|
+      w.sheet("StreamCF") do |s|
+        (1..5).each { |i| s.row([i, i * 2]) }
+        s.conditional_format("A1:B5") do |cf|
+          cf.type :cell_is
+          cf.operator :between
+          cf.formulas 2, 4
+          cf.bold true
+          cf.fill_color "FFFF00"
+        end
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+    assert_match(/sqref="A1:B5"/, sheet_xml)
+    assert_match(/type="cellIs"/, sheet_xml)
+    assert_match(/operator="between"/, sheet_xml)
+    assert_match(%r{<formula>2</formula>}, sheet_xml)
+    assert_match(%r{<formula>4</formula>}, sheet_xml)
   ensure
     tmp&.close!
   end

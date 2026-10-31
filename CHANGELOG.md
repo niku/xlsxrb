@@ -1,6 +1,11 @@
 ## [Unreleased]
 
 ### Added
+- Add `ConditionalFormatBuilder` supporting block configuration for conditional formatting across `WorksheetBuilder`, `StreamWriter`, `WorksheetProxy`, and `Ooxml::Writer`.
+- Add coordinate targeting (`columns:`, `rows:`, `col:`, `row:`, `except_rows:`) to `conditional_format` and `ConditionalFormatBuilder`, symmetrically resolving to `sqref`.
+- Enhance `color_scale` conditional formatting with automatic cfvo generation for 2-color (`min`/`max`) and 3-color (`min`/50%/`max`) scales, and auto-normalize 6-digit RGB hex colors to 8-digit ARGB.
+- Enhance `icon_set` conditional formatting with automatic cfvo percent distribution for 3, 4, and 5 icon sets, and support symbol icon set styles (`:three_arrows`, `:four_rating`, `:five_quarters`, etc.).
+- Enhance `table` and `TableBuilder` with `auto_filter:` option, boolean `total_row` / `totals_row` helpers, symbol column names, and symbol `totals_row_function` mappings (`:sum`, `:average`, `:count`, `:min`, `:max`, `:count_nums`, `:std_dev`, `:var`, `:custom`).
 - Add worksheet name sanitization utility via `Xlsxrb.sanitize_sheet_name` (aliased as `Xlsxrb.sheet_name` and `DslHelpers.sanitize_sheet_name`), sanitizing forbidden characters (`\`, `/`, `?`, `*`, `[`, `]`, `:`, control characters), replacing leading/trailing apostrophes, appending `replace_char` to the reserved `History` sheet name, and truncating names to 31 characters.
 - Add `sheet_names` to `StreamWriter`, `WorksheetProxy`, and `WorkbookBuilder` returning an array of worksheet names currently registered in the workbook.
 - Support `sheet.defined_name` symmetrically across `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy`, automatically quoting sheet names with single quote escaping and generating absolute `$` coordinate references.
@@ -30,6 +35,8 @@
 - Support configurable ZIP deflate compression level (`compression_level: 0..9`) across `StreamWriter`, `Ooxml::ZipWriter`, `Ooxml::WorkbookWriter`, and `Xlsxrb.write`, allowing performance tuning between compression speed (e.g. level 4 for 20-40% faster writes) and archive size.
 
 ### Changed
+- Unify differential format extraction across `WorkbookWriter` and `StreamWriter` into centralized `DslHelpers.extract_dxf_from_rule!`.
+- Synchronize mutation testing metrics in `README.md`, `docs/MUTATION_TESTING.md`, and `docs/QUALITY_ASSURANCE.md` to reflect 51 pure functional subjects and 2,549 mutations at 100.00% kill rate.
 - Optimize `bin/pre-push` and test suite execution time:
   - Scope mutation testing (`rake mutant:pure`) to subjects and test files matching changed files via `MUTANT_FILES` (running only affected pure logic subjects in ~2-20s rather than all 51 subjects), falling back to full coverage when `Rakefile` or `.mutant.yml` changes or when `--force` is passed, and suppressing parser future-frozen string warnings during mutation runs.
   - Eliminate duplicate `rake sig` invocation in `bin/pre-push` (already invoked as a prerequisite of `rake typecheck`) and run unit and contract tests in a single `rake test` process rather than two separate test processes.
@@ -39,6 +46,8 @@
   - Update `bin/setup` to install `.git/hooks/pre-push` as a wrapper forwarding directly to `bin/pre-push --all`, ensuring `git push` runs extended diff-scoped mutation verification while staying synchronized with `bin/pre-push`.
 
 ### Fixed
+- Guard `Ooxml::Writer#generate_table_xml` against `TypeError` when `tbl[:style]` is provided as a string, and resolve table style attributes (`show_first_column`, `show_last_column`, `show_row_stripes`, `show_column_stripes`) directly from table definition root.
+- Omit `<autoFilter>` tag from table XML when `auto_filter: false` is explicitly specified across `Ooxml::Writer` and `WorkbookWriter`.
 - Enforce strict Excel worksheet name rules in `StreamWriter#sheet`, `WorkbookBuilder#sheet`, and `Elements::Worksheet.valid_name?` / `validate`, rejecting colons (`:`), leading/trailing apostrophes (`'`), and the case-insensitive reserved name `History`, updating validation error messages to reference Excel constraints.
 - Guard against non-finite Float values (`Float::INFINITY`, `Float::NAN`, and non-finite cached formula values) in `StreamWriter#row` and `WorksheetWriter#write_row_values`, raising `ArgumentError` to prevent corrupt XML output.
 - Support `xsd:boolean` representations (`"true"`, `"false"`, `"1"`, `"0"`) across `StylesParser`, `StylesListener`, and column definitions in `WorksheetParser`.
