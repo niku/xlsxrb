@@ -9,11 +9,13 @@ exec < /dev/null
 RUN_EXTENDED=0
 FORCE_CHECK=0
 SINCE_REF=""
+RUN_RBS="${RUN_RBS:-0}"
 
 for arg in "$@"; do
   case "$arg" in
     --all) RUN_EXTENDED=1 ;;
     --force) FORCE_CHECK=1; RUN_EXTENDED=1 ;;
+    --rbs) RUN_RBS=1; RUN_EXTENDED=1 ;;
     --last|--since-last) SINCE_REF="HEAD~1"; RUN_EXTENDED=1 ;;
     --since=*) SINCE_REF="${arg#*=}"; RUN_EXTENDED=1 ;;
   esac
@@ -26,6 +28,9 @@ if [ "${FORCE_PRE_PUSH:-0}" = "1" ]; then
   FORCE_CHECK=1
   RUN_EXTENDED=1
 fi
+if [ "${RUN_RBS_CHECK:-0}" = "1" ] || [ "${CI:-false}" = "true" ]; then
+  RUN_RBS=1
+fi
 
 echo "Running pre-push checks..."
 
@@ -36,7 +41,6 @@ echo "2/4 Running Steep Type Check..."
 bundle exec rake typecheck
 
 echo "3/4 Verifying RBS sync and commit hygiene..."
-bundle exec rake sig
 git diff --exit-code sig/
 
 untracked_files="$(git ls-files --others --exclude-standard lib/ test/ sig/)"
@@ -70,7 +74,7 @@ if git rev-parse --verify origin/main >/dev/null 2>&1; then
 fi
 
 echo "4/4 Running Unit & Contract Tests..."
-bundle exec rake test:unit test:contract
+bundle exec rake test
 
 # Extended checks (RBS runtime validation & Mutation testing)
 if [ "$RUN_EXTENDED" = "1" ]; then
@@ -80,6 +84,9 @@ if [ "$RUN_EXTENDED" = "1" ]; then
       base_ref="$SINCE_REF"
     elif git rev-parse --verify origin/main >/dev/null 2>&1; then
       base_ref="$(git merge-base origin/main HEAD 2>/dev/null || echo "HEAD~1")"
+      if [ "$base_ref" = "$(git rev-parse HEAD 2>/dev/null)" ]; then
+        base_ref="HEAD~1"
+      fi
     else
       base_ref="HEAD~1"
     fi
@@ -98,7 +105,7 @@ if [ "$RUN_EXTENDED" = "1" ]; then
 
   has_pure_logic_changes() {
     [ "$FORCE_CHECK" = "1" ] && return 0
-    local pattern='^(lib/xlsxrb/(elements/|ooxml/(utils|zip_generator|cfb|xml_builder)\.rb|stream_row\.rb|dsl_helpers\.rb)|test/(xlsxrb/(elements|ooxml|ooxml/utils|ooxml/crypto|ooxml/cfb|stream_row|style_builder|dsl_helpers)_test\.rb|zip_generator_test\.rb)|Rakefile|\.mutant\.yml)'
+    local pattern='^(lib/xlsxrb/(elements/|ooxml/(utils|zip_generator|cfb|xml_builder)\.rb|stream_row\.rb|dsl_helpers\.rb)|test/(xlsxrb/(elements|ooxml|ooxml/utils|ooxml/cfb|stream_row|dsl_helpers)_test\.rb|zip_generator_test\.rb)|Rakefile|\.mutant\.yml)'
     echo "$CHANGED_FILES" | grep -Eq "$pattern"
   }
 
@@ -108,16 +115,24 @@ if [ "$RUN_EXTENDED" = "1" ]; then
     echo "$CHANGED_FILES" | grep -Eq "$pattern"
   }
 
-  if has_code_or_sig_changes; then
-    echo "5/6 Running RBS Runtime Type Validation (single worker to avoid hook deadlock)..."
-    TEST_WORKERS=1 bundle exec rake test:rbs
+  if [ "$RUN_RBS" = "1" ]; then
+    if has_code_or_sig_changes; then
+      echo "5/6 Running RBS Runtime Type Validation (single worker to avoid hook deadlock)..."
+      TEST_WORKERS=1 bundle exec rake test:rbs
+    else
+      echo "5/6 Skipping RBS Runtime Type Validation (no code or type signature changes)..."
+    fi
   else
-    echo "5/6 Skipping RBS Runtime Type Validation (no code or type signature changes)..."
+    echo "5/6 Skipping RBS Runtime Type Validation (enable with --rbs or RUN_RBS=1; covered by CI)..."
   fi
 
   if has_pure_logic_changes; then
     echo "6/6 Running Mutation Tests (Pure Logic)..."
-    bundle exec rake mutant:pure
+    if [ "$FORCE_CHECK" = "1" ]; then
+      bundle exec rake mutant:pure
+    else
+      MUTANT_FILES="$CHANGED_FILES" bundle exec rake mutant:pure
+    fi
   else
     echo "6/6 Skipping Mutation Tests (no pure logic changes detected)..."
   fi

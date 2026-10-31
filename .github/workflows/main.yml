@@ -28,7 +28,9 @@ jobs:
       - name: Run Bundler Audit
         run: bundle exec rake bundle:audit
       - name: Run Unit & Contract Tests
-        run: bundle exec rake test:unit test:contract
+        env:
+          COVERAGE: '1'
+        run: bundle exec rake test
       - name: Run Property-Based Tests (PBT)
         run: bundle exec rake test:pbt
       - name: Run Mutation Tests (Pure Logic)

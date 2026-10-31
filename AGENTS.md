@@ -12,7 +12,7 @@ Guidelines for LLM-powered coding assistants (Claude, Cursor, Copilot, Gemini, A
 - Minimal Surface Area:
   Do not introduce new files, scripts, tasks, or dependencies unless their necessity is explicitly justified. Use existing tools and tasks (`bundle exec rake test:unit`, `rake typecheck`, `rake mutant:pure`, `bin/pre-push`, etc.).
 - Pre-Push Verification:
-  Ensure the verification suite passes before pushing or completing a task: `bin/pre-push --all`. For intermediate commits or non-logic tasks, run lightweight verification (`bin/pre-push` or component rake tasks) to maintain fast feedback loops.
+  Ensure the verification suite passes before pushing or completing a task: `bin/pre-push --all` (executes linting, static typecheck, test suites, and diff-scoped pure logic mutation tests in ~45s). For intermediate commits or non-logic tasks, run lightweight verification (`bin/pre-push` or component rake tasks, ~20s) to maintain fast feedback loops. Full RBS runtime validation runs in CI and can be triggered on demand via `bin/pre-push --all --rbs`.
 - Atomic Commits & Granularity:
   Each commit must correspond to exactly one logical change, feature, or bug fix. Never bundle multiple unrelated fixes, improvements, or features into a single commit. Every commit must encompass its specific implementation, unit/contract tests, and corresponding CHANGELOG.md entry while satisfying component quality gates.
 - Changelog Policy:
@@ -29,7 +29,7 @@ When modifying specific parts of the codebase, the following verification standa
 1. Pure algorithms and coordinate logic (`lib/xlsxrb/elements/`, `lib/xlsxrb/ooxml/utils.rb`, `lib/xlsxrb/dsl_helpers.rb`):
    - Quality Attribute: Test Suite Rigor / Detection Power
    - Verification: `bundle exec rake mutant:pure`
-   - Requirement: Maintain a 100.00% mutation kill rate across all 50 subjects. Do not accept surviving mutants.
+   - Requirement: Maintain a 100.00% mutation kill rate across all 51 subjects. Do not accept surviving mutants.
 
 2. Public interfaces and method signatures (`lib/`, `sig/`):
    - Quality Attribute: Type Safety (Static & Dynamic)

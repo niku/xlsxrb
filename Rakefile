@@ -94,7 +94,7 @@ Rake::TestTask.new(test: :ensure_reader_fixtures) do |t|
   t.libs << "test"
   t.libs << "lib"
   t.test_files = FileList["test/xlsxrb/**/*_test.rb", "test/ooxml/**/*_test.rb", "test/*_test.rb", "test/contract/**/*_test.rb"]
-  workers = ENV.fetch("TEST_WORKERS", [Etc.nprocessors, 4].min)
+  workers = ENV.fetch("TEST_WORKERS", Etc.nprocessors)
   t.options = "--parallel --n-workers=#{workers}"
 end
 
@@ -102,8 +102,7 @@ namespace :test do
   desc "Run tests with runtime type checking enabled (RBS_TEST=1)"
   task :rbs do
     ENV["RBS_TEST"] = "1"
-    Rake::Task["test:unit"].invoke
-    Rake::Task["test:contract"].invoke
+    Rake::Task["test"].invoke
   end
   Rake::TestTask.new(:unit) do |t|
     t.libs << "test"
@@ -941,72 +940,157 @@ end
 namespace :mutant do
   desc "Run mutation testing on pure logic and algorithms (coordinates, serial, conversion)"
   task :pure do
-    default_subjects = [
-      "Xlsxrb::Elements::CoordinateAccess#cells",
-      "Xlsxrb::Elements::CoordinateAccess#[]",
-      "Xlsxrb::Elements::Cell#ref",
-      "Xlsxrb::Elements::Cell#to_i",
-      "Xlsxrb::Elements::Cell#to_f",
-      "Xlsxrb::Elements::Cell#content",
-      "Xlsxrb::Elements::Cell#to_s",
-      "Xlsxrb::Elements::Cell#valid?",
-      "Xlsxrb::Elements::Cell.calculate_column_letter",
-      "Xlsxrb::Elements::Cell.calculate_column_index",
-      "Xlsxrb::Elements::Cell.valid_coordinates?",
-      "Xlsxrb::Elements::Cell.valid_value?",
-      "Xlsxrb::Ooxml::Utils.serial_to_date",
-      "Xlsxrb::Ooxml::Utils.date_to_serial",
-      "Xlsxrb::Ooxml::Utils.datetime_to_serial",
-      "Xlsxrb::Ooxml::Utils.serial_to_datetime",
-      "Xlsxrb::Ooxml::ZipGenerator.le16",
-      "Xlsxrb::Ooxml::ZipGenerator.le32",
-      "Xlsxrb::StreamRow#valid?",
-      "Xlsxrb::StreamRow#unmapped_data",
-      "Xlsxrb::StreamRow#errors",
-      "Xlsxrb::StreamRow#values",
-      "Xlsxrb::Elements::Worksheet.valid_name?",
-      "Xlsxrb::Elements::Worksheet#valid?",
-      "Xlsxrb::Elements::Worksheet#load",
-      "Xlsxrb::Ooxml::Cfb::Reader.cfb?",
-      "Xlsxrb::Ooxml::Cfb::DirEntry#stream?",
-      "Xlsxrb::Ooxml::Cfb::DirEntry#root?",
-      "Xlsxrb::Ooxml::Cfb::DirEntry#storage?",
-      "Xlsxrb::Elements::Column.valid_index?",
-      "Xlsxrb::Elements::Column.validate",
-      "Xlsxrb::Elements::Column#valid?",
-      "Xlsxrb::Elements::Row.valid_index?",
-      "Xlsxrb::Elements::Row#valid?",
-      "Xlsxrb::Elements::Workbook#valid?",
-      "Xlsxrb::Ooxml::XmlBuilder.escape",
-      "Xlsxrb::Ooxml::XmlBuilder.unescape",
-      "Xlsxrb::Ooxml::ZipGenerator.dos_datetime",
-      "Xlsxrb::DslHelpers.normalize_column_indices",
-      "Xlsxrb::DslHelpers.absolute_range",
-      "Xlsxrb::DslHelpers.normalize_row_values",
-      "Xlsxrb::DslHelpers.normalize_row_styles",
-      "Xlsxrb::DslHelpers.validate_row_bounds!",
-      "Xlsxrb::DslHelpers.compress_runs",
-      "Xlsxrb::DslHelpers.complement_runs",
-      "Xlsxrb::DslHelpers.area_ref",
-      "Xlsxrb::DslHelpers.chunked_sqrefs",
-      "Xlsxrb::DslHelpers.quote_sheet_name",
-      "Xlsxrb::DslHelpers.format_absolute_reference",
-      "Xlsxrb::DslHelpers.normalize_defined_name_value",
-      "Xlsxrb::DslHelpers.sanitize_sheet_name"
-    ].join(" ")
-    subjects = ENV["MUTANT_SUBJECTS"] || default_subjects
-    test_files = [
-      "./test/xlsxrb/elements_test.rb",
-      "./test/xlsxrb/ooxml_test.rb",
-      "./test/xlsxrb/ooxml/utils_test.rb",
-      "./test/xlsxrb/ooxml/crypto_test.rb",
-      "./test/xlsxrb/ooxml/cfb_test.rb",
-      "./test/zip_generator_test.rb",
-      "./test/xlsxrb/stream_row_test.rb",
-      "./test/xlsxrb/style_builder_test.rb",
-      "./test/xlsxrb/dsl_helpers_test.rb"
-    ].select { |f| File.exist?(f) }
+    subject_groups = [
+      {
+        pattern: %r{\A(lib/xlsxrb/elements/coordinate_access\.rb|test/xlsxrb/elements_test\.rb)\z},
+        tests: ["./test/xlsxrb/elements_test.rb"],
+        subjects: [
+          "Xlsxrb::Elements::CoordinateAccess#cells",
+          "Xlsxrb::Elements::CoordinateAccess#[]"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/elements/cell\.rb|test/xlsxrb/elements_test\.rb)\z},
+        tests: ["./test/xlsxrb/elements_test.rb"],
+        subjects: [
+          "Xlsxrb::Elements::Cell#ref",
+          "Xlsxrb::Elements::Cell#to_i",
+          "Xlsxrb::Elements::Cell#to_f",
+          "Xlsxrb::Elements::Cell#content",
+          "Xlsxrb::Elements::Cell#to_s",
+          "Xlsxrb::Elements::Cell#valid?",
+          "Xlsxrb::Elements::Cell.calculate_column_letter",
+          "Xlsxrb::Elements::Cell.calculate_column_index",
+          "Xlsxrb::Elements::Cell.valid_coordinates?",
+          "Xlsxrb::Elements::Cell.valid_value?"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/elements/worksheet\.rb|test/xlsxrb/elements_test\.rb)\z},
+        tests: ["./test/xlsxrb/elements_test.rb"],
+        subjects: [
+          "Xlsxrb::Elements::Worksheet.valid_name?",
+          "Xlsxrb::Elements::Worksheet#valid?",
+          "Xlsxrb::Elements::Worksheet#load"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/elements/column\.rb|test/xlsxrb/elements_test\.rb)\z},
+        tests: ["./test/xlsxrb/elements_test.rb"],
+        subjects: [
+          "Xlsxrb::Elements::Column.valid_index?",
+          "Xlsxrb::Elements::Column.validate",
+          "Xlsxrb::Elements::Column#valid?"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/elements/row\.rb|test/xlsxrb/elements_test\.rb)\z},
+        tests: ["./test/xlsxrb/elements_test.rb"],
+        subjects: [
+          "Xlsxrb::Elements::Row.valid_index?",
+          "Xlsxrb::Elements::Row#valid?"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/elements/workbook\.rb|test/xlsxrb/elements_test\.rb)\z},
+        tests: ["./test/xlsxrb/elements_test.rb"],
+        subjects: [
+          "Xlsxrb::Elements::Workbook#valid?"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/ooxml/utils\.rb|test/xlsxrb/ooxml/utils_test\.rb|test/xlsxrb/ooxml_test\.rb)\z},
+        tests: ["./test/xlsxrb/ooxml/utils_test.rb", "./test/xlsxrb/ooxml_test.rb"],
+        subjects: [
+          "Xlsxrb::Ooxml::Utils.serial_to_date",
+          "Xlsxrb::Ooxml::Utils.date_to_serial",
+          "Xlsxrb::Ooxml::Utils.datetime_to_serial",
+          "Xlsxrb::Ooxml::Utils.serial_to_datetime"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/ooxml/zip_generator\.rb|test/zip_generator_test\.rb)\z},
+        tests: ["./test/zip_generator_test.rb"],
+        subjects: [
+          "Xlsxrb::Ooxml::ZipGenerator.le16",
+          "Xlsxrb::Ooxml::ZipGenerator.le32",
+          "Xlsxrb::Ooxml::ZipGenerator.dos_datetime"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/stream_row\.rb|test/xlsxrb/stream_row_test\.rb)\z},
+        tests: ["./test/xlsxrb/stream_row_test.rb"],
+        subjects: [
+          "Xlsxrb::StreamRow#valid?",
+          "Xlsxrb::StreamRow#unmapped_data",
+          "Xlsxrb::StreamRow#errors",
+          "Xlsxrb::StreamRow#values"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/ooxml/cfb\.rb|test/xlsxrb/ooxml/cfb_test\.rb)\z},
+        tests: ["./test/xlsxrb/ooxml/cfb_test.rb"],
+        subjects: [
+          "Xlsxrb::Ooxml::Cfb::Reader.cfb?",
+          "Xlsxrb::Ooxml::Cfb::DirEntry#stream?",
+          "Xlsxrb::Ooxml::Cfb::DirEntry#root?",
+          "Xlsxrb::Ooxml::Cfb::DirEntry#storage?"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/ooxml/xml_builder\.rb|test/xlsxrb/ooxml_test\.rb)\z},
+        tests: ["./test/xlsxrb/ooxml_test.rb"],
+        subjects: [
+          "Xlsxrb::Ooxml::XmlBuilder.escape",
+          "Xlsxrb::Ooxml::XmlBuilder.unescape"
+        ]
+      },
+      {
+        pattern: %r{\A(lib/xlsxrb/dsl_helpers\.rb|test/xlsxrb/dsl_helpers_test\.rb)\z},
+        tests: ["./test/xlsxrb/dsl_helpers_test.rb"],
+        subjects: [
+          "Xlsxrb::DslHelpers.normalize_column_indices",
+          "Xlsxrb::DslHelpers.absolute_range",
+          "Xlsxrb::DslHelpers.normalize_row_values",
+          "Xlsxrb::DslHelpers.normalize_row_styles",
+          "Xlsxrb::DslHelpers.validate_row_bounds!",
+          "Xlsxrb::DslHelpers.compress_runs",
+          "Xlsxrb::DslHelpers.complement_runs",
+          "Xlsxrb::DslHelpers.area_ref",
+          "Xlsxrb::DslHelpers.chunked_sqrefs",
+          "Xlsxrb::DslHelpers.quote_sheet_name",
+          "Xlsxrb::DslHelpers.format_absolute_reference",
+          "Xlsxrb::DslHelpers.normalize_defined_name_value",
+          "Xlsxrb::DslHelpers.sanitize_sheet_name"
+        ]
+      }
+    ]
+    default_subjects = subject_groups.flat_map { |g| g[:subjects] }.uniq
+    default_tests = subject_groups.flat_map { |g| g[:tests] }.uniq
+
+    selected_groups = nil
+    if ENV["MUTANT_SUBJECTS"]
+      subjects = ENV["MUTANT_SUBJECTS"]
+      subject_list = subjects.split(/\s+/)
+      selected_groups = subject_groups.select { |g| g[:subjects].intersect?(subject_list) }
+    elsif ENV["MUTANT_FILES"]
+      files = ENV["MUTANT_FILES"].split(/\s+/)
+      unless files.intersect?(%w[Rakefile .mutant.yml])
+        matched_groups = subject_groups.select do |g|
+          files.any? { |file| g[:pattern].match?(file) }
+        end
+        if matched_groups.any?
+          selected_groups = matched_groups
+          matched_subjects = matched_groups.flat_map { |g| g[:subjects] }.uniq
+          puts "Scoping mutant run to #{matched_subjects.size}/#{default_subjects.size} subjects based on changed files" if matched_subjects.size < default_subjects.size
+          subjects = matched_subjects.join(" ")
+        end
+      end
+    end
+
+    subjects ||= default_subjects.join(" ")
+    test_files = (selected_groups&.any? ? selected_groups.flat_map { |g| g[:tests] }.uniq : default_tests).select { |f| File.exist?(f) }
     requires = test_files.map { |f| "-r #{f}" }.join(" ")
-    sh "bundle exec mutant run --usage opensource #{requires} -- #{subjects}"
+    sh({ "RUBYOPT" => "#{ENV.fetch("RUBYOPT", "")} -W0".strip }, "bundle exec mutant run --usage opensource #{requires} -- #{subjects}")
   end
 end

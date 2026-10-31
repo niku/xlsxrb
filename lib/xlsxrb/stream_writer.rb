@@ -232,8 +232,8 @@ module Xlsxrb
     # @return [void]
     # @api public
     #: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
-    def default_font(name = nil, size = nil, **)
-      @style_writer.default_font(name, size, **)
+    def default_font(name = nil, size = nil, **opts)
+      @style_writer.default_font(name, size, **opts)
     end
     alias set_default_font default_font
 
@@ -1267,10 +1267,10 @@ module Xlsxrb
       # @return [Hash, nil]
       # @api public
       #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
-      def sheet_calc_pr(spec = nil, full_calc_on_load: nil, **)
+      def sheet_calc_pr(spec = nil, full_calc_on_load: nil, **opts)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.sheet_calc_pr(spec, full_calc_on_load: full_calc_on_load, **)
+        @writer.sheet_calc_pr(spec, full_calc_on_load: full_calc_on_load, **opts)
       end
       alias sheet_calc_pr= sheet_calc_pr
       alias calc_pr sheet_calc_pr
@@ -1659,9 +1659,9 @@ module Xlsxrb
     # @return [void]
     # @api public
     #: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
-    def validate_data(sqref = nil, **, &)
+    def validate_data(sqref = nil, **opts, &)
       sheet if @current_sheet.nil?
-      normalized_list = DslHelpers.normalize_data_validation(sqref, **, &)
+      normalized_list = DslHelpers.normalize_data_validation(sqref, **opts, &)
       @current_data_validations.concat(normalized_list)
     end
 

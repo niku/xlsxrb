@@ -156,6 +156,7 @@ Style/AmbiguousEndlessMethodDefinition: # new in 1.68
   Enabled: true
 Style/ArgumentsForwarding: # new in 1.1
   Enabled: true
+  UseAnonymousForwarding: false
 Style/ArrayIntersect: # new in 1.40
   Enabled: true
 Style/ArrayIntersectWithSingleElement: # new in 1.81
@@ -343,3 +344,13 @@ Style/YAMLFileRead: # new in 1.53
 # without triggering missing space errors.
 Layout/LeadingCommentSpace: # new in 1.53
   AllowRBSInlineAnnotation: true
+Lint/ArgumentMismatch: # new in 1.90
+  Enabled: true
+Lint/MisplacedMagicComment: # new in 1.91
+  Enabled: true
+Lint/SuperArgumentMismatch: # new in 1.90
+  Enabled: true
+Style/DirectiveScope: # new in 1.90
+  Enabled: false
+Style/TimeNow: # new in 1.90
+  Enabled: true

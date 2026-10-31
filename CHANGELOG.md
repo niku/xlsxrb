@@ -29,6 +29,15 @@
 - Support inline strings option (`shared_strings: false`) across `StreamWriter` and `Xlsxrb.write`, writing cells directly as `<c t="inlineStr"><is><t>...</t></is></c>` and omitting `xl/sharedStrings.xml` and package relationships to maintain flat $O(1)$ constant memory during streaming write.
 - Support configurable ZIP deflate compression level (`compression_level: 0..9`) across `StreamWriter`, `Ooxml::ZipWriter`, `Ooxml::WorkbookWriter`, and `Xlsxrb.write`, allowing performance tuning between compression speed (e.g. level 4 for 20-40% faster writes) and archive size.
 
+### Changed
+- Optimize `bin/pre-push` and test suite execution time:
+  - Scope mutation testing (`rake mutant:pure`) to subjects and test files matching changed files via `MUTANT_FILES` (running only affected pure logic subjects in ~2-20s rather than all 51 subjects), falling back to full coverage when `Rakefile` or `.mutant.yml` changes or when `--force` is passed, and suppressing parser future-frozen string warnings during mutation runs.
+  - Eliminate duplicate `rake sig` invocation in `bin/pre-push` (already invoked as a prerequisite of `rake typecheck`) and run unit and contract tests in a single `rake test` process rather than two separate test processes.
+  - Decouple serial RBS runtime type validation (`test:rbs`) from default local `bin/pre-push --all` (saving ~160s locally where static Steep type checking already ensures zero errors), while preserving automated runtime type validation on CI and allowing manual execution with `bin/pre-push --all --rbs` or `RUN_RBS=1`.
+  - Condition SimpleCov coverage profiling on `ENV["COVERAGE"] == "1"` or `ENV["CI"] == "true"`, eliminating 5-10s of instrumentation overhead during local test runs.
+  - Replace anonymous keyword argument forwarding (`**`) in `StreamWriter` and `WorksheetBuilder` with explicit `**opts` to prevent Steep 2.1.0 internal `RuntimeError` crashes during type synthesis.
+  - Update `bin/setup` to install `.git/hooks/pre-push` as a wrapper forwarding directly to `bin/pre-push --all`, ensuring `git push` runs extended diff-scoped mutation verification while staying synchronized with `bin/pre-push`.
+
 ### Fixed
 - Enforce strict Excel worksheet name rules in `StreamWriter#sheet`, `WorkbookBuilder#sheet`, and `Elements::Worksheet.valid_name?` / `validate`, rejecting colons (`:`), leading/trailing apostrophes (`'`), and the case-insensitive reserved name `History`, updating validation error messages to reference Excel constraints.
 - Guard against non-finite Float values (`Float::INFINITY`, `Float::NAN`, and non-finite cached formula values) in `StreamWriter#row` and `WorksheetWriter#write_row_values`, raising `ArgumentError` to prevent corrupt XML output.

@@ -161,11 +161,14 @@ xlsxrb is a pure Ruby library for reading and writing Excel spreadsheets with st
 The standard pre-push hook runs the complete verification suite without requiring any custom setup:
 
 ```bash
-# Standard pre-push checks
+# Standard pre-push checks (RuboCop, Steep, RBS sync, Unit & Contract tests)
 bin/pre-push
 
-# Complete pre-push checks (including mutation and RBS runtime validation)
+# Extended pre-push checks (including diff-scoped mutation testing)
 bin/pre-push --all
+
+# Extended pre-push checks with full RBS runtime type validation
+bin/pre-push --all --rbs
 ```
 
 ---

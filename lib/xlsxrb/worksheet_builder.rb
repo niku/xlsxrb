@@ -402,8 +402,8 @@ module Xlsxrb
     # @return [void]
     # @api public
     #: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
-    def validate_data(sqref = nil, **, &)
-      normalized_list = DslHelpers.normalize_data_validation(sqref, **, &)
+    def validate_data(sqref = nil, **opts, &)
+      normalized_list = DslHelpers.normalize_data_validation(sqref, **opts, &)
       @data_validations.concat(normalized_list)
     end
 

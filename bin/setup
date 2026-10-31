@@ -8,6 +8,12 @@ bundle install
 # Install git pre-push hook
 if [ -d ".git" ]; then
   mkdir -p .git/hooks
-  cp bin/pre-push .git/hooks/pre-push
+  cat > .git/hooks/pre-push << 'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+exec "${repo_root}/bin/pre-push" --all "$@"
+EOF
   chmod +x .git/hooks/pre-push
 fi
