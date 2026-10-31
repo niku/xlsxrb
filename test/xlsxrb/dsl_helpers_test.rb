@@ -571,6 +571,14 @@ class DslHelpersTest < Test::Unit::TestCase
       cf.formula = 100
       cf.bold = true
       cf.fill_color = "FF0000"
+      cf.above_average = true
+      cf.equal_average = true
+      cf.std_dev = 2
+      cf.rank = 5
+      cf.percent = true
+      cf.bottom = true
+      cf.text = "urgent"
+      cf.time_period = :this_month
     end
     assert_equal(1, rules.size)
     assert_equal("C1:C10", rules.first[:sqref])
@@ -579,6 +587,42 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal(100, rules.first[:formula])
     assert_equal(true, rules.first[:bold])
     assert_equal("FF0000", rules.first[:fill_color])
+    assert_equal(true, rules.first[:above_average])
+    assert_equal(true, rules.first[:equal_average])
+    assert_equal(2, rules.first[:std_dev])
+    assert_equal(5, rules.first[:rank])
+    assert_equal(true, rules.first[:percent])
+    assert_equal(true, rules.first[:bottom])
+    assert_equal("urgent", rules.first[:text])
+    assert_equal("thisMonth", rules.first[:time_period])
+  end
+
+  test "normalize_conditional_format infers type and normalizes time_period" do
+    # Time period inference and symbol mapping
+    rules_tp = Xlsxrb::DslHelpers.normalize_conditional_format("D1:D10", time_period: :last_7_days)
+    assert_equal(:time_period, rules_tp.first[:type])
+    assert_equal("last7Days", rules_tp.first[:time_period])
+
+    # Rank inference -> top10
+    rules_top = Xlsxrb::DslHelpers.normalize_conditional_format("E1:E10", rank: 10, percent: true)
+    assert_equal(:top10, rules_top.first[:type])
+    assert_equal(10, rules_top.first[:rank])
+    assert_equal(true, rules_top.first[:percent])
+
+    # Above average inference
+    rules_avg = Xlsxrb::DslHelpers.normalize_conditional_format("F1:F10", above_average: false, equal_average: true)
+    assert_equal(:above_average, rules_avg.first[:type])
+    assert_equal(false, rules_avg.first[:above_average])
+    assert_equal(true, rules_avg.first[:equal_average])
+
+    # Text inference
+    rules_txt = Xlsxrb::DslHelpers.normalize_conditional_format("G1:G10", text: "error")
+    assert_equal(:contains_text, rules_txt.first[:type])
+    assert_equal("error", rules_txt.first[:text])
+
+    # Error rule types
+    rules_err = Xlsxrb::DslHelpers.normalize_conditional_format("H1:H10", type: :contains_errors)
+    assert_equal(:contains_errors, rules_err.first[:type])
   end
 
   test "normalize_conditional_format raises when neither sqref nor coordinates provided" do

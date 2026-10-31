@@ -1905,6 +1905,8 @@ module Xlsxrb
         ends_with: "endsWith",
         contains_blanks: "containsBlanks",
         not_contains_blanks: "notContainsBlanks",
+        contains_errors: "containsErrors",
+        not_contains_errors: "notContainsErrors",
         time_period: "timePeriod"
       }.freeze
 

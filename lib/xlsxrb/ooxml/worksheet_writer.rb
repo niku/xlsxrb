@@ -1039,7 +1039,7 @@ module Xlsxrb
               snake = t_str.gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
                            .gsub(/([a-z\d])([A-Z])/, '\1_\2')
                            .downcase.to_sym
-              type = snake if %i[cell_is expression color_scale data_bar icon_set above_average top10 duplicate_values unique_values contains_text not_contains_text begins_with ends_with contains_blanks not_contains_blanks time_period].include?(snake)
+              type = snake if %i[cell_is expression color_scale data_bar icon_set above_average top10 duplicate_values unique_values contains_text not_contains_text begins_with ends_with contains_blanks not_contains_blanks contains_errors not_contains_errors time_period].include?(snake)
             end
 
             cf_type = case type
@@ -1058,6 +1058,8 @@ module Xlsxrb
                       when :ends_with then "endsWith"
                       when :contains_blanks then "containsBlanks"
                       when :not_contains_blanks then "notContainsBlanks"
+                      when :contains_errors then "containsErrors"
+                      when :not_contains_errors then "notContainsErrors"
                       when :time_period then "timePeriod"
                       else type.to_s
                       end
@@ -1075,7 +1077,10 @@ module Xlsxrb
             r_attrs[:percent] = "1" if rule[:percent]
             r_attrs[:bottom] = "1" if rule[:bottom]
             r_attrs[:text] = rule[:text].to_s if rule[:text]
-            r_attrs[:timePeriod] = rule[:time_period].to_s if rule[:time_period]
+            if rule[:time_period]
+              tp = rule[:time_period]
+              r_attrs[:timePeriod] = DslHelpers::CF_TIME_PERIODS[tp.to_sym] || tp.to_s
+            end
             r_attrs[:stdDev] = rule[:std_dev].to_s if rule[:std_dev]
 
             case type

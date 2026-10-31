@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Enhance conditional formatting with statistical and relative rules (`above_average`, `top10`, `duplicate_values`, `unique_values`, `contains_blanks`, `not_contains_blanks`, `contains_errors`, `not_contains_errors`, `time_period`), add builder accessors (`above_average`, `equal_average`, `std_dev`, `rank`, `percent`, `bottom`, `text`, `time_period`) to `ConditionalFormatBuilder`, map symbol time periods (`:today`, `:last_7_days`, `:this_month`, etc.) to ECMA-376 `ST_TimePeriod` values, and automatically infer rule type from options.
 - Add `ConditionalFormatBuilder` supporting block configuration for conditional formatting across `WorksheetBuilder`, `StreamWriter`, `WorksheetProxy`, and `Ooxml::Writer`.
 - Add coordinate targeting (`columns:`, `rows:`, `col:`, `row:`, `except_rows:`) to `conditional_format` and `ConditionalFormatBuilder`, symmetrically resolving to `sqref`.
 - Enhance `color_scale` conditional formatting with automatic cfvo generation for 2-color (`min`/`max`) and 3-color (`min`/50%/`max`) scales, and auto-normalize 6-digit RGB hex colors to 8-digit ARGB.

@@ -2068,6 +2068,118 @@ module Xlsxrb
       @options[:priority] = val.to_i
     end
 
+    #: (?bool? val) -> bool?
+    def above_average(val = nil)
+      if val.nil?
+        @options[:above_average]
+      else
+        @options[:above_average] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def above_average=(val)
+      @options[:above_average] = val ? true : false
+    end
+
+    #: (?bool? val) -> bool?
+    def equal_average(val = nil)
+      if val.nil?
+        @options[:equal_average]
+      else
+        @options[:equal_average] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def equal_average=(val)
+      @options[:equal_average] = val ? true : false
+    end
+
+    #: (?Integer? val) -> Integer?
+    def std_dev(val = nil)
+      if val
+        @options[:std_dev] = val.to_i
+      else
+        @options[:std_dev]
+      end
+    end
+
+    #: (Integer val) -> Integer
+    def std_dev=(val)
+      @options[:std_dev] = val.to_i
+    end
+
+    #: (?Integer? val) -> Integer?
+    def rank(val = nil)
+      if val
+        @options[:rank] = val.to_i
+      else
+        @options[:rank]
+      end
+    end
+
+    #: (Integer val) -> Integer
+    def rank=(val)
+      @options[:rank] = val.to_i
+    end
+
+    #: (?bool? val) -> bool?
+    def percent(val = nil)
+      if val.nil?
+        @options[:percent]
+      else
+        @options[:percent] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def percent=(val)
+      @options[:percent] = val ? true : false
+    end
+
+    #: (?bool? val) -> bool?
+    def bottom(val = nil)
+      if val.nil?
+        @options[:bottom]
+      else
+        @options[:bottom] = val ? true : false
+      end
+    end
+
+    #: (bool val) -> bool
+    def bottom=(val)
+      @options[:bottom] = val ? true : false
+    end
+
+    #: (?String? val) -> String?
+    def text(val = nil)
+      if val
+        @options[:text] = val.to_s
+      else
+        @options[:text]
+      end
+    end
+
+    #: (String val) -> String
+    def text=(val)
+      @options[:text] = val.to_s
+    end
+
+    #: (?untyped val) -> untyped
+    def time_period(val = nil)
+      if val
+        @options[:time_period] = val
+      else
+        @options[:time_period]
+      end
+    end
+
+    #: (untyped val) -> untyped
+    def time_period=(val)
+      @options[:time_period] = val
+    end
+
     #: (?untyped val) -> untyped
     def color_scale(val = nil)
       if val

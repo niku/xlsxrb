@@ -538,13 +538,17 @@ module Xlsxrb
           rule_attrs << %( percent="1") if rule[:percent]
           rule_attrs << %( bottom="1") if rule[:bottom]
           rule_attrs << %( text="#{xml_escape(rule[:text])}") if rule[:text]
-          rule_attrs << %( timePeriod="#{rule[:time_period]}") if rule[:time_period]
+          if rule[:time_period]
+            tp = rule[:time_period]
+            tp_str = DslHelpers::CF_TIME_PERIODS[tp.to_sym] || tp.to_s
+            rule_attrs << %( timePeriod="#{tp_str}")
+          end
           rule_attrs << %( stdDev="#{rule[:std_dev]}") if rule[:std_dev]
 
           case type
           when :cell_is, :expression, :above_average, :top10, :duplicate_values, :unique_values,
                :contains_text, :not_contains_text, :begins_with, :ends_with,
-               :contains_blanks, :not_contains_blanks, :time_period
+               :contains_blanks, :not_contains_blanks, :contains_errors, :not_contains_errors, :time_period
             formulas = rule[:formulas] || [rule[:formula]].compact
             if formulas.empty?
               parts << "<cfRule #{rule_attrs}/>"

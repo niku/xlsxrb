@@ -167,6 +167,8 @@ module Xlsxrb
 
     CF_TYPES: untyped
 
+    CF_TIME_PERIODS: untyped
+
     CF_ICON_SETS: untyped
 
     # Extracts a differential format (dxf) hash from a conditional formatting rule hash.

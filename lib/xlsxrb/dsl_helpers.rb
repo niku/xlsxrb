@@ -458,7 +458,23 @@ module Xlsxrb
       ends_with: "endsWith",
       contains_blanks: "containsBlanks",
       not_contains_blanks: "notContainsBlanks",
+      contains_errors: "containsErrors",
+      not_contains_errors: "notContainsErrors",
       time_period: "timePeriod"
+    }.freeze
+
+    CF_TIME_PERIODS = {
+      today: "today",
+      yesterday: "yesterday",
+      tomorrow: "tomorrow",
+      last7_days: "last7Days",
+      last_7_days: "last7Days",
+      this_month: "thisMonth",
+      last_month: "lastMonth",
+      next_month: "nextMonth",
+      this_week: "thisWeek",
+      last_week: "lastWeek",
+      next_week: "nextWeek"
     }.freeze
 
     CF_ICON_SETS = {
@@ -560,6 +576,25 @@ module Xlsxrb
       end
 
       raise ArgumentError, "conditional format sqref or coordinates (columns/rows) must be provided" if sqrefs.empty?
+
+      # Normalize time_period if provided
+      if opts.key?(:time_period) && opts[:time_period]
+        tp = opts[:time_period]
+        opts[:time_period] = CF_TIME_PERIODS[tp.to_sym] || tp.to_s
+      end
+
+      # Infer rule type if not explicitly provided
+      if opts[:type].nil?
+        if opts[:time_period]
+          opts[:type] = :time_period
+        elsif opts[:rank]
+          opts[:type] = :top10
+        elsif !opts[:above_average].nil? || !opts[:equal_average].nil? || opts[:std_dev]
+          opts[:type] = :above_average
+        elsif opts[:text]
+          opts[:type] = :contains_text
+        end
+      end
 
       type_str = opts[:type].to_s
       # Normalize color_scale

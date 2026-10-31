@@ -1054,6 +1054,54 @@ module Xlsxrb
     # : (Integer val) -> Integer
     def priority=: (Integer val) -> Integer
 
+    # : (?bool? val) -> bool?
+    def above_average: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def above_average=: (bool val) -> bool
+
+    # : (?bool? val) -> bool?
+    def equal_average: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def equal_average=: (bool val) -> bool
+
+    # : (?Integer? val) -> Integer?
+    def std_dev: (?Integer? val) -> Integer?
+
+    # : (Integer val) -> Integer
+    def std_dev=: (Integer val) -> Integer
+
+    # : (?Integer? val) -> Integer?
+    def rank: (?Integer? val) -> Integer?
+
+    # : (Integer val) -> Integer
+    def rank=: (Integer val) -> Integer
+
+    # : (?bool? val) -> bool?
+    def percent: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def percent=: (bool val) -> bool
+
+    # : (?bool? val) -> bool?
+    def bottom: (?bool? val) -> bool?
+
+    # : (bool val) -> bool
+    def bottom=: (bool val) -> bool
+
+    # : (?String? val) -> String?
+    def text: (?String? val) -> String?
+
+    # : (String val) -> String
+    def text=: (String val) -> String
+
+    # : (?untyped val) -> untyped
+    def time_period: (?untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def time_period=: (untyped val) -> untyped
+
     # : (?untyped val) -> untyped
     def color_scale: (?untyped val) -> untyped
 

@@ -1570,4 +1570,78 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  test "conditional_format with extended statistical and error rules across in-memory and streaming" do
+    tmp = Tempfile.new(["facade_cf_extended_roundtrip", ".xlsx"])
+    Xlsxrb.write(tmp.path) do |w|
+      w.sheet("CfTest") do |s|
+        (1..10).each { |i| s.row([i, i * 10]) }
+
+        # Block with top10
+        s.conditional_format("A1:A10") do |cf|
+          cf.rank 5
+          cf.percent true
+          cf.bottom true
+          cf.bold true
+        end
+
+        # Block with above_average
+        s.conditional_format("B1:B10") do |cf|
+          cf.above_average true
+          cf.equal_average true
+          cf.std_dev 1
+          cf.fill_color "00FF00"
+        end
+
+        # Options with time_period
+        s.conditional_format("C1:C10", time_period: :last_7_days, bold: true)
+
+        # Options with contains_errors
+        s.conditional_format("D1:D10", type: :contains_errors, fill_color: "FF0000")
+      end
+    end
+
+    entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+    sheet_xml = entries["xl/worksheets/sheet1.xml"]
+
+    # Top10
+    assert_match(/type="top10"/, sheet_xml)
+    assert_match(/rank="5"/, sheet_xml)
+    assert_match(/percent="1"/, sheet_xml)
+    assert_match(/bottom="1"/, sheet_xml)
+
+    # AboveAverage
+    assert_match(/type="aboveAverage"/, sheet_xml)
+    assert_match(/equalAverage="1"/, sheet_xml)
+    assert_match(/stdDev="1"/, sheet_xml)
+
+    # TimePeriod
+    assert_match(/type="timePeriod"/, sheet_xml)
+    assert_match(/timePeriod="last7Days"/, sheet_xml)
+
+    # ContainsErrors
+    assert_match(/type="containsErrors"/, sheet_xml)
+
+    # Read back through reader
+    rules = Xlsxrb::Ooxml::Reader.new(tmp.path).conditional_formats(sheet: 0)
+    top10_rule = rules.find { |r| r[:type] == "top10" }
+    assert_not_nil(top10_rule)
+    assert_equal(5, top10_rule[:rank])
+    assert_equal(true, top10_rule[:percent])
+    assert_equal(true, top10_rule[:bottom])
+
+    avg_rule = rules.find { |r| r[:type] == "aboveAverage" }
+    assert_not_nil(avg_rule)
+    assert_equal(true, avg_rule[:equal_average])
+    assert_equal(1, avg_rule[:std_dev])
+
+    tp_rule = rules.find { |r| r[:type] == "timePeriod" }
+    assert_not_nil(tp_rule)
+    assert_equal("last7Days", tp_rule[:time_period])
+
+    err_rule = rules.find { |r| r[:type] == "containsErrors" }
+    assert_not_nil(err_rule)
+  ensure
+    tmp&.close!
+  end
 end

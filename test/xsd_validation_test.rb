@@ -540,4 +540,54 @@ class XsdValidationTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  # 19. Extended conditional formatting rules (aboveAverage, top10, duplicateValues, containsErrors, timePeriod, etc.)
+  def test_extended_conditional_formatting_xsd_validation
+    tmp = Tempfile.new(["xsd_cf_extended", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("CfExtended") do |s|
+          s.row([10, 20, 30, 40, 50])
+          s.row([15, 25, 35, 45, 55])
+
+          # 1. aboveAverage
+          s.conditional_format("A1:A10") do |cf|
+            cf.type = :above_average
+            cf.above_average = true
+            cf.equal_average = true
+            cf.std_dev = 1
+            cf.dxf = { font: { bold: true, color: "FF006100" } }
+          end
+
+          # 2. top10
+          s.conditional_format("B1:B10") do |cf|
+            cf.type = :top10
+            cf.rank = 3
+            cf.percent = false
+            cf.bottom = true
+            cf.dxf = { fill: { fg_color: "FFFFC7CE" } }
+          end
+
+          # 3. duplicateValues & uniqueValues
+          s.conditional_format("C1:C10", type: :duplicate_values, dxf: { font: { italic: true } })
+          s.conditional_format("C1:C10", type: :unique_values, dxf: { font: { color: "FF0000FF" } })
+
+          # 4. containsBlanks & notContainsBlanks
+          s.conditional_format("D1:D10", type: :contains_blanks, dxf: { fill: { fg_color: "FFFFFF00" } })
+          s.conditional_format("D1:D10", type: :not_contains_blanks, dxf: { font: { bold: true } })
+
+          # 5. containsErrors & notContainsErrors
+          s.conditional_format("E1:E10", type: :contains_errors, dxf: { fill: { fg_color: "FFFF0000" } })
+          s.conditional_format("E1:E10", type: :not_contains_errors, dxf: { font: { color: "FF00FF00" } })
+
+          # 6. timePeriod
+          s.conditional_format("F1:F10", time_period: :this_month, dxf: { font: { bold: true } })
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
 end
