@@ -309,6 +309,44 @@ class XsdValidationTest < Test::Unit::TestCase
     end
   end
 
+  # Combo chart with primary and secondary value axes validation
+  def test_combo_chart_with_secondary_axis_xsd_validation
+    tmp = Tempfile.new(["xsd_combo_chart", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("Sales") do |s|
+          s.row(%w[Month Revenue Units])
+          s.row(["Jan", 10_000, 50])
+          s.row(["Feb", 12_000, 65])
+          s.row(["Mar", 15_000, 80])
+          s.chart(type: :combo,
+                  title: "Revenue vs Units",
+                  category_axis: { title: "Month" },
+                  value_axis: { title: "Revenue ($)" },
+                  secondary_value_axis: { title: "Units Sold", major_gridlines: false },
+                  series: [
+                    { type: :bar, name: "Revenue", cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$B$2:$B$4" },
+                    { type: :line, name: "Units", cat_ref: "Sales!$A$2:$A$4", val_ref: "Sales!$C$2:$C$4", secondary_axis: true }
+                  ])
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+
+      doc = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      charts = doc.charts(sheet: "Sales")
+      assert_equal(1, charts.size)
+      chart = charts.first
+      assert_equal("comboChart", chart[:type])
+      assert_equal(2, chart[:series].size)
+      assert_equal("Revenue ($)", chart[:val_axis_title])
+      assert_equal("Units Sold", chart[:sec_val_axis_title])
+      assert_equal(true, chart[:series][1][:secondary_axis])
+    ensure
+      tmp.close!
+    end
+  end
+
   # 10. Shared strings rich text XML validation
   def test_rich_text_shared_strings_validation
     tmp = Tempfile.new(["xsd_rich_text", ".xlsx"])

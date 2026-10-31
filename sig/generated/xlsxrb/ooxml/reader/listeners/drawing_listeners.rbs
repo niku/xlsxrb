@@ -70,8 +70,6 @@ module Xlsxrb
       class ChartTypeListener
         include REXML::SAX2Listener
 
-        attr_reader chart_type: untyped
-
         attr_reader title: untyped
 
         attr_reader title_overlay: untyped
@@ -97,6 +95,78 @@ module Xlsxrb
         attr_reader cat_axis_title: untyped
 
         attr_reader val_axis_title: untyped
+
+        attr_reader secondary_value_axis: untyped
+
+        attr_reader sec_val_axis_title: untyped
+
+        attr_reader chart_types: untyped
+
+        attr_reader sec_val_axis_major_gridlines: untyped
+
+        attr_reader sec_val_axis_minor_gridlines: untyped
+
+        attr_reader sec_val_axis_delete: untyped
+
+        attr_reader sec_val_axis_orientation: untyped
+
+        attr_reader sec_val_axis_num_fmt: untyped
+
+        attr_reader sec_val_axis_major_tick_mark: untyped
+
+        attr_reader sec_val_axis_minor_tick_mark: untyped
+
+        attr_reader sec_val_axis_crosses: untyped
+
+        attr_reader sec_val_axis_crosses_at: untyped
+
+        attr_reader sec_val_axis_cross_between: untyped
+
+        attr_reader sec_val_axis_major_unit: untyped
+
+        attr_reader sec_val_axis_minor_unit: untyped
+
+        attr_reader sec_val_axis_disp_units: untyped
+
+        attr_reader sec_val_axis_scaling_max: untyped
+
+        attr_reader sec_val_axis_scaling_min: untyped
+
+        attr_reader sec_val_axis_log_base: untyped
+
+        attr_reader sec_val_axis_pos: untyped
+
+        attr_reader sec_val_axis_label_rotation: untyped
+
+        attr_reader sec_val_axis_font: untyped
+
+        attr_reader sec_val_axis_fill: untyped
+
+        attr_reader sec_val_axis_no_fill: untyped
+
+        attr_reader sec_val_axis_line_color: untyped
+
+        attr_reader sec_val_axis_line_width: untyped
+
+        attr_reader sec_val_axis_line_dash: untyped
+
+        attr_reader sec_val_axis_tick_lbl_pos: untyped
+
+        attr_reader sec_val_axis_title_font: untyped
+
+        attr_reader sec_val_axis_title_fill: untyped
+
+        attr_reader sec_val_axis_title_no_fill: untyped
+
+        attr_reader sec_val_axis_title_line_color: untyped
+
+        attr_reader sec_val_axis_title_line_width: untyped
+
+        attr_reader sec_val_axis_title_line_dash: untyped
+
+        attr_reader sec_val_axis_title_layout: untyped
+
+        attr_reader sec_val_axis_title_rotation: untyped
 
         attr_reader grouping: untyped
 
@@ -359,6 +429,8 @@ module Xlsxrb
         attr_reader chart_font: untyped
 
         CHART_TYPES: untyped
+
+        def chart_type: () -> untyped
 
         def initialize: () -> untyped
 

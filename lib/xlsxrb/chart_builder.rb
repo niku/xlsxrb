@@ -184,6 +184,18 @@ module Xlsxrb
       @options[:value_axis] = kwargs.empty? ? args.first : kwargs
     end
 
+    # Configures the secondary value axis properties for combo charts.
+    #
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object]
+    # @api public
+    #: (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+    def secondary_value_axis(*args, **kwargs)
+      @options[:secondary_value_axis] = kwargs.empty? ? args.first : kwargs
+    end
+    alias secondary_axis secondary_value_axis
+
     # Configures whether to show the legend key in data labels.
     #
     # @param args [Array] Positional arguments.
@@ -322,11 +334,38 @@ module Xlsxrb
       #
       # @param args [Array] Positional arguments.
       # @param kwargs [Hash] Keyword arguments.
-      # @return [String]
+      # @return [Symbol, String, Hash, nil]
       # @api public
-      #: (*(String) args, **String | Numeric | bool | nil kwargs) -> String
+      #: (*(String | Symbol) args, **String | Numeric | bool | nil kwargs) -> (String | Symbol | Hash[Symbol, untyped] | nil)
       def type(*args, **kwargs)
         @options[:type] = kwargs.empty? ? args.first : kwargs
+      end
+
+      # Configures whether this series uses the secondary value axis.
+      #
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Boolean, Hash]
+      # @api public
+      #: (*bool args, **bool kwargs) -> (bool | Hash[Symbol, bool])
+      def secondary_axis(*args, **kwargs)
+        @options[:secondary_axis] = if kwargs.empty?
+                                      args.empty? || args.first
+                                    else
+                                      kwargs
+                                    end
+      end
+
+      # Configures the axis (:primary or :secondary) for this series.
+      #
+      # @param value [Symbol, String]
+      # @return [Symbol, String]
+      # @api public
+      #: (Symbol | String value) -> (Symbol | String)
+      def axis(value)
+        @options[:axis] = value
+        @options[:secondary_axis] = (value.to_s == "secondary")
+        value
       end
     end
   end

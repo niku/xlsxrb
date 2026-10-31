@@ -721,6 +721,7 @@ module Xlsxrb
           cp.listen(cl)
           cp.parse
           chart[:chart_type] = cl.chart_type
+          chart[:type] = cl.chart_type
           chart[:title] = cl.title
           chart[:title_overlay] = cl.title_overlay unless cl.title_overlay.nil?
           chart[:title_font] = cl.title_font if cl.title_font
@@ -867,6 +868,30 @@ module Xlsxrb
           chart[:protection] = cl.protection if cl.protection
           chart[:print_settings] = cl.print_settings if cl.print_settings
           chart[:chart_font] = cl.chart_font if cl.chart_font
+          chart[:sec_val_axis_title] = cl.sec_val_axis_title if cl.sec_val_axis_title
+          chart[:sec_val_axis_major_gridlines] = cl.sec_val_axis_major_gridlines if cl.sec_val_axis_major_gridlines
+          chart[:sec_val_axis_minor_gridlines] = cl.sec_val_axis_minor_gridlines if cl.sec_val_axis_minor_gridlines
+          chart[:sec_val_axis_num_fmt] = cl.sec_val_axis_num_fmt if cl.sec_val_axis_num_fmt
+          chart[:sec_val_axis_pos] = cl.sec_val_axis_pos if cl.sec_val_axis_pos
+          chart[:sec_val_axis_scaling_max] = cl.sec_val_axis_scaling_max if cl.sec_val_axis_scaling_max
+          chart[:sec_val_axis_scaling_min] = cl.sec_val_axis_scaling_min if cl.sec_val_axis_scaling_min
+          chart[:sec_val_axis_major_unit] = cl.sec_val_axis_major_unit if cl.sec_val_axis_major_unit
+          chart[:sec_val_axis_minor_unit] = cl.sec_val_axis_minor_unit if cl.sec_val_axis_minor_unit
+          next unless cl.sec_val_axis_title || cl.sec_val_axis_major_gridlines || cl.sec_val_axis_scaling_max ||
+                      cl.sec_val_axis_scaling_min || cl.sec_val_axis_num_fmt || cl.sec_val_axis_pos
+
+          sva = {
+            title: cl.sec_val_axis_title,
+            major_gridlines: cl.sec_val_axis_major_gridlines,
+            minor_gridlines: cl.sec_val_axis_minor_gridlines,
+            num_fmt: cl.sec_val_axis_num_fmt,
+            pos: cl.sec_val_axis_pos,
+            max: cl.sec_val_axis_scaling_max,
+            min: cl.sec_val_axis_scaling_min,
+            major_unit: cl.sec_val_axis_major_unit,
+            minor_unit: cl.sec_val_axis_minor_unit
+          }.compact
+          chart[:secondary_value_axis] = sva unless sva.empty?
         end
         listener.charts
       end

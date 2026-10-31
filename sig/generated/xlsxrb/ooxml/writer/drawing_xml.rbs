@@ -62,6 +62,8 @@ module Xlsxrb
         # : (untyped rotation, untyped font) -> ("" | ::String)
         def build_axis_txpr: (untyped rotation, untyped font) -> untyped
 
+        def build_val_ax_xml: (ax_id: untyped, prefix: untyped, chart: untyped, ?default_pos: untyped, ?default_crosses: untyped) -> untyped
+
         # : (untyped chart) -> untyped
         def generate_chart_xml: (untyped chart) -> untyped
 

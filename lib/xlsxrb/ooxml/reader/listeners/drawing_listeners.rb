@@ -1075,9 +1075,22 @@ module Xlsxrb
       class ChartTypeListener
         include REXML::SAX2Listener
 
-        attr_reader :chart_type, :title, :title_overlay, :title_font,
+        attr_reader :title, :title_overlay, :title_font,
                     :title_fill_color, :title_no_fill, :title_line_color, :title_line_width, :title_line_dash,
                     :series, :legend, :data_labels, :cat_axis_title, :val_axis_title,
+                    :secondary_value_axis, :sec_val_axis_title, :chart_types,
+                    :sec_val_axis_major_gridlines, :sec_val_axis_minor_gridlines,
+                    :sec_val_axis_delete, :sec_val_axis_orientation, :sec_val_axis_num_fmt,
+                    :sec_val_axis_major_tick_mark, :sec_val_axis_minor_tick_mark, :sec_val_axis_crosses,
+                    :sec_val_axis_crosses_at, :sec_val_axis_cross_between, :sec_val_axis_major_unit,
+                    :sec_val_axis_minor_unit, :sec_val_axis_disp_units, :sec_val_axis_scaling_max,
+                    :sec_val_axis_scaling_min, :sec_val_axis_log_base, :sec_val_axis_pos,
+                    :sec_val_axis_label_rotation, :sec_val_axis_font, :sec_val_axis_fill,
+                    :sec_val_axis_no_fill, :sec_val_axis_line_color, :sec_val_axis_line_width,
+                    :sec_val_axis_line_dash, :sec_val_axis_tick_lbl_pos,
+                    :sec_val_axis_title_font, :sec_val_axis_title_fill, :sec_val_axis_title_no_fill,
+                    :sec_val_axis_title_line_color, :sec_val_axis_title_line_width, :sec_val_axis_title_line_dash,
+                    :sec_val_axis_title_layout, :sec_val_axis_title_rotation,
                     :grouping, :bar_dir, :vary_colors, :plot_vis_only, :disp_blanks_as, :style, :auto_title_deleted,
                     :rounded_corners, :cat_axis_tick_lbl_pos, :val_axis_tick_lbl_pos,
                     :cat_axis_major_gridlines, :val_axis_major_gridlines,
@@ -1134,8 +1147,54 @@ module Xlsxrb
                          bar3DChart line3DChart pie3DChart area3DChart surfaceChart surface3DChart stockChart bubbleChart
                          ofPieChart].freeze
 
+        def chart_type
+          return "comboChart" if @chart_types && @chart_types.uniq.size > 1
+
+          @chart_types&.first || @chart_type
+        end
+
         def initialize
           @chart_type = nil
+          @chart_types = []
+          @current_chart_type = nil
+          @current_chart_series = []
+          @val_ax_count = 0
+          @is_secondary_val_ax = false
+          @secondary_value_axis = nil
+          @sec_val_axis_title = nil
+          @sec_val_axis_major_gridlines = false
+          @sec_val_axis_minor_gridlines = false
+          @sec_val_axis_delete = nil
+          @sec_val_axis_orientation = nil
+          @sec_val_axis_num_fmt = nil
+          @sec_val_axis_major_tick_mark = nil
+          @sec_val_axis_minor_tick_mark = nil
+          @sec_val_axis_crosses = nil
+          @sec_val_axis_crosses_at = nil
+          @sec_val_axis_cross_between = nil
+          @sec_val_axis_major_unit = nil
+          @sec_val_axis_minor_unit = nil
+          @sec_val_axis_disp_units = nil
+          @sec_val_axis_scaling_max = nil
+          @sec_val_axis_scaling_min = nil
+          @sec_val_axis_log_base = nil
+          @sec_val_axis_pos = nil
+          @sec_val_axis_label_rotation = nil
+          @sec_val_axis_font = nil
+          @sec_val_axis_fill = nil
+          @sec_val_axis_no_fill = nil
+          @sec_val_axis_line_color = nil
+          @sec_val_axis_line_width = nil
+          @sec_val_axis_line_dash = nil
+          @sec_val_axis_tick_lbl_pos = nil
+          @sec_val_axis_title_font = nil
+          @sec_val_axis_title_fill = nil
+          @sec_val_axis_title_no_fill = nil
+          @sec_val_axis_title_line_color = nil
+          @sec_val_axis_title_line_width = nil
+          @sec_val_axis_title_line_dash = nil
+          @sec_val_axis_title_layout = nil
+          @sec_val_axis_title_rotation = nil
           @title = nil
           @title_overlay = nil
           @title_font = nil
@@ -1441,13 +1500,25 @@ module Xlsxrb
 
         def start_element(_uri, local_name, qname, attributes)
           name = element_name(local_name, qname)
-          @chart_type = name if CHART_TYPES.include?(name)
+          if CHART_TYPES.include?(name)
+            @chart_type ||= name
+            @chart_types << name
+            @current_chart_type = name
+            @current_chart_series = []
+          end
 
           case name
           when "chart"
             @inside_chart = true
           when "plotArea"
             @inside_plot_area = true
+          when "axId"
+            val = attributes["val"]
+            if @inside_val_ax
+              @is_secondary_val_ax = val == "3" || @val_ax_count > 1
+            elsif @current_chart_series && val == "3"
+              @current_chart_series.each { |s| s[:secondary_axis] = true }
+            end
           when "grouping"
             @grouping = attributes["val"] if attributes["val"]
           when "barDir"
@@ -2191,7 +2262,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_delete = attributes["val"] == "1"
               elsif @inside_val_ax
-                @val_axis_delete = attributes["val"] == "1"
+                if @is_secondary_val_ax
+                  @sec_val_axis_delete = attributes["val"] == "1"
+                else
+                  @val_axis_delete = attributes["val"] == "1"
+                end
               end
             end
           when "overlay"
@@ -2285,6 +2360,8 @@ module Xlsxrb
             @cat_axis_type = :date
           when "valAx"
             @inside_val_ax = true
+            @val_ax_count += 1
+            @is_secondary_val_ax = (@val_ax_count > 1)
           when "scaling"
             @inside_scaling = true if @inside_cat_ax || @inside_val_ax
           when "logBase"
@@ -2292,7 +2369,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_log_base = attributes["val"].to_f
               elsif @inside_val_ax
-                @val_axis_log_base = attributes["val"].to_f
+                if @is_secondary_val_ax
+                  @sec_val_axis_log_base = attributes["val"].to_f
+                else
+                  @val_axis_log_base = attributes["val"].to_f
+                end
               end
             end
           when "max"
@@ -2300,7 +2381,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_scaling_max = attributes["val"].to_f
               elsif @inside_val_ax
-                @val_axis_scaling_max = attributes["val"].to_f
+                if @is_secondary_val_ax
+                  @sec_val_axis_scaling_max = attributes["val"].to_f
+                else
+                  @val_axis_scaling_max = attributes["val"].to_f
+                end
               end
             end
           when "min"
@@ -2308,7 +2393,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_scaling_min = attributes["val"].to_f
               elsif @inside_val_ax
-                @val_axis_scaling_min = attributes["val"].to_f
+                if @is_secondary_val_ax
+                  @sec_val_axis_scaling_min = attributes["val"].to_f
+                else
+                  @val_axis_scaling_min = attributes["val"].to_f
+                end
               end
             end
           when "orientation"
@@ -2316,7 +2405,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_orientation = attributes["val"]
               elsif @inside_val_ax
-                @val_axis_orientation = attributes["val"]
+                if @is_secondary_val_ax
+                  @sec_val_axis_orientation = attributes["val"]
+                else
+                  @val_axis_orientation = attributes["val"]
+                end
               end
             end
           when "numFmt"
@@ -2339,7 +2432,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_num_fmt = nf
               elsif @inside_val_ax
-                @val_axis_num_fmt = nf
+                if @is_secondary_val_ax
+                  @sec_val_axis_num_fmt = nf
+                else
+                  @val_axis_num_fmt = nf
+                end
               end
             elsif @inside_dlbl && @current_dlbl && attributes["formatCode"]
               nf = { format_code: attributes["formatCode"] }
@@ -2356,7 +2453,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_major_tick_mark = attributes["val"]
               elsif @inside_val_ax
-                @val_axis_major_tick_mark = attributes["val"]
+                if @is_secondary_val_ax
+                  @sec_val_axis_major_tick_mark = attributes["val"]
+                else
+                  @val_axis_major_tick_mark = attributes["val"]
+                end
               end
             end
           when "minorTickMark"
@@ -2364,7 +2465,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_minor_tick_mark = attributes["val"]
               elsif @inside_val_ax
-                @val_axis_minor_tick_mark = attributes["val"]
+                if @is_secondary_val_ax
+                  @sec_val_axis_minor_tick_mark = attributes["val"]
+                else
+                  @val_axis_minor_tick_mark = attributes["val"]
+                end
               end
             end
           when "crosses"
@@ -2372,7 +2477,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_crosses = attributes["val"]
               elsif @inside_val_ax
-                @val_axis_crosses = attributes["val"]
+                if @is_secondary_val_ax
+                  @sec_val_axis_crosses = attributes["val"]
+                else
+                  @val_axis_crosses = attributes["val"]
+                end
               end
             end
           when "crossesAt"
@@ -2380,7 +2489,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_crosses_at = attributes["val"]&.to_f
               elsif @inside_val_ax
-                @val_axis_crosses_at = attributes["val"]&.to_f
+                if @is_secondary_val_ax
+                  @sec_val_axis_crosses_at = attributes["val"]&.to_f
+                else
+                  @val_axis_crosses_at = attributes["val"]&.to_f
+                end
               end
             end
           when "tickLblSkip"
@@ -2400,22 +2513,40 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_pos = attributes["val"]
               elsif @inside_val_ax
-                @val_axis_pos = attributes["val"]
+                if @is_secondary_val_ax
+                  @sec_val_axis_pos = attributes["val"]
+                else
+                  @val_axis_pos = attributes["val"]
+                end
               end
             end
           when "crossBetween"
-            @val_axis_cross_between = attributes["val"] if @inside_val_ax && attributes["val"]
+            if @inside_val_ax && attributes["val"]
+              if @is_secondary_val_ax
+                @sec_val_axis_cross_between = attributes["val"]
+              else
+                @val_axis_cross_between = attributes["val"]
+              end
+            end
           when "majorUnit"
             if @inside_cat_ax && @cat_axis_type == :date && attributes["val"]
               @cat_axis_major_unit = attributes["val"].to_f
             elsif @inside_val_ax && attributes["val"]
-              @val_axis_major_unit = attributes["val"].to_f
+              if @is_secondary_val_ax
+                @sec_val_axis_major_unit = attributes["val"].to_f
+              else
+                @val_axis_major_unit = attributes["val"].to_f
+              end
             end
           when "minorUnit"
             if @inside_cat_ax && @cat_axis_type == :date && attributes["val"]
               @cat_axis_minor_unit = attributes["val"].to_f
             elsif @inside_val_ax && attributes["val"]
-              @val_axis_minor_unit = attributes["val"].to_f
+              if @is_secondary_val_ax
+                @sec_val_axis_minor_unit = attributes["val"].to_f
+              else
+                @val_axis_minor_unit = attributes["val"].to_f
+              end
             end
           when "baseTimeUnit"
             @cat_axis_base_time_unit = attributes["val"] if @inside_cat_ax && attributes["val"]
@@ -2490,7 +2621,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_tick_lbl_pos = attributes["val"]
               elsif @inside_val_ax
-                @val_axis_tick_lbl_pos = attributes["val"]
+                if @is_secondary_val_ax
+                  @sec_val_axis_tick_lbl_pos = attributes["val"]
+                else
+                  @val_axis_tick_lbl_pos = attributes["val"]
+                end
               end
             end
           when "majorGridlines"
@@ -2499,8 +2634,13 @@ module Xlsxrb
               @cat_axis_major_gridlines = true
               @gridlines_target = :cat_axis_major_gridlines
             elsif @inside_val_ax
-              @val_axis_major_gridlines = true
-              @gridlines_target = :val_axis_major_gridlines
+              if @is_secondary_val_ax
+                @sec_val_axis_major_gridlines = true
+                @gridlines_target = :sec_val_axis_major_gridlines
+              else
+                @val_axis_major_gridlines = true
+                @gridlines_target = :val_axis_major_gridlines
+              end
             end
           when "minorGridlines"
             @inside_gridlines = true
@@ -2508,8 +2648,13 @@ module Xlsxrb
               @cat_axis_minor_gridlines = true
               @gridlines_target = :cat_axis_minor_gridlines
             elsif @inside_val_ax
-              @val_axis_minor_gridlines = true
-              @gridlines_target = :val_axis_minor_gridlines
+              if @is_secondary_val_ax
+                @sec_val_axis_minor_gridlines = true
+                @gridlines_target = :sec_val_axis_minor_gridlines
+              else
+                @val_axis_minor_gridlines = true
+                @gridlines_target = :val_axis_minor_gridlines
+              end
             end
           when "plotVisOnly"
             @plot_vis_only = attributes["val"] == "1" if attributes["val"]
@@ -2616,7 +2761,11 @@ module Xlsxrb
               if @inside_cat_ax
                 @cat_axis_title = @text_buffer.dup
               elsif @inside_val_ax
-                @val_axis_title = @text_buffer.dup
+                if @is_secondary_val_ax
+                  @sec_val_axis_title = @text_buffer.dup
+                else
+                  @val_axis_title = @text_buffer.dup
+                end
               end
             elsif @inside_title && @title_depth == 1
               @title = @text_buffer.dup
@@ -2737,7 +2886,11 @@ module Xlsxrb
             @current_trendline[:name] = @text_buffer.dup if @inside_trendline_name && @current_trendline
             @inside_trendline_name = false
           when "ser"
-            @series << @current_ser if @current_ser
+            if @current_ser
+              @current_ser[:chart_type] = @current_chart_type if @current_chart_type
+              @current_chart_series << @current_ser if @current_chart_series
+              @series << @current_ser
+            end
             @current_ser = nil
             @inside_ser = false
             @inside_ser_sp_pr = false
@@ -3007,6 +3160,7 @@ module Xlsxrb
             @inside_axis_def_rpr = false
           when "valAx"
             @inside_val_ax = false
+            @is_secondary_val_ax = false
             @inside_axis_tx_pr = false
             @inside_axis_def_rpr = false
             @inside_disp_units = false
@@ -3145,6 +3299,11 @@ module Xlsxrb
             @inside_leader_lines_ln = false
             @inside_leader_lines_solid_fill = false
           end
+
+          return unless CHART_TYPES.include?(name)
+
+          @current_chart_type = nil
+          @current_chart_series = nil
         end
 
         private
@@ -3154,7 +3313,11 @@ module Xlsxrb
             if @inside_cat_ax
               (@cat_axis_title_layout ||= {})[key] = value
             elsif @inside_val_ax
-              (@val_axis_title_layout ||= {})[key] = value
+              if @is_secondary_val_ax
+                (@sec_val_axis_title_layout ||= {})[key] = value
+              else
+                (@val_axis_title_layout ||= {})[key] = value
+              end
             end
           elsif @inside_title && @title_depth == 1
             (@title_layout ||= {})[key] = value

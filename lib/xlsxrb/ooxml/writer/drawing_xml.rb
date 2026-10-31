@@ -774,10 +774,121 @@ module Xlsxrb
           %(<c:txPr><a:bodyPr#{body_attrs}/><a:lstStyle/><a:p><a:pPr>#{def_rpr}</a:pPr><a:endParaRPr/></a:p></c:txPr>)
         end
 
+        def build_val_ax_xml(ax_id:, prefix:, chart:, default_pos: "l", default_crosses: nil)
+          del_key = :"#{prefix}_delete"
+          orient_key = :"#{prefix}_orientation"
+          log_key = :"#{prefix}_log_base"
+          max_key = :"#{prefix}_scaling_max"
+          min_key = :"#{prefix}_scaling_min"
+          pos_key = :"#{prefix}_pos"
+          major_grid_key = :"#{prefix}_major_gridlines"
+          minor_grid_key = :"#{prefix}_minor_gridlines"
+          title_key = :"#{prefix}_title"
+          num_fmt_key = :"#{prefix}_num_fmt"
+          major_tick_key = :"#{prefix}_major_tick_mark"
+          minor_tick_key = :"#{prefix}_minor_tick_mark"
+          tick_lbl_pos_key = :"#{prefix}_tick_lbl_pos"
+          line_color_key = :"#{prefix}_line_color"
+          fill_key = :"#{prefix}_fill"
+          no_fill_key = :"#{prefix}_no_fill"
+          line_dash_key = :"#{prefix}_line_dash"
+          line_width_key = :"#{prefix}_line_width"
+          rotation_key = :"#{prefix}_label_rotation"
+          font_key = :"#{prefix}_font"
+          crosses_key = :"#{prefix}_crosses"
+          crosses_at_key = :"#{prefix}_crosses_at"
+          cross_between_key = :"#{prefix}_cross_between"
+          major_unit_key = :"#{prefix}_major_unit"
+          minor_unit_key = :"#{prefix}_minor_unit"
+          disp_units_key = :"#{prefix}_disp_units"
+
+          parts = +""
+          val_del = chart[del_key] ? 1 : 0
+          val_orient = chart[orient_key] || "minMax"
+          parts << %(<c:valAx><c:axId val="#{ax_id}"/><c:scaling>)
+          parts << %(<c:logBase val="#{chart[log_key]}"/>) if chart[log_key]
+          parts << %(<c:orientation val="#{val_orient}"/>)
+          parts << %(<c:max val="#{chart[max_key]}"/>) if chart[max_key]
+          parts << %(<c:min val="#{chart[min_key]}"/>) if chart[min_key]
+          parts << %(</c:scaling><c:delete val="#{val_del}"/><c:axPos val="#{chart[pos_key] || default_pos}"/>)
+          parts << gridlines_xml("majorGridlines", chart[major_grid_key])
+          parts << gridlines_xml("minorGridlines", chart[minor_grid_key])
+          if chart[title_key]
+            val_title_spec = merge_flat_title_styling(chart[title_key], chart, title_key)
+            parts << build_chart_title_xml(val_title_spec)
+          end
+          if (vnf = chart[num_fmt_key])
+            vnf_hash = vnf.is_a?(Hash) ? vnf : { format_code: vnf }
+            sl = vnf_hash[:source_linked] ? 1 : 0
+            parts << %(<c:numFmt formatCode="#{xml_escape(vnf_hash[:format_code])}" sourceLinked="#{sl}"/>)
+          end
+          parts << %(<c:majorTickMark val="#{chart[major_tick_key]}"/>) if chart[major_tick_key]
+          parts << %(<c:minorTickMark val="#{chart[minor_tick_key]}"/>) if chart[minor_tick_key]
+          parts << %(<c:tickLblPos val="#{chart[tick_lbl_pos_key]}"/>) if chart[tick_lbl_pos_key]
+          if chart[line_color_key] || chart[fill_key] || chart[no_fill_key] || chart[line_dash_key]
+            parts << "<c:spPr>"
+            parts << "<a:noFill/>" if chart[no_fill_key]
+            parts << %(<a:solidFill>#{color_xml(chart[fill_key])}</a:solidFill>) if chart[fill_key]
+            if chart[line_color_key] || chart[line_dash_key]
+              w_attr = chart[line_width_key] ? %( w="#{chart[line_width_key]}") : ""
+              va_ln_f = chart[line_color_key] ? %(<a:solidFill>#{srgb_clr_xml(chart[line_color_key])}</a:solidFill>) : ""
+              va_ln_d = chart[line_dash_key] ? %(<a:prstDash val="#{xml_escape(chart[line_dash_key])}"/>) : ""
+              parts << "<a:ln#{w_attr}>#{va_ln_f}#{va_ln_d}</a:ln>"
+            end
+            parts << "</c:spPr>"
+          end
+          parts << build_axis_txpr(chart[rotation_key], chart[font_key])
+          parts << '<c:crossAx val="1"/>'
+          crosses_val = chart[crosses_key] || default_crosses
+          parts << %(<c:crosses val="#{crosses_val}"/>) if crosses_val
+          parts << %(<c:crossesAt val="#{chart[crosses_at_key]}"/>) if !crosses_val && chart[crosses_at_key]
+          parts << %(<c:crossBetween val="#{chart[cross_between_key]}"/>) if chart[cross_between_key]
+          parts << %(<c:majorUnit val="#{chart[major_unit_key]}"/>) if chart[major_unit_key]
+          parts << %(<c:minorUnit val="#{chart[minor_unit_key]}"/>) if chart[minor_unit_key]
+          if chart[disp_units_key]
+            du = chart[disp_units_key]
+            if du.is_a?(Hash)
+              parts << "<c:dispUnits>"
+              parts << %(<c:builtInUnit val="#{xml_escape(du[:built_in_unit])}"/>) if du[:built_in_unit]
+              parts << %(<c:custUnit val="#{du[:cust_unit]}"/>) if du[:cust_unit]
+              if du[:label]
+                dul = du[:label]
+                parts << "<c:dispUnitsLbl>"
+                if dul[:num_fmt]
+                  nf = dul[:num_fmt]
+                  nf_src = nf.is_a?(Hash) ? nf : { format_code: nf }
+                  nf_linked = if nf_src.key?(:source_linked)
+                                nf_src[:source_linked] ? 1 : 0
+                              else
+                                0
+                              end
+                  parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
+                end
+                dul_sp = +""
+                dul_sp << %(<a:solidFill>#{color_xml(dul[:fill_color])}</a:solidFill>) if dul[:fill_color]
+                dul_sp << "<a:noFill/>" if dul[:no_fill]
+                if dul[:line_color] || dul[:line_width] || dul[:line_dash]
+                  dul_lw = dul[:line_width] ? %( w="#{(dul[:line_width] * 12_700).to_i}") : ""
+                  dul_lf = dul[:line_color] ? %(<a:solidFill>#{color_xml(dul[:line_color])}</a:solidFill>) : ""
+                  dul_ld = dul[:line_dash] ? %(<a:prstDash val="#{xml_escape(dul[:line_dash])}"/>) : ""
+                  dul_sp << "<a:ln#{dul_lw}>#{dul_lf}#{dul_ld}</a:ln>"
+                end
+                parts << "<c:spPr>#{dul_sp}</c:spPr>" unless dul_sp.empty?
+                parts << build_axis_txpr(nil, dul[:font]) if dul[:font]
+                parts << "</c:dispUnitsLbl>"
+              end
+              parts << "</c:dispUnits>"
+            else
+              parts << %(<c:dispUnits><c:builtInUnit val="#{xml_escape(du.to_s)}"/></c:dispUnits>)
+            end
+          end
+          parts << "</c:valAx>"
+          parts
+        end
+
         # : (untyped chart) -> untyped
         def generate_chart_xml(chart)
           chart_type = CHART_TYPE_MAP[chart[:type]] || "barChart"
-          no_axes = NO_AXIS_CHARTS.include?(chart_type)
           parts = [
             XML_HEADER,
             %(<c:chartSpace xmlns:c="#{C_NS}" xmlns:a="#{A_NS}" xmlns:r="#{DOC_REL_NS}">)
@@ -864,406 +975,446 @@ module Xlsxrb
           else
             parts << "<c:layout/>"
           end
-          parts << "<c:#{chart_type}>"
-          parts << %(<c:ofPieType val="#{xml_escape(chart[:of_pie_type] || "pie")}"/>) if chart_type == "ofPieChart"
-          if %w[barChart bar3DChart].include?(chart_type)
-            bd = chart[:bar_dir] || "col"
-            gr = chart[:grouping] || "clustered"
-            parts << %(<c:barDir val="#{bd}"/><c:grouping val="#{gr}"/>)
-          elsif GROUPING_CHARTS.include?(chart_type)
-            parts << %(<c:grouping val="#{chart[:grouping] || "standard"}"/>)
-          end
-          parts << %(<c:scatterStyle val="#{chart[:scatter_style] || "lineMarker"}"/>) if chart_type == "scatterChart"
-          parts << %(<c:radarStyle val="#{chart[:radar_style] || "standard"}"/>) if chart_type == "radarChart"
-          vc = chart[:vary_colors]
-          parts << %(<c:varyColors val="#{vc ? 1 : 0}"/>) unless vc.nil?
-          wf = chart[:wireframe]
-          parts << %(<c:wireframe val="#{wf ? 1 : 0}"/>) unless wf.nil?
-
           all_series = chart[:series] || []
+          all_series.each do |s|
+            s[:cat_ref] ||= s[:categories] if s[:categories]
+            s[:val_ref] ||= s[:values] if s[:values]
+          end
+
+          has_secondary = !chart[:sec_val_axis_title].nil? ||
+                          !chart[:secondary_value_axis].nil? ||
+                          all_series.any? { |s| s[:secondary_axis] || s[:axis] == :secondary || s[:axis] == "secondary" }
+
+          groups = []
           all_series.each_with_index do |ser, idx|
-            ser_order = ser[:order] || idx
-            parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{ser_order}\"/>"
-            parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f>#{str_cache_xml(ser[:name])}</c:strRef></c:tx>" if ser[:name]
-            iin = ser[:invert_if_negative]
-            parts << %(<c:invertIfNegative val="#{iin ? 1 : 0}"/>) unless iin.nil?
-            parts << %(<c:explosion val="#{ser[:explosion]}"/>) if ser[:explosion]
-            ser[:data_points]&.each do |dp|
-              parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
-              dp_iin = dp[:invert_if_negative]
-              parts << %(<c:invertIfNegative val="#{dp_iin ? 1 : 0}"/>) unless dp_iin.nil?
-              if dp[:marker_symbol] || dp[:marker_size] || dp[:marker_fill] || dp[:marker_no_fill] || dp[:marker_line_color] || dp[:marker_line_dash] || dp[:marker_no_line]
-                parts << "<c:marker>"
-                parts << %(<c:symbol val="#{xml_escape(dp[:marker_symbol])}"/>) if dp[:marker_symbol]
-                parts << %(<c:size val="#{dp[:marker_size]}"/>) if dp[:marker_size]
-                if dp[:marker_fill] || dp[:marker_no_fill] || dp[:marker_line_color] || dp[:marker_line_dash] || dp[:marker_no_line]
-                  mk_sp = +""
-                  mk_sp << "<a:noFill/>" if dp[:marker_no_fill]
-                  mk_sp << %(<a:solidFill>#{color_xml(dp[:marker_fill])}</a:solidFill>) if dp[:marker_fill]
-                  if dp[:marker_no_line]
-                    mk_sp << "<a:ln><a:noFill/></a:ln>"
-                  elsif dp[:marker_line_color] || dp[:marker_line_dash]
-                    mk_ln_w = dp[:marker_line_width] ? %( w="#{(dp[:marker_line_width] * 12_700).to_i}") : ""
-                    mk_ln_f = dp[:marker_line_color] ? %(<a:solidFill>#{color_xml(dp[:marker_line_color])}</a:solidFill>) : ""
-                    mk_ln_d = dp[:marker_line_dash] ? %(<a:prstDash val="#{xml_escape(dp[:marker_line_dash])}"/>) : ""
-                    mk_sp << "<a:ln#{mk_ln_w}>#{mk_ln_f}#{mk_ln_d}</a:ln>"
+            s_type = if ser[:type]
+                       CHART_TYPE_MAP[ser[:type]] || ser[:type].to_s
+                     elsif chart_type == "comboChart"
+                       "barChart"
+                     else
+                       chart_type
+                     end
+            s_sec = ser[:secondary_axis] || ser[:axis] == :secondary || ser[:axis] == "secondary"
+            s_val_ax = s_sec ? 3 : 2
+
+            group = groups.find { |g| g[:type] == s_type && g[:val_ax_id] == s_val_ax }
+            if group
+              group[:series] << [ser, idx]
+            else
+              groups << { type: s_type, val_ax_id: s_val_ax, series: [[ser, idx]] }
+            end
+          end
+
+          if groups.empty?
+            groups << { type: (chart_type == "comboChart" ? "barChart" : chart_type), val_ax_id: 2, series: [] }
+          end
+
+          groups.each do |grp|
+            g_type = grp[:type]
+            g_val_ax = grp[:val_ax_id]
+            g_no_axes = NO_AXIS_CHARTS.include?(g_type)
+
+            parts << "<c:#{g_type}>"
+            parts << %(<c:ofPieType val="#{xml_escape(chart[:of_pie_type] || "pie")}"/>) if g_type == "ofPieChart"
+            if %w[barChart bar3DChart].include?(g_type)
+              bd = chart[:bar_dir] || "col"
+              gr = chart[:grouping] || "clustered"
+              parts << %(<c:barDir val="#{bd}"/><c:grouping val="#{gr}"/>)
+            elsif GROUPING_CHARTS.include?(g_type)
+              parts << %(<c:grouping val="#{chart[:grouping] || "standard"}"/>)
+            end
+            parts << %(<c:scatterStyle val="#{chart[:scatter_style] || "lineMarker"}"/>) if g_type == "scatterChart"
+            parts << %(<c:radarStyle val="#{chart[:radar_style] || "standard"}"/>) if g_type == "radarChart"
+            vc = chart[:vary_colors]
+            parts << %(<c:varyColors val="#{vc ? 1 : 0}"/>) unless vc.nil?
+            wf = chart[:wireframe]
+            parts << %(<c:wireframe val="#{wf ? 1 : 0}"/>) unless wf.nil?
+
+            grp[:series].each do |ser, idx|
+              ser_order = ser[:order] || idx
+              parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{ser_order}\"/>"
+              parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f>#{str_cache_xml(ser[:name])}</c:strRef></c:tx>" if ser[:name]
+              iin = ser[:invert_if_negative]
+              parts << %(<c:invertIfNegative val="#{iin ? 1 : 0}"/>) unless iin.nil?
+              parts << %(<c:explosion val="#{ser[:explosion]}"/>) if ser[:explosion]
+              ser[:data_points]&.each do |dp|
+                parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
+                dp_iin = dp[:invert_if_negative]
+                parts << %(<c:invertIfNegative val="#{dp_iin ? 1 : 0}"/>) unless dp_iin.nil?
+                if dp[:marker_symbol] || dp[:marker_size] || dp[:marker_fill] || dp[:marker_no_fill] || dp[:marker_line_color] || dp[:marker_line_dash] || dp[:marker_no_line]
+                  parts << "<c:marker>"
+                  parts << %(<c:symbol val="#{xml_escape(dp[:marker_symbol])}"/>) if dp[:marker_symbol]
+                  parts << %(<c:size val="#{dp[:marker_size]}"/>) if dp[:marker_size]
+                  if dp[:marker_fill] || dp[:marker_no_fill] || dp[:marker_line_color] || dp[:marker_line_dash] || dp[:marker_no_line]
+                    mk_sp = +""
+                    mk_sp << "<a:noFill/>" if dp[:marker_no_fill]
+                    mk_sp << %(<a:solidFill>#{color_xml(dp[:marker_fill])}</a:solidFill>) if dp[:marker_fill]
+                    if dp[:marker_no_line]
+                      mk_sp << "<a:ln><a:noFill/></a:ln>"
+                    elsif dp[:marker_line_color] || dp[:marker_line_dash]
+                      mk_ln_w = dp[:marker_line_width] ? %( w="#{(dp[:marker_line_width] * 12_700).to_i}") : ""
+                      mk_ln_f = dp[:marker_line_color] ? %(<a:solidFill>#{color_xml(dp[:marker_line_color])}</a:solidFill>) : ""
+                      mk_ln_d = dp[:marker_line_dash] ? %(<a:prstDash val="#{xml_escape(dp[:marker_line_dash])}"/>) : ""
+                      mk_sp << "<a:ln#{mk_ln_w}>#{mk_ln_f}#{mk_ln_d}</a:ln>"
+                    end
+                    parts << "<c:spPr>#{mk_sp}</c:spPr>"
                   end
-                  parts << "<c:spPr>#{mk_sp}</c:spPr>"
+                  parts << "</c:marker>"
                 end
-                parts << "</c:marker>"
-              end
-              dp_b3d = dp[:bubble_3d]
-              parts << %(<c:bubble3D val="#{dp_b3d ? 1 : 0}"/>) unless dp_b3d.nil?
-              parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
-              dp_sp_children = +""
-              dp_sp_children << %(<a:solidFill>#{color_xml(dp[:fill_color])}</a:solidFill>) if dp[:fill_color]
-              dp_sp_children << "<a:noFill/>" if dp[:no_fill]
-              if dp[:no_line]
-                dp_sp_children << "<a:ln><a:noFill/></a:ln>"
-              elsif dp[:line_color] || dp[:line_width] || dp[:line_dash]
-                dp_ln_attrs = dp[:line_width] ? %( w="#{(dp[:line_width] * 12_700).to_i}") : ""
-                dp_ln_fill = dp[:line_color] ? %(<a:solidFill>#{color_xml(dp[:line_color])}</a:solidFill>) : ""
-                dp_ln_dash = dp[:line_dash] ? %(<a:prstDash val="#{xml_escape(dp[:line_dash])}"/>) : ""
-                dp_sp_children << "<a:ln#{dp_ln_attrs}>#{dp_ln_fill}#{dp_ln_dash}</a:ln>"
-              end
-              parts << "<c:spPr>#{dp_sp_children}</c:spPr>" unless dp_sp_children.empty?
-              parts << "</c:dPt>"
-            end
-            if ser[:fill_color] || ser[:no_fill] || ser[:line_color] || ser[:no_line] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
-              parts << "<c:spPr>"
-              parts << %(<a:solidFill>#{color_xml(ser[:fill_color])}</a:solidFill>) if ser[:fill_color]
-              parts << "<a:noFill/>" if ser[:no_fill]
-              if ser[:line_color] || ser[:no_line] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
-                lw = ser[:line_width] ? %( w="#{(ser[:line_width] * 12_700).to_i}") : ""
-                lc = ser[:line_cap] ? %( cap="#{xml_escape(ser[:line_cap])}") : ""
-                parts << "<a:ln#{lw}#{lc}>"
-                parts << "<a:noFill/>" if ser[:no_line]
-                parts << %(<a:solidFill>#{color_xml(ser[:line_color])}</a:solidFill>) if ser[:line_color]
-                parts << %(<a:prstDash val="#{xml_escape(ser[:line_dash])}"/>) if ser[:line_dash]
-                case ser[:line_join]
-                when "round" then parts << "<a:round/>"
-                when "bevel" then parts << "<a:bevel/>"
-                when "miter"
-                  parts << (ser[:line_miter_limit] ? "<a:miter lim=\"#{ser[:line_miter_limit].to_i}\"/>" : "<a:miter/>")
+                dp_b3d = dp[:bubble_3d]
+                parts << %(<c:bubble3D val="#{dp_b3d ? 1 : 0}"/>) unless dp_b3d.nil?
+                parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
+                dp_sp_children = +""
+                dp_sp_children << %(<a:solidFill>#{color_xml(dp[:fill_color])}</a:solidFill>) if dp[:fill_color]
+                dp_sp_children << "<a:noFill/>" if dp[:no_fill]
+                if dp[:no_line]
+                  dp_sp_children << "<a:ln><a:noFill/></a:ln>"
+                elsif dp[:line_color] || dp[:line_width] || dp[:line_dash]
+                  dp_ln_attrs = dp[:line_width] ? %( w="#{(dp[:line_width] * 12_700).to_i}") : ""
+                  dp_ln_fill = dp[:line_color] ? %(<a:solidFill>#{color_xml(dp[:line_color])}</a:solidFill>) : ""
+                  dp_ln_dash = dp[:line_dash] ? %(<a:prstDash val="#{xml_escape(dp[:line_dash])}"/>) : ""
+                  dp_sp_children << "<a:ln#{dp_ln_attrs}>#{dp_ln_fill}#{dp_ln_dash}</a:ln>"
                 end
-                parts << "</a:ln>"
+                parts << "<c:spPr>#{dp_sp_children}</c:spPr>" unless dp_sp_children.empty?
+                parts << "</c:dPt>"
               end
-              parts << "</c:spPr>"
-            end
-            if ser[:marker_symbol] || ser[:marker_size] || ser[:marker_fill] || ser[:marker_no_fill] || ser[:marker_line_color] || ser[:marker_line_dash] || ser[:marker_no_line]
-              parts << "<c:marker>"
-              parts << %(<c:symbol val="#{xml_escape(ser[:marker_symbol])}"/>) if ser[:marker_symbol]
-              parts << %(<c:size val="#{ser[:marker_size]}"/>) if ser[:marker_size]
-              if ser[:marker_fill] || ser[:marker_no_fill] || ser[:marker_line_color] || ser[:marker_line_dash] || ser[:marker_no_line]
+              if ser[:fill_color] || ser[:no_fill] || ser[:line_color] || ser[:no_line] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
                 parts << "<c:spPr>"
-                parts << "<a:noFill/>" if ser[:marker_no_fill]
-                parts << %(<a:solidFill>#{color_xml(ser[:marker_fill])}</a:solidFill>) if ser[:marker_fill]
-                if ser[:marker_no_line]
-                  parts << "<a:ln><a:noFill/></a:ln>"
-                elsif ser[:marker_line_color] || ser[:marker_line_dash]
-                  mk_ln_w = ser[:marker_line_width] ? %( w="#{(ser[:marker_line_width] * 12_700).to_i}") : ""
-                  mk_ln_f = ser[:marker_line_color] ? %(<a:solidFill>#{color_xml(ser[:marker_line_color])}</a:solidFill>) : ""
-                  mk_ln_d = ser[:marker_line_dash] ? %(<a:prstDash val="#{xml_escape(ser[:marker_line_dash])}"/>) : ""
-                  parts << "<a:ln#{mk_ln_w}>#{mk_ln_f}#{mk_ln_d}</a:ln>"
+                parts << %(<a:solidFill>#{color_xml(ser[:fill_color])}</a:solidFill>) if ser[:fill_color]
+                parts << "<a:noFill/>" if ser[:no_fill]
+                if ser[:line_color] || ser[:no_line] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
+                  lw = ser[:line_width] ? %( w="#{(ser[:line_width] * 12_700).to_i}") : ""
+                  lc = ser[:line_cap] ? %( cap="#{xml_escape(ser[:line_cap])}") : ""
+                  parts << "<a:ln#{lw}#{lc}>"
+                  parts << "<a:noFill/>" if ser[:no_line]
+                  parts << %(<a:solidFill>#{color_xml(ser[:line_color])}</a:solidFill>) if ser[:line_color]
+                  parts << %(<a:prstDash val="#{xml_escape(ser[:line_dash])}"/>) if ser[:line_dash]
+                  case ser[:line_join]
+                  when "round" then parts << "<a:round/>"
+                  when "bevel" then parts << "<a:bevel/>"
+                  when "miter"
+                    parts << (ser[:line_miter_limit] ? "<a:miter lim=\"#{ser[:line_miter_limit].to_i}\"/>" : "<a:miter/>")
+                  end
+                  parts << "</a:ln>"
                 end
                 parts << "</c:spPr>"
               end
-              parts << "</c:marker>"
-            end
-            if (dl = ser[:data_labels] || chart[:data_labels])
-              parts << "<c:dLbls>"
-              dl[:labels]&.each do |lbl|
-                parts << "<c:dLbl>"
-                parts << %(<c:idx val="#{lbl[:idx]}"/>)
-                if lbl[:delete]
-                  parts << '<c:delete val="1"/>'
-                else
-                  if (lbl_layout = lbl[:layout])
-                    ml = +""
-                    ml << %(<c:x val="#{lbl_layout[:x]}"/>) if lbl_layout[:x]
-                    ml << %(<c:y val="#{lbl_layout[:y]}"/>) if lbl_layout[:y]
-                    parts << (ml.empty? ? "<c:layout/>" : "<c:layout><c:manualLayout>#{ml}</c:manualLayout></c:layout>")
+              if ser[:marker_symbol] || ser[:marker_size] || ser[:marker_fill] || ser[:marker_no_fill] || ser[:marker_line_color] || ser[:marker_line_dash] || ser[:marker_no_line]
+                parts << "<c:marker>"
+                parts << %(<c:symbol val="#{xml_escape(ser[:marker_symbol])}"/>) if ser[:marker_symbol]
+                parts << %(<c:size val="#{ser[:marker_size]}"/>) if ser[:marker_size]
+                if ser[:marker_fill] || ser[:marker_no_fill] || ser[:marker_line_color] || ser[:marker_line_dash] || ser[:marker_no_line]
+                  parts << "<c:spPr>"
+                  parts << "<a:noFill/>" if ser[:marker_no_fill]
+                  parts << %(<a:solidFill>#{color_xml(ser[:marker_fill])}</a:solidFill>) if ser[:marker_fill]
+                  if ser[:marker_no_line]
+                    parts << "<a:ln><a:noFill/></a:ln>"
+                  elsif ser[:marker_line_color] || ser[:marker_line_dash]
+                    mk_ln_w = ser[:marker_line_width] ? %( w="#{(ser[:marker_line_width] * 12_700).to_i}") : ""
+                    mk_ln_f = ser[:marker_line_color] ? %(<a:solidFill>#{color_xml(ser[:marker_line_color])}</a:solidFill>) : ""
+                    mk_ln_d = ser[:marker_line_dash] ? %(<a:prstDash val="#{xml_escape(ser[:marker_line_dash])}"/>) : ""
+                    parts << "<a:ln#{mk_ln_w}>#{mk_ln_f}#{mk_ln_d}</a:ln>"
                   end
+                  parts << "</c:spPr>"
+                end
+                parts << "</c:marker>"
+              end
+              if (dl = ser[:data_labels] || chart[:data_labels])
+                parts << "<c:dLbls>"
+                dl[:labels]&.each do |lbl|
+                  parts << "<c:dLbl>"
+                  parts << %(<c:idx val="#{lbl[:idx]}"/>)
+                  if lbl[:delete]
+                    parts << '<c:delete val="1"/>'
+                  else
+                    if (lbl_layout = lbl[:layout])
+                      ml = +""
+                      ml << %(<c:x val="#{lbl_layout[:x]}"/>) if lbl_layout[:x]
+                      ml << %(<c:y val="#{lbl_layout[:y]}"/>) if lbl_layout[:y]
+                      parts << (ml.empty? ? "<c:layout/>" : "<c:layout><c:manualLayout>#{ml}</c:manualLayout></c:layout>")
+                    end
+                    parts << "<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(lbl[:text])}</a:t></a:r></a:p></c:rich></c:tx>" if lbl[:text]
+                    if lbl[:num_fmt]
+                      lnf = lbl[:num_fmt]
+                      lnf_src = lnf[:source_linked] ? ' sourceLinked="1"' : ""
+                      parts << %(<c:numFmt formatCode="#{xml_escape(lnf[:format_code])}"#{lnf_src}/>)
+                    end
+                    lbl_sp = +""
+                    lbl_sp << %(<a:solidFill>#{color_xml(lbl[:fill_color])}</a:solidFill>) if lbl[:fill_color]
+                    lbl_sp << "<a:noFill/>" if lbl[:no_fill]
+                    if lbl[:line_color] || lbl[:line_width] || lbl[:line_dash]
+                      lbl_lw = lbl[:line_width] ? %( w="#{(lbl[:line_width] * 12_700).to_i}") : ""
+                      lbl_lf = lbl[:line_color] ? %(<a:solidFill>#{color_xml(lbl[:line_color])}</a:solidFill>) : ""
+                      lbl_ld = lbl[:line_dash] ? %(<a:prstDash val="#{xml_escape(lbl[:line_dash])}"/>) : ""
+                      lbl_sp << "<a:ln#{lbl_lw}>#{lbl_lf}#{lbl_ld}</a:ln>"
+                    end
+                    parts << "<c:spPr>#{lbl_sp}</c:spPr>" unless lbl_sp.empty?
+                    parts << build_axis_txpr(nil, lbl[:font]) if lbl[:font]
+                    parts << %(<c:dLblPos val="#{lbl[:position]}"/>) if lbl[:position]
+                    parts << "<c:showLegendKey val=\"#{lbl[:show_legend_key] ? 1 : 0}\"/>" unless lbl[:show_legend_key].nil?
+                    parts << "<c:showVal val=\"#{lbl[:show_val] ? 1 : 0}\"/>" unless lbl[:show_val].nil?
+                    parts << "<c:showCatName val=\"#{lbl[:show_cat_name] ? 1 : 0}\"/>" unless lbl[:show_cat_name].nil?
+                    parts << "<c:showSerName val=\"#{lbl[:show_ser_name] ? 1 : 0}\"/>" unless lbl[:show_ser_name].nil?
+                    parts << "<c:showPercent val=\"#{lbl[:show_percent] ? 1 : 0}\"/>" unless lbl[:show_percent].nil?
+                    parts << "<c:showBubbleSize val=\"#{lbl[:show_bubble_size] ? 1 : 0}\"/>" unless lbl[:show_bubble_size].nil?
+                    parts << "<c:separator>#{xml_escape(lbl[:separator])}</c:separator>" if lbl[:separator]
+                  end
+                  parts << "</c:dLbl>"
+                end
+                if dl[:num_fmt]
+                  nf = dl[:num_fmt]
+                  nf_src = nf[:source_linked] ? ' sourceLinked="1"' : ""
+                  parts << %(<c:numFmt formatCode="#{xml_escape(nf[:format_code])}"#{nf_src}/>)
+                end
+                dl_sp_children = +""
+                dl_sp_children << %(<a:solidFill>#{color_xml(dl[:fill_color])}</a:solidFill>) if dl[:fill_color]
+                dl_sp_children << "<a:noFill/>" if dl[:no_fill]
+                if dl[:line_color] || dl[:line_width] || dl[:line_dash]
+                  dl_lw = dl[:line_width] ? %( w="#{(dl[:line_width] * 12_700).to_i}") : ""
+                  dl_lf = dl[:line_color] ? %(<a:solidFill>#{color_xml(dl[:line_color])}</a:solidFill>) : ""
+                  dl_ld = dl[:line_dash] ? %(<a:prstDash val="#{xml_escape(dl[:line_dash])}"/>) : ""
+                  dl_sp_children << "<a:ln#{dl_lw}>#{dl_lf}#{dl_ld}</a:ln>"
+                end
+                parts << "<c:spPr>#{dl_sp_children}</c:spPr>" unless dl_sp_children.empty?
+                parts << build_axis_txpr(nil, dl[:font]) if dl[:font]
+                parts << %(<c:dLblPos val="#{dl[:position]}"/>) if dl[:position]
+                parts << "<c:showLegendKey val=\"#{dl[:show_legend_key] ? 1 : 0}\"/>" unless dl[:show_legend_key].nil?
+                parts << "<c:showVal val=\"#{dl[:show_val] ? 1 : 0}\"/>" unless dl[:show_val].nil?
+                parts << "<c:showCatName val=\"#{dl[:show_cat_name] ? 1 : 0}\"/>" unless dl[:show_cat_name].nil?
+                parts << "<c:showSerName val=\"#{dl[:show_ser_name] ? 1 : 0}\"/>" unless dl[:show_ser_name].nil?
+                parts << "<c:showPercent val=\"#{dl[:show_percent] ? 1 : 0}\"/>" unless dl[:show_percent].nil?
+                parts << "<c:showBubbleSize val=\"#{dl[:show_bubble_size] ? 1 : 0}\"/>" unless dl[:show_bubble_size].nil?
+                parts << "<c:separator>#{xml_escape(dl[:separator])}</c:separator>" if dl[:separator]
+                sl = dl[:show_leader_lines]
+                parts << "<c:showLeaderLines val=\"#{sl ? 1 : 0}\"/>" unless sl.nil?
+                if dl[:leader_lines]
+                  ll_spec = dl[:leader_lines]
+                  if ll_spec.is_a?(Hash)
+                    ll_sp = +""
+                    if ll_spec[:line_color] || ll_spec[:line_width] || ll_spec[:line_dash]
+                      ll_lw = ll_spec[:line_width] ? %( w="#{(ll_spec[:line_width] * 12_700).to_i}") : ""
+                      ll_lf = ll_spec[:line_color] ? %(<a:solidFill>#{color_xml(ll_spec[:line_color])}</a:solidFill>) : ""
+                      ll_ld = ll_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(ll_spec[:line_dash])}"/>) : ""
+                      ll_sp << "<a:ln#{ll_lw}>#{ll_lf}#{ll_ld}</a:ln>"
+                    end
+                    parts << (ll_sp.empty? ? "<c:leaderLines/>" : "<c:leaderLines><c:spPr>#{ll_sp}</c:spPr></c:leaderLines>")
+                  else
+                    parts << "<c:leaderLines/>"
+                  end
+                end
+                parts << "</c:dLbls>"
+              end
+              trendline_list = ser[:trendlines] || (ser[:trendline] ? [ser[:trendline]] : [])
+              trendline_list.each do |tl|
+                parts << "<c:trendline>"
+                parts << "<c:name>#{xml_escape(tl[:name])}</c:name>" if tl[:name]
+                tl_sp_children = +""
+                if tl[:line_color] || tl[:line_width] || tl[:line_dash]
+                  tl_ln_w = tl[:line_width] ? %( w="#{(tl[:line_width] * 12_700).to_i}") : ""
+                  tl_ln_f = tl[:line_color] ? %(<a:solidFill>#{color_xml(tl[:line_color])}</a:solidFill>) : ""
+                  tl_ln_d = tl[:line_dash] ? %(<a:prstDash val="#{xml_escape(tl[:line_dash])}"/>) : ""
+                  tl_sp_children << "<a:ln#{tl_ln_w}>#{tl_ln_f}#{tl_ln_d}</a:ln>"
+                end
+                parts << "<c:spPr>#{tl_sp_children}</c:spPr>" unless tl_sp_children.empty?
+                parts << %(<c:trendlineType val="#{xml_escape(tl[:type] || "linear")}"/>)
+                parts << %(<c:order val="#{tl[:order]}"/>) if tl[:order]
+                parts << %(<c:period val="#{tl[:period]}"/>) if tl[:period]
+                parts << %(<c:forward val="#{tl[:forward]}"/>) if tl[:forward]
+                parts << %(<c:backward val="#{tl[:backward]}"/>) if tl[:backward]
+                parts << %(<c:intercept val="#{tl[:intercept]}"/>) if tl[:intercept]
+                parts << %(<c:dispRSqr val="#{tl[:disp_r_sqr] ? 1 : 0}"/>) unless tl[:disp_r_sqr].nil?
+                parts << %(<c:dispEq val="#{tl[:disp_eq] ? 1 : 0}"/>) unless tl[:disp_eq].nil?
+                if tl[:label]
+                  lbl = tl[:label]
+                  parts << "<c:trendlineLbl>"
+                  parts << build_title_layout_xml(lbl[:layout])
                   parts << "<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(lbl[:text])}</a:t></a:r></a:p></c:rich></c:tx>" if lbl[:text]
                   if lbl[:num_fmt]
-                    lnf = lbl[:num_fmt]
-                    lnf_src = lnf[:source_linked] ? ' sourceLinked="1"' : ""
-                    parts << %(<c:numFmt formatCode="#{xml_escape(lnf[:format_code])}"#{lnf_src}/>)
+                    nf = lbl[:num_fmt]
+                    nf_src = nf.is_a?(Hash) ? nf : { format_code: nf }
+                    nf_linked = if nf_src.key?(:source_linked)
+                                  nf_src[:source_linked] ? 1 : 0
+                                else
+                                  0
+                                end
+                    parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
                   end
-                  lbl_sp = +""
-                  lbl_sp << %(<a:solidFill>#{color_xml(lbl[:fill_color])}</a:solidFill>) if lbl[:fill_color]
-                  lbl_sp << "<a:noFill/>" if lbl[:no_fill]
+                  tll_sp = +""
+                  tll_sp << %(<a:solidFill>#{color_xml(lbl[:fill_color])}</a:solidFill>) if lbl[:fill_color]
+                  tll_sp << "<a:noFill/>" if lbl[:no_fill]
                   if lbl[:line_color] || lbl[:line_width] || lbl[:line_dash]
-                    lbl_lw = lbl[:line_width] ? %( w="#{(lbl[:line_width] * 12_700).to_i}") : ""
-                    lbl_lf = lbl[:line_color] ? %(<a:solidFill>#{color_xml(lbl[:line_color])}</a:solidFill>) : ""
-                    lbl_ld = lbl[:line_dash] ? %(<a:prstDash val="#{xml_escape(lbl[:line_dash])}"/>) : ""
-                    lbl_sp << "<a:ln#{lbl_lw}>#{lbl_lf}#{lbl_ld}</a:ln>"
+                    tll_lw = lbl[:line_width] ? %( w="#{(lbl[:line_width] * 12_700).to_i}") : ""
+                    tll_lf = lbl[:line_color] ? %(<a:solidFill>#{color_xml(lbl[:line_color])}</a:solidFill>) : ""
+                    tll_ld = lbl[:line_dash] ? %(<a:prstDash val="#{xml_escape(lbl[:line_dash])}"/>) : ""
+                    tll_sp << "<a:ln#{tll_lw}>#{tll_lf}#{tll_ld}</a:ln>"
                   end
-                  parts << "<c:spPr>#{lbl_sp}</c:spPr>" unless lbl_sp.empty?
+                  parts << "<c:spPr>#{tll_sp}</c:spPr>" unless tll_sp.empty?
                   parts << build_axis_txpr(nil, lbl[:font]) if lbl[:font]
-                  parts << %(<c:dLblPos val="#{lbl[:position]}"/>) if lbl[:position]
-                  parts << "<c:showLegendKey val=\"#{lbl[:show_legend_key] ? 1 : 0}\"/>" unless lbl[:show_legend_key].nil?
-                  parts << "<c:showVal val=\"#{lbl[:show_val] ? 1 : 0}\"/>" unless lbl[:show_val].nil?
-                  parts << "<c:showCatName val=\"#{lbl[:show_cat_name] ? 1 : 0}\"/>" unless lbl[:show_cat_name].nil?
-                  parts << "<c:showSerName val=\"#{lbl[:show_ser_name] ? 1 : 0}\"/>" unless lbl[:show_ser_name].nil?
-                  parts << "<c:showPercent val=\"#{lbl[:show_percent] ? 1 : 0}\"/>" unless lbl[:show_percent].nil?
-                  parts << "<c:showBubbleSize val=\"#{lbl[:show_bubble_size] ? 1 : 0}\"/>" unless lbl[:show_bubble_size].nil?
-                  parts << "<c:separator>#{xml_escape(lbl[:separator])}</c:separator>" if lbl[:separator]
+                  parts << "</c:trendlineLbl>"
                 end
-                parts << "</c:dLbl>"
+                parts << "</c:trendline>"
               end
-              if dl[:num_fmt]
-                nf = dl[:num_fmt]
-                nf_src = nf[:source_linked] ? ' sourceLinked="1"' : ""
-                parts << %(<c:numFmt formatCode="#{xml_escape(nf[:format_code])}"#{nf_src}/>)
-              end
-              dl_sp_children = +""
-              dl_sp_children << %(<a:solidFill>#{color_xml(dl[:fill_color])}</a:solidFill>) if dl[:fill_color]
-              dl_sp_children << "<a:noFill/>" if dl[:no_fill]
-              if dl[:line_color] || dl[:line_width] || dl[:line_dash]
-                dl_lw = dl[:line_width] ? %( w="#{(dl[:line_width] * 12_700).to_i}") : ""
-                dl_lf = dl[:line_color] ? %(<a:solidFill>#{color_xml(dl[:line_color])}</a:solidFill>) : ""
-                dl_ld = dl[:line_dash] ? %(<a:prstDash val="#{xml_escape(dl[:line_dash])}"/>) : ""
-                dl_sp_children << "<a:ln#{dl_lw}>#{dl_lf}#{dl_ld}</a:ln>"
-              end
-              parts << "<c:spPr>#{dl_sp_children}</c:spPr>" unless dl_sp_children.empty?
-              parts << build_axis_txpr(nil, dl[:font]) if dl[:font]
-              parts << %(<c:dLblPos val="#{dl[:position]}"/>) if dl[:position]
-              parts << "<c:showLegendKey val=\"#{dl[:show_legend_key] ? 1 : 0}\"/>" unless dl[:show_legend_key].nil?
-              parts << "<c:showVal val=\"#{dl[:show_val] ? 1 : 0}\"/>" unless dl[:show_val].nil?
-              parts << "<c:showCatName val=\"#{dl[:show_cat_name] ? 1 : 0}\"/>" unless dl[:show_cat_name].nil?
-              parts << "<c:showSerName val=\"#{dl[:show_ser_name] ? 1 : 0}\"/>" unless dl[:show_ser_name].nil?
-              parts << "<c:showPercent val=\"#{dl[:show_percent] ? 1 : 0}\"/>" unless dl[:show_percent].nil?
-              parts << "<c:showBubbleSize val=\"#{dl[:show_bubble_size] ? 1 : 0}\"/>" unless dl[:show_bubble_size].nil?
-              parts << "<c:separator>#{xml_escape(dl[:separator])}</c:separator>" if dl[:separator]
-              sl = dl[:show_leader_lines]
-              parts << "<c:showLeaderLines val=\"#{sl ? 1 : 0}\"/>" unless sl.nil?
-              if dl[:leader_lines]
-                ll_spec = dl[:leader_lines]
-                if ll_spec.is_a?(Hash)
-                  ll_sp = +""
-                  if ll_spec[:line_color] || ll_spec[:line_width] || ll_spec[:line_dash]
-                    ll_lw = ll_spec[:line_width] ? %( w="#{(ll_spec[:line_width] * 12_700).to_i}") : ""
-                    ll_lf = ll_spec[:line_color] ? %(<a:solidFill>#{color_xml(ll_spec[:line_color])}</a:solidFill>) : ""
-                    ll_ld = ll_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(ll_spec[:line_dash])}"/>) : ""
-                    ll_sp << "<a:ln#{ll_lw}>#{ll_lf}#{ll_ld}</a:ln>"
-                  end
-                  parts << (ll_sp.empty? ? "<c:leaderLines/>" : "<c:leaderLines><c:spPr>#{ll_sp}</c:spPr></c:leaderLines>")
-                else
-                  parts << "<c:leaderLines/>"
+              err_bars_list = ser[:error_bars_list] || (ser[:error_bars] ? [ser[:error_bars]] : [])
+              err_bars_list.each do |eb|
+                parts << "<c:errBars>"
+                parts << %(<c:errDir val="#{xml_escape(eb[:direction])}"/>) if eb[:direction]
+                parts << %(<c:errBarType val="#{xml_escape(eb[:bar_type] || "both")}"/>)
+                parts << %(<c:errValType val="#{xml_escape(eb[:val_type] || "fixedVal")}"/>)
+                parts << %(<c:noEndCap val="#{eb[:no_end_cap] ? 1 : 0}"/>) unless eb[:no_end_cap].nil?
+                parts << "<c:plus><c:numRef><c:f>#{xml_escape(eb[:plus])}</c:f></c:numRef></c:plus>" if eb[:plus]
+                parts << "<c:minus><c:numRef><c:f>#{xml_escape(eb[:minus])}</c:f></c:numRef></c:minus>" if eb[:minus]
+                parts << %(<c:val val="#{eb[:val]}"/>) if eb[:val]
+                eb_sp_children = +""
+                eb_sp_children << %(<a:solidFill>#{color_xml(eb[:fill_color])}</a:solidFill>) if eb[:fill_color]
+                eb_sp_children << "<a:noFill/>" if eb[:no_fill]
+                if eb[:line_color] || eb[:line_width] || eb[:line_dash]
+                  eb_ln_w = eb[:line_width] ? %( w="#{(eb[:line_width] * 12_700).to_i}") : ""
+                  eb_ln_f = eb[:line_color] ? %(<a:solidFill>#{color_xml(eb[:line_color])}</a:solidFill>) : ""
+                  eb_ln_d = eb[:line_dash] ? %(<a:prstDash val="#{xml_escape(eb[:line_dash])}"/>) : ""
+                  eb_sp_children << "<a:ln#{eb_ln_w}>#{eb_ln_f}#{eb_ln_d}</a:ln>"
                 end
+                parts << "<c:spPr>#{eb_sp_children}</c:spPr>" unless eb_sp_children.empty?
+                parts << "</c:errBars>"
               end
-              parts << "</c:dLbls>"
-            end
-            trendline_list = ser[:trendlines] || (ser[:trendline] ? [ser[:trendline]] : [])
-            trendline_list.each do |tl|
-              parts << "<c:trendline>"
-              parts << "<c:name>#{xml_escape(tl[:name])}</c:name>" if tl[:name]
-              tl_sp_children = +""
-              if tl[:line_color] || tl[:line_width] || tl[:line_dash]
-                tl_ln_w = tl[:line_width] ? %( w="#{(tl[:line_width] * 12_700).to_i}") : ""
-                tl_ln_f = tl[:line_color] ? %(<a:solidFill>#{color_xml(tl[:line_color])}</a:solidFill>) : ""
-                tl_ln_d = tl[:line_dash] ? %(<a:prstDash val="#{xml_escape(tl[:line_dash])}"/>) : ""
-                tl_sp_children << "<a:ln#{tl_ln_w}>#{tl_ln_f}#{tl_ln_d}</a:ln>"
+              uses_xy = %w[scatterChart bubbleChart].include?(g_type)
+              cat_tag = uses_xy ? "xVal" : "cat"
+              val_tag = uses_xy ? "yVal" : "val"
+              if ser[:cat_ref]
+                parts << if uses_xy || ser[:cat_ref_type] == :num
+                           "<c:#{cat_tag}><c:numRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f>#{num_cache_xml(ser[:cat_ref])}</c:numRef></c:#{cat_tag}>"
+                         else
+                           "<c:#{cat_tag}><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f>#{str_cache_xml(ser[:cat_ref])}</c:strRef></c:#{cat_tag}>"
+                         end
               end
-              parts << "<c:spPr>#{tl_sp_children}</c:spPr>" unless tl_sp_children.empty?
-              parts << %(<c:trendlineType val="#{xml_escape(tl[:type] || "linear")}"/>)
-              parts << %(<c:order val="#{tl[:order]}"/>) if tl[:order]
-              parts << %(<c:period val="#{tl[:period]}"/>) if tl[:period]
-              parts << %(<c:forward val="#{tl[:forward]}"/>) if tl[:forward]
-              parts << %(<c:backward val="#{tl[:backward]}"/>) if tl[:backward]
-              parts << %(<c:intercept val="#{tl[:intercept]}"/>) if tl[:intercept]
-              parts << %(<c:dispRSqr val="#{tl[:disp_r_sqr] ? 1 : 0}"/>) unless tl[:disp_r_sqr].nil?
-              parts << %(<c:dispEq val="#{tl[:disp_eq] ? 1 : 0}"/>) unless tl[:disp_eq].nil?
-              if tl[:label]
-                lbl = tl[:label]
-                parts << "<c:trendlineLbl>"
-                parts << build_title_layout_xml(lbl[:layout])
-                parts << "<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(lbl[:text])}</a:t></a:r></a:p></c:rich></c:tx>" if lbl[:text]
-                if lbl[:num_fmt]
-                  nf = lbl[:num_fmt]
-                  nf_src = nf.is_a?(Hash) ? nf : { format_code: nf }
-                  nf_linked = if nf_src.key?(:source_linked)
-                                nf_src[:source_linked] ? 1 : 0
-                              else
-                                0
-                              end
-                  parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
-                end
-                tll_sp = +""
-                tll_sp << %(<a:solidFill>#{color_xml(lbl[:fill_color])}</a:solidFill>) if lbl[:fill_color]
-                tll_sp << "<a:noFill/>" if lbl[:no_fill]
-                if lbl[:line_color] || lbl[:line_width] || lbl[:line_dash]
-                  tll_lw = lbl[:line_width] ? %( w="#{(lbl[:line_width] * 12_700).to_i}") : ""
-                  tll_lf = lbl[:line_color] ? %(<a:solidFill>#{color_xml(lbl[:line_color])}</a:solidFill>) : ""
-                  tll_ld = lbl[:line_dash] ? %(<a:prstDash val="#{xml_escape(lbl[:line_dash])}"/>) : ""
-                  tll_sp << "<a:ln#{tll_lw}>#{tll_lf}#{tll_ld}</a:ln>"
-                end
-                parts << "<c:spPr>#{tll_sp}</c:spPr>" unless tll_sp.empty?
-                parts << build_axis_txpr(nil, lbl[:font]) if lbl[:font]
-                parts << "</c:trendlineLbl>"
-              end
-              parts << "</c:trendline>"
+              parts << "<c:#{val_tag}><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f>#{num_cache_xml(ser[:val_ref])}</c:numRef></c:#{val_tag}>" if ser[:val_ref]
+              parts << "<c:bubbleSize><c:numRef><c:f>#{xml_escape(ser[:bubble_size_ref])}</c:f>#{num_cache_xml(ser[:bubble_size_ref])}</c:numRef></c:bubbleSize>" if ser[:bubble_size_ref]
+              parts << %(<c:smooth val="#{ser[:smooth] ? 1 : 0}"/>) unless ser[:smooth].nil?
+              parts << %(<c:shape val="#{xml_escape(ser[:shape])}"/>) if ser[:shape]
+              parts << "</c:ser>"
             end
-            err_bars_list = ser[:error_bars_list] || (ser[:error_bars] ? [ser[:error_bars]] : [])
-            err_bars_list.each do |eb|
-              parts << "<c:errBars>"
-              parts << %(<c:errDir val="#{xml_escape(eb[:direction])}"/>) if eb[:direction]
-              parts << %(<c:errBarType val="#{xml_escape(eb[:bar_type] || "both")}"/>)
-              parts << %(<c:errValType val="#{xml_escape(eb[:val_type] || "fixedVal")}"/>)
-              parts << %(<c:noEndCap val="#{eb[:no_end_cap] ? 1 : 0}"/>) unless eb[:no_end_cap].nil?
-              parts << "<c:plus><c:numRef><c:f>#{xml_escape(eb[:plus])}</c:f></c:numRef></c:plus>" if eb[:plus]
-              parts << "<c:minus><c:numRef><c:f>#{xml_escape(eb[:minus])}</c:f></c:numRef></c:minus>" if eb[:minus]
-              parts << %(<c:val val="#{eb[:val]}"/>) if eb[:val]
-              eb_sp_children = +""
-              eb_sp_children << %(<a:solidFill>#{color_xml(eb[:fill_color])}</a:solidFill>) if eb[:fill_color]
-              eb_sp_children << "<a:noFill/>" if eb[:no_fill]
-              if eb[:line_color] || eb[:line_width] || eb[:line_dash]
-                eb_ln_w = eb[:line_width] ? %( w="#{(eb[:line_width] * 12_700).to_i}") : ""
-                eb_ln_f = eb[:line_color] ? %(<a:solidFill>#{color_xml(eb[:line_color])}</a:solidFill>) : ""
-                eb_ln_d = eb[:line_dash] ? %(<a:prstDash val="#{xml_escape(eb[:line_dash])}"/>) : ""
-                eb_sp_children << "<a:ln#{eb_ln_w}>#{eb_ln_f}#{eb_ln_d}</a:ln>"
-              end
-              parts << "<c:spPr>#{eb_sp_children}</c:spPr>" unless eb_sp_children.empty?
-              parts << "</c:errBars>"
-            end
-            uses_xy = %w[scatterChart bubbleChart].include?(chart_type)
-            cat_tag = uses_xy ? "xVal" : "cat"
-            val_tag = uses_xy ? "yVal" : "val"
-            if ser[:cat_ref]
-              parts << if uses_xy || ser[:cat_ref_type] == :num
-                         "<c:#{cat_tag}><c:numRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f>#{num_cache_xml(ser[:cat_ref])}</c:numRef></c:#{cat_tag}>"
-                       else
-                         "<c:#{cat_tag}><c:strRef><c:f>#{xml_escape(ser[:cat_ref])}</c:f>#{str_cache_xml(ser[:cat_ref])}</c:strRef></c:#{cat_tag}>"
-                       end
-            end
-            parts << "<c:#{val_tag}><c:numRef><c:f>#{xml_escape(ser[:val_ref])}</c:f>#{num_cache_xml(ser[:val_ref])}</c:numRef></c:#{val_tag}>" if ser[:val_ref]
-            parts << "<c:bubbleSize><c:numRef><c:f>#{xml_escape(ser[:bubble_size_ref])}</c:f>#{num_cache_xml(ser[:bubble_size_ref])}</c:numRef></c:bubbleSize>" if ser[:bubble_size_ref]
-            parts << %(<c:smooth val="#{ser[:smooth] ? 1 : 0}"/>) unless ser[:smooth].nil?
-            parts << %(<c:shape val="#{xml_escape(ser[:shape])}"/>) if ser[:shape]
-            parts << "</c:ser>"
-          end
 
-          if chart[:band_fmts]
-            parts << "<c:bandFmts>"
-            chart[:band_fmts].each do |bf|
-              parts << "<c:bandFmt><c:idx val=\"#{bf[:idx]}\"/>"
-              bf_sp = +""
-              bf_sp << %(<a:solidFill>#{color_xml(bf[:fill_color])}</a:solidFill>) if bf[:fill_color]
-              bf_sp << "<a:noFill/>" if bf[:no_fill]
-              if bf[:line_color] || bf[:line_width] || bf[:line_dash]
-                bf_lw = bf[:line_width] ? %( w="#{(bf[:line_width] * 12_700).to_i}") : ""
-                bf_lf = bf[:line_color] ? %(<a:solidFill>#{color_xml(bf[:line_color])}</a:solidFill>) : ""
-                bf_ld = bf[:line_dash] ? %(<a:prstDash val="#{xml_escape(bf[:line_dash])}"/>) : ""
-                bf_sp << "<a:ln#{bf_lw}>#{bf_lf}#{bf_ld}</a:ln>"
-              end
-              parts << "<c:spPr>#{bf_sp}</c:spPr>" unless bf_sp.empty?
-              parts << "</c:bandFmt>"
-            end
-            parts << "</c:bandFmts>"
-          end
-
-          parts << %(<c:gapWidth val="#{chart[:gap_width]}"/>) if chart[:gap_width]
-          parts << %(<c:splitType val="#{xml_escape(chart[:split_type])}"/>) if chart[:split_type]
-          parts << %(<c:splitPos val="#{chart[:split_pos]}"/>) if chart[:split_pos]
-          if chart[:cust_split]&.any?
-            parts << "<c:custSplit>"
-            chart[:cust_split].each { |idx| parts << %(<c:secondPiePt val="#{idx}"/>) }
-            parts << "</c:custSplit>"
-          end
-          parts << %(<c:secondPieSize val="#{chart[:second_pie_size]}"/>) if chart[:second_pie_size]
-          parts << %(<c:gapDepth val="#{chart[:gap_depth]}"/>) if chart[:gap_depth]
-          parts << %(<c:overlap val="#{chart[:overlap]}"/>) if chart[:overlap]
-          parts << %(<c:shape val="#{chart[:bar_shape]}"/>) if chart[:bar_shape]
-          b3d = chart[:bubble_3d]
-          parts << %(<c:bubble3D val="#{b3d ? 1 : 0}"/>) unless b3d.nil?
-          parts << %(<c:bubbleScale val="#{chart[:bubble_scale]}"/>) if chart[:bubble_scale]
-          snb = chart[:show_neg_bubbles]
-          parts << %(<c:showNegBubbles val="#{snb ? 1 : 0}"/>) unless snb.nil?
-          parts << %(<c:sizeRepresents val="#{chart[:size_represents]}"/>) if chart[:size_represents]
-          parts << %(<c:firstSliceAng val="#{chart[:first_slice_ang]}"/>) if chart[:first_slice_ang]
-          parts << %(<c:holeSize val="#{chart[:hole_size]}"/>) if chart[:hole_size]
-          if chart[:ser_lines]
-            sl_spec = chart[:ser_lines]
-            if sl_spec.is_a?(Hash)
-              sl_sp = +""
-              if sl_spec[:line_color] || sl_spec[:line_width] || sl_spec[:line_dash]
-                sl_lw = sl_spec[:line_width] ? %( w="#{(sl_spec[:line_width] * 12_700).to_i}") : ""
-                sl_lf = sl_spec[:line_color] ? %(<a:solidFill>#{color_xml(sl_spec[:line_color])}</a:solidFill>) : ""
-                sl_ld = sl_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(sl_spec[:line_dash])}"/>) : ""
-                sl_sp << "<a:ln#{sl_lw}>#{sl_lf}#{sl_ld}</a:ln>"
-              end
-              parts << (sl_sp.empty? ? "<c:serLines/>" : "<c:serLines><c:spPr>#{sl_sp}</c:spPr></c:serLines>")
-            else
-              parts << "<c:serLines/>"
-            end
-          end
-          if chart[:drop_lines]
-            dl_spec = chart[:drop_lines]
-            if dl_spec.is_a?(Hash)
-              dl_sp = +""
-              if dl_spec[:line_color] || dl_spec[:line_width] || dl_spec[:line_dash]
-                dl_lw = dl_spec[:line_width] ? %( w="#{(dl_spec[:line_width] * 12_700).to_i}") : ""
-                dl_lf = dl_spec[:line_color] ? %(<a:solidFill>#{color_xml(dl_spec[:line_color])}</a:solidFill>) : ""
-                dl_ld = dl_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(dl_spec[:line_dash])}"/>) : ""
-                dl_sp << "<a:ln#{dl_lw}>#{dl_lf}#{dl_ld}</a:ln>"
-              end
-              parts << (dl_sp.empty? ? "<c:dropLines/>" : "<c:dropLines><c:spPr>#{dl_sp}</c:spPr></c:dropLines>")
-            else
-              parts << "<c:dropLines/>"
-            end
-          end
-          if chart[:hi_low_lines]
-            hl_spec = chart[:hi_low_lines]
-            if hl_spec.is_a?(Hash)
-              hl_sp = +""
-              if hl_spec[:line_color] || hl_spec[:line_width] || hl_spec[:line_dash]
-                hl_lw = hl_spec[:line_width] ? %( w="#{(hl_spec[:line_width] * 12_700).to_i}") : ""
-                hl_lf = hl_spec[:line_color] ? %(<a:solidFill>#{color_xml(hl_spec[:line_color])}</a:solidFill>) : ""
-                hl_ld = hl_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(hl_spec[:line_dash])}"/>) : ""
-                hl_sp << "<a:ln#{hl_lw}>#{hl_lf}#{hl_ld}</a:ln>"
-              end
-              parts << (hl_sp.empty? ? "<c:hiLowLines/>" : "<c:hiLowLines><c:spPr>#{hl_sp}</c:spPr></c:hiLowLines>")
-            else
-              parts << "<c:hiLowLines/>"
-            end
-          end
-          if chart[:up_down_bars]
-            udb = chart[:up_down_bars]
-            parts << "<c:upDownBars>"
-            parts << %(<c:gapWidth val="#{udb[:gap_width]}"/>) if udb.is_a?(Hash) && udb[:gap_width]
-            %i[up_bars down_bars].each do |bar_key|
-              tag = bar_key == :up_bars ? "upBars" : "downBars"
-              bar = udb.is_a?(Hash) ? udb[bar_key] : nil
-              if bar
-                bar_sp = +""
-                bar_sp << %(<a:solidFill>#{color_xml(bar[:fill_color])}</a:solidFill>) if bar[:fill_color]
-                bar_sp << "<a:noFill/>" if bar[:no_fill]
-                if bar[:line_color] || bar[:line_width] || bar[:line_dash]
-                  b_lw = bar[:line_width] ? %( w="#{(bar[:line_width] * 12_700).to_i}") : ""
-                  b_lf = bar[:line_color] ? %(<a:solidFill>#{color_xml(bar[:line_color])}</a:solidFill>) : ""
-                  b_ld = bar[:line_dash] ? %(<a:prstDash val="#{xml_escape(bar[:line_dash])}"/>) : ""
-                  bar_sp << "<a:ln#{b_lw}>#{b_lf}#{b_ld}</a:ln>"
+            if chart[:band_fmts]
+              parts << "<c:bandFmts>"
+              chart[:band_fmts].each do |bf|
+                parts << "<c:bandFmt><c:idx val=\"#{bf[:idx]}\"/>"
+                bf_sp = +""
+                bf_sp << %(<a:solidFill>#{color_xml(bf[:fill_color])}</a:solidFill>) if bf[:fill_color]
+                bf_sp << "<a:noFill/>" if bf[:no_fill]
+                if bf[:line_color] || bf[:line_width] || bf[:line_dash]
+                  bf_lw = bf[:line_width] ? %( w="#{(bf[:line_width] * 12_700).to_i}") : ""
+                  bf_lf = bf[:line_color] ? %(<a:solidFill>#{color_xml(bf[:line_color])}</a:solidFill>) : ""
+                  bf_ld = bf[:line_dash] ? %(<a:prstDash val="#{xml_escape(bf[:line_dash])}"/>) : ""
+                  bf_sp << "<a:ln#{bf_lw}>#{bf_lf}#{bf_ld}</a:ln>"
                 end
-                parts << (bar_sp.empty? ? "<c:#{tag}/>" : "<c:#{tag}><c:spPr>#{bar_sp}</c:spPr></c:#{tag}>")
+                parts << "<c:spPr>#{bf_sp}</c:spPr>" unless bf_sp.empty?
+                parts << "</c:bandFmt>"
+              end
+              parts << "</c:bandFmts>"
+            end
+
+            parts << %(<c:gapWidth val="#{chart[:gap_width]}"/>) if chart[:gap_width]
+            parts << %(<c:splitType val="#{xml_escape(chart[:split_type])}"/>) if chart[:split_type]
+            parts << %(<c:splitPos val="#{chart[:split_pos]}"/>) if chart[:split_pos]
+            if chart[:cust_split]&.any?
+              parts << "<c:custSplit>"
+              chart[:cust_split].each { |idx| parts << %(<c:secondPiePt val="#{idx}"/>) }
+              parts << "</c:custSplit>"
+            end
+            parts << %(<c:secondPieSize val="#{chart[:second_pie_size]}"/>) if chart[:second_pie_size]
+            parts << %(<c:gapDepth val="#{chart[:gap_depth]}"/>) if chart[:gap_depth]
+            parts << %(<c:overlap val="#{chart[:overlap]}"/>) if chart[:overlap]
+            parts << %(<c:shape val="#{chart[:bar_shape]}"/>) if chart[:bar_shape]
+            b3d = chart[:bubble_3d]
+            parts << %(<c:bubble3D val="#{b3d ? 1 : 0}"/>) unless b3d.nil?
+            parts << %(<c:bubbleScale val="#{chart[:bubble_scale]}"/>) if chart[:bubble_scale]
+            snb = chart[:show_neg_bubbles]
+            parts << %(<c:showNegBubbles val="#{snb ? 1 : 0}"/>) unless snb.nil?
+            parts << %(<c:sizeRepresents val="#{chart[:size_represents]}"/>) if chart[:size_represents]
+            parts << %(<c:firstSliceAng val="#{chart[:first_slice_ang]}"/>) if chart[:first_slice_ang]
+            parts << %(<c:holeSize val="#{chart[:hole_size]}"/>) if chart[:hole_size]
+            if chart[:ser_lines]
+              sl_spec = chart[:ser_lines]
+              if sl_spec.is_a?(Hash)
+                sl_sp = +""
+                if sl_spec[:line_color] || sl_spec[:line_width] || sl_spec[:line_dash]
+                  sl_lw = sl_spec[:line_width] ? %( w="#{(sl_spec[:line_width] * 12_700).to_i}") : ""
+                  sl_lf = sl_spec[:line_color] ? %(<a:solidFill>#{color_xml(sl_spec[:line_color])}</a:solidFill>) : ""
+                  sl_ld = sl_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(sl_spec[:line_dash])}"/>) : ""
+                  sl_sp << "<a:ln#{sl_lw}>#{sl_lf}#{sl_ld}</a:ln>"
+                end
+                parts << (sl_sp.empty? ? "<c:serLines/>" : "<c:serLines><c:spPr>#{sl_sp}</c:spPr></c:serLines>")
               else
-                parts << "<c:#{tag}/>"
+                parts << "<c:serLines/>"
               end
             end
-            parts << "</c:upDownBars>"
+            if chart[:drop_lines]
+              dl_spec = chart[:drop_lines]
+              if dl_spec.is_a?(Hash)
+                dl_sp = +""
+                if dl_spec[:line_color] || dl_spec[:line_width] || dl_spec[:line_dash]
+                  dl_lw = dl_spec[:line_width] ? %( w="#{(dl_spec[:line_width] * 12_700).to_i}") : ""
+                  dl_lf = dl_spec[:line_color] ? %(<a:solidFill>#{color_xml(dl_spec[:line_color])}</a:solidFill>) : ""
+                  dl_ld = dl_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(dl_spec[:line_dash])}"/>) : ""
+                  dl_sp << "<a:ln#{dl_lw}>#{dl_lf}#{dl_ld}</a:ln>"
+                end
+                parts << (dl_sp.empty? ? "<c:dropLines/>" : "<c:dropLines><c:spPr>#{dl_sp}</c:spPr></c:dropLines>")
+              else
+                parts << "<c:dropLines/>"
+              end
+            end
+            if chart[:hi_low_lines]
+              hl_spec = chart[:hi_low_lines]
+              if hl_spec.is_a?(Hash)
+                hl_sp = +""
+                if hl_spec[:line_color] || hl_spec[:line_width] || hl_spec[:line_dash]
+                  hl_lw = hl_spec[:line_width] ? %( w="#{(hl_spec[:line_width] * 12_700).to_i}") : ""
+                  hl_lf = hl_spec[:line_color] ? %(<a:solidFill>#{color_xml(hl_spec[:line_color])}</a:solidFill>) : ""
+                  hl_ld = hl_spec[:line_dash] ? %(<a:prstDash val="#{xml_escape(hl_spec[:line_dash])}"/>) : ""
+                  hl_sp << "<a:ln#{hl_lw}>#{hl_lf}#{hl_ld}</a:ln>"
+                end
+                parts << (hl_sp.empty? ? "<c:hiLowLines/>" : "<c:hiLowLines><c:spPr>#{hl_sp}</c:spPr></c:hiLowLines>")
+              else
+                parts << "<c:hiLowLines/>"
+              end
+            end
+            if chart[:up_down_bars]
+              udb = chart[:up_down_bars]
+              parts << "<c:upDownBars>"
+              parts << %(<c:gapWidth val="#{udb[:gap_width]}"/>) if udb.is_a?(Hash) && udb[:gap_width]
+              %i[up_bars down_bars].each do |bar_key|
+                tag = bar_key == :up_bars ? "upBars" : "downBars"
+                bar = udb.is_a?(Hash) ? udb[bar_key] : nil
+                if bar
+                  bar_sp = +""
+                  bar_sp << %(<a:solidFill>#{color_xml(bar[:fill_color])}</a:solidFill>) if bar[:fill_color]
+                  bar_sp << "<a:noFill/>" if bar[:no_fill]
+                  if bar[:line_color] || bar[:line_width] || bar[:line_dash]
+                    b_lw = bar[:line_width] ? %( w="#{(bar[:line_width] * 12_700).to_i}") : ""
+                    b_lf = bar[:line_color] ? %(<a:solidFill>#{color_xml(bar[:line_color])}</a:solidFill>) : ""
+                    b_ld = bar[:line_dash] ? %(<a:prstDash val="#{xml_escape(bar[:line_dash])}"/>) : ""
+                    bar_sp << "<a:ln#{b_lw}>#{b_lf}#{b_ld}</a:ln>"
+                  end
+                  parts << (bar_sp.empty? ? "<c:#{tag}/>" : "<c:#{tag}><c:spPr>#{bar_sp}</c:spPr></c:#{tag}>")
+                else
+                  parts << "<c:#{tag}/>"
+                end
+              end
+              parts << "</c:upDownBars>"
+            end
+            mk = chart[:marker]
+            parts << %(<c:marker val="#{mk ? 1 : 0}"/>) unless mk.nil?
+            sm = chart[:smooth]
+            parts << %(<c:smooth val="#{sm ? 1 : 0}"/>) unless sm.nil?
+            three_axes = THREE_AXIS_CHARTS.include?(g_type)
+            unless g_no_axes
+              parts << %(<c:axId val="1"/><c:axId val="#{g_val_ax}"/>)
+              parts << '<c:axId val="3"/>' if three_axes
+            end
+            parts << "</c:#{g_type}>"
           end
-          mk = chart[:marker]
-          parts << %(<c:marker val="#{mk ? 1 : 0}"/>) unless mk.nil?
-          sm = chart[:smooth]
-          parts << %(<c:smooth val="#{sm ? 1 : 0}"/>) unless sm.nil?
-          three_axes = THREE_AXIS_CHARTS.include?(chart_type)
-          unless no_axes
-            parts << '<c:axId val="1"/><c:axId val="2"/>'
-            parts << '<c:axId val="3"/>' if three_axes
-          end
-          parts << "</c:#{chart_type}>"
 
-          unless no_axes
+          has_axes = groups.any? { |g| !NO_AXIS_CHARTS.include?(g[:type]) }
+          if has_axes
             cat_del = chart[:cat_axis_delete] ? 1 : 0
             cat_orient = chart[:cat_axis_orientation] || "minMax"
             cat_ax_tag = chart[:cat_axis_type] == :date ? "dateAx" : "catAx"
@@ -1318,86 +1469,11 @@ module Xlsxrb
               parts << %(<c:minorTimeUnit val="#{chart[:cat_axis_minor_time_unit]}"/>) if chart[:cat_axis_minor_time_unit]
             end
             parts << "</c:#{cat_ax_tag}>"
-            val_del = chart[:val_axis_delete] ? 1 : 0
-            val_orient = chart[:val_axis_orientation] || "minMax"
-            parts << %(<c:valAx><c:axId val="2"/><c:scaling>)
-            parts << %(<c:logBase val="#{chart[:val_axis_log_base]}"/>) if chart[:val_axis_log_base]
-            parts << %(<c:orientation val="#{val_orient}"/>)
-            parts << %(<c:max val="#{chart[:val_axis_scaling_max]}"/>) if chart[:val_axis_scaling_max]
-            parts << %(<c:min val="#{chart[:val_axis_scaling_min]}"/>) if chart[:val_axis_scaling_min]
-            parts << %(</c:scaling><c:delete val="#{val_del}"/><c:axPos val="#{chart[:val_axis_pos] || "l"}"/>)
-            parts << gridlines_xml("majorGridlines", chart[:val_axis_major_gridlines])
-            parts << gridlines_xml("minorGridlines", chart[:val_axis_minor_gridlines])
-            if chart[:val_axis_title]
-              val_title_spec = merge_flat_title_styling(chart[:val_axis_title], chart, :val_axis_title)
-              parts << build_chart_title_xml(val_title_spec)
-            end
-            if (vnf = chart[:val_axis_num_fmt])
-              sl = vnf[:source_linked] ? 1 : 0
-              parts << %(<c:numFmt formatCode="#{xml_escape(vnf[:format_code])}" sourceLinked="#{sl}"/>)
-            end
-            parts << %(<c:majorTickMark val="#{chart[:val_axis_major_tick_mark]}"/>) if chart[:val_axis_major_tick_mark]
-            parts << %(<c:minorTickMark val="#{chart[:val_axis_minor_tick_mark]}"/>) if chart[:val_axis_minor_tick_mark]
-            parts << %(<c:tickLblPos val="#{chart[:val_axis_tick_lbl_pos]}"/>) if chart[:val_axis_tick_lbl_pos]
-            if chart[:val_axis_line_color] || chart[:val_axis_fill] || chart[:val_axis_no_fill] || chart[:val_axis_line_dash]
-              parts << "<c:spPr>"
-              parts << "<a:noFill/>" if chart[:val_axis_no_fill]
-              parts << %(<a:solidFill>#{color_xml(chart[:val_axis_fill])}</a:solidFill>) if chart[:val_axis_fill]
-              if chart[:val_axis_line_color] || chart[:val_axis_line_dash]
-                w_attr = chart[:val_axis_line_width] ? %( w="#{chart[:val_axis_line_width]}") : ""
-                va_ln_f = chart[:val_axis_line_color] ? %(<a:solidFill>#{srgb_clr_xml(chart[:val_axis_line_color])}</a:solidFill>) : ""
-                va_ln_d = chart[:val_axis_line_dash] ? %(<a:prstDash val="#{xml_escape(chart[:val_axis_line_dash])}"/>) : ""
-                parts << "<a:ln#{w_attr}>#{va_ln_f}#{va_ln_d}</a:ln>"
-              end
-              parts << "</c:spPr>"
-            end
-            parts << build_axis_txpr(chart[:val_axis_label_rotation], chart[:val_axis_font])
-            parts << '<c:crossAx val="1"/>'
-            parts << %(<c:crosses val="#{chart[:val_axis_crosses]}"/>) if chart[:val_axis_crosses]
-            parts << %(<c:crossesAt val="#{chart[:val_axis_crosses_at]}"/>) if !chart[:val_axis_crosses] && chart[:val_axis_crosses_at]
-            parts << %(<c:crossBetween val="#{chart[:val_axis_cross_between]}"/>) if chart[:val_axis_cross_between]
-            parts << %(<c:majorUnit val="#{chart[:val_axis_major_unit]}"/>) if chart[:val_axis_major_unit]
-            parts << %(<c:minorUnit val="#{chart[:val_axis_minor_unit]}"/>) if chart[:val_axis_minor_unit]
-            if chart[:val_axis_disp_units]
-              du = chart[:val_axis_disp_units]
-              if du.is_a?(Hash)
-                parts << "<c:dispUnits>"
-                parts << %(<c:builtInUnit val="#{xml_escape(du[:built_in_unit])}"/>) if du[:built_in_unit]
-                parts << %(<c:custUnit val="#{du[:cust_unit]}"/>) if du[:cust_unit]
-                if du[:label]
-                  dul = du[:label]
-                  parts << "<c:dispUnitsLbl>"
-                  if dul[:num_fmt]
-                    nf = dul[:num_fmt]
-                    nf_src = nf.is_a?(Hash) ? nf : { format_code: nf }
-                    nf_linked = if nf_src.key?(:source_linked)
-                                  nf_src[:source_linked] ? 1 : 0
-                                else
-                                  0
-                                end
-                    parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
-                  end
-                  dul_sp = +""
-                  dul_sp << %(<a:solidFill>#{color_xml(dul[:fill_color])}</a:solidFill>) if dul[:fill_color]
-                  dul_sp << "<a:noFill/>" if dul[:no_fill]
-                  if dul[:line_color] || dul[:line_width] || dul[:line_dash]
-                    dul_lw = dul[:line_width] ? %( w="#{(dul[:line_width] * 12_700).to_i}") : ""
-                    dul_lf = dul[:line_color] ? %(<a:solidFill>#{color_xml(dul[:line_color])}</a:solidFill>) : ""
-                    dul_ld = dul[:line_dash] ? %(<a:prstDash val="#{xml_escape(dul[:line_dash])}"/>) : ""
-                    dul_sp << "<a:ln#{dul_lw}>#{dul_lf}#{dul_ld}</a:ln>"
-                  end
-                  parts << "<c:spPr>#{dul_sp}</c:spPr>" unless dul_sp.empty?
-                  parts << build_axis_txpr(nil, dul[:font]) if dul[:font]
-                  parts << "</c:dispUnitsLbl>"
-                end
-                parts << "</c:dispUnits>"
-              else
-                parts << %(<c:dispUnits><c:builtInUnit val="#{xml_escape(du.to_s)}"/></c:dispUnits>)
-              end
-            end
-            parts << "</c:valAx>"
 
-            if three_axes
+            parts << build_val_ax_xml(ax_id: 2, prefix: :val_axis, chart: chart, default_pos: "l")
+            parts << build_val_ax_xml(ax_id: 3, prefix: :sec_val_axis, chart: chart, default_pos: "r", default_crosses: "max") if has_secondary
+
+            if groups.any? { |g| THREE_AXIS_CHARTS.include?(g[:type]) }
               parts << '<c:serAx><c:axId val="3"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
               parts << '<c:delete val="0"/><c:axPos val="b"/><c:crossAx val="2"/></c:serAx>'
             end

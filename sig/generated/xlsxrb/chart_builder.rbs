@@ -146,6 +146,17 @@ module Xlsxrb
     # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
     def value_axis: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
 
+    # Configures the secondary value axis properties for combo charts.
+    #
+    # @param args [Array] Positional arguments.
+    # @param kwargs [Hash] Keyword arguments.
+    # @return [Object]
+    # @api public
+    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+    def secondary_value_axis: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> (Hash[Symbol, String | Numeric | bool | nil] | String)
+
+    alias secondary_axis secondary_value_axis
+
     # Configures whether to show the legend key in data labels.
     #
     # @param args [Array] Positional arguments.
@@ -260,10 +271,27 @@ module Xlsxrb
       #
       # @param args [Array] Positional arguments.
       # @param kwargs [Hash] Keyword arguments.
-      # @return [String]
+      # @return [Symbol, String, Hash, nil]
       # @api public
-      # : (*(String) args, **String | Numeric | bool | nil kwargs) -> String
-      def type: (*String args, **String | Numeric | bool | nil kwargs) -> String
+      # : (*(String | Symbol) args, **String | Numeric | bool | nil kwargs) -> (String | Symbol | Hash[Symbol, untyped] | nil)
+      def type: (*String | Symbol args, **String | Numeric | bool | nil kwargs) -> (String | Symbol | Hash[Symbol, untyped] | nil)
+
+      # Configures whether this series uses the secondary value axis.
+      #
+      # @param args [Array] Positional arguments.
+      # @param kwargs [Hash] Keyword arguments.
+      # @return [Boolean, Hash]
+      # @api public
+      # : (*bool args, **bool kwargs) -> (bool | Hash[Symbol, bool])
+      def secondary_axis: (*bool args, **bool kwargs) -> (bool | Hash[Symbol, bool])
+
+      # Configures the axis (:primary or :secondary) for this series.
+      #
+      # @param value [Symbol, String]
+      # @return [Symbol, String]
+      # @api public
+      # : (Symbol | String value) -> (Symbol | String)
+      def axis: (Symbol | String value) -> (Symbol | String)
     end
   end
 end

@@ -88,4 +88,41 @@ class ChartBuilderTest < Test::Unit::TestCase
     assert_equal("pyramid", opts[:shape])
     assert_equal("scatter", opts[:type])
   end
+
+  test "chart_builder secondary value axis and series axis binding" do
+    builder = Xlsxrb::ChartBuilder.new
+    builder.type(:combo)
+    builder.secondary_value_axis(title: "Secondary Units", major_gridlines: false)
+
+    builder.series do |s|
+      s.name("Primary Bar")
+      s.values("Sheet1!$B$2:$B$10")
+    end
+
+    builder.series do |s|
+      s.name("Secondary Line")
+      s.type(:line)
+      s.values("Sheet1!$C$2:$C$10")
+      s.secondary_axis(true)
+    end
+
+    builder.series do |s|
+      s.name("Tertiary Series")
+      s.axis(:secondary)
+    end
+
+    opts = builder.options
+    assert_equal(:combo, opts[:type])
+    assert_equal({ title: "Secondary Units", major_gridlines: false }, opts[:secondary_value_axis])
+    assert_equal(3, opts[:series].size)
+    assert_nil(opts[:series][0][:secondary_axis])
+    assert_equal(true, opts[:series][1][:secondary_axis])
+    assert_equal(:secondary, opts[:series][2][:axis])
+    assert_equal(true, opts[:series][2][:secondary_axis])
+
+    # Positional overload and alias test
+    b2 = Xlsxrb::ChartBuilder.new
+    b2.secondary_axis("sec_axis_spec")
+    assert_equal("sec_axis_spec", b2.options[:secondary_value_axis])
+  end
 end
