@@ -13,6 +13,10 @@ module Xlsxrb
 
     BORDER_INDEX_MAP: untyped
 
+    UNDERLINE_MAP: untyped
+
+    VERT_ALIGN_MAP: untyped
+
     # Normalizes a color definition (CSS color name, hex code, or RGB integer) to an OpenXML hex color string.
     #
     # @example
@@ -122,11 +126,11 @@ module Xlsxrb
     def font_color: (String | Symbol) -> self
 
     # Sets the font underline style.
-    # @param val [String] The underline style (e.g., 'single').
+    # @param val [String, Symbol, Boolean] The underline style (e.g., 'single', :double, :single_accounting, :double_accounting).
     # @return [self]
     # @api public
-    # : (?String) -> self
-    def underline: (?String) -> self
+    # : (?String | Symbol | bool) -> self
+    def underline: (?String | Symbol | bool) -> self
 
     # Sets the font strikethrough.
     # @param value [Boolean] Whether to apply strike.
@@ -136,11 +140,25 @@ module Xlsxrb
     def strike: (?bool) -> self
 
     # Sets the vertical alignment of the font.
-    # @param value [String] The alignment value.
+    # @param value [String, Symbol] The alignment value ('superscript', 'subscript', 'baseline', :superscript, :subscript).
     # @return [self]
     # @api public
-    # : (String) -> self
-    def vert_align: (String) -> self
+    # : (String | Symbol) -> self
+    def vert_align: (String | Symbol) -> self
+
+    # Sets the font to superscript.
+    # @param value [Boolean] Whether to apply superscript.
+    # @return [self]
+    # @api public
+    # : (?bool) -> self
+    def superscript: (?bool) -> self
+
+    # Sets the font to subscript.
+    # @param value [Boolean] Whether to apply subscript.
+    # @return [self]
+    # @api public
+    # : (?bool) -> self
+    def subscript: (?bool) -> self
 
     # Sets the fill pattern.
     # @param pattern [String, Symbol] The pattern type.

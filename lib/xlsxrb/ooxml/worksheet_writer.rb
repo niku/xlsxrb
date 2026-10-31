@@ -1616,13 +1616,21 @@ module Xlsxrb
             buf << "<i/>" if font[:italic]
             buf << "<strike/>" if font[:strike]
             if font[:underline]
-              if font[:underline] == true
+              u_val = font[:underline]
+              if u_val == true || u_val.to_s == "single"
                 buf << "<u/>"
               else
-                buf << '<u val="' << font[:underline].to_s << '"/>'
+                mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
+                buf << '<u val="' << mapped_u.to_s << '"/>'
               end
             end
-            buf << '<vertAlign val="' << font[:vert_align].to_s << '"/>' if font[:vert_align]
+            va_val = font[:vert_align] || font[:vertical_align]
+            va_val ||= "superscript" if font[:superscript]
+            va_val ||= "subscript" if font[:subscript]
+            if va_val
+              mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
+              buf << '<vertAlign val="' << mapped_va.to_s << '"/>'
+            end
             font_sz = font[:sz] || font[:size]
             buf << '<sz val="' << font_sz.to_s << '"/>' if font_sz
             if font[:color]

@@ -245,13 +245,21 @@ module Xlsxrb
           parts << "<condense/>" if font[:condense]
           parts << "<extend/>" if font[:extend]
           if font[:underline]
-            parts << if font[:underline] == true
-                       "<u/>"
-                     else
-                       %(<u val="#{font[:underline]}"/>)
-                     end
+            u_val = font[:underline]
+            if u_val == true || u_val.to_s == "single"
+              parts << "<u/>"
+            else
+              mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
+              parts << %(<u val="#{mapped_u}"/>)
+            end
           end
-          parts << %(<vertAlign val="#{font[:vert_align]}"/>) if font[:vert_align]
+          va_val = font[:vert_align] || font[:vertical_align]
+          va_val ||= "superscript" if font[:superscript]
+          va_val ||= "subscript" if font[:subscript]
+          if va_val
+            mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
+            parts << %(<vertAlign val="#{mapped_va}"/>)
+          end
           parts << %(<sz val="#{font[:sz]}"/>) if font[:sz]
           parts << emit_color_xml(font)
           parts << %(<name val="#{xml_escape(font[:name])}"/>) if font[:name]

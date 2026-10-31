@@ -380,4 +380,44 @@ class StyleTest < Test::Unit::TestCase
     assert_false(sax_xf[:protection][:locked])
     assert_true(sax_xf[:protection][:hidden])
   end
+
+  test "font underline styles and vertical alignment (superscript/subscript)" do
+    tmp = Tempfile.new(["style_underline_vert", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.style("double_u", font: { underline: :double })
+        w.style("single_acct", font: { underline: :single_accounting })
+        w.style("double_acct", font: { underline: :double_accounting })
+        w.style("super", font: { superscript: true })
+        w.style("sub", font: { subscript: true })
+
+        w.sheet("Styles") do |s|
+          s.row(["Double", "Single Acct", "Double Acct", "Super", "Sub"],
+                styles: %w[double_u single_acct double_acct super sub])
+        end
+      end
+
+      entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+      styles_xml = entries["xl/styles.xml"]
+
+      assert_match(%r{<u val="double"/>}, styles_xml)
+      assert_match(%r{<u val="singleAccounting"/>}, styles_xml)
+      assert_match(%r{<u val="doubleAccounting"/>}, styles_xml)
+      assert_match(%r{<vertAlign val="superscript"/>}, styles_xml)
+      assert_match(%r{<vertAlign val="subscript"/>}, styles_xml)
+
+      # Reader check
+      fonts = Xlsxrb::Ooxml::Reader.new(tmp.path).fonts
+      underline_vals = fonts.map { |f| f[:underline] }.compact
+      assert_includes(underline_vals, "double")
+      assert_includes(underline_vals, "singleAccounting")
+      assert_includes(underline_vals, "doubleAccounting")
+
+      vert_vals = fonts.map { |f| f[:vert_align] }.compact
+      assert_includes(vert_vals, "superscript")
+      assert_includes(vert_vals, "subscript")
+    ensure
+      tmp&.close!
+    end
+  end
 end

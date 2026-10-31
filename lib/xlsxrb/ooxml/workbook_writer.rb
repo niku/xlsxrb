@@ -730,7 +730,20 @@ module Xlsxrb
               b.empty_tag("i") if font_props[:italic]
               b.empty_tag("strike") if font_props[:strike]
               if font_props[:underline]
-                b.empty_tag("u", font_props[:underline] == "single" ? {} : { val: font_props[:underline] })
+                u_val = font_props[:underline]
+                if u_val == true || u_val.to_s == "single"
+                  b.empty_tag("u")
+                else
+                  mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val.to_s
+                  b.empty_tag("u", { val: mapped_u })
+                end
+              end
+              va_val = font_props[:vert_align] || font_props[:vertical_align]
+              va_val ||= "superscript" if font_props[:superscript]
+              va_val ||= "subscript" if font_props[:subscript]
+              if va_val
+                mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val.to_s
+                b.empty_tag("vertAlign", { val: mapped_va })
               end
               b.empty_tag("sz", { val: (font_props[:sz] || 11).to_s }) if font_props[:sz] || fonts == [{}]
               color_attrs = color_tag_attrs(font_props[:color] || (font_props.key?(:rgb) || font_props.key?(:theme) || font_props.key?(:indexed) ? font_props : nil))
@@ -935,8 +948,16 @@ module Xlsxrb
             if [true, "single"].include?(font[:underline])
               builder.empty_tag("u")
             else
-              builder.empty_tag("u", { val: font[:underline] })
+              mapped_u = StyleBuilder::UNDERLINE_MAP[font[:underline].to_sym] || font[:underline]
+              builder.empty_tag("u", { val: mapped_u })
             end
+          end
+          va_val = font[:vert_align] || font[:vertical_align]
+          va_val ||= "superscript" if font[:superscript]
+          va_val ||= "subscript" if font[:subscript]
+          if va_val
+            mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val.to_s
+            builder.empty_tag("vertAlign", { val: mapped_va })
           end
           color_attrs = color_tag_attrs(font[:color] || font)
           builder.empty_tag("color", color_attrs) if color_attrs
@@ -1100,13 +1121,20 @@ module Xlsxrb
                 buf << "<i/>" if font[:italic]
                 buf << "<strike/>" if font[:strike]
                 if font[:underline]
-                  if font[:underline] == true
+                  if font[:underline] == true || font[:underline].to_s == "single"
                     buf << "<u/>"
                   else
-                    buf << '<u val="' << font[:underline].to_s << '"/>'
+                    mapped_u = StyleBuilder::UNDERLINE_MAP[font[:underline].to_sym] || font[:underline]
+                    buf << '<u val="' << mapped_u.to_s << '"/>'
                   end
                 end
-                buf << '<vertAlign val="' << font[:vert_align].to_s << '"/>' if font[:vert_align]
+                va_val = font[:vert_align] || font[:vertical_align]
+                va_val ||= "superscript" if font[:superscript]
+                va_val ||= "subscript" if font[:subscript]
+                if va_val
+                  mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val.to_s
+                  buf << '<vertAlign val="' << mapped_va << '"/>'
+                end
                 font_sz = font[:sz] || font[:size]
                 buf << '<sz val="' << font_sz.to_s << '"/>' if font_sz
                 color_attrs = color_tag_attrs(font[:color] || font)

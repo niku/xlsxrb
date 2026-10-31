@@ -322,13 +322,21 @@ module Xlsxrb
               rpr << "<i/>" if font[:italic]
               rpr << "<strike/>" if font[:strike]
               if font[:underline]
-                rpr << if font[:underline] == true
-                         "<u/>"
-                       else
-                         %(<u val="#{font[:underline]}"/>)
-                       end
+                u_val = font[:underline]
+                if u_val == true || u_val.to_s == "single"
+                  rpr << "<u/>"
+                else
+                  mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
+                  rpr << %(<u val="#{mapped_u}"/>)
+                end
               end
-              rpr << %(<vertAlign val="#{font[:vert_align]}"/>) if font[:vert_align]
+              va_val = font[:vert_align] || font[:vertical_align]
+              va_val ||= "superscript" if font[:superscript]
+              va_val ||= "subscript" if font[:subscript]
+              if va_val
+                mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
+                rpr << %(<vertAlign val="#{mapped_va}"/>)
+              end
               rpr << %(<sz val="#{font[:sz]}"/>) if font[:sz]
               rpr << emit_color_xml(font)
               rpr << %(<rFont val="#{xml_escape(font[:name])}"/>) if font[:name]

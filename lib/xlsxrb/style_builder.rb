@@ -217,6 +217,22 @@ module Xlsxrb
       13 => :slantDashDot
     }.freeze
 
+    UNDERLINE_MAP = {
+      single: "single",
+      double: "double",
+      single_accounting: "singleAccounting",
+      double_accounting: "doubleAccounting",
+      none: "none"
+    }.freeze
+
+    VERT_ALIGN_MAP = {
+      superscript: "superscript",
+      super: "superscript",
+      subscript: "subscript",
+      sub: "subscript",
+      baseline: "baseline"
+    }.freeze
+
     # Normalizes a color definition (CSS color name, hex code, or RGB integer) to an OpenXML hex color string.
     #
     # @example
@@ -350,6 +366,9 @@ module Xlsxrb
         underline(font_opts[:underline]) if font_opts.key?(:underline)
         strike(font_opts[:strike]) if font_opts.key?(:strike)
         vert_align(font_opts[:vert_align]) if font_opts.key?(:vert_align)
+        vert_align(font_opts[:vertical_align]) if font_opts.key?(:vertical_align)
+        superscript(font_opts[:superscript]) if font_opts.key?(:superscript)
+        subscript(font_opts[:subscript]) if font_opts.key?(:subscript)
       else
         bold(opts[:bold]) if opts.key?(:bold)
         italic(opts[:italic]) if opts.key?(:italic)
@@ -359,6 +378,9 @@ module Xlsxrb
         underline(opts[:underline]) if opts.key?(:underline)
         strike(opts[:strike]) if opts.key?(:strike)
         vert_align(opts[:vert_align]) if opts.key?(:vert_align)
+        vert_align(opts[:vertical_align]) if opts.key?(:vertical_align)
+        superscript(opts[:superscript]) if opts.key?(:superscript)
+        subscript(opts[:subscript]) if opts.key?(:subscript)
       end
 
       if opts.key?(:fill)
@@ -438,6 +460,9 @@ module Xlsxrb
       underline(opts[:underline]) if opts.key?(:underline)
       strike(opts[:strike]) if opts.key?(:strike)
       vert_align(opts[:vert_align]) if opts.key?(:vert_align)
+      vert_align(opts[:vertical_align]) if opts.key?(:vertical_align)
+      superscript(opts[:superscript]) if opts.key?(:superscript)
+      subscript(opts[:subscript]) if opts.key?(:subscript)
       self
     end
 
@@ -493,12 +518,19 @@ module Xlsxrb
     end
 
     # Sets the font underline style.
-    # @param val [String] The underline style (e.g., 'single').
+    # @param val [String, Symbol, Boolean] The underline style (e.g., 'single', :double, :single_accounting, :double_accounting).
     # @return [self]
     # @api public
-    #: (?String) -> self
+    #: (?String | Symbol | bool) -> self
     def underline(val = "single")
-      @font_props[:underline] = val
+      mapped = if [true, "single"].include?(val)
+                 "single"
+               elsif val == false
+                 nil
+               else
+                 UNDERLINE_MAP[val.to_sym] || val.to_s
+               end
+      @font_props[:underline] = mapped
       self
     end
 
@@ -513,12 +545,33 @@ module Xlsxrb
     end
 
     # Sets the vertical alignment of the font.
-    # @param value [String] The alignment value.
+    # @param value [String, Symbol] The alignment value ('superscript', 'subscript', 'baseline', :superscript, :subscript).
     # @return [self]
     # @api public
-    #: (String) -> self
+    #: (String | Symbol) -> self
     def vert_align(value)
-      @font_props[:vert_align] = value
+      mapped = VERT_ALIGN_MAP[value.to_sym] || value.to_s
+      @font_props[:vert_align] = mapped
+      self
+    end
+
+    # Sets the font to superscript.
+    # @param value [Boolean] Whether to apply superscript.
+    # @return [self]
+    # @api public
+    #: (?bool) -> self
+    def superscript(value = true)
+      @font_props[:vert_align] = value ? "superscript" : "baseline"
+      self
+    end
+
+    # Sets the font to subscript.
+    # @param value [Boolean] Whether to apply subscript.
+    # @return [self]
+    # @api public
+    #: (?bool) -> self
+    def subscript(value = true)
+      @font_props[:vert_align] = value ? "subscript" : "baseline"
       self
     end
     # rubocop:enable Style/OptionalBooleanParameter

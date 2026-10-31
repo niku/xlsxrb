@@ -80,6 +80,8 @@ module Xlsxrb
             @current_font[:extend] = truthy_val?(attrs) if @current_font
           when "u"
             @current_font[:underline] = attrs["val"] || "single" if @current_font
+          when "vertAlign"
+            @current_font[:vert_align] = attrs["val"] if @current_font && attrs["val"]
           when "sz"
             @current_font[:sz] = attrs["val"]&.to_f if @current_font
           when "color"

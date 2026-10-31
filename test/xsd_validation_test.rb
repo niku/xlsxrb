@@ -614,4 +614,36 @@ class XsdValidationTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  def test_font_decorations_and_vertical_alignment_xsd_validation
+    tmp = Tempfile.new(["xsd_font_decorations", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.style("u_double", font: { underline: :double })
+        w.style("u_single_acct", font: { underline: :single_accounting })
+        w.style("u_double_acct", font: { underline: :double_accounting })
+        w.style("super", font: { superscript: true })
+        w.style("sub", font: { subscript: true })
+
+        w.sheet("FontDecorations") do |s|
+          s.row(["Double", "Single Acct", "Double Acct", "Super", "Sub"],
+                styles: %w[u_double u_single_acct u_double_acct super sub])
+
+          rt = Xlsxrb.rich_text(
+            { text: "E = mc", font: { bold: true } },
+            { text: "2", font: { vert_align: :superscript, bold: true } },
+            { text: " and H", font: { italic: true } },
+            { text: "2", font: { vert_align: :subscript } },
+            { text: "O with ", font: { underline: :double } },
+            { text: "Accounting", font: { underline: :single_accounting } }
+          )
+          s.row([rt])
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
 end
