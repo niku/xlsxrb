@@ -763,12 +763,21 @@ module Xlsxrb
     # Appends a single column name or column definition.
     #
     # @param col [String, Hash, Symbol] Column header name or definition.
-    # @param opts [Hash] Column options (e.g. totals_row_function, totals_row_label).
+    # @param opts [Hash] Column options (e.g. totals_row_function, totals_row_label, formula, totals_row_formula).
     # @return [void]
     # : (String | Symbol | Hash[Symbol, untyped] col, **untyped opts) -> void
     def column: (String | Symbol | Hash[Symbol, untyped] col, **untyped opts) -> void
 
     alias add_column column
+
+    # Appends a calculated column with formula and options.
+    #
+    # @param name [String, Symbol] The column name.
+    # @param formula [String] The formula for the calculated column (e.g. "[@Qty]*[@Price]").
+    # @param opts [Hash] Additional column options.
+    # @return [void]
+    # : (String | Symbol name, String formula, **untyped opts) -> void
+    def calculated_column: (String | Symbol name, String formula, **untyped opts) -> void
 
     # : (?String? val) -> String?
     def name: (?String? val) -> String?

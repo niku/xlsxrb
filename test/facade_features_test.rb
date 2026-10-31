@@ -339,6 +339,46 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     assert_match(/showFirstColumn="1"/, xml)
   end
 
+  test "table calculated columns and totals row formulas via builder and reader" do
+    tmp = Tempfile.new(["table_calc_col", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("Orders") do |s|
+          s.row(%w[Item Qty Price Total])
+          s.row(["Widget", 10, 5.0, 50.0])
+          s.row(["Gadget", 20, 15.0, 300.0])
+          s.row(["Totals", nil, nil, 350.0])
+          s.table("A1:D4") do |t|
+            t.name = "OrdersTable"
+            t.column(:item)
+            t.column(:qty, totals_row_function: :sum)
+            t.column(:price, totals_row_function: :average)
+            t.calculated_column(:total, "[@Qty]*[@Price]", totals_row_formula: "SUBTOTAL(109,[Total])")
+            t.total_row = true
+          end
+        end
+      end
+
+      entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+      tbl_xml = entries["xl/tables/table1.xml"]
+      assert_not_nil(tbl_xml)
+      assert_match(%r{<calculatedColumnFormula>\[@Qty\]\*\[@Price\]</calculatedColumnFormula>}, tbl_xml)
+      assert_match(%r{<totalsRowFormula>SUBTOTAL\(109,\[Total\]\)</totalsRowFormula>}, tbl_xml)
+      assert_match(/totalsRowFunction="custom"/, tbl_xml)
+
+      reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      tbl = reader.tables.first
+      assert_equal(4, tbl[:columns].size)
+      total_col = tbl[:columns][3]
+      assert_equal("[@Qty]*[@Price]", total_col[:calculated_column_formula])
+      assert_equal("[@Qty]*[@Price]", total_col[:data_formula])
+      assert_equal("SUBTOTAL(109,[Total])", total_col[:totals_row_formula])
+      assert_equal("custom", total_col[:totals_row_function])
+    ensure
+      tmp&.close!
+    end
+  end
+
   # =====================================================
   # Comments
   # =====================================================

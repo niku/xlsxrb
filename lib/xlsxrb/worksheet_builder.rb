@@ -1474,7 +1474,7 @@ module Xlsxrb
     # Appends a single column name or column definition.
     #
     # @param col [String, Hash, Symbol] Column header name or definition.
-    # @param opts [Hash] Column options (e.g. totals_row_function, totals_row_label).
+    # @param opts [Hash] Column options (e.g. totals_row_function, totals_row_label, formula, totals_row_formula).
     # @return [void]
     #: (String | Symbol | Hash[Symbol, untyped] col, **untyped opts) -> void
     def column(col, **opts)
@@ -1488,6 +1488,17 @@ module Xlsxrb
       (@options[:columns] ||= []) << col_spec
     end
     alias add_column column
+
+    # Appends a calculated column with formula and options.
+    #
+    # @param name [String, Symbol] The column name.
+    # @param formula [String] The formula for the calculated column (e.g. "[@Qty]*[@Price]").
+    # @param opts [Hash] Additional column options.
+    # @return [void]
+    #: (String | Symbol name, String formula, **untyped opts) -> void
+    def calculated_column(name, formula, **opts)
+      column(name, formula: formula, **opts)
+    end
 
     #: (?String? val) -> String?
     def name(val = nil)
@@ -1610,6 +1621,7 @@ module Xlsxrb
         rc ? rc.positive? : @options[:total_row]
       else
         @options[:totals_row_count] = val ? 1 : 0
+        val ? true : false
       end
     end
     alias total_row= total_row

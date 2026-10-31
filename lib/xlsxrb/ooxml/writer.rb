@@ -2978,16 +2978,19 @@ module Xlsxrb
           col_name = col.is_a?(Hash) ? col[:name] : col
           col_attrs = %(id="#{i + 1}" name="#{xml_escape(col_name)}")
           if col.is_a?(Hash)
-            col_attrs << %( totalsRowFunction="#{col[:totals_row_function]}") if col[:totals_row_function]
+            calc_formula = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
+            tot_formula = col[:totals_row_formula] || col[:total_row_formula] || col[:total_formula]
+            trf = col[:totals_row_function] || ("custom" if tot_formula)
+            col_attrs << %( totalsRowFunction="#{trf}") if trf
             col_attrs << %( totalsRowLabel="#{xml_escape(col[:totals_row_label])}") if col[:totals_row_label]
             col_attrs << %( dataDxfId="#{col[:data_dxf_id]}") if col[:data_dxf_id]
             col_attrs << %( totalsRowDxfId="#{col[:totals_row_dxf_id]}") if col[:totals_row_dxf_id]
             col_attrs << %( headerRowDxfId="#{col[:header_row_dxf_id]}") if col[:header_row_dxf_id]
             col_attrs << %( dataCellStyle="#{xml_escape(col[:data_cell_style])}") if col[:data_cell_style]
-            if col[:calculated_column_formula] || col[:totals_row_formula]
+            if calc_formula || tot_formula
               parts << "<tableColumn #{col_attrs}>"
-              parts << "<calculatedColumnFormula>#{xml_escape(col[:calculated_column_formula])}</calculatedColumnFormula>" if col[:calculated_column_formula]
-              parts << "<totalsRowFormula>#{xml_escape(col[:totals_row_formula])}</totalsRowFormula>" if col[:totals_row_formula]
+              parts << "<calculatedColumnFormula>#{xml_escape(calc_formula.to_s)}</calculatedColumnFormula>" if calc_formula
+              parts << "<totalsRowFormula>#{xml_escape(tot_formula.to_s)}</totalsRowFormula>" if tot_formula
               parts << "</tableColumn>"
             else
               parts << "<tableColumn #{col_attrs}/>"

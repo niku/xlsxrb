@@ -160,6 +160,37 @@ class DslHelpersTest < Test::Unit::TestCase
       col_tbl = Xlsxrb::DslHelpers.normalize_table_options("A1:A5", columns: [{ name: "Col", totals_row_function: sym }])
       assert_equal(expected_str, col_tbl[:columns].first[:totals_row_function])
     end
+
+    # Calculated column formulas and totals row formulas aliases
+    calc_tbl1 = Xlsxrb::DslHelpers.normalize_table_options(
+      "A1:B5",
+      columns: [
+        { name: "C1", formula: "[@Qty]*[@Price]" },
+        { name: "C2", data_formula: "[@Qty]*0.1" },
+        { name: "C3", calculated_column_formula: "[@Qty]+1" }
+      ]
+    )
+    assert_equal("[@Qty]*[@Price]", calc_tbl1[:columns][0][:calculated_column_formula])
+    assert_equal("[@Qty]*0.1", calc_tbl1[:columns][1][:calculated_column_formula])
+    assert_equal("[@Qty]+1", calc_tbl1[:columns][2][:calculated_column_formula])
+
+    tot_tbl1 = Xlsxrb::DslHelpers.normalize_table_options(
+      "A1:B5",
+      columns: [
+        { name: "T1", totals_row_formula: "SUM([T1])" },
+        { name: "T2", total_row_formula: "AVERAGE([T2])" },
+        { name: "T3", total_formula: "MAX([T3])" },
+        { name: "T4", totals_row_formula: "SUBTOTAL(109,[T4])", totals_row_function: :sum }
+      ]
+    )
+    assert_equal("SUM([T1])", tot_tbl1[:columns][0][:totals_row_formula])
+    assert_equal("custom", tot_tbl1[:columns][0][:totals_row_function])
+    assert_equal("AVERAGE([T2])", tot_tbl1[:columns][1][:totals_row_formula])
+    assert_equal("custom", tot_tbl1[:columns][1][:totals_row_function])
+    assert_equal("MAX([T3])", tot_tbl1[:columns][2][:totals_row_formula])
+    assert_equal("custom", tot_tbl1[:columns][2][:totals_row_function])
+    assert_equal("SUBTOTAL(109,[T4])", tot_tbl1[:columns][3][:totals_row_formula])
+    assert_equal("sum", tot_tbl1[:columns][3][:totals_row_function])
   end
 
   # --- absolute_range ---

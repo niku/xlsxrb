@@ -125,9 +125,15 @@ module Xlsxrb
         if c.is_a?(Hash)
           col = c.dup
           col[:name] = col[:name].to_s if col.key?(:name)
+          calc_f = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
+          col[:calculated_column_formula] = calc_f.to_s if calc_f
+          tot_f = col[:totals_row_formula] || col[:total_row_formula] || col[:total_formula]
+          col[:totals_row_formula] = tot_f.to_s if tot_f
           if col.key?(:totals_row_function)
             fn = col[:totals_row_function]
             col[:totals_row_function] = TOTALS_ROW_FUNCTIONS[fn.to_sym] || fn.to_s
+          elsif tot_f
+            col[:totals_row_function] = "custom"
           end
           col
         else

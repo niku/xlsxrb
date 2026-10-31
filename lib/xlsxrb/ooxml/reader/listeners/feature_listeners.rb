@@ -1400,7 +1400,11 @@ module Xlsxrb
           name = element_name(local_name, qname)
           case name
           when "calculatedColumnFormula"
-            @current_column[:calculated_column_formula] = @text_buffer.dup if @current_column
+            if @current_column
+              val = @text_buffer.dup
+              @current_column[:calculated_column_formula] = val
+              @current_column[:data_formula] = val
+            end
             @inside_calc_formula = false
           when "totalsRowFormula"
             @current_column[:totals_row_formula] = @text_buffer.dup if @current_column

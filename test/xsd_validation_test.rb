@@ -170,6 +170,33 @@ class XsdValidationTest < Test::Unit::TestCase
     end
   end
 
+  def test_table_calculated_columns_and_totals_row_formula_validation
+    tmp = Tempfile.new(["xsd_table_formulas", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("FormulasTable") do |s|
+          s.row(%w[Item Qty Price Total])
+          s.row(["Widget", 10, 5.0, 50.0])
+          s.row(["Gadget", 20, 15.0, 300.0])
+          s.row(["Totals", nil, nil, 350.0])
+
+          s.table("A1:D4") do |t|
+            t.name = "TableWithFormulas"
+            t.column(:item)
+            t.column(:qty, totals_row_function: :sum)
+            t.column(:price, totals_row_function: :average)
+            t.calculated_column(:total, "[@Qty]*[@Price]", totals_row_formula: "SUBTOTAL(109,[Total])")
+            t.total_row = true
+          end
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
+
   # 5. Charts and Drawings validation (chart1.xml, drawing1.xml)
   def test_charts_and_drawings_validation
     tmp = Tempfile.new(["xsd_charts", ".xlsx"])
