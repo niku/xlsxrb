@@ -150,6 +150,7 @@ module Xlsxrb
           @value_buffer = +""
           @inline_text_buffer = +""
           @formula_buffer = +""
+          @shared_formula_masters = {}
           @is_runs = []
           @is_has_runs = false
           @is_current_font = {}
@@ -302,6 +303,8 @@ module Xlsxrb
             @value_buffer = +""
             @inline_text_buffer = +""
             @formula_buffer = +""
+          when "worksheet"
+            expand_shared_formulas!
           end
         end
 
@@ -339,8 +342,16 @@ module Xlsxrb
                        @value_buffer.dup
                      end
             f_type = { "shared" => :shared, "array" => :array, "dataTable" => :data_table }[@formula_type]
+            expr = @formula_buffer.dup
+            if f_type == :shared && @formula_si
+              if !expr.empty?
+                @shared_formula_masters[@formula_si] = { cell: @current_cell_ref, expression: expr }
+              elsif (master = @shared_formula_masters[@formula_si])
+                expr = Xlsxrb::Utils.expand_formula(master[:expression], from_ref: master[:cell], to_ref: @current_cell_ref)
+              end
+            end
             @cells[@current_cell_ref] = Xlsxrb::Elements::Formula.new(
-              expression: @formula_buffer.dup,
+              expression: expr,
               cached_value: cached,
               type: f_type,
               ref: @formula_ref,
@@ -375,6 +386,16 @@ module Xlsxrb
                                       else
                                         val
                                       end
+        end
+
+        def expand_shared_formulas!
+          @cells.each do |ref, val|
+            next unless val.is_a?(Xlsxrb::Elements::Formula) && val.type == :shared && (val.expression.nil? || val.expression.empty?)
+            next unless val.shared_index && (master = @shared_formula_masters[val.shared_index])
+
+            expanded = Xlsxrb::Utils.expand_formula(master[:expression], from_ref: master[:cell], to_ref: ref)
+            @cells[ref] = val.with(expression: expanded)
+          end
         end
 
         def numeric_value(raw)

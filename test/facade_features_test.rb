@@ -379,6 +379,55 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     end
   end
 
+  test "shared formula serialization and reader expansion" do
+    tmp = Tempfile.new(["shared_formula", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("Formulas") do |s|
+          s.row([10, Xlsxrb.shared_formula("A1*2", si: 0, ref: "B1:B3", cached_value: 20)])
+          s.row([20, Xlsxrb.shared_formula(si: 0, cached_value: 40)])
+          s.row([30, { type: :shared, si: 0, cached_value: 60 }])
+        end
+      end
+
+      entries = Xlsxrb::Ooxml::ZipReader.open(tmp.path, &:read_all)
+      sheet_xml = entries["xl/worksheets/sheet1.xml"]
+      assert_not_nil(sheet_xml)
+      assert_match(%r{<f t="shared" si="0" ref="B1:B3">A1\*2</f>}, sheet_xml)
+      assert_match(%r{<f t="shared" si="0"/>}, sheet_xml)
+
+      # Test Reader#cells formula expansion
+      reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
+      cells = reader.cells(sheet: 0)
+      assert_equal(10, cells["A1"])
+      assert_equal("A1*2", cells["B1"].expression)
+      assert_equal(:shared, cells["B1"].type)
+      assert_equal(0, cells["B1"].shared_index)
+
+      assert_equal(20, cells["A2"])
+      assert_equal("A2*2", cells["B2"].expression)
+      assert_equal(:shared, cells["B2"].type)
+      assert_equal(0, cells["B2"].shared_index)
+
+      assert_equal(30, cells["A3"])
+      assert_equal("A3*2", cells["B3"].expression)
+      assert_equal(:shared, cells["B3"].type)
+      assert_equal(0, cells["B3"].shared_index)
+
+      # Test streaming event parser formula expansion
+      events = []
+      Xlsxrb::Ooxml::WorksheetParser.each_event(sheet_xml) { |ev| events << ev if ev.type == :cell }
+      b1_ev = events.find { |ev| ev.args[0] == "B1" }
+      b2_ev = events.find { |ev| ev.args[0] == "B2" }
+      b3_ev = events.find { |ev| ev.args[0] == "B3" }
+      assert_equal("A1*2", b1_ev.args[4])
+      assert_equal("A2*2", b2_ev.args[4])
+      assert_equal("A3*2", b3_ev.args[4])
+    ensure
+      tmp&.close!
+    end
+  end
+
   # =====================================================
   # Comments
   # =====================================================

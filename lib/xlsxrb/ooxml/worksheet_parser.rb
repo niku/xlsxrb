@@ -201,6 +201,7 @@ module Xlsxrb
 
         pos = sd_open_end + 1
         last_row_index = -1
+        shared_masters = {}
 
         while pos < sd_end
           row_start = xml.index(row_start_pattern, pos)
@@ -245,7 +246,7 @@ module Xlsxrb
           row_end = xml.index(row_end_tag, tag_end + 1)
           break unless row_end
 
-          fast_scan_cells_events(xml, tag_end + 1, row_end, shared_strings, row_source, prefix, &block)
+          fast_scan_cells_events(xml, tag_end + 1, row_end, shared_strings, row_source, prefix, shared_masters, &block)
 
           block.call(Event.new(
                        type: :row_end,
@@ -314,7 +315,7 @@ module Xlsxrb
 
       private_class_method :tag_attr
 
-      def self.fast_scan_cells_events(xml, from, to, shared_strings, row_source, prefix = "", &block)
+      def self.fast_scan_cells_events(xml, from, to, shared_strings, row_source, prefix = "", shared_masters = {}, &block)
         pos = from
         c_start_pattern = "<#{prefix}c"
         c_start_len = c_start_pattern.bytesize
@@ -393,13 +394,26 @@ module Xlsxrb
             elsif xml.byteslice(tag_pos, f_tag_start_str.bytesize) == f_tag_start_str
               f_tag_end = xml.index(">", tag_pos + f_tag_start_str.bytesize)
               if f_tag_end && f_tag_end < c_end
+                f_tag_slice = xml.byteslice(tag_pos, f_tag_end - tag_pos)
+                is_shared = f_tag_slice.include?('t="shared"') || f_tag_slice.include?("t='shared'")
+                si = is_shared ? tag_attr(f_tag_slice, ' si="') : nil
                 if xml.getbyte(f_tag_end - 1) == 47 # self-closing <f ... />
+                  if si && (master = shared_masters[si])
+                    formula = Xlsxrb::Utils.expand_formula(master[:formula], from_ref: master[:ref], to_ref: ref)
+                  end
                   cpos = f_tag_end + 1
                 else
                   f_end = xml.index(f_tag_end_str, f_tag_end + 1)
                   if f_end && f_end <= c_end
                     formula = xml.byteslice(f_tag_end + 1, f_end - f_tag_end - 1).force_encoding("UTF-8")
                     formula = decode_xml_entities(formula) if formula.include?("&")
+                    if is_shared && si
+                      if formula && !formula.empty?
+                        shared_masters[si] = { ref: ref, formula: formula }
+                      elsif (master = shared_masters[si])
+                        formula = Xlsxrb::Utils.expand_formula(master[:formula], from_ref: master[:ref], to_ref: ref)
+                      end
+                    end
                     cpos = f_end + f_tag_end_len
                   else
                     cpos = f_tag_end + 1

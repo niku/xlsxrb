@@ -199,18 +199,50 @@ module Xlsxrb
   # @param cached_value [Object, nil] Optional precomputed value for readers that do not evaluate formulas.
   # @param type [Symbol, String, nil] Formula type (:shared, :array, etc.).
   # @param ref [String, nil] Target cell or range reference (e.g. "A1:C1").
+  # @param shared_index [Integer, nil] Shared formula group index (0-based).
+  # @param si [Integer, nil] Alias for shared_index.
   # @return [Elements::Formula]
   # @api public
-  #: (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?) -> Elements::Formula
-  def self.formula(expression, cached_value: nil, type: nil, ref: nil)
+  # rubocop:disable Naming/MethodParameterName
+  #: (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?, ?shared_index: Integer?, ?si: Integer?) -> Elements::Formula
+  def self.formula(expression, cached_value: nil, type: nil, ref: nil, shared_index: nil, si: nil)
+    s_idx = shared_index || si
     Elements::Formula.new(
       expression: expression,
       cached_value: cached_value,
-      type: type,
+      type: type || (s_idx ? :shared : nil),
       ref: ref,
+      shared_index: s_idx,
       calculate_always: cached_value.nil? || nil
     )
   end
+
+  # Creates a shared formula {Elements::Formula} object for master or follower cell.
+  #
+  # @example Create a shared formula master
+  #   formula = Xlsxrb.shared_formula("A2*2", si: 0, ref: "B2:B10")
+  #
+  # @example Create a shared formula follower
+  #   formula = Xlsxrb.shared_formula(si: 0)
+  #
+  # @param expression [String, nil] The formula expression (nil for follower cells).
+  # @param si [Integer] Shared formula group index (0-based).
+  # @param ref [String, nil] Target range for master cell (e.g. "B2:B10").
+  # @param cached_value [Object, nil] Optional precomputed value.
+  # @return [Elements::Formula]
+  # @api public
+  #: (?String? expression, si: Integer, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
+  def self.shared_formula(expression = nil, si:, ref: nil, cached_value: nil)
+    Elements::Formula.new(
+      expression: expression || "",
+      cached_value: cached_value,
+      type: :shared,
+      ref: ref,
+      shared_index: si,
+      calculate_always: cached_value.nil? || nil
+    )
+  end
+  # rubocop:enable Naming/MethodParameterName
 
   # Creates an array or dynamic array {Elements::Formula} object.
   #
@@ -2345,9 +2377,9 @@ module Xlsxrb
         end
       end
     when Hash
-      if value.key?(:formula)
-        result[:formula] = value[:formula]
-        result[:formula_type] = value[:type] if value[:type]
+      if value.key?(:formula) || value.key?(:expression) || (value[:type]&.to_sym == :shared && (value.key?(:shared_index) || value.key?(:si)))
+        result[:formula] = value[:formula] || value[:expression]
+        result[:formula_type] = value[:type] || (:shared if value.key?(:shared_index) || value.key?(:si))
         result[:formula_ref] = value[:ref] if value[:ref]
         si = value[:shared_index] || value[:si]
         result[:formula_si] = si if si

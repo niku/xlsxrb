@@ -673,4 +673,21 @@ class XsdValidationTest < Test::Unit::TestCase
       tmp.close!
     end
   end
+
+  def test_shared_formulas_xsd_validation
+    tmp = Tempfile.new(["xsd_shared_formulas", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp.path) do |w|
+        w.sheet("SharedFormulasSheet") do |s|
+          s.row([10, Xlsxrb.shared_formula("A1*2", si: 0, ref: "B1:B3", cached_value: 20)])
+          s.row([20, Xlsxrb.shared_formula(si: 0, cached_value: 40)])
+          s.row([30, { type: :shared, si: 0, cached_value: 60 }])
+        end
+      end
+
+      validate_xlsx_file(tmp.path)
+    ensure
+      tmp.close!
+    end
+  end
 end

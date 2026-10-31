@@ -103,4 +103,49 @@ class UtilsTest < Test::Unit::TestCase
     assert_true(Xlsxrb::Utils.valid_excel_date?(44_561, date1904: true))
     assert_false(Xlsxrb::Utils.valid_excel_date?(3_000_000, date1904: true))
   end
+
+  test "expand_formula shifts relative cell references by coordinates or delta" do
+    # Simple shift
+    assert_equal("A3*2", Xlsxrb::Utils.expand_formula("A2*2", from_ref: "B2", to_ref: "B3"))
+    assert_equal("B2*2", Xlsxrb::Utils.expand_formula("A2*2", from_ref: "A2", to_ref: "B2"))
+
+    # Direct deltas
+    assert_equal("A4*2", Xlsxrb::Utils.expand_formula("A2*2", row_delta: 2, col_delta: 0))
+    assert_equal("C2*2", Xlsxrb::Utils.expand_formula("A2*2", row_delta: 0, col_delta: 2))
+    assert_equal("C4*2", Xlsxrb::Utils.expand_formula("A2*2", row_delta: 2, col_delta: 2))
+
+    # Absolute and mixed references
+    assert_equal("$A$1+A3", Xlsxrb::Utils.expand_formula("$A$1+A2", from_ref: "B2", to_ref: "B3"))
+    assert_equal("A$1+B$1", Xlsxrb::Utils.expand_formula("A$1+B$1", from_ref: "A2", to_ref: "A3"))
+    assert_equal("$A2+$A3", Xlsxrb::Utils.expand_formula("$A1+$A2", from_ref: "B1", to_ref: "B2"))
+
+    # Range references
+    assert_equal("SUM(A3:C3)", Xlsxrb::Utils.expand_formula("SUM(A2:C2)", from_ref: "D2", to_ref: "D3"))
+    assert_equal("AVERAGE(B3:B10)", Xlsxrb::Utils.expand_formula("AVERAGE(A3:A10)", from_ref: "A1", to_ref: "B1"))
+
+    # Preserves string literals
+    formula = 'SUM(A2:B2) & " Text A1 here " & A2'
+    assert_equal('SUM(A3:B3) & " Text A1 here " & A3', Xlsxrb::Utils.expand_formula(formula, from_ref: "C2", to_ref: "C3"))
+
+    # Escaped double quotes in string literals
+    f_esc = 'A2 & " ""A1"" test "'
+    assert_equal('A3 & " ""A1"" test "', Xlsxrb::Utils.expand_formula(f_esc, from_ref: "B2", to_ref: "B3"))
+
+    # Sheet prefix
+    assert_equal("Sheet1!A3 + 'My Sheet'!B3", Xlsxrb::Utils.expand_formula("Sheet1!A2 + 'My Sheet'!B2", from_ref: "C2", to_ref: "C3"))
+
+    # Functions with numbers
+    assert_equal("LOG10(A3)", Xlsxrb::Utils.expand_formula("LOG10(A2)", from_ref: "B2", to_ref: "B3"))
+
+    # No shift when delta is zero
+    assert_equal("A2*2", Xlsxrb::Utils.expand_formula("A2*2", from_ref: "B2", to_ref: "B2"))
+    assert_equal("A2*2", Xlsxrb::Utils.expand_formula("A2*2", row_delta: 0, col_delta: 0))
+
+    # Empty or nil formula
+    assert_nil(Xlsxrb::Utils.expand_formula(nil, from_ref: "A1", to_ref: "A2"))
+    assert_equal("", Xlsxrb::Utils.expand_formula("", from_ref: "A1", to_ref: "A2"))
+
+    # Invalid coordinates fallback to unmodified formula
+    assert_equal("A2*2", Xlsxrb::Utils.expand_formula("A2*2", from_ref: "invalid", to_ref: "B2"))
+  end
 end

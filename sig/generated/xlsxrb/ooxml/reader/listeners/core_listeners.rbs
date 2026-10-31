@@ -46,6 +46,8 @@ module Xlsxrb
 
         def store_cell_value: () -> untyped
 
+        def expand_shared_formulas!: () -> untyped
+
         def numeric_value: (untyped raw) -> untyped
 
         def element_name: (untyped local_name, untyped qname) -> untyped

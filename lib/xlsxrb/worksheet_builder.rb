@@ -192,12 +192,14 @@ module Xlsxrb
                                raw_value: val.cached_value&.to_s,
                                format_code: fmt_code
                              )
-                           elsif val.is_a?(Hash) && val.key?(:formula)
+                           elsif val.is_a?(Hash) && (val.key?(:formula) || val.key?(:expression) || (val[:type]&.to_sym == :shared && (val.key?(:shared_index) || val.key?(:si))))
                              cached_val = val.key?(:value) ? val[:value] : val[:cached_value]
+                             f_expr = val[:formula] || val[:expression] || ""
+                             f_type = val[:type] || (:shared if val.key?(:shared_index) || val.key?(:si))
                              f_obj = Elements::Formula.new(
-                               expression: val[:formula],
+                               expression: f_expr,
                                cached_value: cached_val,
-                               type: val[:type],
+                               type: f_type,
                                ref: val[:ref],
                                shared_index: val[:shared_index] || val[:si],
                                calculate_always: val[:calculate_always]

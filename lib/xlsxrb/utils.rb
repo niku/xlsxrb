@@ -219,6 +219,71 @@ module Xlsxrb
       Ooxml::Utils.serial_to_datetime(serial, date1904: date1904)
     end
 
+    FORMULA_TOKEN_RE = %r{(?<str>"(?:[^"]|"")*")|(?<ref>(?<=\b|\A|[$!:,()+\-*/^<>=& \r\n])(?<col_abs>\$?)(?<col>[A-Za-z]{1,3})(?<row_abs>\$?)(?<row>\d+)(?!\w|\())}
+
+    # Expands a formula by shifting relative cell references from a master cell to a target cell.
+    #
+    # @example Shift formula down one row
+    #   Xlsxrb::Utils.expand_formula("A2*2", from_ref: "B2", to_ref: "B3") #=> "A3*2"
+    #
+    # @example Shift formula with absolute references
+    #   Xlsxrb::Utils.expand_formula("$A$1+A2", from_ref: "B2", to_ref: "B4") #=> "$A$1+A4"
+    #
+    # @param formula [String] Formula expression to expand.
+    # @param from_ref [String, nil] Master cell reference (e.g. "B2").
+    # @param to_ref [String, nil] Target cell reference (e.g. "B3").
+    # @param row_delta [Integer, nil] Row shift amount (positive = down, negative = up).
+    # @param col_delta [Integer, nil] Column shift amount (positive = right, negative = left).
+    # @return [String, nil] Expanded formula expression.
+    # @api public
+    #: (String? formula, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?col_delta: Integer?) -> String?
+    def self.expand_formula(formula, from_ref: nil, to_ref: nil, row_delta: nil, col_delta: nil)
+      return formula if formula.nil? || formula.empty?
+
+      if from_ref && to_ref
+        f_coords = ref_to_row_col(from_ref)
+        t_coords = ref_to_row_col(to_ref)
+        return formula unless f_coords && t_coords
+
+        rd = t_coords[0] - f_coords[0]
+        cd = t_coords[1] - f_coords[1]
+      else
+        rd = row_delta || 0
+        cd = col_delta || 0
+      end
+
+      return formula if rd.zero? && cd.zero?
+
+      formula.gsub(FORMULA_TOKEN_RE) do |match|
+        m = Regexp.last_match
+        if m[:str]
+          match
+        else
+          c_abs = !m[:col_abs].empty?
+          r_abs = !m[:row_abs].empty?
+          col = m[:col]
+          row = m[:row].to_i
+
+          new_col = if c_abs || cd.zero?
+                      col
+                    else
+                      ci = col_name_to_index(col) + cd
+                      ci = ci.clamp(0, 16_383)
+                      col_index_to_name(ci)
+                    end
+
+          new_row = if r_abs || rd.zero?
+                      row
+                    else
+                      ri = row + rd
+                      ri.clamp(1, 1_048_576)
+                    end
+
+          "#{m[:col_abs]}#{new_col}#{m[:row_abs]}#{new_row}"
+        end
+      end
+    end
+
     class << self
       alias serial_to_datetime serial_to_time
     end

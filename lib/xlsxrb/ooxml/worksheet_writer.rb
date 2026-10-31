@@ -270,7 +270,7 @@ module Xlsxrb
             else
               buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
             end
-          elsif formula_expr
+          elsif formula_expr || (formula_type && formula_type.to_sym == :shared && !formula_si.nil?)
             f_attrs = +""
             if formula_type
               case formula_type.to_sym
@@ -284,7 +284,11 @@ module Xlsxrb
               end
             end
             f_attrs << ' ca="1"' if formula_ca
-            buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
+            if formula_expr && !formula_expr.empty?
+              buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
+            else
+              buf << "><f#{f_attrs}/>"
+            end
             if xml_val.nil?
               buf << "<v>0</v></c>"
             else
@@ -401,20 +405,27 @@ module Xlsxrb
               else
                 v_val = value.cached_value.is_a?(String) ? escape_xml(value.cached_value) : value.cached_value
               end
-              buf << "<c r=\"#{col_ref}#{row_num_str}\"#{c_type}><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{v_val}</v></c>"
+              f_tag = if formula_expr && !formula_expr.empty?
+                        "<f#{f_attrs}>#{escape_xml(formula_expr)}</f>"
+                      else
+                        "<f#{f_attrs}/>"
+                      end
+              buf << "<c r=\"#{col_ref}#{row_num_str}\"#{c_type}>#{f_tag}<v>#{v_val}</v></c>"
             when Hash
-              if value.key?(:formula)
+              if value.key?(:formula) || value.key?(:expression) || (value[:type]&.to_sym == :shared && (value.key?(:shared_index) || value.key?(:si)))
                 formula_expr = value[:formula] || value[:expression]
-                formula_expr = formula_expr[1..] if formula_expr.start_with?("=")
+                formula_expr = formula_expr[1..] if formula_expr.is_a?(String) && formula_expr.start_with?("=")
                 f_attrs = +""
-                if value[:type]
-                  case value[:type].to_sym
+                f_type = value[:type] || (:shared if value.key?(:shared_index) || value.key?(:si))
+                if f_type
+                  case f_type.to_sym
                   when :array
                     f_attrs << ' t="array"'
                     f_attrs << %( ref="#{value[:ref]}") if value[:ref]
                   when :shared
                     f_attrs << ' t="shared"'
-                    f_attrs << %( si="#{value[:si] || value[:shared_index]}") if value[:si] || value[:shared_index]
+                    si = value[:si] || value[:shared_index]
+                    f_attrs << %( si="#{si}") if si
                     f_attrs << %( ref="#{value[:ref]}") if value[:ref]
                   end
                 end
@@ -441,7 +452,12 @@ module Xlsxrb
                   xml_val = xml_val.code
                 end
                 xml_val = escape_xml(xml_val) if xml_val.is_a?(String)
-                buf << "<c r=\"#{col_ref}#{row_num_str}\"#{c_type}><f#{f_attrs}>#{escape_xml(formula_expr)}</f><v>#{xml_val}</v></c>"
+                f_tag = if formula_expr && !formula_expr.empty?
+                          "<f#{f_attrs}>#{escape_xml(formula_expr)}</f>"
+                        else
+                          "<f#{f_attrs}/>"
+                        end
+                buf << "<c r=\"#{col_ref}#{row_num_str}\"#{c_type}>#{f_tag}<v>#{xml_val}</v></c>"
               end
             when Xlsxrb::Elements::CellError
               buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"e\"><v>#{value.code}</v></c>"
@@ -669,7 +685,7 @@ module Xlsxrb
           buf << '<c r="' << col_ref << row_num_str << '"'
           buf << ' s="' << style_id.to_s << '"' if style_id
           buf << ' t="' << type << '"' if type
-          if formula_expr
+          if formula_expr || (formula_type && formula_type.to_sym == :shared && !formula_si.nil?)
             f_attrs = +""
             if formula_type
               case formula_type.to_sym
@@ -683,7 +699,11 @@ module Xlsxrb
               end
             end
             f_attrs << ' ca="1"' if formula_ca
-            buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
+            if formula_expr && !formula_expr.empty?
+              buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
+            else
+              buf << "><f#{f_attrs}/>"
+            end
             if xml_val.nil?
               buf << "<v>0</v></c>"
             else

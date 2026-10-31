@@ -159,6 +159,26 @@ module Xlsxrb
     # : (Numeric serial, ?date1904: bool) -> Time
     def self.serial_to_time: (Numeric serial, ?date1904: bool) -> Time
 
+    FORMULA_TOKEN_RE: ::Regexp
+
+    # Expands a formula by shifting relative cell references from a master cell to a target cell.
+    #
+    # @example Shift formula down one row
+    #   Xlsxrb::Utils.expand_formula("A2*2", from_ref: "B2", to_ref: "B3") #=> "A3*2"
+    #
+    # @example Shift formula with absolute references
+    #   Xlsxrb::Utils.expand_formula("$A$1+A2", from_ref: "B2", to_ref: "B4") #=> "$A$1+A4"
+    #
+    # @param formula [String] Formula expression to expand.
+    # @param from_ref [String, nil] Master cell reference (e.g. "B2").
+    # @param to_ref [String, nil] Target cell reference (e.g. "B3").
+    # @param row_delta [Integer, nil] Row shift amount (positive = down, negative = up).
+    # @param col_delta [Integer, nil] Column shift amount (positive = right, negative = left).
+    # @return [String, nil] Expanded formula expression.
+    # @api public
+    # : (String? formula, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?col_delta: Integer?) -> String?
+    def self.expand_formula: (String? formula, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?col_delta: Integer?) -> String?
+
     alias self.serial_to_datetime self.serial_to_time
   end
 end

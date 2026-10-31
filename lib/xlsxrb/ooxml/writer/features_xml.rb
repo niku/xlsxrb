@@ -386,7 +386,12 @@ module Xlsxrb
               t_attr = ' t="b"'
               cached_val_str = "0"
             end
-            parts = %(<c r="#{cell_ref}"#{t_attr}#{s_attr}#{ph_attr}><f#{f_attrs}>#{xml_escape(value.expression)}</f>)
+            f_tag = if value.expression && !value.expression.empty?
+                      "<f#{f_attrs}>#{xml_escape(value.expression)}</f>"
+                    else
+                      "<f#{f_attrs}/>"
+                    end
+            parts = %(<c r="#{cell_ref}"#{t_attr}#{s_attr}#{ph_attr}>#{f_tag})
             parts << "<v>#{xml_escape(cached_val_str)}</v>" unless value.cached_value.nil?
             parts << "</c>"
             parts

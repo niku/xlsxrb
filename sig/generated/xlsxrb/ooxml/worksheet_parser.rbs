@@ -45,7 +45,7 @@ module Xlsxrb
       # Extract an attribute value from a small tag substring (bounded search).
       def self.tag_attr: (untyped tag, untyped prefix) -> untyped
 
-      def self.fast_scan_cells_events: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped prefix) ?{ (?) -> untyped } -> untyped
+      def self.fast_scan_cells_events: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped prefix, ?untyped shared_masters) ?{ (?) -> untyped } -> untyped
 
       def self.extract_inline_text: (untyped xml, untyped from, untyped to) -> untyped
 
