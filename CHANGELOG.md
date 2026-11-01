@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.1.17] - 2026-11-01
+
 ### Added
 - Support threaded comments (`<ThreadedComments>`) and workbook person lists (`<personList>`) across `WorksheetBuilder`, `StreamWriter`, `WorksheetProxy`, `Ooxml::Writer`, `WorkbookWriter`, `DrawingXml`, `Elements::Worksheet`, `Elements::Cell`, `StreamSheet`, and `Ooxml::Reader`, serialize `xl/threadedComments/threadedComment{N}.xml` and `xl/persons/person.xml` conforming to the OpenXML threaded comments specification, support root comments and replies with `parent_id`, timestamps, and resolution states (`done`), register relationship types and content types, and provide query accessors across worksheets and cells.
 - Support combo charts and secondary value axes across `ChartBuilder`, `DrawingXml`, `Ooxml::Writer`, and `DrawingListeners`, allow mixed chart types (e.g. bar and line) inside a single plot area with primary and secondary value axes (`secondary_value_axis:`, `secondary_axis:`), support per-series axis binding via `SeriesBuilder#secondary_axis` and `SeriesBuilder#axis`, serialize distinct `<c:valAx>` elements with independent scaling, orientation, units, and gridlines conforming to ECMA-376 Part 4 §21.2 schema sequence, and expose secondary value axis configurations in `Ooxml::Reader`.
