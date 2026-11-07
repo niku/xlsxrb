@@ -407,7 +407,7 @@ module Xlsxrb
         sheet_properties: sheet_properties,
         sheet_format: sheet_format,
         row_breaks: row_breaks,
-        col_breaks: col_breaks,
+        column_breaks: column_breaks,
         protected_ranges: protected_ranges,
         cell_watches: cell_watches,
         ignored_errors: ignored_errors,
@@ -900,11 +900,18 @@ module Xlsxrb
 
     # Returns explicit column page breaks for this worksheet.
     #
-    # @return [Array<untyped>]
+    # @return [Array<Hash[Symbol, untyped]>]
     # @api public
-    #: () -> Array[untyped]
+    #: () -> Array[Hash[Symbol, untyped]]
+    def column_breaks
+      print_page_data[:column_breaks] || print_page_data[:col_breaks] || []
+    end
+
+    # @deprecated Use {#column_breaks} instead.
+    #: () -> Array[Hash[Symbol, untyped]]
     def col_breaks
-      print_page_data[:col_breaks] || []
+      warn "[DEPRECATION] `col_breaks` is deprecated; use `column_breaks` instead.", uplevel: 1
+      column_breaks
     end
 
     # Returns protected ranges defined for this worksheet.
@@ -1011,6 +1018,7 @@ module Xlsxrb
                                header_footer: listener.header_footer,
                                print_options: listener.print_options,
                                row_breaks: listener.row_breaks,
+                               column_breaks: listener.column_breaks,
                                col_breaks: listener.col_breaks
                              }
                            else
@@ -1020,6 +1028,7 @@ module Xlsxrb
                                header_footer: {},
                                print_options: {},
                                row_breaks: [],
+                               column_breaks: [],
                                col_breaks: []
                              }
                            end

@@ -1187,10 +1187,10 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#freeze_pane configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
-        s.freeze_pane(row: 1, col: "B")
+        s.freeze_pane(row: 1, column: "B")
       end
     end
-    assert_equal({ row: 1, col: 1 }, wb.sheet(0).unmapped_data.dig(:facade, :freeze_pane))
+    assert_equal({ row: 1, column: 1, col: 1 }, wb.sheet(0).unmapped_data.dig(:facade, :freeze_pane))
   end
 
   test "WorksheetBuilder#header_footer configures correctly" do
@@ -1580,24 +1580,28 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "C3", sel[:active_cell]
   end
 
-  test "WorksheetBuilder#page_break_row adds row breaks" do
+  test "WorksheetBuilder#row_break and #page_break_row add row breaks" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.page_break_row(10)
+        s.row_break(10)
+        s.page_break_row(20)
       end
     end
     breaks = wb.sheet(0).unmapped_data.dig(:facade, :row_breaks)
-    assert_equal 10, breaks.first
+    assert_equal 10, breaks[0][:id]
+    assert_equal 20, breaks[1][:id]
   end
 
-  test "WorksheetBuilder#page_break_col adds col breaks" do
+  test "WorksheetBuilder#column_break and #page_break_col add col breaks" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
+        s.column_break("C")
         s.page_break_col(5)
       end
     end
     breaks = wb.sheet(0).unmapped_data.dig(:facade, :col_breaks)
-    assert_equal 5, breaks.first
+    assert_equal 2, breaks[0][:id]
+    assert_equal 5, breaks[1][:id]
   end
 
   test "WorksheetBuilder#auto_filter captures range" do
@@ -3876,5 +3880,116 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(/\[DEPRECATION\] Elements::Worksheet#update_cell passing non-Integer to style_index: is deprecated/, warn_ws)
     assert_equal("custom", s3.cell("A1").style)
     assert_nil(s3.cell("A1").style_index)
+  end
+
+  test "Commit 4: singular builders and deprecation warnings" do
+    wb = Xlsxrb.build do |b|
+      b.workbook_protection(lock_structure: true)
+      b.sheet("S1") do |s|
+        s.data_validation("A1:A10") { |v| v.list = %w[X Y] }
+        s.sheet_protection(sheet: true)
+        s.selection("B2:C5")
+        s.sheet_property(:tab_color, "FF0000")
+        s.sheet_properties(enable_format_conditions_calculation: true)
+        s.print_options(grid_lines: true)
+        s.sheet_view(show_grid_lines: false)
+      end
+    end
+    ws = wb.sheet(0)
+    assert_equal({ lock_structure: true }, wb.workbook_protection)
+    assert_equal(1, ws.data_validations.size)
+    assert_equal({ sheet: true }, ws.sheet_protection)
+    assert_equal "B2:C5", ws.selection[:sqref]
+    assert_equal "FF0000", ws.sheet_properties[:tab_color]
+    assert ws.sheet_properties[:enable_format_conditions_calculation]
+    assert ws.print_options[:grid_lines]
+    assert_equal false, ws.sheet_view[:show_grid_lines]
+
+    # Deprecation warnings for legacy methods
+    w_protect = capture_stderr { Xlsxrb.build { |b| b.protect_workbook(lock_structure: true); b.sheet("S") } }
+    assert_match(/\[DEPRECATION\] `protect_workbook` is deprecated; use `workbook_protection` instead/, w_protect)
+
+    w_sheet_methods = capture_stderr do
+      Xlsxrb.build do |b|
+        b.sheet("S") do |s|
+          s.validate_data("A1", type: "whole")
+          s.protect_sheet(sheet: true)
+          s.select_cell("B2")
+        end
+      end
+    end
+    assert_match(/\[DEPRECATION\] `validate_data` is deprecated; use `data_validation` instead/, w_sheet_methods)
+    assert_match(/\[DEPRECATION\] `protect_sheet` is deprecated; use `sheet_protection` instead/, w_sheet_methods)
+    assert_match(/\[DEPRECATION\] `select_cell` is deprecated; use `selection` instead/, w_sheet_methods)
+  end
+
+  test "Commit 4: page breaks, column spelling, and image accessors" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("S1") do |s|
+        s.row_break(5)
+        s.column_break(:C)
+      end
+    end
+    ws = wb.sheet(0)
+    assert_equal([{ id: 5, max: 16_383, man: 1 }], ws.row_breaks)
+    assert_equal([{ id: 2, max: 1_048_575, man: 1 }], ws.column_breaks)
+
+    w_breaks = capture_stderr do
+      Xlsxrb.build do |b|
+        b.sheet("S") do |s|
+          s.page_break_row(5)
+          s.page_break_col(2)
+        end
+      end
+    end
+    assert_match(/\[DEPRECATION\] `page_break_row` is deprecated; use `row_break` instead/, w_breaks)
+    assert_match(/\[DEPRECATION\] `page_break_col` is deprecated; use `column_break` instead/, w_breaks)
+
+    w_reader_breaks = capture_stderr do
+      assert_equal([{ id: 2, max: 1_048_575, man: 1 }], ws.col_breaks)
+    end
+    assert_match(/\[DEPRECATION\] `col_breaks` is deprecated; use `column_breaks` instead/, w_reader_breaks)
+
+    # Elements::Image from_column / to_column and deprecated aliases
+    img = Xlsxrb::Elements::Image.new(filename: "test.png", from_column: 1, to_column: 3)
+    assert_equal 1, img.from_column
+    assert_equal 3, img.to_column
+
+    w_img = capture_stderr do
+      assert_equal 1, img.from_col
+      assert_equal 3, img.to_col
+    end
+    assert_match(/\[DEPRECATION\] `from_col` is deprecated; use `from_column` instead/, w_img)
+    assert_match(/\[DEPRECATION\] `to_col` is deprecated; use `to_column` instead/, w_img)
+  end
+
+  test "Commit 4: filter_column coercion, defined_name scope, and DataValidationBuilder#list" do
+    wb = Xlsxrb.build do |b|
+      b.defined_name("GlobalRate", "0.15", scope: :workbook)
+      b.sheet("S1") do |s|
+        s.auto_filter("A1:D10")
+        s.filter_column("B", ["Active", "Pending"])
+        s.filter_column(:C, ["High"])
+        s.defined_name("LocalRef", column: "B", row: 2, scope: "S1")
+      end
+    end
+    ws = wb.sheet(0)
+    fc = ws.unmapped_data.dig(:facade, :filter_columns) || {}
+    assert fc.key?(1)
+    assert fc.key?(2)
+
+    # DataValidationBuilder#list and #list=
+    builder = Xlsxrb::DataValidationBuilder.new("A1")
+    builder.list = %w[One Two Three]
+    assert_equal %w[One Two Three], builder.list
+    res = builder.to_h
+    assert_equal %w[One Two Three], res[:list]
+
+    w_dv = capture_stderr do
+      builder.in = %w[A B]
+      assert_equal %w[A B], builder.in
+    end
+    assert_match(/\[DEPRECATION\] `DataValidationBuilder#in=` is deprecated; use `list=` instead/, w_dv)
+    assert_match(/\[DEPRECATION\] `DataValidationBuilder#in` is deprecated; use `list` instead/, w_dv)
   end
 end

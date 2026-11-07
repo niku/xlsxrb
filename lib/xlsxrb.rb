@@ -757,6 +757,7 @@ module Xlsxrb
       wb_unmapped = {}
       wb_props = {}
       wb_props[:date1904] = true if is_date1904
+      wb_props[:active_sheet] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
       wb_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
       wb_props[:first_sheet] = wb_parsed[:first_sheet] unless wb_parsed[:first_sheet].nil?
       wb_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
@@ -1019,7 +1020,15 @@ module Xlsxrb
       sd[:merge_cells] ||= ws.merged_cells if ws.respond_to?(:merged_cells) && ws.merged_cells && !ws.merged_cells.empty?
       sd[:auto_filter] ||= ws.auto_filter if ws.respond_to?(:auto_filter) && ws.auto_filter
       sd[:row_breaks] ||= ws.row_breaks if ws.respond_to?(:row_breaks) && ws.row_breaks && !ws.row_breaks.empty?
-      sd[:col_breaks] ||= ws.col_breaks if ws.respond_to?(:col_breaks) && ws.col_breaks && !ws.col_breaks.empty?
+      brks = if ws.respond_to?(:column_breaks)
+               ws.column_breaks unless ws.column_breaks.empty?
+             elsif ws.respond_to?(:col_breaks)
+               ws.col_breaks unless ws.col_breaks.empty?
+             end
+      if brks
+        sd[:column_breaks] ||= brks
+        sd[:col_breaks] ||= brks
+      end
       sd[:background_image] ||= ws.background_image if ws.respond_to?(:background_image) && ws.background_image
       if ws.respond_to?(:images) && ws.images && !ws.images.empty?
         sd[:images] ||= ws.images.map do |img|
@@ -1029,9 +1038,9 @@ module Xlsxrb
             opts[:name] ||= img.name
             opts[:file_data] = img.data
             opts[:ext] = ext
-            opts[:from_col] = img.from_col
+            opts[:from_col] = img.from_column
             opts[:from_row] = img.from_row
-            opts[:to_col] = img.to_col
+            opts[:to_col] = img.to_column
             opts[:to_row] = img.to_row
             opts
           else
@@ -1065,7 +1074,8 @@ module Xlsxrb
 
       pt = ws.print_titles
       parts = []
-      parts << "'#{sheet_name}'!$#{pt[:cols].sub(":", ":$")}" if pt[:cols]
+      col_val = pt[:columns] || pt[:cols]
+      parts << "'#{sheet_name}'!$#{col_val.sub(":", ":$")}" if col_val
       parts << "'#{sheet_name}'!$#{pt[:rows].sub(":", ":$")}" if pt[:rows]
       defined_names << { name: "_xlnm.Print_Titles", value: parts.join(","), local_sheet_id: idx } unless parts.empty?
     end
@@ -1459,8 +1469,8 @@ module Xlsxrb
       fallbacks.find { |f| zip_reader.entry?(f) }
     end
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_pr: nil, background_image: nil, threaded_comments: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, column_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_pr: nil, background_image: nil, threaded_comments: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
       if sheet_xml.nil? || sheet_xml.empty?
         return Elements::Worksheet.new(
@@ -1470,9 +1480,9 @@ module Xlsxrb
           tables: tables || [], shapes: shapes || [], freeze_pane: freeze_pane,
           page_setup: page_setup || {}, page_margins: page_margins, header_footer: header_footer || {},
           print_options: print_options || {}, sheet_protection: sheet_protection, sheet_view: sheet_view || {},
-          sheet_properties: sheet_properties || {}, sheet_format: sheet_format || {}, row_breaks: row_breaks || [], col_breaks: col_breaks || [],
+          sheet_properties: sheet_properties || {}, sheet_format: sheet_format || {}, row_breaks: row_breaks || [], column_breaks: column_breaks || col_breaks || [],
           protected_ranges: protected_ranges || [], cell_watches: cell_watches || [], ignored_errors: ignored_errors || [],
-          phonetic_properties: phonetic_properties, selection: selection, sheet_calc_pr: sheet_calc_pr,
+          phonetic_properties: phonetic_properties, selection: selection, sheet_calc_properties: sheet_calc_pr,
           background_image: background_image,
           threaded_comments: threaded_comments || []
         )
@@ -1573,7 +1583,7 @@ module Xlsxrb
                                     {}
                                   end
 
-      print_data = if page_setup.nil? || page_margins.nil? || header_footer.nil? || print_options.nil? || row_breaks.nil? || col_breaks.nil?
+      print_data = if page_setup.nil? || page_margins.nil? || header_footer.nil? || print_options.nil? || row_breaks.nil? || (column_breaks.nil? && col_breaks.nil?)
                      if sheet_xml.match?(/<(?:pageSetup|pageMargins|headerFooter|printOptions|rowBreaks|colBreaks)\b/)
                        pg_listener = Ooxml::Reader::PrintPageListener.new
                        Ooxml::XmlParser.parse(sheet_xml, pg_listener)
@@ -1583,13 +1593,15 @@ module Xlsxrb
                          header_footer: pg_listener.header_footer,
                          print_options: pg_listener.print_options,
                          row_breaks: pg_listener.row_breaks,
+                         column_breaks: pg_listener.column_breaks,
                          col_breaks: pg_listener.col_breaks
                        }
                      else
-                       { page_margins: nil, page_setup: {}, header_footer: {}, print_options: {}, row_breaks: [], col_breaks: [] }
+                       { page_margins: nil, page_setup: {}, header_footer: {}, print_options: {}, row_breaks: [], column_breaks: [], col_breaks: [] }
                      end
                    else
-                     { page_margins: page_margins, page_setup: page_setup, header_footer: header_footer, print_options: print_options, row_breaks: row_breaks, col_breaks: col_breaks }
+                     cb = column_breaks || col_breaks
+                     { page_margins: page_margins, page_setup: page_setup, header_footer: header_footer, print_options: print_options, row_breaks: row_breaks, column_breaks: cb, col_breaks: cb }
                    end
 
       sheet_prot_ranges = protected_ranges || if sheet_xml.include?("<protectedRanges")
@@ -1652,13 +1664,13 @@ module Xlsxrb
         sheet_properties: sheet_props,
         sheet_format: sheet_fmt,
         row_breaks: row_breaks || print_data[:row_breaks] || [],
-        col_breaks: col_breaks || print_data[:col_breaks] || [],
+        column_breaks: column_breaks || col_breaks || print_data[:column_breaks] || print_data[:col_breaks] || [],
         protected_ranges: sheet_prot_ranges,
         cell_watches: sheet_watches,
         ignored_errors: sheet_ignored_errors,
         phonetic_properties: sheet_phonetic,
         selection: sheet_selection,
-        sheet_calc_pr: sheet_calc_pr,
+        sheet_calc_properties: sheet_calc_pr,
         background_image: background_image || (sheet_xml.include?("<picture") ? resolve_background_image(sheet_xml, zip_reader: zip_reader, entry_name: entry_name) : nil),
         threaded_comments: sheet_threaded_comments
       )
@@ -1853,9 +1865,9 @@ module Xlsxrb
           img_data = zip_reader.read_entry(media_path)
         end
 
-        from_col = raw_img[:from_col] || 0
+        from_col = raw_img[:from_column] || raw_img[:from_col] || 0
         from_row = raw_img[:from_row] || 0
-        to_col = raw_img[:to_col]
+        to_col = raw_img[:to_column] || raw_img[:to_col]
         to_row = raw_img[:to_row]
         cx = raw_img[:cx]
         cy = raw_img[:cy]
@@ -1865,9 +1877,9 @@ module Xlsxrb
           filename: filename || "image.png",
           name: name,
           data: img_data,
-          from_col: from_col,
+          from_column: from_col,
           from_row: from_row,
-          to_col: to_col,
+          to_column: to_col,
           to_row: to_row,
           cx: cx,
           cy: cy,

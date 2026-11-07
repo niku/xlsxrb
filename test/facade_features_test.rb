@@ -1592,7 +1592,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("Formatting") do |s|
         (1..10).each { |i| s.row([i, i * 10]) }
         # Block builder with coordinate targeting
-        s.conditional_format(columns: 0..1, rows: 2..10) do |cf|
+        s.conditional_format(columns: 0..1, rows: 1..9) do |cf|
           cf.type = :cell_is
           cf.operator = :greater_than
           cf.formula = 50
@@ -1601,12 +1601,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
           cf.font_color = "9C0006"
         end
         # 2-color scale
-        s.conditional_format(col: 0, rows: 1..10) do |cf|
+        s.conditional_format(col: 0, rows: 0..9) do |cf|
           cf.type = :color_scale
           cf.color_scale = { colors: %w[FFFFFF 5B9BD5] }
         end
         # 4-arrows icon set
-        s.conditional_format(col: 1, rows: 1..10) do |cf|
+        s.conditional_format(col: 1, rows: 0..9) do |cf|
           cf.type = :icon_set
           cf.icon_set = { icon_set: :four_arrows }
         end
@@ -1738,7 +1738,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_outline_stream", ".xlsx"])
     Xlsxrb.write(tmp.path) do |w|
       w.sheet("GroupSheet") do |s|
-        s.outline_properties(summary_below: true, summary_right: false, show_symbols: true, apply_styles: true)
+        s.outline_properties(summary_below: true, summary_right: false, show_outline_symbols: true, apply_styles: true)
         s.group_columns("B".."D", level: 1, collapsed: true)
 
         s.row(["Header A", "B", "C", "D"])

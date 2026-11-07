@@ -14,6 +14,16 @@
 - Add canonical cell-level and row-level style keywords `cell_styles:` and `row_style:` across `WorksheetBuilder#row`, `StreamWriter#row`, and `StreamWriter::WorksheetProxy#row`.
 - Expose `:style_index` as a canonical `Data.define` member on `Elements::Row`.
 - Add `style:` keyword to `Elements::Cell.new` and `Elements::Worksheet#update_cell` for style names and inline style definitions.
+- Add 1-based `row_range` and `column_range` boundaries to `Elements::Worksheet` (via `CoordinateAccess`) and `StreamSheet` (from sheet dimension bounds), returning idiomatic `Range[Integer]` boundaries.
+- Support 2D coordinate indexing `sheet[row, col]` and letter column indexing `sheet[row, "A"]` on `Elements::Worksheet` and `CoordinateAccess`.
+- Add `column` and `columns` builder methods across `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` with unified options.
+- Support 0-based page break indices (`row_breaks`, `column_breaks`) across builders and readers.
+- Add `Elements::WorkbookProperties#active_sheet` and `Elements::Workbook#active_sheet_index`.
+- Add `Elements::FilterColumn#column_id`.
+- Add structured Hash access for `category_axis` and `value_axis` titles on `Elements::Chart`.
+
+### Changed
+- Update `Elements::Row#[]` and `StreamRow#[]` to resolve column indices and column letters via `cell_at` instead of indexing the raw sparse `cells` array, returning `nil` when a cell at the specified column is absent.
 
 ### Deprecated
 - `DslHelpers.sheet_name` is deprecated in favor of `DslHelpers.sanitize_sheet_name`; will be removed in version 0.2.0.
@@ -32,6 +42,14 @@
 - `fit_to_page?` on builders is deprecated in favor of `fit_to_page`; will be removed in version 0.2.0.
 - Keywords `styles:` and `style:` on `WorksheetBuilder#row`, `StreamWriter#row`, and `WorksheetProxy#row` are deprecated in favor of `cell_styles:` and `row_style:`; will be removed in version 0.2.0.
 - Passing non-Integer style names or Hash definitions to `style_index:` on `Elements::Cell.new` and `Elements::Worksheet#update_cell` is deprecated in favor of `style:`; will be removed in version 0.2.0.
+- `Elements::Worksheet#cell` is deprecated in favor of bracket access (`sheet["A1"]` or `sheet[row, col]`) and will be removed in version 0.2.0.
+- `StreamSheet#cell` is deprecated in favor of materializing an `Elements::Worksheet` via `sheet.load` and using coordinate bracket access; will be removed in version 0.2.0.
+- `StreamSheet#first_row` and `StreamSheet#last_row` returning integer row numbers are deprecated in favor of `row_range` or `dimension_bounds`; will be removed in version 0.2.0.
+- Passing coordinate keyword arguments (`row:`, `col_start:`, `col_end:`, `row_start:`, `row_end:`) to `merge` on `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` is deprecated in favor of coordinate range strings (e.g. `"A1:C1"`); coordinate kwargs will be removed in version 0.2.0.
+- `Elements::FilterColumn#col_id` is deprecated in favor of `#column_id`; will be removed in version 0.2.0.
+- `Elements::WorkbookProperties#active_tab` is deprecated in favor of `#active_sheet`, and `Elements::Workbook#active_tab` is deprecated in favor of `#active_sheet_index`; will be removed in version 0.2.0.
+- `Elements::Chart#cat_axis_title` and `#val_axis_title` are deprecated in favor of `category_axis[:title]` and `value_axis[:title]`; will be removed in version 0.2.0.
+- `Elements::Worksheet` constructor keywords `sheet_calc_pr:`, `calc_pr:`, `phonetic_pr:`, `background_picture:`, `picture:` are deprecated in favor of canonical keyword arguments; will be removed in version 0.2.0.
 
 ### Fixed
 - Prevent attribute loss in `Elements::PivotTable`, `Elements::TableColumn`, `Elements::ThreadedComment`, `Elements::Comment`, and `Elements::FilterColumn` by retaining full schema attributes and capturing unmapped keyword options into `options:`.

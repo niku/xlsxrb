@@ -1055,8 +1055,8 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(view, ws.sheet_view)
     assert_equal(props, ws.sheet_properties)
     assert_equal(fmt, ws.sheet_format)
-    assert_equal(row_brks, ws.row_breaks)
-    assert_equal(col_brks, ws.col_breaks)
+    assert_equal([{ id: 10, max: 16_383, man: 1 }], ws.row_breaks)
+    assert_equal([{ id: 5, max: 1_048_575, man: 1 }], ws.column_breaks)
 
     # Defaults on empty worksheet
     ws_empty = Xlsxrb::Elements::Worksheet.new(name: "EmptyStruct")

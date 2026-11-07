@@ -582,10 +582,14 @@ module Xlsxrb
 
     # Returns explicit column page breaks for this worksheet.
     #
-    # @return [Array<untyped>]
+    # @return [Array<Hash[Symbol, untyped]>]
     # @api public
-    # : () -> Array[untyped]
-    def col_breaks: () -> Array[untyped]
+    # : () -> Array[Hash[Symbol, untyped]]
+    def column_breaks: () -> Array[Hash[Symbol, untyped]]
+
+    # @deprecated Use {#column_breaks} instead.
+    # : () -> Array[Hash[Symbol, untyped]]
+    def col_breaks: () -> Array[Hash[Symbol, untyped]]
 
     # Returns protected ranges defined for this worksheet.
     #

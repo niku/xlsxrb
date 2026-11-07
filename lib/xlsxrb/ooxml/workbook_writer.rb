@@ -614,7 +614,7 @@ module Xlsxrb
         show_sheet_tabs = @workbook_properties&.[](:show_sheet_tabs)
         tab_ratio = @workbook_properties&.[](:tab_ratio)
 
-        emit_active_tab = !@workbook_properties&.[](:active_tab).nil? || active_tab_idx&.positive?
+        emit_active_tab = !(@workbook_properties&.[](:active_sheet) || @workbook_properties&.[](:active_tab)).nil? || active_tab_idx&.positive?
 
         has_book_views = emit_active_tab || first_sheet_idx || !show_sheet_tabs.nil? || tab_ratio
         if has_book_views
@@ -961,7 +961,7 @@ module Xlsxrb
           next if rules.nil? || rules.empty?
 
           sheet[:conditional_formats] = rules.map do |rule|
-            next rule if rule[:format_id]
+            next rule if rule.respond_to?(:dxf_id) ? rule.dxf_id : (rule.is_a?(Hash) && (rule[:dxf_id] || rule[:format_id]))
 
             normalized = rule.dup
             dxf = normalized.delete(:dxf) || extract_dxf_from_rule!(normalized)
@@ -976,6 +976,7 @@ module Xlsxrb
                          @styles[:dxfs].size - 1
                        end
                      end
+            normalized[:dxf_id] = dxf_id
             normalized[:format_id] = dxf_id
             normalized
           end
@@ -1455,7 +1456,7 @@ module Xlsxrb
       end
 
       def resolve_active_tab_index
-        active_tab = @workbook_properties&.[](:active_tab)
+        active_tab = @workbook_properties&.[](:active_sheet) || @workbook_properties&.[](:active_tab)
         if active_tab.nil?
           first_vis_idx = @sheets.find_index do |s|
             state = s.respond_to?(:state) ? s.state : s[:state]

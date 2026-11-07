@@ -277,7 +277,7 @@ module Xlsxrb
     end
 
     # Builds an A1-style reference from a column interval [col_start, col_end] (0-based)
-    # and a row interval [row_start, row_end] (1-based Excel row number).
+    # and a row interval [row_start, row_end] (0-based row index).
     #
     # @param col_run [Array(Integer, Integer)]
     # @param row_run [Array(Integer, Integer)]
@@ -286,8 +286,8 @@ module Xlsxrb
     def self.area_ref(col_run, row_run)
       c1, c2 = col_run
       r1, r2 = row_run
-      ref1 = "#{Elements::Cell._column_letter(c1)}#{r1}"
-      c1 == c2 && r1 == r2 ? ref1 : "#{ref1}:#{Elements::Cell._column_letter(c2)}#{r2}"
+      ref1 = "#{Elements::Cell._column_letter(c1)}#{r1 + 1}"
+      c1 == c2 && r1 == r2 ? ref1 : "#{ref1}:#{Elements::Cell._column_letter(c2)}#{r2 + 1}"
     end
 
     # Combines column intervals and row intervals into chunked space-delimited sqref strings
@@ -344,10 +344,11 @@ module Xlsxrb
       elsif col || rows
         c_letter = Elements::Cell._column_letter(col ? Elements::Cell._column_index(col) : 0)
         value = if rows.is_a?(Range)
+                  r1 = rows.begin
                   r2 = rows.exclude_end? ? rows.end - 1 : rows.end
-                  "$#{c_letter}$#{rows.begin}:$#{c_letter}$#{r2}"
+                  "$#{c_letter}$#{r1 + 1}:$#{c_letter}$#{r2 + 1}"
                 elsif rows
-                  "$#{c_letter}$#{rows}"
+                  "$#{c_letter}$#{rows + 1}"
                 else
                   "$#{c_letter}:$#{c_letter}"
                 end
@@ -359,6 +360,51 @@ module Xlsxrb
         sheet ? "#{quote_sheet_name(sheet)}!#{abs}" : abs
       else
         str
+      end
+    end
+
+    # Normalizes print titles repeating row specification to an Excel range string (e.g. "1:2").
+    # Accepts 0-based Integer, 0-based Range, or 1-based Excel range string.
+    #
+    # @param rows [Integer, Range, String, nil]
+    # @return [String, nil]
+    #: (untyped rows) -> String?
+    def self.normalize_print_titles_rows(rows)
+      return nil if rows.nil?
+
+      case rows
+      when Integer
+        "#{rows + 1}:#{rows + 1}"
+      when Range
+        r1 = rows.begin
+        r2 = rows.exclude_end? ? rows.end - 1 : rows.end
+        "#{r1 + 1}:#{r2 + 1}"
+      else
+        rows.to_s
+      end
+    end
+
+    # Normalizes print titles repeating column specification to an Excel range string (e.g. "A:B").
+    # Accepts 0-based Integer, Symbol, Range, or Excel column range string.
+    #
+    # @param columns [Integer, Symbol, Range, String, nil]
+    # @return [String, nil]
+    #: (untyped columns) -> String?
+    def self.normalize_print_titles_columns(columns)
+      return nil if columns.nil?
+
+      case columns
+      when Integer, Symbol
+        letter = Elements::Cell._column_letter(columns)
+        "#{letter}:#{letter}"
+      when Range
+        c1 = Elements::Cell._column_letter(columns.begin)
+        c2_val = columns.exclude_end? ? Elements::Cell._column_index(columns.end) - 1 : Elements::Cell._column_index(columns.end)
+        c2 = Elements::Cell._column_letter(c2_val)
+        "#{c1}:#{c2}"
+      else
+        s = columns.to_s
+        s.include?(":") ? s : "#{s}:#{s}"
       end
     end
 
@@ -379,9 +425,10 @@ module Xlsxrb
       end
       sqref = opts.delete(:sqref) || sqref
 
-      if opts[:in].is_a?(Array)
+      list_val = opts.delete(:list) || opts.delete(:in)
+      if list_val.is_a?(Array)
         opts[:type] ||= "list"
-        opts[:formula1] ||= %("#{opts.delete(:in).join(",")}")
+        opts[:formula1] ||= %("#{list_val.join(",")}")
       end
 
       # ST_Xstring conversion for newlines in prompt and error messages
@@ -404,7 +451,7 @@ module Xlsxrb
 
         rows_val = opts.delete(:rows)
         row_val = opts.delete(:row)
-        raw_rows = rows_val || row_val || (1..Xlsxrb::MAX_ROW)
+        raw_rows = rows_val || row_val || (0...Xlsxrb::MAX_ROW)
 
         except_rows = opts.delete(:except_rows)
 
@@ -557,7 +604,7 @@ module Xlsxrb
 
         rows_val = opts.delete(:rows)
         row_val = opts.delete(:row)
-        raw_rows = rows_val || row_val || (1..Xlsxrb::MAX_ROW)
+        raw_rows = rows_val || row_val || (0...Xlsxrb::MAX_ROW)
 
         except_rows = opts.delete(:except_rows)
 

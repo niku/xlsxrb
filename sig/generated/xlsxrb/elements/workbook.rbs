@@ -70,8 +70,14 @@ module Xlsxrb
       # : () -> String?
       def code_name: () -> String?
 
-      # Returns the 0-based active worksheet tab index from workbookView, or nil if not set.
+      # Returns the 0-based active worksheet index from workbookView, or nil if not set.
       #
+      # @return [Integer, nil]
+      # @api public
+      # : () -> Integer?
+      def active_sheet_index: () -> Integer?
+
+      # @deprecated Use {#active_sheet_index} or {#active_sheet} instead.
       # @return [Integer, nil]
       # @api public
       # : () -> Integer?

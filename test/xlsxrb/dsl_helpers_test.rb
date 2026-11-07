@@ -340,16 +340,16 @@ class DslHelpersTest < Test::Unit::TestCase
   # --- area_ref & chunked_sqrefs ---
 
   test "area_ref formats single cell and rectangular range" do
-    assert_equal("A1", Xlsxrb::DslHelpers.area_ref([0, 0], [1, 1]))
-    assert_equal("A1:A5", Xlsxrb::DslHelpers.area_ref([0, 0], [1, 5]))
-    assert_equal("A1:C1", Xlsxrb::DslHelpers.area_ref([0, 2], [1, 1]))
-    assert_equal("B2:C5", Xlsxrb::DslHelpers.area_ref([1, 2], [2, 5]))
+    assert_equal("A1", Xlsxrb::DslHelpers.area_ref([0, 0], [0, 0]))
+    assert_equal("A1:A5", Xlsxrb::DslHelpers.area_ref([0, 0], [0, 4]))
+    assert_equal("A1:C1", Xlsxrb::DslHelpers.area_ref([0, 2], [0, 0]))
+    assert_equal("B2:C5", Xlsxrb::DslHelpers.area_ref([1, 2], [1, 4]))
   end
 
   test "chunked_sqrefs chunks references by limit" do
     assert_equal([], Xlsxrb::DslHelpers.chunked_sqrefs([], []))
     col_runs = [[0, 0], [2, 2]]
-    row_runs = [[2, 3], [5, 6]]
+    row_runs = [[1, 2], [4, 5]]
     # 2 cols * 2 rows = 4 areas: A2:A3, A5:A6, C2:C3, C5:C6
     assert_equal(["A2:A3 A5:A6 C2:C3 C5:C6"], Xlsxrb::DslHelpers.chunked_sqrefs(col_runs, row_runs))
     assert_equal(["A2:A3 A5:A6", "C2:C3 C5:C6"], Xlsxrb::DslHelpers.chunked_sqrefs(col_runs, row_runs, 2))
@@ -390,11 +390,11 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal("'Data'!$A$1:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value("A1:A10", sheet: "Data"))
     assert_equal("'Data'!$A$1", Xlsxrb::DslHelpers.normalize_defined_name_value("A1", sheet: "Data"))
     assert_equal("'O''Connor'!$A$1:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value(range: :"A1:A10", sheet: "O'Connor"))
-    assert_equal("'Sheet1'!$A$2:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value(col: 0, rows: 2..10, sheet: "Sheet1"))
-    assert_equal("'Sheet1'!$C$2:$C$9", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", rows: 2...10, sheet: "Sheet1"))
-    assert_equal("'Sheet1'!$A$2:$A$5", Xlsxrb::DslHelpers.normalize_defined_name_value(rows: Class.new(Range).new(2, 5), sheet: "Sheet1"))
-    assert_equal("'Sheet1'!$C$5", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", rows: 5, sheet: "Sheet1"))
-    assert_equal("'Sheet1'!$A$5", Xlsxrb::DslHelpers.normalize_defined_name_value(rows: 5, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$A$2:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value(col: 0, rows: 1..9, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$C$2:$C$9", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", rows: 1...9, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$A$2:$A$5", Xlsxrb::DslHelpers.normalize_defined_name_value(rows: Class.new(Range).new(1, 4), sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$C$5", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", rows: 4, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$A$5", Xlsxrb::DslHelpers.normalize_defined_name_value(rows: 4, sheet: "Sheet1"))
     assert_equal("'Sheet1'!$C:$C", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", sheet: "Sheet1"))
     assert_equal("'Sheet1'!$A:$B", Xlsxrb::DslHelpers.normalize_defined_name_value("A:B", sheet: "Sheet1"))
     assert_equal("'Sheet1'!$1:$10", Xlsxrb::DslHelpers.normalize_defined_name_value("1:10", sheet: "Sheet1"))
@@ -427,7 +427,7 @@ class DslHelpersTest < Test::Unit::TestCase
   end
 
   test "normalize_data_validation handles coordinates and except_rows and deletes both col and columns keys" do
-    res = Xlsxrb::DslHelpers.normalize_data_validation(columns: 0, col: 0, rows: 2..5, row: 2..5, except_rows: 3, in: %w[Yes No])
+    res = Xlsxrb::DslHelpers.normalize_data_validation(columns: 0, col: 0, rows: 1..4, row: 1..4, except_rows: 2, in: %w[Yes No])
     assert_equal(1, res.size)
     assert_equal("A2 A4:A5", res.first[:sqref])
     assert_nil(res.first[:columns])
@@ -534,7 +534,7 @@ class DslHelpersTest < Test::Unit::TestCase
   test "normalize_conditional_format with coordinate targeting" do
     rules = Xlsxrb::DslHelpers.normalize_conditional_format(
       columns: 0..1,
-      rows: 2..10,
+      rows: 1..9,
       type: :cell_is,
       operator: :less_than,
       formula: 50
@@ -547,8 +547,8 @@ class DslHelpersTest < Test::Unit::TestCase
     # with except_rows
     rules_exc = Xlsxrb::DslHelpers.normalize_conditional_format(
       col: 2,
-      rows: 1..5,
-      except_rows: 3,
+      rows: 0..4,
+      except_rows: 2,
       type: :expression,
       formula: "C1>0"
     )

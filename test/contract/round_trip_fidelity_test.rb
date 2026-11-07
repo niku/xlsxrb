@@ -22,10 +22,10 @@ class RoundTripFidelityTest < Test::Unit::TestCase
       b.core_property(:title, "Comprehensive Round-Trip")
       b.app_property(:company, "Engineering Org")
       b.custom_property("Classification", "Internal")
-      b.protect_workbook(lock_structure: true)
+      b.workbook_protection(lock_structure: true)
       b.defined_name("DataRange", "Sheet1!$A$1:$B$2")
       b.sheet("Sheet1") do |s|
-        s.freeze_pane(row: 1, col: 1)
+        s.freeze_pane(row: 1, column: 1)
         s.sheet_view(:show_grid_lines, false)
         s.sheet_view(:tab_selected, true)
         s.sheet_view(:zoom_scale, 120)
@@ -35,16 +35,16 @@ class RoundTripFidelityTest < Test::Unit::TestCase
         s.page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
         s.header_footer(odd_header: "&CTest Header", odd_footer: "&RPage &P")
         s.print_options(:grid_lines, true)
-        s.protect_sheet(sheet: true)
+        s.sheet_protection(sheet: true)
         s.merge("C1:D2")
         s.auto_filter("A1:D1")
         s.conditional_format("A1:A5", type: :cellIs, operator: :greaterThan, formula1: "10")
-        s.validate_data("B1:B5", type: :whole, operator: :between, formula1: "1", formula2: "100")
-        s.page_break_row(5)
-        s.page_break_col(3)
+        s.data_validation("B1:B5", type: :whole, operator: :between, formula1: "1", formula2: "100")
+        s.row_break(5)
+        s.column_break(3)
         s.hyperlink("A2", "https://example.com", tooltip: "Example")
         s.comment("B2", "Audited cell", author: "QA")
-        s.image(MINIMAL_PNG, ext: "png", from_col: 4, from_row: 4, to_col: 6, to_row: 6)
+        s.image(MINIMAL_PNG, ext: "png", from_column: 4, from_row: 4, to_column: 6, to_row: 6)
         s.table("A1:B5", columns: %w[ColA ColB], name: "RoundTripTable")
 
         s.row %w[ColA ColB Merged1 Merged2]
@@ -89,7 +89,7 @@ class RoundTripFidelityTest < Test::Unit::TestCase
         assert_equal([{ name: "DataRange", hidden: false, value: "Sheet1!$A$1:$B$2" }], roundtrip_wb.defined_names)
 
         s = roundtrip_wb.sheet(0)
-        assert_equal({ row: 1, col: 1, state: :frozen, active_pane: "bottomRight" }, s.freeze_pane)
+        assert_equal({ row: 1, column: 1, col: 1, state: :frozen, active_pane: "bottomRight" }, s.freeze_pane)
         assert_equal({ show_grid_lines: false, tab_selected: true, zoom_scale: 120 }, s.sheet_view)
         assert_equal({ orientation: "landscape", paper_size: 9 }, s.page_setup)
         assert_equal(0.7, s.page_margins[:left])
@@ -102,7 +102,7 @@ class RoundTripFidelityTest < Test::Unit::TestCase
         assert_equal ["C1:D2"], s.merged_cells
         assert_equal "A1:D1", s.auto_filter
         assert_equal [{ id: 5, max: 16_383, man: true }], s.row_breaks
-        assert_equal [{ id: 3, max: 1_048_575, man: true }], s.col_breaks
+        assert_equal [{ id: 3, max: 1_048_575, man: true }], s.column_breaks
         assert_equal({ "A2" => { url: "https://example.com", tooltip: "Example" } }, s.hyperlinks)
         assert_equal [{ ref: "B2", text: "Audited cell", author: "QA" }], s.comments
         assert_equal 1, s.images.size

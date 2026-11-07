@@ -7,7 +7,6 @@ class ApiSymmetryTest < Test::Unit::TestCase
   BUILDER_ONLY_METHODS = %i[
     build
     defined_names
-    name
     styles
   ].freeze
 
@@ -24,6 +23,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
     internal_sheet_setup
     properties
     protect_workbook
+    workbook_protection
     set_default_font
     sheet_names
     show_sheet_tabs

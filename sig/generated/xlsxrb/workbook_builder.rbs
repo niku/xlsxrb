@@ -204,24 +204,26 @@ module Xlsxrb
 
     alias [] sheet
 
-    # Adds a defined name (named range or formula constant) to the workbook.
-    #
-    # @param name [String] Defined name (e.g. "TaxRate").
-    # @param value [String] Formula expression or range reference (e.g. "Sheet1!$B$2").
     # Adds a defined name (named range or formula) to the workbook.
     # Bare cell references and coordinate keywords are automatically formatted with sheet quotes and absolute $ references.
     #
     # @param name [String] Defined name identifier.
     # @param value [Object, nil] Value or formula expression.
-    # @param sheet [String, nil] Optional sheet name for sheet-scoped defined names.
+    # @param sheet [String, nil] Reference sheet name for coordinates/formula.
+    # @param scope [String, Symbol, nil] Optional sheet name or :workbook for scope (defaults to workbook).
     # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
-    # @param col [Integer, String, nil] Column index or letter for coordinate-based reference.
-    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param column [Integer, String, nil] Column index or letter for coordinate-based reference.
+    # @param columns [Integer, String, nil] Alias for column.
+    # @param col [Integer, String, nil] Deprecated alias for column.
+    # @param row [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param rows [Integer, Range, nil] Alias for row.
     # @param range [String, nil] Cell range reference.
+    # @param ref_sheet [String, nil] Deprecated alias for sheet.
+    # @param local [Boolean] Deprecated alias for scope.
     # @return [void]
     # @api public
-    # : (String name, ?untyped value, ?sheet: String?, ?hidden: bool, ?col: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
-    def defined_name: (String name, ?untyped value, ?sheet: String?, ?hidden: bool, ?col: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
+    # : (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
+    def defined_name: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
 
     # Sets the print area for a sheet.
     #
@@ -234,13 +236,14 @@ module Xlsxrb
 
     # Sets repeating print titles (rows and/or columns) for pagination.
     #
-    # @param rows [String, nil] Repeating row range (e.g. "1:2").
-    # @param cols [String, nil] Repeating column range (e.g. "A:B").
+    # @param rows [String, Integer, Range, nil] Repeating row range (e.g. "1:2" or 0-based 0..1).
+    # @param columns [String, Integer, Symbol, Range, nil] Repeating column range (e.g. "A:B" or 0..1).
+    # @param cols [String, Integer, Symbol, Range, nil] Deprecated alias for columns.
     # @param sheet [String, nil] Target sheet name.
     # @return [void]
     # @api public
-    # : (?rows: String?, ?cols: String?, ?sheet: String?) -> void
-    def print_titles: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
+    # : (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
+    def print_titles: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
 
     # Sets repeating title rows for pagination on the target or active sheet.
     #
@@ -273,6 +276,10 @@ module Xlsxrb
     # @param opts [Hash] Protection options (e.g. lock_structure: true, password: "secret").
     # @return [void]
     # @api public
+    # : (**String | Integer | bool | nil opts) -> void
+    def workbook_protection: (**String | Integer | bool | nil opts) -> void
+
+    # @deprecated Use {#workbook_protection} instead.
     # : (**String | Integer | bool | nil opts) -> void
     def protect_workbook: (**String | Integer | bool | nil opts) -> void
 

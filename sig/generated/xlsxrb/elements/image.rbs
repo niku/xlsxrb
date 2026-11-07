@@ -3,7 +3,7 @@
 module Xlsxrb
   module Elements
     # Represents an embedded image anchored to worksheet cells.
-    # Coordinates (from_row, from_col, to_row, to_col) are 0-based.
+    # Coordinates (from_row, from_column, to_row, to_column) are 0-based.
     #
     # @example Access image properties
     #   image = sheet.images.first
@@ -20,16 +20,32 @@ module Xlsxrb
       # @param name [String, nil] Image or shape name.
       # @param content_type [String, nil] MIME content type (e.g. "image/png").
       # @param data [String, nil] Raw binary image data.
-      # @param from_col [Integer] 0-based starting column index.
+      # @param from_column [Integer, nil] 0-based starting column index.
       # @param from_row [Integer] 0-based starting row index.
-      # @param to_col [Integer, nil] 0-based ending column index (nil for 1-cell anchor).
+      # @param to_column [Integer, nil] 0-based ending column index (nil for 1-cell anchor).
       # @param to_row [Integer, nil] 0-based ending row index (nil for 1-cell anchor).
+      # @param from_col [Integer, nil] Deprecated alias for from_column.
+      # @param to_col [Integer, nil] Deprecated alias for to_column.
       # @param cx [Integer, nil] Extent width in EMUs (English Metric Units).
       # @param cy [Integer, nil] Extent height in EMUs (English Metric Units).
       # @param unmapped_data [Hash] Additional metadata from drawing XML.
-      # : (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer?, ?to_row: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
+      # : (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer?, ?from_col: Integer?, ?to_col: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
       # rubocop:disable Naming/MethodParameterName
-      def initialize: (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer?, ?to_row: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
+      def initialize: (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer?, ?from_col: Integer?, ?to_col: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
+
+      # @deprecated Use {#from_column} instead.
+      # : () -> Integer
+      def from_col: () -> Integer
+
+      # @deprecated Use {#to_column} instead.
+      # : () -> Integer?
+      def to_col: () -> Integer?
+
+      # : (Symbol | String member) -> untyped
+      def []: (Symbol | String member) -> untyped
+
+      # : (Array[Symbol]?) -> Hash[Symbol, untyped]
+      def deconstruct_keys: (Array[Symbol]?) -> Hash[Symbol, untyped]
 
       # Returns the top-left cell coordinate reference string (e.g. "A1").
       #

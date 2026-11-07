@@ -307,28 +307,49 @@ module Xlsxrb
 
     # --- Workbook-Level Methods ---
 
-    # Adds a defined name (named range or formula constant) to the workbook.
-    #
-    # @param name [String] Defined name (e.g. "TaxRate").
-    # @param value [String] Formula expression or range reference (e.g. "Sheet1!$B$2").
     # Adds a defined name (named range or formula) to the workbook.
     # Bare cell references and coordinate keywords are automatically formatted with sheet quotes and absolute $ references.
     #
     # @param name [String] Defined name identifier.
     # @param value [Object, nil] Value or formula expression.
-    # @param sheet [String, nil] Optional sheet name for sheet-scoped defined names.
+    # @param sheet [String, nil] Reference sheet name for coordinates/formula.
+    # @param scope [String, Symbol, nil] Optional sheet name or :workbook for scope (defaults to workbook).
     # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
-    # @param col [Integer, String, nil] Column index or letter for coordinate-based reference.
-    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param column [Integer, String, nil] Column index or letter for coordinate-based reference.
+    # @param columns [Integer, String, nil] Alias for column.
+    # @param col [Integer, String, nil] Deprecated alias for column.
+    # @param row [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param rows [Integer, Range, nil] Alias for row.
     # @param range [String, nil] Cell range reference.
+    # @param ref_sheet [String, nil] Deprecated alias for sheet.
+    # @param local [Boolean] Deprecated alias for scope.
     # @return [void]
     # @api public
-    #: (String name, ?untyped value, ?sheet: String?, ?hidden: bool, ?col: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
-    def defined_name(name, value = nil, sheet: nil, hidden: false, col: nil, rows: nil, range: nil, ref_sheet: nil, local: false)
+    #: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
+    def defined_name(name, value = nil, sheet: nil, scope: nil, hidden: false, column: nil, columns: nil, col: nil, row: nil, rows: nil, range: nil, ref_sheet: nil, local: false)
+      if col
+        warn "[DEPRECATION] `col:` is deprecated; use `column:` (or `columns:`) instead.", uplevel: 1
+      end
+      if ref_sheet
+        warn "[DEPRECATION] `ref_sheet:` is deprecated; use `sheet:` for reference sheet and `scope:` for scope instead.", uplevel: 1
+      end
+      if local
+        warn "[DEPRECATION] `local:` is deprecated; use `scope:` instead.", uplevel: 1
+      end
       target_ref_sheet = ref_sheet || sheet
-      normalized_val = DslHelpers.normalize_defined_name_value(value, sheet: target_ref_sheet, col: col, rows: rows, range: range)
+      c_arg = column || columns || col
+      r_arg = row || rows
+      normalized_val = DslHelpers.normalize_defined_name_value(value, sheet: target_ref_sheet, col: c_arg, rows: r_arg, range: range)
       entry = { name: name, value: normalized_val, hidden: hidden }
-      local_sheet = sheet if sheet || local
+      local_sheet = if scope
+                      scope == :workbook ? nil : scope.to_s
+                    elsif ref_sheet
+                      sheet
+                    elsif local
+                      sheet
+                    else
+                      sheet
+                    end
       entry[:local_sheet_name] = local_sheet if local_sheet
       @defined_names << entry
     end
@@ -349,22 +370,28 @@ module Xlsxrb
 
     # Sets repeating print titles (rows and/or columns) for pagination.
     #
-    # @param rows [String, nil] Repeating row range (e.g. "1:2").
-    # @param cols [String, nil] Repeating column range (e.g. "A:B").
+    # @param rows [String, Integer, Range, nil] Repeating row range (e.g. "1:2" or 0-based 0..1).
+    # @param columns [String, Integer, Symbol, Range, nil] Repeating column range (e.g. "A:B" or 0..1).
+    # @param cols [String, Integer, Symbol, Range, nil] Deprecated alias for columns.
     # @param sheet [String, nil] Target sheet name.
     # @return [void]
     # @api public
-    #: (?rows: String?, ?cols: String?, ?sheet: String?) -> void
-    def print_titles(rows: nil, cols: nil, sheet: nil)
+    #: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
+    def print_titles(rows: nil, columns: nil, cols: nil, sheet: nil)
+      if cols && columns.nil?
+        warn "[DEPRECATION] `cols:` is deprecated; use `columns:` instead.", uplevel: 1
+      end
+      c = DslHelpers.normalize_print_titles_columns(columns || cols)
+      r = DslHelpers.normalize_print_titles_rows(rows)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
       existing = @defined_names.find { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
-      if existing && (rows.nil? || cols.nil?)
-        cols = Regexp.last_match(1).delete("$") if cols.nil? && existing[:value] =~ /'[^']*'!\$([A-Za-z]+:\$[A-Za-z]+)/
-        rows = Regexp.last_match(1).delete("$") if rows.nil? && existing[:value] =~ /'[^']*'!\$([0-9]+:\$[0-9]+)/
+      if existing && (r.nil? || c.nil?)
+        c = Regexp.last_match(1).delete("$") if c.nil? && existing[:value] =~ /'[^']*'!\$([A-Za-z]+:\$[A-Za-z]+)/
+        r = Regexp.last_match(1).delete("$") if r.nil? && existing[:value] =~ /'[^']*'!\$([0-9]+:\$[0-9]+)/
       end
       parts = []
-      parts << "'#{sheet_name}'!$#{cols.sub(":", ":$")}" if cols
-      parts << "'#{sheet_name}'!$#{rows.sub(":", ":$")}" if rows
+      parts << "'#{sheet_name}'!$#{c.sub(":", ":$")}" if c
+      parts << "'#{sheet_name}'!$#{r.sub(":", ":$")}" if r
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
       defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
@@ -425,8 +452,15 @@ module Xlsxrb
     # @return [void]
     # @api public
     #: (**String | Integer | bool | nil opts) -> void
-    def protect_workbook(**opts)
+    def workbook_protection(**opts)
       @workbook_protection = opts
+    end
+
+    # @deprecated Use {#workbook_protection} instead.
+    #: (**String | Integer | bool | nil opts) -> void
+    def protect_workbook(...)
+      warn "[DEPRECATION] `protect_workbook` is deprecated; use `workbook_protection` instead.", uplevel: 1
+      workbook_protection(...)
     end
 
     # Sets a Dublin Core document metadata property.
@@ -495,7 +529,7 @@ module Xlsxrb
       # Auto-register print_area and print_titles defined names from sheet builders if not explicitly defined
       @sheet_builders.each do |sb|
         print_area(sb.print_area, sheet: sb.name) if sb.print_area && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sb.name }
-        print_titles(rows: sb.print_titles[:rows], cols: sb.print_titles[:cols], sheet: sb.name) if sb.print_titles && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sb.name }
+        print_titles(rows: sb.print_titles[:rows], columns: sb.print_titles[:columns] || sb.print_titles[:cols], sheet: sb.name) if sb.print_titles && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sb.name }
         sb.defined_names&.each do |dn|
           @defined_names << dn
         end

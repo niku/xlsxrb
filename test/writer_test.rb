@@ -8963,7 +8963,7 @@ class WriterTest < Test::Unit::TestCase
       w.sheet("Data") do |s|
         s.row(["Header 1", "Header 2"])
         s.row(["Val 1", "Val 2"])
-        s.validate_data(columns: 0, rows: 2..10, except_rows: [5, 6],
+        s.validate_data(columns: 0, rows: 1..9, except_rows: [4, 5],
                         in: %w[Active Inactive],
                         allow_blank: true,
                         prompt: "Choose status:\nActive or Inactive",
@@ -8989,7 +8989,7 @@ class WriterTest < Test::Unit::TestCase
       w.sheet("StreamData") do |s|
         s.row(["Header"])
         s.row(["Data"])
-        s.validate_data(col: 0, row: 2, in: %w[Yes No])
+        s.validate_data(col: 0, row: 1, in: %w[Yes No])
       end
     end
 
@@ -9003,8 +9003,8 @@ class WriterTest < Test::Unit::TestCase
       w.sheet("BlockData") do |s|
         s.validate_data do |dv|
           dv.col = 1
-          dv.rows = 2..5
-          dv.except_rows = 3
+          dv.rows = 1..4
+          dv.except_rows = 2
           dv.in = %w[High Medium Low]
           dv.prompt = "Select priority"
         end
@@ -9186,7 +9186,7 @@ class WriterTest < Test::Unit::TestCase
         s.row(["Item 1"])
         s.defined_name("CATEGORIES", range: "A2:A10")
         s.defined_name("FIRST_ITEM", "A2")
-        s.defined_name("COORDINATES", col: 0, rows: 2..5)
+        s.defined_name("COORDINATES", col: 0, rows: 1..4)
         s.defined_name("LOCAL_ITEM", "A2", local: true)
         s.defined_name("TAX_RATE", "0.10")
       end

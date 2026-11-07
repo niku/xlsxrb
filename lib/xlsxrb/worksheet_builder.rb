@@ -383,6 +383,15 @@ module Xlsxrb
       @columns.sort_by!(&:index)
     end
 
+    # Returns column configurations defined for this worksheet.
+    #
+    # @return [Array<Elements::Column>]
+    # @api public
+    #: () -> Array[Elements::Column]
+    def columns
+      @columns.map { |c| c.is_a?(Elements::Column) ? c : Elements::Column.new(**c) }
+    end
+
     # Groups multiple columns together with outline hierarchy.
     #
     # @example Group columns B through D
@@ -561,12 +570,13 @@ module Xlsxrb
 
     # Configures filtering rules on a specific column of an auto-filter.
     #
-    # @param col_id [Integer] 0-based column index relative to filter range.
+    # @param col_id [Integer, String, Symbol] 0-based column index relative to filter range or column letter ("A", :B).
     # @param filter [Hash] Filter criteria (e.g. values, custom filters).
     # @return [Hash]
     # @api public
-    #: (Integer col_id, Hash[untyped, untyped] filter) -> Hash[untyped, untyped]
+    #: (Integer | String | Symbol col_id, Hash[untyped, untyped] filter) -> Hash[untyped, untyped]
     def filter_column(col_id, filter)
+      col_id = Elements::Cell._column_index(col_id) if col_id.is_a?(String) || col_id.is_a?(Symbol)
       @filter_columns[col_id] = filter
     end
 
@@ -585,14 +595,21 @@ module Xlsxrb
     # Adds a data validation rule to a cell, range, or coordinates.
     #
     # @param sqref [String, nil] Target cell or range reference (e.g. "B2:B100").
-    # @param opts [Hash] Validation configuration (e.g. type: :list, formula1: '"Option1,Option2"', or coordinate options `columns:`, `rows:`, `except_rows:`, `in:`).
+    # @param opts [Hash] Validation configuration (e.g. type: :list, formula1: '"Option1,Option2"', or coordinate options `columns:`, `rows:`, `except_rows:`, `list:`, `in:`).
     # @yield [data_validation_builder] Optional configuration block.
     # @return [void]
     # @api public
     #: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
-    def validate_data(sqref = nil, **opts, &)
+    def data_validation(sqref = nil, **opts, &)
       normalized_list = DslHelpers.normalize_data_validation(sqref, **opts, &)
       @data_validations.concat(normalized_list)
+    end
+
+    # @deprecated Use {#data_validation} instead.
+    #: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
+    def validate_data(...)
+      warn "[DEPRECATION] `validate_data` is deprecated; use `data_validation` instead.", uplevel: 1
+      data_validation(...)
     end
 
     # Adds a conditional formatting rule to a cell range.
@@ -651,17 +668,31 @@ module Xlsxrb
     # @param name [String, nil] Pivot table name.
     # @param field_names [Array<String>, nil] Custom field display names.
     # @param items [Array, nil] Item configuration.
+    # @param column_fields [Array<String, Integer>] Field names or indices for columns.
+    # @param col_fields [Array<String, Integer>] Deprecated alias for column_fields.
+    # @param ref [String] Target cell for pivot table top-left corner (e.g. "E1").
+    # @param dest_ref [String] Deprecated alias for ref.
     # @return [void]
     # @api public
-    #: (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?col_fields: Array[String | Integer], ?dest_ref: String, ?name: String?, ?field_names: Array[String]?, ?items: Array[untyped]?, **untyped opts) -> void
-    def pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil)
+    #: (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?column_fields: Array[String | Integer]?, ?col_fields: Array[String | Integer]?, ?ref: String?, ?dest_ref: String?, ?name: String?, ?field_names: Array[String]?, ?items: Array[untyped]?, **untyped opts) -> void
+    def pivot_table(source_ref, row_fields:, data_fields:, column_fields: nil, col_fields: nil, ref: nil, dest_ref: nil, name: nil, field_names: nil, items: nil, **opts)
+      if col_fields && column_fields.nil?
+        warn "[DEPRECATION] `col_fields:` is deprecated; use `column_fields:` instead.", uplevel: 1
+      end
+      if dest_ref && ref.nil?
+        warn "[DEPRECATION] `dest_ref:` is deprecated; use `ref:` instead.", uplevel: 1
+      end
+      c_fields = column_fields || col_fields || []
+      target_ref = ref || dest_ref || "E1"
       @pivot_tables ||= []
-      @pivot_tables << {
+      entry = {
         source_ref: source_ref, row_fields: row_fields,
-        data_fields: data_fields, col_fields: col_fields,
-        dest_ref: dest_ref, name: name,
+        data_fields: data_fields, column_fields: c_fields,
+        col_fields: c_fields, ref: target_ref,
+        dest_ref: target_ref, name: name,
         field_names: field_names, items: items
-      }
+      }.merge(opts)
+      @pivot_tables << entry
     end
 
     # Adds a cell comment / note.
@@ -784,13 +815,17 @@ module Xlsxrb
     # Freezes window panes at the specified row and column.
     #
     # @param row [Integer] Number of rows to freeze from top (0-based split position).
-    # @param col [Integer, String] Number of columns to freeze from left (0-based or letter).
+    # @param column [Integer, String, nil] Number of columns to freeze from left (0-based or letter).
+    # @param col [Integer, String, nil] Deprecated alias for column.
     # @return [void]
     # @api public
-    #: (?row: Integer, ?col: (Integer | String)) -> void
-    def freeze_pane(row: 0, col: 0)
-      col = Elements::Cell._column_index(col)
-      @freeze_pane = { row: row, col: col }
+    #: (?row: Integer, ?column: (Integer | String)?, ?col: (Integer | String)?) -> void
+    def freeze_pane(row: 0, column: nil, col: nil)
+      if col && column.nil?
+        warn "[DEPRECATION] `col:` is deprecated; use `column:` instead.", uplevel: 1
+      end
+      c = Elements::Cell._column_index(column || col || 0)
+      @freeze_pane = { row: row, col: c, column: c }
     end
 
     # Splits window panes without freezing.
@@ -807,15 +842,28 @@ module Xlsxrb
 
     # Sets the active cell and selection area for the worksheet.
     #
-    # @param active_cell [String] Active cell reference (e.g. "A1").
+    # @param active_cell [String] Active cell reference (e.g. "A1") or range (e.g. "A1:D10").
     # @param sqref [String, nil] Selected range reference (e.g. "A1:D10").
     # @param pane [String, Symbol, nil] Target pane (:topLeft, :topRight, :bottomLeft, :bottomRight).
     # @return [void]
     # @api public
     #: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-    def select_cell(active_cell, sqref: nil, pane: nil)
-      @selection = { active_cell: active_cell, sqref: sqref || active_cell }
+    def selection(active_cell, sqref: nil, pane: nil)
+      if sqref.nil? && active_cell.is_a?(String) && active_cell.include?(":")
+        sqref = active_cell
+        active_cell = sqref.split(":").first
+      else
+        sqref ||= active_cell
+      end
+      @selection = { active_cell: active_cell, sqref: sqref }
       @selection[:pane] = pane if pane
+    end
+
+    # @deprecated Use {#selection} instead.
+    #: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
+    def select_cell(...)
+      warn "[DEPRECATION] `select_cell` is deprecated; use `selection` instead.", uplevel: 1
+      selection(...)
     end
 
     # Sets page margins in inches for printing.
@@ -893,15 +941,21 @@ module Xlsxrb
       @header_footer.merge!(opts)
     end
 
-    # Sets a print option (e.g. grid_lines: true, headings: true).
+    # Configures print options for the worksheet.
     #
-    # @param name [Symbol] Option name.
-    # @param value [Object] Option value.
+    # @param name [Symbol, String, Hash, nil] Option name or hash of options.
+    # @param value [Object, nil] Option value.
+    # @param opts [Hash] Additional print options.
     # @return [void]
     # @api public
-    #: (Symbol name, untyped value) -> void
-    def print_options(name, value)
-      @print_options[name] = value
+    #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> void
+    def print_options(name = nil, value = nil, **opts)
+      if name.is_a?(Hash)
+        opts = name.merge(opts)
+        name = nil
+      end
+      @print_options[name.to_sym] = value if name && !value.nil?
+      opts.each { |k, v| @print_options[k.to_sym] = v }
     end
 
     # Adds a defined name (named range or formula) scoped to this sheet or workbook.
@@ -910,18 +964,37 @@ module Xlsxrb
     # @param name [String] Defined name identifier.
     # @param value [Object, nil] Cell reference, formula, or constant.
     # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
-    # @param col [Integer, String, nil] Column index or letter for coordinate-based reference.
-    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param column [Integer, String, nil] Column index or letter for coordinate-based reference.
+    # @param columns [Integer, String, nil] Alias for column.
+    # @param col [Integer, String, nil] Deprecated alias for column.
+    # @param row [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param rows [Integer, Range, nil] Alias for row.
     # @param range [String, nil] Cell range reference (e.g. "A1:A10").
-    # @param sheet [String, nil] Target sheet name (defaults to current sheet).
+    # @param sheet [String, nil] Reference sheet name (defaults to current sheet).
+    # @param scope [String, Symbol, nil] Scope identifier (:workbook or sheet name).
+    # @param local [Boolean] Deprecated alias for scope: :current.
     # @return [void]
     # @api public
-    #: (String name, ?untyped value, ?hidden: bool, ?col: untyped, ?rows: untyped, ?range: untyped, ?sheet: String?, ?local: bool) -> void
-    def defined_name(name, value = nil, hidden: false, col: nil, rows: nil, range: nil, sheet: nil, local: false)
+    #: (String name, ?untyped value, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?sheet: String?, ?scope: (String | Symbol)?, ?local: bool) -> void
+    def defined_name(name, value = nil, hidden: false, column: nil, columns: nil, col: nil, row: nil, rows: nil, range: nil, sheet: nil, scope: nil, local: false)
+      if col
+        warn "[DEPRECATION] `col:` is deprecated; use `column:` (or `columns:`) instead.", uplevel: 1
+      end
+      if local
+        warn "[DEPRECATION] `local:` is deprecated; use `scope:` instead.", uplevel: 1
+      end
+      c_arg = column || columns || col
+      r_arg = row || rows
       ref_sheet = sheet || @name
-      normalized_val = DslHelpers.normalize_defined_name_value(value, sheet: ref_sheet, col: col, rows: rows, range: range)
+      normalized_val = DslHelpers.normalize_defined_name_value(value, sheet: ref_sheet, col: c_arg, rows: r_arg, range: range)
       entry = { name: name, value: normalized_val, hidden: hidden }
-      local_sheet = local ? (@name || sheet) : sheet
+      local_sheet = if scope
+                      scope == :workbook ? nil : scope.to_s
+                    elsif local
+                      @name || sheet
+                    else
+                      sheet
+                    end
       entry[:local_sheet_name] = local_sheet if local_sheet
       @defined_names << entry
     end
@@ -950,17 +1023,24 @@ module Xlsxrb
     #   sheet.print_titles(rows: "1:2")
     #
     # @example Get repeating print titles
-    #   sheet.print_titles #=> { rows: "1:2", cols: nil }
+    #   sheet.print_titles #=> { rows: "1:2", columns: nil, cols: nil }
     #
-    # @param rows [String, nil] Repeating row range (e.g. "1:2").
-    # @param cols [String, nil] Repeating column range (e.g. "A:B").
+    # @param rows [String, Integer, Range, nil] Repeating row range (e.g. "1:2" or 0-based 0..1).
+    # @param columns [String, Integer, Symbol, Range, nil] Repeating column range (e.g. "A:B" or 0..1).
+    # @param cols [String, Integer, Symbol, Range, nil] Deprecated alias for columns.
     # @return [Hash, nil]
     # @api public
-    #: (?rows: String?, ?cols: String?) -> Hash[Symbol, untyped]?
-    def print_titles(rows: nil, cols: nil)
-      return @print_titles if rows.nil? && cols.nil?
+    #: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?) -> Hash[Symbol, untyped]?
+    def print_titles(rows: nil, columns: nil, cols: nil)
+      return @print_titles if rows.nil? && columns.nil? && cols.nil?
 
-      @print_titles = { rows: rows, cols: cols }
+      if cols && columns.nil?
+        warn "[DEPRECATION] `cols:` is deprecated; use `columns:` instead.", uplevel: 1
+      end
+      c = columns || cols
+      norm_rows = DslHelpers.normalize_print_titles_rows(rows)
+      norm_cols = DslHelpers.normalize_print_titles_columns(c)
+      @print_titles = { rows: norm_rows, columns: norm_cols, cols: norm_cols }
     end
 
     # Sets repeating title rows to appear at the top of each printed page.
@@ -1024,24 +1104,41 @@ module Xlsxrb
     # @return [void]
     # @api public
     #: (**untyped opts) -> void
-    def protect_sheet(**opts)
+    def sheet_protection(**opts)
       @sheet_protection = DslHelpers.normalize_protection_options(opts)
+    end
+
+    # @deprecated Use {#sheet_protection} instead.
+    #: (**untyped opts) -> void
+    def protect_sheet(...)
+      warn "[DEPRECATION] `protect_sheet` is deprecated; use `sheet_protection` instead.", uplevel: 1
+      sheet_protection(...)
     end
 
     # Inserts an embedded image from raw binary data.
     #
     # @param file_data [String] Binary image data.
     # @param ext [String] File extension ("png", "jpeg", etc.).
-    # @param from_col [Integer] Top-left starting column (0-based).
+    # @param from_column [Integer, nil] Top-left starting column (0-based).
+    # @param from_col [Integer, nil] Deprecated alias for from_column.
     # @param from_row [Integer] Top-left starting row (0-based).
-    # @param to_col [Integer] Bottom-right ending column (0-based).
+    # @param to_column [Integer, nil] Bottom-right ending column (0-based).
+    # @param to_col [Integer, nil] Deprecated alias for to_column.
     # @param to_row [Integer] Bottom-right ending row (0-based).
     # @param opts [Hash] Additional image anchoring options.
     # @return [void]
     # @api public
-    #: (String file_data, ?ext: ::String, ?from_col: ::Integer, ?from_row: ::Integer, ?to_col: ::Integer, ?to_row: ::Integer, **untyped opts) -> void
-    def image(file_data, ext: "png", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts)
-      img = { file_data: file_data, ext: ext, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
+    #: (String file_data, ?ext: ::String, ?from_column: ::Integer?, ?from_col: ::Integer?, ?from_row: ::Integer, ?to_column: ::Integer?, ?to_col: ::Integer?, ?to_row: ::Integer, **untyped opts) -> void
+    def image(file_data, ext: "png", from_column: nil, from_col: nil, from_row: 0, to_column: nil, to_col: nil, to_row: 10, **opts)
+      if from_col && from_column.nil?
+        warn "[DEPRECATION] `from_col:` is deprecated; use `from_column:` instead.", uplevel: 1
+      end
+      if to_col && to_column.nil?
+        warn "[DEPRECATION] `to_col:` is deprecated; use `to_column:` instead.", uplevel: 1
+      end
+      fc = from_column || from_col || 0
+      tc = to_column || to_col || 5
+      img = { file_data: file_data, ext: ext, from_column: fc, from_col: fc, from_row: from_row, to_column: tc, to_col: tc, to_row: to_row }
       img.merge!(opts)
       @images << img
     end
@@ -1119,19 +1216,29 @@ module Xlsxrb
     #
     # @param preset [String] Shape preset name (e.g. "rect", "roundRect").
     # @param text [String, nil] Shape label text.
-    # @param from_col [Integer] Top-left column.
+    # @param from_column [Integer, nil] Top-left column.
+    # @param from_col [Integer, nil] Deprecated alias for from_column.
     # @param from_row [Integer] Top-left row.
-    # @param to_col [Integer] Bottom-right column.
+    # @param to_column [Integer, nil] Bottom-right column.
+    # @param to_col [Integer, nil] Deprecated alias for to_column.
     # @param to_row [Integer] Bottom-right row.
     # @param opts [Hash] Additional shape formatting options.
     # @return [void]
     # @api public
     #: (**untyped opts) -> void
-    def shape(preset: "rect", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts)
-      shape = { preset: preset, text: text, from_col: from_col, from_row: from_row, to_col: to_col, to_row: to_row }
-      shape[:name] = opts.delete(:name) || "Shape #{@shapes.size + 1}"
-      shape.merge!(opts)
-      @shapes << shape
+    def shape(preset: "rect", text: nil, from_column: nil, from_col: nil, from_row: 0, to_column: nil, to_col: nil, to_row: 5, **opts)
+      if from_col && from_column.nil?
+        warn "[DEPRECATION] `from_col:` is deprecated; use `from_column:` instead.", uplevel: 1
+      end
+      if to_col && to_column.nil?
+        warn "[DEPRECATION] `to_col:` is deprecated; use `to_column:` instead.", uplevel: 1
+      end
+      fc = from_column || from_col || 0
+      tc = to_column || to_col || 5
+      shape_data = { preset: preset, text: text, from_column: fc, from_col: fc, from_row: from_row, to_column: tc, to_col: tc, to_row: to_row }
+      shape_data[:name] = opts.delete(:name) || "Shape #{@shapes.size + 1}"
+      shape_data.merge!(opts)
+      @shapes << shape_data
     end
 
     # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
@@ -1201,44 +1308,68 @@ module Xlsxrb
       @sheet_properties[:tab_color] = spec
     end
 
-    # Sets a sheet-level property (e.g. tab_color: "FF0000").
+    # Sets a single sheet property.
     #
-    # @param name [Symbol] Property name.
+    # @param name [Symbol, String] Property name.
     # @param value [Object] Property value.
     # @return [void]
     # @api public
-    #: (Symbol name, untyped value) -> void
-    def sheet_properties(name, value)
-      sym = name.to_sym
-      if sym == :state
-        val = value.to_sym
-        raise ArgumentError, "Invalid sheet state ':#{val}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(val)
-
-        @state = val
-        return
-      elsif sym == :hidden
-        @state = value ? :hidden : :visible
-        return
-      end
-
-      @sheet_properties[name] = value
+    #: (Symbol | String name, untyped value) -> void
+    def sheet_property(name, value)
+      sheet_properties(name, value)
     end
 
-    # Sets a sheet view display property (e.g. show_grid_lines: true, zoom_scale: 120).
+    # Sets worksheet properties. Accepts name/value pair or keyword arguments.
     #
-    # @param name [Symbol] View property name.
-    # @param value [Object] View property value.
+    # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
+    # @param value [Object, nil] Property value when name is provided.
+    # @param opts [Hash] Additional sheet properties.
     # @return [void]
     # @api public
-    #: (Symbol name, untyped value) -> void
-    def sheet_view(name, value)
-      @sheet_view[name] = value
+    #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> void
+    def sheet_properties(name = nil, value = nil, **opts)
+      if name.is_a?(Hash)
+        opts = name.merge(opts)
+        name = nil
+      end
+      if name && !value.nil?
+        sym = name.to_sym
+        if sym == :state
+          val = value.to_sym
+          raise ArgumentError, "Invalid sheet state ':#{val}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(val)
+
+          @state = val
+          return
+        elsif sym == :hidden
+          @state = value ? :hidden : :visible
+          return
+        end
+        @sheet_properties[name.to_sym] = value
+      end
+      opts.each { |k, v| sheet_properties(k, v) }
     end
 
-    # Configures sheet format properties (e.g. default_row_height, default_col_width).
+    # Sets sheet view display properties (e.g. show_grid_lines: true, zoom_scale: 120).
+    #
+    # @param name [Symbol, String, Hash, nil] View property name or hash of properties.
+    # @param value [Object, nil] View property value when name is provided.
+    # @param opts [Hash] Additional view properties.
+    # @return [void]
+    # @api public
+    #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> void
+    def sheet_view(name = nil, value = nil, **opts)
+      if name.is_a?(Hash)
+        opts = name.merge(opts)
+        name = nil
+      end
+      @sheet_view[name.to_sym] = value if name && !value.nil?
+      opts.each { |k, v| @sheet_view[k.to_sym] = v }
+    end
+
+    # Configures sheet format properties (e.g. default_row_height, default_column_width).
     #
     # @example Using keyword arguments
-    #   sheet.sheet_format(default_row_height: 24, default_col_width: 15)
+    #   sheet.sheet_format(default_row_height: 24, default_column_width: 15)
     #
     # @example Using property name and value
     #   sheet.sheet_format(:default_row_height, 24)
@@ -1255,29 +1386,55 @@ module Xlsxrb
       elsif name && value
         @sheet_format[name.to_sym] = value
       end
+      if opts.key?(:default_col_width) && !opts.key?(:default_column_width)
+        warn "[DEPRECATION] `default_col_width:` is deprecated; use `default_column_width:` instead.", uplevel: 1
+        opts[:default_column_width] = opts[:default_col_width]
+      end
+      if opts.key?(:base_col_width) && !opts.key?(:base_column_width)
+        warn "[DEPRECATION] `base_col_width:` is deprecated; use `base_column_width:` instead.", uplevel: 1
+        opts[:base_column_width] = opts[:base_col_width]
+      end
+      if opts.key?(:outline_level_col) && !opts.key?(:outline_level_column)
+        warn "[DEPRECATION] `outline_level_col:` is deprecated; use `outline_level_column:` instead.", uplevel: 1
+        opts[:outline_level_column] = opts[:outline_level_col]
+      end
       @sheet_format.merge!(opts) unless opts.empty?
       @sheet_format
     end
 
-    # Inserts a horizontal page break before the specified row.
+    # Inserts a horizontal page break after the specified 0-based row.
     #
-    # @param row_num [Integer] 1-based row number.
+    # @param row_index [Integer] 0-based row index.
     # @return [void]
     # @api public
-    #: (Integer row_num) -> void
-    def page_break_row(row_num)
-      @row_breaks << row_num
+    #: (Integer row_index) -> void
+    def row_break(row_index)
+      @row_breaks << { id: row_index, max: 16_383, man: 1 }
     end
 
-    # Inserts a vertical page break before the specified column.
+    # @deprecated Use {#row_break} instead.
+    #: (Integer row_num) -> void
+    def page_break_row(row_num)
+      warn "[DEPRECATION] `page_break_row` is deprecated; use `row_break` instead.", uplevel: 1
+      row_break(row_num)
+    end
+
+    # Inserts a vertical page break after the specified column.
     #
-    # @param col_index [Integer, String] Column index (0-based) or letter ("B").
+    # @param col [Integer, String, Symbol] Column index (0-based) or letter ("B", :B).
     # @return [void]
     # @api public
-    #: (Integer | String col_index) -> void
+    #: (Integer | String | Symbol col) -> void
+    def column_break(col)
+      col_index = Elements::Cell._column_index(col)
+      @col_breaks << { id: col_index, max: 1_048_575, man: 1 }
+    end
+
+    # @deprecated Use {#column_break} instead.
+    #: (Integer | String | Symbol col_index) -> void
     def page_break_col(col_index)
-      col_index = Elements::Cell._column_index(col_index)
-      @col_breaks << col_index
+      warn "[DEPRECATION] `page_break_col` is deprecated; use `column_break` instead.", uplevel: 1
+      column_break(col_index)
     end
 
     # Adds a protected range to the worksheet.
@@ -2042,19 +2199,42 @@ module Xlsxrb
       @options[:except_rows] = val
     end
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#in=} instead.
+    # Sets or gets the list validation choices.
+    #
+    # @example
+    #   b.list = ["Option1", "Option2"]
+    #
+    # @param val [Array<Object>, nil]
+    # @return [Array<Object>, nil]
+    # @api public
     #: (?Array[untyped]? val) -> untyped
-    def in(val = nil)
+    def list(val = nil)
       if val
+        @options[:list] = val
         @options[:in] = val
       else
-        @options[:in]
+        @options[:list] || @options[:in]
       end
     end
 
     #: (Array[untyped] val) -> untyped
-    def in=(val)
+    def list=(val)
+      @options[:list] = val
       @options[:in] = val
+    end
+
+    # @deprecated Use {#list} instead.
+    #: (?Array[untyped]? val) -> untyped
+    def in(val = nil)
+      warn "[DEPRECATION] `DataValidationBuilder#in` is deprecated; use `list` instead.", uplevel: 1
+      list(val)
+    end
+
+    # @deprecated Use {#list=} instead.
+    #: (Array[untyped] val) -> untyped
+    def in=(val)
+      warn "[DEPRECATION] `DataValidationBuilder#in=` is deprecated; use `list=` instead.", uplevel: 1
+      self.list = val
     end
 
     # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#type=} instead.

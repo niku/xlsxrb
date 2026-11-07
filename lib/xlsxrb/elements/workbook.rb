@@ -96,13 +96,23 @@ module Xlsxrb
         workbook_properties[:code_name]
       end
 
-      # Returns the 0-based active worksheet tab index from workbookView, or nil if not set.
+      # Returns the 0-based active worksheet index from workbookView, or nil if not set.
       #
       # @return [Integer, nil]
       # @api public
       #: () -> Integer?
+      def active_sheet_index
+        props = workbook_properties
+        props[:active_sheet] || props[:active_tab]
+      end
+
+      # @deprecated Use {#active_sheet_index} or {#active_sheet} instead.
+      # @return [Integer, nil]
+      # @api public
+      #: () -> Integer?
       def active_tab
-        workbook_properties[:active_tab]
+        warn "[Xlsxrb DEPRECATION] Workbook#active_tab is deprecated and will be removed in v0.2.0. Use #active_sheet_index or #active_sheet instead.", uplevel: 1
+        active_sheet_index
       end
 
       # Returns the active worksheet in the workbook, or the first worksheet if not set.
@@ -111,7 +121,7 @@ module Xlsxrb
       # @api public
       #: () -> (Elements::Worksheet | StreamSheet)?
       def active_sheet
-        idx = active_tab
+        idx = active_sheet_index
         idx ? sheets[idx] : sheets.first
       end
 

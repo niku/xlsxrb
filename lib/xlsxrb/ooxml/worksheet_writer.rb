@@ -1101,7 +1101,8 @@ module Xlsxrb
               op = rule[:operator]
               r_attrs[:operator] = DslHelpers::CF_OPERATORS[op.to_sym] || op.to_s
             end
-            r_attrs[:dxfId] = rule[:format_id].to_s if rule[:format_id]
+            did = rule[:dxf_id] || rule[:format_id]
+            r_attrs[:dxfId] = did.to_s if did
             r_attrs[:stopIfTrue] = "1" if rule[:stop_if_true]
             r_attrs[:aboveAverage] = "0" if rule[:above_average] == false
             r_attrs[:equalAverage] = "1" if rule[:equal_average]

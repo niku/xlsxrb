@@ -5,7 +5,7 @@
 module Xlsxrb
   module Elements
     # Represents an embedded image anchored to worksheet cells.
-    # Coordinates (from_row, from_col, to_row, to_col) are 0-based.
+    # Coordinates (from_row, from_column, to_row, to_column) are 0-based.
     #
     # @example Access image properties
     #   image = sheet.images.first
@@ -15,7 +15,7 @@ module Xlsxrb
     #   image.data           #=> "\x89PNG..."
     #
     # @api public
-    class Image < Data.define(:name, :filename, :content_type, :data, :from_col, :from_row, :to_col, :to_row, :cx, :cy, :unmapped_data)
+    class Image < Data.define(:name, :filename, :content_type, :data, :from_column, :from_row, :to_column, :to_row, :cx, :cy, :unmapped_data)
       MIME_TYPES = {
         "png" => "image/png",
         "jpg" => "image/jpeg",
@@ -34,18 +34,29 @@ module Xlsxrb
       # @param name [String, nil] Image or shape name.
       # @param content_type [String, nil] MIME content type (e.g. "image/png").
       # @param data [String, nil] Raw binary image data.
-      # @param from_col [Integer] 0-based starting column index.
+      # @param from_column [Integer, nil] 0-based starting column index.
       # @param from_row [Integer] 0-based starting row index.
-      # @param to_col [Integer, nil] 0-based ending column index (nil for 1-cell anchor).
+      # @param to_column [Integer, nil] 0-based ending column index (nil for 1-cell anchor).
       # @param to_row [Integer, nil] 0-based ending row index (nil for 1-cell anchor).
+      # @param from_col [Integer, nil] Deprecated alias for from_column.
+      # @param to_col [Integer, nil] Deprecated alias for to_column.
       # @param cx [Integer, nil] Extent width in EMUs (English Metric Units).
       # @param cy [Integer, nil] Extent height in EMUs (English Metric Units).
       # @param unmapped_data [Hash] Additional metadata from drawing XML.
-      #: (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_col: Integer, ?from_row: Integer, ?to_col: Integer?, ?to_row: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
+      #: (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer?, ?from_col: Integer?, ?to_col: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
       # rubocop:disable Naming/MethodParameterName
-      def initialize(filename:, name: nil, content_type: nil, data: nil, from_col: 0, from_row: 0,
-                     to_col: nil, to_row: nil, cx: nil, cy: nil, unmapped_data: EMPTY_HASH)
+      def initialize(filename:, name: nil, content_type: nil, data: nil, from_column: nil, from_row: 0,
+                     to_column: nil, to_row: nil, from_col: nil, to_col: nil, cx: nil, cy: nil, unmapped_data: EMPTY_HASH)
         # rubocop:enable Naming/MethodParameterName
+        if from_col
+          warn "[DEPRECATION] `from_col:` is deprecated; use `from_column:` instead.", uplevel: 1 unless from_column
+          from_column ||= from_col
+        end
+        if to_col
+          warn "[DEPRECATION] `to_col:` is deprecated; use `to_column:` instead.", uplevel: 1 unless to_column
+          to_column ||= to_col
+        end
+        from_column ||= 0
         ext = File.extname(filename).delete_prefix(".").downcase
         mime = content_type || MIME_TYPES[ext] || "application/octet-stream"
         super(
@@ -53,14 +64,50 @@ module Xlsxrb
           filename: filename,
           content_type: mime,
           data: data&.b,
-          from_col: from_col,
+          from_column: from_column,
           from_row: from_row,
-          to_col: to_col,
+          to_column: to_column,
           to_row: to_row,
           cx: cx,
           cy: cy,
           unmapped_data: unmapped_data
         )
+      end
+
+      # @deprecated Use {#from_column} instead.
+      #: () -> Integer
+      def from_col
+        warn "[DEPRECATION] `from_col` is deprecated; use `from_column` instead.", uplevel: 1
+        from_column
+      end
+
+      # @deprecated Use {#to_column} instead.
+      #: () -> Integer?
+      def to_col
+        warn "[DEPRECATION] `to_col` is deprecated; use `to_column` instead.", uplevel: 1
+        to_column
+      end
+
+      #: (Symbol | String member) -> untyped
+      def [](member)
+        case member.to_sym
+        when :from_col
+          warn "[DEPRECATION] `:from_col` is deprecated; use `:from_column` instead.", uplevel: 1
+          from_column
+        when :to_col
+          warn "[DEPRECATION] `:to_col` is deprecated; use `:to_column` instead.", uplevel: 1
+          to_column
+        else
+          super
+        end
+      end
+
+      #: (Array[Symbol]?) -> Hash[Symbol, untyped]
+      def deconstruct_keys(keys)
+        h = super
+        h[:from_col] = from_column
+        h[:to_col] = to_column
+        h
       end
 
       # Returns the top-left cell coordinate reference string (e.g. "A1").
@@ -69,7 +116,7 @@ module Xlsxrb
       # @api public
       #: () -> String
       def cell_ref
-        "#{Cell._column_letter(from_col)}#{from_row + 1}"
+        "#{Cell._column_letter(from_column)}#{from_row + 1}"
       end
       alias cell cell_ref
       alias ref cell_ref
@@ -80,9 +127,9 @@ module Xlsxrb
       # @api public
       #: () -> String?
       def to_cell_ref
-        return nil if to_col.nil? || to_row.nil?
+        return nil if to_column.nil? || to_row.nil?
 
-        "#{Cell._column_letter(to_col)}#{to_row + 1}"
+        "#{Cell._column_letter(to_column)}#{to_row + 1}"
       end
 
       # Returns whether this image uses a one-cell anchor.
@@ -91,7 +138,7 @@ module Xlsxrb
       # @api public
       #: () -> bool
       def one_cell_anchor?
-        to_col.nil? || to_row.nil?
+        to_column.nil? || to_row.nil?
       end
 
       # Returns whether this image uses a two-cell anchor.

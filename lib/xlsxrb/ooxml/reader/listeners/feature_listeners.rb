@@ -105,8 +105,11 @@ module Xlsxrb
             @inside_custom_filters = false
           when "filterColumn"
             if @current_col_id && @current_filter
+              @current_filter[:hidden] = true if @fc_hidden_button
               @current_filter[:hidden_button] = true if @fc_hidden_button
               @current_filter[:show_button] = false if @fc_show_button == false
+              @current_filter[:column_id] = @current_col_id
+              @current_filter[:col_id] = @current_col_id
               @filter_columns[@current_col_id] = @current_filter
             end
             @current_col_id = nil
@@ -782,13 +785,22 @@ module Xlsxrb
           drh = attributes["defaultRowHeight"]
           @properties[:default_row_height] = drh.to_f if drh
           dcw = attributes["defaultColWidth"]
-          @properties[:default_col_width] = dcw.to_f if dcw
+          if dcw
+            @properties[:default_column_width] = dcw.to_f
+            @properties[:default_col_width] = dcw.to_f
+          end
           bcw = attributes["baseColWidth"]
-          @properties[:base_col_width] = bcw.to_i if bcw
+          if bcw
+            @properties[:base_column_width] = bcw.to_i
+            @properties[:base_col_width] = bcw.to_i
+          end
           olr = attributes["outlineLevelRow"]
           @properties[:outline_level_row] = olr.to_i if olr
           olc = attributes["outlineLevelCol"]
-          @properties[:outline_level_col] = olc.to_i if olc
+          if olc
+            @properties[:outline_level_column] = olc.to_i
+            @properties[:outline_level_col] = olc.to_i
+          end
           ch = attributes["customHeight"]
           @properties[:custom_height] = true if %w[1 true].include?(ch)
           zh = attributes["zeroHeight"]
@@ -875,18 +887,22 @@ module Xlsxrb
             frozen = attributes["state"] == "frozen"
             tlc = attributes["topLeftCell"]
             ap = attributes["activePane"]
+            col_val = xs ? xs.to_i : 0
+            row_val = ys ? ys.to_i : 0
             p = if frozen
                   {
-                    row: ys ? ys.to_i : 0,
-                    col: xs ? xs.to_i : 0,
+                    row: row_val,
+                    column: col_val,
+                    col: col_val,
                     state: :frozen
                   }
                 else
                   {
-                    row: ys ? ys.to_i : 0,
-                    col: xs ? xs.to_i : 0,
-                    x_split: xs ? xs.to_i : 0,
-                    y_split: ys ? ys.to_i : 0,
+                    row: row_val,
+                    column: col_val,
+                    col: col_val,
+                    x_split: col_val,
+                    y_split: row_val,
                     top_left_cell: tlc,
                     state: :split
                   }
@@ -1154,7 +1170,7 @@ module Xlsxrb
       class PrintPageListener
         include REXML::SAX2Listener
 
-        attr_reader :print_options, :page_margins, :page_setup, :header_footer, :row_breaks, :col_breaks
+        attr_reader :print_options, :page_margins, :page_setup, :header_footer, :row_breaks, :col_breaks, :column_breaks
 
         def initialize
           @print_options = {}
@@ -1163,6 +1179,7 @@ module Xlsxrb
           @header_footer = {}
           @row_breaks = []
           @col_breaks = []
+          @column_breaks = @col_breaks
           @inside_header_footer = false
           @inside_row_breaks = false
           @inside_col_breaks = false
@@ -1491,7 +1508,11 @@ module Xlsxrb
             @pivot_table[:data_caption] = attributes["dataCaption"] if attributes["dataCaption"]
             @pivot_table[:data_on_rows] = attributes["dataOnRows"] == "1" if attributes["dataOnRows"]
             @pivot_table[:row_grand_totals] = attributes["rowGrandTotals"] != "0" if attributes["rowGrandTotals"]
-            @pivot_table[:col_grand_totals] = attributes["colGrandTotals"] != "0" if attributes["colGrandTotals"]
+            if attributes["colGrandTotals"]
+              cgt = attributes["colGrandTotals"] != "0"
+              @pivot_table[:column_grand_totals] = cgt
+              @pivot_table[:col_grand_totals] = cgt
+            end
             @pivot_table[:compact] = attributes["compact"] != "0" if attributes["compact"]
             @pivot_table[:outline] = attributes["outline"] != "0" if attributes["outline"]
             @pivot_table[:outline_data] = attributes["outlineData"] == "1" if attributes["outlineData"]
@@ -1544,7 +1565,11 @@ module Xlsxrb
           when "location"
             @pivot_table[:ref] = attributes["ref"] if @pivot_table
             @pivot_table[:row_page_count] = attributes["rowPageCount"]&.to_i if attributes["rowPageCount"]
-            @pivot_table[:col_page_count] = attributes["colPageCount"]&.to_i if attributes["colPageCount"]
+            if attributes["colPageCount"]
+              cpc = attributes["colPageCount"].to_i
+              @pivot_table[:column_page_count] = cpc
+              @pivot_table[:col_page_count] = cpc
+            end
           when "pivotField"
             @inside_pivot_field = true
             @current_field = {}
@@ -1601,11 +1626,19 @@ module Xlsxrb
               srh = attributes["showRowHeaders"]
               psi[:show_row_headers] = srh == "1" unless srh.nil?
               sch = attributes["showColHeaders"]
-              psi[:show_col_headers] = sch == "1" unless sch.nil?
+              unless sch.nil?
+                val = sch == "1"
+                psi[:show_column_headers] = val
+                psi[:show_col_headers] = val
+              end
               srs = attributes["showRowStripes"]
               psi[:show_row_stripes] = srs == "1" unless srs.nil?
               scs = attributes["showColStripes"]
-              psi[:show_col_stripes] = scs == "1" unless scs.nil?
+              unless scs.nil?
+                val = scs == "1"
+                psi[:show_column_stripes] = val
+                psi[:show_col_stripes] = val
+              end
               slc = attributes["showLastColumn"]
               psi[:show_last_column] = slc == "1" unless slc.nil?
               @pivot_table[:pivot_table_style] = psi
@@ -1626,6 +1659,7 @@ module Xlsxrb
             if @pivot_table
               @pivot_table[:fields] = @fields
               @pivot_table[:row_fields] = @row_fields
+              @pivot_table[:column_fields] = @col_fields
               @pivot_table[:col_fields] = @col_fields
               @pivot_table[:data_fields] = @data_fields
             end

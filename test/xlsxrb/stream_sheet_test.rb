@@ -124,14 +124,14 @@ class StreamSheetTest < Test::Unit::TestCase
 
     assert_equal({ tab_color: "FFFF0000" }, sheet.sheet_properties)
     assert_equal({ show_grid_lines: false, zoom_scale: 125 }, sheet.sheet_view)
-    assert_equal({ row: 1, col: 2, state: :frozen }, sheet.freeze_pane)
+    assert_equal({ row: 1, column: 2, col: 2, state: :frozen }, sheet.freeze_pane)
     assert_equal({ sheet: true }, sheet.sheet_protection)
     assert_equal({ grid_lines: true, headings: true }, sheet.print_options)
     assert_equal({ left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 }, sheet.page_margins)
     assert_equal({ orientation: "landscape", paper_size: 9 }, sheet.page_setup)
     assert_equal({ odd_header: "&CHeader" }, sheet.header_footer)
     assert_equal([{ id: 10, max: 16_383, man: true }], sheet.row_breaks)
-    assert_equal([{ id: 5, max: 1_048_575, man: true }], sheet.col_breaks)
+    assert_equal([{ id: 5, max: 1_048_575, man: true }], sheet.column_breaks)
 
     # Propagation to Elements::Worksheet via load
     ws = sheet.load

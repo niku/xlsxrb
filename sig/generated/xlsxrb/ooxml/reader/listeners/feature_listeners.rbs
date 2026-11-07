@@ -317,6 +317,8 @@ module Xlsxrb
 
         attr_reader col_breaks: untyped
 
+        attr_reader column_breaks: untyped
+
         def initialize: () -> untyped
 
         def start_element: (untyped _uri, untyped local_name, untyped qname, untyped attributes) -> untyped

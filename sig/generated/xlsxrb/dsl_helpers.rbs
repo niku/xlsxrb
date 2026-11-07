@@ -109,7 +109,7 @@ module Xlsxrb
     def self.complement_runs: (untyped excluded, Integer min, Integer max) -> Array[[ Integer, Integer ]]
 
     # Builds an A1-style reference from a column interval [col_start, col_end] (0-based)
-    # and a row interval [row_start, row_end] (1-based Excel row number).
+    # and a row interval [row_start, row_end] (0-based row index).
     #
     # @param col_run [Array(Integer, Integer)]
     # @param row_run [Array(Integer, Integer)]
@@ -153,6 +153,22 @@ module Xlsxrb
     # @return [String]
     # : (?untyped value, ?sheet: untyped, ?col: untyped, ?rows: untyped, ?range: untyped) -> String
     def self.normalize_defined_name_value: (?untyped value, ?sheet: untyped, ?col: untyped, ?rows: untyped, ?range: untyped) -> String
+
+    # Normalizes print titles repeating row specification to an Excel range string (e.g. "1:2").
+    # Accepts 0-based Integer, 0-based Range, or 1-based Excel range string.
+    #
+    # @param rows [Integer, Range, String, nil]
+    # @return [String, nil]
+    # : (untyped rows) -> String?
+    def self.normalize_print_titles_rows: (untyped rows) -> String?
+
+    # Normalizes print titles repeating column specification to an Excel range string (e.g. "A:B").
+    # Accepts 0-based Integer, Symbol, Range, or Excel column range string.
+    #
+    # @param columns [Integer, Symbol, Range, String, nil]
+    # @return [String, nil]
+    # : (untyped columns) -> String?
+    def self.normalize_print_titles_columns: (untyped columns) -> String?
 
     # Normalizes data validation arguments (sqref, coordinate targeting, list arrays, input/error message inference).
     #
