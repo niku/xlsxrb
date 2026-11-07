@@ -7,9 +7,9 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row([10], styles: "center")
-    s.row([50], styles: "center")
-    s.row([90], styles: "center")
+    s.row([10], cell_styles: "center")
+    s.row([50], cell_styles: "center")
+    s.row([90], cell_styles: "center")
     s.conditional_format("A1:A3", type: :colorScale, priority: 1)
   end
 end

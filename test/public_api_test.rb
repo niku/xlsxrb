@@ -637,7 +637,7 @@ class PublicApiTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Styled") do |s|
         s.style("header", bold: true, size: 12, font_color: "FF0000FF")
-        s.row(%w[Name Score], styles: %w[header header])
+        s.row(%w[Name Score], cell_styles: %w[header header])
       end
     end
 
@@ -1030,7 +1030,7 @@ class PublicApiTest < Test::Unit::TestCase
       wb.sheet("Test")
       wb.row(
         { "A" => 1, "B" => 2, "C" => 3, "D" => 4 },
-        styles: { "A" => "bold", "B".."C" => "italic", "D" => "red" }
+        cell_styles: { "A" => "bold", "B".."C" => "italic", "D" => "red" }
       )
 
       wb.column("A".."B", width: 20)
@@ -2379,7 +2379,7 @@ class PublicApiTest < Test::Unit::TestCase
       w.sheet("S1") do |s|
         s.style("bold", font: { bold: true })
         s.style("italic", font: { italic: true })
-        s.row([1, 2, 3, 4, 5], styles: { "A" => "bold", "C".."D" => "italic" })
+        s.row([1, 2, 3, 4, 5], cell_styles: { "A" => "bold", "C".."D" => "italic" })
       end
     end
     cells = wb.sheet(0).rows[0].cells
@@ -2415,7 +2415,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#row handles inline Hash styles" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.row([1], styles: [{ font: { bold: true } }])
+        s.row([1], cell_styles: [{ font: { bold: true } }])
       end
     end
     cells = wb.sheet(0).rows[0].cells
@@ -2571,7 +2571,7 @@ class PublicApiTest < Test::Unit::TestCase
 
       # styles
       sheet.style("mystyle", bold: true, size: 14)
-      sheet.row(["Styled"], styles: ["mystyle"])
+      sheet.row(["Styled"], cell_styles: ["mystyle"])
     end
 
     assert_instance_of Xlsxrb::Elements::Workbook, wb.build
@@ -3771,5 +3771,110 @@ class PublicApiTest < Test::Unit::TestCase
     end
     assert_kind_of(Xlsxrb::Elements::Workbook, res2)
     assert_equal(999, res2.sheet(0)["A1"].value)
+  end
+
+  test "Commit 3: cell_styles and row_style in WorksheetBuilder#row with deprecation warnings" do
+    builder = Xlsxrb::WorksheetBuilder.new("Sheet1")
+    builder.style(:b, bold: true)
+    builder.style(:r, font_color: "FF0000")
+
+    # Canonical cell_styles and row_style
+    builder.row([1, 2], cell_styles: [:b, nil], row_style: :r)
+    rows = builder.instance_variable_get(:@rows)
+    row = rows.last
+    assert_equal(:r, row.unmapped_data[:style_index])
+    assert_equal(:b, row.cells[0].style)
+
+    # Deprecated styles: emits warning
+    warn_styles = capture_stderr do
+      builder.row([3, 4], styles: :b)
+    end
+    assert_match(/\[DEPRECATION\] WorksheetBuilder#row keyword :styles is deprecated/, warn_styles)
+    assert_equal(:b, rows.last.cells[0].style)
+
+    # Deprecated style: emits warning
+    warn_style = capture_stderr do
+      builder.row([5, 6], style: :r)
+    end
+    assert_match(/\[DEPRECATION\] WorksheetBuilder#row keyword :style is deprecated/, warn_style)
+    assert_equal(:r, rows.last.unmapped_data[:style_index])
+  end
+
+  test "Commit 3: cell_styles and row_style in StreamWriter#row and WorksheetProxy#row with deprecation warnings" do
+    io = StringIO.new
+    writer = Xlsxrb::StreamWriter.new(io)
+    writer.style(:b, bold: true)
+    writer.style(:r, font_color: "FF0000")
+
+    # Proxy with cell_styles and row_style
+    writer.sheet("S1") do |proxy|
+      proxy.row([1, 2], cell_styles: [:b, nil], row_style: :r)
+
+      # Deprecated styles on proxy
+      warn_p_styles = capture_stderr do
+        proxy.row([3, 4], styles: :b)
+      end
+      assert_match(/\[DEPRECATION\] WorksheetProxy#row keyword :styles is deprecated/, warn_p_styles)
+
+      # Deprecated style on proxy
+      warn_p_style = capture_stderr do
+        proxy.row([5, 6], style: :r)
+      end
+      assert_match(/\[DEPRECATION\] WorksheetProxy#row keyword :style is deprecated/, warn_p_style)
+    end
+
+    # Deprecated styles on writer directly
+    warn_w_styles = capture_stderr do
+      writer.row([7, 8], styles: :b)
+    end
+    assert_match(/\[DEPRECATION\] StreamWriter#row keyword :styles is deprecated/, warn_w_styles)
+
+    # Deprecated style on writer directly
+    warn_w_style = capture_stderr do
+      writer.row([9, 10], style: :r)
+    end
+    assert_match(/\[DEPRECATION\] StreamWriter#row keyword :style is deprecated/, warn_w_style)
+
+    writer.close
+  end
+
+  test "Commit 3: Elements::Cell.new and Worksheet#update_cell style vs style_index" do
+    # Cell.new with style:
+    c1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, style: :bold)
+    assert_equal(:bold, c1.style)
+    assert_nil(c1.style_index)
+    assert_equal(:bold, c1[:style])
+
+    # Cell.new with style_index Integer (no warning)
+    c2 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, style_index: 5)
+    assert_nil(c2.style)
+    assert_equal(5, c2.style_index)
+    assert_equal(5, c2[:style])
+
+    # Cell.new with non-Integer style_index emits warning
+    c3 = nil
+    warn_cell = capture_stderr do
+      c3 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, style_index: :italic)
+    end
+    assert_match(/\[DEPRECATION\] Elements::Cell\.new passing non-Integer to style_index: is deprecated/, warn_cell)
+    assert_equal(:italic, c3.style)
+    assert_nil(c3.style_index)
+
+    # Worksheet#update_cell with style:
+    sheet = Xlsxrb::Elements::Worksheet.new(name: "S", rows: [
+      Xlsxrb::Elements::Row.new(index: 0, cells: [c1])
+    ])
+    s2 = sheet.update_cell("A1", style: :green)
+    assert_equal(:green, s2.cell("A1").style)
+    assert_nil(s2.cell("A1").style_index)
+
+    # Worksheet#update_cell with non-Integer style_index emits warning
+    s3 = nil
+    warn_ws = capture_stderr do
+      s3 = sheet.update_cell("A1", style_index: "custom")
+    end
+    assert_match(/\[DEPRECATION\] Elements::Worksheet#update_cell passing non-Integer to style_index: is deprecated/, warn_ws)
+    assert_equal("custom", s3.cell("A1").style)
+    assert_nil(s3.cell("A1").style_index)
   end
 end

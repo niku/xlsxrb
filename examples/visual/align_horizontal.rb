@@ -11,6 +11,6 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 20)
     s.column(1, width: 20)
     s.column(2, width: 20)
-    s.row(%w[Left Center Right], styles: { 0 => "left", 1 => "center", 2 => "right" })
+    s.row(%w[Left Center Right], cell_styles: { 0 => "left", 1 => "center", 2 => "right" })
   end
 end

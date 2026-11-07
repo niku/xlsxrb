@@ -12,10 +12,10 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 20)
     s.column(1, width: 30)
 
-    s.row(%w[Setting Status], styles: :header)
-    s.row(["Protection", "Enabled with password"], styles: :cell)
-    s.row(["Select Locked", "Allowed"], styles: :cell)
-    s.row(["Select Unlocked", "Allowed"], styles: :cell)
+    s.row(%w[Setting Status], cell_styles: :header)
+    s.row(["Protection", "Enabled with password"], cell_styles: :cell)
+    s.row(["Select Locked", "Allowed"], cell_styles: :cell)
+    s.row(["Select Unlocked", "Allowed"], cell_styles: :cell)
 
     # Protect worksheet against unauthorized edits
     s.protect_sheet(password: "secret", select_locked_cells: true, select_unlocked_cells: true)

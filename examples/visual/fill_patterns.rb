@@ -9,7 +9,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Pattern Preview])
-    s.row(["Dark Gray", "Pattern Fill"], styles: { 1 => "dark_gray" })
-    s.row(["Dark Grid", "Grid Fill"], styles: { 1 => "grid_fill" })
+    s.row(["Dark Gray", "Pattern Fill"], cell_styles: { 1 => "dark_gray" })
+    s.row(["Dark Grid", "Grid Fill"], cell_styles: { 1 => "grid_fill" })
   end
 end

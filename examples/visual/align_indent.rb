@@ -10,7 +10,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(1, width: 25)
     s.print_options(:grid_lines, true)
     s.row(["No Indent"])
-    s.row(["Indent 1"], styles: { 0 => "indent_1" })
-    s.row(["Indent 3"], styles: { 0 => "indent_3" })
+    s.row(["Indent 1"], cell_styles: { 0 => "indent_1" })
+    s.row(["Indent 3"], cell_styles: { 0 => "indent_3" })
   end
 end

@@ -11,7 +11,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row(%w[Format Value])
     s.row(["Integer", 12_345])
     s.row(["Float", 123.456])
-    s.row(["Currency", 1234.5], styles: { 1 => "currency" })
-    s.row(["Percentage", 0.85], styles: { 1 => "percent" })
+    s.row(["Currency", 1234.5], cell_styles: { 1 => "currency" })
+    s.row(["Percentage", 0.85], cell_styles: { 1 => "percent" })
   end
 end

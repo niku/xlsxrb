@@ -17,8 +17,8 @@ module Xlsxrb
               s.row(["Format", "Value"])
               s.row(["Integer", 12345])
               s.row(["Float", 123.456])
-              s.row(["Currency", 1234.5], styles: { 1 => "currency" })
-              s.row(["Percentage", 0.85], styles: { 1 => "percent" })
+              s.row(["Currency", 1234.5], cell_styles: { 1 => "currency" })
+              s.row(["Percentage", 0.85], cell_styles: { 1 => "percent" })
             end
           end
         RUBY
@@ -33,7 +33,7 @@ module Xlsxrb
             w.sheet("Dates") do |s|
               s.row(["Format", "Date Value"])
               s.row(["Default Date", Date.new(2026, 7, 1)])
-              s.row(["Formatted Date", Date.new(2026, 12, 25)], styles: { 1 => "custom_date" })
+              s.row(["Formatted Date", Date.new(2026, 12, 25)], cell_styles: { 1 => "custom_date" })
             end
           end
         RUBY
@@ -48,7 +48,7 @@ module Xlsxrb
             w.sheet("Times") do |s|
               s.row(["Format", "Time Value"])
               s.row(["DateTime", Time.new(2026, 7, 1, 12, 34, 56)])
-              s.row(["Time Only", Time.new(2026, 7, 1, 9, 15, 0)], styles: { 1 => "time_fmt" })
+              s.row(["Time Only", Time.new(2026, 7, 1, 9, 15, 0)], cell_styles: { 1 => "time_fmt" })
             end
           end
         RUBY
@@ -108,9 +108,9 @@ module Xlsxrb
             w.style("courier") { |s| s.font_name("Courier New") }
             w.sheet("Fonts") do |s|
               s.row(["Font Family", "Preview"])
-              s.row(["Arial", "Hello Arial"], styles: { 1 => "arial" })
-              s.row(["Times New Roman", "Hello Times"], styles: { 1 => "times" })
-              s.row(["Courier New", "Hello Courier"], styles: { 1 => "courier" })
+              s.row(["Arial", "Hello Arial"], cell_styles: { 1 => "arial" })
+              s.row(["Times New Roman", "Hello Times"], cell_styles: { 1 => "times" })
+              s.row(["Courier New", "Hello Courier"], cell_styles: { 1 => "courier" })
             end
           end
         RUBY
@@ -125,9 +125,9 @@ module Xlsxrb
             w.style("size_24") { |s| s.size(24) }
             w.sheet("Font Sizes") do |s|
               s.row(["Size", "Text"])
-              s.row(["10pt", "Small Text"], styles: { 1 => "size_10" })
-              s.row(["16pt", "Medium Text"], styles: { 1 => "size_16" })
-              s.row(["24pt", "Large Text"], styles: { 1 => "size_24" })
+              s.row(["10pt", "Small Text"], cell_styles: { 1 => "size_10" })
+              s.row(["16pt", "Medium Text"], cell_styles: { 1 => "size_16" })
+              s.row(["24pt", "Large Text"], cell_styles: { 1 => "size_24" })
             end
           end
         RUBY
@@ -142,9 +142,9 @@ module Xlsxrb
             w.style("blue") { |s| s.font_color("FF0070C0") }
             w.sheet("Colors") do |s|
               s.row(["Color", "Preview"])
-              s.row(["Red", "Red Text"], styles: { 1 => "red" })
-              s.row(["Green", "Green Text"], styles: { 1 => "green" })
-              s.row(["Blue", "Blue Text"], styles: { 1 => "blue" })
+              s.row(["Red", "Red Text"], cell_styles: { 1 => "red" })
+              s.row(["Green", "Green Text"], cell_styles: { 1 => "green" })
+              s.row(["Blue", "Blue Text"], cell_styles: { 1 => "blue" })
             end
           end
         RUBY
@@ -160,10 +160,10 @@ module Xlsxrb
             w.style("strike") { |s| s.strike }
             w.sheet("Styles") do |s|
               s.row(["Style", "Preview"])
-              s.row(["Bold", "Bold Text"], styles: { 1 => "bold" })
-              s.row(["Italic", "Italic Text"], styles: { 1 => "italic" })
-              s.row(["Underline", "Underlined Text"], styles: { 1 => "underline" })
-              s.row(["Strike-through", "Struck Text"], styles: { 1 => "strike" })
+              s.row(["Bold", "Bold Text"], cell_styles: { 1 => "bold" })
+              s.row(["Italic", "Italic Text"], cell_styles: { 1 => "italic" })
+              s.row(["Underline", "Underlined Text"], cell_styles: { 1 => "underline" })
+              s.row(["Strike-through", "Struck Text"], cell_styles: { 1 => "strike" })
             end
           end
         RUBY
@@ -177,8 +177,8 @@ module Xlsxrb
             w.style("sub") { |s| s.vert_align("subscript") }
             w.sheet("Vertical Align") do |s|
               s.row(["Format", "Text"])
-              s.row(["Superscript", "x2"], styles: { 1 => "super" })
-              s.row(["Subscript", "H2O"], styles: { 1 => "sub" })
+              s.row(["Superscript", "x2"], cell_styles: { 1 => "super" })
+              s.row(["Subscript", "H2O"], cell_styles: { 1 => "sub" })
             end
           end
         RUBY
@@ -190,7 +190,7 @@ module Xlsxrb
           Xlsxrb.write(output_path) do |w|
             w.style("thin") { |s| s.border_left(style: "thin").border_right(style: "thin").border_top(style: "thin").border_bottom(style: "thin") }
             w.sheet("Thin Borders") do |s|
-              s.row(["Normal Cell", "Thin Border Cell"], styles: { 1 => "thin" })
+              s.row(["Normal Cell", "Thin Border Cell"], cell_styles: { 1 => "thin" })
             end
           end
         RUBY
@@ -202,7 +202,7 @@ module Xlsxrb
           Xlsxrb.write(output_path) do |w|
             w.style("medium") { |s| s.border_left(style: "medium").border_right(style: "medium").border_top(style: "medium").border_bottom(style: "medium") }
             w.sheet("Medium Borders") do |s|
-              s.row(["Normal Cell", "Medium Border Cell"], styles: { 1 => "medium" })
+              s.row(["Normal Cell", "Medium Border Cell"], cell_styles: { 1 => "medium" })
             end
           end
         RUBY
@@ -214,7 +214,7 @@ module Xlsxrb
           Xlsxrb.write(output_path) do |w|
             w.style("dashed") { |s| s.border_left(style: "dashed").border_right(style: "dashed").border_top(style: "dashed").border_bottom(style: "dashed") }
             w.sheet("Dashed Borders") do |s|
-              s.row(["Normal Cell", "Dashed Border Cell"], styles: { 1 => "dashed" })
+              s.row(["Normal Cell", "Dashed Border Cell"], cell_styles: { 1 => "dashed" })
             end
           end
         RUBY
@@ -226,7 +226,7 @@ module Xlsxrb
           Xlsxrb.write(output_path) do |w|
             w.style("double") { |s| s.border_left(style: "double").border_right(style: "double").border_top(style: "double").border_bottom(style: "double") }
             w.sheet("Double Borders") do |s|
-              s.row(["Normal Cell", "Double Border Cell"], styles: { 1 => "double" })
+              s.row(["Normal Cell", "Double Border Cell"], cell_styles: { 1 => "double" })
             end
           end
         RUBY
@@ -238,7 +238,7 @@ module Xlsxrb
           Xlsxrb.write(output_path) do |w|
             w.style("slanted") { |s| s.border_left(style: "slantedDashDot").border_right(style: "slantedDashDot").border_top(style: "slantedDashDot").border_bottom(style: "slantedDashDot") }
             w.sheet("Slanted Borders") do |s|
-              s.row(["Normal Cell", "Slanted Border Cell"], styles: { 1 => "slanted" })
+              s.row(["Normal Cell", "Slanted Border Cell"], cell_styles: { 1 => "slanted" })
             end
           end
         RUBY
@@ -252,8 +252,8 @@ module Xlsxrb
             w.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
             w.sheet("Fills") do |s|
               s.row(["Color", "Preview"])
-              s.row(["Red", "Red Fill"], styles: { 1 => "red_fill" })
-              s.row(["Green", "Green Fill"], styles: { 1 => "green_fill" })
+              s.row(["Red", "Red Fill"], cell_styles: { 1 => "red_fill" })
+              s.row(["Green", "Green Fill"], cell_styles: { 1 => "green_fill" })
             end
           end
         RUBY
@@ -267,8 +267,8 @@ module Xlsxrb
             w.style("grid_fill") { |s| s.fill(pattern: "darkGrid", fg_color: "FFC0C0C0", bg_color: "FFFFFFFF") }
             w.sheet("Patterns") do |s|
               s.row(["Pattern", "Preview"])
-              s.row(["Dark Gray", "Pattern Fill"], styles: { 1 => "dark_gray" })
-              s.row(["Dark Grid", "Grid Fill"], styles: { 1 => "grid_fill" })
+              s.row(["Dark Gray", "Pattern Fill"], cell_styles: { 1 => "dark_gray" })
+              s.row(["Dark Grid", "Grid Fill"], cell_styles: { 1 => "grid_fill" })
             end
           end
         RUBY
@@ -285,7 +285,7 @@ module Xlsxrb
               ])
             end
             w.sheet("Gradients") do |s|
-              s.row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })
+              s.row(["Normal Cell", "Gradient Cell"], cell_styles: { 1 => "gradient" })
             end
           end
         RUBY
@@ -303,7 +303,7 @@ module Xlsxrb
               s.column(0, width: 20)
               s.column(1, width: 20)
               s.column(2, width: 20)
-              s.row(["Left", "Center", "Right"], styles: { 0 => "left", 1 => "center", 2 => "right" })
+              s.row(["Left", "Center", "Right"], cell_styles: { 0 => "left", 1 => "center", 2 => "right" })
             end
           end
         RUBY
@@ -318,7 +318,7 @@ module Xlsxrb
             w.style("bottom") { |s| s.align_vertical("bottom") }
             w.sheet("Vertical Alignment") do |s|
               s.print_options(:grid_lines, true)
-              s.row(["Top", "Center", "Bottom"], styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
+              s.row(["Top", "Center", "Bottom"], cell_styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
             end
           end
         RUBY
@@ -332,7 +332,7 @@ module Xlsxrb
             w.style("rot_90") { |s| s.text_rotation(90) }
             w.sheet("Rotation") do |s|
               s.print_options(:grid_lines, true)
-              s.row(["Rotated 45", "Rotated 90"], styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
+              s.row(["Rotated 45", "Rotated 90"], cell_styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
             end
           end
         RUBY
@@ -346,7 +346,7 @@ module Xlsxrb
             w.sheet("Text Wrap") do |s|
               s.print_options(:grid_lines, true)
               s.column(0, width: 15)
-              s.row(["This is a long sentence that wraps inside the cell."], styles: { 0 => "wrap" })
+              s.row(["This is a long sentence that wraps inside the cell."], cell_styles: { 0 => "wrap" })
             end
           end
         RUBY
@@ -361,8 +361,8 @@ module Xlsxrb
             w.sheet("Indent") do |s|
               s.print_options(:grid_lines, true)
               s.row(["No Indent"])
-              s.row(["Indent 1"], styles: { 0 => "indent_1" })
-              s.row(["Indent 3"], styles: { 0 => "indent_3" })
+              s.row(["Indent 1"], cell_styles: { 0 => "indent_1" })
+              s.row(["Indent 3"], cell_styles: { 0 => "indent_3" })
             end
           end
         RUBY

@@ -631,14 +631,20 @@ module Xlsxrb
       #
       # @param ref [String] The cell reference (e.g. "B1").
       # @param value [Object] The new cell value.
-      # @param style_index [Integer, String, nil] Optional new style index.
+      # @param style [String, Symbol, Hash, nil] Optional new style name or inline style properties.
+      # @param style_index [Integer, nil] Optional new 0-based style index.
       # @param formula [Elements::Formula, nil] Optional new formula.
       # @param hyperlink [Hash, String, nil] Optional new hyperlink.
       # @param comment [Hash, String, nil] Optional new comment.
       # @return [Worksheet] A new Worksheet instance.
       # @api public
-      #: (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
-      def update_cell(ref, value: nil, style_index: nil, formula: nil, hyperlink: nil, comment: nil)
+      #: (String ref, ?value: untyped, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
+      def update_cell(ref, value: nil, style: nil, style_index: nil, formula: nil, hyperlink: nil, comment: nil)
+        if style_index && !style_index.is_a?(Integer)
+          warn "[DEPRECATION] Elements::Worksheet#update_cell passing non-Integer to style_index: is deprecated; use style: instead.", uplevel: 1
+          style ||= style_index
+          style_index = nil
+        end
         parsed = Cell._parse_ref(ref)
         raise ArgumentError, "invalid cell reference: #{ref}" unless parsed
 
@@ -650,13 +656,14 @@ module Xlsxrb
           new_cell = if existing_cell
                        existing_cell.with(
                          value: value || existing_cell.value,
-                         style_index: style_index || existing_cell.style_index,
+                         style: style || (style_index ? nil : existing_cell.style),
+                         style_index: style_index || (style ? nil : existing_cell.style_index),
                          formula: formula || existing_cell.formula,
                          hyperlink: hyperlink || existing_cell.hyperlink,
                          comment: comment || existing_cell.comment
                        )
                      else
-                       Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula, hyperlink: hyperlink, comment: comment)
+                       Cell.new(row_index: row_idx, column_index: col_idx, value: value, style: style, style_index: style_index, formula: formula, hyperlink: hyperlink, comment: comment)
                      end
 
           # Replace cell in the existing row
@@ -668,7 +675,7 @@ module Xlsxrb
           new_rows = rows.map { |r| r.index == row_idx ? new_row : r }
         else
           # Row doesn't exist, create it
-          new_cell = Cell.new(row_index: row_idx, column_index: col_idx, value: value, style_index: style_index, formula: formula, hyperlink: hyperlink, comment: comment)
+          new_cell = Cell.new(row_index: row_idx, column_index: col_idx, value: value, style: style, style_index: style_index, formula: formula, hyperlink: hyperlink, comment: comment)
           new_row = Row.new(index: row_idx, cells: [new_cell])
           new_rows = (rows + [new_row]).sort_by!(&:index)
         end

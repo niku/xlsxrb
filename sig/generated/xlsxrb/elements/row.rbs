@@ -20,10 +20,11 @@ module Xlsxrb
       # @param custom_height [Boolean] Whether custom height is set.
       # @param collapsed [Boolean] Whether the row is collapsed.
       # @param outline_level [Integer, nil] Grouping/outline level.
+      # @param style_index [Integer, nil] Default row style index.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      # : (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      # : (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: (Integer | Symbol | String | Hash[Symbol, untyped] | nil), ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      def initialize: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | Symbol | String | Hash[Symbol, untyped] | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
       # Access a cell by 0-based column index, column letter, or access row attributes via Symbol.
       #
@@ -81,12 +82,6 @@ module Xlsxrb
       # @api public
       # : () -> Hash[Symbol, untyped]
       def attributes: () -> Hash[Symbol, untyped]
-
-      # Returns style_index if present in unmapped_data.
-      #
-      # @return [Integer, nil]
-      # : () -> Integer?
-      def style_index: () -> Integer?
 
       # Iterate over cells in this row.
       #

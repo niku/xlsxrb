@@ -14,7 +14,7 @@ Xlsxrb.write(output_path) do |wb|
     sheet.column(0, width: 25)
     sheet.column(1, width: 25)
     sheet.row(%w[Product Qty Price Date Active])
-    sheet.row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], styles: { 2 => "currency", 3 => "date" })
-    sheet.row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], styles: { 2 => "currency", 3 => "date" })
+    sheet.row(["Gadget A", 10, 99.99, Date.new(2026, 1, 15), true], cell_styles: { 2 => "currency", 3 => "date" })
+    sheet.row(["Widget B", 5, 49.50, Date.new(2026, 2, 20), false], cell_styles: { 2 => "currency", 3 => "date" })
   end
 end

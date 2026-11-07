@@ -8,7 +8,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
-    s.row(["Positive Yen", 12_500], styles: { 1 => "jpy" })
-    s.row(["Negative Yen", -8000], styles: { 1 => "jpy" })
+    s.row(["Positive Yen", 12_500], cell_styles: { 1 => "jpy" })
+    s.row(["Negative Yen", -8000], cell_styles: { 1 => "jpy" })
   end
 end

@@ -7,6 +7,6 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Col Width") do |s|
     s.column(0, width: 50)
     s.column(1, width: 10)
-    s.row(["Very Wide Column (Width 50)", "Normal (10)"], styles: %w[border border])
+    s.row(["Very Wide Column (Width 50)", "Normal (10)"], cell_styles: %w[border border])
   end
 end

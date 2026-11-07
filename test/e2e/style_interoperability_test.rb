@@ -18,10 +18,10 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
         end
 
         # Add styled rows
-        s.row(%w[Name Value], styles: { 0 => "header", 1 => "header" })
+        s.row(%w[Name Value], cell_styles: { 0 => "header", 1 => "header" })
         s.row(["Item A", 100])
         s.row(["Item B", 200])
-        s.row(["Total", 300], styles: { 1 => "total" })
+        s.row(["Total", 300], cell_styles: { 1 => "total" })
       end
     end
 
@@ -66,12 +66,12 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
 
         w.sheet("Data") do
           # Header row with style
-          w.row(%w[Col1 Col2], styles: { 0 => "header", 1 => "header" })
+          w.row(%w[Col1 Col2], cell_styles: { 0 => "header", 1 => "header" })
 
           # Data rows
           (1..5).each do |i|
-            styles = i.even? ? { 0 => "data", 1 => "data" } : nil
-            w.row([i, "Value#{i}"], styles: styles)
+            cell_styles = i.even? ? { 0 => "data", 1 => "data" } : nil
+            w.row([i, "Value#{i}"], cell_styles: cell_styles)
           end
         end
       end

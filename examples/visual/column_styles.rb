@@ -18,7 +18,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(2, width: 16, style: :currency)
     s.column(3, width: 14, style: :percent)
 
-    s.row(%w[Item Date Price Margin], styles: :header)
+    s.row(%w[Item Date Price Margin], cell_styles: :header)
     s.row(["Widget A", Date.new(2026, 4, 1), 1250.0, 0.25])
     s.row(["Gadget B", Date.new(2026, 5, 15), 340.5, 0.18])
     s.row(["Tool C", Date.new(2026, 6, 20), 89.99, 0.42])

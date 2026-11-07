@@ -26,10 +26,10 @@ Xlsxrb.write(output_path) do |wb|
     s.phonetic_properties(font_id: 0, type: :no_conversion, alignment: :left)
     s.ignore_error("A2:A4", number_stored_as_text: true)
 
-    s.row(["Code", "Product Description", "Inventory"], styles: :header)
-    s.row(["00101", "Compact Mechanical Keyboard", 42], styles: :border_cell)
-    s.row(["00102", "Ergonomic Vertical Mouse", 78], styles: :border_cell)
-    s.row(["00103", "Ultra-wide Monitor Stand", 15], styles: :border_cell)
+    s.row(["Code", "Product Description", "Inventory"], cell_styles: :header)
+    s.row(["00101", "Compact Mechanical Keyboard", 42], cell_styles: :border_cell)
+    s.row(["00102", "Ergonomic Vertical Mouse", 78], cell_styles: :border_cell)
+    s.row(["00103", "Ultra-wide Monitor Stand", 15], cell_styles: :border_cell)
   end
 
   # Sheet 2: Secondary sheet with green tab, sheet calculation pr, and background image
@@ -40,9 +40,9 @@ Xlsxrb.write(output_path) do |wb|
     s.sheet_calc_pr(full_calc_on_load: true)
     s.background_image(subtle_bg)
 
-    s.row(%w[Metric Calculation], styles: :meta_hdr)
-    s.row(["Total Units", "=SUM('Active Summary'!C2:C4)"], styles: :border_cell)
-    s.row(["Average Stock", "=AVERAGE('Active Summary'!C2:C4)"], styles: :border_cell)
+    s.row(%w[Metric Calculation], cell_styles: :meta_hdr)
+    s.row(["Total Units", "=SUM('Active Summary'!C2:C4)"], cell_styles: :border_cell)
+    s.row(["Average Stock", "=AVERAGE('Active Summary'!C2:C4)"], cell_styles: :border_cell)
   end
 
   # Sheet 3: Hidden configuration sheet

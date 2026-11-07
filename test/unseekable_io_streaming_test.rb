@@ -120,8 +120,8 @@ class UnseekableIoStreamingTest < Test::Unit::TestCase
       wb.style("currency", number_format: "$#,##0.00")
 
       wb.sheet("Invoices") do |sheet|
-        sheet.row(["Invoice #", "Amount"], styles: "header")
-        sheet.row(["INV-001", 1250.5], styles: [nil, "currency"])
+        sheet.row(["Invoice #", "Amount"], cell_styles: "header")
+        sheet.row(["INV-001", 1250.5], cell_styles: [nil, "currency"])
         sheet.merge("A3:B3")
         sheet.row(["Merged Footer Note"])
       end

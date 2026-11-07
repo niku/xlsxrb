@@ -13,9 +13,9 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 22)
     s.column(1, width: 35)
 
-    s.row(%w[Link_Type Target_Description], styles: :header)
-    s.row(["External Web URL", "Visit Ruby-Lang"], styles: %i[border link])
-    s.row(["Internal Sheet", "Jump to Details Sheet"], styles: %i[border link])
+    s.row(%w[Link_Type Target_Description], cell_styles: :header)
+    s.row(["External Web URL", "Visit Ruby-Lang"], cell_styles: %i[border link])
+    s.row(["Internal Sheet", "Jump to Details Sheet"], cell_styles: %i[border link])
 
     s.hyperlink("B2", "https://www.ruby-lang.org", display: "Visit Ruby-Lang", tooltip: "Official Ruby Website")
     s.hyperlink("B3", location: "Details!A1", tooltip: "Go to Details sheet")

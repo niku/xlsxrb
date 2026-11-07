@@ -16,13 +16,14 @@ module Xlsxrb
     #
     # @api public
     class Cell
-      attr_reader :row_index, :column_index, :value, :formula, :style_index, :unmapped_data, :errors, :hyperlink, :comment, :raw_value, :format_code, :date1904, :threaded_comments
+      attr_reader :row_index, :column_index, :value, :formula, :style, :style_index, :unmapped_data, :errors, :hyperlink, :comment, :raw_value, :format_code, :date1904, :threaded_comments
 
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
       # @param value [Object, nil] The cell's value.
       # @param formula [Elements::Formula, nil] Optional formula.
-      # @param style_index [Integer, String, Symbol, Hash, nil] Style identifier or inline style.
+      # @param style [String, Symbol, Hash, nil] Style name or inline style properties.
+      # @param style_index [Integer, nil] 0-based style index.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
       # @param hyperlink [Hash, String, Elements::Hyperlink, nil] Optional hyperlink metadata or URL.
@@ -31,13 +32,19 @@ module Xlsxrb
       # @param format_code [String, nil] Optional OpenXML number/date format code.
       # @param date1904 [Boolean] Whether the cell belongs to a 1904 date system workbook.
       # @param threaded_comments [Array<Hash>, nil] Optional threaded comments.
-      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> void
-      def initialize(row_index:, column_index:, value: nil, formula: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil, comment: nil, raw_value: nil, format_code: nil, date1904: false, threaded_comments: nil)
+      #: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> void
+      def initialize(row_index:, column_index:, value: nil, formula: nil, style: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil, hyperlink: nil, comment: nil, raw_value: nil, format_code: nil, date1904: false, threaded_comments: nil)
+        if style_index && !style_index.is_a?(Integer)
+          warn "[DEPRECATION] Elements::Cell.new passing non-Integer to style_index: is deprecated; use style: instead.", uplevel: 1
+          style ||= style_index
+          style_index = nil
+        end
         @row_index = row_index
         @column_index = column_index
         @value = value
         @formula = formula
-        @style_index = style_index
+        @style = style || (style_index unless style_index.is_a?(Integer))
+        @style_index = style_index || (style if style.is_a?(Integer))
         @unmapped_data = unmapped_data || EMPTY_HASH
         computed_errors = errors || self.class.validate(row_index, column_index, value)
         @errors = computed_errors.frozen? ? computed_errors : computed_errors.freeze
@@ -56,7 +63,8 @@ module Xlsxrb
         inst.instance_variable_set(:@column_index, column_index)
         inst.instance_variable_set(:@value, value)
         inst.instance_variable_set(:@formula, formula)
-        inst.instance_variable_set(:@style_index, style_index)
+        inst.instance_variable_set(:@style, (style_index.is_a?(Integer) ? nil : style_index))
+        inst.instance_variable_set(:@style_index, (style_index.is_a?(Integer) ? style_index : nil))
         inst.instance_variable_set(:@unmapped_data, EMPTY_HASH)
         inst.instance_variable_set(:@errors, EMPTY_ERRORS)
         inst.instance_variable_set(:@hyperlink, nil)
@@ -75,6 +83,7 @@ module Xlsxrb
           column_index == other.column_index &&
           value == other.value &&
           formula == other.formula &&
+          style == other.style &&
           style_index == other.style_index &&
           unmapped_data == other.unmapped_data &&
           errors == other.errors &&
@@ -87,17 +96,18 @@ module Xlsxrb
       alias eql? ==
 
       def hash
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment, raw_value, format_code, threaded_comments].hash
+        [row_index, column_index, value, formula, style, style_index, unmapped_data, errors, hyperlink, comment, raw_value, format_code, threaded_comments].hash
       end
 
       def deconstruct
-        [row_index, column_index, value, formula, style_index, unmapped_data, errors, hyperlink, comment, raw_value, format_code, threaded_comments]
+        [row_index, column_index, value, formula, (style_index || style), unmapped_data, errors, hyperlink, comment, raw_value, format_code, threaded_comments]
       end
 
       def deconstruct_keys(keys)
         h = { row_index: row_index, column_index: column_index, value: value, formula: formula,
               style_index: style_index, unmapped_data: unmapped_data, errors: errors, hyperlink: hyperlink,
               comment: comment, raw_value: raw_value, format_code: format_code, threaded_comments: threaded_comments }
+        h[:style] = style if style
         keys ? h.slice(*keys) : h
       end
 
@@ -107,6 +117,7 @@ module Xlsxrb
           column_index: changes.fetch(:column_index, column_index),
           value: changes.fetch(:value, value),
           formula: changes.fetch(:formula, formula),
+          style: changes.fetch(:style, style),
           style_index: changes.fetch(:style_index, style_index),
           unmapped_data: changes.fetch(:unmapped_data, unmapped_data),
           errors: changes.fetch(:errors, errors),
@@ -277,6 +288,7 @@ module Xlsxrb
         when :formula
           formula.is_a?(Formula) ? formula.expression : formula
         when :style_index then style_index
+        when :style then style || style_index
         when :ref then ref
         when :column_index then column_index
         when :row_index then row_index

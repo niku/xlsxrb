@@ -483,14 +483,15 @@ module Xlsxrb
       #
       # @param ref [String] The cell reference (e.g. "B1").
       # @param value [Object] The new cell value.
-      # @param style_index [Integer, String, nil] Optional new style index.
+      # @param style [String, Symbol, Hash, nil] Optional new style name or inline style properties.
+      # @param style_index [Integer, nil] Optional new 0-based style index.
       # @param formula [Elements::Formula, nil] Optional new formula.
       # @param hyperlink [Hash, String, nil] Optional new hyperlink.
       # @param comment [Hash, String, nil] Optional new comment.
       # @return [Worksheet] A new Worksheet instance.
       # @api public
-      # : (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
-      def update_cell: (String ref, ?value: untyped, ?style_index: Integer | String | nil, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
+      # : (String ref, ?value: untyped, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
+      def update_cell: (String ref, ?value: untyped, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
 
       # Returns a new Worksheet with attributes replaced (Data-like behavior).
       #

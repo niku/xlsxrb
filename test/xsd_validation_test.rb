@@ -97,8 +97,8 @@ class XsdValidationTest < Test::Unit::TestCase
                 })
 
         w.sheet("StylesSheet") do |s|
-          s.row(["Header 1", "Header 2"], styles: %w[header header])
-          s.row(["Item", 1234.56], styles: [nil, "currency_cell"])
+          s.row(["Header 1", "Header 2"], cell_styles: %w[header header])
+          s.row(["Item", 1234.56], cell_styles: [nil, "currency_cell"])
         end
       end
 
@@ -380,7 +380,7 @@ class XsdValidationTest < Test::Unit::TestCase
             { text: "Italic Part", font: { italic: true, color: "FF0000FF" } }
           )
           s.row([rt, "Normal String"])
-          s.row([rt, "Styled String"], styles: [:header, nil])
+          s.row([rt, "Styled String"], cell_styles: [:header, nil])
         end
       end
 
@@ -692,7 +692,7 @@ class XsdValidationTest < Test::Unit::TestCase
 
         w.sheet("FontDecorations") do |s|
           s.row(["Double", "Single Acct", "Double Acct", "Super", "Sub"],
-                styles: %w[u_double u_single_acct u_double_acct super sub])
+                cell_styles: %w[u_double u_single_acct u_double_acct super sub])
 
           rt = Xlsxrb.rich_text(
             { text: "E = mc", font: { bold: true } },

@@ -200,10 +200,10 @@ class RowColumnStylesTest < Test::Unit::TestCase
         # Row 1: row style :row_hl.
         # Cell A2 unstyled -> inherits Row 1 (:row_hl) over Col 0.
         # Cell B2 explicit :cell_override -> overrides Row 1 and Col 1.
-        ws.row([200, "OverrideText"], styles: [nil, :cell_override], style: :row_hl)
+        ws.row([200, "OverrideText"], cell_styles: [nil, :cell_override], row_style: :row_hl)
 
         # Row 2: inline row style { fill_color: "FFFF00" }
-        ws.row([300, "RowInline"], style: { fill_color: "FFFF00" })
+        ws.row([300, "RowInline"], row_style: { fill_color: "FFFF00" })
       end
     end
 
@@ -258,7 +258,7 @@ class RowColumnStylesTest < Test::Unit::TestCase
       w.sheet("Stream") do |s|
         s.column(0, width: 20.0, style: { italic: true })
         s.row(%w[ColInherited Normal])
-        s.row(%w[RowInherited RowInherited2], style: :header)
+        s.row(%w[RowInherited RowInherited2], row_style: :header)
       end
     end
 

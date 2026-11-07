@@ -460,23 +460,34 @@ module Xlsxrb
       #   s.row(["Name", "Age", "City"])
       #
       # @example Write with explicit column keys and styles
-      #   s.row({ A: "Header", C: 100 }, styles: { A: :bold })
+      #   s.row({ A: "Header", C: 100 }, cell_styles: { A: :bold })
       #
       # @param values [Array, Hash] The cell values (e.g. `[1, 2, 3]` or `{ A: 1, C: 3 }`).
-      # @param styles [String, Symbol, Array, Hash, nil] Style names or hashes to apply.
+      # @param cell_styles [String, Symbol, Array, Hash, nil] Style names or hashes to apply to cells.
+      # @param row_style [Integer, Symbol, String, Hash, nil] Row style format or index.
       # @param height [Float, Integer, nil] The row height in points (0 - 409).
       # @param hidden [Boolean] Whether the row is hidden.
       # @param custom_height [Boolean] Whether to flag as custom height.
       # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
       # @param collapsed [Boolean] Whether the row is collapsed.
-      # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
+      # @param styles [String, Symbol, Array, Hash, nil] Deprecated. Use cell_styles: instead.
+      # @param style [Integer, Symbol, String, Hash, nil] Deprecated. Use row_style: instead.
       # @return [void]
       # @api public
-      #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
-      def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style: nil)
+      #: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: untyped, ?styles: untyped, ?style: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+      def row(values, cell_styles: nil, row_style: nil, styles: nil, style: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.row(values, styles: styles, height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level, style: style)
+        if styles
+          warn "[DEPRECATION] WorksheetProxy#row keyword :styles is deprecated; use :cell_styles instead.", uplevel: 1
+          cell_styles ||= styles
+        end
+        if style
+          warn "[DEPRECATION] WorksheetProxy#row keyword :style is deprecated; use :row_style instead.", uplevel: 1
+          row_style ||= style
+        end
+
+        @writer.row(values, cell_styles: cell_styles, row_style: row_style, height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level)
       end
       # @deprecated Use {#row} instead. Will be removed in 0.2.0.
       alias add_row row
@@ -1762,24 +1773,36 @@ module Xlsxrb
     # Appends a row of values to the active sheet.
     #
     # @param values [Array<Object>, Hash] The cell values.
-    # @param styles [String, Symbol, Array, Hash, nil] Style names or inline style definitions.
+    # @param cell_styles [String, Symbol, Array, Hash, nil] Style names or inline style definitions to apply to cells.
+    # @param row_style [Integer, Symbol, String, Hash, nil] Row style format or index.
     # @param height [Float, Integer, nil] The row height in points (0 - 409).
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom row height is set.
     # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
-    # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
+    # @param collapsed [Boolean] Whether the row is collapsed.
+    # @param styles [String, Symbol, Array, Hash, nil] Deprecated. Use cell_styles: instead.
+    # @param style [Integer, Symbol, String, Hash, nil] Deprecated. Use row_style: instead.
     # @return [void]
     # @api public
-    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
-    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style: nil)
+    #: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: untyped, ?styles: untyped, ?style: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+    def row(values, cell_styles: nil, row_style: nil, styles: nil, style: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
       sheet if @current_sheet.nil?
+
+      if styles
+        warn "[DEPRECATION] StreamWriter#row keyword :styles is deprecated; use :cell_styles instead.", uplevel: 1
+        cell_styles ||= styles
+      end
+      if style
+        warn "[DEPRECATION] StreamWriter#row keyword :style is deprecated; use :row_style instead.", uplevel: 1
+        row_style ||= style
+      end
 
       row_index = @current_row_index
       DslHelpers.validate_row_bounds!(row_index, height, strict_excel_mode: @strict_excel_mode)
       @current_row_index += 1
 
       values = DslHelpers.normalize_row_values(values)
-      styles = DslHelpers.normalize_row_styles(styles)
+      cell_styles = DslHelpers.normalize_row_styles(cell_styles)
 
       if @current_charts && !@current_charts.empty?
         @current_cells ||= {}
@@ -1794,12 +1817,12 @@ module Xlsxrb
 
       raise ArgumentError, "Row contains #{values.length} columns, exceeding Excel limit of 16_384 columns" if @strict_excel_mode && values.length > 16_384
 
-      row_style_id = if style.is_a?(Hash)
-                       inline_name = "__inline_row_#{style.hash}"
-                       style(inline_name, **style) unless @style_name_to_id.key?(inline_name)
+      row_style_id = if row_style.is_a?(Hash)
+                       inline_name = "__inline_row_#{row_style.hash}"
+                       self.style(inline_name, **row_style) unless @style_name_to_id.key?(inline_name)
                        @style_name_to_id[inline_name]
                      else
-                       style
+                       row_style
                      end
 
       effective_outline = outline_level || @current_row_outline_level
@@ -1817,7 +1840,7 @@ module Xlsxrb
         attrs[:style_index] = row_style_id if row_style_id
       end
 
-      @current_row_writer.write_row_values(row_index, values, styles: styles, style_map: @style_name_to_id, sst: @sst, sst_index: @sst_index, attrs: attrs)
+      @current_row_writer.write_row_values(row_index, values, styles: cell_styles, style_map: @style_name_to_id, sst: @sst, sst_index: @sst_index, attrs: attrs)
       start_sheet_entry if !@sheet_entry_started && @current_row_buffer.bytesize >= 65_536
     end
     # @deprecated Use {#row} instead. Will be removed in 0.2.0.

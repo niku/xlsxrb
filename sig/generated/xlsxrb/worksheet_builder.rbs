@@ -59,24 +59,26 @@ module Xlsxrb
     # Appends a row of cells to the worksheet.
     #
     # @example Add a row with values and array styles
-    #   sheet.row(["ID", "Name", "Total"], styles: [:header, :header, :header])
+    #   sheet.row(["ID", "Name", "Total"], cell_styles: [:header, :header, :header])
     #
     # @example Add a row with a hash of column keys
     #   sheet.row({ "A" => "Invoice", "C" => 12345 })
     #
     # @param values [Array<Object>, Hash{String, Integer => Object}] The cell values.
-    # @param styles [String, Symbol, Array<String | Symbol>, Hash, nil] Style names or inline styles to apply.
+    # @param cell_styles [String, Symbol, Array<String | Symbol>, Hash, nil] Style names or inline styles to apply to each cell.
+    # @param row_style [Integer, Symbol, String, Hash, nil] Row style format or index.
     # @param height [Float, Integer, nil] The row height in points (0 to 409).
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom row height is enforced.
     # @param outline_level [Integer, nil] Grouping/outline hierarchy level.
     # @param collapsed [Boolean] Whether the row is collapsed.
-    # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
+    # @param styles [String, Symbol, Array<String | Symbol>, Hash, nil] Deprecated. Use cell_styles: instead.
+    # @param style [Integer, Symbol, String, Hash, nil] Deprecated. Use row_style: instead.
     # @return [void]
     # @raise [ArgumentError] If limits are exceeded when strict_excel_mode is enabled.
     # @api public
-    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
-    def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
+    # : (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?styles: untyped, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+    def row: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?styles: untyped, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
 
     # @deprecated Use {#row} instead. Will be removed in 0.2.0 (available via xlsxrb-adapters).
     alias add_row row

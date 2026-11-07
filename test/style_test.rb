@@ -13,7 +13,7 @@ class StyleTest < Test::Unit::TestCase
         end
 
         # Add rows with styles
-        s.row(["Header 1", "Header 2"], styles: "heading")
+        s.row(["Header 1", "Header 2"], cell_styles: "heading")
         s.row([100, 200])
       end
     end
@@ -47,14 +47,14 @@ class StyleTest < Test::Unit::TestCase
 
         w.sheet("Sales") do
           # Add header row with heading style
-          w.row(%w[Date Amount], styles: { 0 => "heading", 1 => "heading" })
+          w.row(%w[Date Amount], cell_styles: { 0 => "heading", 1 => "heading" })
 
           # Add data rows
           w.row([Date.today, 100])
           w.row([Date.today - 1, 200])
 
           # Add total row with total style
-          w.row(["Total", 300], styles: { 1 => "total" })
+          w.row(["Total", 300], cell_styles: { 1 => "total" })
         end
       end
 
@@ -89,7 +89,7 @@ class StyleTest < Test::Unit::TestCase
           style.bold.font_color("FFFF0000").size(12)
         end
 
-        s.row(%w[Styled Data], styles: ["bold_red", nil])
+        s.row(%w[Styled Data], cell_styles: ["bold_red", nil])
         s.row(%w[Normal Row])
       end
     end
@@ -393,7 +393,7 @@ class StyleTest < Test::Unit::TestCase
 
         w.sheet("Styles") do |s|
           s.row(["Double", "Single Acct", "Double Acct", "Super", "Sub"],
-                styles: %w[double_u single_acct double_acct super sub])
+                cell_styles: %w[double_u single_acct double_acct super sub])
         end
       end
 

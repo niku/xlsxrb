@@ -127,24 +127,35 @@ module Xlsxrb
     # Appends a row of cells to the worksheet.
     #
     # @example Add a row with values and array styles
-    #   sheet.row(["ID", "Name", "Total"], styles: [:header, :header, :header])
+    #   sheet.row(["ID", "Name", "Total"], cell_styles: [:header, :header, :header])
     #
     # @example Add a row with a hash of column keys
     #   sheet.row({ "A" => "Invoice", "C" => 12345 })
     #
     # @param values [Array<Object>, Hash{String, Integer => Object}] The cell values.
-    # @param styles [String, Symbol, Array<String | Symbol>, Hash, nil] Style names or inline styles to apply.
+    # @param cell_styles [String, Symbol, Array<String | Symbol>, Hash, nil] Style names or inline styles to apply to each cell.
+    # @param row_style [Integer, Symbol, String, Hash, nil] Row style format or index.
     # @param height [Float, Integer, nil] The row height in points (0 to 409).
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom row height is enforced.
     # @param outline_level [Integer, nil] Grouping/outline hierarchy level.
     # @param collapsed [Boolean] Whether the row is collapsed.
-    # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
+    # @param styles [String, Symbol, Array<String | Symbol>, Hash, nil] Deprecated. Use cell_styles: instead.
+    # @param style [Integer, Symbol, String, Hash, nil] Deprecated. Use row_style: instead.
     # @return [void]
     # @raise [ArgumentError] If limits are exceeded when strict_excel_mode is enabled.
     # @api public
-    #: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
-    def row(values, styles: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style: nil)
+    #: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?styles: untyped, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+    def row(values, cell_styles: nil, row_style: nil, styles: nil, style: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
+      if styles
+        warn "[DEPRECATION] WorksheetBuilder#row keyword :styles is deprecated; use :cell_styles instead.", uplevel: 1
+        cell_styles ||= styles
+      end
+      if style
+        warn "[DEPRECATION] WorksheetBuilder#row keyword :style is deprecated; use :row_style instead.", uplevel: 1
+        row_style ||= style
+      end
+
       row_index = @next_row_index
       DslHelpers.validate_row_bounds!(row_index, height, strict_excel_mode: @strict_excel_mode)
       @next_row_index += 1
@@ -156,32 +167,32 @@ module Xlsxrb
       height ||= pending[:height]
 
       values = DslHelpers.normalize_row_values(values)
-      styles = DslHelpers.normalize_row_styles(styles)
+      cell_styles = DslHelpers.normalize_row_styles(cell_styles)
 
       # Auto-detect Date / Time for built-in styles
       values.each_with_index do |val, idx|
-        cell_style = styles.is_a?(Array) ? styles[idx] : styles
+        cell_style = cell_styles.is_a?(Array) ? cell_styles[idx] : cell_styles
 
         if val.is_a?(Date) && cell_style.nil?
-          style("__xlsxrb_date", number_format: "yyyy-mm-dd") unless @styles.key?("__xlsxrb_date")
-          styles = [] if styles.nil?
-          styles = Array.new(values.size, styles) unless styles.is_a?(Array)
-          styles[idx] = "__xlsxrb_date"
+          self.style("__xlsxrb_date", number_format: "yyyy-mm-dd") unless @styles.key?("__xlsxrb_date")
+          cell_styles = [] if cell_styles.nil?
+          cell_styles = Array.new(values.size, cell_styles) unless cell_styles.is_a?(Array)
+          cell_styles[idx] = "__xlsxrb_date"
         elsif val.is_a?(Time) && cell_style.nil?
-          style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss") unless @styles.key?("__xlsxrb_time")
-          styles = [] if styles.nil?
-          styles = Array.new(values.size, styles) unless styles.is_a?(Array)
-          styles[idx] = "__xlsxrb_time"
+          self.style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss") unless @styles.key?("__xlsxrb_time")
+          cell_styles = [] if cell_styles.nil?
+          cell_styles = Array.new(values.size, cell_styles) unless cell_styles.is_a?(Array)
+          cell_styles[idx] = "__xlsxrb_time"
         end
       end
 
       max_len = values.size
-      max_len = [max_len, styles.size].max if styles.is_a?(Array)
+      max_len = [max_len, cell_styles.size].max if cell_styles.is_a?(Array)
       # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
       raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns" if @strict_excel_mode && max_len > 16_384
 
       cells = Array.new(max_len)
-      style_lookup = styles.is_a?(Array)
+      style_lookup = cell_styles.is_a?(Array)
 
       col_index = 0
       while col_index < max_len
@@ -201,14 +212,14 @@ module Xlsxrb
         end
 
         style_name = if style_lookup
-                       col_index < styles.size ? styles[col_index] : nil
+                       col_index < cell_styles.size ? cell_styles[col_index] : nil
                      else
-                       styles
+                       cell_styles
                      end
 
         if style_name.is_a?(Hash)
           inline_name = "__inline_#{style_name.hash}"
-          style(inline_name, **style_name) unless @styles.key?(inline_name)
+          self.style(inline_name, **style_name) unless @styles.key?(inline_name)
           style_name = inline_name
         end
         if val.nil? && style_name.nil?
@@ -226,7 +237,7 @@ module Xlsxrb
                                column_index: col_index,
                                value: val.cached_value,
                                formula: val,
-                               style_index: style_name,
+                               style: style_name,
                                raw_value: val.cached_value&.to_s,
                                format_code: fmt_code
                              )
@@ -247,7 +258,7 @@ module Xlsxrb
                                column_index: col_index,
                                value: cached_val,
                                formula: f_obj,
-                               style_index: style_name,
+                               style: style_name,
                                raw_value: cached_val&.to_s,
                                format_code: fmt_code
                              )
@@ -256,7 +267,7 @@ module Xlsxrb
                                row_index: row_index,
                                column_index: col_index,
                                value: val,
-                               style_index: style_name,
+                               style: style_name,
                                raw_value: val&.to_s,
                                format_code: fmt_code
                              )
@@ -265,7 +276,7 @@ module Xlsxrb
       end
 
       cells.compact!
-      unmapped = style ? { style_index: style } : {}
+      unmapped = row_style ? { style_index: row_style } : {}
       @rows << Elements::Row.new(
         index: row_index,
         cells: cells,
@@ -274,6 +285,7 @@ module Xlsxrb
         custom_height: custom_height || !height.nil?,
         collapsed: collapsed,
         outline_level: outline_level,
+        style_index: row_style,
         unmapped_data: unmapped
       )
     end
@@ -450,6 +462,7 @@ module Xlsxrb
               custom_height: existing_row.custom_height,
               collapsed: collapsed || existing_row.collapsed,
               outline_level: level,
+              style_index: existing_row.style_index,
               unmapped_data: existing_row.unmapped_data
             )
           else

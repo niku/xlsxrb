@@ -10,6 +10,6 @@ Xlsxrb.write(output_path) do |wb|
     s.column(1, width: 25)
     s.row(["Format", "Date Value"])
     s.row(["Default Date", Date.new(2026, 7, 1)])
-    s.row(["Formatted Date", Date.new(2026, 12, 25)], styles: { 1 => "custom_date" })
+    s.row(["Formatted Date", Date.new(2026, 12, 25)], cell_styles: { 1 => "custom_date" })
   end
 end

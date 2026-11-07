@@ -691,7 +691,7 @@ module Xlsxrb
           end
 
           new_cells = row.cells.map do |cell|
-            raw_cell_style = cell.style_index
+            raw_cell_style = cell.style || cell.style_index
             resolved_cell_style = if (raw_cell_style.is_a?(String) || raw_cell_style.is_a?(Symbol)) && style_name_to_id.key?(raw_cell_style.to_s)
                                     style_name_to_id[raw_cell_style.to_s]
                                   elsif raw_cell_style.nil?
@@ -702,7 +702,7 @@ module Xlsxrb
 
             target_fmt = cell.format_code || col_fmt_map[cell.column_index]
 
-            if resolved_cell_style == cell.style_index && target_fmt == cell.format_code
+            if resolved_cell_style == (cell.style || cell.style_index) && target_fmt == cell.format_code
               cell
             else
               Elements::Cell.new(
@@ -710,7 +710,8 @@ module Xlsxrb
                 column_index: cell.column_index,
                 value: cell.value,
                 formula: cell.formula,
-                style_index: resolved_cell_style,
+                style: (resolved_cell_style unless resolved_cell_style.is_a?(Integer)),
+                style_index: (resolved_cell_style if resolved_cell_style.is_a?(Integer)),
                 hyperlink: cell.hyperlink,
                 comment: cell.comment,
                 raw_value: cell.raw_value,
@@ -729,6 +730,7 @@ module Xlsxrb
             custom_height: row.custom_height,
             collapsed: row.collapsed,
             outline_level: row.outline_level,
+            style_index: resolved_row_style,
             unmapped_data: row_unmapped,
             errors: row.errors
           )

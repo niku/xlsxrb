@@ -8,6 +8,6 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
-    s.row(["Percent with 2 Decimals", 0.12345], styles: { 1 => "pct2" })
+    s.row(["Percent with 2 Decimals", 0.12345], cell_styles: { 1 => "pct2" })
   end
 end

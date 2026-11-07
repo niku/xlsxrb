@@ -11,6 +11,9 @@
 - Support `ref:` keyword argument in `Xlsxrb.array_formula` and include `Elements::CellError` in `cached_value:` types.
 - Support `new_password:` and writer/reader option forwarding in `Xlsxrb.modify`, and return the block result.
 - Define Ractor-shareable frozen `Elements::CellError` constants (`DIV0`, `NA`, `NAME`, `NULL`, `NUM`, `REF`, `VALUE`, `GETTING_DATA`) on `Elements::CellError`.
+- Add canonical cell-level and row-level style keywords `cell_styles:` and `row_style:` across `WorksheetBuilder#row`, `StreamWriter#row`, and `StreamWriter::WorksheetProxy#row`.
+- Expose `:style_index` as a canonical `Data.define` member on `Elements::Row`.
+- Add `style:` keyword to `Elements::Cell.new` and `Elements::Worksheet#update_cell` for style names and inline style definitions.
 
 ### Deprecated
 - `DslHelpers.sheet_name` is deprecated in favor of `DslHelpers.sanitize_sheet_name`; will be removed in version 0.2.0.
@@ -27,6 +30,8 @@
 - Singular `column:` and `row:` keywords in `defined_name` are deprecated in favor of plural `columns:` and `rows:`; will be removed in version 0.2.0.
 - `show_symbols:` keyword in `outline_properties` is deprecated in favor of `show_outline_symbols:`; will be removed in version 0.2.0.
 - `fit_to_page?` on builders is deprecated in favor of `fit_to_page`; will be removed in version 0.2.0.
+- Keywords `styles:` and `style:` on `WorksheetBuilder#row`, `StreamWriter#row`, and `WorksheetProxy#row` are deprecated in favor of `cell_styles:` and `row_style:`; will be removed in version 0.2.0.
+- Passing non-Integer style names or Hash definitions to `style_index:` on `Elements::Cell.new` and `Elements::Worksheet#update_cell` is deprecated in favor of `style:`; will be removed in version 0.2.0.
 
 ### Fixed
 - Prevent attribute loss in `Elements::PivotTable`, `Elements::TableColumn`, `Elements::ThreadedComment`, `Elements::Comment`, and `Elements::FilterColumn` by retaining full schema attributes and capturing unmapped keyword options into `options:`.

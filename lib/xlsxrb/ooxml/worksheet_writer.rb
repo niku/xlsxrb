@@ -108,7 +108,7 @@ module Xlsxrb
         cells.each do |cell|
           if cell.is_a?(Elements::Cell)
             value = cell.value
-            cell_style_id = cell.style_index
+            cell_style_id = cell.style || cell.style_index
             col_ref = cell.ref || "#{column_letter(cell.column_index)}#{row_num_str}"
             col_idx = cell.column_index
             formula = cell.formula

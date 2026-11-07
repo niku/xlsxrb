@@ -10,6 +10,6 @@ Xlsxrb.write(output_path) do |wb|
     s.column(1, width: 25)
     s.row(["Format", "Time Value"])
     s.row(["DateTime", Time.new(2026, 7, 1, 12, 34, 56)])
-    s.row(["Time Only", Time.new(2026, 7, 1, 9, 15, 0)], styles: { 1 => "time_fmt" })
+    s.row(["Time Only", Time.new(2026, 7, 1, 9, 15, 0)], cell_styles: { 1 => "time_fmt" })
   end
 end

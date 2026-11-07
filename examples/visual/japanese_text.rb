@@ -12,7 +12,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Japanese") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row(%w[日本語ラベル 値], styles: { 0 => "ja_font", 1 => "ja_font" })
-    s.row(["売上", 12_500], styles: { 0 => "ja_font" })
+    s.row(%w[日本語ラベル 値], cell_styles: { 0 => "ja_font", 1 => "ja_font" })
+    s.row(["売上", 12_500], cell_styles: { 0 => "ja_font" })
   end
 end

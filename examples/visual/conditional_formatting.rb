@@ -9,7 +9,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Scores") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row([90, 45, 72, 88], styles: %w[center center center center])
+    s.row([90, 45, 72, 88], cell_styles: %w[center center center center])
 
     s.conditional_format("A1:D1",
                          type: :cell_is, operator: :greaterThan,

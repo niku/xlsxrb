@@ -543,7 +543,7 @@ class PbtTest < Test::Unit::TestCase
             w.sheet("StyledSheet") do |s|
               s.style(:custom_style, **style_opts)
               rows.each do |label, num|
-                s.row([label, num], styles: %i[custom_style custom_style])
+                s.row([label, num], cell_styles: %i[custom_style custom_style])
               end
             end
           end

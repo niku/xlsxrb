@@ -16,7 +16,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Styles") do |sheet|
     sheet.column(0, width: 25)
     sheet.column(1, width: 25)
-    sheet.row(["Header 1", "Header 2"], styles: "header")
-    sheet.row(["Normal Text", "Highlighted Text"], styles: [nil, "highlight"])
+    sheet.row(["Header 1", "Header 2"], cell_styles: "header")
+    sheet.row(["Normal Text", "Highlighted Text"], cell_styles: [nil, "highlight"])
   end
 end

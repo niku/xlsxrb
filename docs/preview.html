@@ -886,23 +886,23 @@ Xlsxrb.write("executive_dashboard.xlsx") do |wb|
     s.column(5, width: 2)   # Spacer
 
     # Title Banner & Logo
-    s.row(["", "Executive Sales Dashboard"], height: 26, styles: [nil, :title])
-    s.row(["", "Q3 Performance Overview & Target Attainment"], height: 16, styles: [nil, :subtitle])
+    s.row(["", "Executive Sales Dashboard"], height: 26, cell_styles: [nil, :title])
+    s.row(["", "Q3 Performance Overview & Target Attainment"], height: 16, cell_styles: [nil, :subtitle])
     s.row([])
     s.image(logo, ext: "png", from_col: 0, from_row: 0, to_col: 1, to_row: 1)
 
     # KPI Summary Cards
-    s.row(["", "ACTUAL REVENUE", "TARGET REVENUE", "VARIANCE", "ATTAINMENT"], height: 14, styles: [nil, :kpi_lbl, :kpi_lbl, :kpi_lbl, :kpi_lbl])
-    s.row(["", "=D12", "=C12", "=D12-C12", "=D12/C12"], height: 24, styles: [nil, :kpi_val, :kpi_val, :kpi_var, :kpi_pct])
+    s.row(["", "ACTUAL REVENUE", "TARGET REVENUE", "VARIANCE", "ATTAINMENT"], height: 14, cell_styles: [nil, :kpi_lbl, :kpi_lbl, :kpi_lbl, :kpi_lbl])
+    s.row(["", "=D12", "=C12", "=D12-C12", "=D12/C12"], height: 24, cell_styles: [nil, :kpi_val, :kpi_val, :kpi_var, :kpi_pct])
     s.row([])
 
     # Business Line Breakdown Table
-    s.row(["", "Business Line", "Target", "Actual", "Attainment"], height: 22, styles: [nil, :th_l, :th_r, :th_r, :th_r])
-    s.row(["", "Cloud Platform", 50000, 54500, "=D8/C8"], styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
-    s.row(["", "AI & Analytics", 35000, 39200, "=D9/C9"], styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
-    s.row(["", "Cybersecurity", 25000, 26800, "=D10/C10"], styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
-    s.row(["", "Consulting", 30000, 28000, "=D11/C11"], styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
-    s.row(["", "Total Portfolio", "=SUM(C8:C11)", "=SUM(D8:D11)", "=D12/C12"], height: 20, styles: [nil, :tot_l, :tot_r, :tot_r, :tot_pct])
+    s.row(["", "Business Line", "Target", "Actual", "Attainment"], height: 22, cell_styles: [nil, :th_l, :th_r, :th_r, :th_r])
+    s.row(["", "Cloud Platform", 50000, 54500, "=D8/C8"], cell_styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
+    s.row(["", "AI & Analytics", 35000, 39200, "=D9/C9"], cell_styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
+    s.row(["", "Cybersecurity", 25000, 26800, "=D10/C10"], cell_styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
+    s.row(["", "Consulting", 30000, 28000, "=D11/C11"], cell_styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
+    s.row(["", "Total Portfolio", "=SUM(C8:C11)", "=SUM(D8:D11)", "=D12/C12"], height: 20, cell_styles: [nil, :tot_l, :tot_r, :tot_r, :tot_pct])
 
     # Target vs Actual Clustered Bar Chart (Opaque Card Background)
     s.chart(
@@ -939,21 +939,21 @@ Xlsxrb.write("sales_report.xlsx") do |wb|
     s.column(2, width: 15)
     s.column(3, width: 18)
 
-    s.row(["Premium Product Sales Report", nil, nil, nil], styles: :title)
+    s.row(["Premium Product Sales Report", nil, nil, nil], cell_styles: :title)
     s.merge("A1:D1")
 
-    s.row(["Report Generated at: #{Time.now.strftime('%Y-%m-%d')}", nil, nil, nil], styles: :subtitle)
+    s.row(["Report Generated at: #{Time.now.strftime('%Y-%m-%d')}", nil, nil, nil], cell_styles: :subtitle)
     s.merge("A2:D2")
     s.row([])
 
-    s.row(%w[Product_Item Quantity Unit_Price Total_Value], styles: :header)
-    s.row(["Wireless Headphones", 120, 89.99, "=B5*C5"], styles: %i[td_left td_center currency currency])
-    s.row(["Smart Watch", 85, 199.50, "=B6*C6"], styles: %i[td_left td_center currency currency])
-    s.row(["Bluetooth Speaker", 150, 45.00, "=B7*C7"], styles: %i[td_left td_center currency currency])
-    s.row(["Mechanical Keyboard", 60, 129.00, "=B8*C8"], styles: %i[td_left td_center currency currency])
-    s.row(["Ergonomic Mouse", 210, 59.90, "=B9*C9"], styles: %i[td_left td_center currency currency])
+    s.row(%w[Product_Item Quantity Unit_Price Total_Value], cell_styles: :header)
+    s.row(["Wireless Headphones", 120, 89.99, "=B5*C5"], cell_styles: %i[td_left td_center currency currency])
+    s.row(["Smart Watch", 85, 199.50, "=B6*C6"], cell_styles: %i[td_left td_center currency currency])
+    s.row(["Bluetooth Speaker", 150, 45.00, "=B7*C7"], cell_styles: %i[td_left td_center currency currency])
+    s.row(["Mechanical Keyboard", 60, 129.00, "=B8*C8"], cell_styles: %i[td_left td_center currency currency])
+    s.row(["Ergonomic Mouse", 210, 59.90, "=B9*C9"], cell_styles: %i[td_left td_center currency currency])
 
-    s.row(["Total Portfolio Value", nil, nil, "=SUM(D5:D9)"], styles: %i[total_label total_label total_label total])
+    s.row(["Total Portfolio Value", nil, nil, "=SUM(D5:D9)"], cell_styles: %i[total_label total_label total_label total])
     s.merge("A10:C10")
   end
 end
@@ -1090,8 +1090,8 @@ Xlsxrb.write("styles_borders.xlsx") do |wb|
 
   wb.sheet("Styles & Borders") do |s|
     s.column(0..2, width: 22)
-    s.row(["Header 1", "Header 2", "Header 3"], styles: :header)
-    s.row(["Thin Borders", "Double Borders", "Yellow Highlight"], styles: %i[box double_box colored])
+    s.row(["Header 1", "Header 2", "Header 3"], cell_styles: :header)
+    s.row(["Thin Borders", "Double Borders", "Yellow Highlight"], cell_styles: %i[box double_box colored])
     s.row(["Normal Data", "More Data", "Sample Value"])
   end
 end
@@ -1112,11 +1112,11 @@ Xlsxrb.write("number_formats.xlsx") do |wb|
     s.column(0, width: 20)
     s.column(1, width: 18)
 
-    s.row(%w[Type Formatted_Value], styles: :header)
-    s.row(["US Dollar", 12345.67], styles: [nil, :currency])
-    s.row(["Japanese Yen", 54000], styles: [nil, :yen])
-    s.row(["Percentage", 0.785], styles: [nil, :percent])
-    s.row(["Date", Date.new(2026, 10, 10)], styles: [nil, :date])
+    s.row(%w[Type Formatted_Value], cell_styles: :header)
+    s.row(["US Dollar", 12345.67], cell_styles: [nil, :currency])
+    s.row(["Japanese Yen", 54000], cell_styles: [nil, :yen])
+    s.row(["Percentage", 0.785], cell_styles: [nil, :percent])
+    s.row(["Date", Date.new(2026, 10, 10)], cell_styles: [nil, :date])
   end
 end
 
@@ -1132,9 +1132,9 @@ Xlsxrb.write("conditional_formatting.xlsx") do |wb|
     s.column(0, width: 15)
     s.column(1, width: 15)
 
-    s.row(%w[Score Heatmap], styles: :header)
+    s.row(%w[Score Heatmap], cell_styles: :header)
     [95, 82, 64, 45, 90, 73].each do |score|
-      s.row([score, score], styles: :center)
+      s.row([score, score], cell_styles: :center)
     end
 
     # Highlight scores >= 80 with soft red fill
@@ -1156,9 +1156,9 @@ Xlsxrb.write("hyperlinks.xlsx") do |wb|
     s.column(0, width: 22)
     s.column(1, width: 35)
 
-    s.row(%w[Link_Type Target], styles: :header)
-    s.row(["External URL", "Visit GitHub Repository"], styles: [nil, :link])
-    s.row(["Internal Sheet", "Jump to Summary Sheet"], styles: [nil, :link])
+    s.row(%w[Link_Type Target], cell_styles: :header)
+    s.row(["External URL", "Visit GitHub Repository"], cell_styles: [nil, :link])
+    s.row(["Internal Sheet", "Jump to Summary Sheet"], cell_styles: [nil, :link])
 
     s.hyperlink("B2", "https://github.com/niku/xlsxrb", display: "Visit GitHub Repository", tooltip: "Open xlsxrb repository")
     s.hyperlink("B3", location: "Summary!A1", tooltip: "Go to Summary Sheet")
@@ -1183,10 +1183,10 @@ Xlsxrb.write("japanese_text.xlsx") do |wb|
     s.column(1, width: 24)
     s.column(2, width: 16)
 
-    s.row(%w[商品コード 商品名 価格], styles: :jp_header)
-    s.row(["A-001", "ワイヤレスイヤホン", 8800], styles: %i[jp_cell jp_cell currency])
-    s.row(["A-002", "スマートウォッチ", 19800], styles: %i[jp_cell jp_cell currency])
-    s.row(["A-003", "メカニカルキーボード", 14500], styles: %i[jp_cell jp_cell currency])
+    s.row(%w[商品コード 商品名 価格], cell_styles: :jp_header)
+    s.row(["A-001", "ワイヤレスイヤホン", 8800], cell_styles: %i[jp_cell jp_cell currency])
+    s.row(["A-002", "スマートウォッチ", 19800], cell_styles: %i[jp_cell jp_cell currency])
+    s.row(["A-003", "メカニカルキーボード", 14500], cell_styles: %i[jp_cell jp_cell currency])
   end
 end
 
@@ -1216,10 +1216,10 @@ Xlsxrb.write("sheet_properties.xlsx") do |wb|
     s.phonetic_properties(font_id: 0, type: :no_conversion, alignment: :left)
     s.ignore_error("A2:A4", number_stored_as_text: true)
 
-    s.row(["Code", "Product Description", "Inventory"], styles: :header)
-    s.row(["00101", "Compact Mechanical Keyboard", 42], styles: :border_cell)
-    s.row(["00102", "Ergonomic Vertical Mouse", 78], styles: :border_cell)
-    s.row(["00103", "Ultra-wide Monitor Stand", 15], styles: :border_cell)
+    s.row(["Code", "Product Description", "Inventory"], cell_styles: :header)
+    s.row(["00101", "Compact Mechanical Keyboard", 42], cell_styles: :border_cell)
+    s.row(["00102", "Ergonomic Vertical Mouse", 78], cell_styles: :border_cell)
+    s.row(["00103", "Ultra-wide Monitor Stand", 15], cell_styles: :border_cell)
   end
 
   # Sheet 2: Secondary sheet with green tab, sheet calculation pr, and background image
@@ -1230,9 +1230,9 @@ Xlsxrb.write("sheet_properties.xlsx") do |wb|
     s.sheet_calc_pr(full_calc_on_load: true)
     s.background_image(subtle_bg)
 
-    s.row(%w[Metric Calculation], styles: :meta_hdr)
-    s.row(["Total Units", "=SUM('Active Summary'!C2:C4)"], styles: :border_cell)
-    s.row(["Average Stock", "=AVERAGE('Active Summary'!C2:C4)"], styles: :border_cell)
+    s.row(%w[Metric Calculation], cell_styles: :meta_hdr)
+    s.row(["Total Units", "=SUM('Active Summary'!C2:C4)"], cell_styles: :border_cell)
+    s.row(["Average Stock", "=AVERAGE('Active Summary'!C2:C4)"], cell_styles: :border_cell)
   end
 
   # Sheet 3: Hidden configuration sheet
@@ -1401,7 +1401,7 @@ puts "Sheet properties workbook generated!"`
                   {
                     label: 's.row',
                     kind: monaco.languages.CompletionItemKind.Snippet,
-                    insertText: 's.row([${1:"Item", 100}], height: ${2:20}, styles: [${3:nil, :bold}])',
+                    insertText: 's.row([${1:"Item", 100}], height: ${2:20}, cell_styles: [${3:nil, :bold}])',
                     insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                     documentation: 'Append a row with cell values, row height, and styles',
                     detail: 'xlsxrb worksheet row',

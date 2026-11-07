@@ -8,7 +8,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
-    s.row(["Scientific", 123_456_789.0], styles: { 1 => "sci" })
-    s.row(["Small Scientific", 0.00001234], styles: { 1 => "sci" })
+    s.row(["Scientific", 123_456_789.0], cell_styles: { 1 => "sci" })
+    s.row(["Small Scientific", 0.00001234], cell_styles: { 1 => "sci" })
   end
 end

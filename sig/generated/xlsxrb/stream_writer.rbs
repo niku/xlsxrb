@@ -293,20 +293,22 @@ module Xlsxrb
       #   s.row(["Name", "Age", "City"])
       #
       # @example Write with explicit column keys and styles
-      #   s.row({ A: "Header", C: 100 }, styles: { A: :bold })
+      #   s.row({ A: "Header", C: 100 }, cell_styles: { A: :bold })
       #
       # @param values [Array, Hash] The cell values (e.g. `[1, 2, 3]` or `{ A: 1, C: 3 }`).
-      # @param styles [String, Symbol, Array, Hash, nil] Style names or hashes to apply.
+      # @param cell_styles [String, Symbol, Array, Hash, nil] Style names or hashes to apply to cells.
+      # @param row_style [Integer, Symbol, String, Hash, nil] Row style format or index.
       # @param height [Float, Integer, nil] The row height in points (0 - 409).
       # @param hidden [Boolean] Whether the row is hidden.
       # @param custom_height [Boolean] Whether to flag as custom height.
       # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
       # @param collapsed [Boolean] Whether the row is collapsed.
-      # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
+      # @param styles [String, Symbol, Array, Hash, nil] Deprecated. Use cell_styles: instead.
+      # @param style [Integer, Symbol, String, Hash, nil] Deprecated. Use row_style: instead.
       # @return [void]
       # @api public
-      # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
-      def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
+      # : (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: untyped, ?styles: untyped, ?style: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+      def row: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: untyped, ?styles: untyped, ?style: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
 
       # @deprecated Use {#row} instead. Will be removed in 0.2.0.
       alias add_row row
@@ -1176,16 +1178,19 @@ module Xlsxrb
     # Appends a row of values to the active sheet.
     #
     # @param values [Array<Object>, Hash] The cell values.
-    # @param styles [String, Symbol, Array, Hash, nil] Style names or inline style definitions.
+    # @param cell_styles [String, Symbol, Array, Hash, nil] Style names or inline style definitions to apply to cells.
+    # @param row_style [Integer, Symbol, String, Hash, nil] Row style format or index.
     # @param height [Float, Integer, nil] The row height in points (0 - 409).
     # @param hidden [Boolean] Whether the row is hidden.
     # @param custom_height [Boolean] Whether custom row height is set.
     # @param outline_level [Integer, nil] Grouping/outline level (0 - 7).
-    # @param style [Integer, Symbol, String, Hash, nil] Row style format or index.
+    # @param collapsed [Boolean] Whether the row is collapsed.
+    # @param styles [String, Symbol, Array, Hash, nil] Deprecated. Use cell_styles: instead.
+    # @param style [Integer, Symbol, String, Hash, nil] Deprecated. Use row_style: instead.
     # @return [void]
     # @api public
-    # : (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
-    def row: (Array[untyped] | Hash[untyped, untyped] values, ?styles: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style: untyped) -> void
+    # : (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: untyped, ?styles: untyped, ?style: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+    def row: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: untyped, ?styles: untyped, ?style: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
 
     # @deprecated Use {#row} instead. Will be removed in 0.2.0.
     alias add_row row

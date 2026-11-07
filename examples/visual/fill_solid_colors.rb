@@ -9,7 +9,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Color Preview])
-    s.row(["Red", "Red Fill"], styles: { 1 => "red_fill" })
-    s.row(["Green", "Green Fill"], styles: { 1 => "green_fill" })
+    s.row(["Red", "Red Fill"], cell_styles: { 1 => "red_fill" })
+    s.row(["Green", "Green Fill"], cell_styles: { 1 => "green_fill" })
   end
 end

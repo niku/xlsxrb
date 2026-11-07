@@ -1054,7 +1054,7 @@ class ContractTest < Test::Unit::TestCase
         s.style("bold_green") do |style|
           style.bold.fill_color("00FF00")
         end
-        s.row(["Header"], styles: ["bold_green"])
+        s.row(["Header"], cell_styles: ["bold_green"])
         s.row(["Normal"])
       end
     end
@@ -1085,7 +1085,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Formats") do |s|
         # numFmtId 4 = "#,##0.00" (built-in)
         s.style("currency") { |style| style.number_format(4) }
-        s.row([1234.56], styles: ["currency"])
+        s.row([1234.56], cell_styles: ["currency"])
         s.row([7890])
       end
     end
@@ -1107,7 +1107,7 @@ class ContractTest < Test::Unit::TestCase
     _reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Bordered") do |s|
         s.style("boxed") { |style| style.border_all(style: "thin") }
-        s.row(["Item"], styles: ["boxed"])
+        s.row(["Item"], cell_styles: ["boxed"])
       end
     end
 
@@ -1132,7 +1132,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Dates") do |s|
         # numFmtId 14 = "m/d/yy" (built-in date format); triggers date conversion in Reader
         s.style("date_fmt") { |style| style.number_format(14) }
-        s.row([today], styles: ["date_fmt"])
+        s.row([today], cell_styles: ["date_fmt"])
       end
     end
 

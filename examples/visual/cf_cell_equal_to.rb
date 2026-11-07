@@ -8,9 +8,9 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Values"])
-    s.row([10], styles: "center")
-    s.row([20], styles: "center")
-    s.row([10], styles: "center")
+    s.row([10], cell_styles: "center")
+    s.row([20], cell_styles: "center")
+    s.row([10], cell_styles: "center")
     s.conditional_format("A2:A4", type: "cellIs", operator: "equal", formula: "10", fill_color: "FFFFC7CE")
   end
 end

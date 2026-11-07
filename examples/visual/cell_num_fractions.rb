@@ -8,8 +8,8 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
-    s.row(["Half", 0.5], styles: { 1 => "frac" })
-    s.row(["Third", 0.3333], styles: { 1 => "frac" })
-    s.row(["Quarter", 0.75], styles: { 1 => "frac" })
+    s.row(["Half", 0.5], cell_styles: { 1 => "frac" })
+    s.row(["Third", 0.3333], cell_styles: { 1 => "frac" })
+    s.row(["Quarter", 0.75], cell_styles: { 1 => "frac" })
   end
 end

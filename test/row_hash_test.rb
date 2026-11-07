@@ -12,7 +12,7 @@ class RowHashTest < Test::Unit::TestCase
       w.sheet("HashRow") do |s|
         s.style("bold", font: { bold: true })
         s.style("italic", font: { italic: true })
-        s.row({ A: 1, C: 2 }, styles: { C: "bold", D: "italic" })
+        s.row({ A: 1, C: 2 }, cell_styles: { C: "bold", D: "italic" })
       end
     end
     Xlsxrb.write(xlsx_path, wb)
@@ -29,7 +29,7 @@ class RowHashTest < Test::Unit::TestCase
       w.sheet("HashRow") do |s|
         s.style("bold", font: { bold: true })
         s.style("italic", font: { italic: true })
-        s.row({ A: 1, C: 2 }, styles: { C: "bold", D: "italic" })
+        s.row({ A: 1, C: 2 }, cell_styles: { C: "bold", D: "italic" })
       end
     end
 

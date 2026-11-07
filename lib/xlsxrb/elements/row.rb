@@ -14,7 +14,7 @@ module Xlsxrb
     #
     # @api public
     # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
-    class Row < Data.define(:index, :cells, :height, :hidden, :custom_height, :collapsed, :outline_level, :unmapped_data, :errors)
+    class Row < Data.define(:index, :cells, :height, :hidden, :custom_height, :collapsed, :outline_level, :style_index, :unmapped_data, :errors)
       # rubocop:enable Style/DataInheritance
       [Enumerable].each { |m| include m }
 
@@ -25,17 +25,19 @@ module Xlsxrb
       # @param custom_height [Boolean] Whether custom height is set.
       # @param collapsed [Boolean] Whether the row is collapsed.
       # @param outline_level [Integer, nil] Grouping/outline level.
+      # @param style_index [Integer, nil] Default row style index.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      #: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      #: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: (Integer | Symbol | String | Hash[Symbol, untyped] | nil), ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize(index:, cells: EMPTY_CELLS, height: nil, hidden: false, custom_height: false, collapsed: false,
-                     outline_level: nil, unmapped_data: EMPTY_HASH, errors: nil)
+                     outline_level: nil, style_index: nil, unmapped_data: EMPTY_HASH, errors: nil)
         computed_errors = errors || self.class.validate(index, cells)
         computed_errors = computed_errors.freeze unless computed_errors.frozen?
         cells = cells.freeze unless cells.frozen?
+        resolved_style_index = style_index || unmapped_data[:style_index]
         super(index: index, cells: cells, height: height, hidden: hidden,
               custom_height: custom_height, collapsed: collapsed, outline_level: outline_level,
-              unmapped_data: unmapped_data, errors: computed_errors)
+              style_index: resolved_style_index, unmapped_data: unmapped_data, errors: computed_errors)
       end
 
       # Access a cell by 0-based column index, column letter, or access row attributes via Symbol.
@@ -184,14 +186,6 @@ module Xlsxrb
         }
         h[:style_index] = style_index if style_index
         h.freeze
-      end
-
-      # Returns style_index if present in unmapped_data.
-      #
-      # @return [Integer, nil]
-      #: () -> Integer?
-      def style_index
-        unmapped_data[:style_index]
       end
 
       # Iterate over cells in this row.

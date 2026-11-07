@@ -12,6 +12,6 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Gradients") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row(["Normal Cell", "Gradient Cell"], styles: { 1 => "gradient" })
+    s.row(["Normal Cell", "Gradient Cell"], cell_styles: { 1 => "gradient" })
   end
 end

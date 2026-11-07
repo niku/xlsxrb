@@ -2072,6 +2072,7 @@ module Xlsxrb
         custom_height: attrs[:custom_height] || false,
         collapsed: attrs[:collapsed] || false,
         outline_level: attrs[:outline_level],
+        style_index: attrs[:style_index],
         unmapped_data: row_unmapped,
         errors: row_errors
       )

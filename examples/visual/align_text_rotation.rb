@@ -9,6 +9,6 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.print_options(:grid_lines, true)
-    s.row(["Rotated 45", "Rotated 90"], styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
+    s.row(["Rotated 45", "Rotated 90"], cell_styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
   end
 end

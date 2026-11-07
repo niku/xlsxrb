@@ -8764,7 +8764,7 @@ class WriterTest < Test::Unit::TestCase
       assert_equal(false, w.shared_strings)
       w.sheet("Data") do |s|
         s.style(:header, bold: true)
-        s.row(%w[Item Count Price], styles: [:header, nil, nil])
+        s.row(%w[Item Count Price], cell_styles: [:header, nil, nil])
         s.row(["Widget", 42, 19.99])
         s.row(["Gadget", 100, 5.50])
       end
@@ -8926,7 +8926,7 @@ class WriterTest < Test::Unit::TestCase
       w.sheet("RichTextSheet") do |s|
         s.style(:header, fill_color: "FFEEEEEE")
         s.row([rt_unstyled, "Plain"])
-        s.row([rt_styled, "PlainStyled"], styles: [:header, nil])
+        s.row([rt_styled, "PlainStyled"], cell_styles: [:header, nil])
       end
     end
 
@@ -9079,7 +9079,7 @@ class WriterTest < Test::Unit::TestCase
       w.style(:col_style, bold: true)
       w.sheet("Override") do |s|
         s.column(0, style: :col_style)
-        s.row(["Overridden"], styles: [:default])
+        s.row(["Overridden"], cell_styles: [:default])
         s.row(["Inherited"])
       end
     end

@@ -8,8 +8,8 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Row Grouping") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row(["Parent Row 1", ""], styles: %w[parent parent])
-    s.row(["Child Row 1.1", ""], outline_level: 1, styles: %w[child child])
-    s.row(["Child Row 1.2", ""], outline_level: 1, styles: %w[child child])
+    s.row(["Parent Row 1", ""], cell_styles: %w[parent parent])
+    s.row(["Child Row 1.1", ""], outline_level: 1, cell_styles: %w[child child])
+    s.row(["Child Row 1.2", ""], outline_level: 1, cell_styles: %w[child child])
   end
 end

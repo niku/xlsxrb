@@ -8,7 +8,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(%w[Format Value])
-    s.row(["Positive (Green)", 5000], styles: { 1 => "custom_color" })
-    s.row(["Negative (Red)", -2500], styles: { 1 => "custom_color" })
+    s.row(["Positive (Green)", 5000], cell_styles: { 1 => "custom_color" })
+    s.row(["Negative (Red)", -2500], cell_styles: { 1 => "custom_color" })
   end
 end

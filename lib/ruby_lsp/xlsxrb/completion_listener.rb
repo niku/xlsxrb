@@ -14,7 +14,7 @@ module RubyLsp
         {
           label: "sheet",
           detail: "(name = nil, **opts) { |sheet| ... } -> void",
-          documentation: "Adds a new worksheet to the streaming XLSX writer and yields a `WorksheetProxy`.\n\n```ruby\nwb.sheet(\"Sales\") do |s|\n  s.row([\"Product\", \"Price\"], styles: :bold)\nend\n```"
+          documentation: "Adds a new worksheet to the streaming XLSX writer and yields a `WorksheetProxy`.\n\n```ruby\nwb.sheet(\"Sales\") do |s|\n  s.row([\"Product\", \"Price\"], cell_styles: :bold)\nend\n```"
         },
         {
           label: "style",
@@ -139,8 +139,8 @@ module RubyLsp
       WORKSHEET_PROXY_ITEMS = [
         {
           label: "row",
-          detail: "(values, styles: nil, height: nil, hidden: false, outline_level: nil) -> void",
-          documentation: "Writes a single row of cells with optional style name, height, and outline level.\n\n```ruby\ns.row([\"Product\", \"Price\"], styles: :bold)\ns.row([\"Laptop\", 1200])\n```"
+          detail: "(values, cell_styles: nil, row_style: nil, height: nil, hidden: false, outline_level: nil) -> void",
+          documentation: "Writes a single row of cells with optional style name, height, and outline level.\n\n```ruby\ns.row([\"Product\", \"Price\"], cell_styles: :bold)\ns.row([\"Laptop\", 1200])\n```"
         },
         {
           label: "column",

@@ -13,9 +13,9 @@ Xlsxrb.write(output_path) do |wb|
     s.column(1, width: 30)
     s.column(2, width: 20)
 
-    s.row(%w[ID Description Status], styles: :header)
+    s.row(%w[ID Description Status], cell_styles: :header)
     40.times do |i|
-      s.row([i + 1, "Report item #{i + 1}", i.even? ? "Completed" : "Pending"], styles: :border)
+      s.row([i + 1, "Report item #{i + 1}", i.even? ? "Completed" : "Pending"], cell_styles: :border)
     end
 
     # Repeat top header row on every printed page

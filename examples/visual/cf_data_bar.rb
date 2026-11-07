@@ -7,9 +7,9 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data Bars") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row([20], styles: "center")
-    s.row([60], styles: "center")
-    s.row([100], styles: "center")
+    s.row([20], cell_styles: "center")
+    s.row([60], cell_styles: "center")
+    s.row([100], cell_styles: "center")
     s.conditional_format("A1:A3", type: :dataBar, priority: 1, color: "FF0070C0")
   end
 end

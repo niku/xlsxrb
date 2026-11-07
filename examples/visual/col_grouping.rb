@@ -10,6 +10,6 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25, outline_level: 0)
     s.column(1, width: 25, outline_level: 1)
     s.column(2, width: 25, outline_level: 1)
-    s.row(["Col A", "Col B (Grouped)", "Col C (Grouped)"], styles: %w[border border border])
+    s.row(["Col A", "Col B (Grouped)", "Col C (Grouped)"], cell_styles: %w[border border border])
   end
 end

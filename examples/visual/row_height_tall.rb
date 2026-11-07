@@ -7,7 +7,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Row Height") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.row(["Very Tall Row (Height 60)", ""], height: 60, styles: %w[border border])
-    s.row(["Normal Row", ""], styles: %w[border border])
+    s.row(["Very Tall Row (Height 60)", ""], height: 60, cell_styles: %w[border border])
+    s.row(["Normal Row", ""], cell_styles: %w[border border])
   end
 end

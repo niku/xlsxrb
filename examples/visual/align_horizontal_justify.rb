@@ -9,6 +9,6 @@ Xlsxrb.write(output_path) do |wb|
   end
   wb.sheet("Alignment") do |s|
     s.column(0, width: 25)
-    s.row(["Justified alignment wraps and distributes text evenly."], styles: { 0 => "justify_align" })
+    s.row(["Justified alignment wraps and distributes text evenly."], cell_styles: { 0 => "justify_align" })
   end
 end
