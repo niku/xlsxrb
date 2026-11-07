@@ -1229,14 +1229,12 @@ class OoxmlTest < Test::Unit::TestCase
     assert_include(sheet_xml, '<c r="A1" t="b"><f>A1&gt;10</f><v>0</v></c>')
     assert_include(sheet_xml, '<c r="B1"><f>SUM(A1:A5)</f><v>0</v></c>')
 
-    loaded_wb = Xlsxrb.read(StringIO.new(bytes))
-    s1 = loaded_wb.sheet("S1").load
+    loaded_wb = Xlsxrb.load(StringIO.new(bytes))
+    s1 = loaded_wb.sheet("S1")
     assert_equal(false, s1["A1"].value)
-    f_expr_a1 = s1["A1"].formula.is_a?(Xlsxrb::Elements::Formula) ? s1["A1"].formula.expression : s1["A1"].formula
-    assert_equal("A1>10", f_expr_a1)
+    assert_equal("A1>10", s1["A1"].formula&.expression)
     assert_equal(0, s1["B1"].value)
-    f_expr_b1 = s1["B1"].formula.is_a?(Xlsxrb::Elements::Formula) ? s1["B1"].formula.expression : s1["B1"].formula
-    assert_equal("SUM(A1:A5)", f_expr_b1)
+    assert_equal("SUM(A1:A5)", s1["B1"].formula&.expression)
   end
 
   test "Ooxml::Reader resolves case-insensitive part names via ZipReader" do
@@ -1284,13 +1282,11 @@ class OoxmlTest < Test::Unit::TestCase
     assert_include(dom_sheet_xml, '<f t="array" ref="A1:C1">A2:C2*10</f>')
     assert_include(dom_sheet_xml, '<f t="shared" si="0" ref="D1:D5">A2*2</f>')
 
-    wb = Xlsxrb.read(StringIO.new(dom_bytes))
-    s1 = wb.sheet("S1").load
-    f_expr_a1 = s1["A1"].formula.is_a?(Xlsxrb::Elements::Formula) ? s1["A1"].formula.expression : s1["A1"].formula
-    assert_equal("A2:C2*10", f_expr_a1)
+    wb = Xlsxrb.load(StringIO.new(dom_bytes))
+    s1 = wb.sheet("S1")
+    assert_equal("A2:C2*10", s1["A1"].formula&.expression)
     assert_equal(10, s1["A1"].value)
-    f_expr_b1 = s1["B1"].formula.is_a?(Xlsxrb::Elements::Formula) ? s1["B1"].formula.expression : s1["B1"].formula
-    assert_equal("A2*2", f_expr_b1)
+    assert_equal("A2*2", s1["B1"].formula&.expression)
     assert_equal(2, s1["B1"].value)
   end
 

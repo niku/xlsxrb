@@ -11,6 +11,8 @@ require_relative "../dsl_helpers"
 module Xlsxrb
   module Ooxml
     # Writes spreadsheet data into an XLSX file.
+    #
+    # @api private
     class Writer
       include DrawingXml
       include FeaturesXml

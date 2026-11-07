@@ -3628,6 +3628,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(/\[DEPRECATION\] #full_calc_on_load is deprecated/, capture_stderr { wb.full_calc_on_load })
     assert_match(/\[DEPRECATION\] #to_workbook is deprecated/, capture_stderr { wb.to_workbook })
     assert_match(/\[DEPRECATION\] #each_sheet is deprecated/, capture_stderr { wb.each_sheet { |_| nil } })
+    assert_match(/\[Xlsxrb DEPRECATION\] Elements::Workbook#close is deprecated/, capture_stderr { wb.close })
 
     # 2. Worksheet aliases
     ws = wb.sheet(0)
@@ -3639,6 +3640,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(/\[DEPRECATION\] #to_worksheet is deprecated/, capture_stderr { ws.to_worksheet })
     assert_match(/\[DEPRECATION\] #sheet_calc_pr is deprecated/, capture_stderr { ws.sheet_calc_pr })
     assert_match(/\[DEPRECATION\] #calc_pr is deprecated/, capture_stderr { ws.calc_pr })
+    assert_match(/\[Xlsxrb DEPRECATION\] Elements::Worksheet#close is deprecated/, capture_stderr { ws.close })
 
     # 3. StreamSheet aliases
     data = Xlsxrb.write(wb)

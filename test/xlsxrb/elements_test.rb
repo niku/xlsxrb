@@ -2319,6 +2319,16 @@ class ElementsTest < Test::Unit::TestCase
     assert_empty(wb_warnings)
   end
 
+  test "worksheet load returns self and emits deprecation warning" do
+    ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
+    target_line = nil
+    err = capture_stderr do
+      target_line = __LINE__ + 1
+      assert_same(ws, ws.load)
+    end
+    assert_match(/(?:elements_test\.rb:#{target_line}|worksheet\.rb:\d+): warning: \[Xlsxrb DEPRECATION\] Elements::Worksheet#load is deprecated; worksheet is already loaded in memory\.\n\z/, err)
+  end
+
   # --- Worksheet#full_calc_on_load? ---
 
   test "worksheet full_calc_on_load? evaluates calculation and sheet properties" do

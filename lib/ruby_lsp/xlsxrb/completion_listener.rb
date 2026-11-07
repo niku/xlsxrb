@@ -13,12 +13,12 @@ module RubyLsp
       STREAM_WRITER_ITEMS = [
         {
           label: "sheet",
-          detail: "(name = nil, **opts) { |sheet| ... } -> void",
+          detail: "(name = nil, state: nil, tab_color: nil, code_name: nil, **opts) { |sheet| ... } -> String",
           documentation: "Adds a new worksheet to the streaming XLSX writer and yields a `WorksheetProxy`.\n\n```ruby\nwb.sheet(\"Sales\") do |s|\n  s.row([\"Product\", \"Price\"], cell_styles: :bold)\nend\n```"
         },
         {
           label: "style",
-          detail: "(name, **options) -> Symbol",
+          detail: "(name, **opts) { |style_builder| ... } -> StyleBuilder",
           documentation: "Registers a reusable named cell style (font, fill, border, alignment, number_format).\n\n```ruby\nwb.style(:bold_blue, font: { bold: true, color: \"0000FF\" })\n```"
         },
         {
@@ -27,7 +27,7 @@ module RubyLsp
           documentation: "Sets a workbook-level property (e.g. `:update_links`).\n\n```ruby\nwb.workbook_property(:update_links, \"never\")\n```"
         },
         {
-          label: "protect_workbook",
+          label: "workbook_protection",
           detail: "(**opts) -> void",
           documentation: "Configures workbook protection options (e.g. `structure: true`, `windows: true`)."
         },
@@ -43,7 +43,7 @@ module RubyLsp
         },
         {
           label: "print_titles",
-          detail: "(rows: nil, cols: nil, sheet: nil) -> void",
+          detail: "(rows: nil, columns: nil, sheet: nil) -> void",
           documentation: "Sets repeating title rows or columns for printing (e.g. `rows: \"1:2\"`)."
         },
         {
@@ -76,12 +76,12 @@ module RubyLsp
       WORKBOOK_BUILDER_ITEMS = [
         {
           label: "sheet",
-          detail: "(name = nil, **opts) { |sheet_builder| ... } -> WorksheetBuilder",
+          detail: "(name = nil, state: nil, tab_color: nil, code_name: nil, **opts) { |sheet_builder| ... } -> Elements::Worksheet",
           documentation: "Adds a new worksheet to the workbook builder and yields a `WorksheetBuilder`.\n\n```ruby\nwb.sheet(\"Summary\") do |s|\n  s.row([\"Item\", \"Total\"])\nend\n```"
         },
         {
           label: "style",
-          detail: "(name, **opts) { |style_builder| ... } -> Symbol",
+          detail: "(name, **opts) { |style_builder| ... } -> StyleBuilder",
           documentation: "Defines a named style in the workbook builder."
         },
         {
@@ -95,7 +95,7 @@ module RubyLsp
           documentation: "Sets a workbook property."
         },
         {
-          label: "protect_workbook",
+          label: "workbook_protection",
           detail: "(**opts) -> void",
           documentation: "Sets workbook protection options."
         },
@@ -111,7 +111,7 @@ module RubyLsp
         },
         {
           label: "print_titles",
-          detail: "(rows: nil, cols: nil, sheet: nil) -> void",
+          detail: "(rows: nil, columns: nil, sheet: nil) -> void",
           documentation: "Sets repeating print titles."
         },
         {
@@ -149,13 +149,13 @@ module RubyLsp
         },
         {
           label: "merge",
-          detail: "(range = nil, row: nil, col_start: nil, col_end: nil) -> void",
-          documentation: "Merges a range of cells.\n\n```ruby\ns.merge(\"A1:C1\")\ns.merge(row: 0, col_start: 0, col_end: 2)\n```"
+          detail: "(range) -> void",
+          documentation: "Merges a range of cells.\n\n```ruby\ns.merge(\"A1:C1\")\n```"
         },
         {
           label: "freeze_pane",
-          detail: "(row: 0, col: 0) -> void",
-          documentation: "Freezes rows and columns from scrolling (0-based indices).\n\n```ruby\ns.freeze_pane(row: 1, col: 0) # Freeze top header row\n```"
+          detail: "(row: 0, column: 0) -> void",
+          documentation: "Freezes rows and columns from scrolling (0-based indices).\n\n```ruby\ns.freeze_pane(row: 1, column: 0) # Freeze top header row\n```"
         },
         {
           label: "auto_filter",
@@ -183,13 +183,13 @@ module RubyLsp
           documentation: "Adds conditional formatting rules (cellIs, colorScale, dataBar, expression)."
         },
         {
-          label: "validate_data",
+          label: "data_validation",
           detail: "(range, type: \"list\", **opts) -> void",
           documentation: "Adds data validation rules (dropdown list, whole number, decimal, date range, custom formula)."
         },
         {
           label: "image",
-          detail: "(file_data, ext: \"png\", from_col: 0, from_row: 0, to_col: 5, to_row: 10, **opts) -> void",
+          detail: "(file_data, ext: \"png\", from_column: 0, from_row: 0, to_column: 5, to_row: 10, **opts) -> void",
           documentation: "Inserts an image into the worksheet."
         },
         {
@@ -209,7 +209,7 @@ module RubyLsp
         },
         {
           label: "shape",
-          detail: "(preset: \"rect\", text: nil, from_col: 0, from_row: 0, to_col: 5, to_row: 5, **opts) -> void",
+          detail: "(preset: \"rect\", text: nil, from_column: 0, from_row: 0, to_column: 5, to_row: 5, **opts) -> void",
           documentation: "Adds a drawing shape to the sheet."
         },
         {
@@ -233,7 +233,7 @@ module RubyLsp
           documentation: "Configures print options (e.g. `s.print_options(:grid_lines, true)`)."
         },
         {
-          label: "protect_sheet",
+          label: "sheet_protection",
           detail: "(**opts) -> void",
           documentation: "Protects worksheet with optional password hashing and capability flags."
         },
@@ -248,7 +248,7 @@ module RubyLsp
           documentation: "Sets sheet properties (e.g. `s.sheet_properties(:tab_color, \"FF0000\")`)."
         },
         {
-          label: "select_cell",
+          label: "selection",
           detail: "(active_cell, sqref: nil, pane: nil) -> void",
           documentation: "Sets the active / selected cell when opening the worksheet in Excel."
         },
@@ -268,12 +268,12 @@ module RubyLsp
           documentation: "Configures sort state conditions on a cell range."
         },
         {
-          label: "page_break_row",
+          label: "row_break",
           detail: "(row_num) -> void",
           documentation: "Adds a horizontal page break before the given row index."
         },
         {
-          label: "page_break_col",
+          label: "column_break",
           detail: "(col_index) -> void",
           documentation: "Adds a vertical page break before the given column index."
         }
@@ -283,7 +283,7 @@ module RubyLsp
         {
           label: "each_row",
           detail: "() { |row| ... } -> void",
-          documentation: "Yields each row in the streaming sheet as an `Elements::Row`.\n\n```ruby\nsheet.each_row do |row|\n  puts row.to_a.inspect\nend\n```"
+          documentation: "Yields each row in the streaming sheet as an `Elements::Row`.\n\n```ruby\nsheet.each_row do |row|\n  puts row.values.inspect\nend\n```"
         },
         {
           label: "each",
@@ -307,11 +307,6 @@ module RubyLsp
           label: "[]",
           detail: "(index_or_name) -> Elements::Worksheet?",
           documentation: "Returns the worksheet by 0-based index or name.\n\n```ruby\nsheet = workbook[\"Sheet1\"]\n```"
-        },
-        {
-          label: "update_sheet",
-          detail: "(name_or_index, sheet) -> Elements::Workbook",
-          documentation: "Replaces or updates a sheet and returns a new `Elements::Workbook`."
         },
         {
           label: "sheet_names",
@@ -354,7 +349,7 @@ module RubyLsp
         {
           label: "each_row",
           detail: "() { |row| ... } -> void",
-          documentation: "Yields each row in the worksheet as an `Elements::Row`.\n\n```ruby\nsheet.each_row do |row|\n  puts row.to_a.inspect\nend\n```"
+          documentation: "Yields each row in the worksheet as an `Elements::Row`.\n\n```ruby\nsheet.each_row do |row|\n  puts row.values.inspect\nend\n```"
         },
         {
           label: "each",
@@ -365,11 +360,6 @@ module RubyLsp
           label: "each_cell",
           detail: "() { |cell| ... } -> void",
           documentation: "Yields every `Elements::Cell` across all rows."
-        },
-        {
-          label: "update_cell",
-          detail: "(ref, new_value) -> Elements::Worksheet",
-          documentation: "Returns a new worksheet with the updated cell value."
         },
         {
           label: "row_at",
@@ -392,11 +382,6 @@ module RubyLsp
           documentation: "Returns a flat array of all cells in the sheet."
         },
         {
-          label: "cells_hash",
-          detail: "() -> Hash<String, Elements::Cell>",
-          documentation: "Returns a hash mapping A1 references to `Elements::Cell` objects."
-        },
-        {
           label: "name",
           detail: "() -> String",
           documentation: "Returns the worksheet name."
@@ -416,13 +401,13 @@ module RubyLsp
       ROW_ELEMENT_ITEMS = [
         {
           label: "[]",
-          detail: "(col_index_or_symbol) -> Elements::Cell? | Object?",
-          documentation: "Returns the cell at 0-based column index, or access property symbol (`:cells`, `:index`, `:height`).\n\n```ruby\ncell = row[0]\n```"
+          detail: "(col_index_or_letter) -> Elements::Cell?",
+          documentation: "Returns the cell at 0-based column index or column letter/Symbol.\n\n```ruby\ncell = row[0]\n```"
         },
         {
           label: "to_a",
-          detail: "() -> Array<Object?>",
-          documentation: "Returns an array containing the values of all cells in this row.\n\n```ruby\nvalues = row.to_a\n```"
+          detail: "() -> Array<Elements::Cell>",
+          documentation: "Returns an array of all `Elements::Cell` objects in this row.\n\n```ruby\ncells = row.to_a\n```"
         },
         {
           label: "values",
@@ -508,11 +493,6 @@ module RubyLsp
           documentation: "Converts cell value to Time."
         },
         {
-          label: "column_letter",
-          detail: "() -> String",
-          documentation: "Returns the column letters (e.g. `\"A\"`, `\"AA\"`)."
-        },
-        {
           label: "row_index",
           detail: "() -> Integer",
           documentation: "Returns the 0-based row index."
@@ -526,16 +506,6 @@ module RubyLsp
           label: "style_index",
           detail: "() -> Integer?",
           documentation: "Returns the 0-based index into stylesheet formatting."
-        },
-        {
-          label: "content",
-          detail: "() -> String",
-          documentation: "Returns string content of cell value."
-        },
-        {
-          label: "[]",
-          detail: "(symbol) -> Object?",
-          documentation: "Hash-style access to cell attributes (`:value`, `:ref`, `:style_index`)."
         },
         {
           label: "valid?",
@@ -605,12 +575,12 @@ module RubyLsp
         },
         {
           label: "border",
-          detail: "(left: nil, right: nil, top: nil, bottom: nil) -> void",
+          detail: "(all: nil, left: nil, right: nil, top: nil, bottom: nil, diagonal: nil) -> self",
           documentation: "Sets cell border lines and colors."
         },
         {
           label: "alignment",
-          detail: "(horizontal: nil, vertical: nil, wrap_text: false, rotation: 0) -> void",
+          detail: "(horizontal: nil, vertical: nil, wrap_text: nil, text_rotation: nil, indent: nil, shrink_to_fit: nil, ...) -> Hash | self",
           documentation: "Sets cell text alignment and text wrap."
         },
         {
@@ -696,7 +666,7 @@ module RubyLsp
             when :write then return :stream_writer
             when :read then return :stream_sheet
             when :build then return :workbook_builder
-            when :modify then return :workbook
+            when :load then return :workbook
             end
           end
 

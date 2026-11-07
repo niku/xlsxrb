@@ -44,7 +44,7 @@ class RubyLspAddonTest < Test::Unit::TestCase
     assert_includes(labels, "sheet")
     assert_includes(labels, "workbook_property")
     assert_includes(labels, "style")
-    assert_includes(labels, "protect_workbook")
+    assert_includes(labels, "workbook_protection")
 
     sheet_item = results.find { |i| i.label == "sheet" }
     assert_not_nil(sheet_item)
@@ -90,10 +90,10 @@ class RubyLspAddonTest < Test::Unit::TestCase
     assert_includes(each_row_item.detail, "Xlsxrb::StreamSheet")
   end
 
-  # 4. Xlsxrb.modify -> Elements::Workbook
-  def test_workbook_element_completions_in_modify_block
+  # 4. Xlsxrb.load -> Elements::Workbook
+  def test_workbook_element_completions_in_load_block
     source = <<~RUBY
-      Xlsxrb.modify("test.xlsx") do |doc|
+      Xlsxrb.load("test.xlsx") do |doc|
         doc.sheet
       end
     RUBY
@@ -103,7 +103,6 @@ class RubyLspAddonTest < Test::Unit::TestCase
 
     assert_includes(labels, "sheet")
     assert_includes(labels, "sheet_names")
-    assert_includes(labels, "update_sheet")
     assert_includes(labels, "save")
 
     sheet_item = results.find { |i| i.label == "sheet" }

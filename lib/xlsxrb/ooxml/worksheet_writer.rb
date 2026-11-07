@@ -744,7 +744,7 @@ module Xlsxrb
                  conditional_formats: nil, data_validations: nil,
                  hyperlinks: nil, print_options: nil, page_margins: nil,
                  page_setup: nil, header_footer: nil, row_breaks: nil,
-                 col_breaks: nil, cell_watches: nil, ignored_errors: nil, tables: nil, table_start_rid: nil,
+                 col_breaks: nil, column_breaks: nil, cell_watches: nil, ignored_errors: nil, tables: nil, table_start_rid: nil,
                  legacy_drawing_rid: nil, sparkline_groups: nil, phonetic_pr: nil, sheet_calc_pr: nil)
         return if @finished
 
@@ -780,7 +780,8 @@ module Xlsxrb
         write_page_setup(page_setup) if page_setup && !page_setup.empty?
         write_header_footer(header_footer) if header_footer && !header_footer.empty?
         write_row_breaks(row_breaks) if row_breaks && !row_breaks.empty?
-        write_col_breaks(col_breaks) if col_breaks && !col_breaks.empty?
+        cbreaks = column_breaks || col_breaks
+        write_col_breaks(cbreaks) if cbreaks && !cbreaks.empty?
         write_cell_watches(cell_watches) if cell_watches && !cell_watches.empty?
         write_ignored_errors(ignored_errors) if ignored_errors && !ignored_errors.empty?
         @builder.empty_tag("drawing", { "r:id": drawing_rid }) if drawing_rid
@@ -941,10 +942,13 @@ module Xlsxrb
 
         attrs = {}
         attrs[:defaultRowHeight] = fmt[:default_row_height].to_s if fmt[:default_row_height]
-        attrs[:defaultColWidth] = fmt[:default_col_width].to_s if fmt[:default_col_width]
-        attrs[:baseColWidth] = fmt[:base_col_width].to_s if fmt[:base_col_width]
+        dcw = fmt[:default_column_width] || fmt[:default_col_width]
+        attrs[:defaultColWidth] = dcw.to_s if dcw
+        bcw = fmt[:base_column_width] || fmt[:base_col_width]
+        attrs[:baseColWidth] = bcw.to_s if bcw
         attrs[:outlineLevelRow] = fmt[:outline_level_row].to_s if fmt[:outline_level_row]
-        attrs[:outlineLevelCol] = fmt[:outline_level_col].to_s if fmt[:outline_level_col]
+        olc = fmt[:outline_level_column] || fmt[:outline_level_col]
+        attrs[:outlineLevelCol] = olc.to_s if olc
         attrs[:customHeight] = "1" if fmt[:custom_height]
         attrs[:zeroHeight] = "1" if fmt[:zero_height]
         attrs[:thickTop] = "1" if fmt[:thick_top]
@@ -1531,7 +1535,10 @@ module Xlsxrb
       # --- Columns ---
 
       def write_columns(columns)
-        default_width = @sheet_format ? (@sheet_format[:default_col_width] || @sheet_format["default_col_width"]) : nil
+        default_width = if @sheet_format
+                          @sheet_format[:default_column_width] || @sheet_format[:default_col_width] ||
+                            @sheet_format["default_column_width"] || @sheet_format["default_col_width"]
+                        end
         @builder.open_tag("cols")
         columns.each do |col|
           if col.is_a?(Elements::Column)

@@ -31,12 +31,17 @@
 - Freeze `Elements::Cell` instances on instantiation (`initialize` and `fast_create`).
 - Return frozen `Array[Elements::IgnoredError]` from `WorksheetBuilder#ignored_errors`, `StreamWriter#ignored_errors`, and `WorksheetProxy#ignored_errors`.
 - Add XML element existence guards for `merged_cells`, `data_validations`, `conditional_formats` on `StreamSheet`.
+- Establish four-pillar I/O architecture: `Xlsxrb.read`, `Xlsxrb.write`, `Xlsxrb.load`, and `Xlsxrb.build`.
+- Direct worksheet materialization in `Xlsxrb.load` without intermediate `StreamSheet` allocations.
+- Support on-demand zip reopen after close in `Ooxml::ZipReader`.
+- Clarify `@api private` on `Ooxml::Reader`, `Ooxml::Writer`, and `Ooxml::ZipGenerator`.
 
 ### Changed
 - Update `Elements::Row#[]` and `StreamRow#[]` to resolve column indices and column letters via `cell_at` instead of indexing the raw sparse `cells` array, returning `nil` when a cell at the specified column is absent.
 - Separate builder getter (`xxx`) and setter (`xxx=`) methods, allowing explicit `nil` resets.
 - Encapsulate `StyleBuilder#resolve_color` as `private`.
 - Encapsulate `StreamSheet#auto_filter_data` as `private`.
+- Make `Xlsxrb._read_workbook` `private_class_method`.
 
 ### Deprecated
 - `DslHelpers.sheet_name` is deprecated in favor of `DslHelpers.sanitize_sheet_name`; will be removed in version 0.2.0.
@@ -78,6 +83,10 @@
 - Non-predicate boolean queries on element readers (`trim_empty_rows`, `pad_empty_rows`, `pad_empty_cells`, `fit_to_page`, `show_sheet_tabs`, `full_calc_on_load`) are deprecated in favor of `?`-suffixed methods (`trim_empty_rows?`, `pad_empty_rows?`, `pad_empty_cells?`, `fit_to_page?`, `show_sheet_tabs?`, `full_calc_on_load?`); will be removed in version 0.2.0.
 - Transitional aliases `to_workbook` on `Workbook`, `to_worksheet` on `Worksheet` and `StreamSheet`, and `each_sheet` on `Workbook` are deprecated in favor of `load` and `each`; will be removed in version 0.2.0.
 - Style aliases `Styles#xf`, `Styles#format_code_for`, `Styles#classification_for`, and `StyleBuilder#num_fmt` are deprecated in favor of `cell_xf`, `number_format`, and `format_type`; will be removed in version 0.2.0.
+- `Xlsxrb.modify` is deprecated in favor of explicit `Xlsxrb.load` -> mutate -> `Xlsxrb.write` pipeline; will be removed in version 0.2.0.
+- `Xlsxrb.write_workbook` and `Xlsxrb.workbook_to_data` are deprecated in favor of `Xlsxrb.write`; will be removed in version 0.2.0.
+- In-memory `Elements::Workbook#close`, `Elements::Worksheet#close`, and `Elements::Worksheet#load` are deprecated; will be removed in version 0.2.0 (`StreamSheet#close` and `StreamSheet#load` remain supported).
+- Returning non-`Elements::Workbook` values from `Xlsxrb.modify` blocks is deprecated and will raise `TypeError` in version 0.2.0.
 
 ### Fixed
 - Prevent attribute loss in `Elements::PivotTable`, `Elements::TableColumn`, `Elements::ThreadedComment`, `Elements::Comment`, and `Elements::FilterColumn` by retaining full schema attributes and capturing unmapped keyword options into `options:`.

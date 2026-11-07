@@ -70,8 +70,8 @@ module Xlsxrb
       # : (untyped source, ?max_uncompressed_size: Integer) ?{ (ZipReader) -> untyped } -> (ZipReader | untyped)
       def self.open: (untyped source, ?max_uncompressed_size: Integer) ?{ (ZipReader) -> untyped } -> (ZipReader | untyped)
 
-      # : (untyped io, ?max_uncompressed_size: Integer, ?should_close_io: bool) -> void
-      def initialize: (untyped io, ?max_uncompressed_size: Integer, ?should_close_io: bool) -> void
+      # : (untyped io, ?max_uncompressed_size: Integer, ?should_close_io: bool, ?filepath: String?) -> void
+      def initialize: (untyped io, ?max_uncompressed_size: Integer, ?should_close_io: bool, ?filepath: String?) -> void
 
       # Returns a Hash { entry_name => raw_bytes } for all entries.
       # : () -> Hash[String, String?]

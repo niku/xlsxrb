@@ -39,7 +39,7 @@ require_relative "xlsxrb/utils"
 
 # Modern, streaming-capable, low-memory XLSX reading and writing library for Ruby.
 #
-# Provides high-level facade methods ({Xlsxrb.read}, {Xlsxrb.write}, {Xlsxrb.build}, {Xlsxrb.modify})
+# Provides high-level facade methods ({Xlsxrb.read}, {Xlsxrb.write}, {Xlsxrb.build}, {Xlsxrb.load})
 # with full ECMA-376 OpenXML compliance, MS-OFFCRYPTO password protection, and zero core dependencies.
 #
 # @api public
@@ -843,18 +843,123 @@ module Xlsxrb
   # @api public
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
   def self.load(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil)
-    wb = _read_workbook(
-      source,
-      password: password,
-      trim_empty_rows: trim_empty_rows,
-      pad_empty_rows: pad_empty_rows,
-      pad_empty_cells: pad_empty_cells,
-      max_uncompressed_size: max_uncompressed_size
-    )
+    prepared_source = prepare_source_io(source, password)
+    zip_options = {}
+    zip_options[:max_uncompressed_size] = max_uncompressed_size if max_uncompressed_size
+    zip_reader = Ooxml::ZipReader.open(prepared_source, **zip_options)
+
     begin
-      wb._load
+      workbook_path = resolve_workbook_entry(zip_reader)
+      wb_dir = File.dirname(workbook_path)
+      wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
+      rels_xml = zip_reader.read_entry(wb_rels_name)
+      rels, rel_types = parse_workbook_relationships(rels_xml)
+
+      sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
+      shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
+      shared_strings = shared_strings_xml ? Ooxml::SharedStringsParser.parse(shared_strings_xml) : []
+
+      styles_entry = resolve_part_entry(zip_reader, rels, "styles", "styles.xml", wb_dir)
+      styles_xml = styles_entry ? zip_reader.read_entry(styles_entry) : nil
+      styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
+
+      workbook_xml = zip_reader.read_entry(workbook_path)
+      wb_parsed = Ooxml::WorkbookParser.parse_with_properties(workbook_xml)
+      workbook_sheets = wb_parsed[:sheets]
+      is_date1904 = wb_parsed[:date1904]
+      defined_names = wb_parsed[:defined_names] || []
+
+      non_worksheet_sheets = []
+      ws_idx = 0
+      sheets = workbook_sheets.filter_map do |sheet_info|
+        r_id = sheet_info[:r_id]
+        target = rels[r_id]
+        rel_type = rel_types[r_id]
+        if non_worksheet_relationship?(rel_type, target)
+          non_worksheet_sheets << sheet_info.merge(target: target, type: rel_type)
+          next
+        end
+
+        sheet_path = resolve_sheet_entry(zip_reader, target, wb_dir, ws_idx)
+        current_sheet_idx = ws_idx
+        ws_idx += 1
+        next unless sheet_path
+
+        sheet_xml = zip_reader.read_entry(sheet_path)
+        sheet_name = sheet_info[:name]
+        pa = extract_sheet_print_area(defined_names, sheet_name, current_sheet_idx)
+        pt = extract_sheet_print_titles(defined_names, sheet_name, current_sheet_idx)
+
+        build_worksheet(
+          sheet_name,
+          sheet_xml,
+          shared_strings,
+          styles,
+          state: sheet_info[:state] || :visible,
+          zip_reader: zip_reader,
+          entry_name: sheet_path,
+          date1904: is_date1904,
+          trim_empty_rows: trim_empty_rows,
+          pad_empty_rows: pad_empty_rows,
+          pad_empty_cells: pad_empty_cells,
+          print_area: pa,
+          print_titles: pt
+        )
+      end
+
+      wb_unmapped = {}
+      wb_props = {}
+      wb_props[:date1904] = true if is_date1904
+      wb_props[:active_sheet] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
+      wb_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
+      wb_props[:first_sheet] = wb_parsed[:first_sheet] unless wb_parsed[:first_sheet].nil?
+      wb_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
+      wb_props[:tab_ratio] = wb_parsed[:tab_ratio] unless wb_parsed[:tab_ratio].nil?
+      wb_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
+      wb_props[:code_name] = wb_parsed[:code_name] if wb_parsed[:code_name]
+      wb_unmapped[:workbook_properties] = wb_props unless wb_props.empty?
+      wb_unmapped[:non_worksheet_sheets] = non_worksheet_sheets unless non_worksheet_sheets.empty?
+
+      if workbook_xml&.include?("<workbookProtection")
+        prot_match = workbook_xml.match(%r{<workbookProtection\b([^>]*)/>})
+        if prot_match
+          prot = {}
+          prot[:lock_structure] = true if prot_match[1].include?('lockStructure="1"') || prot_match[1].include?('lockStructure="true"')
+          prot[:lock_windows] = true if prot_match[1].include?('lockWindows="1"') || prot_match[1].include?('lockWindows="true"')
+          wb_unmapped[:workbook_protection] = prot unless prot.empty?
+        end
+      end
+
+      core_xml = zip_reader.read_entry("docProps/core.xml")
+      if core_xml && !core_xml.empty?
+        c_listener = Ooxml::Reader::CorePropertiesListener.new
+        Ooxml::XmlParser.parse(core_xml, c_listener)
+        wb_unmapped[:core_properties] = c_listener.properties unless c_listener.properties.empty?
+      end
+
+      app_xml = zip_reader.read_entry("docProps/app.xml")
+      if app_xml && !app_xml.empty?
+        a_listener = Ooxml::Reader::AppPropertiesListener.new
+        Ooxml::XmlParser.parse(app_xml, a_listener)
+        wb_unmapped[:app_properties] = a_listener.properties unless a_listener.properties.empty?
+      end
+
+      custom_xml = zip_reader.read_entry("docProps/custom.xml")
+      if custom_xml && !custom_xml.empty?
+        cu_listener = Ooxml::Reader::CustomPropertiesListener.new
+        Ooxml::XmlParser.parse(custom_xml, cu_listener)
+        wb_unmapped[:custom_properties] = cu_listener.properties unless cu_listener.properties.empty?
+      end
+
+      Elements::Workbook.new(
+        sheets: sheets,
+        shared_strings: shared_strings,
+        styles: styles,
+        unmapped_data: wb_unmapped,
+        defined_names: defined_names
+      )
     ensure
-      wb.close
+      zip_reader&.close
     end
   end
 
@@ -973,8 +1078,10 @@ module Xlsxrb
       defined_names: defined_names
     )
   end
+  private_class_method :_read_workbook
 
   # @deprecated Use {.read} instead. Will be removed in 0.2.0.
+  #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
   def self.stream(...)
     warn "[DEPRECATION] Xlsxrb.stream is deprecated; use Xlsxrb.read instead.", uplevel: 1
     read(...)
@@ -1138,69 +1245,71 @@ module Xlsxrb
       sd[:conditional_formats] = ws.conditional_formats unless ws.conditional_formats.empty?
       sd[:data_validations] = ws.data_validations unless ws.data_validations.empty?
 
-      # Extract facade metadata from unmapped_data
-      facade = ws.unmapped_data[:facade]
-      facade&.each { |key, val| sd[key] ||= val }
-
-      sd[:state] ||= ws.state if ws.respond_to?(:state) && ws.state && ws.state != :visible
-      sd[:comments] ||= ws.comments if ws.respond_to?(:comments) && !ws.comments.empty?
+      sd[:state] = ws.state if ws.respond_to?(:state) && ws.state && ws.state != :visible
+      sd[:comments] = ws.comments if ws.respond_to?(:comments) && !ws.comments.empty?
       if ws.respond_to?(:hyperlinks) && !ws.hyperlinks.empty?
-        sd[:hyperlinks] ||= if ws.hyperlinks.is_a?(Hash)
-                              ws.hyperlinks.map do |cell_ref, link|
-                                entry = if link.is_a?(Hash)
-                                          link.dup
-                                        else
-                                          (link.respond_to?(:to_h) ? link.to_h : { url: link })
-                                        end
-                                entry[:ref] ||= cell_ref
-                                entry
-                              end
-                            else
-                              ws.hyperlinks
+        sd[:hyperlinks] = if ws.hyperlinks.is_a?(Hash)
+                            ws.hyperlinks.map do |cell_ref, link|
+                              entry = if link.is_a?(Hash)
+                                        link.dup
+                                      else
+                                        (link.respond_to?(:to_h) ? link.to_h : { url: link })
+                                      end
+                              entry[:ref] ||= cell_ref
+                              entry
                             end
+                          else
+                            ws.hyperlinks
+                          end
       end
-      sd[:sparkline_groups] ||= ws.sparkline_groups if ws.respond_to?(:sparkline_groups) && !ws.sparkline_groups.empty?
-      sd[:sheet_properties] ||= ws.sheet_properties if ws.respond_to?(:sheet_properties) && !ws.sheet_properties.empty?
-      sd[:sheet_format] ||= ws.sheet_format if ws.respond_to?(:sheet_format) && !ws.sheet_format.empty?
-      sd[:protected_ranges] ||= ws.protected_ranges if ws.respond_to?(:protected_ranges) && !ws.protected_ranges.empty?
-      sd[:cell_watches] ||= ws.cell_watches if ws.respond_to?(:cell_watches) && !ws.cell_watches.empty?
-      sd[:ignored_errors] ||= ws.ignored_errors if ws.respond_to?(:ignored_errors) && !ws.ignored_errors.empty?
-      sd[:phonetic_properties] ||= ws.phonetic_properties if ws.respond_to?(:phonetic_properties) && ws.phonetic_properties
-      sd[:sheet_calc_pr] ||= ws.sheet_calc_properties if ws.respond_to?(:sheet_calc_properties) && ws.sheet_calc_properties
-      sd[:freeze_pane] ||= ws.freeze_pane if ws.respond_to?(:freeze_pane) && ws.freeze_pane
-      sd[:split_pane] ||= ws.split_pane if ws.respond_to?(:split_pane) && ws.split_pane
-      sd[:sheet_view] ||= ws.sheet_view if ws.respond_to?(:sheet_view) && ws.sheet_view && !ws.sheet_view.empty?
-      sd[:selection] ||= ws.selection if ws.respond_to?(:selection) && ws.selection
+      sd[:sparkline_groups] = ws.sparkline_groups if ws.respond_to?(:sparkline_groups) && !ws.sparkline_groups.empty?
+      sd[:sheet_properties] = ws.sheet_properties if ws.respond_to?(:sheet_properties) && ws.sheet_properties && !ws.sheet_properties.empty?
+      sd[:sheet_format] = ws.sheet_format if ws.respond_to?(:sheet_format) && ws.sheet_format && !ws.sheet_format.empty?
+      sd[:protected_ranges] = ws.protected_ranges.map { |r| r.respond_to?(:to_h) ? r.to_h : r } if ws.respond_to?(:protected_ranges) && !ws.protected_ranges.empty?
+      sd[:cell_watches] = ws.cell_watches.map { |w| w.respond_to?(:to_h) ? w.to_h : w } if ws.respond_to?(:cell_watches) && !ws.cell_watches.empty?
+      sd[:ignored_errors] = ws.ignored_errors if ws.respond_to?(:ignored_errors) && !ws.ignored_errors.empty?
+      sd[:phonetic_properties] = ws.phonetic_properties.respond_to?(:to_h) ? ws.phonetic_properties.to_h : ws.phonetic_properties if ws.respond_to?(:phonetic_properties) && ws.phonetic_properties
+      sd[:sheet_calc_pr] = ws.sheet_calc_properties.respond_to?(:to_h) ? ws.sheet_calc_properties.to_h : ws.sheet_calc_properties if ws.respond_to?(:sheet_calc_properties) && ws.sheet_calc_properties
+      sd[:freeze_pane] = ws.freeze_pane.respond_to?(:to_h) ? ws.freeze_pane.to_h : ws.freeze_pane if ws.respond_to?(:freeze_pane) && ws.freeze_pane
+      sd[:split_pane] = ws.unmapped_data.dig(:facade, :split_pane) || (ws.split_pane.respond_to?(:to_h) ? ws.split_pane.to_h : ws.split_pane) if ws.respond_to?(:split_pane) && ws.split_pane
+      sd[:sheet_view] = ws.sheet_view.respond_to?(:to_h) ? ws.sheet_view.to_h : ws.sheet_view if ws.respond_to?(:sheet_view) && ws.sheet_view && !ws.sheet_view.empty?
+      sd[:selection] = ws.selection.respond_to?(:to_h) ? ws.selection.to_h : ws.selection if ws.respond_to?(:selection) && ws.selection
       sd[:selection] ||= ws.sheet_view[:selection] if ws.respond_to?(:sheet_view) && ws.sheet_view.is_a?(Hash) && ws.sheet_view[:selection]
-      sd[:page_setup] ||= ws.page_setup if ws.respond_to?(:page_setup) && ws.page_setup && !ws.page_setup.empty?
-      sd[:page_margins] ||= ws.page_margins if ws.respond_to?(:page_margins) && ws.page_margins && !ws.page_margins.empty?
-      sd[:header_footer] ||= ws.header_footer if ws.respond_to?(:header_footer) && ws.header_footer && !ws.header_footer.empty?
-      sd[:print_options] ||= ws.print_options if ws.respond_to?(:print_options) && ws.print_options && !ws.print_options.empty?
-      sd[:sheet_protection] ||= ws.sheet_protection if ws.respond_to?(:sheet_protection) && ws.sheet_protection && !ws.sheet_protection.empty?
-      sd[:tables] ||= ws.tables if ws.respond_to?(:tables) && ws.tables && !ws.tables.empty?
-      sd[:merge_cells] ||= ws.merged_cells if ws.respond_to?(:merged_cells) && ws.merged_cells && !ws.merged_cells.empty?
-      sd[:auto_filter] ||= ws.auto_filter if ws.respond_to?(:auto_filter) && ws.auto_filter
-      sd[:row_breaks] ||= ws.row_breaks if ws.respond_to?(:row_breaks) && ws.row_breaks && !ws.row_breaks.empty?
-      brks = if ws.respond_to?(:column_breaks)
-               ws.column_breaks unless ws.column_breaks.empty?
-             elsif ws.respond_to?(:col_breaks)
-               ws.col_breaks unless ws.col_breaks.empty?
-             end
-      if brks
-        sd[:column_breaks] ||= brks
-        sd[:col_breaks] ||= brks
+      sd[:page_setup] = ws.page_setup.respond_to?(:to_h) ? ws.page_setup.to_h : ws.page_setup if ws.respond_to?(:page_setup) && ws.page_setup && !ws.page_setup.empty?
+      sd[:page_margins] = ws.page_margins.respond_to?(:to_h) ? ws.page_margins.to_h : ws.page_margins if ws.respond_to?(:page_margins) && ws.page_margins && !ws.page_margins.empty?
+      sd[:header_footer] = ws.header_footer.respond_to?(:to_h) ? ws.header_footer.to_h : ws.header_footer if ws.respond_to?(:header_footer) && ws.header_footer && !ws.header_footer.empty?
+      sd[:print_options] = ws.print_options.respond_to?(:to_h) ? ws.print_options.to_h : ws.print_options if ws.respond_to?(:print_options) && ws.print_options && !ws.print_options.empty?
+      sd[:sheet_protection] = ws.sheet_protection.respond_to?(:to_h) ? ws.sheet_protection.to_h : ws.sheet_protection if ws.respond_to?(:sheet_protection) && ws.sheet_protection && !ws.sheet_protection.empty?
+      sd[:tables] = ws.tables.map { |t| t.respond_to?(:to_h) ? t.to_h : t } if ws.respond_to?(:tables) && ws.tables && !ws.tables.empty?
+      sd[:merge_cells] = ws.merged_cells if ws.respond_to?(:merged_cells) && ws.merged_cells && !ws.merged_cells.empty?
+      sd[:auto_filter] = ws.auto_filter if ws.respond_to?(:auto_filter) && ws.auto_filter
+      sd[:filter_columns] = ws.unmapped_data.dig(:facade, :filter_columns) || (ws.filter_columns.transform_values { |fc| fc.respond_to?(:to_h) ? fc.to_h : fc } if ws.respond_to?(:filter_columns) && ws.filter_columns && !ws.filter_columns.empty?)
+      sd[:sort_state] = ws.unmapped_data.dig(:facade, :sort_state) || (ws.sort_state.respond_to?(:to_h) ? ws.sort_state.to_h : ws.sort_state) if ws.respond_to?(:sort_state) && ws.sort_state
+      sd[:pivot_tables] = ws.pivot_tables.map { |pt| pt.respond_to?(:to_h) ? pt.to_h : pt } if ws.respond_to?(:pivot_tables) && ws.pivot_tables && !ws.pivot_tables.empty?
+      sd[:shapes] = ws.shapes.map { |s| s.respond_to?(:to_h) ? s.to_h : s } if ws.respond_to?(:shapes) && ws.shapes && !ws.shapes.empty?
+      sd[:threaded_comments] = ws.threaded_comments if ws.respond_to?(:threaded_comments) && ws.threaded_comments && !ws.threaded_comments.empty?
+      sd[:header_footer_images] = ws.header_footer_images if ws.respond_to?(:header_footer_images) && ws.header_footer_images && !ws.header_footer_images.empty?
+      if ws.respond_to?(:row_breaks) && ws.row_breaks && !ws.row_breaks.empty?
+        sd[:row_breaks] = ws.row_breaks.map { |r| r.respond_to?(:to_h) ? r.to_h : r }
       end
-      sd[:background_image] ||= ws.background_image if ws.respond_to?(:background_image) && ws.background_image
+      if ws.respond_to?(:column_breaks) && ws.column_breaks && !ws.column_breaks.empty?
+        sd[:column_breaks] = ws.column_breaks.map { |c| c.respond_to?(:to_h) ? c.to_h : c }
+      elsif ws.respond_to?(:col_breaks) && ws.col_breaks && !ws.col_breaks.empty?
+        sd[:column_breaks] = ws.col_breaks.map { |c| c.respond_to?(:to_h) ? c.to_h : c }
+      end
+      sd[:background_image] = ws.background_image if ws.respond_to?(:background_image) && ws.background_image
       if ws.respond_to?(:images) && ws.images && !ws.images.empty?
-        sd[:images] ||= ws.images.map do |img|
+        sd[:images] = ws.images.map do |img|
           if img.is_a?(Elements::Image)
             ext = img.filename ? File.extname(img.filename).delete_prefix(".").downcase : "png"
             opts = img.unmapped_data ? img.unmapped_data.dup : {}
             opts[:name] ||= img.name
             opts[:file_data] = img.data
             opts[:ext] = ext
+            opts[:from_column] = img.from_column
             opts[:from_col] = img.from_column
             opts[:from_row] = img.from_row
+            opts[:to_column] = img.to_column
             opts[:to_col] = img.to_column
             opts[:to_row] = img.to_row
             opts
@@ -1209,7 +1318,11 @@ module Xlsxrb
           end
         end
       end
-      sd[:shapes] ||= ws.shapes if ws.respond_to?(:shapes) && ws.shapes && !ws.shapes.empty?
+      sd[:shapes] = ws.shapes if ws.respond_to?(:shapes) && ws.shapes && !ws.shapes.empty?
+
+      # Extract facade metadata from unmapped_data as fallback
+      facade = ws.unmapped_data[:facade] if ws.respond_to?(:unmapped_data) && ws.unmapped_data.is_a?(Hash)
+      facade&.each { |key, val| sd[key] = val unless sd.key?(key) }
 
       sd
     end

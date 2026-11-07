@@ -63,25 +63,21 @@ You can also browse 80+ rendered visual examples across all features in the [Vis
 
 ## Usage
 
-### Quick Start: Streaming (Recommended for Large Files)
+### I/O Architecture Matrix
 
-#### Streaming Write (Low Memory)
-```ruby
-require "xlsxrb"
+xlsxrb provides four canonical entry points organized along two axes:
 
-Xlsxrb.write("large_output.xlsx") do |writer|
-  writer.sheet("Sales Data") do |sheet|
-    sheet.row(["Date", "Amount", "Status"])
-    sheet.row([Date.today, 100, true])
-    sheet.column(0, width: 15.5)
-  end
-end
-```
+| Axis | Streaming ($O(1)$ Memory) | In-Memory (Full Random Access) |
+| :--- | :--- | :--- |
+| Read / Input | `Xlsxrb.read(source) { \|sheet\| ... }` | `Xlsxrb.load(source) -> Elements::Workbook` |
+| Write / Output | `Xlsxrb.write(dest) { \|writer\| ... }` | `Xlsxrb.build { \|builder\| ... } -> Elements::Workbook` |
 
-> [!NOTE]
-> Streaming writes pipe row and cell XML directly to the archive without buffering rows, keeping cell data memory constant. Because shared strings are indexed across the workbook to minimize output file size, memory scales with the count of distinct strings.
+---
 
-#### Streaming Read ($O(1)$ Memory)
+### Streaming Read ($O(1)$ Memory)
+
+Iterates rows sequentially without loading the full document into memory. Closes the underlying archive automatically upon block completion:
+
 ```ruby
 require "xlsxrb"
 
@@ -94,9 +90,41 @@ Xlsxrb.read("large_file.xlsx") do |sheet|
 end
 ```
 
-### In-Memory Building & Modifying
+### Streaming Write (Low Memory)
 
-#### Creating & Exporting (Rails / Mailers)
+Pipes row and cell XML directly to the archive without buffering rows in memory:
+
+```ruby
+require "xlsxrb"
+
+Xlsxrb.write("large_output.xlsx") do |writer|
+  writer.sheet("Sales Data") do |sheet|
+    sheet.row(["Date", "Amount", "Status"])
+    sheet.row([Date.today, 100, true])
+    sheet.column(0, width: 15.5)
+  end
+end
+```
+
+### In-Memory Load (Full Random Access)
+
+Parses the workbook into an immutable document model (`Elements::Workbook`) and immediately closes the underlying file:
+
+```ruby
+require "xlsxrb"
+
+wb = Xlsxrb.load("workbook.xlsx")
+sheet = wb["Sheet1"]
+
+puts sheet["A1"].value
+puts sheet.page_setup.orientation
+puts sheet.hyperlinks["B2"].url
+```
+
+### In-Memory Build (Document Creation)
+
+Constructs an in-memory `Elements::Workbook` using the declarative builder DSL:
+
 ```ruby
 require "xlsxrb"
 
@@ -112,17 +140,49 @@ Xlsxrb.write("report.xlsx", wb)
 binary_data = Xlsxrb.write(wb)
 ```
 
-#### Modifying an Existing File
+---
+
+### Constant-Memory Streaming Transformation
+
+To transform or filter data from an existing spreadsheet, stream rows from reader to writer in $O(1)$ memory:
+
 ```ruby
 require "xlsxrb"
 
-Xlsxrb.modify("template.xlsx", "output.xlsx") do |workbook|
-  workbook.update_sheet("Invoice") do |sheet|
-    sheet.update_cell("C4", value: "INV-10042")
-         .update_cell("C5", value: Date.today)
+Xlsxrb.write("output.xlsx") do |out_wb|
+  out_wb.sheet("Processed") do |out_sheet|
+    Xlsxrb.read("input.xlsx") do |in_sheet|
+      in_sheet.each_row do |row|
+        out_sheet.row(row.cells.map { |c| c.value.is_a?(Numeric) ? c.value * 1.1 : c.value })
+      end
+    end
   end
 end
 ```
+
+---
+
+### Template Migration & AI Code Generation
+
+> [!NOTE]
+> `Xlsxrb.modify` is deprecated. Runtime data transformations are handled with streaming pipelines (`Xlsxrb.read` -> `Xlsxrb.write`), while template-based report generation is performed by converting templates into declarative `Xlsxrb.write` DSL code.
+
+To migrate an existing Excel template (`template.xlsx`) into reproducible Ruby code, inspect the template structure with `Xlsxrb.load` and provide it to an AI coding assistant:
+
+```ruby
+require "xlsxrb"
+
+wb = Xlsxrb.load("template.xlsx")
+sheet = wb.sheets.first
+
+# Inspect layout, formulas, and column widths
+puts "Columns: #{sheet.columns.map { |c| [c.index, c.width] }}"
+puts "Merged: #{sheet.merged_cells}"
+puts "Formulas: #{sheet.rows.flat_map(&:cells).select(&:formula?).map { |c| [c.ref, c.formula] }}"
+```
+
+**Recommended AI Prompt for Template Migration:**
+> "Convert this Excel template into an `Xlsxrb.write` builder script using xlsxrb DSL methods (`row`, `column`, `merge`, `style`, `formula`). Ensure cell styles, column widths, number formats, and formulas match the inspected template layout."
 
 ### Password Protection & Encryption ([MS-OFFCRYPTO])
 

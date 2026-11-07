@@ -137,6 +137,7 @@ module Xlsxrb
       # @api public
       #: () -> void
       def close
+        Xlsxrb::Deprecation.warn("Elements::Worksheet#close is deprecated; in-memory worksheets do not hold file handles.", uplevel: 1)
         nil
       end
 
@@ -1045,6 +1046,18 @@ module Xlsxrb
                  end
         new_dv = changes.key?(:data_validations) ? changes[:data_validations] : data_validations
         new_unmapped = changes.key?(:unmapped_data) ? changes[:unmapped_data] : unmapped_data
+        if new_unmapped.is_a?(Hash) && new_unmapped[:facade].is_a?(Hash)
+          stale_keys = changes.keys.select { |k| new_unmapped[:facade].key?(k) }
+          stale_keys << :col_breaks if changes.key?(:column_breaks) && new_unmapped[:facade].key?(:col_breaks)
+          stale_keys << :sheet_calc_pr if changes.key?(:sheet_calc_properties) && new_unmapped[:facade].key?(:sheet_calc_pr)
+          stale_keys << :merge_cells if changes.key?(:merged_cells) && new_unmapped[:facade].key?(:merge_cells)
+          unless stale_keys.empty?
+            new_unmapped = new_unmapped.dup
+            new_facade = new_unmapped[:facade].dup
+            stale_keys.each { |k| new_facade.delete(k) }
+            new_unmapped[:facade] = new_facade
+          end
+        end
         new_errors = changes.key?(:errors) ? changes[:errors] : errors
         new_state = changes.key?(:state) ? changes[:state] : state
         new_hyperlinks = changes.key?(:hyperlinks) ? changes[:hyperlinks] : hyperlinks
@@ -1282,6 +1295,7 @@ module Xlsxrb
       # @api public
       #: () -> Elements::Worksheet
       def load
+        Deprecation.warn("Elements::Worksheet#load is deprecated; worksheet is already loaded in memory.")
         self
       end
 

@@ -7,6 +7,8 @@ require "zlib"
 module Xlsxrb
   module Ooxml
     # Generates a simple ZIP file using only the standard library.
+    #
+    # @api private
     class ZipGenerator
       def initialize(filepath)
         @filepath = filepath

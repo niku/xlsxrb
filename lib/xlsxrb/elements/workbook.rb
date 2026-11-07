@@ -353,6 +353,10 @@ module Xlsxrb
       # @api public
       #: () -> void
       def close
+        if sheets.all?(Elements::Worksheet)
+          Xlsxrb::Deprecation.warn("Elements::Workbook#close is deprecated; in-memory workbooks do not hold file handles.", uplevel: 1)
+          return nil
+        end
         sheets.each { |s| s.close if s.respond_to?(:close) }
         nil
       end

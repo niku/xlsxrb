@@ -105,7 +105,8 @@ module Xlsxrb
               page_setup: sheet[:page_setup],
               header_footer: sheet[:header_footer],
               row_breaks: sheet[:row_breaks],
-              col_breaks: sheet[:col_breaks],
+              column_breaks: sheet[:column_breaks],
+              col_breaks: sheet[:col_breaks] || sheet[:column_breaks],
               freeze_pane: sheet[:freeze_pane],
               split_pane: sheet[:split_pane],
               selection: sheet[:selection],
@@ -1249,7 +1250,7 @@ module Xlsxrb
                               sort_state: nil, merge_cells: nil, conditional_formats: nil,
                               data_validations: nil, hyperlinks: nil,
                               print_options: nil, page_margins: nil, page_setup: nil,
-                              header_footer: nil, row_breaks: nil, col_breaks: nil,
+                              header_footer: nil, row_breaks: nil, col_breaks: nil, column_breaks: nil,
                               cell_watches: nil, ignored_errors: nil, freeze_pane: nil, split_pane: nil,
                               selection: nil, sheet_view: nil, sheet_properties: nil,
                               sheet_format: nil, tables: nil, table_start_rid: nil,
@@ -1305,7 +1306,8 @@ module Xlsxrb
           page_setup: page_setup,
           header_footer: header_footer,
           row_breaks: row_breaks,
-          col_breaks: col_breaks,
+          col_breaks: col_breaks || column_breaks,
+          column_breaks: column_breaks || col_breaks,
           cell_watches: cell_watches,
           ignored_errors: ignored_errors,
           tables: tables,
@@ -1377,7 +1379,8 @@ module Xlsxrb
         # - style: "TableStyleMedium9"
         # - style: { name:, show_* }
         # and also show_* values at the table root for Facade compatibility.
-        raw_style = tbl[:style]
+        raw_style = tbl[:style] || tbl[:style_info]
+        raw_style = raw_style.to_h if raw_style.respond_to?(:to_h)
         style = if raw_style.is_a?(Hash)
                   raw_style
                 elsif raw_style

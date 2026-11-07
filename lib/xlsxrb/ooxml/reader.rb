@@ -10,6 +10,8 @@ require_relative "../number_formatter"
 module Xlsxrb
   module Ooxml
     # Reads cells from an XLSX file.
+    #
+    # @api private
     class Reader
       def initialize(filepath)
         @filepath = filepath

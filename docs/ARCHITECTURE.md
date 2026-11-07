@@ -29,7 +29,11 @@ All user-facing API methods and internal delegations must be explicitly defined 
 Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mappings (e.g. `ChartBuilder`, `SeriesBuilder`) would traditionally benefit from dynamic delegation to avoid boilerplate, we explicitly generate and write out those delegations in the source code.
 
 ### 1. `Xlsxrb` Module Entrypoint
-   The `Xlsxrb` module provides the top-level methods: `read`, `write`, `build`, and `modify`. Users should not instantiate internal classes (like `Xlsxrb::Ooxml::WorkbookWriter`) directly.
+   The `Xlsxrb` module provides four canonical entry points in a 2x2 matrix:
+   * Streaming: `Xlsxrb.read` (streaming read, $O(1)$ memory) and `Xlsxrb.write` (streaming write).
+   * In-Memory: `Xlsxrb.load` (in-memory parsing into `Elements::Workbook` with immediate file close) and `Xlsxrb.build` (declarative document creation).
+
+   `Xlsxrb.modify`, `Workbook#update_sheet`, and `Worksheet#update_cell` are deprecated; runtime transformations use `Xlsxrb.read` -> `Xlsxrb.write` streaming pipelines, while template report generation uses declarative `Xlsxrb.write` DSL scripts. Users should not instantiate low-level internal classes (such as `Xlsxrb::Ooxml::WorkbookWriter`) directly.
 
 2. The `@api public` Contract (SemVer Guarantee):
    Any module, class, or method tagged with `# @api public` in its YARD documentation is guaranteed to follow Semantic Versioning.

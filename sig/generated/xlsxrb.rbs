@@ -2,7 +2,7 @@
 
 # Modern, streaming-capable, low-memory XLSX reading and writing library for Ruby.
 #
-# Provides high-level facade methods ({Xlsxrb.read}, {Xlsxrb.write}, {Xlsxrb.build}, {Xlsxrb.modify})
+# Provides high-level facade methods ({Xlsxrb.read}, {Xlsxrb.write}, {Xlsxrb.build}, {Xlsxrb.load})
 # with full ECMA-376 OpenXML compliance, MS-OFFCRYPTO password protection, and zero core dependencies.
 #
 # @api public
@@ -534,7 +534,8 @@ module Xlsxrb
   def self._read_workbook: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
 
   # @deprecated Use {.read} instead. Will be removed in 0.2.0.
-  def self.stream: () -> untyped
+  # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+  def self.stream: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
   #

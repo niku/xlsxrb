@@ -108,8 +108,6 @@ module Xlsxrb
               @current_filter[:hidden] = true if @fc_hidden_button
               @current_filter[:hidden_button] = true if @fc_hidden_button
               @current_filter[:show_button] = false if @fc_show_button == false
-              @current_filter[:column_id] = @current_col_id
-              @current_filter[:col_id] = @current_col_id
               @filter_columns[@current_col_id] = @current_filter
             end
             @current_col_id = nil
@@ -230,7 +228,9 @@ module Xlsxrb
           name = element_name(local_name, qname)
           case name
           when "Application"
-            @properties[:application] = @text_buffer.dup
+            val = @text_buffer.dup
+            @properties[:application] = val
+            @properties[:app_name] = val
             @current_field = nil
           when "AppVersion"
             @properties[:app_version] = @text_buffer.dup
@@ -1128,7 +1128,11 @@ module Xlsxrb
           name = element_name(local_name, qname)
           case name
           when "formula"
-            (@current_rule[:formulas] ||= []) << @text_buffer.dup if @current_rule
+            if @current_rule
+              val = @text_buffer.dup
+              (@current_rule[:formulas] ||= []) << val
+              @current_rule[:formula] = @current_rule[:formulas]
+            end
             @inside_formula = false
           when "cfRule"
             @rules << @current_rule if @current_rule

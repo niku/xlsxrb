@@ -233,7 +233,7 @@ module Xlsxrb
              else
                source
              end
-        reader = new(io, max_uncompressed_size: max_uncompressed_size, should_close_io: should_close)
+        reader = new(io, max_uncompressed_size: max_uncompressed_size, should_close_io: should_close, filepath: (source if should_close))
         if block_given?
           begin
             yield reader
@@ -245,11 +245,12 @@ module Xlsxrb
         end
       end
 
-      #: (untyped io, ?max_uncompressed_size: Integer, ?should_close_io: bool) -> void
-      def initialize(io, max_uncompressed_size: MAX_UNCOMPRESSED_SIZE, should_close_io: false)
+      #: (untyped io, ?max_uncompressed_size: Integer, ?should_close_io: bool, ?filepath: String?) -> void
+      def initialize(io, max_uncompressed_size: MAX_UNCOMPRESSED_SIZE, should_close_io: false, filepath: nil)
         @raw_io = io
         @max_uncompressed_size = max_uncompressed_size
         @should_close_io = should_close_io
+        @filepath = filepath
         @tempfile = nil
         @io = nil
         @catalog = nil
@@ -279,8 +280,15 @@ module Xlsxrb
         cached ||= @cached_entries[entry.name] if @cached_entries&.key?(entry.name)
         return normalize_text_encoding(cached) if cached
 
-        io.seek(entry.data_offset, IO::SEEK_SET)
-        raw = io.read(entry.compressed_size)
+        raw = if @should_close_io && @raw_io.respond_to?(:closed?) && @raw_io.closed? && @filepath
+                File.open(@filepath, "rb") do |f|
+                  f.seek(entry.data_offset, IO::SEEK_SET)
+                  f.read(entry.compressed_size)
+                end
+              else
+                io.seek(entry.data_offset, IO::SEEK_SET)
+                io.read(entry.compressed_size)
+              end
         decompress(raw, entry.method)
       end
 
@@ -323,11 +331,40 @@ module Xlsxrb
       def each_entry_chunk(entry_name, chunk_size: 65_536, encoding: nil, &block)
         return enum_for(:each_entry_chunk, entry_name, chunk_size: chunk_size, encoding: encoding) unless block
 
-        stream = open_entry_io(entry_name, encoding: encoding)
-        begin
-          stream.each_chunk(chunk_size, &block)
-        ensure
-          stream.close
+        if @should_close_io && @raw_io.respond_to?(:closed?) && @raw_io.closed? && @filepath
+          File.open(@filepath, "rb") do |f|
+            entry = lookup_entry(entry_name)
+            raise ZipError, "Entry not found in archive: #{entry_name}" unless entry
+
+            resolved_encoding = if encoding == false
+                                  nil
+                                elsif encoding
+                                  encoding.is_a?(String) ? Encoding.find(encoding) : encoding
+                                elsif entry_name.end_with?(".xml", ".rels") || entry.name.end_with?(".xml", ".rels")
+                                  Encoding::UTF_8
+                                end
+
+            stream = EntryStreamIO.new(
+              f,
+              entry.data_offset,
+              entry.compressed_size,
+              entry.method,
+              max_uncompressed_size: @max_uncompressed_size,
+              encoding: resolved_encoding
+            )
+            begin
+              stream.each_chunk(chunk_size, &block)
+            ensure
+              stream.close
+            end
+          end
+        else
+          stream = open_entry_io(entry_name, encoding: encoding)
+          begin
+            stream.each_chunk(chunk_size, &block)
+          ensure
+            stream.close
+          end
         end
       end
 

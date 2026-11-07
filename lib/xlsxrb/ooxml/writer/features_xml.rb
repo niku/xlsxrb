@@ -564,7 +564,7 @@ module Xlsxrb
           when :cell_is, :expression, :above_average, :top10, :duplicate_values, :unique_values,
                :contains_text, :not_contains_text, :begins_with, :ends_with,
                :contains_blanks, :not_contains_blanks, :contains_errors, :not_contains_errors, :time_period
-            formulas = rule[:formula].is_a?(Array) ? rule[:formula] : (rule[:formulas] || [rule[:formula]].compact)
+            formulas = rule[:formulas] || [rule[:formula]].compact
             if formulas.empty?
               parts << "<cfRule #{rule_attrs}/>"
             else
