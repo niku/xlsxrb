@@ -5,7 +5,10 @@ require "xlsxrb"
 output_path = ARGV[0] || "merge_freeze.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
-  wb.style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
+  wb.style("title") do |style|
+    style.border_all(style: "thin", color: "FF000000")
+    style.align_horizontal("center")
+  end
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Merge & Freeze") do |s|
     s.sheet_properties(:fit_to_page, true)
@@ -19,6 +22,6 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], cell_styles: %w[border border border])
 
     s.merge("A1:C1")
-    s.freeze_pane(row: 2, col: 0)
+    s.freeze_pane(row: 2, column: 0)
   end
 end

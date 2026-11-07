@@ -18,6 +18,9 @@ module Xlsxrb
   #
   # @api public
   class WorkbookBuilder
+    OMITTED = Object.new.freeze
+    private_constant :OMITTED
+
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specifications.
     # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
     # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
@@ -72,8 +75,6 @@ module Xlsxrb
       existing[:size] = size if size
       @default_font = existing.merge(opts)
     end
-    # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
-    alias set_default_font default_font
 
     # @return [Hash{String => StyleBuilder}]
     #: Hash[String, StyleBuilder]
@@ -158,114 +159,41 @@ module Xlsxrb
       Xlsxrb.cell_error(...)
     end
 
-    OMITTED = Object.new.freeze
-    private_constant :OMITTED
-
     # Gets or sets the active worksheet tab in the workbook window.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#active_sheet=} instead.
-    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
-    #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-    def active_sheet(name_or_index = OMITTED)
-      if name_or_index.equal?(OMITTED)
-        @active_sheet
-      else
-        @active_sheet = name_or_index
-      end
-    end
-    # @deprecated Use {#active_sheet} instead. Will be removed in 0.2.0.
-    alias active_tab active_sheet
-
-    # Sets the active worksheet tab in the workbook window.
-    #
-    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
-    # @return [String, Symbol, Integer, nil]
-    # @api public
-    attr_writer :active_sheet #: (String | Symbol | Integer | nil)
-    # @deprecated Use {#active_sheet=} instead. Will be removed in 0.2.0.
-    alias active_tab= active_sheet=
+    #: (String | Symbol | Integer | nil)
+    attr_accessor :active_sheet
 
     # Gets or sets the first sheet tab visible in the sheet tab scroll area.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#first_sheet=} instead.
-    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
-    #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-    def first_sheet(name_or_index = OMITTED)
-      if name_or_index.equal?(OMITTED)
-        @first_sheet
-      else
-        @first_sheet = name_or_index
-      end
-    end
-
-    # Sets the first sheet tab visible in the sheet tab scroll area.
-    #
-    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
-    # @return [String, Symbol, Integer, nil]
-    # @api public
-    attr_writer :first_sheet #: (String | Symbol | Integer | nil)
+    #: (String | Symbol | Integer | nil)
+    attr_accessor :first_sheet
 
     # Gets or sets whether sheet tabs are visible in the workbook window.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_sheet_tabs=} instead.
-    # @param visible [Boolean, nil]
     # @return [Boolean, nil]
     # @api public
-    #: (?bool? visible) -> bool?
-    def show_sheet_tabs(visible = OMITTED)
-      if visible.equal?(OMITTED)
-        @show_sheet_tabs
-      else
-        @show_sheet_tabs = visible
-      end
-    end
-
-    # Sets whether sheet tabs are visible in the workbook window.
-    #
-    # @param visible [Boolean, nil]
-    # @return [Boolean, nil]
-    # @api public
-    attr_writer :show_sheet_tabs #: bool?
+    #: bool?
+    attr_accessor :show_sheet_tabs
 
     # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#tab_ratio=} instead.
-    # @param ratio [Integer, nil]
     # @return [Integer, nil]
     # @api public
-    #: (?Integer? ratio) -> Integer?
-    def tab_ratio(ratio = OMITTED)
-      if ratio.equal?(OMITTED)
-        @tab_ratio
-      else
-        @tab_ratio = ratio
-      end
-    end
+    #: Integer?
+    attr_accessor :tab_ratio
 
-    # Sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
+    # Gets the internal code name of the workbook.
     #
-    # @param ratio [Integer, nil]
-    # @return [Integer, nil]
-    # @api public
-    attr_writer :tab_ratio #: Integer?
-
-    # Gets or sets the internal code name of the workbook.
-    #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#code_name=} instead.
-    # @param name [String, Symbol, nil] The code name.
     # @return [String, nil]
     # @api public
-    #: (?String | Symbol | nil name) -> String?
-    def code_name(name = OMITTED)
-      if name.equal?(OMITTED)
-        @workbook_properties[:code_name]
-      else
-        @workbook_properties[:code_name] = name&.to_s
-      end
+    #: () -> String?
+    def code_name
+      @workbook_properties[:code_name]
     end
 
     # Sets the internal code name of the workbook.
@@ -326,17 +254,16 @@ module Xlsxrb
     #
     # @param name [String, nil] Sheet name (max 31 chars, no forbidden chars `[ ] * ? / \ :`).
     # @param state [Symbol, String, nil] Sheet visibility state (:visible, :hidden, :very_hidden).
-    # @param tab_color [String, Hash, nil] Tab color hex string or color hash.
-    # @param code_name [String, nil] VBA code name.
-    # @param hidden [Boolean, nil] Deprecated alias for state: :hidden.
+    # @param tab_color [String, Hash, Symbol, nil] Tab color hex string (e.g. "FF0000") or hash options.
+    # @param code_name [String, Symbol, nil] Internal VBA code name of the sheet.
     # @param opts [Hash] Additional sheet properties.
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
     # @return [Elements::Worksheet]
     # @raise [ArgumentError] If sheet name violates Excel limits in strict mode.
     # @api public
-    #: (?String? name, ?state: (Symbol | String)?, ?tab_color: untyped, ?code_name: String?, ?hidden: bool?, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
-    def sheet(name = nil, state: nil, tab_color: nil, code_name: nil, hidden: nil, **opts)
+    #: (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    def sheet(name = nil, state: nil, tab_color: nil, code_name: nil, **opts)
       sheet_count = [@sheets.size, @sheet_builders.size].max
       name ||= "Sheet#{sheet_count + 1}"
       raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
@@ -349,11 +276,9 @@ module Xlsxrb
 
       active = opts.delete(:active)
       state = opts.delete(:state) if opts.key?(:state)
-      hidden = opts.delete(:hidden) if opts.key?(:hidden)
+      hidden = opts.delete(:hidden)
       code_name = opts.delete(:code_name) if opts.key?(:code_name)
       tab_color = opts.delete(:tab_color) if opts.key?(:tab_color)
-
-      warn "[Xlsxrb DEPRECATION] sheet keyword hidden: is deprecated; use state: :hidden instead.", uplevel: 1 unless hidden.nil?
       state ||= :hidden if hidden
       state ||= :visible
       state = state.to_sym
@@ -395,32 +320,17 @@ module Xlsxrb
     # @param sheet [String, nil] Reference sheet name for coordinates/formula.
     # @param scope [String, Symbol, nil] Optional sheet name or :workbook for scope (defaults to workbook).
     # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
-    # @param column [Integer, String, nil] Deprecated alias for columns.
     # @param columns [Integer, String, nil] Column index or letter for coordinate-based reference.
-    # @param col [Integer, String, nil] Deprecated alias for column.
-    # @param row [Integer, Range, nil] Deprecated alias for rows.
-    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param rows [Integer, Range, nil] Row or row range (0-based) for coordinate-based reference.
     # @param range [String, nil] Cell range reference.
-    # @param ref_sheet [String, nil] Deprecated alias for sheet.
-    # @param local [Boolean] Deprecated alias for scope.
     # @return [void]
     # @api public
-    #: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
-    def defined_name(name, value = nil, sheet: nil, scope: nil, hidden: false, column: nil, columns: nil, col: nil, row: nil, rows: nil, range: nil, ref_sheet: nil, local: false)
-      warn "[DEPRECATION] `col:` is deprecated; use `column:` (or `columns:`) instead.", uplevel: 1 if col
-      warn "[DEPRECATION] `ref_sheet:` is deprecated; use `sheet:` for reference sheet and `scope:` for scope instead.", uplevel: 1 if ref_sheet
-      warn "[DEPRECATION] `local:` is deprecated; use `scope:` instead.", uplevel: 1 if local
-      warn "[Xlsxrb DEPRECATION] defined_name keyword column: is deprecated; use columns: instead.", uplevel: 1 unless column.nil?
-      warn "[Xlsxrb DEPRECATION] defined_name keyword row: is deprecated; use rows: instead.", uplevel: 1 unless row.nil?
-      target_ref_sheet = ref_sheet || sheet
-      c_arg = column || columns || col
-      r_arg = row || rows
-      normalized_val = DslHelpers.normalize_defined_name_value(value, sheet: target_ref_sheet, col: c_arg, rows: r_arg, range: range)
+    #: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?columns: untyped, ?rows: untyped, ?range: untyped) -> void
+    def defined_name(name, value = nil, sheet: nil, scope: nil, hidden: false, columns: nil, rows: nil, range: nil)
+      normalized_val = DslHelpers.normalize_defined_name_value(value, sheet: sheet, columns: columns, rows: rows, range: range)
       entry = { name: name, value: normalized_val, hidden: hidden }
       local_sheet = if scope
                       scope == :workbook ? nil : scope.to_s
-                    elsif sheet || local || ref_sheet
-                      sheet
                     end
       entry[:local_sheet_name] = local_sheet if local_sheet
       @defined_names << entry
@@ -452,7 +362,7 @@ module Xlsxrb
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
       if range
         value = "'#{sheet_name}'!#{absolute_range(range)}"
-        defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
+        defined_name("_xlnm.Print_Area", value, sheet: sheet_name, scope: sheet_name)
       end
       nil
     end
@@ -464,7 +374,7 @@ module Xlsxrb
     # @api public
     #: (String? range) -> String?
     def print_area=(range)
-      print_area(range)
+      print_area(range) if range
       range
     end
 
@@ -472,14 +382,12 @@ module Xlsxrb
     #
     # @param rows [String, nil] Repeating row range (e.g. "1:2").
     # @param columns [String, nil] Repeating column range (e.g. "A:B").
-    # @param cols [String, nil] Deprecated alias for columns.
     # @param sheet [String, nil] Target sheet name.
     # @return [void]
     # @api public
-    #: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
-    def print_titles(rows: nil, columns: nil, cols: nil, sheet: nil)
-      warn "[DEPRECATION] `cols:` is deprecated; use `columns:` instead.", uplevel: 1 if cols && columns.nil?
-      c = DslHelpers.normalize_print_titles_columns(columns || cols)
+    #: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
+    def print_titles(rows: nil, columns: nil, sheet: nil)
+      c = DslHelpers.normalize_print_titles_columns(columns)
       r = DslHelpers.normalize_print_titles_rows(rows)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
       existing = @defined_names.find { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
@@ -492,7 +400,7 @@ module Xlsxrb
       parts << "'#{sheet_name}'!$#{r.sub(":", ":$")}" if r
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
-      defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
+      defined_name("_xlnm.Print_Titles", value, sheet: sheet_name, scope: sheet_name)
       nil
     end
 
@@ -582,13 +490,6 @@ module Xlsxrb
       @workbook_protection = opts.is_a?(Elements::MetadataRecord) ? opts.to_h : opts
     end
 
-    # @deprecated Use {#workbook_protection} instead.
-    #: (**String | Integer | bool | nil opts) -> void
-    def protect_workbook(...)
-      warn "[DEPRECATION] `protect_workbook` is deprecated; use `workbook_protection` instead.", uplevel: 1
-      workbook_protection(...)
-    end
-
     # Sets a Dublin Core document metadata property.
     #
     # @param name [Symbol] Core property name (:creator, :title, :subject, :description, etc.).
@@ -617,7 +518,8 @@ module Xlsxrb
     # @api public
     #: (Symbol name, String | Integer | Time value) -> void
     def app_property(name, value)
-      @app_properties[name] = value
+      norm_name = name.to_sym == :application ? :app_name : name.to_sym
+      @app_properties[norm_name] = value
     end
 
     # Returns application document properties.
@@ -685,7 +587,7 @@ module Xlsxrb
       # Auto-register print_area and print_titles defined names from sheet builders if not explicitly defined
       @sheet_builders.each do |sb|
         print_area(sb.print_area, sheet: sb.name) if sb.print_area && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sb.name }
-        print_titles(rows: sb.print_titles[:rows], columns: sb.print_titles[:columns] || sb.print_titles[:cols], sheet: sb.name) if sb.print_titles && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sb.name }
+        print_titles(rows: sb.print_titles.rows, columns: sb.print_titles.columns, sheet: sb.name) if sb.print_titles && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sb.name }
         sb.defined_names&.each do |dn|
           @defined_names << dn
         end
@@ -855,8 +757,10 @@ module Xlsxrb
             Elements::Column.new(
               index: col.index,
               width: col.width,
-              hidden: col.hidden,
-              custom_width: col.custom_width,
+              hidden: col.hidden?,
+              custom_width: col.custom_width?,
+              best_fit: col.best_fit?,
+              collapsed: col.collapsed?,
               outline_level: col.outline_level,
               style_index: resolved_col_style,
               unmapped_data: unmapped,

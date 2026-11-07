@@ -31,7 +31,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
 
       bad_passwords.each do |bad_pw|
         assert_raise(Xlsxrb::InvalidPasswordError) do
-          Xlsxrb.read(xlsx_path, password: bad_pw).load
+          Xlsxrb.load(xlsx_path, password: bad_pw)
         end
       end
     end
@@ -58,7 +58,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
         Xlsxrb.write(std_path, password: "Pass", encryption_mode: :standard) do |wb|
           wb.sheet("S") { |s| s.row([1]) }
         end
-        Xlsxrb.read(std_path, password: "Pass").load
+        Xlsxrb.load(std_path, password: "Pass")
         assert_operator calls, :>=, 1
 
         # Test Agile Mode verification invokes secure_compare
@@ -67,7 +67,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
         Xlsxrb.write(agile_path, password: "Pass", encryption_mode: :agile) do |wb|
           wb.sheet("S") { |s| s.row([1]) }
         end
-        Xlsxrb.read(agile_path, password: "Pass").load
+        Xlsxrb.load(agile_path, password: "Pass")
         assert_operator calls, :>, calls_before_agile
       end
     ensure
@@ -102,7 +102,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
 
       # Invariant: Must safely reject with DecryptionError without allocating huge memory
       assert_raise(Xlsxrb::DecryptionError) do
-        Xlsxrb.read(corrupted_cfb, password: "ValidPassword123").load
+        Xlsxrb.load(corrupted_cfb, password: "ValidPassword123")
       end
     end
   end
@@ -142,7 +142,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
 
     # High-level API invariant: Calling Xlsxrb.read on circular CFB must fail safely with DecryptionError without infinite loop
     assert_raise(Xlsxrb::DecryptionError) do
-      Xlsxrb.read(raw_cfb, password: "Pass").load
+      Xlsxrb.load(raw_cfb, password: "Pass")
     end
 
     # Invariant: Mini-stream circular loop must also terminate safely
@@ -197,7 +197,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
 
     # Invariant: Must immediately reject with DecryptionError without spinning CPU 1 billion times
     assert_raise(Xlsxrb::DecryptionError) do
-      Xlsxrb.read(corrupted_cfb, password: "Pass").load
+      Xlsxrb.load(corrupted_cfb, password: "Pass")
     end
   end
 
@@ -212,7 +212,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
     )
 
     assert_raise(Xlsxrb::DecryptionError) do
-      Xlsxrb.read(corrupted_cfb, password: "Pass").load
+      Xlsxrb.load(corrupted_cfb, password: "Pass")
     end
   end
 
@@ -228,7 +228,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
     )
 
     assert_raise(Xlsxrb::DecryptionError) do
-      Xlsxrb.read(corrupted_cfb, password: "Pass").load
+      Xlsxrb.load(corrupted_cfb, password: "Pass")
     end
   end
 end

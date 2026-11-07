@@ -27,22 +27,6 @@ module Xlsxrb
     # : Integer?
     attr_reader style_index: untyped
 
-    # @deprecated Use {#hidden?} instead. Will be removed in 0.2.0.
-    # : () -> bool
-    def hidden: () -> bool
-
-    # @deprecated Use {#collapsed?} instead. Will be removed in 0.2.0.
-    # : () -> bool
-    def collapsed: () -> bool
-
-    # @deprecated Use {#custom_height?} instead. Will be removed in 0.2.0.
-    # : () -> bool
-    def custom_height: () -> bool
-
-    # @deprecated Use {#pad_empty_cells?} instead. Will be removed in 0.2.0.
-    # : () -> bool
-    def pad_empty_cells: () -> bool
-
     # @param index [Integer] 0-based row index.
     # @param xml_bytes [String] Raw ASCII-8BIT XML bytes.
     # @param from [Integer] Byte offset where cells start.
@@ -151,13 +135,15 @@ module Xlsxrb
     # : () -> Array[Elements::Cell]
     def cells: () -> Array[Elements::Cell]
 
-    # Access a cell by 0-based column index, column letter, or access row attributes via Symbol.
+    # Access a cell by 0-based column index, column letter/Symbol, or column range.
     #
-    # @param col_index [Integer, String, Symbol] Column index, column letter, or attribute symbol.
-    # @return [Elements::Cell, Object, nil]
+    # @param col_index_or_range [Integer, String, Symbol, Range<Integer>] Column index, column letter/Symbol, or column index range.
+    # @return [Elements::Cell, Array<Elements::Cell>, nil]
     # @api public
-    # : (Integer | String | Symbol col_index) -> untyped
-    def []: (Integer | String | Symbol col_index) -> untyped
+    # : (Integer | String | Symbol col_index_or_range) -> Elements::Cell?
+    # : (Range[Integer] col_index_or_range) -> Array[Elements::Cell]
+    def []: (Integer | String | Symbol col_index_or_range) -> Elements::Cell?
+          | (Range[Integer] col_index_or_range) -> Array[Elements::Cell]
 
     # Access a cell by 0-based column index or column letter/Symbol.
     #
@@ -166,23 +152,6 @@ module Xlsxrb
     # @api public
     # : (Integer | String | Symbol col_index) -> Elements::Cell?
     def cell_at: (Integer | String | Symbol col_index) -> Elements::Cell?
-
-    # Convert row cells to a coordinate-keyed Hash (e.g. {"A1" => "value", "B1" => 123}).
-    #
-    # @deprecated Use {#values} or {#cells} instead. Will be removed in 0.2.0.
-    # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
-    # @return [Hash{String => Object}]
-    # @api public
-    # : (?type_cast: bool) -> Hash[String, untyped]
-    def to_h: (?type_cast: bool) -> Hash[String, untyped]
-
-    # Convert row cells to an Array of raw values (sparse columns get nil).
-    #
-    # @deprecated Use {#values} to get an Array of cell values, or {#cells} for Cell objects. In 0.2.0, {#to_a} will conform to Enumerable#to_a and return Array<Cell>.
-    # @return [Array<Object>]
-    # @api public
-    # : () -> Array[untyped]
-    def to_a: () -> Array[untyped]
 
     # Returns cell values as an Array (sparse columns get nil).
     #
@@ -212,10 +181,6 @@ module Xlsxrb
     # @api public
     # : () -> Array[String?]
     def formula_expressions: () -> Array[String?]
-
-    # @deprecated Use {#formula_expressions} instead. Will be removed in 0.2.0.
-    # : () -> Array[String?]
-    def formulas: () -> Array[String?]
 
     # Returns whether the row is valid according to OOXML specifications.
     #

@@ -23,18 +23,6 @@ end
 require "open3"
 require "fileutils"
 
-module Test
-  module Unit
-    class TestCase
-      def capture_stderr(&)
-        _out, err = capture_output(&)
-        err
-      end
-      alias capture_io capture_output
-    end
-  end
-end
-
 class OpenXmlSdkScenarioRunner
   def self.sdk_runner_dll
     File.expand_path("../vendor/sdk_runner/bin/Release/net8.0/sdk_runner.dll", File.dirname(__FILE__))

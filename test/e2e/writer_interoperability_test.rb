@@ -269,10 +269,12 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
     wb = Xlsxrb.build do |w|
       w.sheet("Sheet1") { |s| s.row(["A"]) }
-      w.core_property(:title, "My Workbook")
-      w.core_property(:creator, "Test User")
-      w.core_property(:created, "2024-01-15T00:00:00Z")
-      w.core_property(:modified, "2024-01-16T12:00:00Z")
+      w.core_properties(
+        title: "My Workbook",
+        creator: "Test User",
+        created: "2024-01-15T00:00:00Z",
+        modified: "2024-01-16T12:00:00Z"
+      )
     end
     Xlsxrb.write(xlsx_path, wb)
 
@@ -580,14 +582,14 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
             Xlsxrb::Elements::Row.new(
               index: 0,
               cells: [Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Hello")],
-              unmapped_data: { style_index: 1 }
+              style_index: 1
             )
           ],
           columns: [
             Xlsxrb::Elements::Column.new(
               index: 0,
               width: 20.0,
-              unmapped_data: { style_index: 1 }
+              style_index: 1
             )
           ]
         )
@@ -1413,13 +1415,13 @@ class WriterInteroperabilityTest < Test::Unit::TestCase
 
   test "writer output stores error cell values correctly" do
     writer = Xlsxrb::Ooxml::Writer.new
-    writer.set_cell("A1", Xlsxrb::Error::NA)
-    writer.set_cell("B1", Xlsxrb::Error::DIV0)
-    writer.set_cell("C1", Xlsxrb::Error::VALUE)
-    writer.set_cell("D1", Xlsxrb::Error::REF)
-    writer.set_cell("E1", Xlsxrb::Error::NAME)
-    writer.set_cell("F1", Xlsxrb::Error::NUM)
-    writer.set_cell("G1", Xlsxrb::Error::NULL)
+    writer.set_cell("A1", Xlsxrb::Elements::CellError::NA)
+    writer.set_cell("B1", Xlsxrb::Elements::CellError::DIV0)
+    writer.set_cell("C1", Xlsxrb::Elements::CellError::VALUE)
+    writer.set_cell("D1", Xlsxrb::Elements::CellError::REF)
+    writer.set_cell("E1", Xlsxrb::Elements::CellError::NAME)
+    writer.set_cell("F1", Xlsxrb::Elements::CellError::NUM)
+    writer.set_cell("G1", Xlsxrb::Elements::CellError::NULL)
 
     xlsx_tempfile = Tempfile.new(["xlsxrb-writer-e2e", ".xlsx"])
     xlsx_path = xlsx_tempfile.path

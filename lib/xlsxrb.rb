@@ -35,7 +35,6 @@ require_relative "xlsxrb/worksheet_builder"
 require_relative "xlsxrb/workbook_builder"
 require_relative "xlsxrb/number_formatter"
 require_relative "xlsxrb/stream_writer"
-require_relative "xlsxrb/utils"
 
 # Modern, streaming-capable, low-memory XLSX reading and writing library for Ruby.
 #
@@ -50,34 +49,11 @@ module Xlsxrb
   # Maximum number of columns supported by Excel / OpenXML.
   MAX_COLUMN = 16_384
 
-  # @deprecated Use {MAX_COLUMN} instead. Will be removed in 0.2.0.
-  MAX_COL = MAX_COLUMN
-  deprecate_constant :MAX_COL
-
   # Maximum number of individual cell/range references allowed in a single data validation element by Excel.
   MAX_REFS_PER_VALIDATION = 32_767
 
-  # @api private
-  module Deprecation
-    def self.warn(message, uplevel: 1)
-      Kernel.warn("[Xlsxrb DEPRECATION] #{message}", uplevel: uplevel + 1)
-    end
-  end
-
   # Base class for all exceptions raised by Xlsxrb.
-  # Predefined cell error constants are exposed on this class for convenience.
-  class Error < StandardError
-    DIV0         = Elements::CellError::DIV0
-    NA           = Elements::CellError::NA
-    NAME         = Elements::CellError::NAME
-    NULL         = Elements::CellError::NULL
-    NUM          = Elements::CellError::NUM
-    REF          = Elements::CellError::REF
-    VALUE        = Elements::CellError::VALUE
-    GETTING_DATA = Elements::CellError::GETTING_DATA
-
-    deprecate_constant :DIV0, :NA, :NAME, :NULL, :NUM, :REF, :VALUE, :GETTING_DATA
-  end
+  class Error < StandardError; end
 
   # Raised when parsing malformed or invalid XML structures.
   class ParseError < Error; end
@@ -214,19 +190,16 @@ module Xlsxrb
   # @param type [Symbol, String, nil] Formula type (:shared, :array, etc.).
   # @param ref [String, nil] Target cell or range reference (e.g. "A1:C1").
   # @param shared_index [Integer, nil] Shared formula group index (0-based).
-  # @param si [Integer, nil] Alias for shared_index.
   # @return [Elements::Formula]
   # @api public
-  # rubocop:disable Naming/MethodParameterName
-  #: (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?, ?shared_index: Integer?, ?si: Integer?) -> Elements::Formula
-  def self.formula(expression, cached_value: nil, type: nil, ref: nil, shared_index: nil, si: nil)
-    s_idx = shared_index || si
+  #: (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?, ?shared_index: Integer?) -> Elements::Formula
+  def self.formula(expression, cached_value: nil, type: nil, ref: nil, shared_index: nil)
     Elements::Formula.new(
       expression: expression,
       cached_value: cached_value,
-      type: type || (s_idx ? :shared : nil),
+      type: type || (shared_index ? :shared : nil),
       ref: ref,
-      shared_index: s_idx,
+      shared_index: shared_index,
       calculate_always: cached_value.nil? || nil
     )
   end
@@ -241,52 +214,44 @@ module Xlsxrb
   #
   # @param expression [String, nil] The formula expression (nil for follower cells).
   # @param shared_index [Integer, nil] Shared formula group index (0-based).
-  # @param si [Integer, nil] Legacy alias for shared_index.
   # @param ref [String, nil] Target range for master cell (e.g. "B2:B10").
   # @param cached_value [Object, nil] Optional precomputed value.
   # @return [Elements::Formula]
   # @api public
-  #: (?String? expression, ?shared_index: Integer?, ?si: Integer?, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
-  def self.shared_formula(expression = nil, shared_index: nil, si: nil, ref: nil, cached_value: nil)
-    warn "[DEPRECATION] Xlsxrb.shared_formula keyword :si is deprecated; use :shared_index instead.", uplevel: 1 if si && shared_index.nil?
-    s_idx = shared_index || si
-    raise ArgumentError, "shared_index is required for shared formula" if s_idx.nil?
+  #: (?String? expression, ?shared_index: Integer?, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
+  def self.shared_formula(expression = nil, shared_index: nil, ref: nil, cached_value: nil)
+    raise ArgumentError, "shared_index is required for shared formula" if shared_index.nil?
 
     Elements::Formula.new(
       expression: expression || "",
       cached_value: cached_value,
       type: :shared,
       ref: ref,
-      shared_index: s_idx,
+      shared_index: shared_index,
       calculate_always: cached_value.nil? || nil
     )
   end
-  # rubocop:enable Naming/MethodParameterName
 
   # Creates an array or dynamic array {Elements::Formula} object.
   #
   # @example Create a multi-cell array formula
-  #   formula = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", "A1:C1", cached_value: 0)
   #   formula = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", ref: "A1:C1", cached_value: 0)
   #
   # @example Create a dynamic array formula
-  #   formula = Xlsxrb.array_formula("SORT(UNIQUE(A1:A10))", "D1")
+  #   formula = Xlsxrb.array_formula("SORT(UNIQUE(A1:A10))", ref: "D1")
   #
   # @param expression [String] The formula expression without leading '='.
-  # @param pos_ref [String, nil] Target cell or range reference (positional).
   # @param ref [String, nil] Target cell or range reference (keyword).
   # @param cached_value [Object, nil] Optional precomputed value.
   # @return [Elements::Formula]
   # @api public
-  #: (String expression, ?String? pos_ref, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), **untyped attrs) -> Elements::Formula
-  def self.array_formula(expression, pos_ref = nil, ref: nil, cached_value: nil, **attrs)
-    warn "[Xlsxrb DEPRECATION] Passing positional ref to Xlsxrb.array_formula is deprecated and will be removed in v0.2.0. Use ref: keyword argument instead.", uplevel: 1 unless pos_ref.nil?
-    target_ref = ref || pos_ref
+  #: (String expression, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), **untyped attrs) -> Elements::Formula
+  def self.array_formula(expression, ref: nil, cached_value: nil, **attrs)
     Elements::Formula.new(
       expression: expression,
       cached_value: cached_value,
       type: :array,
-      ref: target_ref,
+      ref: ref,
       calculate_always: cached_value.nil? || nil,
       **attrs
     )
@@ -367,13 +332,6 @@ module Xlsxrb
     NumberFormatter.format(value, format_code, date1904: date1904)
   end
 
-  # @deprecated Use {.format_value} instead. Will be removed in 0.2.0.
-  #: (untyped value, ?String? format_code, ?date1904: bool) -> String
-  def self.format(value, format_code = nil, date1904: false)
-    warn "[DEPRECATION] Xlsxrb.format is deprecated; use Xlsxrb.format_value instead.", uplevel: 1
-    format_value(value, format_code, date1904: date1904)
-  end
-
   # Converts a Date or Time to an Excel numeric serial number (1900 or 1904 system).
   #
   # @example
@@ -439,13 +397,6 @@ module Xlsxrb
     end
   end
 
-  # @deprecated Use {.time_to_serial} instead. Will be removed in 0.2.0.
-  #: (Time | Date time, ?date1904: bool) -> Float
-  def self.datetime_to_serial(time, date1904: false)
-    warn "[DEPRECATION] Xlsxrb.datetime_to_serial is deprecated; use Xlsxrb.time_to_serial instead.", uplevel: 1
-    time_to_serial(time, date1904: date1904)
-  end
-
   # Converts an Excel serial number to a Time (UTC).
   #
   # @example
@@ -458,13 +409,6 @@ module Xlsxrb
   #: (Numeric serial, ?date1904: bool) -> Time
   def self.serial_to_time(serial, date1904: false)
     Ooxml::Utils.serial_to_datetime(serial, date1904: date1904)
-  end
-
-  # @deprecated Use {.serial_to_time} instead. Will be removed in 0.2.0.
-  #: (Numeric serial, ?date1904: bool) -> Time
-  def self.serial_to_datetime(serial, date1904: false)
-    warn "[DEPRECATION] Xlsxrb.serial_to_datetime is deprecated; use Xlsxrb.serial_to_time instead.", uplevel: 1
-    serial_to_time(serial, date1904: date1904)
   end
 
   # Converts a cell reference string (e.g. "A1", "BC100") to 0-based [row, col] coordinates.
@@ -613,27 +557,21 @@ module Xlsxrb
   # Expands a formula by shifting relative cell references from a master cell to a target cell or by offset amounts.
   #
   # @example Shift formula down one row
-  #   Xlsxrb.expand_formula("A2*2", 1, 0) #=> "A3*2"
+  #   Xlsxrb.expand_formula("A2*2", row_delta: 1, column_delta: 0) #=> "A3*2"
   #   Xlsxrb.expand_formula("A2*2", from_ref: "B2", to_ref: "B3") #=> "A3*2"
   #
   # @example Shift formula with absolute references
-  #   Xlsxrb.expand_formula("$A$1+A2", 2, 0) #=> "$A$1+A4"
+  #   Xlsxrb.expand_formula("$A$1+A2", row_delta: 2, column_delta: 0) #=> "$A$1+A4"
   #
   # @param formula [String, nil] Formula expression to expand.
-  # @param offset_row [Integer, nil] Optional row shift amount (positive = down, negative = up).
-  # @param offset_col [Integer, nil] Optional column shift amount (positive = right, negative = left).
   # @param from_ref [String, nil] Master cell reference (e.g. "B2").
   # @param to_ref [String, nil] Target cell reference (e.g. "B3").
   # @param row_delta [Integer, nil] Row shift amount (positive = down, negative = up).
   # @param column_delta [Integer, nil] Column shift amount (positive = right, negative = left).
-  # @param col_delta [Integer, nil] Deprecated alias for column_delta.
   # @return [String, nil] Expanded formula expression.
   # @api public
-  #: (String? formula, ?Integer? offset_row, ?Integer? offset_col, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?column_delta: Integer?, ?col_delta: Integer?) -> String?
-  def self.expand_formula(formula, offset_row = nil, offset_col = nil, from_ref: nil, to_ref: nil, row_delta: nil, column_delta: nil, col_delta: nil)
-    warn "[Xlsxrb DEPRECATION] Passing positional offset arguments to expand_formula is deprecated; use row_delta: and column_delta: instead.", uplevel: 1 unless offset_row.nil? && offset_col.nil?
-    warn "[Xlsxrb DEPRECATION] Keyword col_delta: in expand_formula is deprecated; use column_delta: instead.", uplevel: 1 unless col_delta.nil?
-
+  #: (String? formula, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?column_delta: Integer?) -> String?
+  def self.expand_formula(formula, from_ref: nil, to_ref: nil, row_delta: nil, column_delta: nil)
     return formula if formula.nil? || formula.empty?
 
     if from_ref && to_ref
@@ -644,8 +582,8 @@ module Xlsxrb
       rd = t_coords[0] - f_coords[0]
       cd = t_coords[1] - f_coords[1]
     else
-      rd = row_delta || offset_row || 0
-      cd = column_delta || col_delta || offset_col || 0
+      rd = row_delta || 0
+      cd = column_delta || 0
     end
 
     return formula if rd.zero? && cd.zero?
@@ -712,13 +650,6 @@ module Xlsxrb
     Colors.to_hex(color, alpha: alpha)
   end
 
-  # @deprecated Use {.to_hex_color} instead. Will be removed in 0.2.0.
-  #: (Integer | String | Symbol | nil color, ?alpha: bool) -> String?
-  def self.color_to_hex(color, alpha: false)
-    warn "[DEPRECATION] Xlsxrb.color_to_hex is deprecated; use Xlsxrb.to_hex_color instead.", uplevel: 1
-    to_hex_color(color, alpha: alpha)
-  end
-
   # Sanitizes a worksheet name to ensure it conforms to Excel constraints within 31 characters.
   # Replaces forbidden characters (\ / ? * [ ] : and control characters),
   # replaces leading/trailing apostrophes, and replaces reserved 'History' with 'History_'.
@@ -736,38 +667,11 @@ module Xlsxrb
     DslHelpers.sanitize_sheet_name(name, replace_char: replace_char)
   end
 
-  # @deprecated Use {.sanitize_sheet_name} instead. Will be removed in 0.2.0.
-  #: (untyped name, ?replace_char: String) -> String
-  def self.sheet_name(name, replace_char: "_")
-    warn "[DEPRECATION] Xlsxrb.sheet_name is deprecated; use Xlsxrb.sanitize_sheet_name instead.", uplevel: 1
-    sanitize_sheet_name(name, replace_char: replace_char)
-  end
-
   # Reads an XLSX file (streaming and lazy-loaded by default) from a file path, IO stream, or binary String.
   #
   # Sheets and rows are streamed lazily with O(1) constant memory. If a block is given,
-  # yields each {StreamSheet} sequentially. Call {#load} on the returned Workbook or Sheet
-  # to convert to an in-memory representation for coordinate random access (`sheet["A1"]`).
-  #
-  # @overload read(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, &block)
-  #   Yields each {StreamSheet} sequentially in streaming mode.
-  #   @param source [String, IO, StringIO] File path, binary content string, or readable IO stream.
-  #   @param password [String, nil] Optional password to decrypt password-protected XLSX files.
-  #   @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during sheet iteration.
-  #   @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
-  #   @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
-  #   @yield [sheet]
-  #   @yieldparam sheet [StreamSheet] The streaming worksheet object.
-  #   @return [void]
-  #
-  # @overload read(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false)
-  #   Returns a lazy {Elements::Workbook} object.
-  #   @param source [String, IO, StringIO] File path, binary content string, or readable IO stream.
-  #   @param password [String, nil] Optional password to decrypt password-protected XLSX files.
-  #   @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during sheet iteration.
-  #   @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
-  #   @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
-  #   @return [Elements::Workbook]
+  # yields each {StreamSheet} sequentially. Call {StreamSheet#load} to convert a sheet to
+  # an in-memory representation for coordinate random access (`sheet["A1"]`).
   #
   # @example Streaming read across sheets and rows (O(1) constant memory)
   #   Xlsxrb.read("large.xlsx") do |sheet|
@@ -777,51 +681,84 @@ module Xlsxrb
   #     end
   #   end
   #
-  # @example Explicit in-memory loading for coordinate random access
-  #   wb = Xlsxrb.read("data.xlsx")
-  #   sheet = wb.sheets.first
-  #   doc_sheet = sheet.load         # explicitly load into memory
-  #   puts doc_sheet["A1"].value     # coordinate random access
-  #
-  # Reads an XLSX file or IO stream. When called with a block, yields each {StreamSheet}
-  # for low-memory streaming iteration. When called without a block, returns an {Elements::Workbook}
-  # containing {StreamSheet} instances.
-  #
-  # @deprecated Calling {Xlsxrb.read} without a block is deprecated; use {Xlsxrb.load} for in-memory random access. Will be removed in 0.2.0.
+  # @param source [String, IO, StringIO] File path, binary content string, or readable IO stream.
+  # @param password [String, nil] Optional password to decrypt password-protected XLSX files.
+  # @param trim_empty_rows [Boolean] Whether to omit trailing empty rows during sheet iteration.
+  # @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
+  # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
   # @param max_uncompressed_size [Integer, nil] Maximum allowed uncompressed size in bytes per entry (ZIP bomb defense).
+  # @yield [sheet]
+  # @yieldparam sheet [StreamSheet] The streaming worksheet object.
+  # @return [Enumerator<StreamSheet>, void]
   # @raise [ZipBombError] If an uncompressed entry exceeds max_uncompressed_size.
   # @raise [EncryptedFileError] If the file is encrypted and no password was supplied.
   # @raise [InvalidPasswordError] If the supplied password is incorrect.
   # @raise [ParseError] If the spreadsheet XML structure is invalid.
   # @api public
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
-  #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
+  #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Enumerator[StreamSheet, void]
   def self.read(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil, &)
-    if block_given?
-      wb = _read_workbook(
-        source,
-        password: password,
-        trim_empty_rows: trim_empty_rows,
-        pad_empty_rows: pad_empty_rows,
-        pad_empty_cells: pad_empty_cells,
-        max_uncompressed_size: max_uncompressed_size
-      )
-      begin
-        wb.sheets.each(&)
-        nil
-      ensure
-        wb.close
+    prepared_source = prepare_source_io(source, password)
+    return to_enum(:read, source, password: password, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells, max_uncompressed_size: max_uncompressed_size) unless block_given?
+
+    zip_options = {}
+    zip_options[:max_uncompressed_size] = max_uncompressed_size if max_uncompressed_size
+    zip_reader = Ooxml::ZipReader.open(prepared_source, **zip_options)
+
+    begin
+      workbook_path = resolve_workbook_entry(zip_reader)
+      wb_dir = File.dirname(workbook_path)
+      wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
+      rels_xml = zip_reader.read_entry(wb_rels_name)
+      rels, rel_types = parse_workbook_relationships(rels_xml)
+
+      sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
+      shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
+      shared_strings = shared_strings_xml ? Ooxml::SharedStringsParser.parse(shared_strings_xml) : []
+
+      styles_entry = resolve_part_entry(zip_reader, rels, "styles", "styles.xml", wb_dir)
+      styles_xml = styles_entry ? zip_reader.read_entry(styles_entry) : nil
+      styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
+
+      workbook_xml = zip_reader.read_entry(workbook_path)
+      wb_parsed = Ooxml::WorkbookParser.parse_with_properties(workbook_xml)
+      workbook_sheets = wb_parsed[:sheets]
+      is_date1904 = wb_parsed[:date1904]
+
+      ws_idx = 0
+      workbook_sheets.each do |sheet_info|
+        r_id = sheet_info[:r_id]
+        target = rels[r_id]
+        rel_type = rel_types[r_id]
+        next if non_worksheet_relationship?(rel_type, target)
+
+        sheet_path = resolve_sheet_entry(zip_reader, target, wb_dir, ws_idx)
+        current_sheet_idx = ws_idx
+        ws_idx += 1
+        next unless sheet_path
+
+        chunk_supplier = ->(&blk) { zip_reader.each_entry_chunk(sheet_path, &blk) }
+
+        stream_sheet = StreamSheet.new(
+          sheet_info[:name],
+          chunk_supplier,
+          shared_strings,
+          styles,
+          zip_reader: zip_reader,
+          entry_name: sheet_path,
+          state: sheet_info[:state] || :visible,
+          date1904: is_date1904,
+          trim_empty_rows: trim_empty_rows,
+          pad_empty_rows: pad_empty_rows,
+          pad_empty_cells: pad_empty_cells,
+          defined_names: wb_parsed[:defined_names] || [],
+          sheet_index: current_sheet_idx
+        )
+        yield stream_sheet
       end
-    else
-      warn "[DEPRECATION] Calling Xlsxrb.read without a block is deprecated; use Xlsxrb.load(source) for in-memory random access or pass a block to Xlsxrb.read(source) { |sheet| ... } for streaming.", uplevel: 1
-      _read_workbook(
-        source,
-        password: password,
-        trim_empty_rows: trim_empty_rows,
-        pad_empty_rows: pad_empty_rows,
-        pad_empty_cells: pad_empty_cells,
-        max_uncompressed_size: max_uncompressed_size
-      )
+      nil
+    ensure
+      zip_reader&.close
     end
   end
 
@@ -911,7 +848,7 @@ module Xlsxrb
       wb_props = {}
       wb_props[:date1904] = true if is_date1904
       wb_props[:active_sheet] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
-      wb_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
+      wb_props[:active_sheet_index] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
       wb_props[:first_sheet] = wb_parsed[:first_sheet] unless wb_parsed[:first_sheet].nil?
       wb_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
       wb_props[:tab_ratio] = wb_parsed[:tab_ratio] unless wb_parsed[:tab_ratio].nil?
@@ -961,130 +898,6 @@ module Xlsxrb
     ensure
       zip_reader&.close
     end
-  end
-
-  # Internal reader helper returning a Workbook with StreamSheet instances without deprecation warning.
-  # @api private
-  #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
-  def self._read_workbook(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil)
-    prepared_source = prepare_source_io(source, password)
-    zip_options = {}
-    zip_options[:max_uncompressed_size] = max_uncompressed_size if max_uncompressed_size
-    zip_reader = Ooxml::ZipReader.open(prepared_source, **zip_options)
-
-    workbook_path = resolve_workbook_entry(zip_reader)
-    wb_dir = File.dirname(workbook_path)
-    wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
-    rels_xml = zip_reader.read_entry(wb_rels_name)
-    rels, rel_types = parse_workbook_relationships(rels_xml)
-
-    sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
-    shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
-    shared_strings = shared_strings_xml ? Ooxml::SharedStringsParser.parse(shared_strings_xml) : []
-
-    styles_entry = resolve_part_entry(zip_reader, rels, "styles", "styles.xml", wb_dir)
-    styles_xml = styles_entry ? zip_reader.read_entry(styles_entry) : nil
-    styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
-
-    workbook_xml = zip_reader.read_entry(workbook_path)
-    wb_parsed = Ooxml::WorkbookParser.parse_with_properties(workbook_xml)
-    workbook_sheets = wb_parsed[:sheets]
-    is_date1904 = wb_parsed[:date1904]
-
-    non_worksheet_sheets = []
-    ws_idx = 0
-    sheets = workbook_sheets.filter_map do |sheet_info|
-      r_id = sheet_info[:r_id]
-      target = rels[r_id]
-      rel_type = rel_types[r_id]
-      if non_worksheet_relationship?(rel_type, target)
-        non_worksheet_sheets << sheet_info.merge(target: target, type: rel_type)
-        next
-      end
-
-      sheet_path = resolve_sheet_entry(zip_reader, target, wb_dir, ws_idx)
-      current_sheet_idx = ws_idx
-      ws_idx += 1
-      next unless sheet_path
-
-      chunk_supplier = ->(&blk) { zip_reader.each_entry_chunk(sheet_path, &blk) }
-
-      StreamSheet.new(
-        sheet_info[:name],
-        chunk_supplier,
-        shared_strings,
-        styles,
-        zip_reader: zip_reader,
-        entry_name: sheet_path,
-        state: sheet_info[:state] || :visible,
-        date1904: is_date1904,
-        trim_empty_rows: trim_empty_rows,
-        pad_empty_rows: pad_empty_rows,
-        pad_empty_cells: pad_empty_cells,
-        defined_names: wb_parsed[:defined_names] || [],
-        sheet_index: current_sheet_idx
-      )
-    end
-
-    wb_unmapped = {}
-    wb_props = {}
-    wb_props[:date1904] = true if is_date1904
-    wb_props[:active_sheet] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
-    wb_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
-    wb_props[:first_sheet] = wb_parsed[:first_sheet] unless wb_parsed[:first_sheet].nil?
-    wb_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
-    wb_props[:tab_ratio] = wb_parsed[:tab_ratio] unless wb_parsed[:tab_ratio].nil?
-    wb_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
-    wb_props[:code_name] = wb_parsed[:code_name] if wb_parsed[:code_name]
-    wb_unmapped[:workbook_properties] = wb_props unless wb_props.empty?
-    wb_unmapped[:non_worksheet_sheets] = non_worksheet_sheets unless non_worksheet_sheets.empty?
-
-    if workbook_xml&.include?("<workbookProtection")
-      prot_match = workbook_xml.match(%r{<workbookProtection\b([^>]*)/>})
-      if prot_match
-        prot = {}
-        prot[:lock_structure] = true if prot_match[1].include?('lockStructure="1"') || prot_match[1].include?('lockStructure="true"')
-        prot[:lock_windows] = true if prot_match[1].include?('lockWindows="1"') || prot_match[1].include?('lockWindows="true"')
-        wb_unmapped[:workbook_protection] = prot unless prot.empty?
-      end
-    end
-
-    core_xml = zip_reader.read_entry("docProps/core.xml")
-    if core_xml && !core_xml.empty?
-      c_listener = Ooxml::Reader::CorePropertiesListener.new
-      Ooxml::XmlParser.parse(core_xml, c_listener)
-      wb_unmapped[:core_properties] = c_listener.properties unless c_listener.properties.empty?
-    end
-
-    app_xml = zip_reader.read_entry("docProps/app.xml")
-    if app_xml && !app_xml.empty?
-      a_listener = Ooxml::Reader::AppPropertiesListener.new
-      Ooxml::XmlParser.parse(app_xml, a_listener)
-      wb_unmapped[:app_properties] = a_listener.properties unless a_listener.properties.empty?
-    end
-
-    custom_xml = zip_reader.read_entry("docProps/custom.xml")
-    if custom_xml && !custom_xml.empty?
-      cu_listener = Ooxml::Reader::CustomPropertiesListener.new
-      Ooxml::XmlParser.parse(custom_xml, cu_listener)
-      wb_unmapped[:custom_properties] = cu_listener.properties unless cu_listener.properties.empty?
-    end
-    defined_names = wb_parsed[:defined_names] || []
-    Elements::Workbook.new(
-      sheets: sheets,
-      shared_strings: shared_strings,
-      styles: styles,
-      unmapped_data: wb_unmapped,
-      defined_names: defined_names
-    )
-  end
-  private_class_method :_read_workbook
-
-  # @deprecated Use {.read} instead. Will be removed in 0.2.0.
-  #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
-  def self.stream(...)
-    warn "[DEPRECATION] Xlsxrb.stream is deprecated; use Xlsxrb.read instead.", uplevel: 1
-    read(...)
   end
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
@@ -1237,7 +1050,7 @@ module Xlsxrb
         style_idx = col.unmapped_data&.[](:style_index) || col.unmapped_data&.[](:style) || (col.respond_to?(:style_index) && col.style_index)
         min = col.unmapped_data&.[](:min)
         max = col.unmapped_data&.[](:max)
-        { index: col.index, width: col.width, hidden: col.hidden, custom_width: col.custom_width, outline_level: col.outline_level, style_index: style_idx, min: min, max: max }
+        { index: col.index, width: col.width, hidden: col.hidden?, custom_width: col.custom_width?, outline_level: col.outline_level, style_index: style_idx, min: min, max: max }
         # simplecov:enable
       end
       sd = { name: ws.name, rows: ws.rows, columns: columns }
@@ -1294,8 +1107,6 @@ module Xlsxrb
       end
       if ws.respond_to?(:column_breaks) && ws.column_breaks && !ws.column_breaks.empty?
         sd[:column_breaks] = ws.column_breaks.map { |c| c.respond_to?(:to_h) ? c.to_h : c }
-      elsif ws.respond_to?(:col_breaks) && ws.col_breaks && !ws.col_breaks.empty?
-        sd[:column_breaks] = ws.col_breaks.map { |c| c.respond_to?(:to_h) ? c.to_h : c }
       end
       sd[:background_image] = ws.background_image if ws.respond_to?(:background_image) && ws.background_image
       if ws.respond_to?(:images) && ws.images && !ws.images.empty?
@@ -1307,10 +1118,8 @@ module Xlsxrb
             opts[:file_data] = img.data
             opts[:ext] = ext
             opts[:from_column] = img.from_column
-            opts[:from_col] = img.from_column
             opts[:from_row] = img.from_row
             opts[:to_column] = img.to_column
-            opts[:to_col] = img.to_column
             opts[:to_row] = img.to_row
             opts
           else
@@ -1329,13 +1138,19 @@ module Xlsxrb
 
     # Extract workbook-level facade metadata
     wb_facade = workbook.unmapped_data[:facade] || {}
-    wb_properties = workbook.unmapped_data[:workbook_properties] || wb_facade[:workbook_properties]
+    wb_properties = (workbook.unmapped_data[:workbook_properties] || wb_facade[:workbook_properties] || {}).merge(
+      workbook.respond_to?(:workbook_properties) && workbook.workbook_properties ? workbook.workbook_properties.to_h : {}
+    )
     wb_core = (workbook.respond_to?(:core_properties) && workbook.core_properties) || wb_facade[:core_properties]
     wb_app = (workbook.respond_to?(:app_properties) && workbook.app_properties) || wb_facade[:app_properties]
     wb_custom = (workbook.respond_to?(:custom_properties) && workbook.custom_properties) || wb_facade[:custom_properties]
     wb_prot = (workbook.respond_to?(:workbook_protection) && workbook.workbook_protection) || wb_facade[:workbook_protection]
     raw_dns = wb_facade[:defined_names] || (workbook.respond_to?(:defined_names) && !workbook.defined_names.empty? ? workbook.defined_names : nil)
-    defined_names = raw_dns ? raw_dns.map(&:dup) : []
+    defined_names = if raw_dns
+                      raw_dns.map { |dn| dn.is_a?(Elements::MetadataRecord) ? dn.to_h : dn.dup }
+                    else
+                      []
+                    end
 
     # Auto-generate _xlnm.Print_Area and _xlnm.Print_Titles from worksheet definitions if not already present
     workbook.sheets.each_with_index do |ws, idx|
@@ -1349,7 +1164,7 @@ module Xlsxrb
       pt = ws.print_titles
       pt = pt.to_h if pt.is_a?(Elements::MetadataRecord)
       parts = []
-      col_val = pt[:columns] || pt[:cols]
+      col_val = pt[:columns]
       parts << "'#{sheet_name}'!$#{col_val.sub(":", ":$")}" if col_val
       parts << "'#{sheet_name}'!$#{pt[:rows].sub(":", ":$")}" if pt[:rows]
       defined_names << { name: "_xlnm.Print_Titles", value: parts.join(","), local_sheet_id: idx } unless parts.empty?
@@ -1394,288 +1209,6 @@ module Xlsxrb
         workbook_properties: wb_properties,
         compression_level: compression_level
       )
-    end
-  end
-
-  # Serializes an in-memory workbook to a destination target (path or IO).
-  #
-  # @deprecated Use {.write} instead. Will be removed in 0.2.0.
-  # @param target [String, IO, StringIO] Target destination.
-  # @param workbook [Elements::Workbook] The workbook instance to write.
-  # @param shared_strings [Boolean] Whether to intern strings into sharedStrings.xml.
-  # @param compression_level [Integer, nil] ZIP deflate compression level (0..9).
-  # @param password [String, nil] Optional encryption password.
-  # @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
-  # @return [void]
-  # @api public
-  #: (String | IO | StringIO target, Elements::Workbook workbook, ?shared_strings: bool, ?compression_level: Integer?, ?password: String?, ?encryption_mode: Symbol) -> void
-  def self.write_workbook(target, workbook, shared_strings: true, compression_level: nil, password: nil, encryption_mode: :standard)
-    warn "[Xlsxrb DEPRECATION] Xlsxrb.write_workbook is deprecated and will be removed in v0.2.0. Use Xlsxrb.write instead.", uplevel: 1
-    write(target, workbook, password: password, encryption_mode: encryption_mode, shared_strings: shared_strings, compression_level: compression_level || Zlib::DEFAULT_COMPRESSION)
-  end
-
-  # Serializes an in-memory workbook to a binary XLSX data string.
-  #
-  # @deprecated Use {.write} instead. Will be removed in 0.2.0.
-  # @param workbook [Elements::Workbook] The workbook instance to serialize.
-  # @param shared_strings [Boolean] Whether to intern strings into sharedStrings.xml.
-  # @param compression_level [Integer, nil] ZIP deflate compression level (0..9).
-  # @param password [String, nil] Optional encryption password.
-  # @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
-  # @return [String] Binary XLSX data.
-  # @api public
-  #: (Elements::Workbook workbook, ?shared_strings: bool, ?compression_level: Integer?, ?password: String?, ?encryption_mode: Symbol) -> String
-  def self.workbook_to_data(workbook, shared_strings: true, compression_level: nil, password: nil, encryption_mode: :standard)
-    warn "[Xlsxrb DEPRECATION] Xlsxrb.workbook_to_data is deprecated and will be removed in v0.2.0. Use Xlsxrb.write instead.", uplevel: 1
-    write(workbook, password: password, encryption_mode: encryption_mode, shared_strings: shared_strings, compression_level: compression_level || Zlib::DEFAULT_COMPRESSION)
-  end
-
-  # Modifies an existing XLSX file in-memory using an immutable transformation block.
-  #
-  # Reads the workbook, passes it to the block, and writes the resulting workbook.
-  # If no target is specified, the source file is overwritten in-place.
-  #
-  # @example Modify a template and save to new file
-  #   Xlsxrb.modify("template.xlsx", "output.xlsx") do |workbook|
-  #     workbook.update_sheet("Sheet1") do |sheet|
-  #       sheet.update_cell("B1", value: "Updated Title")
-  #            .update_cell("B2", value: 100)
-  #     end
-  #   end
-  #
-  # @param source [String, IO, StringIO] The source file path or IO object.
-  # @param target [String, IO, StringIO, nil] Target file path or IO object (overwrites source if nil).
-  # @param password [String, nil] Optional password for decrypting encrypted source files.
-  # @deprecated Use {Xlsxrb.read} + {Xlsxrb.write} for streaming transformations or {Xlsxrb.write} DSL for report generation. Will be removed in 0.2.0.
-  # @param new_password [String, nil] Optional password for encrypting the output file (defaults to password).
-  # @yield [workbook]
-  # @yieldparam workbook [Elements::Workbook] The loaded workbook.
-  # @yieldreturn [Elements::Workbook] The modified workbook.
-  # @return [Elements::Workbook] The modified workbook returned by the block.
-  # @api public
-  #: (untyped source, ?untyped target, ?password: String?, ?new_password: String?, **untyped opts) ?{ (Elements::Workbook) -> untyped } -> untyped
-  def self.modify(source, target = nil, password: nil, new_password: nil, **opts)
-    warn "[DEPRECATION] Xlsxrb.modify is deprecated and will be removed in 0.2.0; use Xlsxrb.read + Xlsxrb.write for streaming transformations or Xlsxrb.write DSL for report generation.", uplevel: 1
-    raise Error, "source is required" if source.nil?
-    raise Error, "block is required" unless block_given?
-
-    prepared_source = prepare_source_io(source, password)
-    in_place = target.nil? || target == source || (source.is_a?(String) && target.is_a?(String) && File.file?(target) && File.identical?(source, target))
-    temp_target_path = nil
-
-    begin
-      write_dest = if in_place && source.is_a?(String)
-                     temp_target = Tempfile.new(["xlsxrb_mod", ".xlsx"], File.dirname(source))
-                     temp_target_path = temp_target.path
-                     temp_target.close
-                     temp_target_path
-                   elsif in_place && source.is_a?(StringIO)
-                     StringIO.new
-                   else
-                     target || source
-                   end
-
-      replaced_entries = {}
-      structural_change = false
-      block_result = nil
-
-      zip_options = {}
-      zip_options[:max_uncompressed_size] = opts[:max_uncompressed_size] if opts[:max_uncompressed_size]
-
-      Ooxml::ZipReader.open(prepared_source, **zip_options) do |zip_reader|
-        workbook_path = resolve_workbook_entry(zip_reader)
-        wb_dir = File.dirname(workbook_path)
-        wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
-        rels_xml = zip_reader.read_entry(wb_rels_name)
-        rels, rel_types = parse_workbook_relationships(rels_xml)
-
-        sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
-        shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
-        shared_strings = shared_strings_xml ? Ooxml::SharedStringsParser.parse(shared_strings_xml) : []
-        sst_index = {}
-        shared_strings.each_with_index { |s, idx| sst_index[s] ||= idx }
-        initial_sst_size = shared_strings.size
-
-        styles_entry = resolve_part_entry(zip_reader, rels, "styles", "styles.xml", wb_dir)
-        styles_xml = styles_entry ? zip_reader.read_entry(styles_entry) : nil
-        styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
-
-        workbook_xml = zip_reader.read_entry(workbook_path)
-        wb_parsed = workbook_xml ? Ooxml::WorkbookParser.parse_with_properties(workbook_xml) : { sheets: [], date1904: false, defined_names: [] }
-        workbook_sheets = wb_parsed[:sheets]
-
-        sheet_entry_map = {}
-        ws_idx = 0
-        loaded_sheets = workbook_sheets.filter_map do |sheet_info|
-          r_id = sheet_info[:r_id]
-          target_path = rels[r_id]
-          next if non_worksheet_relationship?(rel_types[r_id], target_path)
-
-          sheet_path = resolve_sheet_entry(zip_reader, target_path, wb_dir, ws_idx)
-          current_ws_idx = ws_idx
-          ws_idx += 1
-          next unless sheet_path
-
-          sheet_entry_map[sheet_info[:name]] = sheet_path
-          sheet_xml = zip_reader.read_entry(sheet_path) || ""
-          sheet_print_area = extract_sheet_print_area(wb_parsed[:defined_names], sheet_info[:name], current_ws_idx)
-          sheet_print_titles = extract_sheet_print_titles(wb_parsed[:defined_names], sheet_info[:name], current_ws_idx)
-          build_worksheet(
-            sheet_info[:name],
-            sheet_xml,
-            shared_strings,
-            styles,
-            state: sheet_info[:state] || :visible,
-            zip_reader: zip_reader,
-            entry_name: sheet_path,
-            print_area: sheet_print_area,
-            print_titles: sheet_print_titles,
-            trim_empty_rows: opts.fetch(:trim_empty_rows, false),
-            pad_empty_rows: opts.fetch(:pad_empty_rows, false),
-            pad_empty_cells: opts.fetch(:pad_empty_cells, false)
-          )
-        end
-
-        mod_unmapped = {}
-        mod_props = {}
-        mod_props[:date1904] = true if wb_parsed[:date1904]
-        mod_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
-        mod_props[:first_sheet] = wb_parsed[:first_sheet] unless wb_parsed[:first_sheet].nil?
-        mod_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
-        mod_props[:tab_ratio] = wb_parsed[:tab_ratio] unless wb_parsed[:tab_ratio].nil?
-        mod_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
-        mod_unmapped[:workbook_properties] = mod_props unless mod_props.empty?
-
-        original_workbook = Elements::Workbook.new(
-          sheets: loaded_sheets,
-          shared_strings: shared_strings,
-          styles: styles,
-          unmapped_data: mod_unmapped,
-          defined_names: wb_parsed[:defined_names] || []
-        )
-        mutable_shared_strings = shared_strings.dup
-
-        block_result = yield original_workbook
-        if block_result.is_a?(Elements::Workbook)
-          result_workbook = block_result
-        else
-          warn "[DEPRECATION] Xlsxrb.modify block must return an Elements::Workbook; returning other values is deprecated and will raise TypeError in version 0.2.0.", uplevel: 1
-          result_workbook = original_workbook
-        end
-
-        write_password = new_password.nil? ? password : new_password
-
-        structural_change = result_workbook.sheets.size != original_workbook.sheets.size ||
-                            result_workbook.sheets.map(&:name) != original_workbook.sheets.map(&:name)
-
-        if structural_change
-          write_target = target || source
-          write_opts = opts.slice(:encryption_mode, :compression_level, :shared_strings)
-          write(write_target, result_workbook, password: write_password, **write_opts)
-        else
-          result_workbook.sheets.each_with_index do |new_sheet, idx|
-            orig_sheet = original_workbook.sheets[idx]
-            next if new_sheet.equal?(orig_sheet) || new_sheet == orig_sheet
-
-            entry_name = sheet_entry_map[new_sheet.name] || "xl/worksheets/sheet#{idx + 1}.xml"
-            orig_sheet_xml = zip_reader.read_entry(entry_name) || ""
-
-            new_sheet_data = serialize_sheet_data_xml(
-              new_sheet.rows,
-              mutable_shared_strings,
-              sst_index,
-              use_sst: !shared_strings_xml.nil?
-            )
-            updated_sheet_xml = replace_sheet_data(orig_sheet_xml, new_sheet_data)
-            updated_sheet_xml = update_dimension(updated_sheet_xml, new_sheet.rows)
-
-            all_hyperlinks = new_sheet.hyperlinks.dup
-            new_sheet.rows.each do |row|
-              row.cells.each do |cell|
-                all_hyperlinks[cell.ref] ||= cell.hyperlink if cell.hyperlink
-              end
-            end
-
-            if all_hyperlinks != orig_sheet.hyperlinks
-              rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-              orig_rels_xml = replaced_entries[rels_path] || zip_reader.read_entry(rels_path)
-              updated_sheet_xml, updated_rels_xml = update_sheet_hyperlinks(
-                updated_sheet_xml,
-                orig_rels_xml,
-                all_hyperlinks
-              )
-              replaced_entries[rels_path] = updated_rels_xml if updated_rels_xml
-            end
-
-            all_comments = new_sheet.comments.dup
-            new_sheet.rows.each do |row|
-              row.cells.each do |cell|
-                if cell.comment && all_comments.none? { |c| (c[:ref] || c[:cell])&.to_s&.upcase == cell.ref.upcase }
-                  entry = cell.comment.is_a?(Hash) ? cell.comment.merge(ref: cell.ref) : { ref: cell.ref, text: cell.comment }
-                  all_comments << entry
-                end
-              end
-            end
-
-            if all_comments != orig_sheet.comments
-              rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-              orig_rels_xml = replaced_entries[rels_path] || zip_reader.read_entry(rels_path)
-              updated_sheet_xml, updated_rels_xml = update_sheet_comments(
-                updated_sheet_xml,
-                rels_path,
-                orig_rels_xml,
-                all_comments,
-                zip_reader,
-                idx,
-                entry_name,
-                replaced_entries
-              )
-              replaced_entries[rels_path] = updated_rels_xml if updated_rels_xml
-            end
-
-            replaced_entries[entry_name] = updated_sheet_xml
-          end
-
-          if mutable_shared_strings.size > initial_sst_size && shared_strings_xml
-            new_strings = mutable_shared_strings[initial_sst_size..]
-            sst_path = sst_entry || (wb_dir == "." ? "sharedStrings.xml" : "#{wb_dir}/sharedStrings.xml")
-            replaced_entries[sst_path] = append_to_shared_strings_xml(
-              shared_strings_xml,
-              new_strings
-            )
-          end
-
-          perform_modify_write(
-            write_dest,
-            zip_reader,
-            replaced_entries,
-            password: write_password
-          )
-        end
-      end
-
-      if in_place && !structural_change
-        if source.is_a?(String) && temp_target_path
-          FileUtils.mv(temp_target_path, source)
-          temp_target_path = nil
-        elsif source.is_a?(StringIO) && write_dest.is_a?(StringIO)
-          source.string = write_dest.string
-        elsif source.respond_to?(:write) && source.respond_to?(:seek) && write_dest.is_a?(StringIO)
-          source.seek(0)
-          source.write(write_dest.string)
-          source.truncate(source.pos) if source.respond_to?(:truncate)
-          source.rewind
-        end
-      end
-      block_result
-    ensure
-      if temp_target_path && File.exist?(temp_target_path)
-        begin
-          File.unlink(temp_target_path)
-        rescue SystemCallError
-          nil
-        end
-      end
     end
   end
 
@@ -1786,10 +1319,9 @@ module Xlsxrb
       fallbacks.find { |f| zip_reader.entry?(f) }
     end
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_properties: Hash[Symbol, untyped]?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?, ?columns: Array[Elements::Column]?, ?pivot_tables: Array[Hash[Symbol, untyped]]?, ?split_pane: Hash[Symbol, untyped]?, ?filter_columns: Hash[Integer, Hash[Symbol, untyped]]?, ?sort_state: Hash[Symbol, untyped]?, ?header_footer_images: (Array[Elements::HeaderFooterImage] | Array[Hash[Symbol, untyped]])?, ?charts: (Array[Elements::Chart] | Array[Hash[Symbol, untyped]])?, ?sparkline_groups: (Array[Elements::SparklineGroup] | Array[Hash[Symbol, untyped]])?, ?print_area: String?, ?print_titles: (Elements::PrintTitles | Hash[Symbol, untyped])?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, column_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_properties: nil, sheet_calc_pr: nil, background_image: nil, threaded_comments: nil, columns: nil, pivot_tables: nil, split_pane: nil, filter_columns: nil, sort_state: nil, header_footer_images: nil, charts: nil, sparkline_groups: nil, print_area: nil, print_titles: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_properties: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?, ?columns: Array[Elements::Column]?, ?pivot_tables: Array[Hash[Symbol, untyped]]?, ?split_pane: Hash[Symbol, untyped]?, ?filter_columns: Hash[Integer, Hash[Symbol, untyped]]?, ?sort_state: Hash[Symbol, untyped]?, ?header_footer_images: (Array[Elements::HeaderFooterImage] | Array[Hash[Symbol, untyped]])?, ?charts: (Array[Elements::Chart] | Array[Hash[Symbol, untyped]])?, ?sparkline_groups: (Array[Elements::SparklineGroup] | Array[Hash[Symbol, untyped]])?, ?print_area: String?, ?print_titles: (Elements::PrintTitles | Hash[Symbol, untyped])?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, column_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_properties: nil, background_image: nil, threaded_comments: nil, columns: nil, pivot_tables: nil, split_pane: nil, filter_columns: nil, sort_state: nil, header_footer_images: nil, charts: nil, sparkline_groups: nil, print_area: nil, print_titles: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
-      resolved_calc_pr = sheet_calc_properties || sheet_calc_pr
       if sheet_xml.nil? || sheet_xml.empty?
         return Elements::Worksheet.new(
           name: name, state: state, styles: styles, images: images || [], date1904: date1904,
@@ -1806,9 +1338,9 @@ module Xlsxrb
           header_footer_images: header_footer_images || [],
           page_setup: page_setup || {}, page_margins: page_margins, header_footer: header_footer || {},
           print_options: print_options || {}, sheet_protection: sheet_protection, sheet_view: sheet_view || {},
-          sheet_properties: sheet_properties || {}, sheet_format: sheet_format || {}, row_breaks: row_breaks || [], column_breaks: column_breaks || col_breaks || [],
+          sheet_properties: sheet_properties || {}, sheet_format: sheet_format || {}, row_breaks: row_breaks || [], column_breaks: column_breaks || [],
           protected_ranges: protected_ranges || [], cell_watches: cell_watches || [], ignored_errors: ignored_errors || [],
-          phonetic_properties: phonetic_properties, selection: selection, sheet_calc_properties: resolved_calc_pr,
+          phonetic_properties: phonetic_properties, selection: selection, sheet_calc_properties: sheet_calc_properties,
           background_image: background_image,
           threaded_comments: threaded_comments || []
         )
@@ -1921,7 +1453,7 @@ module Xlsxrb
                                     {}
                                   end
 
-      print_data = if page_setup.nil? || page_margins.nil? || header_footer.nil? || print_options.nil? || row_breaks.nil? || (column_breaks.nil? && col_breaks.nil?)
+      print_data = if page_setup.nil? || page_margins.nil? || header_footer.nil? || print_options.nil? || row_breaks.nil? || column_breaks.nil?
                      if sheet_xml.match?(/<(?:pageSetup|pageMargins|headerFooter|printOptions|rowBreaks|colBreaks)\b/)
                        pg_listener = Ooxml::Reader::PrintPageListener.new
                        Ooxml::XmlParser.parse(sheet_xml, pg_listener)
@@ -1931,15 +1463,13 @@ module Xlsxrb
                          header_footer: pg_listener.header_footer,
                          print_options: pg_listener.print_options,
                          row_breaks: pg_listener.row_breaks,
-                         column_breaks: pg_listener.column_breaks,
-                         col_breaks: pg_listener.col_breaks
+                         column_breaks: pg_listener.column_breaks
                        }
                      else
-                       { page_margins: nil, page_setup: {}, header_footer: {}, print_options: {}, row_breaks: [], column_breaks: [], col_breaks: [] }
+                       { page_margins: nil, page_setup: {}, header_footer: {}, print_options: {}, row_breaks: [], column_breaks: [] }
                      end
                    else
-                     cb = column_breaks || col_breaks
-                     { page_margins: page_margins, page_setup: page_setup, header_footer: header_footer, print_options: print_options, row_breaks: row_breaks, column_breaks: cb, col_breaks: cb }
+                     { page_margins: page_margins, page_setup: page_setup, header_footer: header_footer, print_options: print_options, row_breaks: row_breaks, column_breaks: column_breaks }
                    end
 
       sheet_prot_ranges = protected_ranges || if sheet_xml.include?("<protectedRanges")
@@ -2015,13 +1545,13 @@ module Xlsxrb
         sheet_properties: sheet_props,
         sheet_format: sheet_fmt,
         row_breaks: row_breaks || print_data[:row_breaks] || [],
-        column_breaks: column_breaks || col_breaks || print_data[:column_breaks] || print_data[:col_breaks] || [],
+        column_breaks: column_breaks || print_data[:column_breaks] || [],
         protected_ranges: sheet_prot_ranges,
         cell_watches: sheet_watches,
         ignored_errors: sheet_ignored_errors,
         phonetic_properties: sheet_phonetic,
         selection: sheet_selection,
-        sheet_calc_properties: resolved_calc_pr,
+        sheet_calc_properties: sheet_calc_properties,
         background_image: background_image || (sheet_xml.include?("<picture") ? resolve_background_image(sheet_xml, zip_reader: zip_reader, entry_name: entry_name) : nil),
         threaded_comments: sheet_threaded_comments
       )
@@ -2284,10 +1814,10 @@ module Xlsxrb
              end
 
       {
+        r_id: picture_rid,
+        path: target_path,
+        extension: ext,
         data: data.b,
-        file_data: data.b,
-        ext: ext,
-        filename: File.basename(target_path),
         content_type: mime
       }.freeze
     end
@@ -2680,10 +2210,14 @@ module Xlsxrb
             end
           end
         end
-        chart[:from_column] ||= chart[:from_col]
-        chart[:to_column] ||= chart[:to_col]
-        chart[:r_id] ||= chart[:rid]
-        chart[:type] ||= chart[:chart_type]
+        from_col = chart.delete(:from_col)
+        to_col = chart.delete(:to_col)
+        chart[:from_column] ||= from_col if from_col
+        chart[:to_column] ||= to_col if to_col
+        rid = chart.delete(:rid)
+        chart[:r_id] ||= rid if rid
+        ctype = chart.delete(:chart_type)
+        chart[:type] ||= ctype if ctype
         Elements::Chart.new(**chart)
       end
     end
@@ -2756,7 +2290,6 @@ module Xlsxrb
         next unless img_data
 
         img_data = img_data.b
-        filename = File.basename(media_path)
         ext = File.extname(media_path).delete_prefix(".").downcase
         content_type = case ext
                        when "png" then "image/png"
@@ -2771,9 +2304,7 @@ module Xlsxrb
           position: shape[:id],
           r_id: rel_id,
           path: media_path,
-          filename: filename,
           extension: ext,
-          ext: ext,
           data: img_data,
           content_type: content_type
         )
@@ -2822,7 +2353,7 @@ module Xlsxrb
 
       return nil if rows.nil? && cols.nil?
 
-      Elements::PrintTitles.new(rows: rows, columns: cols, cols: cols)
+      Elements::PrintTitles.new(rows: rows, columns: cols)
     end
 
     #: (untyped defined_name, String? sheet_name, Integer? sheet_index) -> bool
@@ -2889,7 +2420,7 @@ module Xlsxrb
                          {}
                        end
 
-      raw_cells = raw_row[:cells]
+      raw_cells = raw_row.respond_to?(:cells) ? raw_row.cells : raw_row[:cells]
       cells = raw_cells.map do |rc|
         if rc.is_a?(Elements::Cell)
           hl = hyperlinks_map[rc.ref]
@@ -2909,7 +2440,11 @@ module Xlsxrb
           end
         else
           parsed = Elements::Cell._parse_ref(rc[:ref]) if rc[:ref]
-          row_idx = parsed ? parsed[0] : raw_row[:index]
+          row_idx = if parsed
+                      parsed[0]
+                    else
+                      (raw_row.respond_to?(:index) ? raw_row.index : raw_row[:index])
+                    end
           col_idx = parsed ? parsed[1] : 0
           ref = rc[:ref] || "#{Elements::Cell._column_letter(col_idx)}#{row_idx + 1}"
           ref_key = ref.upcase
@@ -2943,20 +2478,24 @@ module Xlsxrb
           )
         end
       end
-      attrs = raw_row[:attrs] || {}
-      row_errors = Elements::Row.validate(raw_row[:index], cells)
-      if !row_errors.empty? && raw_row[:source]
+      attrs = raw_row.respond_to?(:attributes) ? raw_row.attributes : (raw_row[:attrs] || {})
+      row_idx = raw_row.respond_to?(:index) ? raw_row.index : raw_row[:index]
+      row_source = if raw_row.respond_to?(:source)
+                     raw_row.source
+                   else
+                     (raw_row.is_a?(Hash) ? raw_row[:source] : nil)
+                   end
+      row_errors = Elements::Row.validate(row_idx, cells)
+      if !row_errors.empty? && row_source
         # simplecov:disable
         # Edge case / untested delegation block
         row_errors = row_errors.map do |err|
-          "#{err} (at #{raw_row[:source][:part]} row #{raw_row[:source][:row] + 1})"
+          "#{err} (at #{row_source[:part]} row #{row_source[:row] + 1})"
           # simplecov:enable
         end
       end
-      row_unmapped = {}
-      row_unmapped[:style_index] = attrs[:style_index] if attrs[:style_index]
       Elements::Row.new(
-        index: raw_row[:index],
+        index: row_idx,
         cells: cells,
         height: attrs[:height],
         hidden: attrs[:hidden] || false,
@@ -2964,7 +2503,7 @@ module Xlsxrb
         collapsed: attrs[:collapsed] || false,
         outline_level: attrs[:outline_level],
         style_index: attrs[:style_index],
-        unmapped_data: row_unmapped,
+        unmapped_data: Elements::EMPTY_HASH,
         errors: row_errors
       )
     end
@@ -3014,439 +2553,6 @@ module Xlsxrb
       else
         source
       end
-    end
-
-    #: (untyped dest, Ooxml::ZipReader zip_reader, Hash[String, String] replaced_entries, ?password: String?) -> void
-    def perform_modify_write(dest, zip_reader, replaced_entries, password: nil)
-      norm_replaced = {}
-      replaced_entries.each do |k, v|
-        norm_replaced[k.tr("\\", "/").downcase] = [k.tr("\\", "/"), v]
-      end
-
-      write_zip = lambda do |zip_out|
-        Ooxml::ZipWriter.open(zip_out) do |zip_writer|
-          written_keys = Set.new
-
-          zip_reader.entry_names.each do |name|
-            norm_name = name.tr("\\", "/").downcase
-            next if written_keys.include?(norm_name)
-
-            written_keys << norm_name
-            canonical_path = name.tr("\\", "/")
-
-            if norm_replaced.key?(norm_name)
-              _orig_key, content = norm_replaced[norm_name]
-              zip_writer.add_entry(canonical_path, content)
-            else
-              zip_reader.copy_to_writer(name, zip_writer, target_path: canonical_path)
-            end
-          end
-
-          norm_replaced.each do |norm_name, (canonical_name, content)|
-            next if written_keys.include?(norm_name)
-
-            written_keys << norm_name
-            zip_writer.add_entry(canonical_name, content)
-          end
-        end
-      end
-
-      if password && !password.empty?
-        buf = StringIO.new
-        buf.binmode
-        write_zip.call(buf)
-        encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password)
-        if dest.is_a?(String)
-          File.binwrite(dest, encrypted_bytes)
-        elsif dest.respond_to?(:write)
-          dest.write(encrypted_bytes)
-        end
-      else
-        write_zip.call(dest)
-      end
-    end
-
-    #: (String sst_xml, Array[untyped] new_strings) -> String
-    def append_to_shared_strings_xml(sst_xml, new_strings)
-      return sst_xml if new_strings.nil? || new_strings.empty?
-
-      sst_match = sst_xml.match(/<([a-zA-Z0-9_]+:)?sst\b([^>]*)>/)
-      prefix_with_colon = sst_match ? (sst_match[1] || "") : ""
-      si_tag = "#{prefix_with_colon}si"
-      t_tag = "#{prefix_with_colon}t"
-
-      new_si_tags = +""
-      new_strings.each do |str|
-        s = str.to_s
-        new_si_tags << "<#{si_tag}><#{t_tag}>#{Ooxml::XmlBuilder.escape(s)}</#{t_tag}></#{si_tag}>"
-      end
-
-      close_tag = "</#{prefix_with_colon}sst>"
-      sst_close = sst_xml.rindex(close_tag)
-      updated_xml = if sst_close
-                      prefix = sst_xml[0...sst_close]
-                      suffix = sst_xml[sst_close..]
-                      "#{prefix}#{new_si_tags}#{suffix}"
-                    else
-                      self_closing = sst_xml.match(%r{<#{Regexp.escape(prefix_with_colon)}sst\b[^>]*/>})
-                      return sst_xml unless self_closing
-
-                      sc_idx = self_closing.begin(0)
-                      sc_end = self_closing.end(0)
-                      opening = self_closing[0].sub(%r{/>\z}, ">")
-                      prefix = sst_xml[0...sc_idx]
-                      suffix = sst_xml[sc_end..]
-                      "#{prefix}#{opening}#{new_si_tags}#{close_tag}#{suffix}"
-                    end
-
-      updated_xml.sub(/<#{Regexp.escape(prefix_with_colon)}sst\b([^>]*)>/) do
-        attrs = Regexp.last_match(1)
-        if attrs =~ /\bcount="(\d+)"/
-          old_count = Regexp.last_match(1).to_i
-          new_count = old_count + new_strings.size
-          attrs = attrs.sub(/\bcount="\d+"/, "count=\"#{new_count}\"")
-        else
-          attrs = "#{attrs} count=\"#{new_strings.size}\""
-        end
-        if attrs =~ /\buniqueCount="(\d+)"/
-          old_ucount = Regexp.last_match(1).to_i
-          new_ucount = old_ucount + new_strings.size
-          attrs = attrs.sub(/\buniqueCount="\d+"/, "uniqueCount=\"#{new_ucount}\"")
-        else
-          attrs = "#{attrs} uniqueCount=\"#{new_strings.size}\""
-        end
-        "<#{prefix_with_colon}sst#{attrs}>"
-      end
-    end
-
-    #: (String sheet_xml, String new_sheet_data_xml) -> String
-    def replace_sheet_data(sheet_xml, new_sheet_data_xml)
-      orig_encoding = sheet_xml.encoding
-      sheet_b = sheet_xml.b
-      sd_term = sheet_b.index("sheetData")
-      return sheet_xml unless sd_term
-
-      sheet_data_start = sheet_b.rindex("<", sd_term)
-      return sheet_xml unless sheet_data_start
-
-      prefix_len = sd_term - (sheet_data_start + 1)
-      tag_prefix = sheet_b.byteslice(sheet_data_start + 1, prefix_len).force_encoding(orig_encoding)
-
-      open_tag_end = sheet_b.index(">", sd_term)
-      return sheet_xml unless open_tag_end
-
-      prefix = sheet_b.byteslice(0...sheet_data_start)
-      suffix = if sheet_b.getbyte(open_tag_end - 1) == 47
-                 sheet_b.byteslice((open_tag_end + 1)..) || "".b
-               else
-                 close_tag = "</#{tag_prefix}sheetData>".b
-                 close_tag_start = sheet_b.index(close_tag, open_tag_end)
-                 return sheet_xml unless close_tag_start
-
-                 sheet_b.byteslice((close_tag_start + close_tag.bytesize)..) || "".b
-               end
-
-      new_sheet_data_xml = new_sheet_data_xml.gsub(%r{</?(sheetData|row|c|v|f|is|t)\b}) { |m| m.sub(%r{(</?)}, "\\1#{tag_prefix}") } if tag_prefix && !tag_prefix.empty?
-
-      result = prefix << new_sheet_data_xml.b << suffix
-      result.force_encoding(orig_encoding)
-    end
-
-    #: (String sheet_xml, Array[Elements::Row] rows) -> String
-    def update_dimension(sheet_xml, rows)
-      return sheet_xml if rows.empty?
-
-      min_row = rows.first.index
-      max_row = rows.last.index
-      min_col = rows.map { |r| r.cells.first&.column_index }.compact.min || 0
-      max_col = rows.map { |r| r.cells.last&.column_index }.compact.max || 0
-      min_col_letter = Elements::Cell._column_letter(min_col)
-      max_col_letter = Elements::Cell._column_letter(max_col)
-      dim_ref = if min_row == max_row && min_col == max_col
-                  "#{min_col_letter}#{min_row + 1}"
-                else
-                  "#{min_col_letter}#{min_row + 1}:#{max_col_letter}#{max_row + 1}"
-                end
-
-      sheet_xml.sub(/<([a-zA-Z0-9_]+:)?dimension\b([^>]*)\bref="[^"]*"/, "<\\1dimension\\2ref=\"#{dim_ref}\"")
-    end
-
-    #: (String sheet_xml, String? orig_rels_xml, Hash[String, untyped] new_hyperlinks) -> [String, String?]
-    def update_sheet_hyperlinks(sheet_xml, orig_rels_xml, new_hyperlinks)
-      existing_rels = []
-      max_rid_num = 0
-      if orig_rels_xml && !orig_rels_xml.empty?
-        orig_rels_xml.scan(%r{<Relationship\b([^>]*)/?>}) do |m|
-          attrs = m[0]
-          id = attrs[/Id="([^"]*)"/, 1]
-          type = attrs[/Type="([^"]*)"/, 1]
-          target = attrs[/Target="([^"]*)"/, 1]
-          target_mode = attrs[/TargetMode="([^"]*)"/, 1]
-          if id =~ /\ArId(\d+)\z/
-            num = Regexp.last_match(1).to_i
-            max_rid_num = num if num > max_rid_num
-          end
-          existing_rels << { id: id, type: type, target: target, target_mode: target_mode } unless type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
-        end
-      end
-
-      sheet_rels = existing_rels.dup
-      cur_rid = max_rid_num
-      hl_elements = []
-
-      ws_prefix = sheet_xml[/<([a-zA-Z0-9_]+:)?worksheet\b/, 1] || ""
-
-      new_hyperlinks.each do |cell_ref, link|
-        entry = link.is_a?(Hash) ? link.dup : { url: link.to_s }
-        url = entry[:url]
-        loc = entry[:location]
-        if url&.start_with?("#")
-          loc ||= url.delete_prefix("#")
-          url = nil
-        end
-        display = entry[:display]
-        tooltip = entry[:tooltip]
-
-        attrs = if url && !url.empty?
-                  cur_rid += 1
-                  rid = "rId#{cur_rid}"
-                  sheet_rels << {
-                    id: rid,
-                    type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
-                    target: url,
-                    target_mode: "External"
-                  }
-                  %(ref="#{cell_ref}" r:id="#{rid}")
-                elsif loc && !loc.empty?
-                  %(ref="#{cell_ref}" location="#{Ooxml::XmlBuilder.escape(loc)}")
-                else
-                  next
-                end
-
-        attrs << %( display="#{Ooxml::XmlBuilder.escape(display)}") if display
-        attrs << %( tooltip="#{Ooxml::XmlBuilder.escape(tooltip)}") if tooltip
-        hl_elements << "<#{ws_prefix}hyperlink #{attrs}/>"
-      end
-
-      updated_sheet_xml = sheet_xml.dup
-      root_tag = updated_sheet_xml[/\A\s*(?:<\?xml[^>]*\?>\s*)?<([a-zA-Z0-9_]+:)?worksheet\b[^>]*/, 0]
-      updated_sheet_xml.sub!(/<([a-zA-Z0-9_]+:)?worksheet\b/, '\0 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"') if hl_elements.any? && (root_tag.nil? || !root_tag.match?(/\bxmlns:r\s*=/))
-
-      new_hyperlinks_xml = hl_elements.empty? ? "" : "<#{ws_prefix}hyperlinks>#{hl_elements.join}</#{ws_prefix}hyperlinks>"
-
-      if updated_sheet_xml =~ /<([a-zA-Z0-9_]+:)?hyperlinks\b/
-        updated_sheet_xml.sub!(%r{<(([a-zA-Z0-9_]+:)?hyperlinks)\b(?:[^>]*/>|[^>]*>.*?</\1>)}m) { new_hyperlinks_xml }
-      elsif hl_elements.any?
-        search_start = 0
-        %w[sheetData customSheetViews mergeCells conditionalFormatting dataValidations].each do |tag|
-          pattern = if ws_prefix.empty?
-                      %r{</#{tag}>|<#{tag}\b[^>]*/\s*>}
-                    else
-                      %r{</#{Regexp.escape(ws_prefix)}#{tag}>|<#{Regexp.escape(ws_prefix)}#{tag}\b[^>]*/\s*>}
-                    end
-          if (m = updated_sheet_xml.match(pattern))
-            end_pos = m.end(0)
-            search_start = end_pos if end_pos > search_start
-          end
-        end
-
-        tags_sub = "printOptions|pageMargins|pageSetup|headerFooter|rowBreaks|colBreaks|customProperties|cellWatches|ignoredErrors|smartTags|drawing|legacyDrawing|legacyDrawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst"
-        insert_pattern = if ws_prefix.empty?
-                           %r{<(?:#{tags_sub})\b|</worksheet>}
-                         else
-                           %r{<#{Regexp.escape(ws_prefix)}(?:#{tags_sub})\b|</#{Regexp.escape(ws_prefix)}worksheet>}
-                         end
-        match = updated_sheet_xml.match(insert_pattern, search_start)
-        if match
-          updated_sheet_xml.insert(match.begin(0), new_hyperlinks_xml)
-        else
-          updated_sheet_xml << new_hyperlinks_xml
-        end
-      end
-
-      updated_rels_xml = if sheet_rels.empty? && (orig_rels_xml.nil? || orig_rels_xml.empty?)
-                           nil
-                         else
-                           io = StringIO.new
-                           b = Ooxml::XmlBuilder.new(io)
-                           b.declaration
-                           b.open_tag("Relationships", { xmlns: "http://schemas.openxmlformats.org/package/2006/relationships" })
-                           sheet_rels.each do |rel|
-                             rel_attrs = { Id: rel[:id], Type: rel[:type], Target: rel[:target] }
-                             rel_attrs[:TargetMode] = rel[:target_mode] if rel[:target_mode]
-                             b.empty_tag("Relationship", rel_attrs)
-                           end
-                           b.close_tag("Relationships")
-                           io.string
-                         end
-
-      [updated_sheet_xml, updated_rels_xml]
-    end
-
-    #: (String sheet_xml, String _rels_path, String? orig_rels_xml, Array[Hash[Symbol, untyped]] new_comments, Ooxml::ZipReader zip_reader, Integer sheet_idx, String entry_name, Hash[String, String] replaced_entries) -> [String, String?]
-    def update_sheet_comments(sheet_xml, _rels_path, orig_rels_xml, new_comments, zip_reader, sheet_idx, entry_name, replaced_entries)
-      existing_rels = []
-      max_rid_num = 0
-      if orig_rels_xml && !orig_rels_xml.empty?
-        orig_rels_xml.scan(%r{<Relationship\b([^>]*)/?>}) do |m|
-          attrs = m[0]
-          id = attrs[/Id="([^"]*)"/, 1]
-          type = attrs[/Type="([^"]*)"/, 1]
-          target = attrs[/Target="([^"]*)"/, 1]
-          target_mode = attrs[/TargetMode="([^"]*)"/, 1]
-          if id =~ /\ArId(\d+)\z/
-            num = Regexp.last_match(1).to_i
-            max_rid_num = num if num > max_rid_num
-          end
-          existing_rels << { id: id, type: type, target: target, target_mode: target_mode }
-        end
-      end
-
-      comments_rel = existing_rels.find { |r| r[:type]&.end_with?("/comments") }
-      vml_rel = existing_rels.find { |r| r[:type]&.end_with?("/vmlDrawing") }
-
-      writer = Ooxml::Writer.new
-      new_comments.each do |c|
-        writer.add_comment(c[:cell] || c[:ref], c[:text], author: c[:author] || "Author")
-      end
-      comments_xml = writer.send(:generate_comments_xml, writer.comments)
-      vml_xml = writer.send(:generate_vml_drawing_xml, writer.comments)
-
-      updated_sheet_xml = sheet_xml.dup
-
-      if comments_rel
-        base_dir = File.dirname(entry_name)
-        comments_path = resolve_relative_path(base_dir, comments_rel[:target])
-        replaced_entries[comments_path] = comments_xml
-        if vml_rel
-          vml_path = resolve_relative_path(base_dir, vml_rel[:target])
-          replaced_entries[vml_path] = vml_xml
-        end
-      elsif new_comments.any?
-        existing_comment_count = zip_reader.entry_names.count { |n| n =~ %r{\Axl/comments\d+\.xml\z} }
-        comment_file_num = existing_comment_count + sheet_idx + 1
-        comments_path = "xl/comments#{comment_file_num}.xml"
-        vml_path = "xl/drawings/vmlDrawing#{comment_file_num}.vml"
-        replaced_entries[comments_path] = comments_xml
-        replaced_entries[vml_path] = vml_xml
-
-        max_rid_num += 1
-        c_rid = "rId#{max_rid_num}"
-        existing_rels << {
-          id: c_rid,
-          type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments",
-          target: "../comments#{comment_file_num}.xml"
-        }
-
-        max_rid_num += 1
-        vml_rid = "rId#{max_rid_num}"
-        existing_rels << {
-          id: vml_rid,
-          type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing",
-          target: "../drawings/vmlDrawing#{comment_file_num}.vml"
-        }
-
-        ws_prefix = updated_sheet_xml[/<([a-zA-Z0-9_]+:)?worksheet\b/, 1] || ""
-        legacy_pattern = ws_prefix.empty? ? /<legacyDrawing\b/ : /<#{Regexp.escape(ws_prefix)}legacyDrawing\b/
-        unless updated_sheet_xml =~ legacy_pattern
-          legacy_tag = %(<#{ws_prefix}legacyDrawing r:id="#{vml_rid}"/>)
-          search_start = 0
-          %w[sheetData customSheetViews mergeCells conditionalFormatting dataValidations hyperlinks pageMargins pageSetup].each do |tag|
-            pattern = if ws_prefix.empty?
-                        %r{</#{tag}>|<#{tag}\b[^>]*/\s*>}
-                      else
-                        %r{</#{Regexp.escape(ws_prefix)}#{tag}>|<#{Regexp.escape(ws_prefix)}#{tag}\b[^>]*/\s*>}
-                      end
-            if (m = updated_sheet_xml.match(pattern))
-              end_pos = m.end(0)
-              search_start = end_pos if end_pos > search_start
-            end
-          end
-
-          tags_sub = "legacyDrawingHF|picture|oleObjects|controls|webPublishItems|tableParts|extLst"
-          insert_pattern = if ws_prefix.empty?
-                             %r{<(?:#{tags_sub})\b|</worksheet>}
-                           else
-                             %r{<#{Regexp.escape(ws_prefix)}(?:#{tags_sub})\b|</#{Regexp.escape(ws_prefix)}worksheet>}
-                           end
-          match = updated_sheet_xml.match(insert_pattern, search_start)
-          if match
-            updated_sheet_xml.insert(match.begin(0), legacy_tag)
-          else
-            updated_sheet_xml << legacy_tag
-          end
-        end
-
-        root_tag = updated_sheet_xml[/\A\s*(?:<\?xml[^>]*\?>\s*)?<([a-zA-Z0-9_]+:)?worksheet\b[^>]*/, 0]
-        updated_sheet_xml.sub!(/<([a-zA-Z0-9_]+:)?worksheet\b/, '\0 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"') if root_tag.nil? || !root_tag.match?(/\bxmlns:r\s*=/)
-
-        ct_xml = replaced_entries["[Content_Types].xml"] || zip_reader.read_entry("[Content_Types].xml")
-        if ct_xml && !ct_xml.include?("comments#{comment_file_num}.xml")
-          override_tag = %(<Override PartName="/#{comments_path}" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"/>)
-          ct_xml = ct_xml.sub(%r{</Types>}, "#{override_tag}</Types>")
-          unless ct_xml.include?('Extension="vml"')
-            default_vml = %(<Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/>)
-            ct_xml = ct_xml.sub(%r{</Types>}, "#{default_vml}</Types>")
-          end
-          replaced_entries["[Content_Types].xml"] = ct_xml
-        end
-      end
-
-      io = StringIO.new
-      b = Ooxml::XmlBuilder.new(io)
-      b.declaration
-      b.open_tag("Relationships", { xmlns: "http://schemas.openxmlformats.org/package/2006/relationships" })
-      existing_rels.each do |rel|
-        rel_attrs = { Id: rel[:id], Type: rel[:type], Target: rel[:target] }
-        rel_attrs[:TargetMode] = rel[:target_mode] if rel[:target_mode]
-        b.empty_tag("Relationship", rel_attrs)
-      end
-      b.close_tag("Relationships")
-
-      [updated_sheet_xml, io.string]
-    end
-
-    #: (Array[Elements::Row] rows, Array[untyped] shared_strings, Hash[untyped, Integer] sst_index, ?use_sst: bool, ?date1904: bool) -> String
-    def serialize_sheet_data_xml(rows, shared_strings, sst_index, use_sst: true, date1904: false)
-      io = StringIO.new
-      io.write("<sheetData>")
-      ws = Ooxml::WorksheetWriter.new(io, date1904: date1904)
-      ws.instance_variable_set(:@started, true)
-
-      rows.each do |row|
-        attrs = {}
-        attrs[:height] = row.height if row.height
-        attrs[:hidden] = true if row.hidden
-        attrs[:custom_height] = true if row.custom_height
-        attrs[:outline_level] = row.outline_level if row.outline_level
-
-        if use_sst
-          row.cells.each do |cell|
-            val = cell.value
-            next unless val.is_a?(String) || val.is_a?(Elements::RichText)
-            next if sst_index.key?(val)
-
-            shared_strings << val
-            sst_index[val] = shared_strings.size - 1
-          end
-        end
-
-        ws.write_row(
-          row.index,
-          row.cells,
-          attrs: attrs,
-          unmapped: row.unmapped_data || [],
-          sst_index: use_sst ? sst_index : nil
-        )
-      end
-
-      buf = ws.instance_variable_get(:@row_buffer)
-      if buf && !buf.empty?
-        io.write(buf)
-        buf.clear
-      end
-      io.write("</sheetData>")
-      io.string
     end
   end
 end

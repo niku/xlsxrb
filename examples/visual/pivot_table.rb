@@ -29,8 +29,8 @@ Xlsxrb.write(output_path) do |wb|
       "SalesData!A1:D7",
       row_fields: ["Region"],
       data_fields: [{ name: "Sales", subtotal: "sum" }],
-      col_fields: ["Quarter"],
-      dest_ref: "A10",
+      column_fields: ["Quarter"],
+      ref: "A10",
       name: "RegionalSalesSummary"
     )
   end

@@ -14,7 +14,7 @@ Xlsxrb.write(output_path) do |wb|
     s.chart(
       type: :doughnut,
       title: "Ratio",
-      from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+      from_column: 3, from_row: 0, to_column: 8, to_row: 12,
       series: [{
         cat_ref: "Data!$A$2:$A$3",
         val_ref: "Data!$B$2:$B$3",

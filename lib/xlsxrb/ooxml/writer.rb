@@ -563,9 +563,13 @@ module Xlsxrb
           name = opts[:name]
         end
 
-        font = @fonts[0] ? @fonts[0].dup : { name: "Calibri", sz: 11 }
+        font = @fonts[0] ? @fonts[0].dup : { name: "Calibri", sz: 11, size: 11 }
         font[:name] = (name || opts[:name]).to_s if name || opts[:name]
-        font[:sz] = size || opts[:size] || opts[:sz] if size || opts[:size] || opts[:sz]
+        sz_val = size || opts[:size] || opts[:sz]
+        if sz_val
+          font[:sz] = sz_val
+          font[:size] = sz_val
+        end
         font[:family] = opts[:family] if opts.key?(:family)
         font[:charset] = opts[:charset] if opts.key?(:charset)
         font[:scheme] = opts[:scheme].to_s if opts.key?(:scheme)
@@ -577,8 +581,6 @@ module Xlsxrb
 
         @fonts[0] = font
       end
-      # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
-      alias set_default_font default_font
 
       # Sets the indexed colors palette (array of ARGB hex strings, e.g. ["FF000000", "FFFFFFFF"]).
       # rubocop:disable Naming/AccessorMethodName
@@ -742,13 +744,14 @@ module Xlsxrb
         (@sheet_views[sheet_name] || {}).dup
       end
 
-      # Sets a freeze pane. row: rows to freeze from top, col: columns to freeze from left.
-      # : (?row: ::Integer, ?col: ::Integer, ?sheet: untyped?) -> untyped
-      def set_freeze_pane(row: 0, col: 0, sheet: nil)
+      # Sets a freeze pane. row: rows to freeze from top, column: columns to freeze from left.
+      # : (?row: ::Integer, ?col: ::Integer?, ?column: ::Integer?, ?sheet: untyped?) -> untyped
+      def set_freeze_pane(row: 0, col: nil, column: nil, sheet: nil)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @freeze_panes.key?(sheet_name)
 
-        @freeze_panes[sheet_name] = { row: row, col: col, state: :frozen }
+        col_val = column || col || 0
+        @freeze_panes[sheet_name] = { row: row, column: col_val, state: :frozen }
       end
 
       # Sets a split pane (non-frozen). x_split/y_split are in 1/20th of a point (twips).
@@ -1772,16 +1775,18 @@ module Xlsxrb
       # col_fields: array of 0-based field indices for column axis.
       # field_names: array of field name strings (for cache definition).
       # items: hash mapping field index to array of item values.
-      # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: ::String, ?name: untyped?, ?field_names: untyped?, ?items: untyped?, ?sheet: untyped?, **untyped opts) -> untyped
-      def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: [], dest_ref: "E1", name: nil, field_names: nil, items: nil, sheet: nil, **opts)
+      # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?column_fields: untyped, ?dest_ref: untyped, ?destination: untyped, ?name: untyped?, ?field_names: untyped?, ?items: untyped?, ?sheet: untyped?, **untyped opts) -> untyped
+      def add_pivot_table(source_ref, row_fields:, data_fields:, col_fields: nil, column_fields: nil, dest_ref: nil, destination: nil, name: nil, field_names: nil, items: nil, sheet: nil, **opts)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @pivot_tables_data.key?(sheet_name)
 
         pt_name = name || "PivotTable#{@pivot_tables_data.values.flatten.size + 1}"
+        c_fields = column_fields || col_fields || []
+        target_dest = destination || dest_ref || "E1"
         @pivot_tables_data[sheet_name] << {
           name: pt_name, source_ref: source_ref,
-          row_fields: row_fields, col_fields: col_fields,
-          data_fields: data_fields, dest_ref: dest_ref,
+          row_fields: row_fields, col_fields: c_fields, column_fields: c_fields,
+          data_fields: data_fields, dest_ref: target_dest, destination: target_dest,
           field_names: field_names, items: items,
           data_caption: opts[:data_caption], data_on_rows: opts[:data_on_rows],
           row_grand_totals: opts[:row_grand_totals], col_grand_totals: opts[:col_grand_totals],
@@ -2303,7 +2308,8 @@ module Xlsxrb
           attrs << %(windowHeight="#{@workbook_views[:window_height]}") if @workbook_views[:window_height]
           attrs << %(tabRatio="#{@workbook_views[:tab_ratio]}") if @workbook_views[:tab_ratio]
           attrs << %(firstSheet="#{@workbook_views[:first_sheet]}") if @workbook_views[:first_sheet]
-          attrs << %(activeTab="#{@workbook_views[:active_tab]}") if @workbook_views[:active_tab]
+          at = @workbook_views[:active_sheet_index] || @workbook_views[:active_tab]
+          attrs << %(activeTab="#{at}") if at
           afdg = @workbook_views[:auto_filter_date_grouping]
           attrs << %(autoFilterDateGrouping="#{afdg ? 1 : 0}") unless afdg.nil?
           parts << "<bookViews>"
@@ -2543,8 +2549,11 @@ module Xlsxrb
             outline_attrs << %(showOutlineSymbols="#{sos ? 1 : 0}") unless sos.nil?
             sp_children << "<outlinePr #{outline_attrs.join(" ")}/>"
           end
+          psp = sheet_props[:page_setup_properties] || sheet_props[:page_setup_pr]
           ftp = sheet_props[:fit_to_page]
+          ftp = psp[:fit_to_page] if ftp.nil? && psp.is_a?(Hash)
           apb = sheet_props[:auto_page_breaks]
+          apb = psp[:auto_page_breaks] if apb.nil? && psp.is_a?(Hash)
           unless ftp.nil? && apb.nil?
             psp_attrs = []
             psp_attrs << %(fitToPage="#{ftp ? 1 : 0}") unless ftp.nil?
@@ -2614,22 +2623,25 @@ module Xlsxrb
                           end
             pane_attrs << %(activePane="#{active_pane}")
             parts << "<pane #{pane_attrs.join(" ")}/>"
-          elsif sheet_fp && (sheet_fp[:row].to_i.positive? || sheet_fp[:col].to_i.positive?)
-            top_left = "#{index_to_column_letter(sheet_fp[:col].to_i + 1)}#{sheet_fp[:row].to_i + 1}"
-            pane_attrs = []
-            pane_attrs << %(ySplit="#{sheet_fp[:row]}") if sheet_fp[:row].to_i.positive?
-            pane_attrs << %(xSplit="#{sheet_fp[:col]}") if sheet_fp[:col].to_i.positive?
-            pane_attrs << %(topLeftCell="#{top_left}")
-            active_pane = if sheet_fp[:row].to_i.positive? && sheet_fp[:col].to_i.positive?
-                            "bottomRight"
-                          elsif sheet_fp[:row].to_i.positive?
-                            "bottomLeft"
-                          else
-                            "topRight"
-                          end
-            pane_attrs << %(activePane="#{active_pane}")
-            pane_attrs << 'state="frozen"'
-            parts << "<pane #{pane_attrs.join(" ")}/>"
+          elsif sheet_fp
+            fp_col = sheet_fp[:column] || sheet_fp[:col] || 0
+            if sheet_fp[:row].to_i.positive? || fp_col.to_i.positive?
+              top_left = "#{index_to_column_letter(fp_col.to_i + 1)}#{sheet_fp[:row].to_i + 1}"
+              pane_attrs = []
+              pane_attrs << %(ySplit="#{sheet_fp[:row]}") if sheet_fp[:row].to_i.positive?
+              pane_attrs << %(xSplit="#{fp_col}") if fp_col.to_i.positive?
+              pane_attrs << %(topLeftCell="#{top_left}")
+              active_pane = if sheet_fp[:row].to_i.positive? && fp_col.to_i.positive?
+                              "bottomRight"
+                            elsif sheet_fp[:row].to_i.positive?
+                              "bottomLeft"
+                            else
+                              "topRight"
+                            end
+              pane_attrs << %(activePane="#{active_pane}")
+              pane_attrs << 'state="frozen"'
+              parts << "<pane #{pane_attrs.join(" ")}/>"
+            end
           end
 
           if sheet_sel
@@ -3017,7 +3029,15 @@ module Xlsxrb
 
         # Emit <rowBreaks> if defined.
         unless sheet_rb.empty?
-          manual_count = sheet_rb.count { |r| r.is_a?(Hash) || r.respond_to?(:fetch) ? r.fetch(:man, true) : true }
+          manual_count = sheet_rb.count do |r|
+            if r.is_a?(Elements::PageBreak)
+              r.manual?
+            elsif r.is_a?(Hash)
+              r[:man] != false
+            else
+              true
+            end
+          end
           parts << %(<rowBreaks count="#{sheet_rb.size}" manualBreakCount="#{manual_count}">)
           sheet_rb.each { |r| parts << emit_brk_xml(r, default_max: 16_383) }
           parts << "</rowBreaks>"
@@ -3025,7 +3045,15 @@ module Xlsxrb
 
         # Emit <colBreaks> if defined.
         unless sheet_cb.empty?
-          manual_count = sheet_cb.count { |c| c.is_a?(Hash) || c.respond_to?(:fetch) ? c.fetch(:man, true) : true }
+          manual_count = sheet_cb.count do |c|
+            if c.is_a?(Elements::PageBreak)
+              c.manual?
+            elsif c.is_a?(Hash)
+              c[:man] != false
+            else
+              true
+            end
+          end
           parts << %(<colBreaks count="#{sheet_cb.size}" manualBreakCount="#{manual_count}">)
           sheet_cb.each { |c| parts << emit_brk_xml(c, default_max: 1_048_575) }
           parts << "</colBreaks>"
@@ -3164,7 +3192,7 @@ module Xlsxrb
           col_attrs = %(id="#{i + 1}" name="#{xml_escape(col_name)}")
           if col.is_a?(Hash) || col.is_a?(Elements::TableColumn)
             calc_formula = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
-            tot_formula = col[:totals_row_formula] || col[:total_row_formula] || col[:total_formula]
+            tot_formula = col[:totals_row_formula]
             trf = col[:totals_row_function] || ("custom" if tot_formula)
             col_attrs << %( totalsRowFunction="#{trf}") if trf
             col_attrs << %( totalsRowLabel="#{xml_escape(col[:totals_row_label])}") if col[:totals_row_label]
@@ -3185,7 +3213,8 @@ module Xlsxrb
           end
         end
         parts << "</tableColumns>"
-        raw_style = tbl[:style]
+        raw_style = tbl[:style] || tbl[:style_info]
+        raw_style = raw_style.to_h if raw_style.respond_to?(:to_h)
         style = if raw_style.is_a?(Hash)
                   raw_style
                 elsif raw_style

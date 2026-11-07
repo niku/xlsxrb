@@ -8,7 +8,7 @@ module Xlsxrb
     # @example Access image properties
     #   image = sheet.images.first
     #   image.filename       #=> "image1.png"
-    #   image.cell_ref       #=> "B3"
+    #   image.ref            #=> "B3"
     #   image.content_type   #=> "image/png"
     #   image.data           #=> "\x89PNG..."
     #
@@ -24,28 +24,12 @@ module Xlsxrb
       # @param from_row [Integer] 0-based starting row index.
       # @param to_column [Integer, nil] 0-based ending column index (nil for 1-cell anchor).
       # @param to_row [Integer, nil] 0-based ending row index (nil for 1-cell anchor).
-      # @param from_col [Integer, nil] Deprecated alias for from_column.
-      # @param to_col [Integer, nil] Deprecated alias for to_column.
       # @param cx [Integer, nil] Extent width in EMUs (English Metric Units).
       # @param cy [Integer, nil] Extent height in EMUs (English Metric Units).
       # @param unmapped_data [Hash] Additional metadata from drawing XML.
-      # : (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer?, ?from_col: Integer?, ?to_col: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
+      # : (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
       # rubocop:disable Naming/MethodParameterName
-      def initialize: (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer?, ?from_col: Integer?, ?to_col: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
-
-      # @deprecated Use {#from_column} instead.
-      # : () -> Integer
-      def from_col: () -> Integer
-
-      # @deprecated Use {#to_column} instead.
-      # : () -> Integer?
-      def to_col: () -> Integer?
-
-      # : (Symbol | String member) -> untyped
-      def []: (Symbol | String member) -> untyped
-
-      # : (Array[Symbol]?) -> Hash[Symbol, untyped]
-      def deconstruct_keys: (Array[Symbol]?) -> Hash[Symbol, untyped]
+      def initialize: (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
 
       # Returns the top-left cell coordinate reference string (e.g. "A1").
       #
@@ -53,16 +37,6 @@ module Xlsxrb
       # @api public
       # : () -> String
       def ref: () -> String
-
-      # @deprecated Use {#ref} instead.
-      # @return [String]
-      # @api public
-      # : () -> String
-      def cell_ref: () -> String
-
-      # @deprecated Use {#ref} instead.
-      # : () -> String
-      def cell: () -> String
 
       # Returns the bottom-right cell coordinate reference string (e.g. "B5"), or nil for 1-cell anchors.
       #

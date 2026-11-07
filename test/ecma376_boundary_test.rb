@@ -7,14 +7,14 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
     tmp = Tempfile.new(["1904_boundary", ".xlsx"])
     begin
       wb = Xlsxrb.build do |w|
-        w.workbook_property(:date1904, true)
+        w.workbook_properties(date1904: true)
         w.sheet "Sheet1" do |s|
           s.row [Date.new(1904, 1, 1), Date.new(1904, 1, 2)]
         end
       end
       Xlsxrb.write(tmp.path, wb)
 
-      read_wb = Xlsxrb.read(tmp.path).load
+      read_wb = Xlsxrb.load(tmp.path)
       sheet = read_wb.sheets.first
 
       val1 = sheet.rows.first.cells[0].value
@@ -26,7 +26,7 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
 
       # Pre-1904 dates raise ArgumentError upon writing
       invalid_wb = Xlsxrb.build do |w|
-        w.workbook_property(:date1904, true)
+        w.workbook_properties(date1904: true)
         w.sheet "Sheet1" do |s|
           s.row [Date.new(1899, 12, 31)]
         end
@@ -42,14 +42,14 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
     tmp = Tempfile.new(["1900_boundary", ".xlsx"])
     begin
       wb = Xlsxrb.build do |w|
-        w.workbook_property(:date1904, false)
+        w.workbook_properties(date1904: false)
         w.sheet "Sheet1" do |s|
           s.row [Date.new(1900, 2, 28), Date.new(1900, 3, 1), Date.new(1899, 12, 31)]
         end
       end
       Xlsxrb.write(tmp.path, wb)
 
-      read_wb = Xlsxrb.read(tmp.path).load
+      read_wb = Xlsxrb.load(tmp.path)
       sheet = read_wb.sheets.first
 
       # Serial 59 = Feb 28, 1900. Serial 61 = Mar 1, 1900 (due to Lotus 1-2-3 leap year bug)
@@ -68,19 +68,19 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
       wb = Xlsxrb.build do |w|
         w.sheet "Sheet1" do |s|
           s.style "extreme", number_format: "[Red][<=100];[Blue][>100]"
-          s.row [50, 150], styles: "extreme"
+          s.row [50, 150], cell_styles: "extreme"
         end
       end
       Xlsxrb.write(tmp.path, wb)
 
-      read_wb = Xlsxrb.read(tmp.path).load
+      read_wb = Xlsxrb.load(tmp.path)
       sheet = read_wb.sheets.first
 
       assert_equal 50, sheet.rows.first.cells[0].value
 
       style_index = sheet.rows.first.cells[0].style_index
       xf = read_wb.styles.cell_xf(style_index)
-      num_fmt = read_wb.styles.num_fmt(xf.num_fmt_id)
+      num_fmt = read_wb.styles.number_format_code(xf.num_fmt_id)
 
       # Xlsxrb's parser doesn't unescape XML entities in num_fmt
       assert_equal "[Red][&lt;=100];[Blue][&gt;100]", num_fmt
@@ -100,7 +100,7 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
       end
       Xlsxrb.write(tmp.path, wb)
 
-      read_wb = Xlsxrb.read(tmp.path).load
+      read_wb = Xlsxrb.load(tmp.path)
       sheet = read_wb.sheets.first
 
       assert_equal "A" * 32_767, sheet.rows.first.cells[0].value

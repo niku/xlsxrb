@@ -177,17 +177,19 @@ Each DSL feature should prefer the same dual entry style now used by chart and s
 Examples:
 
 ```ruby
-s.add_style("header", bold: true, size: 14, font_color: "FFFF0000")
+s.style("header", bold: true, font_size: 14, font_color: "FFFF0000")
 
-s.add_style("header") do |style|
-  style.bold.size(14).font_color("FFFF0000")
+s.style("header") do |style|
+  style.bold(true)
+  style.font_size(14)
+  style.font_color("FFFF0000")
 end
 
 w.add_chart(type: :bar, title: "Sales", series: [{ cat_ref: "A1:A3", val_ref: "B1:B3" }])
 
 w.add_chart do |chart|
-  chart.type :bar
-  chart.title "Sales"
+  chart.type = :bar
+  chart.title = "Sales"
   chart.series(cat_ref: "A1:A3", val_ref: "B1:B3")
 end
 ```

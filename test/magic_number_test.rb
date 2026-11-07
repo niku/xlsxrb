@@ -9,7 +9,7 @@ class MagicNumberTest < Test::Unit::TestCase
       f.close
 
       assert_raise_with_message(Xlsxrb::ZipError, /Invalid magic number/) do
-        Xlsxrb.read(f.path)
+        Xlsxrb.load(f.path)
       end
     end
   end
@@ -19,7 +19,7 @@ class MagicNumberTest < Test::Unit::TestCase
       f.close
 
       assert_raise_with_message(Xlsxrb::ZipError, /Invalid magic number/) do
-        Xlsxrb.read(f.path)
+        Xlsxrb.load(f.path)
       end
     end
   end

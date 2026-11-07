@@ -3,8 +3,14 @@
 require "xlsxrb"
 output_path = ARGV[0] || "align_indent.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("indent_1") { |s| s.align_horizontal("left").indent(1) }
-  wb.style("indent_3") { |s| s.align_horizontal("left").indent(3) }
+  wb.style("indent_1") do |s|
+    s.align_horizontal("left")
+    s.indent(1)
+  end
+  wb.style("indent_3") do |s|
+    s.align_horizontal("left")
+    s.indent(3)
+  end
   wb.sheet("Indent") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

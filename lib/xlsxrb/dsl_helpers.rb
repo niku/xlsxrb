@@ -11,40 +11,17 @@ module Xlsxrb
   #
   # @api private
   module DslHelpers
-    # Normalizes merge cell range string or coordinate components into a canonical range reference (e.g. "A1:C3").
+    # Normalizes merge cell range string into a canonical range reference (e.g. "A1:C3").
     #
-    # @param range [String, Hash, nil]
-    # @param row [Integer, nil]
-    # @param col_start [Integer, String, nil]
-    # @param col_end [Integer, String, nil]
-    # @param row_start [Integer, nil]
-    # @param row_end [Integer, nil]
+    # @param range [String]
     # @param strict_excel_mode [Boolean]
     # @return [String]
-    #: (untyped range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?, ?strict_excel_mode: bool) -> String
-    def self.normalize_merge_range(range = nil, row: nil, col_start: nil, col_end: nil, row_start: nil, row_end: nil, strict_excel_mode: true)
-      if range.is_a?(Hash)
-        row = range[:row]
-        row_start = range[:row_start]
-        row_end = range[:row_end]
-        col_start = range[:col_start]
-        col_end = range[:col_end]
-        range = nil
-      end
+    #: (String range, ?strict_excel_mode: bool) -> String
+    def self.normalize_merge_range(range, strict_excel_mode: true)
+      str = range.to_s
+      raise ArgumentError, "Invalid merge range format: '#{str}'. Expected format like 'A1:B2'." if strict_excel_mode && !str.match?(/\A[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?\z/)
 
-      if range
-        raise ArgumentError, "Invalid merge range format: '#{range}'. Expected format like 'A1:B2'." if strict_excel_mode && !range.match?(/\A[A-Za-z]{1,3}\d+(:[A-Za-z]{1,3}\d+)?\z/)
-
-        range
-      else
-        r_start = row || row_start || 0
-        r_end = row || row_end || 0
-        c_start = Elements::Cell._column_index(col_start || 0)
-        c_end = Elements::Cell._column_index(col_end || 0)
-        start_ref = "#{Elements::Cell._column_letter(c_start)}#{r_start + 1}"
-        end_ref = "#{Elements::Cell._column_letter(c_end)}#{r_end + 1}"
-        "#{start_ref}:#{end_ref}"
-      end
+      str
     end
 
     # Normalizes sheet protection options and hashes plain-text password if supplied.
@@ -125,9 +102,9 @@ module Xlsxrb
         if c.is_a?(Hash)
           col = c.dup
           col[:name] = col[:name].to_s if col.key?(:name)
-          calc_f = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
+          calc_f = col[:calculated_column_formula] || col[:formula]
           col[:calculated_column_formula] = calc_f.to_s if calc_f
-          tot_f = col[:totals_row_formula] || col[:total_row_formula] || col[:total_formula]
+          tot_f = col[:totals_row_formula]
           col[:totals_row_formula] = tot_f.to_s if tot_f
           if col.key?(:totals_row_function)
             fn = col[:totals_row_function]
@@ -145,9 +122,8 @@ module Xlsxrb
       tbl[:style] = style if style
 
       # Normalize total row options
-      if opts.key?(:total_row) || opts.key?(:totals_row)
-        tr = opts.delete(:total_row)
-        tr = opts.delete(:totals_row) if tr.nil?
+      if opts.key?(:totals_row)
+        tr = opts.delete(:totals_row)
         tbl[:totals_row_count] = if tr == true
                                    1
                                  elsif tr == false
@@ -155,8 +131,6 @@ module Xlsxrb
                                  else
                                    tr.to_i
                                  end
-      elsif opts.key?(:total_row_count)
-        tbl[:totals_row_count] = opts.delete(:total_row_count).to_i
       elsif opts.key?(:totals_row_count)
         tbl[:totals_row_count] = opts.delete(:totals_row_count).to_i
       end
@@ -337,12 +311,12 @@ module Xlsxrb
     # @param rows [Integer, Range, nil]
     # @param range [String, nil]
     # @return [String]
-    #: (?untyped value, ?sheet: untyped, ?col: untyped, ?rows: untyped, ?range: untyped) -> String
-    def self.normalize_defined_name_value(value = nil, sheet: nil, col: nil, rows: nil, range: nil)
+    #: (?untyped value, ?sheet: untyped, ?columns: untyped, ?rows: untyped, ?range: untyped) -> String
+    def self.normalize_defined_name_value(value = nil, sheet: nil, columns: nil, rows: nil, range: nil)
       if range
         value = range
-      elsif col || rows
-        c_letter = Elements::Cell._column_letter(col ? Elements::Cell._column_index(col) : 0)
+      elsif columns || rows
+        c_letter = Elements::Cell._column_letter(columns ? Elements::Cell._column_index(columns) : 0)
         value = if rows.is_a?(Range)
                   r1 = rows.begin
                   r2 = rows.exclude_end? ? rows.end - 1 : rows.end
@@ -425,7 +399,7 @@ module Xlsxrb
       end
       sqref = opts.delete(:sqref) || sqref
 
-      list_val = opts.delete(:list) || opts.delete(:in)
+      list_val = opts.delete(:list)
       if list_val.is_a?(Array)
         opts[:type] ||= "list"
         opts[:formula1] ||= %("#{list_val.join(",")}")
@@ -443,15 +417,13 @@ module Xlsxrb
 
       # Determine sqrefs
       sqrefs = []
-      has_coords = opts.key?(:columns) || opts.key?(:col) || opts.key?(:rows) || opts.key?(:row)
+      has_coords = opts.key?(:columns) || opts.key?(:rows)
       if sqref.nil? && has_coords
         cols_val = opts.delete(:columns)
-        col_val = opts.delete(:col)
-        raw_cols = cols_val || col_val || 0
+        raw_cols = cols_val || 0
 
         rows_val = opts.delete(:rows)
-        row_val = opts.delete(:row)
-        raw_rows = rows_val || row_val || (0...Xlsxrb::MAX_ROW)
+        raw_rows = rows_val || (0...Xlsxrb::MAX_ROW)
 
         except_rows = opts.delete(:except_rows)
 
@@ -462,9 +434,7 @@ module Xlsxrb
         sqrefs = chunked_sqrefs(col_runs, row_runs)
       elsif sqref
         opts.delete(:columns)
-        opts.delete(:col)
         opts.delete(:rows)
-        opts.delete(:row)
         opts.delete(:except_rows)
         str_sqref = sqref.to_s
         refs = str_sqref.split
@@ -562,8 +532,7 @@ module Xlsxrb
       font[:bold] = rule.delete(:bold) if rule.key?(:bold)
       font[:italic] = rule.delete(:italic) if rule.key?(:italic)
       font[:underline] = rule.delete(:underline) if rule.key?(:underline)
-      font[:size] = rule.delete(:size) if rule.key?(:size)
-      font[:sz] = rule.delete(:sz) if rule.key?(:sz)
+      font[:font_size] = rule.delete(:font_size) if rule.key?(:font_size)
 
       fill = (rule.delete(:fill) || {}).dup
       if rule.key?(:fill_color)
@@ -596,15 +565,13 @@ module Xlsxrb
 
       # Determine sqrefs
       sqrefs = []
-      has_coords = opts.key?(:columns) || opts.key?(:col) || opts.key?(:rows) || opts.key?(:row)
+      has_coords = opts.key?(:columns) || opts.key?(:rows)
       if sqref.nil? && has_coords
         cols_val = opts.delete(:columns)
-        col_val = opts.delete(:col)
-        raw_cols = cols_val || col_val || 0
+        raw_cols = cols_val || 0
 
         rows_val = opts.delete(:rows)
-        row_val = opts.delete(:row)
-        raw_rows = rows_val || row_val || (0...Xlsxrb::MAX_ROW)
+        raw_rows = rows_val || (0...Xlsxrb::MAX_ROW)
 
         except_rows = opts.delete(:except_rows)
 
@@ -615,9 +582,7 @@ module Xlsxrb
         sqrefs = chunked_sqrefs(col_runs, row_runs)
       elsif sqref
         opts.delete(:columns)
-        opts.delete(:col)
         opts.delete(:rows)
-        opts.delete(:row)
         opts.delete(:except_rows)
         str_sqref = sqref.to_s
         refs = str_sqref.split
@@ -729,15 +694,6 @@ module Xlsxrb
       return "#{base}#{replace_char}" if base.casecmp?("History")
 
       base
-    end
-
-    class << self
-      # @deprecated Use {.sanitize_sheet_name} instead.
-      #: (untyped raw) -> String
-      def sheet_name(raw)
-        warn "[Xlsxrb DEPRECATION] DslHelpers.sheet_name is deprecated and will be removed in v0.2.0. Use DslHelpers.sanitize_sheet_name instead.", uplevel: 1
-        sanitize_sheet_name(raw)
-      end
     end
   end
 end

@@ -14,6 +14,8 @@ module Xlsxrb
   #
   # @api public
   class WorkbookBuilder
+    OMITTED: untyped
+
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specifications.
     # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
     # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
@@ -40,9 +42,6 @@ module Xlsxrb
     # @api public
     # : (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
     def default_font: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
-
-    # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
-    alias set_default_font default_font
 
     # @return [Hash{String => StyleBuilder}]
     # : Hash[String, StyleBuilder]
@@ -111,86 +110,40 @@ module Xlsxrb
     # : (String | Symbol | Elements::CellError code) -> Elements::CellError
     def cell_error: (String | Symbol | Elements::CellError code) -> Elements::CellError
 
-    OMITTED: untyped
-
     # Gets or sets the active worksheet tab in the workbook window.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#active_sheet=} instead.
-    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
-    # : (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-    def active_sheet: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-
-    # @deprecated Use {#active_sheet} instead. Will be removed in 0.2.0.
-    alias active_tab active_sheet
-
-    # Sets the active worksheet tab in the workbook window.
-    #
-    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
-    # @return [String, Symbol, Integer, nil]
-    # @api public
-    attr_writer active_sheet: String | Symbol | Integer | nil
-
-    # @deprecated Use {#active_sheet=} instead. Will be removed in 0.2.0.
-    alias active_tab= active_sheet=
+    # : (String | Symbol | Integer | nil)
+    attr_accessor active_sheet: untyped
 
     # Gets or sets the first sheet tab visible in the sheet tab scroll area.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#first_sheet=} instead.
-    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
-    # : (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-    def first_sheet: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-
-    # Sets the first sheet tab visible in the sheet tab scroll area.
-    #
-    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
-    # @return [String, Symbol, Integer, nil]
-    # @api public
-    attr_writer first_sheet: String | Symbol | Integer | nil
+    # : (String | Symbol | Integer | nil)
+    attr_accessor first_sheet: untyped
 
     # Gets or sets whether sheet tabs are visible in the workbook window.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_sheet_tabs=} instead.
-    # @param visible [Boolean, nil]
     # @return [Boolean, nil]
     # @api public
-    # : (?bool? visible) -> bool?
-    def show_sheet_tabs: (?bool? visible) -> bool?
-
-    # Sets whether sheet tabs are visible in the workbook window.
-    #
-    # @param visible [Boolean, nil]
-    # @return [Boolean, nil]
-    # @api public
-    attr_writer show_sheet_tabs: bool?
+    # : bool?
+    attr_accessor show_sheet_tabs: untyped
 
     # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#tab_ratio=} instead.
-    # @param ratio [Integer, nil]
     # @return [Integer, nil]
     # @api public
-    # : (?Integer? ratio) -> Integer?
-    def tab_ratio: (?Integer? ratio) -> Integer?
+    # : Integer?
+    attr_accessor tab_ratio: untyped
 
-    # Sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
+    # Gets the internal code name of the workbook.
     #
-    # @param ratio [Integer, nil]
-    # @return [Integer, nil]
-    # @api public
-    attr_writer tab_ratio: Integer?
-
-    # Gets or sets the internal code name of the workbook.
-    #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#code_name=} instead.
-    # @param name [String, Symbol, nil] The code name.
     # @return [String, nil]
     # @api public
-    # : (?String | Symbol | nil name) -> String?
-    def code_name: (?String | Symbol | nil name) -> String?
+    # : () -> String?
+    def code_name: () -> String?
 
     # Sets the internal code name of the workbook.
     #
@@ -239,17 +192,16 @@ module Xlsxrb
     #
     # @param name [String, nil] Sheet name (max 31 chars, no forbidden chars `[ ] * ? / \ :`).
     # @param state [Symbol, String, nil] Sheet visibility state (:visible, :hidden, :very_hidden).
-    # @param tab_color [String, Hash, nil] Tab color hex string or color hash.
-    # @param code_name [String, nil] VBA code name.
-    # @param hidden [Boolean, nil] Deprecated alias for state: :hidden.
+    # @param tab_color [String, Hash, Symbol, nil] Tab color hex string (e.g. "FF0000") or hash options.
+    # @param code_name [String, Symbol, nil] Internal VBA code name of the sheet.
     # @param opts [Hash] Additional sheet properties.
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
     # @return [Elements::Worksheet]
     # @raise [ArgumentError] If sheet name violates Excel limits in strict mode.
     # @api public
-    # : (?String? name, ?state: (Symbol | String)?, ?tab_color: untyped, ?code_name: String?, ?hidden: bool?, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
-    def sheet: (?String? name, ?state: (Symbol | String)?, ?tab_color: untyped, ?code_name: String?, ?hidden: bool?, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    # : (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    def sheet: (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
 
     # Accesses or defines a worksheet by name.
     #
@@ -268,18 +220,13 @@ module Xlsxrb
     # @param sheet [String, nil] Reference sheet name for coordinates/formula.
     # @param scope [String, Symbol, nil] Optional sheet name or :workbook for scope (defaults to workbook).
     # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
-    # @param column [Integer, String, nil] Deprecated alias for columns.
     # @param columns [Integer, String, nil] Column index or letter for coordinate-based reference.
-    # @param col [Integer, String, nil] Deprecated alias for column.
-    # @param row [Integer, Range, nil] Deprecated alias for rows.
-    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param rows [Integer, Range, nil] Row or row range (0-based) for coordinate-based reference.
     # @param range [String, nil] Cell range reference.
-    # @param ref_sheet [String, nil] Deprecated alias for sheet.
-    # @param local [Boolean] Deprecated alias for scope.
     # @return [void]
     # @api public
-    # : (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
-    def defined_name: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
+    # : (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?columns: untyped, ?rows: untyped, ?range: untyped) -> void
+    def defined_name: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?columns: untyped, ?rows: untyped, ?range: untyped) -> void
 
     # Returns workbook-level defined names.
     #
@@ -309,12 +256,11 @@ module Xlsxrb
     #
     # @param rows [String, nil] Repeating row range (e.g. "1:2").
     # @param columns [String, nil] Repeating column range (e.g. "A:B").
-    # @param cols [String, nil] Deprecated alias for columns.
     # @param sheet [String, nil] Target sheet name.
     # @return [void]
     # @api public
-    # : (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
-    def print_titles: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
+    # : (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
+    def print_titles: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
 
     # Sets repeating print titles.
     #
@@ -365,10 +311,6 @@ module Xlsxrb
     # @api public
     # : (untyped opts) -> void
     def workbook_protection=: (untyped opts) -> void
-
-    # @deprecated Use {#workbook_protection} instead.
-    # : (**String | Integer | bool | nil opts) -> void
-    def protect_workbook: (**String | Integer | bool | nil opts) -> void
 
     # Sets a Dublin Core document metadata property.
     #

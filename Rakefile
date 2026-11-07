@@ -956,7 +956,6 @@ namespace :mutant do
           "Xlsxrb::Elements::Cell#ref",
           "Xlsxrb::Elements::Cell#to_i",
           "Xlsxrb::Elements::Cell#to_f",
-          "Xlsxrb::Elements::Cell#content",
           "Xlsxrb::Elements::Cell#to_s",
           "Xlsxrb::Elements::Cell#valid?",
           "Xlsxrb::Elements::Cell.calculate_column_letter",
@@ -970,8 +969,7 @@ namespace :mutant do
         tests: ["./test/xlsxrb/elements_test.rb"],
         subjects: [
           "Xlsxrb::Elements::Worksheet.valid_name?",
-          "Xlsxrb::Elements::Worksheet#valid?",
-          "Xlsxrb::Elements::Worksheet#load"
+          "Xlsxrb::Elements::Worksheet#valid?"
         ]
       },
       {

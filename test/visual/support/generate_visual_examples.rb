@@ -11,8 +11,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "cell_numbers.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("currency") { |s| s.num_fmt("$#,##0.00") }
-            w.style("percent") { |s| s.num_fmt("0.0%") }
+            w.style("currency") { |s| s.number_format("$#,##0.00") }
+            w.style("percent") { |s| s.number_format("0.0%") }
             w.sheet("Numbers") do |s|
               s.row(["Format", "Value"])
               s.row(["Integer", 12345])
@@ -29,7 +29,7 @@ module Xlsxrb
           require "date"
           output_path = ARGV[0] || "cell_dates.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
+            w.style("custom_date") { |s| s.number_format("yyyy-mm-dd") }
             w.sheet("Dates") do |s|
               s.row(["Format", "Date Value"])
               s.row(["Default Date", Date.new(2026, 7, 1)])
@@ -44,7 +44,7 @@ module Xlsxrb
           require "time"
           output_path = ARGV[0] || "cell_times.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
+            w.style("time_fmt") { |s| s.number_format("hh:mm:ss") }
             w.sheet("Times") do |s|
               s.row(["Format", "Time Value"])
               s.row(["DateTime", Time.new(2026, 7, 1, 12, 34, 56)])
@@ -120,9 +120,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_sizes.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("size_10") { |s| s.size(10) }
-            w.style("size_16") { |s| s.size(16) }
-            w.style("size_24") { |s| s.size(24) }
+            w.style("size_10") { |s| s.font_size(10) }
+            w.style("size_16") { |s| s.font_size(16) }
+            w.style("size_24") { |s| s.font_size(24) }
             w.sheet("Font Sizes") do |s|
               s.row(["Size", "Text"])
               s.row(["10pt", "Small Text"], cell_styles: { 1 => "size_10" })
@@ -154,10 +154,10 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_styles.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("bold") { |s| s.bold }
-            w.style("italic") { |s| s.italic }
-            w.style("underline") { |s| s.underline }
-            w.style("strike") { |s| s.strike }
+            w.style("bold") { |s| s.bold(true) }
+            w.style("italic") { |s| s.italic(true) }
+            w.style("underline") { |s| s.underline(true) }
+            w.style("strike") { |s| s.strike(true) }
             w.sheet("Styles") do |s|
               s.row(["Style", "Preview"])
               s.row(["Bold", "Bold Text"], cell_styles: { 1 => "bold" })
@@ -188,7 +188,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_thin.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("thin") { |s| s.border_left(style: "thin").border_right(style: "thin").border_top(style: "thin").border_bottom(style: "thin") }
+            w.style("thin") { |s| s.border_left(style: "thin"); s.border_right(style: "thin"); s.border_top(style: "thin"); s.border_bottom(style: "thin") }
             w.sheet("Thin Borders") do |s|
               s.row(["Normal Cell", "Thin Border Cell"], cell_styles: { 1 => "thin" })
             end
@@ -200,7 +200,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_medium.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("medium") { |s| s.border_left(style: "medium").border_right(style: "medium").border_top(style: "medium").border_bottom(style: "medium") }
+            w.style("medium") { |s| s.border_left(style: "medium"); s.border_right(style: "medium"); s.border_top(style: "medium"); s.border_bottom(style: "medium") }
             w.sheet("Medium Borders") do |s|
               s.row(["Normal Cell", "Medium Border Cell"], cell_styles: { 1 => "medium" })
             end
@@ -212,7 +212,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_dashed.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("dashed") { |s| s.border_left(style: "dashed").border_right(style: "dashed").border_top(style: "dashed").border_bottom(style: "dashed") }
+            w.style("dashed") { |s| s.border_left(style: "dashed"); s.border_right(style: "dashed"); s.border_top(style: "dashed"); s.border_bottom(style: "dashed") }
             w.sheet("Dashed Borders") do |s|
               s.row(["Normal Cell", "Dashed Border Cell"], cell_styles: { 1 => "dashed" })
             end
@@ -224,7 +224,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_double.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("double") { |s| s.border_left(style: "double").border_right(style: "double").border_top(style: "double").border_bottom(style: "double") }
+            w.style("double") { |s| s.border_left(style: "double"); s.border_right(style: "double"); s.border_top(style: "double"); s.border_bottom(style: "double") }
             w.sheet("Double Borders") do |s|
               s.row(["Normal Cell", "Double Border Cell"], cell_styles: { 1 => "double" })
             end
@@ -236,7 +236,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "border_slanted.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("slanted") { |s| s.border_left(style: "slantedDashDot").border_right(style: "slantedDashDot").border_top(style: "slantedDashDot").border_bottom(style: "slantedDashDot") }
+            w.style("slanted") { |s| s.border_left(style: "slantedDashDot"); s.border_right(style: "slantedDashDot"); s.border_top(style: "slantedDashDot"); s.border_bottom(style: "slantedDashDot") }
             w.sheet("Slanted Borders") do |s|
               s.row(["Normal Cell", "Slanted Border Cell"], cell_styles: { 1 => "slanted" })
             end
@@ -342,7 +342,7 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_text_wrap.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("wrap") { |s| s.wrap_text }
+            w.style("wrap") { |s| s.wrap_text(true) }
             w.sheet("Text Wrap") do |s|
               s.print_options(:grid_lines, true)
               s.column(0, width: 15)
@@ -432,7 +432,7 @@ module Xlsxrb
               s.chart(
                 type: :line,
                 title: "Daily Value",
-                from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+                from_column: 3, from_row: 0, to_column: 8, to_row: 12,
                 series: [{ cat_ref: "Data!$A$2:$A$4", val_ref: "Data!$B$2:$B$4" }]
               )
             end
@@ -451,7 +451,7 @@ module Xlsxrb
               s.chart(
                 type: :area,
                 title: "Daily Area",
-                from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+                from_column: 3, from_row: 0, to_column: 8, to_row: 12,
                 series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }]
               )
             end
@@ -470,7 +470,7 @@ module Xlsxrb
               s.chart(
                 type: :pie,
                 title: "Responses",
-                from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+                from_column: 3, from_row: 0, to_column: 8, to_row: 12,
                 series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }]
               )
             end
@@ -489,7 +489,7 @@ module Xlsxrb
               s.chart(
                 type: :doughnut,
                 title: "Ratio",
-                from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+                from_column: 3, from_row: 0, to_column: 8, to_row: 12,
                 series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }]
               )
             end
@@ -508,7 +508,7 @@ module Xlsxrb
               s.chart(
                 type: :scatter,
                 title: "Scatter Plot",
-                from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+                from_column: 3, from_row: 0, to_column: 8, to_row: 12,
                 series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }]
               )
             end
@@ -527,7 +527,7 @@ module Xlsxrb
               s.chart(
                 type: :radar,
                 title: "Stats",
-                from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+                from_column: 3, from_row: 0, to_column: 8, to_row: 12,
                 series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3" }]
               )
             end
@@ -628,7 +628,7 @@ module Xlsxrb
           Xlsxrb.write(output_path) do |w|
             w.sheet("List Validation") do |s|
               s.row(["Department", "Select:"])
-              s.validate_data("B2", in: %w[HR Sales Engineering])
+              s.data_validation("B2", list: %w[HR Sales Engineering])
             end
           end
         RUBY
@@ -640,7 +640,7 @@ module Xlsxrb
           Xlsxrb.write(output_path) do |w|
             w.sheet("Range Validation") do |s|
               s.row(["Age", "Enter (18-99):"])
-              s.validate_data("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
+              s.data_validation("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
             end
           end
         RUBY
@@ -679,7 +679,7 @@ module Xlsxrb
           Xlsxrb.write(output_path) do |w|
             w.sheet("Images") do |s|
               s.row(["Logo Target cell:"])
-              s.image(dummy_png, ext: "png", from_col: 1, from_row: 1, to_col: 3, to_row: 5)
+              s.image(dummy_png, ext: "png", from_column: 1, from_row: 1, to_column: 3, to_row: 5)
             end
           end
         RUBY

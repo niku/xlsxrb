@@ -25,14 +25,14 @@ class RowColumnStylesTest < Test::Unit::TestCase
               Xlsxrb::Elements::Row.new(
                 index: 0,
                 cells: [Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Hello")],
-                unmapped_data: { style_index: 1 }
+                style_index: 1
               )
             ],
             columns: [
               Xlsxrb::Elements::Column.new(
                 index: 0,
                 width: 20.0,
-                unmapped_data: { style_index: 1 }
+                style_index: 1
               )
             ]
           )
@@ -43,7 +43,7 @@ class RowColumnStylesTest < Test::Unit::TestCase
       Xlsxrb.write(filepath, wb)
 
       # Read back and verify styles, row style_index, and column style_index
-      parsed_wb = Xlsxrb.read(filepath).load
+      parsed_wb = Xlsxrb.load(filepath)
       parsed_ws = parsed_wb.sheets.first
       refute_nil parsed_ws
 
@@ -57,7 +57,7 @@ class RowColumnStylesTest < Test::Unit::TestCase
       parsed_styles = parsed_wb.styles
       refute_nil parsed_styles
       border = parsed_styles.borders.first
-      assert_equal("FFFF0000", border&.dig(:left, :color, :rgb))
+      assert_equal("FFFF0000", border&.left&.dig(:color, :rgb))
     end
   end
 
@@ -75,8 +75,8 @@ class RowColumnStylesTest < Test::Unit::TestCase
       styles_xml = entries["xl/styles.xml"]
       assert_match(%r{<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0\.00"/></numFmts>}, styles_xml)
 
-      parsed = Xlsxrb.read(filepath_hash).load
-      assert_equal("#,##0.00", parsed.styles.num_fmt(164))
+      parsed = Xlsxrb.load(filepath_hash)
+      assert_equal("#,##0.00", parsed.styles.number_format_code(164))
 
       # Test with Array format
       filepath_arr = File.join(dir, "arr_styles.xlsx")
@@ -139,10 +139,10 @@ class RowColumnStylesTest < Test::Unit::TestCase
       end
     end
 
-    parsed = Xlsxrb.read(StringIO.new(sw_io.string)).load
+    parsed = Xlsxrb.load(StringIO.new(sw_io.string))
     sheet = parsed.sheets.first
-    currency_num_fmt_id = parsed.styles.num_fmts.key("$#,##0.00")
-    currency_id = parsed.styles.cell_xfs.find_index { |xf| xf[:num_fmt_id] == currency_num_fmt_id }
+    currency_num_fmt_id = parsed.styles.number_formats.key("$#,##0.00")
+    currency_id = parsed.styles.cell_xfs.find_index { |xf| xf.num_fmt_id == currency_num_fmt_id }
     assert_not_nil currency_id
     assert_equal currency_id, sheet["B1"].style_index
 
@@ -161,7 +161,7 @@ class RowColumnStylesTest < Test::Unit::TestCase
 
     wb_io = StringIO.new
     Xlsxrb.write(wb_io, wb_built)
-    parsed_dom = Xlsxrb.read(StringIO.new(wb_io.string)).load
+    parsed_dom = Xlsxrb.load(StringIO.new(wb_io.string))
     assert_equal 1, parsed_dom.sheets.first.columns.first.style_index
     assert_equal 1, parsed_dom.sheets.first["B1"].style_index
   end
@@ -245,7 +245,7 @@ class RowColumnStylesTest < Test::Unit::TestCase
     assert_match(/<row r="2"[^>]*s="#{row1_style_id}" customFormat="1"/, ws_xml)
 
     # Roundtrip load
-    parsed = Xlsxrb.read(StringIO.new(io.string)).load
+    parsed = Xlsxrb.load(StringIO.new(io.string))
     parsed_sheet = parsed.sheets.first
     assert_equal currency_id, parsed_sheet["A1"].style_index
     assert_equal col1_inline_id, parsed_sheet["B1"].style_index
@@ -266,7 +266,7 @@ class RowColumnStylesTest < Test::Unit::TestCase
     stream_ws_xml = stream_entries["xl/worksheets/sheet1.xml"]
     assert_match(/<row r="2"[^>]*s="\d+" customFormat="1"/, stream_ws_xml)
 
-    parsed_stream = Xlsxrb.read(StringIO.new(sw_io.string)).load
+    parsed_stream = Xlsxrb.load(StringIO.new(sw_io.string))
     ps = parsed_stream.sheets.first
     assert_kind_of Integer, ps.columns.first.style_index
     assert_equal ps.columns.first.style_index, ps["A1"].style_index

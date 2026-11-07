@@ -44,8 +44,8 @@ class NetworkStreamingTest < Test::Unit::TestCase
         # response is a Net::HTTPResponse, we can use response.enum_for(:read_body)
         enum = response.enum_for(:read_body)
 
-        # Test Xlsxrb.read with the enumerator
-        workbook = Xlsxrb.read(enum)
+        # Test Xlsxrb.load with the enumerator
+        workbook = Xlsxrb.load(enum)
 
         # Verify it parsed successfully
         assert_equal 1, workbook.sheets.size

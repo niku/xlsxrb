@@ -627,8 +627,8 @@ Demonstrates custom formatting for integers, floating point numbers, currencies,
 require "xlsxrb"
 output_path = ARGV[0] || "cell_numbers.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("currency") { |s| s.num_fmt("$#,##0.00") }
-  wb.style("percent") { |s| s.num_fmt("0.0%") }
+  wb.style("currency") { |s| s.number_format("$#,##0.00") }
+  wb.style("percent") { |s| s.number_format("0.0%") }
   wb.sheet("Numbers") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -662,7 +662,7 @@ require "xlsxrb"
 require "date"
 output_path = ARGV[0] || "cell_dates.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("custom_date") { |s| s.num_fmt("yyyy-mm-dd") }
+  wb.style("custom_date") { |s| s.number_format("yyyy-mm-dd") }
   wb.sheet("Dates") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -694,7 +694,7 @@ require "xlsxrb"
 require "time"
 output_path = ARGV[0] || "cell_times.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("time_fmt") { |s| s.num_fmt("hh:mm:ss") }
+  wb.style("time_fmt") { |s| s.number_format("hh:mm:ss") }
   wb.sheet("Times") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -824,7 +824,8 @@ output_path = ARGV[0] || "japanese_text.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.style("ja_font") do |style|
-    style.font_name("Noto Sans CJK JP").size(12)
+    style.font_name("Noto Sans CJK JP")
+    style.font_size(12)
   end
 
   wb.sheet("Japanese") do |s|
@@ -859,11 +860,16 @@ output_path = ARGV[0] || "styles_fonts_fills.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.style("header") do |style|
-    style.bold.size(14).font_color("FFFFFFFF").fill_color("FF4F81BD")
+    style.bold(true)
+    style.font_size(14)
+    style.font_color("FFFFFFFF")
+    style.fill_color("FF4F81BD")
   end
 
   wb.style("highlight") do |style|
-    style.italic.font_color("FFC00000").fill_color("FFFFFF00")
+    style.italic(true)
+    style.font_color("FFC00000")
+    style.fill_color("FFFFFF00")
   end
 
   wb.sheet("Styles") do |sheet|
@@ -1627,8 +1633,15 @@ Demonstrates outline grouping for rows.
 require "xlsxrb"
 output_path = ARGV[0] || "row_grouping.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("parent") { |style| style.border_all(style: "thin", color: "FF000000").bold }
-  wb.style("child") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("left").indent(2) }
+  wb.style("parent") do |style|
+    style.border_all(style: "thin", color: "FF000000")
+    style.bold(true)
+  end
+  wb.style("child") do |style|
+    style.border_all(style: "thin", color: "FF000000")
+    style.align_horizontal("left")
+    style.indent(2)
+  end
   wb.sheet("Row Grouping") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1659,7 +1672,7 @@ Demonstrates Yen Currency format code formatting.
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_currency_jpy.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("jpy") { |s| s.num_fmt("¥#,##0;[Red]¥-#,##0") }
+  wb.style("jpy") { |s| s.number_format("¥#,##0;[Red]¥-#,##0") }
   wb.sheet("JPY Currency") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1690,7 +1703,7 @@ Demonstrates percentages with two decimal places (0.00%).
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_percent_decimals.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("pct2") { |s| s.num_fmt("0.00%") }
+  wb.style("pct2") { |s| s.number_format("0.00%") }
   wb.sheet("Percents") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1720,7 +1733,7 @@ Demonstrates scientific number formats (0.00E+00).
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_scientific.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("sci") { |s| s.num_fmt("0.00E+00") }
+  wb.style("sci") { |s| s.number_format("0.00E+00") }
   wb.sheet("Scientific") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1751,7 +1764,7 @@ Demonstrates fraction number formats (# ?/?).
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_fractions.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("frac") { |s| s.num_fmt("# ?/?") }
+  wb.style("frac") { |s| s.number_format("# ?/?") }
   wb.sheet("Fractions") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1783,7 +1796,7 @@ Demonstrates custom colored formats for positive and negative numbers.
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_custom_colors.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("custom_color") { |s| s.num_fmt("[Green]#,##0;[Red]-#,##0") }
+  wb.style("custom_color") { |s| s.number_format("[Green]#,##0;[Red]-#,##0") }
   wb.sheet("Custom Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2255,9 +2268,9 @@ Xlsxrb.write(output_path) do |wb|
     s.chart(
       type: :bar,
       title: "Monthly Sales",
-      from_col: 3,
+      from_column: 3,
       from_row: 0,
-      to_col: 8,
+      to_column: 8,
       to_row: 12,
       series: [
         { cat_ref: "'Sales Data'!$A$2:$A$3", val_ref: "'Sales Data'!$B$2:$B$3", fill_color: "4F81BD" }
@@ -2300,7 +2313,7 @@ Xlsxrb.write(output_path) do |wb|
       type: :bar,
       grouping: :stacked,
       title: "Stacked Bar Chart",
-      from_col: 0, from_row: 5, to_col: 6, to_row: 17,
+      from_column: 0, from_row: 5, to_column: 6, to_row: 17,
       series: [
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$B$2:$B$4", name: "'Data'!$B$1", fill_color: "4F81BD" },
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$C$2:$C$4", name: "'Data'!$C$1", fill_color: "C0504D" }
@@ -2343,7 +2356,7 @@ Xlsxrb.write(output_path) do |wb|
       type: :bar,
       grouping: :percentStacked,
       title: "100% Stacked Bar Chart",
-      from_col: 0, from_row: 5, to_col: 6, to_row: 17,
+      from_column: 0, from_row: 5, to_column: 6, to_row: 17,
       series: [
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$B$2:$B$4", name: "'Data'!$B$1", fill_color: "4F81BD" },
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$C$2:$C$4", name: "'Data'!$C$1", fill_color: "C0504D" }
@@ -2385,7 +2398,7 @@ Xlsxrb.write(output_path) do |wb|
     s.chart(
       type: :line,
       title: "Daily Value",
-      from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+      from_column: 3, from_row: 0, to_column: 8, to_row: 12,
       series: [{ cat_ref: "Data!$A$2:$A$4", val_ref: "Data!$B$2:$B$4", line_color: "4F81BD", line_width: 2.0 }]
     )
   end
@@ -2425,7 +2438,7 @@ Xlsxrb.write(output_path) do |wb|
       type: :line,
       grouping: :stacked,
       title: "Stacked Line Chart",
-      from_col: 0, from_row: 5, to_col: 6, to_row: 17,
+      from_column: 0, from_row: 5, to_column: 6, to_row: 17,
       series: [
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$B$2:$B$4", name: "'Data'!$B$1", line_color: "4F81BD", line_width: 2.0 },
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$C$2:$C$4", name: "'Data'!$C$1", line_color: "C0504D", line_width: 2.0 }
@@ -2466,7 +2479,7 @@ Xlsxrb.write(output_path) do |wb|
     s.chart(
       type: :area,
       title: "Daily Area",
-      from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+      from_column: 3, from_row: 0, to_column: 8, to_row: 12,
       series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3", fill_color: "4F81BD" }]
     )
   end
@@ -2506,7 +2519,7 @@ Xlsxrb.write(output_path) do |wb|
       type: :area,
       grouping: :stacked,
       title: "Stacked Area Chart",
-      from_col: 0, from_row: 5, to_col: 6, to_row: 17,
+      from_column: 0, from_row: 5, to_column: 6, to_row: 17,
       series: [
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$B$2:$B$4", name: "'Data'!$B$1", fill_color: "4F81BD" },
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$C$2:$C$4", name: "'Data'!$C$1", fill_color: "C0504D" }
@@ -2547,7 +2560,7 @@ Xlsxrb.write(output_path) do |wb|
     s.chart(
       type: :pie,
       title: "Responses",
-      from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+      from_column: 3, from_row: 0, to_column: 8, to_row: 12,
       series: [{
         cat_ref: "Data!$A$2:$A$3",
         val_ref: "Data!$B$2:$B$3",
@@ -2592,7 +2605,7 @@ Xlsxrb.write(output_path) do |wb|
     s.chart(
       type: :doughnut,
       title: "Ratio",
-      from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+      from_column: 3, from_row: 0, to_column: 8, to_row: 12,
       series: [{
         cat_ref: "Data!$A$2:$A$3",
         val_ref: "Data!$B$2:$B$3",
@@ -2637,7 +2650,7 @@ Xlsxrb.write(output_path) do |wb|
     s.chart(
       type: :scatter,
       title: "Scatter Plot",
-      from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+      from_column: 3, from_row: 0, to_column: 8, to_row: 12,
       series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3", line_color: "4F81BD", line_width: 2.0 }]
     )
   end
@@ -2675,7 +2688,7 @@ Xlsxrb.write(output_path) do |wb|
     s.chart(
       type: :radar,
       title: "Stats",
-      from_col: 3, from_row: 0, to_col: 8, to_row: 12,
+      from_column: 3, from_row: 0, to_column: 8, to_row: 12,
       series: [{ cat_ref: "Data!$A$2:$A$3", val_ref: "Data!$B$2:$B$3", line_color: "4F81BD", line_width: 2.0 }]
     )
   end
@@ -2873,9 +2886,9 @@ Xlsxrb.write(output_path) do |wb|
     sheet.column(0..4, width: 12)
     sheet.row(["Diagram with shapes and annotations"])
     sheet.row([])
-    sheet.shape(preset: "rect", text: "Start", from_col: 0, from_row: 2, to_col: 1, to_row: 4)
-    sheet.shape(preset: "rightArrow", text: "Next", from_col: 1, from_row: 3, to_col: 2, to_row: 4)
-    sheet.shape(preset: "roundRect", text: "Processing", from_col: 2, from_row: 2, to_col: 4, to_row: 4)
+    sheet.shape(preset: "rect", text: "Start", from_column: 0, from_row: 2, to_column: 1, to_row: 4)
+    sheet.shape(preset: "rightArrow", text: "Next", from_column: 1, from_row: 3, to_column: 2, to_row: 4)
+    sheet.shape(preset: "roundRect", text: "Processing", from_column: 2, from_row: 2, to_column: 4, to_row: 4)
   end
 end
 ```
@@ -2929,7 +2942,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["", "", "", ""])
     s.row(["", "", "", ""])
     s.row(["", "", "", "Boundary End"], cell_styles: [nil, "center", "center", "center"])
-    s.image(dummy_png, ext: "png", from_col: 1, from_row: 1, to_col: 3, to_row: 5)
+    s.image(dummy_png, ext: "png", from_column: 1, from_row: 1, to_column: 3, to_row: 5)
     s.column(0, width: 20)
     s.column(1, width: 15)
     s.column(2, width: 15)

@@ -17,9 +17,9 @@ Xlsxrb.write(output_path) do |wb|
     s.chart(
       type: :bar,
       title: "Monthly Sales",
-      from_col: 3,
+      from_column: 3,
       from_row: 0,
-      to_col: 8,
+      to_column: 8,
       to_row: 12,
       series: [
         { cat_ref: "'Sales Data'!$A$2:$A$3", val_ref: "'Sales Data'!$B$2:$B$3", fill_color: "4F81BD" }

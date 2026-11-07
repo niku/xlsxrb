@@ -10,7 +10,7 @@ module Xlsxrb
     # @example Access image properties
     #   image = sheet.images.first
     #   image.filename       #=> "image1.png"
-    #   image.cell_ref       #=> "B3"
+    #   image.ref            #=> "B3"
     #   image.content_type   #=> "image/png"
     #   image.data           #=> "\x89PNG..."
     #
@@ -38,24 +38,14 @@ module Xlsxrb
       # @param from_row [Integer] 0-based starting row index.
       # @param to_column [Integer, nil] 0-based ending column index (nil for 1-cell anchor).
       # @param to_row [Integer, nil] 0-based ending row index (nil for 1-cell anchor).
-      # @param from_col [Integer, nil] Deprecated alias for from_column.
-      # @param to_col [Integer, nil] Deprecated alias for to_column.
       # @param cx [Integer, nil] Extent width in EMUs (English Metric Units).
       # @param cy [Integer, nil] Extent height in EMUs (English Metric Units).
       # @param unmapped_data [Hash] Additional metadata from drawing XML.
-      #: (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer?, ?from_col: Integer?, ?to_col: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
+      #: (filename: String, ?name: String?, ?content_type: String?, ?data: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer?, ?cx: Integer?, ?cy: Integer?, ?unmapped_data: Hash[untyped, untyped]) -> void
       # rubocop:disable Naming/MethodParameterName
       def initialize(filename:, name: nil, content_type: nil, data: nil, from_column: nil, from_row: 0,
-                     to_column: nil, to_row: nil, from_col: nil, to_col: nil, cx: nil, cy: nil, unmapped_data: EMPTY_HASH)
+                     to_column: nil, to_row: nil, cx: nil, cy: nil, unmapped_data: EMPTY_HASH)
         # rubocop:enable Naming/MethodParameterName
-        if from_col
-          warn "[DEPRECATION] `from_col:` is deprecated; use `from_column:` instead.", uplevel: 1 unless from_column
-          from_column ||= from_col
-        end
-        if to_col
-          warn "[DEPRECATION] `to_col:` is deprecated; use `to_column:` instead.", uplevel: 1 unless to_column
-          to_column ||= to_col
-        end
         from_column ||= 0
         ext = File.extname(filename).delete_prefix(".").downcase
         mime = content_type || MIME_TYPES[ext] || "application/octet-stream"
@@ -74,47 +64,6 @@ module Xlsxrb
         )
       end
 
-      # @deprecated Use {#from_column} instead.
-      #: () -> Integer
-      def from_col
-        warn "[DEPRECATION] `from_col` is deprecated; use `from_column` instead.", uplevel: 1
-        from_column
-      end
-
-      # @deprecated Use {#to_column} instead.
-      #: () -> Integer?
-      def to_col
-        warn "[DEPRECATION] `to_col` is deprecated; use `to_column` instead.", uplevel: 1
-        to_column
-      end
-
-      #: (Symbol | String member) -> untyped
-      def [](member)
-        case member.to_sym
-        when :from_col
-          warn "[DEPRECATION] `:from_col` is deprecated; use `:from_column` instead.", uplevel: 1
-          from_column
-        when :to_col
-          warn "[DEPRECATION] `:to_col` is deprecated; use `:to_column` instead.", uplevel: 1
-          to_column
-        when :cell
-          warn "[DEPRECATION] `:cell` is deprecated; use `:cell_ref` instead.", uplevel: 1
-          ref
-        when :ref
-          ref
-        else
-          super
-        end
-      end
-
-      #: (Array[Symbol]?) -> Hash[Symbol, untyped]
-      def deconstruct_keys(keys)
-        h = super
-        h[:from_col] = from_column
-        h[:to_col] = to_column
-        h
-      end
-
       # Returns the top-left cell coordinate reference string (e.g. "A1").
       #
       # @return [String]
@@ -122,22 +71,6 @@ module Xlsxrb
       #: () -> String
       def ref
         "#{Cell._column_letter(from_column)}#{from_row + 1}"
-      end
-
-      # @deprecated Use {#ref} instead.
-      # @return [String]
-      # @api public
-      #: () -> String
-      def cell_ref
-        warn "[Xlsxrb DEPRECATION] Image#cell_ref is deprecated; use #ref instead.", uplevel: 1
-        ref
-      end
-
-      # @deprecated Use {#ref} instead.
-      #: () -> String
-      def cell
-        warn "[DEPRECATION] `cell` is deprecated; use `cell_ref` instead.", uplevel: 1
-        ref
       end
 
       # Returns the bottom-right cell coordinate reference string (e.g. "B5"), or nil for 1-cell anchors.

@@ -11,28 +11,13 @@ module Xlsxrb
     #
     # @api public
     module CoordinateAccess
-      # Returns a Hash mapping Excel cell references (e.g. "A1") to Cell objects.
-      #
-      # @return [Hash<String, Elements::Cell>]
-      #: () -> Hash[String, Elements::Cell]
-      def cells_hash
-        h = {}
-        rows.each do |r|
-          r.cells.each do |c|
-            ref = "#{Cell._column_letter(c.column_index)}#{c.row_index + 1}"
-            h[ref] = c
-          end
-        end
-        h
-      end
-
       # Returns all cells ordered by row and column index.
       #
       # @return [Array<Elements::Cell>]
       # @api public
       #: () -> Array[Elements::Cell]
       def cells
-        cells_hash.values.sort_by { |c| [c.row_index, c.column_index] }
+        _cells_hash.values.sort_by { |c| [c.row_index, c.column_index] }
       end
 
       # Access a cell by Excel-style reference (e.g. "A1") or 0-based coordinate indices (row, col).
@@ -53,7 +38,7 @@ module Xlsxrb
         if col
           row_at(ref_or_row)&.cell_at(col)
         else
-          cells_hash[ref_or_row.to_s.upcase]
+          _cells_hash[ref_or_row.to_s.upcase]
         end
       end
 
@@ -120,54 +105,6 @@ module Xlsxrb
         }.freeze
       end
 
-      # Returns the 1-based index of the first column containing data, or nil.
-      #
-      # @deprecated Use {#column_range} or {#dimension_bounds} instead.
-      # @return [Integer, nil]
-      # @api public
-      #: () -> Integer?
-      def first_column
-        warn "[DEPRECATION] `first_column` is deprecated; use `column_range` or `dimension_bounds` instead.", uplevel: 1
-        min_c = nil
-        rows.each do |r|
-          r.cells.each do |c|
-            min_c = c.column_index if min_c.nil? || c.column_index < min_c
-          end
-        end
-        min_c ? min_c + 1 : nil
-      end
-
-      # @deprecated Use {#column_range} or {#dimension_bounds} instead. Will be removed in 0.2.0.
-      #: () -> Integer?
-      def first_col
-        warn "[DEPRECATION] `first_col` is deprecated; use `column_range` or `dimension_bounds` instead.", uplevel: 1
-        first_column
-      end
-
-      # Returns the 1-based index of the last column containing data, or nil.
-      #
-      # @deprecated Use {#column_range} or {#dimension_bounds} instead.
-      # @return [Integer, nil]
-      # @api public
-      #: () -> Integer?
-      def last_column
-        warn "[DEPRECATION] `last_column` is deprecated; use `column_range` or `dimension_bounds` instead.", uplevel: 1
-        max_c = nil
-        rows.each do |r|
-          r.cells.each do |c|
-            max_c = c.column_index if max_c.nil? || c.column_index > max_c
-          end
-        end
-        max_c ? max_c + 1 : nil
-      end
-
-      # @deprecated Use {#column_range} or {#dimension_bounds} instead. Will be removed in 0.2.0.
-      #: () -> Integer?
-      def last_col
-        warn "[DEPRECATION] `last_col` is deprecated; use `column_range` or `dimension_bounds` instead.", uplevel: 1
-        last_column
-      end
-
       # Returns the 0-based range of rows containing data, or nil.
       #
       # @example
@@ -204,27 +141,19 @@ module Xlsxrb
         (indices.min..indices.max)
       end
 
-      # Returns the raw cell value at the given Excel-style reference (e.g. "A1").
-      #
-      # @deprecated Use `sheet["A1"]&.value` instead.
-      # @example
-      #   sheet.cell_value("A1") #=> "Sales Report"
-      #
-      # @param ref [String] Cell reference (e.g. "A1").
-      # @return [Object, nil]
-      # @api public
-      #: (String ref) -> untyped
-      def cell_value(ref)
-        warn "[DEPRECATION] `cell_value` is deprecated; use `sheet[\"#{ref}\"]&.value` instead.", uplevel: 1
-        parsed = Cell._parse_ref(ref)
-        return nil unless parsed
+      private
 
-        row_idx, col_idx = parsed
-        row = row_at(row_idx)
-        return nil unless row
-
-        cell = row.cell_at(col_idx)
-        cell&.value
+      # Returns a Hash mapping Excel cell references (e.g. "A1") to Cell objects.
+      #: () -> Hash[String, Elements::Cell]
+      def _cells_hash
+        h = {}
+        rows.each do |r|
+          r.cells.each do |c|
+            ref = "#{Cell._column_letter(c.column_index)}#{c.row_index + 1}"
+            h[ref] = c
+          end
+        end
+        h
       end
     end
   end

@@ -59,7 +59,7 @@ class ReaderTest < Test::Unit::TestCase
       end
 
       utf8_buffer = File.binread(file).force_encoding(Encoding::UTF_8)
-      wb = Xlsxrb.read(utf8_buffer).load
+      wb = Xlsxrb.load(utf8_buffer)
       assert_equal("Hello", wb.sheets.first.row_at(0)[0].value)
     end
   end
@@ -160,14 +160,14 @@ class ReaderTest < Test::Unit::TestCase
     end
     buf.rewind
 
-    wb = Xlsxrb.read(buf).load
+    wb = Xlsxrb.load(buf)
     sheet = wb.sheet(0)
-    assert_equal(true, sheet.cell("A1").value)
-    assert_equal(false, sheet.cell("B1").value)
-    assert_equal(true, sheet.cell("C1").value)
-    assert_equal(true, sheet.cell("D1").value)
-    assert_equal(false, sheet.cell("E1").value)
-    assert_equal(false, sheet.cell("F1").value)
+    assert_equal(true, sheet["A1"].value)
+    assert_equal(false, sheet["B1"].value)
+    assert_equal(true, sheet["C1"].value)
+    assert_equal(true, sheet["D1"].value)
+    assert_equal(false, sheet["E1"].value)
+    assert_equal(false, sheet["F1"].value)
 
     buf.rewind
     rows = []
@@ -333,23 +333,22 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(expected, reader.hyperlinks)
 
     # Also verify via Xlsxrb.read (StreamSheet and loaded Elements::Worksheet)
-    wb = Xlsxrb.read(xlsx_path)
-    sheet = wb.sheets.first
-    assert_equal(expected, sheet.hyperlinks.transform_values(&:to_h))
-    assert_equal(expected["A1"], sheet.hyperlink("A1").to_h)
-    assert_equal(expected["B1"], sheet.hyperlink("B1").to_h)
-    assert_nil(sheet.hyperlink("D1"))
+    Xlsxrb.read(xlsx_path) do |sheet|
+      assert_equal(expected, sheet.hyperlinks.transform_values(&:to_h))
+      assert_equal(expected["A1"], sheet.hyperlink("A1").to_h)
+      assert_equal(expected["B1"], sheet.hyperlink("B1").to_h)
+      assert_nil(sheet.hyperlink("D1"))
 
-    doc = sheet.load
-    assert_equal(expected, doc.hyperlinks.transform_values(&:to_h))
-    assert_true(doc["A1"].link?)
-    assert_true(doc["A1"].hyperlink?)
-    assert_equal("https://example.com", doc["A1"].url)
-    assert_equal(expected["A1"], doc["A1"].hyperlink.to_h)
-    assert_true(doc["B1"].link?)
-    assert_equal("https://example.com/page", doc["B1"].url)
-    assert_true(doc["C1"].link?)
-    assert_equal("Sheet1!D1", doc["C1"].url)
+      doc = sheet.load
+      assert_equal(expected, doc.hyperlinks.transform_values(&:to_h))
+      assert_true(doc["A1"].hyperlink?)
+      assert_equal("https://example.com", doc["A1"].url)
+      assert_equal(expected["A1"], doc["A1"].hyperlink.to_h)
+      assert_true(doc["B1"].hyperlink?)
+      assert_equal("https://example.com/page", doc["B1"].url)
+      assert_true(doc["C1"].hyperlink?)
+      assert_equal("Sheet1!D1", doc["C1"].url)
+    end
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -547,18 +546,12 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(:hidden, states["Hidden"])
     assert_equal(:very_hidden, states["VeryHidden"])
 
-    wb = Xlsxrb.read(xlsx_path)
-    assert_equal(:visible, wb["Sheet1"].state)
-    assert_true(wb["Sheet1"].visible?)
-    assert_false(wb["Sheet1"].hidden?)
-    assert_equal(:hidden, wb["Hidden"].state)
-    assert_false(wb["Hidden"].visible?)
-    assert_true(wb["Hidden"].hidden?)
-    assert_equal(:very_hidden, wb["VeryHidden"].state)
-    assert_true(wb["VeryHidden"].hidden?)
-
-    loaded_wb = wb.load
+    loaded_wb = Xlsxrb.load(xlsx_path)
+    assert_equal(:visible, loaded_wb["Sheet1"].state)
+    assert_true(loaded_wb["Sheet1"].visible?)
+    assert_false(loaded_wb["Sheet1"].hidden?)
     assert_equal(:hidden, loaded_wb["Hidden"].state)
+    assert_false(loaded_wb["Hidden"].visible?)
     assert_true(loaded_wb["Hidden"].hidden?)
     assert_equal(:very_hidden, loaded_wb["VeryHidden"].state)
     assert_true(loaded_wb["VeryHidden"].hidden?)
@@ -595,16 +588,12 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(true, dns[2][:hidden])
     assert_equal("42", dns[2][:value])
 
-    wb = Xlsxrb.read(xlsx_path)
-    assert_equal(3, wb.defined_names.size)
-    assert_equal("Sheet1!$A$1:$B$10", wb.defined_name("MyRange").value)
-    assert_equal("Data!$C$1", wb.defined_name("LocalName", sheet: "Data").value)
-    assert_equal("42", wb.defined_name("HiddenName").value)
-    assert_true(wb.defined_name("HiddenName").hidden)
-
-    loaded_wb = wb.load
+    loaded_wb = Xlsxrb.load(xlsx_path)
     assert_equal(3, loaded_wb.defined_names.size)
     assert_equal("Sheet1!$A$1:$B$10", loaded_wb.defined_name("MyRange").value)
+    assert_equal("Data!$C$1", loaded_wb.defined_name("LocalName", sheet: "Data").value)
+    assert_equal("42", loaded_wb.defined_name("HiddenName").value)
+    assert_true(loaded_wb.defined_name("HiddenName").hidden?)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -2738,22 +2727,22 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("Second note", comments[1][:text])
 
     # Also verify via Xlsxrb.read (StreamSheet and loaded Elements::Worksheet)
-    wb = Xlsxrb.read(xlsx_path)
-    sheet = wb.sheets.first
-    assert_equal(2, sheet.comments.size)
-    assert_equal("Test note", sheet.comment("A1")[:text])
-    assert_equal("Second note", sheet.comment("B2")[:text])
-    assert_nil(sheet.comment("C3"))
+    Xlsxrb.read(xlsx_path) do |sheet|
+      assert_equal(2, sheet.comments.size)
+      assert_equal("Test note", sheet.comment("A1").text)
+      assert_equal("Second note", sheet.comment("B2").text)
+      assert_nil(sheet.comment("C3"))
 
-    doc = sheet.load
-    assert_equal(2, doc.comments.size)
-    assert_equal("Test note", doc.comment("A1")[:text])
-    assert_true(doc["A1"].comment?)
-    assert_equal("Test note", doc["A1"].comment_text)
-    assert_equal("Me", doc["A1"].comment[:author])
-    assert_true(doc["B2"].comment?)
-    assert_equal("Second note", doc["B2"].comment_text)
-    assert_false(doc["B1"].comment?)
+      doc = sheet.load
+      assert_equal(2, doc.comments.size)
+      assert_equal("Test note", doc.comment("A1").text)
+      assert_true(doc["A1"].comment?)
+      assert_equal("Test note", doc["A1"].comment_text)
+      assert_equal("Me", doc["A1"].comment.author)
+      assert_true(doc["B2"].comment?)
+      assert_equal("Second note", doc["B2"].comment_text)
+      assert_false(doc["B1"].comment?)
+    end
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -3049,12 +3038,12 @@ class ReaderTest < Test::Unit::TestCase
     cells = reader.cells
     a1 = cells["A1"]
     assert_instance_of(Xlsxrb::Elements::Formula, a1)
-    assert_equal(true, a1.calculate_always)
+    assert_true(a1.calculate_always?)
     assert_equal("NOW()", a1.expression)
 
     b1 = cells["B1"]
     assert_instance_of(Xlsxrb::Elements::Formula, b1)
-    assert_nil(b1.calculate_always)
+    assert_false(b1.calculate_always?)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -11006,7 +10995,7 @@ class ReaderTest < Test::Unit::TestCase
     end
     src_reader.close
 
-    wb = Xlsxrb.read(modified_io.string).load
+    wb = Xlsxrb.load(modified_io.string)
     sheet = wb.sheets.first
     assert_equal("CaseInsensitiveString", sheet.row_at(0)[0].value)
   end
@@ -11142,7 +11131,7 @@ class ReaderTest < Test::Unit::TestCase
     end
     src_reader.close
 
-    wb = Xlsxrb.read(modified_io.string).load
+    wb = Xlsxrb.load(modified_io.string)
     sheet = wb.sheets.first
     assert_equal("UTF-16 Cell Value", sheet.row_at(0)[0].value)
   end
@@ -11166,7 +11155,7 @@ class ReaderTest < Test::Unit::TestCase
     end
     src_reader.close
 
-    wb = Xlsxrb.read(modified_io.string).load
+    wb = Xlsxrb.load(modified_io.string)
     assert_equal(1, wb.sheets.size)
     assert_equal("Sheet1", wb.sheets.first.name)
     assert_equal("Hello", wb.sheets.first.row_at(0)[0].value)
@@ -11204,7 +11193,7 @@ class ReaderTest < Test::Unit::TestCase
     end
     src_reader.close
 
-    wb = Xlsxrb.read(modified_io.string).load
+    wb = Xlsxrb.load(modified_io.string)
     assert_equal(1, wb.sheets.size)
     assert_equal("Sheet1", wb.sheets.first.name)
     assert_equal("Cell 1", wb.sheets.first.row_at(0)[0].value)
@@ -11256,10 +11245,10 @@ class ReaderTest < Test::Unit::TestCase
     src_reader.close
 
     # Test in-memory read
-    wb = Xlsxrb.read(StringIO.new(modified_io.string))
+    wb = Xlsxrb.load(StringIO.new(modified_io.string))
     assert_equal(1, wb.sheets.size)
     assert_equal("TestSheet", wb.sheet(0).name)
-    assert_equal("Hello", wb.sheet(0).cell("A1").value)
+    assert_equal("Hello", wb.sheet(0)["A1"].value)
 
     # Test streaming read
     stream_rows = []
@@ -11307,11 +11296,11 @@ class ReaderTest < Test::Unit::TestCase
     end
     src_reader.close
 
-    wb = Xlsxrb.read(StringIO.new(modified_io.string))
+    wb = Xlsxrb.load(StringIO.new(modified_io.string))
     assert_equal(1, wb.sheets.size)
     assert_equal("FallbackSheet", wb.sheet(0).name)
-    assert_equal("Data1", wb.sheet(0).cell("A1").value)
-    assert_equal(42, wb.sheet(0).cell("B1").value)
+    assert_equal("Data1", wb.sheet(0)["A1"].value)
+    assert_equal(42, wb.sheet(0)["B1"].value)
   end
 
   test "SparklineGroupsListener parses sparkline groups and elements" do
@@ -11379,7 +11368,7 @@ class ReaderTest < Test::Unit::TestCase
   test "resolves header_footer_images via load and read from zip containing legacyDrawingHF" do
     wb = Xlsxrb.build do |b|
       b.sheet("Report") do |s|
-        s.add_row(["Header Image Test"])
+        s.row(["Header Image Test"])
       end
     end
     raw_xlsx = Xlsxrb.write(wb)
@@ -11431,7 +11420,6 @@ class ReaderTest < Test::Unit::TestCase
     assert_instance_of(Xlsxrb::Elements::HeaderFooterImage, hf_img)
     assert_equal("LH", hf_img.position)
     assert_equal("xl/media/image_lh.png", hf_img.path)
-    assert_equal("xl/media/image_lh.png", hf_img.filename)
     assert_equal("png", hf_img.extension)
     assert_equal("image/png", hf_img.content_type)
     assert_equal(fake_png, hf_img.data)
@@ -11442,8 +11430,7 @@ class ReaderTest < Test::Unit::TestCase
       assert_instance_of(Xlsxrb::Elements::HeaderFooterImage, st_img)
       assert_equal("LH", st_img.position)
       assert_equal("xl/media/image_lh.png", st_img.path)
-      assert_equal("xl/media/image_lh.png", st_img.filename)
-      assert_equal("png", st_img.ext)
+      assert_equal("png", st_img.extension)
       assert_equal("image/png", st_img.content_type)
       assert_equal(fake_png, st_img.data)
 

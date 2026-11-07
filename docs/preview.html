@@ -889,7 +889,7 @@ Xlsxrb.write("executive_dashboard.xlsx") do |wb|
     s.row(["", "Executive Sales Dashboard"], height: 26, cell_styles: [nil, :title])
     s.row(["", "Q3 Performance Overview & Target Attainment"], height: 16, cell_styles: [nil, :subtitle])
     s.row([])
-    s.image(logo, ext: "png", from_col: 0, from_row: 0, to_col: 1, to_row: 1)
+    s.image(logo, ext: "png", from_column: 0, from_row: 0, to_column: 1, to_row: 1)
 
     # KPI Summary Cards
     s.row(["", "ACTUAL REVENUE", "TARGET REVENUE", "VARIANCE", "ATTAINMENT"], height: 14, cell_styles: [nil, :kpi_lbl, :kpi_lbl, :kpi_lbl, :kpi_lbl])
@@ -908,7 +908,7 @@ Xlsxrb.write("executive_dashboard.xlsx") do |wb|
     s.chart(
       type: :bar,
       title: "Revenue by Business Line (Target vs Actual)",
-      from_col: 6, from_row: 3, to_col: 14, to_row: 13,
+      from_column: 6, from_row: 3, to_column: 14, to_row: 13,
       chart_fill: "FFFFFF",
       chart_line_color: "E2E8F0",
       series: [
@@ -976,7 +976,7 @@ Xlsxrb.write("chart_bar.xlsx") do |wb|
     s.chart(
       type: :bar,
       title: "Quarterly Department Sales",
-      from_col: 4, from_row: 1, to_col: 12, to_row: 15,
+      from_column: 4, from_row: 1, to_column: 12, to_row: 15,
       chart_fill: "FFFFFF",
       chart_line_color: "CBD5E1",
       series: [
@@ -1007,7 +1007,7 @@ Xlsxrb.write("chart_line.xlsx") do |wb|
     s.chart(
       type: :line,
       title: "Year-over-Year Growth Trend",
-      from_col: 4, from_row: 1, to_col: 12, to_row: 15,
+      from_column: 4, from_row: 1, to_column: 12, to_row: 15,
       chart_fill: "FFFFFF",
       chart_line_color: "CBD5E1",
       series: [
@@ -1037,7 +1037,7 @@ Xlsxrb.write("chart_pie.xlsx") do |wb|
     s.chart(
       type: :pie,
       title: "Platform Market Share",
-      from_col: 3, from_row: 1, to_col: 10, to_row: 14,
+      from_column: 3, from_row: 1, to_column: 10, to_row: 14,
       chart_fill: "FFFFFF",
       chart_line_color: "CBD5E1",
       series: [
@@ -1423,7 +1423,7 @@ puts "Sheet properties workbook generated!"`
                       's.chart(',
                       '  type: :${1|bar,line,pie,area,scatter,doughnut,radar|},',
                       '  title: "${2:Chart Title}",',
-                      '  from_col: ${3:4}, from_row: ${4:1}, to_col: ${5:12}, to_row: ${6:12},',
+                      '  from_column: ${3:4}, from_row: ${4:1}, to_column: ${5:12}, to_row: ${6:12},',
                       '  series: [',
                       '    { name: "${7:Series 1}", cat_ref: "${8:Sheet1!$A$2:$A$5}", val_ref: "${9:Sheet1!$B$2:$B$5}" }',
                       '  ]',
@@ -1473,7 +1473,7 @@ puts "Sheet properties workbook generated!"`
                   {
                     label: 's.image',
                     kind: monaco.languages.CompletionItemKind.Snippet,
-                    insertText: 's.image(${1:logo_bytes}, ext: "${2:png}", from_col: ${3:0}, from_row: ${4:0}, to_col: ${5:1}, to_row: ${6:1})',
+                    insertText: 's.image(${1:logo_bytes}, ext: "${2:png}", from_column: ${3:0}, from_row: ${4:0}, to_column: ${5:1}, to_row: ${6:1})',
                     insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                     documentation: 'Insert an image into the worksheet',
                     detail: 'xlsxrb image embedding',

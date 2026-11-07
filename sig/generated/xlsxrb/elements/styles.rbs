@@ -52,10 +52,6 @@ module Xlsxrb
       # : () -> Hash[Integer, String]
       def number_formats: () -> Hash[Integer, String]
 
-      # @deprecated Use {#number_formats} instead. Will be removed in 0.2.0.
-      # : () -> Hash[Integer, String]
-      def num_fmts: () -> Hash[Integer, String]
-
       # Returns array of differential format (dxf) entries from the styles.
       #
       # @return [Array<Elements::Dxf>]
@@ -121,10 +117,6 @@ module Xlsxrb
       # : (Integer? id) -> Numeric?
       def font_size: (Integer? id) -> Numeric?
 
-      # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
-      # : (Integer? id) -> Numeric?
-      def sz: (Integer? id) -> Numeric?
-
       # Looks up a fill entry by 0-based index.
       #
       # @param id [Integer, nil]
@@ -149,10 +141,6 @@ module Xlsxrb
       # : (Integer? id) -> Elements::CellXf?
       def cell_xf: (Integer? id) -> Elements::CellXf?
 
-      # @deprecated Use {#cell_xf} instead. Will be removed in 0.2.0.
-      # : (Integer? id) -> Elements::CellXf?
-      def xf: (Integer? id) -> Elements::CellXf?
-
       # Looks up a custom format code by numFmtId.
       #
       # @param id [Integer, nil]
@@ -160,9 +148,6 @@ module Xlsxrb
       # @api public
       # : (Integer? id) -> String?
       def number_format_code: (Integer? id) -> String?
-
-      # @deprecated Use {#number_format_code} instead. Will be removed in 0.2.0.
-      def num_fmt: (untyped id) -> untyped
 
       # Looks up a differential format (dxf) entry by 0-based index.
       #
@@ -221,10 +206,6 @@ module Xlsxrb
       # : (Integer id, String code) -> Integer
       def add_number_format: (Integer id, String code) -> Integer
 
-      # @deprecated Use {#add_number_format} instead. Will be removed in 0.2.0.
-      # : (Integer id, String code) -> Integer
-      def add_num_fmt: (Integer id, String code) -> Integer
-
       # Appends a cell format (cellXf) entry and returns its 0-based index.
       #
       # @param spec [Hash, nil]
@@ -232,10 +213,6 @@ module Xlsxrb
       # @api public
       # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
       def add_cell_xf: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
-
-      # @deprecated Use {#add_cell_xf} instead. Will be removed in 0.2.0.
-      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
-      def add_xf: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
 
       # Appends a differential format (dxf) entry and returns its 0-based index.
       #
@@ -286,7 +263,7 @@ module Xlsxrb
 
       alias to_hash to_h
 
-      # Equality check against another Styles or Hash.
+      # Equality check against another Styles.
       #
       # @param other [Object]
       # @return [Boolean]
@@ -311,17 +288,6 @@ module Xlsxrb
       # : (Integer? style_index) -> String?
       def number_format: (Integer? style_index) -> String?
 
-      # @deprecated Use {#number_format} instead.
-      # @param style_index [Integer, nil]
-      # @return [String, nil]
-      # @api public
-      # : (Integer? style_index) -> String?
-      def format_code: (Integer? style_index) -> String?
-
-      # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
-      # : (Integer? style_index) -> String?
-      def format_code_for: (Integer? style_index) -> String?
-
       # Returns the classified format category (:date, :datetime, :time, :number, :text, :general) for a style index.
       #
       # @param style_index [Integer, nil]
@@ -329,10 +295,6 @@ module Xlsxrb
       # @api public
       # : (Integer? style_index) -> Symbol?
       def format_type: (Integer? style_index) -> Symbol?
-
-      # @deprecated Use {#format_type} instead. Will be removed in 0.2.0.
-      # : (Integer? style_index) -> Symbol?
-      def classification_for: (Integer? style_index) -> Symbol?
 
       # Returns whether the style index represents a date, datetime, or time pattern.
       #

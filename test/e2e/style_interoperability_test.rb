@@ -10,11 +10,14 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
       w.sheet("Styled") do |s|
         # Define styles
         s.style("header") do |style|
-          style.bold.size(14).font_color("FFFF0000")
+          style.bold(true)
+          style.font_size(14)
+          style.font_color("FFFF0000")
         end
 
         s.style("total") do |style|
-          style.bold.fill_color("FF00FF00")
+          style.bold(true)
+          style.fill_color("FF00FF00")
         end
 
         # Add styled rows
@@ -30,7 +33,7 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
       Xlsxrb.write(xlsx_tempfile.path, workbook)
 
       # Verify file exists and can be read back
-      read_workbook = Xlsxrb.read(xlsx_tempfile.path).load
+      read_workbook = Xlsxrb.load(xlsx_tempfile.path)
       assert_equal(1, read_workbook.sheets.size)
 
       sheet = read_workbook.sheets[0]
@@ -57,7 +60,9 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
       Xlsxrb.write(xlsx_tempfile.path) do |w|
         # Define styles
         w.style("header") do |style|
-          style.bold.size(12).font_color("FF0000FF")
+          style.bold(true)
+          style.font_size(12)
+          style.font_color("FF0000FF")
         end
 
         w.style("data") do |style|
@@ -77,7 +82,7 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
       end
 
       # Read back and verify
-      read_workbook = Xlsxrb.read(xlsx_tempfile.path).load
+      read_workbook = Xlsxrb.load(xlsx_tempfile.path)
       assert_equal(1, read_workbook.sheets.size)
       assert_equal(6, read_workbook.sheets[0].rows.size)
 
@@ -91,21 +96,20 @@ class StyleInteroperabilityTest < Test::Unit::TestCase
   end
 
   # E2E test: StyleBuilder direct usage
-  test "StyleBuilder: fluent API produces compatible styles" do
+  test "StyleBuilder: DSL produces compatible styles" do
     style_builder = Xlsxrb::StyleBuilder.new("test_style")
-    style_builder
-      .bold
-      .italic
-      .size(11)
-      .font_name("Calibri")
-      .font_color("FFFF0000")
-      .fill_color("FF0000FF")
-      .border_all(style: "thin", color: "FF000000")
+    style_builder.bold(true)
+    style_builder.italic(true)
+    style_builder.font_size(11)
+    style_builder.font_name("Calibri")
+    style_builder.font_color("FFFF0000")
+    style_builder.fill_color("FF0000FF")
+    style_builder.border_all(style: "thin", color: "FF000000")
 
     # Verify the builder collected properties correctly
     assert_equal(true, style_builder.font_props[:bold])
     assert_equal(true, style_builder.font_props[:italic])
-    assert_equal(11, style_builder.font_props[:sz])
+    assert_equal(11, style_builder.font_props[:size])
     assert_equal("Calibri", style_builder.font_props[:name])
     assert_equal("FFFF0000", style_builder.font_props[:color])
     assert_equal("FF0000FF", style_builder.fill_props[:fg_color])

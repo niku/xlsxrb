@@ -10,7 +10,7 @@ class DateTimeStyleTest < Test::Unit::TestCase
         s.row([Date.new(2026, 1, 1), Time.new(2026, 1, 1, 12, 0, 0)])
       end
     end
-    wb = Xlsxrb.read(temp.path).load
+    wb = Xlsxrb.load(temp.path)
     sheet = wb.sheets.first
     date_cell = sheet.rows.first.cells[0]
     time_cell = sheet.rows.first.cells[1]
@@ -27,21 +27,13 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert time_xf.num_fmt_id.positive?
   end
 
-  test "CellXf#number_format_id deprecation warning" do
-    xf = Xlsxrb::Elements::CellXf.new(num_fmt_id: 14)
-    err = capture_stderr do
-      assert_equal(14, xf.number_format_id)
-    end
-    assert_match(/\[Xlsxrb DEPRECATION\] CellXf#number_format_id is deprecated; use #num_fmt_id instead\./, err)
-  end
-
   test "stream writer with date1904 property serializes dates with 1904 epoch and reads back correctly" do
     target_date = Date.new(2026, 9, 27)
     target_time = Time.utc(2026, 9, 27, 12, 0, 0)
     temp = Tempfile.new(["test_date1904", ".xlsx"])
 
     Xlsxrb.write(temp.path) do |w|
-      w.workbook_property(:date1904, true)
+      w.workbook_properties(date1904: true)
       w.sheet("Dates1904") do |s|
         s.row([target_date, target_time])
       end
@@ -58,17 +50,11 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert_equal(target_time, resolved_cells["B1"])
 
     # Verify Xlsxrb.read parses date1904? flag and cells
-    wb = Xlsxrb.read(temp.path).load
+    wb = Xlsxrb.load(temp.path)
     assert_true(wb.date1904?)
     sheet = wb["Dates1904"]
     assert_equal(target_date, sheet["A1"].to_date)
     assert_equal(target_time, sheet["B1"].to_time)
-
-    # Deprecated date1904: argument warning
-    err_date = capture_stderr { sheet["A1"].to_date(date1904: true) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Passing date1904: to Cell#to_date is deprecated; Cell#date1904\? is used automatically\./, err_date)
-    err_time = capture_stderr { sheet["B1"].to_time(date1904: true) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Passing date1904: to Cell#to_time is deprecated; Cell#date1904\? is used automatically\./, err_time)
 
     # Verify raw serial values in sheet XML are 1462 less than 1900 system
     sheet_xml = reader.send(:load_worksheet_xml, "Dates1904")
@@ -98,12 +84,12 @@ class DateTimeStyleTest < Test::Unit::TestCase
     Xlsxrb.write(temp.path, wb)
 
     # Read back and verify round-trip
-    wb_read = Xlsxrb.read(temp.path).load
+    wb_read = Xlsxrb.load(temp.path)
     assert_true(wb_read.date1904?)
     assert_equal(target_date, wb_read["Sheet1"]["A1"].to_date)
 
     # Verify reading back in-memory binary string
-    wb_buf = Xlsxrb.read(File.binread(temp.path)).load
+    wb_buf = Xlsxrb.load(File.binread(temp.path))
     assert_true(wb_buf.date1904?)
     assert_equal(target_date, wb_buf["Sheet1"]["A1"].to_date)
 

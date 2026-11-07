@@ -16,7 +16,7 @@ Xlsxrb.write(output_path) do |wb|
       type: :line,
       grouping: :stacked,
       title: "Stacked Line Chart",
-      from_col: 0, from_row: 5, to_col: 6, to_row: 17,
+      from_column: 0, from_row: 5, to_column: 6, to_row: 17,
       series: [
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$B$2:$B$4", name: "'Data'!$B$1", line_color: "4F81BD", line_width: 2.0 },
         { cat_ref: "'Data'!$A$2:$A$4", val_ref: "'Data'!$C$2:$C$4", name: "'Data'!$C$1", line_color: "C0504D", line_width: 2.0 }

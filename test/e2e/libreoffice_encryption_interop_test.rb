@@ -109,7 +109,7 @@ module Xlsxrb
           end
 
           # Verify xlsxrb successfully reads with correct password
-          wb = Xlsxrb.read(lo_xlsx_path, password: password).load
+          wb = Xlsxrb.load(lo_xlsx_path, password: password)
           assert_equal 1, wb.sheets.size
           sheet = wb.sheets[0]
           assert_equal "FromLibreOffice", sheet["A1"].value

@@ -335,7 +335,7 @@ module Xlsxrb
         # : (untyped brk, default_max: untyped) -> ::String
         def emit_brk_xml(brk, default_max:)
           brk = brk.to_h if brk.is_a?(Elements::MetadataRecord)
-          if brk.is_a?(Hash) || brk.is_a?(Elements::PageBreak)
+          if brk.is_a?(Hash)
             attrs = %(id="#{brk[:id]}")
             attrs << %( min="#{brk[:min]}") if brk[:min]
             attrs << %( max="#{brk.respond_to?(:fetch) ? brk.fetch(:max, default_max) : (brk[:max] || default_max)}")

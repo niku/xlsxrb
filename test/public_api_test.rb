@@ -21,7 +21,7 @@ class PublicApiTest < Test::Unit::TestCase
 
       Xlsxrb.write(tmp.path, wb)
 
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
 
       assert_instance_of(Xlsxrb::Elements::Workbook, result)
       assert_equal(1, result.sheets.size)
@@ -29,10 +29,10 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal(2, result.sheets[0].rows.size)
 
       sheet = result.sheet(0)
-      assert_equal("Hello", sheet.cell_value("A1"))
-      assert_equal(42, sheet.cell_value("B1"))
-      assert_equal(true, sheet.cell_value("A2"))
-      assert_in_delta(3.14, sheet.cell_value("B2"))
+      assert_equal("Hello", sheet["A1"]&.value)
+      assert_equal(42, sheet["B1"]&.value)
+      assert_equal(true, sheet["A2"]&.value)
+      assert_in_delta(3.14, sheet["B2"]&.value)
     ensure
       tmp.close!
     end
@@ -52,9 +52,9 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, binary.encoding)
 
     # Validate that it can be parsed back
-    parsed = Xlsxrb.read(binary).load
+    parsed = Xlsxrb.load(binary)
     assert_equal(1, parsed.sheets.size)
-    assert_equal("In-Memory", parsed.sheet(0).cell_value("A1"))
+    assert_equal("In-Memory", parsed.sheet(0)["A1"]&.value)
   end
 
   test "Xlsxrb.read automatically handles raw binary string" do
@@ -65,9 +65,9 @@ class PublicApiTest < Test::Unit::TestCase
     end
     binary = Xlsxrb.write(wb)
 
-    parsed = Xlsxrb.read(binary).load
+    parsed = Xlsxrb.load(binary)
     assert_equal(1, parsed.sheets.size)
-    assert_equal("Alice", parsed.sheet("Users").cell_value("A1"))
+    assert_equal("Alice", parsed.sheet("Users")["A1"]&.value)
   end
 
   test "Xlsxrb.write raises on nil target when two arguments are given" do
@@ -95,13 +95,13 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
 
       sheet = result.sheet(0)
-      assert_equal(0, sheet.cell_value("A1"))
-      assert_equal(-99, sheet.cell_value("B1"))
-      assert_equal(1_000_000, sheet.cell_value("C1"))
-      assert_in_delta(1.5, sheet.cell_value("D1"))
+      assert_equal(0, sheet["A1"]&.value)
+      assert_equal(-99, sheet["B1"]&.value)
+      assert_equal(1_000_000, sheet["C1"]&.value)
+      assert_in_delta(1.5, sheet["D1"]&.value)
     ensure
       tmp.close!
     end
@@ -127,12 +127,12 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
 
       assert_equal(2, result.sheets.size)
       assert_equal(%w[First Second], result.sheet_names)
-      assert_equal("sheet1", result.sheet("First").cell_value("A1"))
-      assert_equal("sheet2", result.sheet("Second").cell_value("A1"))
+      assert_equal("sheet1", result.sheet("First")["A1"]&.value)
+      assert_equal("sheet2", result.sheet("Second")["A1"]&.value)
     ensure
       tmp.close!
     end
@@ -150,10 +150,10 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
 
-      assert_equal(true, result.sheet(0).cell_value("A1"))
-      assert_equal(false, result.sheet(0).cell_value("B1"))
+      assert_equal(true, result.sheet(0)["A1"]&.value)
+      assert_equal(false, result.sheet(0)["B1"]&.value)
     ensure
       tmp.close!
     end
@@ -168,9 +168,9 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
 
-      assert_equal("", result.sheet(0).cell_value("A1"))
+      assert_equal("", result.sheet(0)["A1"]&.value)
     ensure
       tmp.close!
     end
@@ -192,12 +192,12 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
       Xlsxrb.write(tmp.path, wb)
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
 
       assert_equal(100, result.sheet(0).rows.size)
-      assert_equal(0, result.sheet(0).cell_value("A1"))
-      assert_equal(99, result.sheet(0).cell_value("A100"))
-      assert_equal("row50", result.sheet(0).cell_value("B51"))
+      assert_equal(0, result.sheet(0)["A1"]&.value)
+      assert_equal(99, result.sheet(0)["A100"]&.value)
+      assert_equal("row50", result.sheet(0)["B51"]&.value)
     ensure
       tmp.close!
     end
@@ -207,25 +207,25 @@ class PublicApiTest < Test::Unit::TestCase
     ws = Xlsxrb::Elements::Worksheet.new(
       name: "HiddenSheet",
       state: :hidden,
-      comments: [{ cell: "A1", text: "Note on A1", author: "Tester" }],
+      comments: [{ ref: "A1", text: "Note on A1", author: "Tester" }],
       hyperlinks: { "B1" => { ref: "B1", url: "https://example.com" } }
     )
     wb = Xlsxrb::Elements::Workbook.new(
       sheets: [ws],
-      defined_names: [{ name: "MyConstant", sheet: "HiddenSheet", range: "A1" }]
+      defined_names: [{ name: "MyConstant", value: "'HiddenSheet'!A1", local_sheet_name: "HiddenSheet" }]
     )
     binary = Xlsxrb.write(wb)
-    read_wb = Xlsxrb.read(binary).load
+    read_wb = Xlsxrb.load(binary)
     sheet = read_wb.sheets.first
 
     assert_equal(:hidden, sheet.state)
     assert(sheet.hidden?)
     assert_equal(1, read_wb.defined_names.size)
-    assert_equal("MyConstant", read_wb.defined_names.first[:name])
-    assert_equal("'HiddenSheet'!A1", read_wb.defined_names.first[:value])
+    assert_equal("MyConstant", read_wb.defined_names.first.name)
+    assert_equal("'HiddenSheet'!A1", read_wb.defined_names.first.value)
     assert_not_nil(read_wb.defined_name("MyConstant", sheet: "HiddenSheet"))
-    assert_equal("Note on A1", sheet.comment("A1")[:text])
-    assert_equal("https://example.com", sheet.hyperlink("B1")[:url])
+    assert_equal("Note on A1", sheet.comment("A1").text)
+    assert_equal("https://example.com", sheet.hyperlink("B1").url)
   end
 
   # --- Streaming read via Xlsxrb.read(&block) ---
@@ -361,8 +361,8 @@ class PublicApiTest < Test::Unit::TestCase
     end
     binary = Xlsxrb.write(wb_data)
 
-    wb = Xlsxrb.read(binary)
-    sheet = wb.sheet(0)
+    sheets = Xlsxrb.read(binary).to_a
+    sheet = sheets.first
 
     # 1. Sheet is a StreamSheet (O(1) memory)
     assert_kind_of(Xlsxrb::StreamSheet, sheet)
@@ -371,7 +371,7 @@ class PublicApiTest < Test::Unit::TestCase
     streamed_values = []
     sheet.each_row do |row|
       assert_kind_of(Xlsxrb::StreamRow, row)
-      streamed_values << row.to_a
+      streamed_values << row.values
     end
     assert_equal([%w[Header1 Header2], [100, 200]], streamed_values)
 
@@ -385,8 +385,8 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(200, doc_sheet["B2"].value)
     assert_equal(2, doc_sheet.rows.size)
 
-    # 5. Workbook#load loads all sheets into memory
-    loaded_wb = wb.load
+    # 5. Xlsxrb.load loads all sheets into memory
+    loaded_wb = Xlsxrb.load(binary)
     assert_kind_of(Xlsxrb::Elements::Worksheet, loaded_wb.sheet(0))
     assert_equal("Header1", loaded_wb["LazySheet"]["A1"].value)
   end
@@ -403,12 +403,12 @@ class PublicApiTest < Test::Unit::TestCase
         w.row(["Bob", 87])
       end
 
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
       assert_equal(1, result.sheets.size)
       assert_equal("Output", result.sheet(0).name)
       assert_equal(3, result.sheet(0).rows.size)
-      assert_equal("Name", result.sheet(0).cell_value("A1"))
-      assert_equal(95, result.sheet(0).cell_value("B2"))
+      assert_equal("Name", result.sheet(0)["A1"]&.value)
+      assert_equal(95, result.sheet(0)["B2"]&.value)
     ensure
       tmp.close!
     end
@@ -424,10 +424,10 @@ class PublicApiTest < Test::Unit::TestCase
         w.row([4, 5, 6])
       end
 
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
       assert_equal(2, result.sheets.size)
-      assert_equal(1, result.sheet("Sheet1").cell_value("A1"))
-      assert_equal(4, result.sheet("Sheet2").cell_value("A1"))
+      assert_equal(1, result.sheet("Sheet1")["A1"]&.value)
+      assert_equal(4, result.sheet("Sheet2")["A1"]&.value)
     ensure
       tmp.close!
     end
@@ -440,9 +440,9 @@ class PublicApiTest < Test::Unit::TestCase
         w.row(["auto"])
       end
 
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
       assert_equal("Sheet1", result.sheet(0).name)
-      assert_equal("auto", result.sheet(0).cell_value("A1"))
+      assert_equal("auto", result.sheet(0)["A1"]&.value)
     ensure
       tmp.close!
     end
@@ -463,7 +463,7 @@ class PublicApiTest < Test::Unit::TestCase
         w.row([true, false, nil, "text", 42])
       end
 
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
       row = result.sheet(0).rows[0]
       assert_equal(true, row.cell_at(0).value)
       assert_equal(false, row.cell_at(1).value)
@@ -513,10 +513,10 @@ class PublicApiTest < Test::Unit::TestCase
         end
       end
 
-      result = Xlsxrb.read(tmp.path).load
+      result = Xlsxrb.load(tmp.path)
       assert_equal(10_000, result.sheet(0).rows.size)
-      assert_equal(0, result.sheet(0).cell_value("A1"))
-      assert_equal(9999, result.sheet(0).cell_value("A10000"))
+      assert_equal(0, result.sheet(0)["A1"]&.value)
+      assert_equal(9999, result.sheet(0)["A10000"]&.value)
     ensure
       tmp.close!
     end
@@ -550,15 +550,15 @@ class PublicApiTest < Test::Unit::TestCase
       wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
       Xlsxrb.write(tmp1.path, wb)
 
-      wb2 = Xlsxrb.read(tmp1.path)
+      wb2 = Xlsxrb.load(tmp1.path)
       Xlsxrb.write(tmp2.path, wb2)
 
-      wb3 = Xlsxrb.read(tmp2.path).load
+      wb3 = Xlsxrb.load(tmp2.path)
 
-      assert_equal("A", wb3.sheet(0).cell_value("A1"))
-      assert_equal(1, wb3.sheet(0).cell_value("B1"))
-      assert_equal("B", wb3.sheet(0).cell_value("A2"))
-      assert_equal(2, wb3.sheet(0).cell_value("B2"))
+      assert_equal("A", wb3.sheet(0)["A1"]&.value)
+      assert_equal(1, wb3.sheet(0)["B1"]&.value)
+      assert_equal("B", wb3.sheet(0)["A2"]&.value)
+      assert_equal(2, wb3.sheet(0)["B2"]&.value)
     ensure
       tmp1.close!
       tmp2.close!
@@ -661,8 +661,8 @@ class PublicApiTest < Test::Unit::TestCase
         w.row(["Jan", 100])
         w.row(["Feb", 200])
         w.chart do |c|
-          c.type :bar
-          c.title "Sales Data"
+          c.type = :bar
+          c.title = "Sales Data"
           c.series(cat_ref: "Sales!$A$2:$A$3", val_ref: "Sales!$B$2:$B$3")
         end
       end
@@ -676,331 +676,6 @@ class PublicApiTest < Test::Unit::TestCase
   ensure
     tmp&.close
     tmp&.unlink
-  end
-
-  # --- Xlsxrb.modify ---
-
-  test "Xlsxrb.modify reads and writes back a workbook with value changes" do
-    source = Tempfile.new(["modify_source", ".xlsx"])
-    target = Tempfile.new(["modify_target", ".xlsx"])
-    begin
-      # Create source file
-      workbook = Xlsxrb.build do |w|
-        w.sheet("Data") do |s|
-          s.row(%w[Name Score])
-          s.row(["Alice", 95])
-          s.row(["Bob", 87])
-        end
-      end
-      Xlsxrb.write(source.path, workbook)
-
-      # Modify: change Bob's score
-      Xlsxrb.modify(source.path, target.path) do |wb|
-        sheet = wb.sheet(0)
-        row2 = sheet.row_at(2)
-        new_cell = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 1, value: 99)
-        new_row = row2.with(cells: row2.cells.map { |c| c.column_index == 1 ? new_cell : c })
-        new_sheet = sheet.with(rows: sheet.rows.map { |r| r.index == 2 ? new_row : r })
-        wb.with(sheets: wb.sheets.map.with_index { |s, i| i.zero? ? new_sheet : s })
-      end
-
-      # Read back and verify
-      result = Xlsxrb.read(target.path).load
-      assert_equal("Data", result.sheet(0).name)
-      assert_equal("Alice", result.sheet(0).cell_value("A2"))
-      assert_equal(99, result.sheet(0).cell_value("B3"))
-    ensure
-      source.close!
-      target.close!
-    end
-  end
-
-  test "Xlsxrb.modify overwrites source when no target given" do
-    tmp = Tempfile.new(["modify_inplace", ".xlsx"])
-    begin
-      workbook = Xlsxrb.build do |w|
-        w.sheet("S") do |s|
-          s.row(["original"])
-        end
-      end
-      Xlsxrb.write(tmp.path, workbook)
-
-      Xlsxrb.modify(tmp.path) do |wb|
-        sheet = wb.sheet(0)
-        row = sheet.row_at(0)
-        new_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "modified")
-        new_row = row.with(cells: [new_cell])
-        new_sheet = sheet.with(rows: [new_row])
-        wb.with(sheets: [new_sheet])
-      end
-
-      result = Xlsxrb.read(tmp.path).load
-      assert_equal("modified", result.sheet(0).cell_value("A1"))
-    ensure
-      tmp.close!
-    end
-  end
-
-  test "Xlsxrb.modify raises on nil source" do
-    assert_raise(Xlsxrb::Error) { Xlsxrb.modify(nil) { |wb| wb } }
-  end
-
-  test "Xlsxrb.modify raises when no block given" do
-    assert_raise(Xlsxrb::Error) { Xlsxrb.modify("/tmp/nonexistent.xlsx") }
-  end
-
-  test "Xlsxrb.modify preserves workbook when block returns non-Workbook" do
-    tmp = Tempfile.new(["modify_noop", ".xlsx"])
-    begin
-      workbook = Xlsxrb.build do |w|
-        w.sheet("Sheet1") do |s|
-          s.row(["keep"])
-        end
-      end
-      Xlsxrb.write(tmp.path, workbook)
-
-      # Block returns nil — workbook should be preserved
-      Xlsxrb.modify(tmp.path) { |_wb| nil }
-
-      result = Xlsxrb.read(tmp.path).load
-      assert_equal("keep", result.sheet(0).cell_value("A1"))
-    ensure
-      tmp.close!
-    end
-  end
-
-  test "Xlsxrb.modify appends new strings to sharedStrings.xml preserving existing entries" do
-    tmp = Tempfile.new(["modify_sst", ".xlsx"])
-    begin
-      wb = Xlsxrb.build do |w|
-        w.sheet("Data") do |s|
-          s.row(%w[Existing1 Existing2])
-        end
-      end
-      Xlsxrb.write(tmp.path, wb)
-
-      # Modify with a brand new string value
-      Xlsxrb.modify(tmp.path) do |doc|
-        doc.update_sheet("Data") do |s|
-          s.update_cell("C1", value: "BrandNewString & Co")
-        end
-      end
-
-      reader = Xlsxrb::Ooxml::ZipReader.open(tmp.path)
-      sst_xml = reader.read_entry("xl/sharedStrings.xml")
-      parsed_sst = Xlsxrb::Ooxml::SharedStringsParser.parse(sst_xml)
-      assert_includes(parsed_sst, "Existing1")
-      assert_includes(parsed_sst, "Existing2")
-      assert_includes(parsed_sst, "BrandNewString & Co")
-
-      result = Xlsxrb.read(tmp.path).load
-      assert_equal("Existing1", result.sheet(0).cell_value("A1"))
-      assert_equal("Existing2", result.sheet(0).cell_value("B1"))
-      assert_equal("BrandNewString & Co", result.sheet(0).cell_value("C1"))
-    ensure
-      tmp.close!
-    end
-  end
-
-  test "Xlsxrb.modify updates cell hyperlinks and comments during template modification" do
-    source = Tempfile.new(["modify_links_comments_src", ".xlsx"])
-    target = Tempfile.new(["modify_links_comments_tgt", ".xlsx"])
-    begin
-      init_wb = Xlsxrb.build do |w|
-        w.sheet("Report") do |s|
-          s.row(%w[Title Score Notes])
-          s.row(["Item1", 100, "Initial note"])
-        end
-        w.sheet("Summary") do |s|
-          s.row(["Total", 100])
-        end
-      end
-      Xlsxrb.write(source.path, init_wb)
-
-      Xlsxrb.modify(source.path, target.path) do |wb|
-        wb.update_sheet("Report") do |sheet|
-          sheet.update_cell("A2", value: "Visit Docs", hyperlink: "https://example.com/docs")
-               .update_cell("B2", value: 105, comment: { text: "Score audited", author: "Auditor" })
-               .update_cell("C2", value: "Go to Summary", hyperlink: "#Summary!A1")
-        end
-      end
-
-      result = Xlsxrb.read(target.path).load
-      report = result.sheet("Report")
-      assert_equal("Visit Docs", report.cell_value("A2"))
-      assert_equal(105, report.cell_value("B2"))
-      assert_equal("Go to Summary", report.cell_value("C2"))
-
-      a2_link = report.cell("A2").hyperlink
-      assert_not_nil(a2_link)
-      assert_equal("https://example.com/docs", a2_link[:url])
-
-      c2_link = report.cell("C2").hyperlink
-      assert_not_nil(c2_link)
-      assert_equal("Summary!A1", c2_link[:location])
-
-      b2_comment = report.cell("B2").comment
-      assert_not_nil(b2_comment)
-      assert_equal("Score audited", b2_comment[:text])
-      assert_equal("Auditor", b2_comment[:author])
-    ensure
-      source.close!
-      target.close!
-    end
-  end
-
-  test "Xlsxrb.modify updates existing hyperlinks and comments in place" do
-    source = Tempfile.new(["modify_existing_links_src", ".xlsx"])
-    begin
-      Xlsxrb.write(
-        source.path,
-        Xlsxrb.build do |w|
-          w.sheet("S") do |s|
-            s.row(["Original"])
-          end
-        end
-      )
-
-      # First modify: add hyperlink and comment
-      Xlsxrb.modify(source.path) do |wb|
-        wb.update_sheet(0) do |sheet|
-          sheet.update_cell("A1", value: "Link1", hyperlink: "https://example.com/v1", comment: "Initial comment")
-        end
-      end
-
-      # Second modify: update the hyperlink URL and comment text in-place
-      Xlsxrb.modify(source.path) do |wb|
-        wb.update_sheet(0) do |sheet|
-          sheet.update_cell("A1", value: "Link2", hyperlink: "https://example.com/v2", comment: "Updated comment")
-        end
-      end
-
-      result = Xlsxrb.read(source.path).load
-      sheet = result.sheet(0)
-      assert_equal("Link2", sheet.cell_value("A1"))
-      assert_equal("https://example.com/v2", sheet.cell("A1").hyperlink[:url])
-      assert_equal("Updated comment", sheet.cell("A1").comment[:text])
-    ensure
-      source.close!
-    end
-  end
-
-  test "replace_sheet_data handles namespace prefixes like <x:sheetData> and self-closing tags" do
-    xml = %(<?xml version="1.0" encoding="UTF-8"?><x:worksheet xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><x:sheetViews/><x:sheetData><x:row r="1"><x:c r="A1"><x:v>1</x:v></x:c></x:row></x:sheetData><x:pageMargins/></x:worksheet>)
-    replaced = Xlsxrb.send(:replace_sheet_data, xml, %(<x:sheetData><x:row r="1"><x:c r="A1"><x:v>99</x:v></x:c></x:row></x:sheetData>))
-    assert_includes(replaced, "<x:v>99</x:v>")
-    assert_includes(replaced, "</x:worksheet>")
-
-    self_closing_xml = %(<worksheet><sheetData/><pageMargins/></worksheet>)
-    replaced_sc = Xlsxrb.send(:replace_sheet_data, self_closing_xml, %(<sheetData><row/></sheetData>))
-    assert_equal("<worksheet><sheetData><row/></sheetData><pageMargins/></worksheet>", replaced_sc)
-  end
-
-  test "replace_sheet_data handles multibyte comments before sheetData without byte drift" do
-    xml = %(<?xml version="1.0" encoding="UTF-8"?><worksheet><!-- 日本語コメント --><sheetData><row r="1"><c r="A1"><v>1</v></c></row></sheetData><pageMargins/></worksheet>)
-    replaced = Xlsxrb.send(:replace_sheet_data, xml, %(<sheetData><row r="1"><c r="A1"><v>99</v></c></row></sheetData>))
-    assert_includes(replaced, "<!-- 日本語コメント -->")
-    assert_includes(replaced, "<v>99</v>")
-    assert_includes(replaced, "<pageMargins/>")
-  end
-
-  test "update_dimension handles namespace prefixed dimension element" do
-    xml = %(<x:worksheet><x:dimension ref="A1:B2"/><x:sheetData/></x:worksheet>)
-    row = Xlsxrb::Elements::Row.new(
-      index: 0,
-      cells: [
-        Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 1),
-        Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 2, value: 2)
-      ]
-    )
-    res = Xlsxrb.send(:update_dimension, xml, [row])
-    assert_equal(%(<x:worksheet><x:dimension ref="A1:C1"/><x:sheetData/></x:worksheet>), res)
-  end
-
-  test "update_sheet_hyperlinks replaces namespaced hyperlinks tag" do
-    xml = %(<x:worksheet xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><x:sheetData/><x:hyperlinks><x:hyperlink ref="A1" r:id="rId1"/></x:hyperlinks></x:worksheet>)
-    rels_xml = %(<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://old.com" TargetMode="External"/></Relationships>)
-    updated_xml, _updated_rels = Xlsxrb.send(:update_sheet_hyperlinks, xml, rels_xml, { "A1" => { url: "https://new.com" } })
-    assert_includes(updated_xml, "<x:hyperlinks><x:hyperlink")
-    refute_includes(updated_xml, "</hyperlinks>")
-    assert_includes(updated_xml, "</x:hyperlinks>")
-  end
-
-  test "Xlsxrb.modify correctly replaces entries when archive casing differs or contains backslashes" do
-    buf = StringIO.new
-    Xlsxrb::Ooxml::ZipWriter.open(buf) do |z|
-      z.add_entry("[Content_Types].xml", %(<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>))
-      z.add_entry("_rels/.rels", %(<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>))
-      z.add_entry("xl/workbook.xml", %(<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>))
-      z.add_entry("xl/_rels/workbook.xml.rels", %(<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="SharedStrings.xml"/></Relationships>))
-      z.add_entry("xl/SharedStrings.xml", %(<?xml version="1.0" encoding="UTF-8"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1"><si><t>Initial</t></si></sst>))
-      z.add_entry("xl\\worksheets\\sheet1.xml", %(<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c></row></sheetData></worksheet>))
-    end
-    buf.rewind
-
-    out_buf = StringIO.new
-    Xlsxrb.modify(buf, out_buf) do |wb|
-      wb.update_sheet(0) do |sheet|
-        sheet.update_cell("A1", value: "Updated")
-      end
-    end
-    out_buf.rewind
-
-    reloaded = Xlsxrb.read(out_buf)
-    assert_equal "Updated", reloaded.sheet(0).cell("A1")&.value
-
-    out_buf.rewind
-    entry_names = []
-    Xlsxrb::Ooxml::ZipReader.open(out_buf) do |zr|
-      entry_names = zr.entry_names
-    end
-    assert(entry_names.none? { |e| e.include?("\\") })
-    assert_equal entry_names.size, entry_names.map(&:downcase).uniq.size
-  end
-
-  test "Xlsxrb.modify avoids duplicate xmlns:r and nested hyperlinks in customSheetViews" do
-    sheet_xml = %(<?xml version="1.0" encoding="UTF-8"?><x:worksheet xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><x:customSheetViews><x:customSheetView><x:pageMargins/></x:customSheetView></x:customSheetViews><x:sheetData><x:row r="1"><x:c r="A1"><x:v>1</x:v></x:c></x:row></x:sheetData><x:pageMargins/><x:pageSetup/></x:worksheet>)
-    updated_xml, = Xlsxrb.send(:update_sheet_hyperlinks, sheet_xml, nil, { "A1" => "https://example.com" })
-
-    assert_equal 1, updated_xml.scan("xmlns:r=").size
-    assert_match(%r{</x:sheetData><x:hyperlinks><x:hyperlink ref="A1" r:id="rId1"/></x:hyperlinks>}, updated_xml)
-  end
-
-  # 1. Workbook#update_sheet
-  test "Workbook#update_sheet creates a new workbook with the updated sheet" do
-    wb = Xlsxrb::Elements::Workbook.new(
-      sheets: [
-        Xlsxrb::Elements::Worksheet.new(name: "Sheet1", rows: [
-                                          Xlsxrb::Elements::Row.new(index: 0, cells: [
-                                                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Hello")
-                                                                    ])
-                                        ])
-      ]
-    )
-
-    new_wb = wb.update_sheet("Sheet1") do |sheet|
-      sheet.update_cell("A1", value: "World")
-    end
-
-    assert_not_equal wb, new_wb
-    assert_equal "Hello", wb.sheet("Sheet1").cell_value("A1")
-    assert_equal "World", new_wb.sheet("Sheet1").cell_value("A1")
-  end
-
-  # 2. Worksheet#update_cell
-  test "Worksheet#update_cell creates a new cell or updates an existing one" do
-    sheet = Xlsxrb::Elements::Worksheet.new(name: "Test")
-
-    # Update new cell
-    sheet2 = sheet.update_cell("B2", value: 42)
-    assert_nil sheet.cell_value("B2")
-    assert_equal 42, sheet2.cell_value("B2")
-
-    # Update existing cell
-    sheet3 = sheet2.update_cell("B2", value: 100, style_index: 1)
-    assert_equal 42, sheet2.cell_value("B2")
-    assert_equal 100, sheet3.cell_value("B2")
-    assert_equal 1, sheet3["B2"].style_index
   end
 
   # 3. Workbook#[]
@@ -1037,13 +712,13 @@ class PublicApiTest < Test::Unit::TestCase
       wb.column(%w[C D], width: 10)
     end
 
-    parsed = Xlsxrb.read(temp_file.path).load
+    parsed = Xlsxrb.load(temp_file.path)
     sheet = parsed.sheet("Test")
 
-    assert_equal 1, sheet.cell_value("A1")
-    assert_equal 2, sheet.cell_value("B1")
-    assert_equal 3, sheet.cell_value("C1")
-    assert_equal 4, sheet.cell_value("D1")
+    assert_equal 1, sheet["A1"]&.value
+    assert_equal 2, sheet["B1"]&.value
+    assert_equal 3, sheet["C1"]&.value
+    assert_equal 4, sheet["D1"]&.value
   ensure
     temp_file&.unlink
   end
@@ -1062,7 +737,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal true, sb.font_props[:bold]
     assert_equal "FFFF0000", sb.font_props[:color]
     assert_equal "Arial", sb.font_props[:name]
-    assert_equal 14, sb.font_props[:sz]
+    assert_equal 14, sb.font_props[:size]
 
     assert_equal "solid", sb.fill_props[:pattern]
     assert_equal "FF0000FF", sb.fill_props[:fg_color]
@@ -1070,16 +745,16 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "thick", sb.border_props[:top][:style]
 
     assert_equal "center", sb.alignment[:horizontal]
-    assert_equal "0.00", sb.num_fmt_id
+    assert_equal "0.00", sb.number_format
   end
 
-  test "StyleBuilder fluent DSL configures correctly" do
+  test "StyleBuilder DSL configures correctly" do
     sb = Xlsxrb::StyleBuilder.new("test")
     sb.font(bold: true, color: :red)
-      .fill_color(:blue)
-      .border_all(style: "thick")
-      .align_horizontal("center")
-      .number_format("0.00")
+    sb.fill_color(:blue)
+    sb.border_all(style: "thick")
+    sb.align_horizontal("center")
+    sb.number_format("0.00")
 
     assert_equal true, sb.font_props[:bold]
     assert_equal "FFFF0000", sb.font_props[:color]
@@ -1095,7 +770,7 @@ class PublicApiTest < Test::Unit::TestCase
   end
 
   test "Xlsxrb.array_formula returns an array formula element and serializes in XML" do
-    f = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", "A1:C1", cached_value: 0)
+    f = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", ref: "A1:C1", cached_value: 0)
     assert_instance_of(Xlsxrb::Elements::Formula, f)
     assert_equal("SUM(B1:B10*C1:C10)", f.expression)
     assert_equal(:array, f.type)
@@ -1126,18 +801,18 @@ class PublicApiTest < Test::Unit::TestCase
     rt = Xlsxrb.rich_text(text: "Hello", bold: true)
     assert_instance_of(Xlsxrb::Elements::RichText, rt)
     assert_equal(1, rt.runs.size)
-    assert_equal("Hello", rt.runs[0][:text])
-    assert_equal({ bold: true }, rt.runs[0][:font])
+    assert_equal("Hello", rt.runs[0].text)
+    assert_equal({ bold: true }, rt.runs[0].font)
   end
 
   test "Xlsxrb.rich_text supports multiple runs" do
     rt = Xlsxrb.rich_text({ text: "A", font: { bold: true } }, { text: "B", font: { italic: true } })
     assert_instance_of(Xlsxrb::Elements::RichText, rt)
     assert_equal(2, rt.runs.size)
-    assert_equal("A", rt.runs[0][:text])
-    assert_equal({ bold: true }, rt.runs[0][:font])
-    assert_equal("B", rt.runs[1][:text])
-    assert_equal({ italic: true }, rt.runs[1][:font])
+    assert_equal("A", rt.runs[0].text)
+    assert_equal({ bold: true }, rt.runs[0].font)
+    assert_equal("B", rt.runs[1].text)
+    assert_equal({ italic: true }, rt.runs[1].font)
   end
 
   test "Xlsxrb.rich_text supports text and font pair arrays" do
@@ -1226,9 +901,9 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal([{ name: "test", value: "test", type: :string }], wb.unmapped_data.dig(:facade, :custom_properties))
   end
 
-  test "WorkbookBuilder#protect_workbook configures correctly" do
+  test "WorkbookBuilder#workbook_protection configures correctly" do
     wb = Xlsxrb.build do |w|
-      w.protect_workbook(password: "123")
+      w.workbook_protection(password: "123")
       w.sheet("S")
     end
     assert_equal({ password: "123" }, wb.unmapped_data.dig(:facade, :workbook_protection))
@@ -1240,7 +915,7 @@ class PublicApiTest < Test::Unit::TestCase
       w.core_property(:creator, "Finance Team")
       w.app_property(:company, "Acme Corp")
       w.custom_property("Confidential", true, type: :boolean)
-      w.protect_workbook(lock_structure: true)
+      w.workbook_protection(lock_structure: true)
       w.sheet("S") do |s|
         s.row(["data"])
       end
@@ -1254,15 +929,15 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Test round-trip via write and read
     binary = Xlsxrb.write(wb)
-    read_wb = Xlsxrb.read(binary).load
+    read_wb = Xlsxrb.load(binary)
 
-    assert_equal("Quarterly Report", read_wb.core_properties[:title])
-    assert_equal("Finance Team", read_wb.core_properties[:creator])
-    assert_equal("Acme Corp", read_wb.app_properties[:company])
+    assert_equal("Quarterly Report", read_wb.core_properties.title)
+    assert_equal("Finance Team", read_wb.core_properties.creator)
+    assert_equal("Acme Corp", read_wb.app_properties.company)
     assert_equal(1, read_wb.custom_properties.size)
     assert_equal("Confidential", read_wb.custom_properties["Confidential"].name)
     assert_equal(true, read_wb.custom_properties["Confidential"].value)
-    assert_equal(true, read_wb.workbook_protection[:lock_structure])
+    assert_equal(true, read_wb.workbook_protection.lock_structure)
   end
 
   test "WorksheetBuilder#split_pane configures correctly" do
@@ -1301,10 +976,10 @@ class PublicApiTest < Test::Unit::TestCase
     assert_not_equal({}, val)
   end
 
-  test "WorksheetBuilder#protect_sheet configures correctly" do
+  test "WorksheetBuilder#sheet_protection configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
-        s.protect_sheet(password: "123")
+        s.sheet_protection(password: "123")
       end
     end
     val = wb.sheet(0).unmapped_data.dig(:facade, :sheet_protection)
@@ -1337,10 +1012,10 @@ class PublicApiTest < Test::Unit::TestCase
     assert_not_equal({}, val)
   end
 
-  test "WorksheetBuilder#validate_data configures correctly" do
+  test "WorksheetBuilder#data_validation configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
-        s.validate_data("A1", type: :whole)
+        s.data_validation("A1", type: :whole)
       end
     end
     val = wb.sheet(0).unmapped_data.dig(:facade, :data_validations)
@@ -1538,7 +1213,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     c = wb.sheet(0).charts.first
-    assert_equal [{ val: "Sheet1!$B$1:$B$5" }], c[:series]
+    assert_equal [{ val: "Sheet1!$B$1:$B$5" }], c.series
   end
 
   test "WorksheetBuilder#hyperlink captures options properly" do
@@ -1571,21 +1246,21 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "A1:B2", merges.first
   end
 
-  test "WorksheetBuilder#select_cell captures active cell" do
+  test "WorksheetBuilder#selection captures active cell" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.select_cell("C3")
+        s.selection("C3")
       end
     end
     sel = wb.sheet(0).unmapped_data.dig(:facade, :selection)
     assert_equal "C3", sel[:active_cell]
   end
 
-  test "WorksheetBuilder#row_break and #page_break_row add row breaks" do
+  test "WorksheetBuilder#row_break adds row breaks" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
         s.row_break(10)
-        s.page_break_row(20)
+        s.row_break(20)
       end
     end
     breaks = wb.sheet(0).unmapped_data.dig(:facade, :row_breaks)
@@ -1593,11 +1268,11 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal 20, breaks[1][:id]
   end
 
-  test "WorksheetBuilder#column_break and #page_break_col add col breaks" do
+  test "WorksheetBuilder#column_break adds col breaks" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
         s.column_break("C")
-        s.page_break_col(5)
+        s.column_break(5)
       end
     end
     breaks = wb.sheet(0).unmapped_data.dig(:facade, :col_breaks)
@@ -1635,10 +1310,10 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "A2:A10", state[:ref]
   end
 
-  test "WorksheetBuilder#validate_data captures validation" do
+  test "WorksheetBuilder#data_validation captures validation" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.validate_data("A1", type: :list)
+        s.data_validation("A1", type: :list)
       end
     end
     vals = wb.sheet(0).unmapped_data.dig(:facade, :data_validations)
@@ -1669,7 +1344,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#freeze_pane captures cell" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.freeze_pane(row: 1, col: "B")
+        s.freeze_pane(row: 1, column: "B")
       end
     end
     pane = wb.sheet(0).unmapped_data.dig(:facade, :freeze_pane)
@@ -1718,8 +1393,8 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     tables = wb.sheet(0).tables
-    assert_equal "Table1", tables.first[:name]
-    assert_equal tables, wb.sheet(0).unmapped_data.dig(:facade, :tables)
+    assert_equal "Table1", tables.first.name
+    assert_equal tables.map(&:to_h), wb.sheet(0).unmapped_data.dig(:facade, :tables)
   end
 
   test "WorkbookBuilder#custom_property captures values" do
@@ -1769,7 +1444,7 @@ class PublicApiTest < Test::Unit::TestCase
     end
     col = wb.sheet(0).columns.first
     assert_equal 25, col.width
-    assert_equal true, col.hidden
+    assert_equal true, col.hidden?
   end
 
   test "WorkbookBuilder#workbook_property captures values" do
@@ -1814,7 +1489,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     chart = wb.sheet(0).charts.first
-    assert_equal({ text: "My Chart" }, chart[:title])
+    assert_equal({ text: "My Chart" }, chart.title)
   end
 
   test "ChartBuilder#legend works via method_missing" do
@@ -1826,7 +1501,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     chart = wb.sheet(0).charts.first
-    assert_equal({ position: "b" }, chart[:legend])
+    assert_equal({ position: "b" }, chart.legend)
   end
 
   test "ChartBuilder#category_axis works via method_missing" do
@@ -1838,7 +1513,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     chart = wb.sheet(0).charts.first
-    assert_equal({ title: "X Axis" }, chart[:category_axis])
+    assert_equal({ title: "X Axis" }, chart.category_axis)
   end
 
   test "ChartBuilder#value_axis works via method_missing" do
@@ -1850,7 +1525,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     chart = wb.sheet(0).charts.first
-    assert_equal({ title: "Y Axis" }, chart[:value_axis])
+    assert_equal({ title: "Y Axis" }, chart.value_axis)
   end
 
   test "WorksheetBuilder#chart without block" do
@@ -1860,7 +1535,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     chart = wb.sheet(0).charts.first
-    assert_equal({ text: "No Block" }, chart[:title])
+    assert_equal({ text: "No Block" }, chart.title)
   end
 
   test "Xlsxrb.write writes string directly" do
@@ -1921,7 +1596,7 @@ class PublicApiTest < Test::Unit::TestCase
     col = wb.sheet(0).columns.first
     assert_equal 25, col.width
     assert_equal 2, col.outline_level
-    assert_equal true, col.custom_width
+    assert_equal true, col.custom_width?
   end
 
   test "Xlsxrb.read parses workbook" do
@@ -1930,7 +1605,7 @@ class PublicApiTest < Test::Unit::TestCase
       w.sheet("S1") { |s| s.row ["A"] }
     end
 
-    wb = Xlsxrb.read(temp.path).load
+    wb = Xlsxrb.load(temp.path)
     assert_equal "S1", wb.sheets.first.name
     assert_equal "A", wb.sheets.first.rows.first.cells.first.value
   ensure
@@ -1948,40 +1623,40 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "A1:B2", merges.first
   end
 
-  test "WorksheetBuilder#page_break_row creates break" do
+  test "WorksheetBuilder#row_break creates break" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.page_break_row(5)
+        s.row_break(5)
       end
     end
     breaks = wb.sheet(0).unmapped_data.dig(:facade, :row_breaks)
     assert breaks
   end
 
-  test "WorksheetBuilder#page_break_col creates break" do
+  test "WorksheetBuilder#column_break creates break" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.page_break_col("C")
+        s.column_break("C")
       end
     end
     breaks = wb.sheet(0).unmapped_data.dig(:facade, :col_breaks)
     assert breaks
   end
 
-  test "WorksheetBuilder#select_cell captures active cell coordinate" do
+  test "WorksheetBuilder#selection captures active cell coordinate" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.select_cell("D4")
+        s.selection("D4")
       end
     end
     selection = wb.sheet(0).unmapped_data.dig(:facade, :selection)
     assert_equal "D4", selection[:active_cell]
   end
 
-  test "WorksheetBuilder#validate_data captures options" do
+  test "WorksheetBuilder#data_validation captures options" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.validate_data("A1:A10", type: :list)
+        s.data_validation("A1:A10", type: :list)
       end
     end
     val = wb.sheet(0).unmapped_data.dig(:facade, :data_validations).first
@@ -2017,23 +1692,6 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal 2026, time.year
   end
 
-  test "Elements::Cell#content returns value" do
-    cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "test")
-    assert_equal "test", cell.content
-  end
-
-  test "Elements::Cell.column_letter works" do
-    assert_equal "A", Xlsxrb::Elements::Cell.column_letter(0)
-    assert_equal "Z", Xlsxrb::Elements::Cell.column_letter(25)
-    assert_equal "AA", Xlsxrb::Elements::Cell.column_letter(26)
-  end
-
-  test "Elements::Cell.column_index works" do
-    assert_equal 0, Xlsxrb::Elements::Cell.column_index("A")
-    assert_equal 25, Xlsxrb::Elements::Cell.column_index("Z")
-    assert_equal 26, Xlsxrb::Elements::Cell.column_index("AA")
-  end
-
   test "Elements::Row#cell_at works" do
     row = Xlsxrb::Elements::Row.new(index: 0, cells: [
                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A"),
@@ -2061,12 +1719,12 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal %w[A B], row.values
   end
 
-  test "Elements::Row#to_a aliases values" do
-    row = Xlsxrb::Elements::Row.new(index: 0, cells: [
-                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A"),
-                                      Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "B")
-                                    ])
-    assert_equal %w[A B], row.to_a
+  test "Elements::Row#to_a returns cells via Enumerable#to_a" do
+    c1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
+    c2 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "B")
+    row = Xlsxrb::Elements::Row.new(index: 0, cells: [c1, c2])
+    assert_equal [c1, c2], row.to_a
+    assert_equal %w[A B], row.values
   end
 
   test "Elements::Worksheet#cell_value works" do
@@ -2075,7 +1733,7 @@ class PublicApiTest < Test::Unit::TestCase
                                                                        Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
                                                                      ])
                                          ])
-    assert_equal "A", ws.cell_value("A1")
+    assert_equal "A", ws["A1"]&.value
   end
 
   test "Elements::Worksheet#cells returns flattened array" do
@@ -2088,15 +1746,6 @@ class PublicApiTest < Test::Unit::TestCase
                                                                      ])
                                          ])
     assert_equal %w[A B], ws.cells.map(&:value)
-  end
-
-  test "Elements::Worksheet#cells_hash maps ref to cell" do
-    ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
-                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
-                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
-                                                                     ])
-                                         ])
-    assert_equal "A", ws.cells_hash["A1"].value
   end
 
   test "Elements::Worksheet#first_row works" do
@@ -2123,16 +1772,6 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "B", ws.last_row.cells[0].value
   end
 
-  test "Elements::Worksheet#update_cell works" do
-    ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
-                                           Xlsxrb::Elements::Row.new(index: 0, cells: [
-                                                                       Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "A")
-                                                                     ])
-                                         ])
-    ws = ws.update_cell("A1", value: "Z")
-    assert_equal "Z", ws.cell_value("A1")
-  end
-
   test "Elements::Worksheet#row_at works" do
     ws = Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [
                                            Xlsxrb::Elements::Row.new(index: 0, cells: [
@@ -2148,16 +1787,6 @@ class PublicApiTest < Test::Unit::TestCase
                                           Xlsxrb::Elements::Worksheet.new(name: "S2", rows: [])
                                         ])
     assert_equal %w[S1 S2], wb.sheet_names
-  end
-
-  test "Elements::Workbook#update_sheet works" do
-    wb = Xlsxrb::Elements::Workbook.new(sheets: [
-                                          Xlsxrb::Elements::Worksheet.new(name: "S1", rows: [])
-                                        ])
-    wb = wb.update_sheet("S1") do |_s|
-      Xlsxrb::Elements::Worksheet.new(name: "S2", rows: [])
-    end
-    assert_equal ["S2"], wb.sheet_names
   end
 
   test "Elements::Cell.validate validates correctly" do
@@ -2203,25 +1832,25 @@ class PublicApiTest < Test::Unit::TestCase
     builder = Xlsxrb::StyleBuilder.new
     builder.font(name: "Arial", size: 12)
     assert_equal "Arial", builder.font_props[:name]
-    assert_equal 12, builder.font_props[:sz]
+    assert_equal 12, builder.font_props[:size]
   end
 
   test "StyleBuilder#bold method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.bold
+    builder.bold(true)
     assert_equal true, builder.font_props[:bold]
   end
 
   test "StyleBuilder#italic method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.italic
+    builder.italic(true)
     assert_equal true, builder.font_props[:italic]
   end
 
-  test "StyleBuilder#size method" do
+  test "StyleBuilder#font_size method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.size(16)
-    assert_equal 16, builder.font_props[:sz]
+    builder.font_size(16)
+    assert_equal 16, builder.font_props[:size]
   end
 
   test "StyleBuilder#font_name method" do
@@ -2244,7 +1873,7 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "StyleBuilder#strike method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.strike
+    builder.strike(true)
     assert_equal true, builder.font_props[:strike]
   end
 
@@ -2342,13 +1971,13 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "StyleBuilder#wrap_text method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.wrap_text
+    builder.wrap_text(true)
     assert_equal true, builder.alignment[:wrap_text]
   end
 
   test "StyleBuilder#shrink_to_fit method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.shrink_to_fit
+    builder.shrink_to_fit(true)
     assert_equal true, builder.alignment[:shrink_to_fit]
   end
 
@@ -2367,7 +1996,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "StyleBuilder#number_format method" do
     builder = Xlsxrb::StyleBuilder.new
     builder.number_format(14)
-    assert_equal 14, builder.num_fmt_id
+    assert_equal 14, builder.number_format
   end
   test "WorksheetBuilder#row handles Hash values" do
     wb = Xlsxrb.build do |w|
@@ -2448,10 +2077,10 @@ class PublicApiTest < Test::Unit::TestCase
 
         s.row([1, 2, 3])
 
-        s.merge(row: 0, col_start: 0, col_end: 2)
-        s.freeze_pane(row: 1, col: 1)
+        s.merge("A1:C1")
+        s.freeze_pane(row: 1, column: 1)
         s.split_pane(x_split: 1000, y_split: 1000, top_left_cell: "B2")
-        s.select_cell("A1", sqref: "A1:A2", pane: "topRight")
+        s.selection("A1", sqref: "A1:A2", pane: "topRight")
 
         s.page_margins(left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2)
         s.print_options(:grid_lines, true)
@@ -2459,7 +2088,7 @@ class PublicApiTest < Test::Unit::TestCase
         s.header_footer(odd_header: "&L&T")
 
         s.sheet_view(:show_grid_lines, false)
-        s.protect_sheet(password: "secret", sheet: true)
+        s.sheet_protection(password: "secret", sheet: true)
       end
     end
     assert io.size.positive?
@@ -2495,7 +2124,7 @@ class PublicApiTest < Test::Unit::TestCase
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
         s.row([Date.today])
-        s.merge(row: 0, col_start: 0, col_end: 2)
+        s.merge("A1:C1")
       end
     end
     assert wb
@@ -2511,10 +2140,10 @@ class PublicApiTest < Test::Unit::TestCase
     wb.print_area("A1:D10", sheet: "Sheet1")
 
     # Check print_titles
-    wb.print_titles(rows: "1:2", cols: "A:B", sheet: "Sheet1")
+    wb.print_titles(rows: "1:2", columns: "A:B", sheet: "Sheet1")
 
     # Check properties
-    wb.protect_workbook(password: "secret", lock_structure: true)
+    wb.workbook_protection(password: "secret", lock_structure: true)
     wb.core_property(:title, "Test Title")
     wb.app_property(:company, "MyCompany")
     wb.properties(core: { creator: "Me" }, app: { manager: "Boss" })
@@ -2552,22 +2181,22 @@ class PublicApiTest < Test::Unit::TestCase
       sheet.merge("A1:B1")
 
       # freeze panes
-      sheet.freeze_pane(row: 1, col: 1)
+      sheet.freeze_pane(row: 1, column: 1)
 
       # column
       sheet.column(1, width: 15, hidden: false)
 
       # protection
-      sheet.protect_sheet(password: "123")
+      sheet.sheet_protection(password: "123")
 
       # data validation
-      sheet.validate_data("A1", type: "list", formula1: '"A,B,C"')
+      sheet.data_validation("A1", type: "list", formula1: '"A,B,C"')
 
       # chart
       sheet.chart(type: "bar", anchor: "D1", width: 300, height: 200) do |c|
-        c.title "My Chart"
+        c.title = "My Chart"
         c.series do |s|
-          s.values [1, 2, 3]
+          s.values = [1, 2, 3]
         end
       end
 
@@ -2575,7 +2204,7 @@ class PublicApiTest < Test::Unit::TestCase
       sheet.image("binary_data", anchor: "E1", width: 100, height: 50)
 
       # styles
-      sheet.style("mystyle", bold: true, size: 14)
+      sheet.style("mystyle", bold: true, font_size: 14)
       sheet.row(["Styled"], cell_styles: ["mystyle"])
     end
 
@@ -2612,32 +2241,32 @@ class PublicApiTest < Test::Unit::TestCase
 
   def test_chart_builder
     cb = Xlsxrb::ChartBuilder.new
-    cb.type "line"
-    cb.title "Sales"
+    cb.type = "line"
+    cb.title = "Sales"
     cb.legend position: "bottom"
     cb.plot_area(layout: "default")
     cb.chart_space(rounded_corners: true)
-    cb.style 2
+    cb.style = 2
     cb.data_labels(show_val: true)
-    cb.plot_visible_only true
-    cb.display_blanks_as "gap"
+    cb.plot_visible_only = true
+    cb.display_blanks_as = "gap"
     cb.view3d(rot_x: 30)
     cb.category_axis(title: "Months")
     cb.value_axis(title: "Revenue")
-    cb.show_legend_key true
+    cb.show_legend_key = true
 
     cb.series do |s|
-      s.name "Q1"
-      s.categories %w[Jan Feb]
-      s.values [10, 20]
+      s.name = "Q1"
+      s.categories = %w[Jan Feb]
+      s.values = [10, 20]
       s.marker symbol: "circle"
       s.fill type: "solid"
       s.line color: "FF0000"
       s.trendline type: "linear"
       s.data_labels show_val: false
-      s.smooth true
-      s.shape "cone"
-      s.type "bar"
+      s.smooth = true
+      s.shape = "cone"
+      s.type = "bar"
     end
 
     assert_equal "line", cb.options[:type]
@@ -2665,23 +2294,22 @@ class PublicApiTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row([50, 5])
         s.conditional_format("A1:A10", type: :cellIs, operator: :greaterThan, formula: "100")
-        s.validate_data("B1:B10", type: :whole, operator: :between, formula1: "1", formula2: "10")
+        s.data_validation("B1:B10", type: :whole, operator: :between, formula1: "1", formula2: "10")
       end
     end
 
     ws = wb.sheet(0)
-    assert_equal 1, ws.conditional_formatting.size
+    assert_equal 1, ws.conditional_formats.size
     assert_equal 1, ws.data_validations.size
-    assert_equal ws.conditional_formatting, ws.conditional_formats
 
     Tempfile.create(["cf_dv_test", ".xlsx"]) do |f|
       Xlsxrb.write(f.path, wb)
-      reloaded_wb = Xlsxrb.read(f.path).load
+      reloaded_wb = Xlsxrb.load(f.path)
       reloaded_ws = reloaded_wb.sheet(0)
-      assert_equal 1, reloaded_ws.conditional_formatting.size
+      assert_equal 1, reloaded_ws.conditional_formats.size
       assert_equal 1, reloaded_ws.data_validations.size
-      assert_equal "A1:A10", reloaded_ws.conditional_formatting.first[:sqref]
-      assert_equal "B1:B10", reloaded_ws.data_validations.first[:sqref]
+      assert_equal "A1:A10", reloaded_ws.conditional_formats.first.sqref
+      assert_equal "B1:B10", reloaded_ws.data_validations.first.sqref
     end
   end
 
@@ -2696,20 +2324,20 @@ class PublicApiTest < Test::Unit::TestCase
         end
       end
 
-      # StreamSheet
-      stream_wb = Xlsxrb.read(f.path)
-      stream_sheet = stream_wb.sheet(0)
-      assert_equal(["A1:B1"], stream_sheet.merged_cells)
-      assert_equal("A1:C2", stream_sheet.auto_filter)
+      # StreamSheet via block
+      Xlsxrb.read(f.path) do |stream_sheet|
+        assert_equal(["A1:B1"], stream_sheet.merged_cells)
+        assert_equal("A1:C2", stream_sheet.auto_filter)
 
-      # Elements::Worksheet via load
-      loaded_ws = stream_sheet.load
-      assert_kind_of(Xlsxrb::Elements::Worksheet, loaded_ws)
-      assert_equal(["A1:B1"], loaded_ws.merged_cells)
-      assert_equal("A1:C2", loaded_ws.auto_filter)
+        # Elements::Worksheet via load
+        loaded_ws = stream_sheet.load
+        assert_kind_of(Xlsxrb::Elements::Worksheet, loaded_ws)
+        assert_equal(["A1:B1"], loaded_ws.merged_cells)
+        assert_equal("A1:C2", loaded_ws.auto_filter)
+      end
 
       # Elements::Workbook via load
-      loaded_wb = stream_wb.load
+      loaded_wb = Xlsxrb.load(f.path)
       assert_equal(["A1:B1"], loaded_wb.sheet(0).merged_cells)
       assert_equal("A1:C2", loaded_wb.sheet(0).auto_filter)
     end
@@ -2722,17 +2350,16 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(d, Xlsxrb.serial_to_date(s))
 
     t = Time.utc(2026, 1, 1, 12, 0, 0)
-    st = Xlsxrb.datetime_to_serial(t)
+    st = Xlsxrb.time_to_serial(t)
     assert_in_delta(46_023.5, st, 1e-6)
     assert_equal(t, Xlsxrb.serial_to_time(st))
-    assert_equal(t, Xlsxrb.serial_to_datetime(st))
 
     # 1904 date system
     s04 = Xlsxrb.date_to_serial(d, date1904: true)
     assert_equal(44_561, s04)
     assert_equal(d, Xlsxrb.serial_to_date(s04, date1904: true))
 
-    st04 = Xlsxrb.datetime_to_serial(t, date1904: true)
+    st04 = Xlsxrb.time_to_serial(t, date1904: true)
     assert_in_delta(44_561.5, st04, 1e-6)
     assert_equal(t, Xlsxrb.serial_to_time(st04, date1904: true))
 
@@ -2747,83 +2374,82 @@ class PublicApiTest < Test::Unit::TestCase
     # Streaming block with omitted target
     data1 = Xlsxrb.write do |w|
       w.sheet("Items") do |s|
-        s.add_row(%w[Header1 Header2])
+        s.row(%w[Header1 Header2])
         s << ["Val1", 10] << ["Val2", 20]
       end
     end
 
     assert_kind_of(String, data1)
     assert(data1.start_with?("PK\x03\x04"))
-    wb1 = Xlsxrb.read(data1).load
+    wb1 = Xlsxrb.load(data1)
     sheet1 = wb1.sheet(0)
     assert_equal("Items", sheet1.name)
-    assert_equal("Header1", sheet1.cell_value("A1"))
-    assert_equal("Val1", sheet1.cell_value("A2"))
-    assert_equal(10, sheet1.cell_value("B2"))
-    assert_equal("Val2", sheet1.cell_value("A3"))
-    assert_equal(20, sheet1.cell_value("B3"))
+    assert_equal("Header1", sheet1["A1"]&.value)
+    assert_equal("Val1", sheet1["A2"]&.value)
+    assert_equal(10, sheet1["B2"]&.value)
+    assert_equal("Val2", sheet1["A3"]&.value)
+    assert_equal(20, sheet1["B3"]&.value)
 
     # In-memory workbook with omitted target
     wb_in = Xlsxrb.build do |w|
       w.sheet("DOM") do |s|
-        s.add_row(["DOM_A", 100])
+        s.row(["DOM_A", 100])
         s << ["DOM_B", 200] << ["DOM_C", 300]
       end
     end
     data2 = Xlsxrb.write(wb_in)
     assert_kind_of(String, data2)
     assert(data2.start_with?("PK\x03\x04"))
-    wb2 = Xlsxrb.read(data2).load
+    wb2 = Xlsxrb.load(data2)
     sheet2 = wb2.sheet(0)
     assert_equal("DOM", sheet2.name)
-    assert_equal("DOM_A", sheet2.cell_value("A1"))
-    assert_equal(100, sheet2.cell_value("B1"))
-    assert_equal("DOM_B", sheet2.cell_value("A2"))
-    assert_equal(200, sheet2.cell_value("B2"))
-    assert_equal("DOM_C", sheet2.cell_value("A3"))
-    assert_equal(300, sheet2.cell_value("B3"))
+    assert_equal("DOM_A", sheet2["A1"]&.value)
+    assert_equal(100, sheet2["B1"]&.value)
+    assert_equal("DOM_B", sheet2["A2"]&.value)
+    assert_equal(200, sheet2["B2"]&.value)
+    assert_equal("DOM_C", sheet2["A3"]&.value)
+    assert_equal(300, sheet2["B3"]&.value)
   end
 
   test "sheet_format configured via build and streaming write round-trips correctly" do
     # 1. Via Xlsxrb.build
     wb_built = Xlsxrb.build do |w|
       w.sheet("Formatted") do |s|
-        s.sheet_format(default_row_height: 24.5, default_col_width: 18.0)
+        s.sheet_format(default_row_height: 24.5, default_column_width: 18.0)
         s.sheet_format(:outline_level_row, 2)
         s.row(["Header 1", "Header 2"])
       end
     end
 
     assert_equal(24.5, wb_built.sheet(0).sheet_format.default_row_height)
-    assert_equal(18.0, wb_built.sheet(0).sheet_format.default_col_width)
+    assert_equal(18.0, wb_built.sheet(0).sheet_format.default_column_width)
     assert_equal(2, wb_built.sheet(0).sheet_format.outline_level_row)
 
     # Write and read back
     data = Xlsxrb.write(wb_built)
-    wb_read = Xlsxrb.read(data)
-    stream_sheet = wb_read.sheet(0)
+    stream_sheet = Xlsxrb.read(data).first
     assert_equal(24.5, stream_sheet.sheet_format.default_row_height)
-    assert_equal(18.0, stream_sheet.sheet_format.default_col_width)
+    assert_equal(18.0, stream_sheet.sheet_format.default_column_width)
     assert_equal(2, stream_sheet.sheet_format.outline_level_row)
 
     loaded_sheet = stream_sheet.load
     assert_equal(24.5, loaded_sheet.sheet_format.default_row_height)
-    assert_equal(18.0, loaded_sheet.sheet_format.default_col_width)
+    assert_equal(18.0, loaded_sheet.sheet_format.default_column_width)
     assert_equal(2, loaded_sheet.sheet_format.outline_level_row)
 
     # 2. Via streaming Xlsxrb.write
     stream_data = Xlsxrb.write do |w|
       w.sheet("StreamFormat") do |s|
-        s.sheet_format(default_row_height: 30.0, default_col_width: 12.5)
+        s.sheet_format(default_row_height: 30.0, default_column_width: 12.5)
         s.row(%w[Val1 Val2])
       end
     end
 
-    wb_stream_read = Xlsxrb.read(stream_data)
-    assert_equal(30.0, wb_stream_read.sheet(0).sheet_format.default_row_height)
-    assert_equal(12.5, wb_stream_read.sheet(0).sheet_format.default_col_width)
-    assert_equal(30.0, wb_stream_read.sheet(0).load.sheet_format.default_row_height)
-    assert_equal(12.5, wb_stream_read.sheet(0).load.sheet_format.default_col_width)
+    stream_sheet2 = Xlsxrb.read(stream_data).first
+    assert_equal(30.0, stream_sheet2.sheet_format.default_row_height)
+    assert_equal(12.5, stream_sheet2.sheet_format.default_column_width)
+    assert_equal(30.0, stream_sheet2.load.sheet_format.default_row_height)
+    assert_equal(12.5, stream_sheet2.load.sheet_format.default_column_width)
   end
 
   test "protected_range and cell_watch configured via build and streaming write round-trips correctly" do
@@ -2831,9 +2457,9 @@ class PublicApiTest < Test::Unit::TestCase
     wb_built = Xlsxrb.build do |w|
       w.sheet("ProtectedSheet") do |s|
         s.protected_range("Range1", "A1:B10", password: "CCEE")
-        s.add_protected_range("Range2", "C1:D5", password: "modern_password")
+        s.protected_range("Range2", "C1:D5", password: "modern_password")
         s.cell_watch("A1")
-        s.add_cell_watch("B10")
+        s.cell_watch("B10")
         s.row(%w[A B C D])
       end
     end
@@ -2852,8 +2478,7 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Write and read back
     data = Xlsxrb.write(wb_built)
-    wb_read = Xlsxrb.read(data)
-    stream_sheet = wb_read.sheet(0)
+    stream_sheet = Xlsxrb.read(data).first
 
     assert_equal(2, stream_sheet.protected_ranges.size)
     assert_equal("Range1", stream_sheet.protected_ranges[0].name)
@@ -2878,8 +2503,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
 
-    wb_stream_read = Xlsxrb.read(stream_data)
-    ss = wb_stream_read.sheet(0)
+    ss = Xlsxrb.read(stream_data).first
     assert_equal(1, ss.protected_ranges.size)
     assert_equal("StreamRange", ss.protected_ranges[0].name)
     assert_equal("B2:F20", ss.protected_ranges[0].sqref)
@@ -2891,7 +2515,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(["C3"], ls.cell_watches)
   end
 
-  test "table and validate_data block forms configure options and round-trip correctly" do
+  test "table and data_validation block forms configure options and round-trip correctly" do
     # 1. Via Xlsxrb.build
     wb_built = Xlsxrb.build do |w|
       w.sheet("BlockConfig") do |s|
@@ -2899,17 +2523,17 @@ class PublicApiTest < Test::Unit::TestCase
           t.column "ID"
           t.column "Name"
           t.column "Score"
-          t.name "ScoreTable"
-          t.style "TableStyleMedium2"
-          t.show_row_stripes true
+          t.name = "ScoreTable"
+          t.style = "TableStyleMedium2"
+          t.show_row_stripes = true
         end
 
-        s.validate_data("B2:B5") do |dv|
-          dv.type :list
-          dv.formula1 '"Alice,Bob,Charlie"'
-          dv.allow_blank true
-          dv.error_title "Invalid Name"
-          dv.error_message "Select a valid student name"
+        s.data_validation("B2:B5") do |dv|
+          dv.type = :list
+          dv.formula1 = '"Alice,Bob,Charlie"'
+          dv.allow_blank = true
+          dv.error_title = "Invalid Name"
+          dv.error_message = "Select a valid student name"
         end
 
         s.row(%w[ID Name Score])
@@ -2921,25 +2545,24 @@ class PublicApiTest < Test::Unit::TestCase
     built_sheet = wb_built.sheet(0)
     assert_equal(1, built_sheet.tables.size)
     table_cfg = built_sheet.tables.first
-    assert_equal("A1:C5", table_cfg[:ref])
+    assert_equal("A1:C5", table_cfg.ref)
     assert_equal(%w[ID Name Score], table_cfg.columns.map(&:name))
-    assert_equal("ScoreTable", table_cfg[:name])
-    assert_equal("TableStyleMedium2", table_cfg[:style])
-    assert_equal(true, table_cfg[:show_row_stripes])
+    assert_equal("ScoreTable", table_cfg.name)
+    assert_equal("TableStyleMedium2", table_cfg.style_name)
+    assert_equal(true, table_cfg.show_row_stripes?)
 
     assert_equal(1, built_sheet.data_validations.size)
     dv_cfg = built_sheet.data_validations.first
-    assert_equal("B2:B5", dv_cfg[:sqref])
-    assert_equal(:list, dv_cfg[:type])
-    assert_equal('"Alice,Bob,Charlie"', dv_cfg[:formula1])
-    assert_equal(true, dv_cfg[:allow_blank])
-    assert_equal("Invalid Name", dv_cfg[:error_title])
-    assert_equal("Select a valid student name", dv_cfg[:error])
+    assert_equal("B2:B5", dv_cfg.sqref)
+    assert_equal(:list, dv_cfg.type)
+    assert_equal('"Alice,Bob,Charlie"', dv_cfg.formula1)
+    assert_equal(true, dv_cfg.allow_blank)
+    assert_equal("Invalid Name", dv_cfg.error_title)
+    assert_equal("Select a valid student name", dv_cfg.error)
 
     # Write and read back
     data = Xlsxrb.write(wb_built)
-    wb_read = Xlsxrb.read(data)
-    stream_sheet = wb_read.sheet(0)
+    stream_sheet = Xlsxrb.read(data).first
 
     assert_equal(1, stream_sheet.tables.size)
     assert_equal("ScoreTable", stream_sheet.tables.first.name)
@@ -2953,10 +2576,10 @@ class PublicApiTest < Test::Unit::TestCase
     stream_data = Xlsxrb.write do |w|
       w.sheet("StreamBlock") do |s|
         s.table("A1:B3") do |t|
-          t.columns %w[Key Value]
+          t.columns = %w[Key Value]
           t.style = "TableStyleLight1"
         end
-        s.validate_data("B2:B3") do |dv|
+        s.data_validation("B2:B3") do |dv|
           dv.type = :whole
           dv.operator = :greaterThan
           dv.formula1 = "0"
@@ -2966,22 +2589,22 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
 
-    wb_stream = Xlsxrb.read(stream_data)
-    assert_equal(1, wb_stream.sheet(0).tables.size)
-    assert_equal("A1:B3", wb_stream.sheet(0).tables.first.ref)
-    assert_equal(1, wb_stream.sheet(0).data_validations.size)
-    assert_equal("B2:B3", wb_stream.sheet(0).data_validations.first.sqref)
+    wb_stream_sheet = Xlsxrb.read(stream_data).first
+    assert_equal(1, wb_stream_sheet.tables.size)
+    assert_equal("A1:B3", wb_stream_sheet.tables.first.ref)
+    assert_equal(1, wb_stream_sheet.data_validations.size)
+    assert_equal("B2:B3", wb_stream_sheet.data_validations.first.sqref)
 
     # 3. Validation errors
     assert_raise(ArgumentError) do
       Xlsxrb.build { |w| w.sheet("Err") { |s| s.table("A1:B2") { |_t| nil } } }
     end
     assert_raise(ArgumentError) do
-      Xlsxrb.build { |w| w.sheet("Err") { |s| s.validate_data { |_dv| nil } } }
+      Xlsxrb.build { |w| w.sheet("Err") { |s| s.data_validation { |_dv| nil } } }
     end
   end
 
-  test "Xlsxrb.read, Xlsxrb.modify, and Ooxml::Reader exclude chartsheets from worksheet enumeration" do
+  test "Xlsxrb.load and Ooxml::Reader exclude chartsheets from worksheet enumeration" do
     buf = StringIO.new
     buf.binmode
     Xlsxrb::Ooxml::ZipWriter.open(buf) do |zw|
@@ -3036,34 +2659,14 @@ class PublicApiTest < Test::Unit::TestCase
 
     raw_bytes = buf.string.b
 
-    # 1. Xlsxrb.read
-    wb = Xlsxrb.read(raw_bytes)
+    # 1. Xlsxrb.load
+    wb = Xlsxrb.load(raw_bytes)
     assert_equal(["DataSheet"], wb.sheets.map(&:name))
     assert_equal([[42]], wb.sheet("DataSheet").each_row_values.to_a)
     assert_equal(1, wb.unmapped_data[:non_worksheet_sheets].size)
     assert_equal("Chart1", wb.unmapped_data[:non_worksheet_sheets].first[:name])
-    wb.close
 
-    # 2. Xlsxrb.modify (preserves chartsheet entry without structural rewrite)
-    mod_io = StringIO.new
-    mod_io.binmode
-    Xlsxrb.modify(StringIO.new(raw_bytes), mod_io) do |mwb|
-      assert_equal(["DataSheet"], mwb.sheets.map(&:name))
-      sheet = mwb.sheet("DataSheet")
-      new_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 99)
-      new_row = sheet.row_at(0).with(cells: [new_cell])
-      mwb.with(sheets: [sheet.with(rows: [new_row])])
-    end
-
-    Xlsxrb::Ooxml::ZipReader.open(StringIO.new(mod_io.string.b)) do |zr|
-      assert_equal(true, zr.entry?("xl/chartsheets/sheet1.xml"))
-    end
-    wb_after = Xlsxrb.read(mod_io.string.b)
-    assert_equal(["DataSheet"], wb_after.sheets.map(&:name))
-    assert_equal([[99]], wb_after.sheet("DataSheet").each_row_values.to_a)
-    wb_after.close
-
-    # 3. Ooxml::Reader
+    # 2. Ooxml::Reader
     Tempfile.create(["chartsheet_test", ".xlsx"]) do |tmp|
       tmp.binmode
       tmp.write(raw_bytes)
@@ -3077,11 +2680,9 @@ class PublicApiTest < Test::Unit::TestCase
 
   # --- sheet_name & Validation ---
 
-  test "Xlsxrb.sanitize_sheet_name and Xlsxrb.sheet_name public facade" do
+  test "Xlsxrb.sanitize_sheet_name public facade" do
     assert_equal("Sales_2026", Xlsxrb.sanitize_sheet_name("Sales:2026"))
-    assert_equal("Sales_2026", Xlsxrb.sheet_name("Sales:2026"))
     assert_equal("History_", Xlsxrb.sanitize_sheet_name("History"))
-    assert_equal("History-", Xlsxrb.sheet_name("History", replace_char: "-"))
   end
 
   test "StreamWriter#sheet_names and WorksheetProxy#sheet_names report workbook sheets" do
@@ -3103,7 +2704,7 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal(["Sheet1", "Sales_ 2026"], w.sheet_names)
     end
 
-    wb = Xlsxrb.read(io.string.b)
+    wb = Xlsxrb.load(io.string.b)
     assert_equal(["Sheet1", "Sales_ 2026"], wb.sheets.map(&:name))
   end
 
@@ -3154,7 +2755,7 @@ class PublicApiTest < Test::Unit::TestCase
       w.sheet { |s| s.row([1]) }
       w.sheet { |s| s.row([2]) }
     end
-    assert_equal(%w[Sheet1 Sheet2], Xlsxrb.read(default_io.string.b).sheets.map(&:name))
+    assert_equal(%w[Sheet1 Sheet2], Xlsxrb.load(default_io.string.b).sheets.map(&:name))
 
     # WorkbookBuilder
     assert_raises(ArgumentError) do
@@ -3183,23 +2784,17 @@ class PublicApiTest < Test::Unit::TestCase
   test "builder getter and setter methods are separated and return assigned values" do
     # 1. WorkbookBuilder
     Xlsxrb.build do |b|
-      # active_sheet / active_tab
+      # active_sheet
       b.sheet("Sheet1") { |s| s.row([1]) }
       b.sheet("Sheet2") { |s| s.row([2]) }
 
       assert_nil b.active_sheet
       assert_equal "Sheet1", (b.active_sheet = "Sheet1")
       assert_equal "Sheet1", b.active_sheet
-      assert_equal "Sheet1", b.active_tab
       assert_nil(b.active_sheet = nil)
       assert_nil b.active_sheet
-      assert_equal "Sheet2", b.active_sheet("Sheet2")
-      assert_equal "Sheet2", b.active_sheet
-      assert_nil b.active_sheet(nil)
-      assert_nil b.active_sheet
       assert_equal "Sheet1", b.send(:active_sheet=, "Sheet1")
-      assert_equal "Sheet2", b.send(:active_tab=, "Sheet2")
-      assert_equal "Sheet2", b.active_sheet
+      assert_equal "Sheet1", b.active_sheet
 
       # first_sheet
       assert_nil b.first_sheet
@@ -3207,21 +2802,14 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal "Sheet2", b.first_sheet
       assert_nil(b.first_sheet = nil)
       assert_nil b.first_sheet
-      assert_equal "Sheet1", b.first_sheet("Sheet1")
-      assert_equal "Sheet1", b.first_sheet
-      assert_nil b.first_sheet(nil)
-      assert_nil b.first_sheet
       assert_equal "Sheet1", b.send(:first_sheet=, "Sheet1")
+      assert_equal "Sheet1", b.first_sheet
 
       # show_sheet_tabs
       assert_nil b.show_sheet_tabs
       assert_equal false, (b.show_sheet_tabs = false)
       assert_equal false, b.show_sheet_tabs
       assert_nil(b.show_sheet_tabs = nil)
-      assert_nil b.show_sheet_tabs
-      assert_equal true, b.show_sheet_tabs(true)
-      assert_equal true, b.show_sheet_tabs
-      assert_nil b.show_sheet_tabs(nil)
       assert_nil b.show_sheet_tabs
       assert_equal false, b.send(:show_sheet_tabs=, false)
 
@@ -3231,10 +2819,6 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal 500, b.tab_ratio
       assert_nil(b.tab_ratio = nil)
       assert_nil b.tab_ratio
-      assert_equal 750, b.tab_ratio(750)
-      assert_equal 750, b.tab_ratio
-      assert_nil b.tab_ratio(nil)
-      assert_nil b.tab_ratio
       assert_equal 600, b.send(:tab_ratio=, 600)
 
       # code_name
@@ -3242,10 +2826,6 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal "WBCode", (b.code_name = "WBCode")
       assert_equal "WBCode", b.code_name
       assert_nil(b.code_name = nil)
-      assert_nil b.code_name
-      assert_equal "WBCode2", b.code_name("WBCode2")
-      assert_equal "WBCode2", b.code_name
-      assert_nil b.code_name(nil)
       assert_nil b.code_name
       assert_equal "WBCode3", b.send(:code_name=, "WBCode3")
     end
@@ -3259,23 +2839,16 @@ class PublicApiTest < Test::Unit::TestCase
         assert_equal "FF0000", s.tab_color
         assert_nil(s.tab_color = nil)
         assert_nil s.tab_color
-        assert_equal "00FF00", s.tab_color("00FF00")
-        assert_equal "00FF00", s.tab_color
-        assert_nil s.tab_color(nil)
-        assert_nil s.tab_color
         assert_equal "0000FF", s.send(:tab_color=, "0000FF")
 
         # fit_to_page
         assert_equal false, s.fit_to_page
-        assert_equal false, s.fit_to_page?
         assert_equal true, (s.fit_to_page = true)
         assert_equal true, s.fit_to_page
         assert_equal false, (s.fit_to_page = false)
         assert_equal false, s.fit_to_page
         assert_nil(s.fit_to_page = nil)
         assert_equal false, s.fit_to_page
-        s.fit_to_page(width: 2)
-        assert_equal true, s.fit_to_page
         assert_equal true, s.send(:fit_to_page=, true)
 
         # code_name
@@ -3284,64 +2857,26 @@ class PublicApiTest < Test::Unit::TestCase
         assert_equal "WSCode", s.code_name
         assert_nil(s.code_name = nil)
         assert_nil s.code_name
-        assert_equal "WSCode2", s.code_name("WSCode2")
-        assert_equal "WSCode2", s.code_name
-        assert_nil s.code_name(nil)
-        assert_nil s.code_name
         assert_equal "WSCode3", s.send(:code_name=, "WSCode3")
 
-        # sheet_calc_properties / sheet_calc_pr / calc_pr
+        # sheet_calc_properties
         assert_nil s.sheet_calc_properties
-        assert_nil s.sheet_calc_pr
-        assert_nil s.calc_pr
         calc_hash = { full_calc_on_load: true }
         assert_equal calc_hash, (s.sheet_calc_properties = calc_hash)
-        assert_equal calc_hash, s.sheet_calc_properties
-        assert_equal calc_hash, s.sheet_calc_pr
-        assert_equal calc_hash, s.calc_pr
+        assert_equal Xlsxrb::Elements::SheetCalcProperties.new(**calc_hash), s.sheet_calc_properties
         assert_nil(s.sheet_calc_properties = nil)
         assert_nil s.sheet_calc_properties
-        assert_nil s.sheet_calc_pr
-        assert_equal calc_hash, (s.sheet_calc_pr = calc_hash)
-        assert_equal calc_hash, s.sheet_calc_properties
-        assert_nil(s.sheet_calc_pr = nil)
-        assert_nil s.sheet_calc_properties
-        assert_equal calc_hash, (s.calc_pr = calc_hash)
-        assert_equal calc_hash, s.sheet_calc_properties
-        assert_nil(s.calc_pr = nil)
-        assert_nil s.sheet_calc_properties
-        s.sheet_calc_properties(full_calc_on_load: true)
-        assert_equal calc_hash, s.sheet_calc_properties
-        assert_nil s.sheet_calc_properties(nil)
-        assert_nil s.sheet_calc_properties
-        assert_equal calc_hash, s.sheet_calc_pr(full_calc_on_load: true)
-        assert_equal calc_hash, s.sheet_calc_properties
-        assert_nil s.sheet_calc_pr(nil)
-        assert_nil s.sheet_calc_properties
         assert_equal calc_hash, s.send(:sheet_calc_properties=, calc_hash)
-        assert_equal calc_hash, s.send(:sheet_calc_pr=, calc_hash)
-        assert_equal calc_hash, s.send(:calc_pr=, calc_hash)
 
-        # phonetic_properties / phonetic_pr
+        # phonetic_properties
         assert_nil s.phonetic_properties
-        assert_nil s.phonetic_pr
         props = { font_id: 2, type: :hiragana }
         expected_props = { font_id: 2, type: "Hiragana" }
         assert_equal props, (s.phonetic_properties = props)
-        assert_equal expected_props, s.phonetic_properties
-        assert_equal expected_props, s.phonetic_pr
+        assert_equal Xlsxrb::Elements::PhoneticProperties.new(**expected_props), s.phonetic_properties
         assert_nil(s.phonetic_properties = nil)
         assert_nil s.phonetic_properties
-        assert_equal props, (s.phonetic_pr = props)
-        assert_equal expected_props, s.phonetic_pr
-        assert_nil(s.phonetic_pr = nil)
-        assert_nil s.phonetic_pr
-        s.phonetic_properties(font_id: 1, type: :halfwidth_katakana)
-        assert_equal({ font_id: 1, type: "halfwidthKatakana" }, s.phonetic_properties)
-        assert_nil s.phonetic_properties(nil)
-        assert_nil s.phonetic_properties
         assert_equal props, s.send(:phonetic_properties=, props)
-        assert_equal props, s.send(:phonetic_pr=, props)
 
         # background_image
         assert_nil s.background_image
@@ -3359,37 +2894,23 @@ class PublicApiTest < Test::Unit::TestCase
         assert_equal :visible, s.state
         assert_equal :visible, s.send(:state=, "visible")
         assert_raises(ArgumentError) { s.state = :invalid_state }
-        assert_equal :hidden, s.state(:hidden)
-        assert_equal :hidden, s.state
-        assert_equal :visible, (s.state = :visible)
 
         # TableBuilder totals_row / totals_row_count
         s.row([1, 2])
         s.table("A1:B1", columns: %w[A B]) do |t|
           assert_nil t.totals_row_count
-          assert_nil t.total_row_count
           assert_nil t.totals_row
-          assert_nil t.total_row
           assert_equal true, (t.totals_row = true)
           assert_equal true, t.totals_row
-          assert_equal true, t.total_row
           assert_equal false, (t.totals_row = false)
           assert_equal false, t.totals_row
-          assert_equal true, (t.total_row = true)
-          assert_equal true, t.totals_row
           assert_equal true, t.send(:totals_row=, true)
-          assert_equal false, t.send(:total_row=, false)
+          assert_equal false, t.send(:totals_row=, false)
 
           assert_equal 0, t.totals_row_count
-          assert_equal 0, t.total_row_count
           assert_equal 1, (t.totals_row_count = 1)
           assert_equal 1, t.totals_row_count
-          assert_equal 1, t.total_row_count
-          assert_equal 0, (t.total_row_count = 0)
-          assert_equal 0, t.totals_row_count
           assert_equal 1, t.send(:totals_row_count=, 1)
-          assert_equal 2, t.send(:total_row_count=, 2)
-          assert_equal 2, t.totals_row_count
         end
       end
     end
@@ -3401,11 +2922,10 @@ class PublicApiTest < Test::Unit::TestCase
       assert_nil w.active_sheet
       assert_equal "S1", (w.active_sheet = "S1")
       assert_equal "S1", w.active_sheet
-      assert_equal "S1", w.active_tab
       assert_nil(w.active_sheet = nil)
       assert_nil w.active_sheet
       assert_equal "S2", w.send(:active_sheet=, "S2")
-      assert_equal "S1", w.send(:active_tab=, "S1")
+      assert_equal "S1", w.send(:active_sheet=, "S1")
 
       assert_nil w.first_sheet
       assert_equal "S1", (w.first_sheet = "S1")
@@ -3435,7 +2955,6 @@ class PublicApiTest < Test::Unit::TestCase
         assert_equal "112233", s.send(:tab_color=, "112233")
 
         assert_equal false, s.fit_to_page
-        assert_equal false, s.fit_to_page?
         assert_equal true, (s.fit_to_page = true)
         assert_equal true, s.fit_to_page
         assert_equal false, (s.fit_to_page = false)
@@ -3453,37 +2972,20 @@ class PublicApiTest < Test::Unit::TestCase
 
         calc_hash = { full_calc_on_load: true }
         assert_nil s.sheet_calc_properties
-        assert_nil s.sheet_calc_pr
         assert_equal calc_hash, (s.sheet_calc_properties = calc_hash)
-        assert_equal calc_hash, s.sheet_calc_properties
-        assert_equal calc_hash, s.sheet_calc_pr
+        assert_equal Xlsxrb::Elements::SheetCalcProperties.new(**calc_hash), s.sheet_calc_properties
         assert_nil(s.sheet_calc_properties = nil)
         assert_nil s.sheet_calc_properties
-        assert_equal calc_hash, (s.sheet_calc_pr = calc_hash)
-        assert_equal calc_hash, s.sheet_calc_properties
-        assert_nil(s.sheet_calc_pr = nil)
-        assert_nil s.sheet_calc_properties
-        assert_equal calc_hash, (s.calc_pr = calc_hash)
-        assert_equal calc_hash, s.sheet_calc_properties
-        assert_nil(s.calc_pr = nil)
-        assert_nil s.sheet_calc_properties
         assert_equal calc_hash, s.send(:sheet_calc_properties=, calc_hash)
-        assert_equal calc_hash, s.send(:sheet_calc_pr=, calc_hash)
-        assert_equal calc_hash, s.send(:calc_pr=, calc_hash)
 
         props = { font_id: 3, type: :hiragana }
         expected_props = { font_id: 3, type: "Hiragana" }
         assert_nil s.phonetic_properties
         assert_equal props, (s.phonetic_properties = props)
-        assert_equal expected_props, s.phonetic_properties
+        assert_equal Xlsxrb::Elements::PhoneticProperties.new(**expected_props), s.phonetic_properties
         assert_nil(s.phonetic_properties = nil)
         assert_nil s.phonetic_properties
-        assert_equal props, (s.phonetic_pr = props)
-        assert_equal expected_props, s.phonetic_pr
-        assert_nil(s.phonetic_pr = nil)
-        assert_nil s.phonetic_pr
         assert_equal props, s.send(:phonetic_properties=, props)
-        assert_equal props, s.send(:phonetic_pr=, props)
 
         assert_nil s.background_image
         assert_nil(s.background_image = nil)
@@ -3500,9 +3002,6 @@ class PublicApiTest < Test::Unit::TestCase
         assert_equal :visible, s.state
         assert_equal :visible, s.send(:state=, "visible")
         assert_raises(ArgumentError) { s.state = :invalid_state }
-        assert_equal :hidden, s.state(:hidden)
-        assert_equal :hidden, s.state
-        assert_equal :visible, (s.state = :visible)
 
         # state on StreamWriter directly
         assert_equal :hidden, (w.state = :hidden)
@@ -3535,7 +3034,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal :very_hidden, wb1.sheet(2).state
 
     data1 = Xlsxrb.write(wb1)
-    wb1_read = Xlsxrb.read(data1).load
+    wb1_read = Xlsxrb.load(data1)
     assert_equal :visible, wb1_read.sheet(0).state
     assert_equal :hidden, wb1_read.sheet(1).state
     assert_equal :very_hidden, wb1_read.sheet(2).state
@@ -3550,7 +3049,7 @@ class PublicApiTest < Test::Unit::TestCase
       w.state = :very_hidden
       w.row([3])
     end
-    wb2 = Xlsxrb.read(data2).load
+    wb2 = Xlsxrb.load(data2)
     assert_equal :visible, wb2.sheet(0).state
     assert_equal :hidden, wb2.sheet(1).state
     assert_equal :very_hidden, wb2.sheet(2).state
@@ -3567,7 +3066,7 @@ class PublicApiTest < Test::Unit::TestCase
     end
     data = Xlsxrb.write(wb_dom)
 
-    wb = Xlsxrb.read(data).load
+    wb = Xlsxrb.load(data)
     sheet = wb.sheet(0)
 
     # Merged cells roundtrip from range string
@@ -3604,8 +3103,6 @@ class PublicApiTest < Test::Unit::TestCase
       assert_nil(stream_sheet.column_range)
       assert_equal(["A1:C1"], stream_sheet.merged_cells)
       assert_not_respond_to(stream_sheet, :[])
-      assert_equal(10, stream_sheet.cell("A1").value)
-      assert_equal(10, stream_sheet.cell(0, 0).value)
     end
   end
 
@@ -3619,107 +3116,6 @@ class PublicApiTest < Test::Unit::TestCase
   ensure
     $stderr = old_stderr
     $VERBOSE = old_verbose
-  end
-
-  test "deprecated aliases and transitional methods emit deprecation warnings" do
-    # 1. Workbook aliases
-    wb = Xlsxrb.build { |b| b.sheet("S1") { |s| s.row([1]) } }
-    assert_match(/\[DEPRECATION\] #show_sheet_tabs is deprecated/, capture_stderr { wb.show_sheet_tabs })
-    assert_match(/\[DEPRECATION\] #full_calc_on_load is deprecated/, capture_stderr { wb.full_calc_on_load })
-    assert_match(/\[DEPRECATION\] #to_workbook is deprecated/, capture_stderr { wb.to_workbook })
-    assert_match(/\[DEPRECATION\] #each_sheet is deprecated/, capture_stderr { wb.each_sheet { |_| nil } })
-    assert_match(/\[Xlsxrb DEPRECATION\] Elements::Workbook#close is deprecated/, capture_stderr { wb.close })
-
-    # 2. Worksheet aliases
-    ws = wb.sheet(0)
-    assert_match(/\[DEPRECATION\] #trim_empty_rows is deprecated/, capture_stderr { ws.trim_empty_rows })
-    assert_match(/\[DEPRECATION\] #pad_empty_rows is deprecated/, capture_stderr { ws.pad_empty_rows })
-    assert_match(/\[DEPRECATION\] #pad_empty_cells is deprecated/, capture_stderr { ws.pad_empty_cells })
-    assert_match(/\[DEPRECATION\] #fit_to_page is deprecated/, capture_stderr { ws.fit_to_page })
-    assert_match(/\[DEPRECATION\] #full_calc_on_load is deprecated/, capture_stderr { ws.full_calc_on_load })
-    assert_match(/\[DEPRECATION\] #to_worksheet is deprecated/, capture_stderr { ws.to_worksheet })
-    assert_match(/\[DEPRECATION\] #sheet_calc_pr is deprecated/, capture_stderr { ws.sheet_calc_pr })
-    assert_match(/\[DEPRECATION\] #calc_pr is deprecated/, capture_stderr { ws.calc_pr })
-    assert_match(/\[Xlsxrb DEPRECATION\] Elements::Worksheet#close is deprecated/, capture_stderr { ws.close })
-
-    # 3. StreamSheet aliases
-    data = Xlsxrb.write(wb)
-    Xlsxrb.read(data) do |s|
-      assert_match(/\[DEPRECATION\] #trim_empty_rows is deprecated/, capture_stderr { s.trim_empty_rows })
-      assert_match(/\[DEPRECATION\] #pad_empty_rows is deprecated/, capture_stderr { s.pad_empty_rows })
-      assert_match(/\[DEPRECATION\] #pad_empty_cells is deprecated/, capture_stderr { s.pad_empty_cells })
-      assert_match(/\[DEPRECATION\] #fit_to_page is deprecated/, capture_stderr { s.fit_to_page })
-      assert_match(/\[DEPRECATION\] #full_calc_on_load is deprecated/, capture_stderr { s.full_calc_on_load })
-      assert_match(/\[DEPRECATION\] #to_worksheet is deprecated/, capture_stderr { s.to_worksheet })
-      assert_match(/\[DEPRECATION\] #sheet_calc_pr is deprecated/, capture_stderr { s.sheet_calc_pr })
-      assert_match(/\[DEPRECATION\] #calc_pr is deprecated/, capture_stderr { s.calc_pr })
-    end
-
-    # 4. Styles aliases
-    styles = Xlsxrb::Elements::Styles.new({})
-    assert_match(/\[DEPRECATION\] #xf is deprecated/, capture_stderr { styles.xf(0) })
-    assert_match(/\[DEPRECATION\] #format_code_for is deprecated/, capture_stderr { styles.format_code_for(0) })
-    assert_match(/\[DEPRECATION\] #classification_for is deprecated/, capture_stderr { styles.classification_for(0) })
-
-    # 5. StyleBuilder alias
-    sb = Xlsxrb::StyleBuilder.new
-    assert_match(/\[DEPRECATION\] #num_fmt is deprecated/, capture_stderr { sb.num_fmt("0.00") })
-
-    # 6. Builder aliases
-    Xlsxrb.build do |b|
-      b.sheet("BuilderSheet") do |s|
-        assert_match(/\[DEPRECATION\] #add_sparkline is deprecated/, capture_stderr { s.add_sparkline(location: "F1", range: "A1:E1") })
-        assert_match(/\[DEPRECATION\] #ignore_error is deprecated/, capture_stderr { s.ignore_error("A1", number_stored_as_text: true) })
-        assert_match(/\[DEPRECATION\] #add_ignored_error is deprecated/, capture_stderr { s.add_ignored_error("A2", eval_error: true) })
-        assert_match(/\[DEPRECATION\] #sheet_calc_pr is deprecated/, capture_stderr { s.sheet_calc_pr })
-        assert_match(/\[DEPRECATION\] #calc_pr is deprecated/, capture_stderr { s.calc_pr })
-        assert_match(/\[DEPRECATION\] #sheet_calc_pr= is deprecated/, capture_stderr { s.sheet_calc_pr = { full_calc_on_load: true } })
-        assert_match(/\[DEPRECATION\] #calc_pr= is deprecated/, capture_stderr { s.calc_pr = { full_calc_on_load: true } })
-        s.row([1, 2])
-        s.table("A1:B1", columns: %w[A B]) do |t|
-          assert_match(/\[DEPRECATION\] #total_row is deprecated/, capture_stderr { t.total_row })
-          assert_match(/\[DEPRECATION\] #total_row= is deprecated/, capture_stderr { t.total_row = true })
-          assert_match(/\[DEPRECATION\] #total_row_count is deprecated/, capture_stderr { t.total_row_count })
-          assert_match(/\[DEPRECATION\] #total_row_count= is deprecated/, capture_stderr { t.total_row_count = 1 })
-        end
-      end
-    end
-
-    # 7. Top-level and Utils aliases
-    assert_match(/\[DEPRECATION\] Xlsxrb\.sheet_name is deprecated/, capture_stderr { Xlsxrb.sheet_name("Test") })
-    assert_match(/\[DEPRECATION\] Xlsxrb\.color_to_hex is deprecated/, capture_stderr { Xlsxrb.color_to_hex(:red) })
-    assert_match(/\[DEPRECATION\] Xlsxrb\.serial_to_datetime is deprecated/, capture_stderr { Xlsxrb.serial_to_datetime(45_000) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.serial_to_datetime is deprecated/, capture_stderr { Xlsxrb::Utils.serial_to_datetime(45_000) })
-    assert_match(/\[DEPRECATION\] Xlsxrb\.format is deprecated/, capture_stderr { Xlsxrb.format(100) })
-    assert_match(/\[DEPRECATION\] Xlsxrb\.datetime_to_serial is deprecated/, capture_stderr { Xlsxrb.datetime_to_serial(Time.utc(2026, 1, 1)) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.time_to_serial is deprecated/, capture_stderr { Xlsxrb::Utils.time_to_serial(Time.utc(2026, 1, 1)) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.datetime_to_serial is deprecated/, capture_stderr { Xlsxrb::Utils.datetime_to_serial(Time.utc(2026, 1, 1)) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.date_to_serial is deprecated/, capture_stderr { Xlsxrb::Utils.date_to_serial(Date.new(2026, 1, 1)) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.serial_to_date is deprecated/, capture_stderr { Xlsxrb::Utils.serial_to_date(46_023) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.serial_to_time is deprecated/, capture_stderr { Xlsxrb::Utils.serial_to_time(46_023.5) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.ref_to_row_col is deprecated/, capture_stderr { Xlsxrb::Utils.ref_to_row_col("A1") })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.row_col_to_ref is deprecated/, capture_stderr { Xlsxrb::Utils.row_col_to_ref(0, 0) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.parse_range is deprecated/, capture_stderr { Xlsxrb::Utils.parse_range("A1:B2") })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.range_to_ref is deprecated/, capture_stderr { Xlsxrb::Utils.range_to_ref(0, 0, 1, 1) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.col_name_to_index is deprecated/, capture_stderr { Xlsxrb::Utils.col_name_to_index("A") })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.col_index_to_name is deprecated/, capture_stderr { Xlsxrb::Utils.col_index_to_name(0) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Elements::Cell\.column_index is deprecated/, capture_stderr { Xlsxrb::Elements::Cell.column_index("A") })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Elements::Cell\.column_letter is deprecated/, capture_stderr { Xlsxrb::Elements::Cell.column_letter(0) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Elements::Cell\.parse_ref is deprecated/, capture_stderr { Xlsxrb::Elements::Cell.parse_ref("A1") })
-    assert_match(/\[DEPRECATION\] Xlsxrb\.shared_formula keyword :si is deprecated/, capture_stderr { Xlsxrb.shared_formula("A1", si: 0) })
-    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.expand_formula keyword :col_delta is deprecated/, capture_stderr { Xlsxrb::Utils.expand_formula("A1", col_delta: 1) })
-
-    # 8. MetadataRecord hash compatibility deprecation warnings
-    ps = Xlsxrb::Elements::PageSetup.new(orientation: "landscape", paper_size: 9)
-    assert_match(/\[DEPRECATION\] Hash access on Xlsxrb::Elements::PageSetup \(`#\[\]`\) is deprecated/, capture_stderr { ps[:orientation] })
-    assert_match(/\[DEPRECATION\] `Xlsxrb::Elements::PageSetup#key\?` is deprecated/, capture_stderr { ps.key?(:orientation) })
-    assert_match(/\[DEPRECATION\] `Xlsxrb::Elements::PageSetup#dig` is deprecated/, capture_stderr { ps.dig(:orientation, :dummy) })
-    assert_match(/\[DEPRECATION\] `Xlsxrb::Elements::PageSetup#fetch` is deprecated/, capture_stderr { ps.fetch(:orientation) })
-    assert_match(/\[DEPRECATION\] `Xlsxrb::Elements::PageSetup#merge` is deprecated/, capture_stderr { ps.merge(paper_size: 1) })
-    assert_match(/\[DEPRECATION\] Comparing `Xlsxrb::Elements::PageSetup` with a Hash is deprecated/, capture_stderr { ps == { orientation: "landscape", paper_size: 9 } })
-
-    hl = Xlsxrb::Elements::Hyperlink.new(url: "https://example.com")
-    assert_match(/\[DEPRECATION\] Hash access on Elements::Hyperlink \(`#\[\]`\) is deprecated/, capture_stderr { hl[:url] })
   end
 
   test "Commit 2: top-level Xlsxrb coordinate and date facade" do
@@ -3749,7 +3145,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(:shared, sf.type)
     assert_equal(1, sf.shared_index)
 
-    af1 = Xlsxrb.array_formula("SUM(A1:A10)", "B1")
+    af1 = Xlsxrb.array_formula("SUM(A1:A10)", ref: "B1")
     assert_equal(:array, af1.type)
     assert_equal("B1", af1.ref)
 
@@ -3768,28 +3164,6 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("#NUM!", Xlsxrb::Elements::CellError::NUM.code)
     assert_equal("#N/A", Xlsxrb::Elements::CellError::NA.code)
     assert_equal("#GETTING_DATA", Xlsxrb::Elements::CellError::GETTING_DATA.code)
-    assert_equal(Xlsxrb::Elements::CellError::DIV0, Xlsxrb::Error::DIV0)
-  end
-
-  test "Commit 2: Xlsxrb.modify returns block result and warns when non-Workbook returned" do
-    wb = Xlsxrb.build { |b| b.sheet("S1") { |s| s.row([1, 2, 3]) } }
-    io = StringIO.new(Xlsxrb.write(wb))
-
-    # Non-Workbook return emits deprecation warning
-    res1 = nil
-    warn_output = capture_stderr do
-      res1 = Xlsxrb.modify(io) { 42 }
-    end
-    assert_equal(42, res1)
-    assert_match(/\[DEPRECATION\] Xlsxrb\.modify block must return an Elements::Workbook/, warn_output)
-
-    # Returning Workbook returns that workbook
-    io.rewind
-    res2 = Xlsxrb.modify(io) do |loaded_wb|
-      loaded_wb.update_sheet("S1") { |s| s.update_cell("A1", value: 999) }
-    end
-    assert_kind_of(Xlsxrb::Elements::Workbook, res2)
-    assert_equal(999, res2.sheet(0)["A1"].value)
   end
 
   test "Commit 3: cell_styles and row_style in WorksheetBuilder#row with deprecation warnings" do
@@ -3803,23 +3177,9 @@ class PublicApiTest < Test::Unit::TestCase
     row = rows.last
     assert_equal(:r, row.unmapped_data[:style_index])
     assert_equal(:b, row.cells[0].style)
-
-    # Deprecated styles: emits warning
-    warn_styles = capture_stderr do
-      builder.row([3, 4], styles: :b)
-    end
-    assert_match(/\[DEPRECATION\] WorksheetBuilder#row keyword :styles is deprecated/, warn_styles)
-    assert_equal(:b, rows.last.cells[0].style)
-
-    # Deprecated style: emits warning
-    warn_style = capture_stderr do
-      builder.row([5, 6], style: :r)
-    end
-    assert_match(/\[DEPRECATION\] WorksheetBuilder#row keyword :style is deprecated/, warn_style)
-    assert_equal(:r, rows.last.unmapped_data[:style_index])
   end
 
-  test "Commit 3: cell_styles and row_style in StreamWriter#row and WorksheetProxy#row with deprecation warnings" do
+  test "cell_styles and row_style in StreamWriter#row and WorksheetProxy#row" do
     io = StringIO.new
     writer = Xlsxrb::StreamWriter.new(io)
     writer.style(:b, bold: true)
@@ -3828,76 +3188,24 @@ class PublicApiTest < Test::Unit::TestCase
     # Proxy with cell_styles and row_style
     writer.sheet("S1") do |proxy|
       proxy.row([1, 2], cell_styles: [:b, nil], row_style: :r)
-
-      # Deprecated styles on proxy
-      warn_p_styles = capture_stderr do
-        proxy.row([3, 4], styles: :b)
-      end
-      assert_match(/\[DEPRECATION\] WorksheetProxy#row keyword :styles is deprecated/, warn_p_styles)
-
-      # Deprecated style on proxy
-      warn_p_style = capture_stderr do
-        proxy.row([5, 6], style: :r)
-      end
-      assert_match(/\[DEPRECATION\] WorksheetProxy#row keyword :style is deprecated/, warn_p_style)
     end
-
-    # Deprecated styles on writer directly
-    warn_w_styles = capture_stderr do
-      writer.row([7, 8], styles: :b)
-    end
-    assert_match(/\[DEPRECATION\] StreamWriter#row keyword :styles is deprecated/, warn_w_styles)
-
-    # Deprecated style on writer directly
-    warn_w_style = capture_stderr do
-      writer.row([9, 10], style: :r)
-    end
-    assert_match(/\[DEPRECATION\] StreamWriter#row keyword :style is deprecated/, warn_w_style)
 
     writer.close
   end
 
-  test "Commit 3: Elements::Cell.new and Worksheet#update_cell style vs style_index" do
+  test "Elements::Cell.new style vs style_index" do
     # Cell.new with style:
     c1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, style: :bold)
     assert_equal(:bold, c1.style)
     assert_nil(c1.style_index)
-    assert_equal(:bold, c1[:style])
 
-    # Cell.new with style_index Integer (no warning)
+    # Cell.new with style_index Integer
     c2 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, style_index: 5)
     assert_nil(c2.style)
     assert_equal(5, c2.style_index)
-    assert_equal(5, c2[:style])
-
-    # Cell.new with non-Integer style_index emits warning
-    c3 = nil
-    warn_cell = capture_stderr do
-      c3 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, style_index: :italic)
-    end
-    assert_match(/\[DEPRECATION\] Elements::Cell\.new passing non-Integer to style_index: is deprecated/, warn_cell)
-    assert_equal(:italic, c3.style)
-    assert_nil(c3.style_index)
-
-    # Worksheet#update_cell with style:
-    sheet = Xlsxrb::Elements::Worksheet.new(name: "S", rows: [
-                                              Xlsxrb::Elements::Row.new(index: 0, cells: [c1])
-                                            ])
-    s2 = sheet.update_cell("A1", style: :green)
-    assert_equal(:green, s2.cell("A1").style)
-    assert_nil(s2.cell("A1").style_index)
-
-    # Worksheet#update_cell with non-Integer style_index emits warning
-    s3 = nil
-    warn_ws = capture_stderr do
-      s3 = sheet.update_cell("A1", style_index: "custom")
-    end
-    assert_match(/\[DEPRECATION\] Elements::Worksheet#update_cell passing non-Integer to style_index: is deprecated/, warn_ws)
-    assert_equal("custom", s3.cell("A1").style)
-    assert_nil(s3.cell("A1").style_index)
   end
 
-  test "Commit 4: singular builders and deprecation warnings" do
+  test "singular builders" do
     wb = Xlsxrb.build do |b|
       b.workbook_protection(lock_structure: true)
       b.sheet("S1") do |s|
@@ -3911,36 +3219,14 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     ws = wb.sheet(0)
-    assert_equal({ lock_structure: true }, wb.workbook_protection)
+    assert_equal(true, wb.workbook_protection.lock_structure)
     assert_equal(1, ws.data_validations.size)
-    assert_equal({ sheet: true }, ws.sheet_protection)
-    assert_equal "B2:C5", ws.selection[:sqref]
-    assert_equal "FF0000", ws.sheet_properties[:tab_color]
-    assert ws.sheet_properties[:enable_format_conditions_calculation]
-    assert ws.print_options[:grid_lines]
-    assert_equal false, ws.sheet_view[:show_grid_lines]
-
-    # Deprecation warnings for legacy methods
-    w_protect = capture_stderr do
-      Xlsxrb.build do |b|
-        b.protect_workbook(lock_structure: true)
-        b.sheet("S")
-      end
-    end
-    assert_match(/\[DEPRECATION\] `protect_workbook` is deprecated; use `workbook_protection` instead/, w_protect)
-
-    w_sheet_methods = capture_stderr do
-      Xlsxrb.build do |b|
-        b.sheet("S") do |s|
-          s.validate_data("A1", type: "whole")
-          s.protect_sheet(sheet: true)
-          s.select_cell("B2")
-        end
-      end
-    end
-    assert_match(/\[DEPRECATION\] `validate_data` is deprecated; use `data_validation` instead/, w_sheet_methods)
-    assert_match(/\[DEPRECATION\] `protect_sheet` is deprecated; use `sheet_protection` instead/, w_sheet_methods)
-    assert_match(/\[DEPRECATION\] `select_cell` is deprecated; use `selection` instead/, w_sheet_methods)
+    assert_equal(true, ws.sheet_protection.sheet)
+    assert_equal "B2:C5", ws.selection.sqref
+    assert_equal "FF0000", ws.sheet_properties.tab_color
+    assert ws.sheet_properties.enable_format_conditions_calculation
+    assert ws.print_options.grid_lines
+    assert_equal false, ws.sheet_view.show_grid_lines
   end
 
   test "Commit 4: page breaks, column spelling, and image accessors" do
@@ -3951,36 +3237,13 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     ws = wb.sheet(0)
-    assert_equal([{ id: 5, max: 16_383, man: 1 }], ws.row_breaks)
-    assert_equal([{ id: 2, max: 1_048_575, man: 1 }], ws.column_breaks)
+    assert_equal([{ id: 5, max: 16_383, man: 1 }], ws.row_breaks.map(&:to_h))
+    assert_equal([{ id: 2, max: 1_048_575, man: 1 }], ws.column_breaks.map(&:to_h))
 
-    w_breaks = capture_stderr do
-      Xlsxrb.build do |b|
-        b.sheet("S") do |s|
-          s.page_break_row(5)
-          s.page_break_col(2)
-        end
-      end
-    end
-    assert_match(/\[DEPRECATION\] `page_break_row` is deprecated; use `row_break` instead/, w_breaks)
-    assert_match(/\[DEPRECATION\] `page_break_col` is deprecated; use `column_break` instead/, w_breaks)
-
-    w_reader_breaks = capture_stderr do
-      assert_equal([{ id: 2, max: 1_048_575, man: 1 }], ws.col_breaks)
-    end
-    assert_match(/\[DEPRECATION\] `col_breaks` is deprecated; use `column_breaks` instead/, w_reader_breaks)
-
-    # Elements::Image from_column / to_column and deprecated aliases
+    # Elements::Image from_column / to_column
     img = Xlsxrb::Elements::Image.new(filename: "test.png", from_column: 1, to_column: 3)
     assert_equal 1, img.from_column
     assert_equal 3, img.to_column
-
-    w_img = capture_stderr do
-      assert_equal 1, img.from_col
-      assert_equal 3, img.to_col
-    end
-    assert_match(/\[DEPRECATION\] `from_col` is deprecated; use `from_column` instead/, w_img)
-    assert_match(/\[DEPRECATION\] `to_col` is deprecated; use `to_column` instead/, w_img)
   end
 
   test "Commit 4: filter_column coercion, defined_name scope, and DataValidationBuilder#list" do
@@ -4000,17 +3263,13 @@ class PublicApiTest < Test::Unit::TestCase
 
     # DataValidationBuilder#list and #list=
     builder = Xlsxrb::DataValidationBuilder.new("A1")
+    assert_false(builder.respond_to?(:[]))
+    assert_false(builder.respond_to?(:[]=))
     builder.list = %w[One Two Three]
     assert_equal %w[One Two Three], builder.list
     res = builder.to_h
     assert_equal %w[One Two Three], res[:list]
-
-    w_dv = capture_stderr do
-      builder.in = %w[A B]
-      assert_equal %w[A B], builder.in
-    end
-    assert_match(/\[DEPRECATION\] `DataValidationBuilder#in=` is deprecated; use `list=` instead/, w_dv)
-    assert_match(/\[DEPRECATION\] `DataValidationBuilder#in` is deprecated; use `list` instead/, w_dv)
+    assert_nil res[:in]
   end
 
   test "Commit 5: ChartBuilder and SeriesBuilder zero-arg readers and attr= writers" do
@@ -4038,17 +3297,6 @@ class PublicApiTest < Test::Unit::TestCase
     sb.categories = "Sheet1!A2:A10"
     assert_equal "Sheet1!A2:A10", sb.categories
     assert_equal "Sheet1!A2:A10", sb.categories
-
-    # Deprecation on secondary_axis
-    w_chart_sec = capture_stderr do
-      cb.secondary_axis(true)
-    end
-    assert_match(/\[DEPRECATION\] `secondary_axis` is deprecated; use `secondary_value_axis` instead/, w_chart_sec)
-
-    w_series_sec = capture_stderr do
-      sb.secondary_axis(true)
-    end
-    assert_match(/\[DEPRECATION\] `secondary_axis` is deprecated; use `axis\(:secondary\)` instead/, w_series_sec)
   end
 
   test "Commit 5: StyleBuilder font_size, alignment, protection, and attr= writers" do
@@ -4083,53 +3331,24 @@ class PublicApiTest < Test::Unit::TestCase
     # Number format
     sb.number_format = "#,##0.00"
     assert_equal "#,##0.00", sb.number_format
-    assert_equal "#,##0.00", sb.number_format_id
-
-    # Deprecations
-    w_style = capture_stderr do
-      assert_equal 14, sb.size
-      sb.size = 16
-      assert_equal 16, sb.sz
-      sb.sz = 18
-      assert_equal "#,##0.00", sb.num_fmt
-      sb.num_fmt = "@"
-      assert_equal "@", sb.num_fmt_id
-      sb.num_fmt_id = "0%"
-    end
-    assert_match(/\[DEPRECATION\] #size is deprecated; use #font_size instead/, w_style)
-    assert_match(/\[DEPRECATION\] #size= is deprecated; use #font_size= instead/, w_style)
-    assert_match(/\[DEPRECATION\] #sz is deprecated; use #font_size instead/, w_style)
-    assert_match(/\[DEPRECATION\] #sz= is deprecated; use #font_size= instead/, w_style)
-    assert_match(/\[DEPRECATION\] #num_fmt is deprecated; use #number_format instead/, w_style)
-    assert_match(/\[DEPRECATION\] #num_fmt= is deprecated; use #number_format= instead/, w_style)
-    assert_match(/\[DEPRECATION\] #num_fmt_id is deprecated; use #number_format_id instead/, w_style)
-    assert_match(/\[DEPRECATION\] #num_fmt_id= is deprecated; use #number_format_id= instead/, w_style)
   end
 
   test "Commit 5: ConditionalFormatBuilder dxf_id, font_size, and deprecations" do
     cf = Xlsxrb::ConditionalFormatBuilder.new("A1:A10")
+    assert_false(cf.respond_to?(:[]))
+    assert_false(cf.respond_to?(:[]=))
+    assert_false(cf.respond_to?(:formulas))
+    assert_false(cf.respond_to?(:formulas=))
+
     cf.dxf_id = 3
     assert_equal 3, cf.dxf_id
     assert_equal 3, cf.dxf_id
+    assert_nil cf.to_h[:format_id]
 
     cf.font_size = 12
     assert_equal 12, cf.font_size
     assert_equal 12, cf.font_size
-
-    w_cf = capture_stderr do
-      assert_equal 3, cf.format_id
-      cf.format_id = 4
-      assert_equal 12, cf.size
-      cf.size = 14
-      assert_equal 14, cf.sz
-      cf.sz = 16
-    end
-    assert_match(/\[DEPRECATION\] `format_id` is deprecated; use `dxf_id` instead/, w_cf)
-    assert_match(/\[DEPRECATION\] `format_id=` is deprecated; use `dxf_id=` instead/, w_cf)
-    assert_match(/\[DEPRECATION\] `size` is deprecated; use `font_size` instead/, w_cf)
-    assert_match(/\[DEPRECATION\] `size=` is deprecated; use `font_size=` instead/, w_cf)
-    assert_match(/\[DEPRECATION\] `sz` is deprecated; use `font_size` instead/, w_cf)
-    assert_match(/\[DEPRECATION\] `sz=` is deprecated; use `font_size=` instead/, w_cf)
+    assert_nil cf.to_h[:size]
   end
 
   test "Commit 5: WorkbookBuilder#style, StreamWriter#[], and DSL return types" do
@@ -4416,16 +3635,69 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
 
-    # 3. Top-level Xlsxrb write_workbook and workbook_to_data
+    # 3. Top-level Xlsxrb write
     Tempfile.create(["ww_test", ".xlsx"]) do |f|
-      Xlsxrb.write_workbook(f.path, wb, shared_strings: true, compression_level: 6)
+      Xlsxrb.write(f.path, wb, shared_strings: true, compression_level: 6)
       assert_true(File.size(f.path).positive?)
-      loaded = Xlsxrb.read(f.path)
+      loaded = Xlsxrb.load(f.path)
       assert_equal(["SheetOne"], loaded.sheet_names)
     end
 
-    data = Xlsxrb.workbook_to_data(wb, shared_strings: false, compression_level: 0)
+    data = Xlsxrb.write(wb, shared_strings: false, compression_level: 0)
     assert_instance_of(String, data)
     assert_true(data.start_with?("PK\x03\x04".b))
+  end
+
+  test "Xlsxrb.split_coordinate splits cell reference into column name and 1-based row number" do
+    assert_equal(["A", 1], Xlsxrb.split_coordinate("A1"))
+    assert_equal(["BC", 100], Xlsxrb.split_coordinate("BC100"))
+    assert_equal(["Z", 5], Xlsxrb.split_coordinate("Z5"))
+    assert_nil(Xlsxrb.split_coordinate(nil))
+    assert_nil(Xlsxrb.split_coordinate("invalid"))
+  end
+
+  test "Xlsxrb.expand_formula shifts relative cell references by coordinates or delta" do
+    # Simple shift
+    assert_equal("A3*2", Xlsxrb.expand_formula("A2*2", from_ref: "B2", to_ref: "B3"))
+    assert_equal("B2*2", Xlsxrb.expand_formula("A2*2", from_ref: "A2", to_ref: "B2"))
+
+    # Direct deltas
+    assert_equal("A4*2", Xlsxrb.expand_formula("A2*2", row_delta: 2, column_delta: 0))
+    assert_equal("C2*2", Xlsxrb.expand_formula("A2*2", row_delta: 0, column_delta: 2))
+    assert_equal("C4*2", Xlsxrb.expand_formula("A2*2", row_delta: 2, column_delta: 2))
+
+    # Absolute and mixed references
+    assert_equal("$A$1+A3", Xlsxrb.expand_formula("$A$1+A2", from_ref: "B2", to_ref: "B3"))
+    assert_equal("A$1+B$1", Xlsxrb.expand_formula("A$1+B$1", from_ref: "A2", to_ref: "A3"))
+    assert_equal("$A2+$A3", Xlsxrb.expand_formula("$A1+$A2", from_ref: "B1", to_ref: "B2"))
+
+    # Range references
+    assert_equal("SUM(A3:C3)", Xlsxrb.expand_formula("SUM(A2:C2)", from_ref: "D2", to_ref: "D3"))
+    assert_equal("AVERAGE(B3:B10)", Xlsxrb.expand_formula("AVERAGE(A3:A10)", from_ref: "A1", to_ref: "B1"))
+
+    # Preserves string literals
+    formula = 'SUM(A2:B2) & " Text A1 here " & A2'
+    assert_equal('SUM(A3:B3) & " Text A1 here " & A3', Xlsxrb.expand_formula(formula, from_ref: "C2", to_ref: "C3"))
+
+    # Escaped double quotes in string literals
+    f_esc = 'A2 & " ""A1"" test "'
+    assert_equal('A3 & " ""A1"" test "', Xlsxrb.expand_formula(f_esc, from_ref: "B2", to_ref: "B3"))
+
+    # Sheet prefix
+    assert_equal("Sheet1!A3 + 'My Sheet'!B3", Xlsxrb.expand_formula("Sheet1!A2 + 'My Sheet'!B2", from_ref: "C2", to_ref: "C3"))
+
+    # Functions with numbers
+    assert_equal("LOG10(A3)", Xlsxrb.expand_formula("LOG10(A2)", from_ref: "B2", to_ref: "B3"))
+
+    # No shift when delta is zero
+    assert_equal("A2*2", Xlsxrb.expand_formula("A2*2", from_ref: "B2", to_ref: "B2"))
+    assert_equal("A2*2", Xlsxrb.expand_formula("A2*2", row_delta: 0, column_delta: 0))
+
+    # Empty or nil formula
+    assert_nil(Xlsxrb.expand_formula(nil, from_ref: "A1", to_ref: "A2"))
+    assert_equal("", Xlsxrb.expand_formula("", from_ref: "A1", to_ref: "A2"))
+
+    # Invalid coordinates fallback to unmodified formula
+    assert_equal("A2*2", Xlsxrb.expand_formula("A2*2", from_ref: "invalid", to_ref: "B2"))
   end
 end

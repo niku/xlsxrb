@@ -372,69 +372,23 @@ module Xlsxrb
         font_opts = opts[:font] || {}
         bold(font_opts[:bold]) if font_opts.key?(:bold)
         italic(font_opts[:italic]) if font_opts.key?(:italic)
-        if font_opts.key?(:font_size)
-          warn "[Xlsxrb DEPRECATION] StyleBuilder font option :font_size is deprecated; use :size instead.", uplevel: 1
-          font_size(font_opts[:font_size])
-        elsif font_opts.key?(:size)
-          font_size(font_opts[:size])
-        elsif font_opts.key?(:sz)
-          warn "[DEPRECATION] :sz is deprecated; use :font_size or :size instead.", uplevel: 1
-          font_size(font_opts[:sz])
-        end
-        if font_opts.key?(:font_name)
-          warn "[Xlsxrb DEPRECATION] StyleBuilder font option :font_name is deprecated; use :name instead.", uplevel: 1
-          font_name(font_opts[:font_name])
-        elsif font_opts.key?(:name)
-          font_name(font_opts[:name])
-        end
-        if font_opts.key?(:font_color)
-          warn "[Xlsxrb DEPRECATION] StyleBuilder font option :font_color is deprecated; use :color instead.", uplevel: 1
-          font_color(font_opts[:font_color])
-        elsif font_opts.key?(:color)
-          font_color(font_opts[:color])
-        end
+        font_size(font_opts[:size]) if font_opts.key?(:size)
+        font_name(font_opts[:name]) if font_opts.key?(:name)
+        font_color(font_opts[:color]) if font_opts.key?(:color)
         underline(font_opts[:underline]) if font_opts.key?(:underline)
         strike(font_opts[:strike]) if font_opts.key?(:strike)
-        if font_opts.key?(:vertical_align)
-          warn "[Xlsxrb DEPRECATION] StyleBuilder font option :vertical_align is deprecated; use :vert_align instead.", uplevel: 1
-          vert_align(font_opts[:vertical_align])
-        elsif font_opts.key?(:vert_align)
-          vert_align(font_opts[:vert_align])
-        end
+        vert_align(font_opts[:vert_align]) if font_opts.key?(:vert_align)
         superscript(font_opts[:superscript]) if font_opts.key?(:superscript)
         subscript(font_opts[:subscript]) if font_opts.key?(:subscript)
       else
         bold(opts[:bold]) if opts.key?(:bold)
         italic(opts[:italic]) if opts.key?(:italic)
-        if opts.key?(:size)
-          warn "[Xlsxrb DEPRECATION] StyleBuilder option :size is deprecated; use :font_size instead.", uplevel: 1
-          font_size(opts[:size])
-        elsif opts.key?(:font_size)
-          font_size(opts[:font_size])
-        elsif opts.key?(:sz)
-          warn "[DEPRECATION] :sz is deprecated; use :font_size or :size instead.", uplevel: 1
-          font_size(opts[:sz])
-        end
-        if opts.key?(:name)
-          warn "[Xlsxrb DEPRECATION] StyleBuilder option :name is deprecated; use :font_name instead.", uplevel: 1
-          font_name(opts[:name])
-        elsif opts.key?(:font_name)
-          font_name(opts[:font_name])
-        end
-        if opts.key?(:color)
-          warn "[Xlsxrb DEPRECATION] StyleBuilder option :color is deprecated; use :font_color instead.", uplevel: 1
-          font_color(opts[:color])
-        elsif opts.key?(:font_color)
-          font_color(opts[:font_color])
-        end
+        font_size(opts[:font_size]) if opts.key?(:font_size)
+        font_name(opts[:font_name]) if opts.key?(:font_name)
+        font_color(opts[:font_color]) if opts.key?(:font_color)
         underline(opts[:underline]) if opts.key?(:underline)
         strike(opts[:strike]) if opts.key?(:strike)
-        if opts.key?(:vertical_align)
-          warn "[Xlsxrb DEPRECATION] StyleBuilder option :vertical_align is deprecated; use :vert_align instead.", uplevel: 1
-          vert_align(opts[:vertical_align])
-        elsif opts.key?(:vert_align)
-          vert_align(opts[:vert_align])
-        end
+        vert_align(opts[:vert_align]) if opts.key?(:vert_align)
         superscript(opts[:superscript]) if opts.key?(:superscript)
         subscript(opts[:subscript]) if opts.key?(:subscript)
       end
@@ -478,12 +432,7 @@ module Xlsxrb
         border_bottom(**opts[:border_bottom]) if opts.key?(:border_bottom) && opts[:border_bottom]
       end
 
-      if opts.key?(:number_format_id)
-        warn "[Xlsxrb DEPRECATION] StyleBuilder option :number_format_id is deprecated; use :number_format instead.", uplevel: 1
-        number_format(opts[:number_format_id])
-      elsif opts.key?(:number_format)
-        number_format(opts[:number_format])
-      end
+      number_format(opts[:number_format]) if opts.key?(:number_format)
 
       if opts.key?(:alignment)
         align_opts = opts[:alignment] || {}
@@ -516,70 +465,47 @@ module Xlsxrb
 
     # --- Font Properties ---
 
-    # Configures multiple font properties at once.
+    # Configures multiple font properties at once or returns font properties.
     # @param opts [Hash] The font properties.
-    # @return [self]
+    # @return [Hash, void]
     # @api public
-    #: (**untyped) -> (self | Hash[Symbol, untyped])
+    #: (**untyped) -> (Hash[Symbol, untyped] | void)
     def font(**opts)
       return @font_props if opts.empty?
 
       bold(opts[:bold]) if opts.key?(:bold)
       italic(opts[:italic]) if opts.key?(:italic)
-      if opts.key?(:font_size)
-        warn "[Xlsxrb DEPRECATION] StyleBuilder font option :font_size is deprecated; use :size instead.", uplevel: 1
-        font_size(opts[:font_size])
-      elsif opts.key?(:size)
-        font_size(opts[:size])
-      elsif opts.key?(:sz)
-        warn "[DEPRECATION] :sz is deprecated; use :font_size or :size instead.", uplevel: 1
-        font_size(opts[:sz])
-      end
-      if opts.key?(:font_name)
-        warn "[Xlsxrb DEPRECATION] StyleBuilder font option :font_name is deprecated; use :name instead.", uplevel: 1
-        font_name(opts[:font_name])
-      elsif opts.key?(:name)
-        font_name(opts[:name])
-      end
-      if opts.key?(:font_color)
-        warn "[Xlsxrb DEPRECATION] StyleBuilder font option :font_color is deprecated; use :color instead.", uplevel: 1
-        font_color(opts[:font_color])
-      elsif opts.key?(:color)
-        font_color(opts[:color])
-      end
+      font_size(opts[:size]) if opts.key?(:size)
+      font_name(opts[:name]) if opts.key?(:name)
+      font_color(opts[:color]) if opts.key?(:color)
       underline(opts[:underline]) if opts.key?(:underline)
       strike(opts[:strike]) if opts.key?(:strike)
-      if opts.key?(:vertical_align)
-        warn "[Xlsxrb DEPRECATION] StyleBuilder font option :vertical_align is deprecated; use :vert_align instead.", uplevel: 1
-        vert_align(opts[:vertical_align])
-      elsif opts.key?(:vert_align)
-        vert_align(opts[:vert_align])
-      end
+      vert_align(opts[:vert_align]) if opts.key?(:vert_align)
       superscript(opts[:superscript]) if opts.key?(:superscript)
       subscript(opts[:subscript]) if opts.key?(:subscript)
-      self
+      nil
     end
 
+    # Sets font options.
+    # @param opts [Hash]
+    # @return [Hash]
+    # @api public
+    #: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
     def font=(opts)
       font(**opts)
+      opts
     end
 
-    # Sets the font to bold.
-    # @param value [Boolean] Whether to apply bold.
-    # @return [self]
+    # Sets or returns whether font is bold.
+    # @param value [Boolean, Object]
+    # @return [Boolean, void]
     # @api public
-    #: (?untyped) -> (self | bool)
+    #: (?untyped value) -> (bool | void)
     def bold(value = OMITTED)
-      if value.equal?(OMITTED)
-        return bold? unless @font_props[:bold].nil?
-
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#bold with zero arguments as a mutator is deprecated; pass true explicitly (e.g. bold(true))", uplevel: 1)
-        @font_props[:bold] = true
-        return self
-      end
+      return bold? if value.equal?(OMITTED)
 
       @font_props[:bold] = value ? true : false
-      self
+      nil
     end
 
     # Sets the font to bold.
@@ -588,7 +514,7 @@ module Xlsxrb
     # @api public
     #: (bool value) -> bool
     def bold=(value)
-      @font_props[:bold] = value
+      @font_props[:bold] = value ? true : false
     end
 
     # Returns whether bold is enabled.
@@ -599,22 +525,16 @@ module Xlsxrb
       @font_props[:bold] ? true : false
     end
 
-    # Sets the font to italic.
-    # @param value [Boolean] Whether to apply italic.
-    # @return [self]
+    # Sets or returns whether font is italic.
+    # @param value [Boolean, Object]
+    # @return [Boolean, void]
     # @api public
-    #: (?untyped) -> (self | bool)
+    #: (?untyped value) -> (bool | void)
     def italic(value = OMITTED)
-      if value.equal?(OMITTED)
-        return italic? unless @font_props[:italic].nil?
-
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#italic with zero arguments as a mutator is deprecated; pass true explicitly (e.g. italic(true))", uplevel: 1)
-        @font_props[:italic] = true
-        return self
-      end
+      return italic? if value.equal?(OMITTED)
 
       @font_props[:italic] = value ? true : false
-      self
+      nil
     end
 
     # Sets the font to italic.
@@ -623,7 +543,7 @@ module Xlsxrb
     # @api public
     #: (bool value) -> bool
     def italic=(value)
-      @font_props[:italic] = value
+      @font_props[:italic] = value ? true : false
     end
 
     # Returns whether italic is enabled.
@@ -635,19 +555,16 @@ module Xlsxrb
     end
 
     # Sets or gets the font size in points.
-    # @param size_value [Integer, Float, nil] The size in points (supports fractional sizes such as 10.5).
-    # @return [Integer, Float, self, nil]
+    # @param size_value [Integer, Float, Object, nil] The size in points (supports fractional sizes such as 10.5).
+    # @return [Integer, Float, void, nil]
     # @api public
-    #: (?Numeric? size_value) -> (Numeric | self | nil)
-    def font_size(size_value = nil)
-      if size_value.nil?
-        @font_props[:size] || @font_props[:sz]
-      else
-        val = size_value.is_a?(Float) && (size_value % 1).zero? ? size_value.to_i : size_value
-        @font_props[:size] = val
-        @font_props[:sz] = val
-        self
-      end
+    #: (?Numeric? size_value) -> (Numeric | void | nil)
+    def font_size(size_value = OMITTED)
+      return @font_props[:size] if size_value.equal?(OMITTED) || size_value.nil?
+
+      val = size_value.is_a?(Float) && (size_value % 1).zero? ? size_value.to_i : size_value
+      @font_props[:size] = val
+      nil
     end
 
     # Sets the font size in points.
@@ -658,49 +575,19 @@ module Xlsxrb
     def font_size=(size_value)
       val = size_value.is_a?(Float) && (size_value % 1).zero? ? size_value.to_i : size_value
       @font_props[:size] = val
-      @font_props[:sz] = val
       size_value
     end
 
-    # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
-    #: (?Numeric? size_value) -> (Numeric | self | nil)
-    def size(size_value = nil)
-      warn "[DEPRECATION] #size is deprecated; use #font_size instead.", uplevel: 1
-      font_size(size_value)
-    end
-
-    # @deprecated Use {#font_size=} instead. Will be removed in 0.2.0.
-    #: (Numeric size_value) -> Numeric
-    def size=(size_value)
-      warn "[DEPRECATION] #size= is deprecated; use #font_size= instead.", uplevel: 1
-      self.font_size = size_value
-    end
-
-    # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
-    #: (?Numeric? size_value) -> (Numeric | self | nil)
-    def sz(size_value = nil)
-      warn "[DEPRECATION] #sz is deprecated; use #font_size instead.", uplevel: 1
-      font_size(size_value)
-    end
-
-    # @deprecated Use {#font_size=} instead. Will be removed in 0.2.0.
-    #: (Numeric size_value) -> Numeric
-    def sz=(size_value)
-      warn "[DEPRECATION] #sz= is deprecated; use #font_size= instead.", uplevel: 1
-      self.font_size = size_value
-    end
-
-    # Sets the font name.
     # Gets or sets the font name.
     # @param name [String, Object] The font name.
-    # @return [String, self, nil]
+    # @return [String, void, nil]
     # @api public
-    #: (?untyped name) -> (String | self | nil)
+    #: (?untyped name) -> (String | void | nil)
     def font_name(name = OMITTED)
       return @font_props[:name] if name.equal?(OMITTED)
 
       @font_props[:name] = name
-      self
+      nil
     end
 
     # Sets the font name.
@@ -714,14 +601,14 @@ module Xlsxrb
 
     # Gets or sets the font color.
     # @param color [String, Symbol, Object] The color.
-    # @return [String, Symbol, self, nil]
+    # @return [String, Symbol, void, nil]
     # @api public
-    #: (?untyped color) -> (String | Symbol | self | nil)
+    #: (?untyped color) -> (String | Symbol | void | nil)
     def font_color(color = OMITTED)
       return @font_props[:color] if color.equal?(OMITTED)
 
       @font_props[:color] = resolve_color(color)
-      self
+      nil
     end
 
     # Sets the font color.
@@ -734,19 +621,13 @@ module Xlsxrb
       color
     end
 
-    # Sets the font underline style.
-    # @param val [String, Symbol, Boolean] The underline style (e.g., 'single', :double, :single_accounting, :double_accounting).
-    # @return [self]
+    # Sets or gets the font underline style.
+    # @param val [String, Symbol, Boolean, Object] The underline style (e.g., 'single', :double, :single_accounting, :double_accounting).
+    # @return [String, Symbol, Boolean, void, nil]
     # @api public
-    #: (?untyped) -> (self | String | Symbol | bool | nil)
+    #: (?untyped val) -> (String | Symbol | bool | void | nil)
     def underline(val = OMITTED)
-      if val.equal?(OMITTED)
-        return @font_props[:underline] unless @font_props[:underline].nil?
-
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#underline with zero arguments as a mutator is deprecated; pass true explicitly (e.g. underline(true))", uplevel: 1)
-        @font_props[:underline] = "single"
-        return self
-      end
+      return @font_props[:underline] if val.equal?(OMITTED)
 
       mapped = if [true, "single"].include?(val)
                  "single"
@@ -756,7 +637,7 @@ module Xlsxrb
                  UNDERLINE_MAP[val.to_sym] || val.to_s
                end
       @font_props[:underline] = mapped
-      self
+      nil
     end
 
     # Sets the font underline style.
@@ -777,22 +658,16 @@ module Xlsxrb
       !@font_props[:underline].nil? && @font_props[:underline] != false
     end
 
-    # Sets the font strikethrough.
-    # @param value [Boolean] Whether to apply strike.
-    # @return [self]
+    # Sets or returns whether font has strikethrough.
+    # @param value [Boolean, Object]
+    # @return [Boolean, void]
     # @api public
-    #: (?untyped) -> (self | bool)
+    #: (?untyped value) -> (bool | void)
     def strike(value = OMITTED)
-      if value.equal?(OMITTED)
-        return strike? unless @font_props[:strike].nil?
-
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#strike with zero arguments as a mutator is deprecated; pass true explicitly (e.g. strike(true))", uplevel: 1)
-        @font_props[:strike] = true
-        return self
-      end
+      return strike? if value.equal?(OMITTED)
 
       @font_props[:strike] = value ? true : false
-      self
+      nil
     end
 
     # Sets the font strikethrough.
@@ -801,7 +676,7 @@ module Xlsxrb
     # @api public
     #: (bool value) -> bool
     def strike=(value)
-      @font_props[:strike] = value
+      @font_props[:strike] = value ? true : false
     end
 
     # Returns whether strikethrough is enabled.
@@ -814,97 +689,103 @@ module Xlsxrb
 
     # Gets or sets the vertical alignment of the font.
     # @param value [String, Symbol, Object] The alignment value ('superscript', 'subscript', 'baseline', :superscript, :subscript).
-    # @return [String, self, nil]
+    # @return [String, void, nil]
     # @api public
-    #: (?untyped value) -> (String | self | nil)
+    #: (?untyped value) -> (String | void | nil)
     def vert_align(value = OMITTED)
       return @font_props[:vert_align] if value.equal?(OMITTED)
 
       mapped = VERT_ALIGN_MAP[value.to_sym] || value.to_s
       @font_props[:vert_align] = mapped
-      self
+      nil
     end
 
-    def vert_align=(value)
-      vert_align(value)
-      value
-    end
-
-    # Sets the font to superscript.
-    # @param value [Boolean] Whether to apply superscript.
-    # @return [self]
+    # Sets the vertical alignment of the font.
+    # @param val [String, Symbol]
+    # @return [Object]
     # @api public
-    #: (?untyped) -> (self | bool)
-    def superscript(value = OMITTED)
-      if value.equal?(OMITTED)
-        return superscript? unless @font_props[:vert_align].nil?
+    #: (untyped val) -> untyped
+    def vert_align=(val)
+      vert_align(val)
+      val
+    end
 
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#superscript with zero arguments as a mutator is deprecated; pass true explicitly (e.g. superscript(true))", uplevel: 1)
-        @font_props[:vert_align] = "superscript"
-        return self
-      end
+    # Sets or gets whether the font is superscript.
+    # @param value [Boolean, Object] Whether to apply superscript.
+    # @return [Boolean, void]
+    # @api public
+    #: (?untyped value) -> (bool | void)
+    def superscript(value = OMITTED)
+      return superscript? if value.equal?(OMITTED)
 
       @font_props[:vert_align] = value ? "superscript" : "baseline"
-      self
+      nil
     end
 
-    def superscript=(value)
-      superscript(value)
-      value
-    end
-
+    # Returns whether superscript is enabled.
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
     def superscript?
       @font_props[:vert_align] == "superscript"
     end
 
-    # Sets the font to subscript.
-    # @param value [Boolean] Whether to apply subscript.
-    # @return [self]
+    # Sets the font to superscript.
+    # @param val [Boolean]
+    # @return [Boolean]
     # @api public
-    #: (?untyped) -> (self | bool)
-    def subscript(value = OMITTED)
-      if value.equal?(OMITTED)
-        return subscript? unless @font_props[:vert_align].nil?
+    #: (untyped val) -> untyped
+    def superscript=(val)
+      superscript(val)
+      val
+    end
 
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#subscript with zero arguments as a mutator is deprecated; pass true explicitly (e.g. subscript(true))", uplevel: 1)
-        @font_props[:vert_align] = "subscript"
-        return self
-      end
+    # Sets or gets whether the font is subscript.
+    # @param value [Boolean, Object] Whether to apply subscript.
+    # @return [Boolean, void]
+    # @api public
+    #: (?untyped value) -> (bool | void)
+    def subscript(value = OMITTED)
+      return subscript? if value.equal?(OMITTED)
 
       @font_props[:vert_align] = value ? "subscript" : "baseline"
-      self
+      nil
     end
 
-    def subscript=(value)
-      subscript(value)
-      value
-    end
-
+    # Returns whether subscript is enabled.
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
     def subscript?
       @font_props[:vert_align] == "subscript"
     end
+
+    # Sets the font to subscript.
+    # @param val [Boolean]
+    # @return [Boolean]
+    # @api public
+    #: (untyped val) -> untyped
+    def subscript=(val)
+      subscript(val)
+      val
+    end
+
     # --- Fill Properties ---
 
-    # Sets the fill pattern.
-    # @param pattern [String, Symbol] The pattern type.
+    # Sets or gets the fill pattern.
+    # @param pattern [String, Symbol, Object] The pattern type.
     # @param fg_color [String, Symbol, nil] The foreground color.
     # @param bg_color [String, Symbol, nil] The background color.
-    # @return [self]
+    # @return [String, Symbol, void, nil]
     # @api public
-    # Configures fill properties.
-    # @param pattern [String, Symbol] The pattern type.
-    # @param fg_color [String, Symbol, nil] The foreground color.
-    # @param bg_color [String, Symbol, nil] The background color.
-    # @return [self]
-    # @api public
-    #: (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> untyped
+    #: (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> (untyped | void)
     def fill_pattern(pattern = OMITTED, fg_color: nil, bg_color: nil)
       return @fill_props[:pattern] if pattern.equal?(OMITTED)
 
       @fill_props[:pattern] = pattern
       @fill_props[:fg_color] = fg_color if fg_color
       @fill_props[:bg_color] = bg_color if bg_color
-      self
+      nil
     end
 
     # Sets the fill pattern.
@@ -923,15 +804,15 @@ module Xlsxrb
 
     # Gets or sets a solid fill color.
     # @param color [String, Symbol, Object] The color.
-    # @return [String, Symbol, self, nil]
+    # @return [String, Symbol, void, nil]
     # @api public
-    #: (?untyped color) -> (String | Symbol | self | nil)
+    #: (?untyped color) -> (String | Symbol | void | nil)
     def fill_color(color = OMITTED)
       return @fill_props[:fg_color] if color.equal?(OMITTED)
 
       @fill_props[:pattern] = "solid"
       @fill_props[:fg_color] = resolve_color(color)
-      self
+      nil
     end
 
     # Sets a solid fill color.
@@ -944,25 +825,42 @@ module Xlsxrb
       color
     end
 
-    #: (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> (self | Hash[Symbol, untyped])
+    # Configures fill properties or returns current fill properties.
+    # @param pattern [String, Symbol, Object]
+    # @param fg_color [String, Symbol, nil]
+    # @param bg_color [String, Symbol, nil]
+    # @return [Hash, void]
+    # @api public
+    #: (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> (Hash[Symbol, untyped] | void)
     def fill(pattern: OMITTED, fg_color: nil, bg_color: nil)
       return @fill_props if pattern.equal?(OMITTED) && fg_color.nil? && bg_color.nil?
 
       pat = pattern.equal?(OMITTED) ? "solid" : pattern
       fill_pattern(pat, fg_color: resolve_color(fg_color), bg_color: resolve_color(bg_color))
+      nil
     end
 
+    # Sets fill options.
+    # @param opts [Hash, Object]
+    # @return [Object]
+    # @api public
+    #: (untyped opts) -> untyped
     def fill=(opts)
-      fill(**opts)
+      if opts.is_a?(Hash)
+        fill(**opts)
+      else
+        fill(pattern: opts)
+      end
+      opts
     end
 
-    # Sets a gradient fill.
-    # @param type [String] The gradient type.
+    # Sets or gets a gradient fill.
+    # @param type [String, Object] The gradient type.
     # @param degree [Numeric, nil] The degree.
     # @param stops [Array] The gradient stops.
-    # @return [self]
+    # @return [Hash, void, nil]
     # @api public
-    #: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> (self | Hash[Symbol, untyped] | nil)
+    #: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> (Hash[Symbol, untyped] | void | nil)
     def fill_gradient(type: OMITTED, degree: nil, stops: [])
       return @fill_props[:gradient] if type.equal?(OMITTED)
 
@@ -971,21 +869,22 @@ module Xlsxrb
         degree: degree,
         stops: stops
       }.compact
-      self
+      nil
     end
 
     # --- Border Properties ---
 
-    # Configures multiple border properties.
-    # @param all [Hash, nil]
-    # @param left [Hash, nil]
-    # @param right [Hash, nil]
-    # @param top [Hash, nil]
-    # @param bottom [Hash, nil]
-    # @param diagonal [Hash, nil]
-    # @return [self]
+    # Configures multiple border properties or returns current border properties.
+    #
+    # @param all [Hash, nil] Border options for all sides.
+    # @param left [Hash, nil] Options for left border.
+    # @param right [Hash, nil] Options for right border.
+    # @param top [Hash, nil] Options for top border.
+    # @param bottom [Hash, nil] Options for bottom border.
+    # @param diagonal [Hash, nil] Options for diagonal border.
+    # @return [Hash, void]
     # @api public
-    #: (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> (self | Hash[Symbol, untyped])
+    #: (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> (Hash[Symbol, untyped] | void)
     def border(all: nil, left: nil, right: nil, top: nil, bottom: nil, diagonal: nil)
       return @border_props if all.nil? && left.nil? && right.nil? && top.nil? && bottom.nil? && diagonal.nil?
 
@@ -995,19 +894,25 @@ module Xlsxrb
       border_top(**top) if top
       border_bottom(**bottom) if bottom
       border_diagonal(**diagonal) if diagonal
-      self
+      nil
     end
 
+    # Sets border options.
+    # @param opts [Hash]
+    # @return [Hash]
+    # @api public
+    #: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
     def border=(opts)
       border(**opts)
+      opts
     end
 
     # Sets all borders.
     # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
-    # @return [self]
+    # @return [void]
     # @api public
-    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_all(style: "thin", color: nil)
       norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
       color_opt = color ? { color: resolve_color(color) } : {}
@@ -1015,55 +920,55 @@ module Xlsxrb
       @border_props[:right] = { style: norm_style, **color_opt }
       @border_props[:top] = { style: norm_style, **color_opt }
       @border_props[:bottom] = { style: norm_style, **color_opt }
-      self
+      nil
     end
 
     # Sets the left border.
     # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
-    # @return [self]
+    # @return [void]
     # @api public
-    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_left(style: "thin", color: nil)
       norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
       @border_props[:left] = { style: norm_style, color: resolve_color(color) }.compact
-      self
+      nil
     end
 
     # Sets the right border.
     # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
-    # @return [self]
+    # @return [void]
     # @api public
-    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_right(style: "thin", color: nil)
       norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
       @border_props[:right] = { style: norm_style, color: resolve_color(color) }.compact
-      self
+      nil
     end
 
     # Sets the top border.
     # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
-    # @return [self]
+    # @return [void]
     # @api public
-    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_top(style: "thin", color: nil)
       norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
       @border_props[:top] = { style: norm_style, color: resolve_color(color) }.compact
-      self
+      nil
     end
 
     # Sets the bottom border.
     # @param style [String, Symbol, Integer] The border style.
     # @param color [String, Symbol, nil] The color.
-    # @return [self]
+    # @return [void]
     # @api public
-    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_bottom(style: "thin", color: nil)
       norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
       @border_props[:bottom] = { style: norm_style, color: resolve_color(color) }.compact
-      self
+      nil
     end
 
     # rubocop:disable Naming/MethodParameterName
@@ -1072,15 +977,15 @@ module Xlsxrb
     # @param color [String, Symbol, nil] The color.
     # @param up [Boolean] Diagonal up.
     # @param down [Boolean] Diagonal down.
-    # @return [self]
+    # @return [void]
     # @api public
-    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> self
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> void
     def border_diagonal(style: "thin", color: nil, up: false, down: false)
       norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
       @border_props[:diagonal] = { style: norm_style, color: resolve_color(color) }.compact
       @border_props[:diagonal_up] = true if up
       @border_props[:diagonal_down] = true if down
-      self
+      nil
     end
     # rubocop:enable Naming/MethodParameterName
 
@@ -1088,20 +993,20 @@ module Xlsxrb
 
     # Configures or returns alignment properties.
     # When called with 0 arguments/keywords, returns the current alignment Hash.
-    # When called with keyword arguments, merges the properties and returns self.
+    # When called with keyword arguments, merges the properties and returns nil.
     #
-    # @param horizontal [String, Symbol, nil]
-    # @param vertical [String, Symbol, nil]
-    # @param wrap_text [Boolean, nil]
-    # @param text_rotation [Integer, nil]
-    # @param indent [Integer, nil]
-    # @param shrink_to_fit [Boolean, nil]
-    # @param reading_order [Integer, nil]
-    # @param justify_last_line [Boolean, nil]
-    # @param relative_indent [Integer, nil]
-    # @return [Hash, self]
+    # @param horizontal [String, Symbol, nil] Horizontal alignment (:left, :center, :right, :fill, :justify, etc.).
+    # @param vertical [String, Symbol, nil] Vertical alignment (:top, :center, :bottom, :justify, :distributed).
+    # @param wrap_text [Boolean, nil] Whether to wrap text within the cell.
+    # @param text_rotation [Integer, nil] Text rotation in degrees (0-180 or 255 for vertical).
+    # @param indent [Integer, nil] Indentation level (0-250).
+    # @param shrink_to_fit [Boolean, nil] Whether to shrink text to fit cell width.
+    # @param reading_order [Integer, nil] Reading order (0: context, 1: left-to-right, 2: right-to-left).
+    # @param justify_last_line [Boolean, nil] Whether to justify the last line of text.
+    # @param relative_indent [Integer, nil] Relative indentation level.
+    # @return [Hash, void]
     # @api public
-    #: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> (Hash[Symbol, untyped] | self)
+    #: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> (Hash[Symbol, untyped] | void)
     def alignment(horizontal: nil, vertical: nil, wrap_text: nil, text_rotation: nil, indent: nil, shrink_to_fit: nil, reading_order: nil, justify_last_line: nil, relative_indent: nil)
       return @alignment if horizontal.nil? && vertical.nil? && wrap_text.nil? && text_rotation.nil? && indent.nil? && shrink_to_fit.nil? && reading_order.nil? && justify_last_line.nil? && relative_indent.nil?
 
@@ -1114,7 +1019,7 @@ module Xlsxrb
       @alignment[:reading_order] = reading_order unless reading_order.nil?
       @alignment[:justify_last_line] = justify_last_line unless justify_last_line.nil?
       @alignment[:relative_indent] = relative_indent unless relative_indent.nil?
-      self
+      nil
     end
 
     # Sets alignment options.
@@ -1130,14 +1035,14 @@ module Xlsxrb
 
     # Gets or sets horizontal alignment.
     # @param value [String, Symbol, Object] The alignment.
-    # @return [String, Symbol, self, nil]
+    # @return [String, Symbol, void, nil]
     # @api public
-    #: (?untyped value) -> (String | Symbol | self | nil)
+    #: (?untyped value) -> (String | Symbol | void | nil)
     def align_horizontal(value = OMITTED)
       return @alignment[:horizontal] if value.equal?(OMITTED)
 
       @alignment[:horizontal] = value
-      self
+      nil
     end
 
     # Sets horizontal alignment.
@@ -1151,14 +1056,14 @@ module Xlsxrb
 
     # Gets or sets vertical alignment.
     # @param value [String, Symbol, Object] The alignment.
-    # @return [String, Symbol, self, nil]
+    # @return [String, Symbol, void, nil]
     # @api public
-    #: (?untyped value) -> (String | Symbol | self | nil)
+    #: (?untyped value) -> (String | Symbol | void | nil)
     def align_vertical(value = OMITTED)
       return @alignment[:vertical] if value.equal?(OMITTED)
 
       @alignment[:vertical] = value
-      self
+      nil
     end
 
     # Sets vertical alignment.
@@ -1170,22 +1075,16 @@ module Xlsxrb
       @alignment[:vertical] = value
     end
 
-    # Sets text wrapping.
-    # @param value [Boolean] Whether to wrap text.
-    # @return [self]
+    # Sets or gets text wrapping.
+    # @param value [Boolean, Object] Whether to wrap text.
+    # @return [Boolean, void]
     # @api public
-    #: (?untyped) -> (self | bool)
+    #: (?untyped value) -> (bool | void)
     def wrap_text(value = OMITTED)
-      if value.equal?(OMITTED)
-        return wrap_text? unless @alignment[:wrap_text].nil?
-
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#wrap_text with zero arguments as a mutator is deprecated; pass true explicitly (e.g. wrap_text(true))", uplevel: 1)
-        @alignment[:wrap_text] = true
-        return self
-      end
+      return wrap_text? if value.equal?(OMITTED)
 
       @alignment[:wrap_text] = value ? true : false
-      self
+      nil
     end
 
     # Sets text wrapping.
@@ -1194,7 +1093,7 @@ module Xlsxrb
     # @api public
     #: (bool value) -> bool
     def wrap_text=(value)
-      @alignment[:wrap_text] = value
+      @alignment[:wrap_text] = value ? true : false
     end
 
     # Returns whether text wrapping is enabled.
@@ -1205,22 +1104,16 @@ module Xlsxrb
       @alignment[:wrap_text] ? true : false
     end
 
-    # Sets shrink to fit.
-    # @param value [Boolean] Whether to shrink text.
-    # @return [self]
+    # Sets or gets shrink to fit.
+    # @param value [Boolean, Object] Whether to shrink text.
+    # @return [Boolean, void]
     # @api public
-    #: (?untyped) -> (self | bool)
+    #: (?untyped value) -> (bool | void)
     def shrink_to_fit(value = OMITTED)
-      if value.equal?(OMITTED)
-        return shrink_to_fit? unless @alignment[:shrink_to_fit].nil?
-
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#shrink_to_fit with zero arguments as a mutator is deprecated; pass true explicitly (e.g. shrink_to_fit(true))", uplevel: 1)
-        @alignment[:shrink_to_fit] = true
-        return self
-      end
+      return shrink_to_fit? if value.equal?(OMITTED)
 
       @alignment[:shrink_to_fit] = value ? true : false
-      self
+      nil
     end
 
     # Sets shrink to fit.
@@ -1229,7 +1122,7 @@ module Xlsxrb
     # @api public
     #: (bool value) -> bool
     def shrink_to_fit=(value)
-      @alignment[:shrink_to_fit] = value
+      @alignment[:shrink_to_fit] = value ? true : false
     end
 
     # Returns whether shrink to fit is enabled.
@@ -1242,14 +1135,14 @@ module Xlsxrb
 
     # Gets or sets text rotation.
     # @param value [Numeric, Object] The rotation angle.
-    # @return [Numeric, self, nil]
+    # @return [Numeric, void, nil]
     # @api public
-    #: (?untyped value) -> (Numeric | self | nil)
+    #: (?untyped value) -> (Numeric | void | nil)
     def text_rotation(value = OMITTED)
       return @alignment[:text_rotation] if value.equal?(OMITTED)
 
       @alignment[:text_rotation] = value
-      self
+      nil
     end
 
     # Sets text rotation.
@@ -1263,14 +1156,14 @@ module Xlsxrb
 
     # Gets or sets text indent.
     # @param value [Numeric, Object] The indent level.
-    # @return [Numeric, self, nil]
+    # @return [Numeric, void, nil]
     # @api public
-    #: (?untyped value) -> (Numeric | self | nil)
+    #: (?untyped value) -> (Numeric | void | nil)
     def indent(value = OMITTED)
       return @alignment[:indent] if value.equal?(OMITTED)
 
       @alignment[:indent] = value.to_i
-      self
+      nil
     end
 
     # Sets text indent.
@@ -1286,19 +1179,19 @@ module Xlsxrb
 
     # Configures or returns cell protection properties.
     # When called with 0 arguments/keywords, returns the current protection Hash.
-    # When called with keyword arguments, merges the properties and returns self.
+    # When called with keyword arguments, merges the properties and returns nil.
     #
     # @param locked [Boolean, nil]
     # @param hidden [Boolean, nil]
-    # @return [Hash, self]
+    # @return [Hash, void]
     # @api public
-    #: (?locked: bool?, ?hidden: bool?) -> (Hash[Symbol, untyped] | self)
+    #: (?locked: bool?, ?hidden: bool?) -> (Hash[Symbol, untyped] | void)
     def protection(locked: nil, hidden: nil)
       return @protection if locked.nil? && hidden.nil?
 
       @protection[:locked] = locked unless locked.nil?
       @protection[:hidden] = hidden unless hidden.nil?
-      self
+      nil
     end
 
     # Sets protection options.
@@ -1312,23 +1205,17 @@ module Xlsxrb
       opts
     end
 
-    # Sets whether the cell is locked.
+    # Sets or gets whether the cell is locked.
     #
-    # @param value [Boolean]
-    # @return [self]
+    # @param value [Boolean, Object]
+    # @return [Boolean, void]
     # @api public
-    #: (?untyped value) -> (self | bool)
+    #: (?untyped value) -> (bool | void)
     def locked(value = OMITTED)
-      if value.equal?(OMITTED)
-        return locked? unless @protection[:locked].nil?
-
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#locked with zero arguments as a mutator is deprecated; pass true explicitly (e.g. locked(true))", uplevel: 1)
-        @protection[:locked] = true
-        return self
-      end
+      return locked? if value.equal?(OMITTED)
 
       @protection[:locked] = value ? true : false
-      self
+      nil
     end
 
     # Sets whether the cell is locked.
@@ -1338,7 +1225,7 @@ module Xlsxrb
     # @api public
     #: (bool value) -> bool
     def locked=(value)
-      @protection[:locked] = value
+      @protection[:locked] = value ? true : false
     end
 
     # Returns whether the cell is locked.
@@ -1349,23 +1236,17 @@ module Xlsxrb
       @protection[:locked] != false
     end
 
-    # Sets whether the cell formula is hidden.
+    # Sets or gets whether the cell formula is hidden.
     #
-    # @param value [Boolean]
-    # @return [self]
+    # @param value [Boolean, Object]
+    # @return [Boolean, void]
     # @api public
-    #: (?untyped value) -> (self | bool)
+    #: (?untyped value) -> (bool | void)
     def hidden(value = OMITTED)
-      if value.equal?(OMITTED)
-        return hidden? unless @protection[:hidden].nil?
-
-        Xlsxrb::Deprecation.warn("Calling StyleBuilder#hidden with zero arguments as a mutator is deprecated; pass true explicitly (e.g. hidden(true))", uplevel: 1)
-        @protection[:hidden] = true
-        return self
-      end
+      return hidden? if value.equal?(OMITTED)
 
       @protection[:hidden] = value ? true : false
-      self
+      nil
     end
 
     # Sets whether the cell formula is hidden.
@@ -1375,7 +1256,7 @@ module Xlsxrb
     # @api public
     #: (bool value) -> bool
     def hidden=(value)
-      @protection[:hidden] = value
+      @protection[:hidden] = value ? true : false
     end
 
     # Returns whether the cell formula is hidden.
@@ -1389,17 +1270,15 @@ module Xlsxrb
     # --- Number Format ---
 
     # Sets or gets the number format.
-    # @param num_fmt_id [String, Integer, nil] The format id or format string.
-    # @return [String, Integer, self, nil]
+    # @param num_fmt_id [String, Integer, Object, nil] The format id or format string.
+    # @return [String, Integer, void, nil]
     # @api public
-    #: (?String | Integer | nil num_fmt_id) -> (String | Integer | self | nil)
-    def number_format(num_fmt_id = nil)
-      if num_fmt_id.nil?
-        @num_fmt_id
-      else
-        @num_fmt_id = num_fmt_id
-        self
-      end
+    #: (?String | Integer | Object | nil num_fmt_id) -> (String | Integer | void | nil)
+    def number_format(num_fmt_id = OMITTED)
+      return @num_fmt_id if num_fmt_id.equal?(OMITTED) || num_fmt_id.nil?
+
+      @num_fmt_id = num_fmt_id
+      nil
     end
 
     # Sets the number format.
@@ -1409,56 +1288,6 @@ module Xlsxrb
     #: (String | Integer num_fmt_id) -> (String | Integer)
     def number_format=(num_fmt_id)
       @num_fmt_id = num_fmt_id
-    end
-
-    # Sets or gets the number format ID.
-    # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
-    # @param id [String, Integer, nil]
-    # @return [String, Integer, self, nil]
-    # @api public
-    #: (?String | Integer | nil id) -> (String | Integer | self | nil)
-    def number_format_id(id = nil)
-      warn "[Xlsxrb DEPRECATION] StyleBuilder#number_format_id is deprecated; use #number_format instead.", uplevel: 1
-      number_format(id)
-    end
-
-    # Sets the number format ID.
-    # @deprecated Use {#number_format=} instead. Will be removed in 0.2.0.
-    # @param id [String, Integer]
-    # @return [String, Integer]
-    # @api public
-    #: (String | Integer id) -> (String | Integer)
-    def number_format_id=(id)
-      warn "[Xlsxrb DEPRECATION] StyleBuilder#number_format_id= is deprecated; use #number_format= instead.", uplevel: 1
-      @num_fmt_id = id
-    end
-
-    # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
-    #: (?String | Integer | nil num_fmt_id) -> (String | Integer | self | nil)
-    def num_fmt(num_fmt_id = nil)
-      warn "[DEPRECATION] #num_fmt is deprecated; use #number_format instead.", uplevel: 1
-      number_format(num_fmt_id)
-    end
-
-    # @deprecated Use {#number_format=} instead. Will be removed in 0.2.0.
-    #: (String | Integer num_fmt_id) -> (String | Integer)
-    def num_fmt=(num_fmt_id)
-      warn "[DEPRECATION] #num_fmt= is deprecated; use #number_format= instead.", uplevel: 1
-      self.number_format = num_fmt_id
-    end
-
-    # @deprecated Use {#number_format_id} instead. Will be removed in 0.2.0.
-    #: (?String | Integer | nil id) -> (String | Integer | self | nil)
-    def num_fmt_id(id = nil)
-      warn "[DEPRECATION] #num_fmt_id is deprecated; use #number_format_id instead.", uplevel: 1
-      number_format_id(id)
-    end
-
-    # @deprecated Use {#number_format_id=} instead. Will be removed in 0.2.0.
-    #: (String | Integer id) -> (String | Integer)
-    def num_fmt_id=(id)
-      warn "[DEPRECATION] #num_fmt_id= is deprecated; use #number_format_id= instead.", uplevel: 1
-      self.number_format_id = id
     end
 
     # Register this style with the given Writer, returning the style_id.

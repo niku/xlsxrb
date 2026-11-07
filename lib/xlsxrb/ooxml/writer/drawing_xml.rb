@@ -22,8 +22,8 @@ module Xlsxrb
               ea = img[:edit_as] || "oneCell"
               img_pub_attr = img[:published] ? ' fPublished="1"' : ""
               parts << %(<xdr:twoCellAnchor editAs="#{xml_escape(ea)}"#{img_pub_attr}>)
-              parts << anchor_xml("from", img[:from_col], img[:from_row], col_off: img[:from_col_off] || 0, row_off: img[:from_row_off] || 0)
-              parts << anchor_xml("to", img[:to_col], img[:to_row], col_off: img[:to_col_off] || 0, row_off: img[:to_row_off] || 0)
+              parts << anchor_xml("from", img[:from_column] || img[:from_col], img[:from_row], col_off: img[:from_col_off] || 0, row_off: img[:from_row_off] || 0)
+              parts << anchor_xml("to", img[:to_column] || img[:to_col], img[:to_row], col_off: img[:to_col_off] || 0, row_off: img[:to_row_off] || 0)
               macro_attr = img[:macro] ? %( macro="#{xml_escape(img[:macro])}") : ""
               parts << "<xdr:pic#{macro_attr}>"
               descr_attr = img[:description] ? %( descr="#{xml_escape(img[:description])}") : ""
@@ -68,8 +68,8 @@ module Xlsxrb
               chart_ea_attr = chart[:edit_as] ? %( editAs="#{xml_escape(chart[:edit_as])}") : ""
               chart_pub_attr = chart[:published] ? ' fPublished="1"' : ""
               parts << "<xdr:twoCellAnchor#{chart_ea_attr}#{chart_pub_attr}>"
-              parts << anchor_xml("from", chart[:from_col], chart[:from_row], col_off: chart[:from_col_off] || 0, row_off: chart[:from_row_off] || 0)
-              parts << anchor_xml("to", chart[:to_col], chart[:to_row], col_off: chart[:to_col_off] || 0, row_off: chart[:to_row_off] || 0)
+              parts << anchor_xml("from", chart[:from_column] || chart[:from_col], chart[:from_row], col_off: chart[:from_col_off] || 0, row_off: chart[:from_row_off] || 0)
+              parts << anchor_xml("to", chart[:to_column] || chart[:to_col], chart[:to_row], col_off: chart[:to_col_off] || 0, row_off: chart[:to_row_off] || 0)
               gf_macro = chart[:frame_macro] ? xml_escape(chart[:frame_macro]) : ""
               parts << %(<xdr:graphicFrame macro="#{gf_macro}">)
               chart_frame_name = chart[:name] || chart[:title] || "Chart"
@@ -93,8 +93,8 @@ module Xlsxrb
               shape_ea_attr = shape[:edit_as] ? %( editAs="#{xml_escape(shape[:edit_as])}") : ""
               shape_pub_attr = shape[:published] ? ' fPublished="1"' : ""
               parts << "<xdr:twoCellAnchor#{shape_ea_attr}#{shape_pub_attr}>"
-              parts << anchor_xml("from", shape[:from_col], shape[:from_row], col_off: shape[:from_col_off] || 0, row_off: shape[:from_row_off] || 0)
-              parts << anchor_xml("to", shape[:to_col], shape[:to_row], col_off: shape[:to_col_off] || 0, row_off: shape[:to_row_off] || 0)
+              parts << anchor_xml("from", shape[:from_column] || shape[:from_col], shape[:from_row], col_off: shape[:from_col_off] || 0, row_off: shape[:from_row_off] || 0)
+              parts << anchor_xml("to", shape[:to_column] || shape[:to_col], shape[:to_row], col_off: shape[:to_col_off] || 0, row_off: shape[:to_row_off] || 0)
               sp_macro_attr = shape[:macro] ? %( macro="#{xml_escape(shape[:macro])}") : ""
               sp_textlink_attr = shape[:textlink] ? %( textlink="#{xml_escape(shape[:textlink])}") : ""
               parts << "<xdr:sp#{sp_macro_attr}#{sp_textlink_attr}>"

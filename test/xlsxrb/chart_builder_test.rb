@@ -172,6 +172,7 @@ class ChartBuilderTest < Test::Unit::TestCase
     assert_equal({ title: "Secondary Units", major_gridlines: false }, opts[:secondary_value_axis])
     assert_equal(3, opts[:series].size)
     assert_nil(opts[:series][0][:secondary_axis])
+    assert_equal(:secondary, opts[:series][1][:axis])
     assert_equal(true, opts[:series][1][:secondary_axis])
     assert_equal(:secondary, opts[:series][2][:axis])
     assert_equal(true, opts[:series][2][:secondary_axis])
@@ -181,72 +182,5 @@ class ChartBuilderTest < Test::Unit::TestCase
     b2.secondary_value_axis = "sec_axis_spec"
     assert_equal("sec_axis_spec", b2.options[:secondary_value_axis])
     assert_equal("sec_axis_spec", b2.secondary_value_axis)
-  end
-
-  test "chart_builder and series_builder emit deprecation warnings on positional calls" do
-    builder = Xlsxrb::ChartBuilder.new
-
-    err = capture_stderr do
-      builder.type(:bar)
-      builder.title("Legacy Title")
-      builder.style(10)
-      builder.plot_visible_only(true)
-      builder.display_blanks_as("zero")
-      builder.show_legend_key(false)
-      builder.legend("bottom")
-      builder.plot_area("custom_plot_area")
-      builder.chart_space("custom_space")
-      builder.category_axis("cat_axis_spec")
-      builder.value_axis("val_axis_spec")
-      builder.secondary_value_axis("sec_axis_spec")
-      builder.view3d("standard_3d")
-      builder.data_labels("show_val")
-      builder.series({ name: "PositionalSeries", values: "Sheet1!$A$1:$A$5" })
-    end
-
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#type\(value\) is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#title\(value\) is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#style\(value\) is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#plot_visible_only\(value\) is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#display_blanks_as\(value\) is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#show_legend_key\(value\) is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#legend\(options\) with positional argument is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#plot_area\(options\) with positional argument is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#chart_space\(options\) with positional argument is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#category_axis\(options\) with positional argument is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#value_axis\(options\) with positional argument is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#secondary_value_axis\(options\) with positional argument is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#view3d\(options\) with positional argument is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#data_labels\(options\) with positional argument is deprecated/, err)
-    assert_match(/\[Xlsxrb DEPRECATION\] ChartBuilder#series\(value\) with positional argument is deprecated/, err)
-
-    sb = Xlsxrb::ChartBuilder::SeriesBuilder.new
-    err_sb = capture_stderr do
-      sb.name("Legacy Series")
-      sb.categories("Sheet1!$A$1:$A$5")
-      sb.values("Sheet1!$B$1:$B$5")
-      sb.marker("circle")
-      sb.fill("blue")
-      sb.line("red")
-      sb.trendline("linear")
-      sb.data_labels("all")
-      sb.smooth(true)
-      sb.shape("cylinder")
-      sb.type("bar")
-      sb.axis(:secondary)
-    end
-
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#name\(value\) is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#categories\(value\) is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#values\(value\) is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#marker\(options\) with positional argument is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#fill\(options\) with positional argument is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#line\(options\) with positional argument is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#trendline\(options\) with positional argument is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#data_labels\(options\) with positional argument is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#smooth\(value\) is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#shape\(value\) is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#type\(value\) is deprecated/, err_sb)
-    assert_match(/\[Xlsxrb DEPRECATION\] SeriesBuilder#axis\(value\) is deprecated/, err_sb)
   end
 end

@@ -32,7 +32,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["", "", "", ""])
     s.row(["", "", "", ""])
     s.row(["", "", "", "Boundary End"], cell_styles: [nil, "center", "center", "center"])
-    s.image(dummy_png, ext: "png", from_col: 1, from_row: 1, to_col: 3, to_row: 5)
+    s.image(dummy_png, ext: "png", from_column: 1, from_row: 1, to_column: 3, to_row: 5)
     s.column(0, width: 20)
     s.column(1, width: 15)
     s.column(2, width: 15)

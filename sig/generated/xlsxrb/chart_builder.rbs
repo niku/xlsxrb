@@ -5,12 +5,12 @@ module Xlsxrb
   #
   # @example Create a chart definition
   #   builder = ChartBuilder.new
-  #   builder.type(:bar)
-  #   builder.title("Quarterly Sales")
+  #   builder.type = :bar
+  #   builder.title = "Quarterly Sales"
   #   builder.series do |s|
-  #     s.name("2026")
-  #     s.categories("Sheet1!$A$2:$A$5")
-  #     s.values("Sheet1!$B$2:$B$5")
+  #     s.name = "2026"
+  #     s.categories = "Sheet1!$A$2:$A$5"
+  #     s.values = "Sheet1!$B$2:$B$5"
   #   end
   #
   # @api public
@@ -23,14 +23,12 @@ module Xlsxrb
     # : Hash[Symbol, untyped]
     attr_reader options: untyped
 
-    # Sets or gets the chart type (e.g. :line, :bar, :pie, :area, :radar, :scatter).
+    # Gets the chart type (e.g. :line, :bar, :pie, :area, :radar, :scatter).
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#type=} instead.
-    # @param value [Symbol, String, nil] Chart type.
     # @return [Symbol, String, nil]
     # @api public
-    # : (?Symbol | String | nil value) -> (Symbol | String | nil)
-    def type: (?Symbol | String | nil value) -> (Symbol | String | nil)
+    # : () -> (Symbol | String | nil)
+    def type: () -> (Symbol | String | nil)
 
     # Sets the chart type.
     #
@@ -40,33 +38,42 @@ module Xlsxrb
     # : (Symbol | String | nil value) -> (Symbol | String | nil)
     def type=: (Symbol | String | nil value) -> (Symbol | String | nil)
 
-    # Sets or gets the chart title.
+    # Gets or configures the chart title.
     #
-    # @param value [String, Hash, nil] Chart title text or options hash.
-    # @param kwargs [Hash] Keyword arguments for title styling.
-    # @return [String, Hash, nil]
+    # @overload title
+    #   Returns the configured title options or text.
+    #   @return [String, Hash{Symbol => Object}, nil]
+    # @overload title(**kwargs)
+    #   Configures title using keyword arguments.
+    #   @return [void]
     # @api public
-    # : (?String | Hash[Symbol, untyped] | nil value, **untyped kwargs) -> (String | Hash[Symbol, untyped] | nil)
-    def title: (?String | Hash[Symbol, untyped] | nil value, **untyped kwargs) -> (String | Hash[Symbol, untyped] | nil)
+    # : (**untyped kwargs) -> (String | Hash[Symbol, untyped] | nil)
+    def title: (**untyped kwargs) -> (String | Hash[Symbol, untyped] | nil)
 
     # Sets the chart title.
     #
-    # @param value [String, Hash, nil]
-    # @return [String, Hash, nil]
+    # @param value [String, Hash{Symbol => Object}, nil]
+    # @return [String, Hash{Symbol => Object}, nil]
     # @api public
     # : (String | Hash[Symbol, untyped] | nil value) -> (String | Hash[Symbol, untyped] | nil)
     def title=: (String | Hash[Symbol, untyped] | nil value) -> (String | Hash[Symbol, untyped] | nil)
 
-    # Adds a data series to the chart.
+    # Adds a data series to the chart or returns the configured series list.
     #
-    # @param value [Hash{Symbol => Object}, Array, nil] Series options hash or array.
-    # @param kwargs [Hash] Keyword arguments for series configuration.
-    # @yield [series_builder]
-    # @yieldparam series_builder [SeriesBuilder]
-    # @return [Array<Hash{Symbol => Object}>, nil]
+    # @overload series
+    #   Returns the configured series options list.
+    #   @return [Array<Hash{Symbol => Object}>]
+    # @overload series(**kwargs)
+    #   Adds a series configured via keyword arguments.
+    #   @return [void]
+    # @overload series(&block)
+    #   Configures a series using a block.
+    #   @yield [series_builder]
+    #   @yieldparam series_builder [SeriesBuilder]
+    #   @return [void]
     # @api public
-    # : (?Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]] | nil value, **untyped kwargs) ?{ (SeriesBuilder) -> void } -> (Array[Hash[Symbol, untyped]] | nil)
-    def series: (?Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]] | nil value, **untyped kwargs) ?{ (SeriesBuilder) -> void } -> (Array[Hash[Symbol, untyped]] | nil)
+    # : (**untyped kwargs) ?{ (SeriesBuilder) -> void } -> (Array[Hash[Symbol, untyped]] | nil)
+    def series: (**untyped kwargs) ?{ (SeriesBuilder) -> void } -> (Array[Hash[Symbol, untyped]] | nil)
 
     # Sets series array.
     #
@@ -76,14 +83,17 @@ module Xlsxrb
     # : (Array[Hash[Symbol, untyped]] | Hash[Symbol, untyped] value) -> (Array[Hash[Symbol, untyped]] | Hash[Symbol, untyped])
     def series=: (Array[Hash[Symbol, untyped]] | Hash[Symbol, untyped] value) -> (Array[Hash[Symbol, untyped]] | Hash[Symbol, untyped])
 
-    # Configures the legend property for this chart.
+    # Gets or configures the legend property for this chart.
     #
-    # @param args [Array] Positional arguments (e.g. position string).
-    # @param kwargs [Hash] Keyword arguments for legend styling/layout.
-    # @return [Object] The configured legend property.
+    # @overload legend
+    #   Returns the configured legend property.
+    #   @return [Object]
+    # @overload legend(**kwargs)
+    #   Configures legend using keyword arguments.
+    #   @return [void]
     # @api public
-    # : (*(Hash[Symbol, untyped] | String | Symbol) args, **untyped kwargs) -> untyped
-    def legend: (*Hash[Symbol, untyped] | String | Symbol args, **untyped kwargs) -> untyped
+    # : (**untyped kwargs) -> untyped
+    def legend: (**untyped kwargs) -> untyped
 
     # Sets the legend property.
     #
@@ -93,14 +103,17 @@ module Xlsxrb
     # : (untyped value) -> untyped
     def legend=: (untyped value) -> untyped
 
-    # Configures the plot_area property for this chart.
+    # Gets or configures the plot_area property for this chart.
     #
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments for plot area configuration.
-    # @return [Object] The configured plot_area property.
+    # @overload plot_area
+    #   Returns the configured plot_area property.
+    #   @return [Object]
+    # @overload plot_area(**kwargs)
+    #   Configures plot_area using keyword arguments.
+    #   @return [void]
     # @api public
-    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-    def plot_area: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+    # : (**untyped kwargs) -> untyped
+    def plot_area: (**untyped kwargs) -> untyped
 
     # Sets the plot_area property.
     #
@@ -110,14 +123,17 @@ module Xlsxrb
     # : (untyped value) -> untyped
     def plot_area=: (untyped value) -> untyped
 
-    # Configures the chart_space property for this chart.
+    # Gets or configures the chart_space property for this chart.
     #
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] The configured chart_space property.
+    # @overload chart_space
+    #   Returns the configured chart_space property.
+    #   @return [Object]
+    # @overload chart_space(**kwargs)
+    #   Configures chart_space using keyword arguments.
+    #   @return [void]
     # @api public
-    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-    def chart_space: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+    # : (**untyped kwargs) -> untyped
+    def chart_space: (**untyped kwargs) -> untyped
 
     # Sets the chart_space property.
     #
@@ -127,14 +143,12 @@ module Xlsxrb
     # : (untyped value) -> untyped
     def chart_space=: (untyped value) -> untyped
 
-    # Configures the style index/id for this chart.
+    # Gets the style index/id for this chart.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#style=} instead.
-    # @param value [Object, nil]
-    # @return [Object] The configured style property.
+    # @return [Integer, String, Hash, nil] The configured style property.
     # @api public
-    # : (?untyped value) -> untyped
-    def style: (?untyped value) -> untyped
+    # : () -> untyped
+    def style: () -> untyped
 
     # Sets the style property.
     #
@@ -144,14 +158,17 @@ module Xlsxrb
     # : (untyped value) -> untyped
     def style=: (untyped value) -> untyped
 
-    # Configures data labels for this chart.
+    # Gets or configures data labels for this chart.
     #
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] The configured data_labels property.
+    # @overload data_labels
+    #   Returns the configured data_labels property.
+    #   @return [Object]
+    # @overload data_labels(**kwargs)
+    #   Configures data_labels using keyword arguments.
+    #   @return [void]
     # @api public
-    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-    def data_labels: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+    # : (**untyped kwargs) -> untyped
+    def data_labels: (**untyped kwargs) -> untyped
 
     # Sets data labels.
     #
@@ -161,48 +178,47 @@ module Xlsxrb
     # : (untyped value) -> untyped
     def data_labels=: (untyped value) -> untyped
 
-    # Configures whether to plot visible cells only.
+    # Gets whether to plot visible cells only.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#plot_visible_only=} instead.
-    # @param value [Boolean, String, nil]
-    # @return [Boolean, String]
+    # @return [Boolean, nil]
     # @api public
-    # : (?untyped value) -> untyped
-    def plot_visible_only: (?untyped value) -> untyped
+    # : () -> bool?
+    def plot_visible_only: () -> bool?
 
     # Sets whether to plot visible cells only.
     #
     # @param value [Boolean, nil]
     # @return [Boolean, nil]
     # @api public
-    # : (untyped value) -> untyped
-    def plot_visible_only=: (untyped value) -> untyped
+    # : (bool? value) -> bool?
+    def plot_visible_only=: (bool? value) -> bool?
 
-    # Configures how blank cells are displayed in the chart.
+    # Gets how blank cells are displayed in the chart.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#display_blanks_as=} instead.
-    # @param value [String, nil]
-    # @return [String]
+    # @return [String, nil]
     # @api public
-    # : (?untyped value) -> untyped
-    def display_blanks_as: (?untyped value) -> untyped
+    # : () -> String?
+    def display_blanks_as: () -> String?
 
     # Sets display blanks as mode.
     #
     # @param value [String, nil]
     # @return [String, nil]
     # @api public
-    # : (untyped value) -> untyped
-    def display_blanks_as=: (untyped value) -> untyped
+    # : (String? value) -> String?
+    def display_blanks_as=: (String? value) -> String?
 
-    # Configures 3D view properties for 3D charts.
+    # Gets or configures 3D view properties for 3D charts.
     #
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object]
+    # @overload view3d
+    #   Returns the configured view3d property.
+    #   @return [Object]
+    # @overload view3d(**kwargs)
+    #   Configures view3d using keyword arguments.
+    #   @return [void]
     # @api public
-    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-    def view3d: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+    # : (**untyped kwargs) -> untyped
+    def view3d: (**untyped kwargs) -> untyped
 
     # Sets 3D view properties.
     #
@@ -212,14 +228,17 @@ module Xlsxrb
     # : (untyped value) -> untyped
     def view3d=: (untyped value) -> untyped
 
-    # Configures the category axis properties for this chart.
+    # Gets or configures the category axis properties for this chart.
     #
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] The configured category axis property.
+    # @overload category_axis
+    #   Returns the configured category axis property.
+    #   @return [Object]
+    # @overload category_axis(**kwargs)
+    #   Configures category axis using keyword arguments.
+    #   @return [void]
     # @api public
-    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-    def category_axis: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+    # : (**untyped kwargs) -> untyped
+    def category_axis: (**untyped kwargs) -> untyped
 
     # Sets category axis properties.
     #
@@ -229,14 +248,17 @@ module Xlsxrb
     # : (untyped value) -> untyped
     def category_axis=: (untyped value) -> untyped
 
-    # Configures the value axis properties for this chart.
+    # Gets or configures the value axis properties for this chart.
     #
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object] The configured value axis property.
+    # @overload value_axis
+    #   Returns the configured value axis property.
+    #   @return [Object]
+    # @overload value_axis(**kwargs)
+    #   Configures value axis using keyword arguments.
+    #   @return [void]
     # @api public
-    # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-    def value_axis: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+    # : (**untyped kwargs) -> untyped
+    def value_axis: (**untyped kwargs) -> untyped
 
     # Sets value axis properties.
     #
@@ -246,14 +268,17 @@ module Xlsxrb
     # : (untyped value) -> untyped
     def value_axis=: (untyped value) -> untyped
 
-    # Configures the secondary value axis properties for combo charts.
+    # Gets or configures the secondary value axis properties for combo charts.
     #
-    # @param args [Array] Positional arguments.
-    # @param kwargs [Hash] Keyword arguments.
-    # @return [Object]
+    # @overload secondary_value_axis
+    #   Returns the configured secondary value axis property.
+    #   @return [Object]
+    # @overload secondary_value_axis(**kwargs)
+    #   Configures secondary value axis using keyword arguments.
+    #   @return [void]
     # @api public
-    # : (*(Hash[Symbol, untyped] | String | bool) args, **untyped kwargs) -> untyped
-    def secondary_value_axis: (*Hash[Symbol, untyped] | String | bool args, **untyped kwargs) -> untyped
+    # : (**untyped kwargs) -> untyped
+    def secondary_value_axis: (**untyped kwargs) -> untyped
 
     # Sets secondary value axis properties.
     #
@@ -263,30 +288,20 @@ module Xlsxrb
     # : (untyped value) -> untyped
     def secondary_value_axis=: (untyped value) -> untyped
 
-    # @deprecated Use {#secondary_value_axis} instead.
-    # : (*(Hash[Symbol, untyped] | String | bool) args, **untyped kwargs) -> untyped
-    def secondary_axis: (*Hash[Symbol, untyped] | String | bool args, **untyped kwargs) -> untyped
-
-    # @deprecated Use {#secondary_value_axis=} instead.
-    # : (untyped value) -> untyped
-    def secondary_axis=: (untyped value) -> untyped
-
-    # Configures whether to show the legend key in data labels.
+    # Gets whether to show the legend key in data labels.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_legend_key=} instead.
-    # @param value [Boolean, String, nil]
-    # @return [Boolean, String]
+    # @return [Boolean, nil]
     # @api public
-    # : (?untyped value) -> untyped
-    def show_legend_key: (?untyped value) -> untyped
+    # : () -> bool?
+    def show_legend_key: () -> bool?
 
     # Sets whether to show the legend key in data labels.
     #
     # @param value [Boolean, nil]
     # @return [Boolean, nil]
     # @api public
-    # : (untyped value) -> untyped
-    def show_legend_key=: (untyped value) -> untyped
+    # : (bool? value) -> bool?
+    def show_legend_key=: (bool? value) -> bool?
 
     # Builder for a single series entry in block-style chart definitions.
     #
@@ -299,14 +314,12 @@ module Xlsxrb
       # : Hash[Symbol, untyped]
       attr_reader options: untyped
 
-      # Configures categories reference for this series (e.g. "Sheet1!$A$2:$A$10").
+      # Gets categories reference for this series (e.g. "Sheet1!$A$2:$A$10").
       #
-      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#categories=} instead.
-      # @param value [Object, nil]
       # @return [Object]
       # @api public
-      # : (?untyped value) -> untyped
-      def categories: (?untyped value) -> untyped
+      # : () -> untyped
+      def categories: () -> untyped
 
       # Sets categories reference for this series.
       #
@@ -316,14 +329,12 @@ module Xlsxrb
       # : (untyped value) -> untyped
       def categories=: (untyped value) -> untyped
 
-      # Configures values reference for this series (e.g. "Sheet1!$B$2:$B$10").
+      # Gets values reference for this series (e.g. "Sheet1!$B$2:$B$10").
       #
-      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#values=} instead.
-      # @param value [Object, nil]
       # @return [Object]
       # @api public
-      # : (?untyped value) -> untyped
-      def values: (?untyped value) -> untyped
+      # : () -> untyped
+      def values: () -> untyped
 
       # Sets values reference for this series.
       #
@@ -333,14 +344,12 @@ module Xlsxrb
       # : (untyped value) -> untyped
       def values=: (untyped value) -> untyped
 
-      # Configures the name for this series (e.g. "Total Sales" or cell reference "Sheet1!$B$1").
+      # Gets the name for this series (e.g. "Total Sales" or cell reference "Sheet1!$B$1").
       #
-      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#name=} instead.
-      # @param value [Object, nil]
       # @return [Object]
       # @api public
-      # : (?untyped value) -> untyped
-      def name: (?untyped value) -> untyped
+      # : () -> untyped
+      def name: () -> untyped
 
       # Sets name for this series.
       #
@@ -350,14 +359,17 @@ module Xlsxrb
       # : (untyped value) -> untyped
       def name=: (untyped value) -> untyped
 
-      # Configures data markers for this series.
+      # Gets or configures data markers for this series.
       #
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object]
+      # @overload marker
+      #   Returns the configured marker property.
+      #   @return [Object]
+      # @overload marker(**kwargs)
+      #   Configures marker using keyword arguments.
+      #   @return [void]
       # @api public
-      # : (*untyped args, **untyped kwargs) -> untyped
-      def marker: (*untyped args, **untyped kwargs) -> untyped
+      # : (**untyped kwargs) -> untyped
+      def marker: (**untyped kwargs) -> untyped
 
       # Sets marker for this series.
       #
@@ -367,14 +379,17 @@ module Xlsxrb
       # : (untyped value) -> untyped
       def marker=: (untyped value) -> untyped
 
-      # Configures fill color/pattern for this series.
+      # Gets or configures fill color/pattern for this series.
       #
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object]
+      # @overload fill
+      #   Returns the configured fill property.
+      #   @return [Object]
+      # @overload fill(**kwargs)
+      #   Configures fill using keyword arguments.
+      #   @return [void]
       # @api public
-      # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-      def fill: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+      # : (**untyped kwargs) -> untyped
+      def fill: (**untyped kwargs) -> untyped
 
       # Sets fill for this series.
       #
@@ -384,14 +399,17 @@ module Xlsxrb
       # : (untyped value) -> untyped
       def fill=: (untyped value) -> untyped
 
-      # Configures line color/thickness for this series.
+      # Gets or configures line color/thickness for this series.
       #
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object]
+      # @overload line
+      #   Returns the configured line property.
+      #   @return [Object]
+      # @overload line(**kwargs)
+      #   Configures line using keyword arguments.
+      #   @return [void]
       # @api public
-      # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-      def line: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+      # : (**untyped kwargs) -> untyped
+      def line: (**untyped kwargs) -> untyped
 
       # Sets line for this series.
       #
@@ -401,14 +419,17 @@ module Xlsxrb
       # : (untyped value) -> untyped
       def line=: (untyped value) -> untyped
 
-      # Configures trendline for this series.
+      # Gets or configures trendline for this series.
       #
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object]
+      # @overload trendline
+      #   Returns the configured trendline property.
+      #   @return [Object]
+      # @overload trendline(**kwargs)
+      #   Configures trendline using keyword arguments.
+      #   @return [void]
       # @api public
-      # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-      def trendline: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+      # : (**untyped kwargs) -> untyped
+      def trendline: (**untyped kwargs) -> untyped
 
       # Sets trendline for this series.
       #
@@ -418,14 +439,17 @@ module Xlsxrb
       # : (untyped value) -> untyped
       def trendline=: (untyped value) -> untyped
 
-      # Configures data labels for this series.
+      # Gets or configures data labels for this series.
       #
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Object]
+      # @overload data_labels
+      #   Returns the configured data_labels property.
+      #   @return [Object]
+      # @overload data_labels(**kwargs)
+      #   Configures data_labels using keyword arguments.
+      #   @return [void]
       # @api public
-      # : (*(Hash[Symbol, String | Numeric | bool | nil] | String) args, **String | Numeric | bool | nil kwargs) -> untyped
-      def data_labels: (*Hash[Symbol, String | Numeric | bool | nil] | String args, **String | Numeric | bool | nil kwargs) -> untyped
+      # : (**untyped kwargs) -> untyped
+      def data_labels: (**untyped kwargs) -> untyped
 
       # Sets data labels for this series.
       #
@@ -435,84 +459,57 @@ module Xlsxrb
       # : (untyped value) -> untyped
       def data_labels=: (untyped value) -> untyped
 
-      # Configures line smoothing for this series.
+      # Gets line smoothing for this series.
       #
-      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#smooth=} instead.
-      # @param value [Boolean, nil]
-      # @return [Boolean, String]
+      # @return [Boolean, nil]
       # @api public
-      # : (?untyped value) -> untyped
-      def smooth: (?untyped value) -> untyped
+      # : () -> bool?
+      def smooth: () -> bool?
 
       # Sets line smoothing for this series.
       #
       # @param value [Boolean, nil]
       # @return [Boolean, nil]
       # @api public
-      # : (untyped value) -> untyped
-      def smooth=: (untyped value) -> untyped
+      # : (bool? value) -> bool?
+      def smooth=: (bool? value) -> bool?
 
-      # Configures 3D bar/column shape (e.g. "cylinder", "cone", "pyramid").
+      # Gets 3D bar/column shape (e.g. "cylinder", "cone", "pyramid").
       #
-      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#shape=} instead.
-      # @param value [String, nil]
-      # @return [String]
+      # @return [String, nil]
       # @api public
-      # : (?untyped value) -> untyped
-      def shape: (?untyped value) -> untyped
+      # : () -> String?
+      def shape: () -> String?
 
       # Sets 3D bar/column shape for this series.
       #
       # @param value [String, nil]
       # @return [String, nil]
       # @api public
-      # : (untyped value) -> untyped
-      def shape=: (untyped value) -> untyped
+      # : (String? value) -> String?
+      def shape=: (String? value) -> String?
 
-      # Configures individual series chart type override in combo charts.
+      # Gets individual series chart type override in combo charts.
       #
-      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#type=} instead.
-      # @param value [Symbol, String, nil]
-      # @return [Symbol, String, Hash, nil]
+      # @return [Symbol, String, nil]
       # @api public
-      # : (?untyped value) -> untyped
-      def type: (?untyped value) -> untyped
+      # : () -> (Symbol | String | nil)
+      def type: () -> (Symbol | String | nil)
 
       # Sets individual series chart type override.
       #
       # @param value [Symbol, String, nil]
       # @return [Symbol, String, nil]
       # @api public
-      # : (untyped value) -> untyped
-      def type=: (untyped value) -> untyped
+      # : (Symbol | String | nil value) -> (Symbol | String | nil)
+      def type=: (Symbol | String | nil value) -> (Symbol | String | nil)
 
-      # Configures whether this series uses the secondary value axis.
+      # Gets the axis (:primary or :secondary) for this series.
       #
-      # @deprecated Use {#axis} with :secondary instead.
-      # @param args [Array] Positional arguments.
-      # @param kwargs [Hash] Keyword arguments.
-      # @return [Boolean, Hash]
-      # @api public
-      # : (*bool args, **bool kwargs) -> untyped
-      def secondary_axis: (*bool args, **bool kwargs) -> untyped
-
-      # Sets whether this series uses the secondary value axis.
-      #
-      # @deprecated Use {#axis=} with :secondary instead.
-      # @param value [Boolean, nil]
-      # @return [Boolean, nil]
-      # @api public
-      # : (untyped value) -> untyped
-      def secondary_axis=: (untyped value) -> untyped
-
-      # Configures the axis (:primary or :secondary) for this series.
-      #
-      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#axis=} instead.
-      # @param value [Symbol, String, nil]
       # @return [Symbol, String, nil]
       # @api public
-      # : (?Symbol | String | nil value) -> (Symbol | String | nil)
-      def axis: (?Symbol | String | nil value) -> (Symbol | String | nil)
+      # : () -> (Symbol | String | nil)
+      def axis: () -> (Symbol | String | nil)
 
       # Sets the axis for this series.
       #

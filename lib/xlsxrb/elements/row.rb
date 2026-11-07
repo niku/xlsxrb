@@ -18,6 +18,8 @@ module Xlsxrb
       # rubocop:enable Style/DataInheritance
       [Enumerable].each { |m| include m }
 
+      undef_method :hidden, :custom_height, :collapsed
+
       # @param index [Integer] 0-based row index.
       # @param cells [Array<Elements::Cell>] Cells in this row.
       # @param height [Float, Integer, nil] Row height in points.
@@ -37,72 +39,40 @@ module Xlsxrb
         @hidden = hidden ? true : false
         @custom_height = custom_height ? true : false
         @collapsed = collapsed ? true : false
-        resolved_style_index = style_index || unmapped_data[:style_index]
         super(index: index, cells: cells, height: height, hidden: @hidden,
               custom_height: @custom_height, collapsed: @collapsed, outline_level: outline_level,
-              style_index: resolved_style_index, unmapped_data: unmapped_data, errors: computed_errors)
+              style_index: style_index, unmapped_data: unmapped_data, errors: computed_errors)
       end
 
-      # Access a cell by 0-based column index, column letter, or access row attributes via Symbol.
+      # Access a cell by 0-based column index, column letter/Symbol, or column range.
       #
       # @example
       #   row[0]          #=> Cell at column 0 (or nil if sparse)
       #   row["A"]        #=> Cell at column "A"
       #   row[:A]         #=> Cell at column "A"
-      #   row[:height]    #=> 25.0
-      #   row[:cells]     #=> [Cell, Cell, ...]
+      #   row[0..2]       #=> [Cell, Cell, ...]
       #
-      # @param col_index [Integer, String, Symbol] Column index, column letter, or attribute symbol.
-      # @return [Elements::Cell, Object, nil]
+      # @param col_index_or_range [Integer, String, Symbol, Range<Integer>] Column index, column letter/Symbol, or column index range.
+      # @return [Elements::Cell, Array<Elements::Cell>, nil]
       # @api public
-      #: (Integer | String | Symbol col_index) -> untyped
-      def [](col_index)
-        case col_index
-        when Symbol
-          case col_index
-          when :cells then cells
-          when :values then values
-          when :raw_values then raw_values
-          when :formatted_values then formatted_values
-          when :formula_expressions, :formulas then formula_expressions
-          when :index then index
-          when :height then height
-          when :hidden, :hidden? then hidden?
-          when :custom_height, :custom_height? then custom_height?
-          when :collapsed, :collapsed? then collapsed?
-          when :outline_level then outline_level
-          when :style_index then style_index
-          when :attributes then attributes
-          when :cells_hash
-            warn "[DEPRECATION] `:cells_hash` key is deprecated; use `cells` instead.", uplevel: 1
-            cells_hash
-          when :attrs
-            warn "[DEPRECATION] `:attrs` key is deprecated; use `:attributes` instead.", uplevel: 1
-            h = { height: height, hidden: hidden?, custom_height: custom_height?, collapsed: collapsed?, outline_level: outline_level }
-            h[:style_index] = style_index if style_index
-            h
-          else
-            idx = Cell._column_index(col_index.to_s)
-            idx ? cell_at(idx) : nil
-          end
+      #: (Integer | String | Symbol col_index_or_range) -> Elements::Cell?
+      #: (Range[Integer] col_index_or_range) -> Array[Elements::Cell]
+      def [](col_index_or_range)
+        case col_index_or_range
+        when Range
+          cells.select { |c| col_index_or_range.cover?(c.column_index) }
         else
-          idx = col_index.is_a?(Integer) ? col_index : Cell._column_index(col_index)
-          idx ? cell_at(idx) : nil
+          cell_at(col_index_or_range)
         end
       end
 
       # Returns a new Row with missing cells padded up to max_column (or maximum cell column index if nil).
       #
       # @param max_column [Integer, nil] Maximum 0-based column index to pad up to.
-      # @param max_col [Integer, nil] Deprecated alias for max_column.
       # @return [Elements::Row]
       # @api public
-      #: (?max_column: Integer?, ?max_col: Integer?) -> Elements::Row
-      def padded(max_column: nil, max_col: nil)
-        if max_col
-          warn "[DEPRECATION] `max_col:` is deprecated; use `max_column:` instead.", uplevel: 1 unless max_column
-          max_column ||= max_col
-        end
+      #: (?max_column: Integer?) -> Elements::Row
+      def padded(max_column: nil)
         return self if cells.empty?
 
         max_c = max_column || (cells.map(&:column_index).max || 0)
@@ -119,75 +89,14 @@ module Xlsxrb
           index: index,
           cells: padded_cells,
           height: height,
-          hidden: hidden,
-          custom_height: custom_height,
-          collapsed: collapsed,
+          hidden: @hidden,
+          custom_height: @custom_height,
+          collapsed: @collapsed,
           outline_level: outline_level,
           style_index: style_index,
           unmapped_data: unmapped_data,
           errors: errors
         )
-      end
-
-      # @deprecated Use {#padded} instead. Will be removed in 0.2.0.
-      #
-      # @param max_col [Integer, nil] Deprecated parameter.
-      # @return [Elements::Row]
-      #: (?max_col: Integer?) -> Elements::Row
-      def pad_empty_cells(max_col: nil)
-        warn "[DEPRECATION] `Row#pad_empty_cells` is deprecated; use `Row#padded` instead.", uplevel: 1
-        padded(max_column: max_col)
-      end
-
-      # Returns a coordinate-keyed Hash of cell values (e.g. {"A1" => "value", "B1" => 123}).
-      #
-      # @deprecated Use {#cells} or sheet.cells_hash instead. Will be removed in 0.2.0.
-      # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
-      # @return [Hash{String => Object}]
-      # @api public
-      #: (?type_cast: bool) -> Hash[String, untyped]
-      def cells_hash(type_cast: false)
-        warn "[DEPRECATION] `Row#cells_hash` is deprecated; use `cells` instead.", uplevel: 1
-        result = {}
-        cells.each do |c|
-          val = c.value
-          if type_cast && val.is_a?(Numeric) && c.format_code
-            fmt_type = NumberFormatter.format_type(c.format_code)
-            begin
-              case fmt_type
-              when :date
-                val = Ooxml::Utils.serial_to_date(val, date1904: c.date1904?)
-              when :datetime, :time
-                val = Ooxml::Utils.serial_to_datetime(val, date1904: c.date1904?)
-              end
-            rescue StandardError
-              # Keep val numeric on failure
-            end
-          end
-          result[c.ref] = val
-        end
-        result
-      end
-
-      # @deprecated Use {#hidden?} instead. Will be removed in 0.2.0.
-      #: () -> bool
-      def hidden
-        warn "[DEPRECATION] `Row#hidden` is deprecated; use `hidden?` instead.", uplevel: 1
-        super
-      end
-
-      # @deprecated Use {#collapsed?} instead. Will be removed in 0.2.0.
-      #: () -> bool
-      def collapsed
-        warn "[DEPRECATION] `Row#collapsed` is deprecated; use `collapsed?` instead.", uplevel: 1
-        super
-      end
-
-      # @deprecated Use {#custom_height?} instead. Will be removed in 0.2.0.
-      #: () -> bool
-      def custom_height
-        warn "[DEPRECATION] `Row#custom_height` is deprecated; use `custom_height?` instead.", uplevel: 1
-        super
       end
 
       # Returns whether the row is hidden.
@@ -238,9 +147,9 @@ module Xlsxrb
           cells: cells,
           values: values,
           height: height,
-          hidden: hidden,
-          custom_height: custom_height,
-          collapsed: collapsed,
+          hidden: hidden?,
+          custom_height: custom_height?,
+          collapsed: collapsed?,
           outline_level: outline_level,
           style_index: style_index
         }
@@ -255,9 +164,9 @@ module Xlsxrb
         h = {
           index: index,
           height: height,
-          hidden: hidden,
-          custom_height: custom_height,
-          collapsed: collapsed,
+          hidden: hidden?,
+          custom_height: custom_height?,
+          collapsed: collapsed?,
           outline_level: outline_level
         }
         h[:style_index] = style_index if style_index
@@ -300,26 +209,6 @@ module Xlsxrb
         return to_enum(:each_cell) unless block_given?
 
         cells.each(&)
-      end
-
-      # Convert row cells to an Array of raw values.
-      #
-      # @deprecated Use {#values} to get an Array of cell values, or {#cells} for Cell objects. In 0.2.0, {#to_a} will conform to Enumerable#to_a and return Array<Cell>.
-      # @example
-      #   row.values #=> ["ID", "Name", "Total"]
-      #
-      # @return [Array<Object>]
-      # @api public
-      #: () -> Array[untyped]
-      def to_a
-        return [] if cells.empty?
-
-        max_col = cells.map(&:column_index).max
-        arr = Array.new(max_col + 1)
-        cells.each do |cell|
-          arr[cell.column_index] = cell.value
-        end
-        arr
       end
 
       # Returns whether the row is valid according to OOXML specifications.
@@ -425,13 +314,6 @@ module Xlsxrb
         result = Array.new(max_col + 1)
         cells.each { |c| result[c.column_index] = c.formula_expression }
         result
-      end
-
-      # @deprecated Use {#formula_expressions} instead. Will be removed in 0.2.0.
-      #: () -> Array[String?]
-      def formulas
-        warn "[DEPRECATION] `Row#formulas` is deprecated; use `Row#formula_expressions` instead.", uplevel: 1
-        formula_expressions
       end
 
       # Returns whether the row index is within valid OOXML range (0..1048575).

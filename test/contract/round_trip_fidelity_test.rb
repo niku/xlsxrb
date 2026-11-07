@@ -18,26 +18,23 @@ class RoundTripFidelityTest < Test::Unit::TestCase
 
   def test_round_trip_preserves_workbook_and_worksheet_attributes
     wb = Xlsxrb.build do |b|
-      b.core_property(:creator, "Author One")
-      b.core_property(:title, "Comprehensive Round-Trip")
-      b.app_property(:company, "Engineering Org")
+      b.core_properties(creator: "Author One", title: "Comprehensive Round-Trip")
+      b.app_properties(company: "Engineering Org")
       b.custom_property("Classification", "Internal")
       b.workbook_protection(lock_structure: true)
       b.defined_name("DataRange", "Sheet1!$A$1:$B$2")
       b.sheet("Sheet1") do |s|
         s.freeze_pane(row: 1, column: 1)
-        s.sheet_view(:show_grid_lines, false)
-        s.sheet_view(:tab_selected, true)
-        s.sheet_view(:zoom_scale, 120)
-        s.sheet_properties(:tab_color, "FFFF0000")
+        s.sheet_view(show_grid_lines: false, tab_selected: true, zoom_scale: 120)
+        s.sheet_properties(tab_color: "FFFF0000")
         s.sheet_format(default_row_height: 20)
         s.page_setup(orientation: "landscape", paper_size: 9)
         s.page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
         s.header_footer(odd_header: "&CTest Header", odd_footer: "&RPage &P")
-        s.print_options(:grid_lines, true)
+        s.print_options(grid_lines: true)
         s.sheet_protection(sheet: true)
         s.merge("C1:D2")
-        s.auto_filter("A1:D1")
+        s.auto_filter = "A1:D1"
         s.conditional_format("A1:A5", type: :cellIs, operator: :greaterThan, formula1: "10")
         s.data_validation("B1:B5", type: :whole, operator: :between, formula1: "1", formula2: "100")
         s.row_break(5)
@@ -67,17 +64,16 @@ class RoundTripFidelityTest < Test::Unit::TestCase
       Xlsxrb.write(tmp1.path, wb)
 
       # 1. Read back initially
-      read1 = Xlsxrb.read(tmp1.path)
+      read1 = Xlsxrb.load(tmp1.path)
 
-      # 2. Round-trip via StreamSheet
+      # 2. Round-trip
       Xlsxrb.write(tmp2.path, read1)
-      read_from_stream = Xlsxrb.read(tmp2.path)
+      read_from_stream = Xlsxrb.load(tmp2.path)
 
       # 3. Round-trip via loaded in-memory Worksheet
-      loaded_wb = Xlsxrb.read(tmp1.path)
-      loaded_wb.sheets.each(&:load)
+      loaded_wb = Xlsxrb.load(tmp1.path)
       Xlsxrb.write(tmp3.path, loaded_wb)
-      read_from_loaded = Xlsxrb.read(tmp3.path)
+      read_from_loaded = Xlsxrb.load(tmp3.path)
 
       [read_from_stream, read_from_loaded].each do |roundtrip_wb|
         assert_equal "Author One", roundtrip_wb.core_properties.creator
@@ -89,7 +85,7 @@ class RoundTripFidelityTest < Test::Unit::TestCase
         assert_equal([{ name: "DataRange", hidden: false, value: "Sheet1!$A$1:$B$2" }], roundtrip_wb.defined_names.map(&:to_h))
 
         s = roundtrip_wb.sheet(0)
-        assert_equal({ row: 1, column: 1, col: 1, state: :frozen, active_pane: "bottomRight" }, s.freeze_pane.to_h)
+        assert_equal({ row: 1, column: 1, state: :frozen, active_pane: "bottomRight" }, s.freeze_pane.to_h)
         assert_equal({ show_grid_lines: false, tab_selected: true, zoom_scale: 120 }, s.sheet_view.to_h)
         assert_equal({ orientation: "landscape", paper_size: 9 }, s.page_setup.to_h)
         assert_equal(0.7, s.page_margins.left)
@@ -108,12 +104,12 @@ class RoundTripFidelityTest < Test::Unit::TestCase
         assert_equal 1, s.images.size
         assert_equal 1, s.tables.size
         assert_equal "RoundTripTable", s.tables.first.name
-        assert_equal "A1:B5", s.tables.first[:ref]
-        assert_equal [{ name: "ColA" }, { name: "ColB" }], s.tables.first[:columns]
-        assert_equal [{ sqref: "A1:A5", type: "cellIs", priority: 1, operator: "greaterThan" }], s.conditional_formatting
-        assert_equal [{ sqref: "B1:B5", type: "whole", operator: "between", formula1: "1", formula2: "100" }], s.data_validations
-        assert_equal({ tab_color: "FFFF0000" }, s.sheet_properties)
-        assert_equal({ default_row_height: 20.0 }, s.sheet_format)
+        assert_equal "A1:B5", s.tables.first.ref
+        assert_equal [{ name: "ColA" }, { name: "ColB" }], s.tables.first.columns.map(&:to_h)
+        assert_equal [{ sqref: "A1:A5", type: "cellIs", priority: 1, operator: "greaterThan" }], s.conditional_formats.map(&:to_h)
+        assert_equal [{ sqref: "B1:B5", type: "whole", operator: "between", formula1: "1", formula2: "100" }], s.data_validations.map(&:to_h)
+        assert_equal({ tab_color: "FFFF0000" }, s.sheet_properties.to_h)
+        assert_equal({ default_row_height: 20.0 }, s.sheet_format.to_h)
       end
     ensure
       tmp1.close!
@@ -125,11 +121,11 @@ class RoundTripFidelityTest < Test::Unit::TestCase
   def test_phase3_features_round_trip_via_load_and_read
     wb = Xlsxrb.build do |b|
       b.sheet("Analytics") do |s|
-        s.add_row(%w[Month Sales Expenses])
-        s.add_row(["Jan", 100, 80])
-        s.add_row(["Feb", 120, 90])
-        s.add_row(["Mar", 150, 110])
-        s.print_area("A1:C4")
+        s.row(%w[Month Sales Expenses])
+        s.row(["Jan", 100, 80])
+        s.row(["Feb", 120, 90])
+        s.row(["Mar", 150, 110])
+        s.print_area = "A1:C4"
         s.print_titles(rows: "1:1", columns: "A:A")
         s.sparkline_group(
           sparklines: [{ location: "D2", data: "B2:C2" }],
@@ -163,10 +159,10 @@ class RoundTripFidelityTest < Test::Unit::TestCase
       sg = ws.sparkline_groups.first
       assert_instance_of(Xlsxrb::Elements::SparklineGroup, sg)
       assert_equal("line", sg.type)
-      assert_equal(true, sg.markers)
-      assert_equal(true, sg.high)
+      assert_equal(true, sg.markers?)
+      assert_equal(true, sg.high?)
       assert_equal("FF0000FF", sg.color_series)
-      assert_equal(200, sg.max)
+      assert_equal(200, sg.manual_max)
       assert_equal(1.5, sg.line_weight)
       assert_equal(1, sg.sparklines.size)
       assert_equal("D2", sg.sparklines.first.sqref)
@@ -190,10 +186,10 @@ class RoundTripFidelityTest < Test::Unit::TestCase
         st_sg = stream_sheet.sparkline_groups.first
         assert_instance_of(Xlsxrb::Elements::SparklineGroup, st_sg)
         assert_equal("line", st_sg.type)
-        assert_equal(true, st_sg.markers)
-        assert_equal(true, st_sg.high)
+        assert_equal(true, st_sg.markers?)
+        assert_equal(true, st_sg.high?)
         assert_equal("FF0000FF", st_sg.color_series)
-        assert_equal(200, st_sg.max)
+        assert_equal(200, st_sg.manual_max)
         assert_equal(1.5, st_sg.line_weight)
         assert_equal(1, stream_sheet.sparkline_groups.first.sparklines.size)
         assert_equal("D2", stream_sheet.sparkline_groups.first.sparklines.first.sqref)

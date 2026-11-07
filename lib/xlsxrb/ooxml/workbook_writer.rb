@@ -79,10 +79,11 @@ module Xlsxrb
             sheet_tables = sheet[:tables] || []
 
             sv = sheet[:sheet_view]
+            sv = sv.to_h if sv && !sv.is_a?(Hash)
             if idx == effective_active_idx
               sv = (sv || {}).merge(tab_selected: true)
             elsif sv&.key?(:tab_selected)
-              sv = sv.is_a?(Hash) ? sv.dup : sv.to_h
+              sv = sv.dup
               sv.delete(:tab_selected)
             end
 
@@ -106,7 +107,6 @@ module Xlsxrb
               header_footer: sheet[:header_footer],
               row_breaks: sheet[:row_breaks],
               column_breaks: sheet[:column_breaks],
-              col_breaks: sheet[:col_breaks] || sheet[:column_breaks],
               freeze_pane: sheet[:freeze_pane],
               split_pane: sheet[:split_pane],
               selection: sheet[:selection],
@@ -221,12 +221,8 @@ module Xlsxrb
             bg_data = File.binread(bg_data)
           else
             bg_ext = if bg_img.is_a?(Hash)
-                       (bg_img[:extension] || bg_img[:ext] || (bg_img[:path] && File.extname(bg_img[:path]).delete_prefix(".")) || (bg_img[:filename] && File.extname(bg_img[:filename]).delete_prefix(".")) || "png").to_s.downcase
-                     elsif bg_img.respond_to?(:extension) && bg_img.extension
-                       bg_img.extension.to_s.downcase
-                     elsif bg_img.respond_to?(:path) && bg_img.path
-                       File.extname(bg_img.path).delete_prefix(".").downcase
-                     elsif bg_img.respond_to?(:filename) && bg_img.filename
+                       (bg_img[:ext] || (bg_img[:filename] && File.extname(bg_img[:filename]).delete_prefix(".")) || "png").to_s.downcase
+                     elsif bg_img.respond_to?(:filename)
                        File.extname(bg_img.filename).delete_prefix(".").downcase
                      else
                        "png"
@@ -371,8 +367,8 @@ module Xlsxrb
                 pt[:source_ref],
                 row_fields: pt[:row_fields],
                 data_fields: pt[:data_fields],
-                col_fields: pt[:col_fields] || [],
-                dest_ref: pt[:dest_ref] || "E1",
+                column_fields: pt[:column_fields] || pt[:col_fields] || [],
+                destination: pt[:destination] || pt[:dest_ref] || pt[:ref] || "E1",
                 name: pt[:name],
                 field_names: pt[:field_names],
                 items: pt[:items],
@@ -621,7 +617,7 @@ module Xlsxrb
         show_sheet_tabs = @workbook_properties&.[](:show_sheet_tabs)
         tab_ratio = @workbook_properties&.[](:tab_ratio)
 
-        emit_active_tab = !(@workbook_properties&.[](:active_sheet) || @workbook_properties&.[](:active_tab)).nil? || active_tab_idx&.positive?
+        emit_active_tab = !(@workbook_properties&.[](:active_sheet_index) || @workbook_properties&.[](:active_sheet) || @workbook_properties&.[](:active_tab)).nil? || active_tab_idx&.positive?
 
         has_book_views = emit_active_tab || first_sheet_idx || !show_sheet_tabs.nil? || tab_ratio
         if has_book_views
@@ -751,8 +747,6 @@ module Xlsxrb
         # Number formats
         raw_num_fmts = if @styles.respond_to?(:number_formats)
                          @styles.number_formats
-                       elsif @styles.respond_to?(:num_fmts)
-                         @styles.num_fmts
                        else
                          @styles&.dig(:num_fmts) || []
                        end
@@ -810,7 +804,7 @@ module Xlsxrb
                 b.empty_tag("vertAlign", { val: mapped_va })
               end
               sz_val = font_props[:size] || font_props[:sz]
-              b.empty_tag("sz", { val: (sz_val || 11).to_s }) if sz_val || (fonts.first.is_a?(Hash) && fonts == [{}])
+              b.empty_tag("sz", { val: (sz_val || 11).to_s }) if sz_val || fonts == [{}]
               color_attrs = color_tag_attrs(font_props[:color] || (font_props.key?(:rgb) || font_props.key?(:theme) || font_props.key?(:indexed) ? font_props : nil))
               b.empty_tag("color", color_attrs) if color_attrs
               b.empty_tag("name", { val: font_props[:name] || "Calibri" })
@@ -994,7 +988,6 @@ module Xlsxrb
                        end
                      end
             normalized[:dxf_id] = dxf_id
-            normalized[:format_id] = dxf_id
             normalized
           end
         end
@@ -1190,8 +1183,8 @@ module Xlsxrb
           if str.is_a?(Xlsxrb::Elements::RichText)
             buf << "<si>"
             str.runs.each do |run|
-              font = run.is_a?(Hash) ? run[:font] : run.font
-              run_text = run.is_a?(Hash) ? run[:text] : run.text
+              font = run.respond_to?(:font) ? run.font : run[:font]
+              text = run.respond_to?(:text) ? run.text : run[:text]
               if font && !font.empty?
                 buf << "<r><rPr>"
                 buf << "<b/>" if font[:bold]
@@ -1226,7 +1219,7 @@ module Xlsxrb
               else
                 buf << "<r><t>"
               end
-              buf << escape_xml(run_text.to_s) << "</t></r>"
+              buf << escape_xml(text.to_s) << "</t></r>"
             end
             buf << "</si>"
           else
@@ -1307,7 +1300,6 @@ module Xlsxrb
           header_footer: header_footer,
           row_breaks: row_breaks,
           col_breaks: col_breaks || column_breaks,
-          column_breaks: column_breaks || col_breaks,
           cell_watches: cell_watches,
           ignored_errors: ignored_errors,
           tables: tables,
@@ -1355,7 +1347,7 @@ module Xlsxrb
           tot_formula = nil
           if col.is_a?(Hash) || col.is_a?(Elements::TableColumn)
             calc_formula = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
-            tot_formula = col[:totals_row_formula] || col[:total_row_formula] || col[:total_formula]
+            tot_formula = col[:totals_row_formula]
             trf = col[:totals_row_function] || ("custom" if tot_formula)
             col_attrs[:totalsRowFunction] = trf.to_s if trf
             col_attrs[:totalsRowLabel] = col[:totals_row_label].to_s if col[:totals_row_label]
@@ -1509,7 +1501,7 @@ module Xlsxrb
       end
 
       def resolve_active_tab_index
-        active_tab = @workbook_properties&.[](:active_sheet) || @workbook_properties&.[](:active_tab)
+        active_tab = @workbook_properties&.[](:active_sheet_index) || @workbook_properties&.[](:active_sheet) || @workbook_properties&.[](:active_tab)
         if active_tab.nil?
           first_vis_idx = @sheets.find_index do |s|
             state = s.respond_to?(:state) ? s.state : s[:state]

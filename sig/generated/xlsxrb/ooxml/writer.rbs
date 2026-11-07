@@ -222,9 +222,6 @@ module Xlsxrb
       # : (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
       def default_font: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
 
-      # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
-      alias set_default_font default_font
-
       # Sets the indexed colors palette (array of ARGB hex strings, e.g. ["FF000000", "FFFFFFFF"]).
       # rubocop:disable Naming/AccessorMethodName
       # : (untyped colors) -> untyped
@@ -312,9 +309,9 @@ module Xlsxrb
       # : (?sheet: untyped?) -> untyped
       def sheet_view: (?sheet: untyped) -> untyped
 
-      # Sets a freeze pane. row: rows to freeze from top, col: columns to freeze from left.
-      # : (?row: ::Integer, ?col: ::Integer, ?sheet: untyped?) -> untyped
-      def set_freeze_pane: (?row: untyped, ?col: untyped, ?sheet: untyped) -> untyped
+      # Sets a freeze pane. row: rows to freeze from top, column: columns to freeze from left.
+      # : (?row: ::Integer, ?col: ::Integer?, ?column: ::Integer?, ?sheet: untyped?) -> untyped
+      def set_freeze_pane: (?row: untyped, ?col: untyped, ?column: untyped, ?sheet: untyped) -> untyped
 
       # Sets a split pane (non-frozen). x_split/y_split are in 1/20th of a point (twips).
       # top_left_cell: the cell at top-left of the bottom-right pane.
@@ -641,8 +638,8 @@ module Xlsxrb
       # col_fields: array of 0-based field indices for column axis.
       # field_names: array of field name strings (for cache definition).
       # items: hash mapping field index to array of item values.
-      # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: ::String, ?name: untyped?, ?field_names: untyped?, ?items: untyped?, ?sheet: untyped?, **untyped opts) -> untyped
-      def add_pivot_table: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?dest_ref: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, ?sheet: untyped, **untyped opts) -> untyped
+      # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?column_fields: untyped, ?dest_ref: untyped, ?destination: untyped, ?name: untyped?, ?field_names: untyped?, ?items: untyped?, ?sheet: untyped?, **untyped opts) -> untyped
+      def add_pivot_table: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?column_fields: untyped, ?dest_ref: untyped, ?destination: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, ?sheet: untyped, **untyped opts) -> untyped
 
       # Returns pivot table definitions for the first (or given) sheet.
       # : (?sheet: untyped?) -> untyped

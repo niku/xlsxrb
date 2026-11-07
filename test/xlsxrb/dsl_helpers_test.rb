@@ -19,24 +19,6 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal("custom_range", Xlsxrb::DslHelpers.normalize_merge_range("custom_range", strict_excel_mode: false))
   end
 
-  test "normalize_merge_range with hash argument" do
-    # Single row range with col indices
-    range_hash1 = { row: 0, col_start: 0, col_end: 2 }
-    assert_equal("A1:C1", Xlsxrb::DslHelpers.normalize_merge_range(range_hash1))
-
-    # Multi-row range with col letters
-    range_hash2 = { row_start: 1, row_end: 4, col_start: "B", col_end: "D" }
-    assert_equal("B2:D5", Xlsxrb::DslHelpers.normalize_merge_range(range_hash2))
-  end
-
-  test "normalize_merge_range with keyword arguments" do
-    res = Xlsxrb::DslHelpers.normalize_merge_range(row: 2, col_start: "A", col_end: :C)
-    assert_equal("A3:C3", res)
-
-    res_rect = Xlsxrb::DslHelpers.normalize_merge_range(row_start: 0, row_end: 2, col_start: 0, col_end: 1)
-    assert_equal("A1:B3", res_rect)
-  end
-
   # --- normalize_protection_options ---
 
   test "normalize_protection_options hashes plain text password" do
@@ -117,11 +99,11 @@ class DslHelpersTest < Test::Unit::TestCase
     refute(min_tbl.key?(:display_name))
     refute(min_tbl.key?(:style))
 
-    # Symbol columns and total_row normalization
+    # Symbol columns and totals_row normalization
     sym_tbl = Xlsxrb::DslHelpers.normalize_table_options(
       "A1:C10",
       columns: [:id, { name: :total, totals_row_function: :sum }, "status"],
-      total_row: true,
+      totals_row: true,
       auto_filter: false
     )
     assert_equal("A1:C10", sym_tbl[:ref])
@@ -131,16 +113,16 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal(1, sym_tbl[:totals_row_count])
     assert_equal(false, sym_tbl[:auto_filter])
 
-    # total_row: false sets totals_row_count: 0
-    tr_false = Xlsxrb::DslHelpers.normalize_table_options("A1:B2", columns: %w[A B], total_row: false)
+    # totals_row: false sets totals_row_count: 0
+    tr_false = Xlsxrb::DslHelpers.normalize_table_options("A1:B2", columns: %w[A B], totals_row: false)
     assert_equal(0, tr_false[:totals_row_count])
 
     # totals_row: true / false
     trs_true = Xlsxrb::DslHelpers.normalize_table_options("A1:B2", columns: %w[A B], totals_row: true)
     assert_equal(1, trs_true[:totals_row_count])
 
-    # total_row_count / totals_row_count integer
-    tr_cnt = Xlsxrb::DslHelpers.normalize_table_options("A1:B2", columns: %w[A B], total_row_count: 2)
+    # totals_row_count integer
+    tr_cnt = Xlsxrb::DslHelpers.normalize_table_options("A1:B2", columns: %w[A B], totals_row_count: 2)
     assert_equal(2, tr_cnt[:totals_row_count])
 
     # Single column not in array
@@ -166,7 +148,7 @@ class DslHelpersTest < Test::Unit::TestCase
       "A1:B5",
       columns: [
         { name: "C1", formula: "[@Qty]*[@Price]" },
-        { name: "C2", data_formula: "[@Qty]*0.1" },
+        { name: "C2", calculated_column_formula: "[@Qty]*0.1" },
         { name: "C3", calculated_column_formula: "[@Qty]+1" }
       ]
     )
@@ -178,19 +160,13 @@ class DslHelpersTest < Test::Unit::TestCase
       "A1:B5",
       columns: [
         { name: "T1", totals_row_formula: "SUM([T1])" },
-        { name: "T2", total_row_formula: "AVERAGE([T2])" },
-        { name: "T3", total_formula: "MAX([T3])" },
-        { name: "T4", totals_row_formula: "SUBTOTAL(109,[T4])", totals_row_function: :sum }
+        { name: "T2", totals_row_formula: "SUBTOTAL(109,[T2])", totals_row_function: :sum }
       ]
     )
     assert_equal("SUM([T1])", tot_tbl1[:columns][0][:totals_row_formula])
     assert_equal("custom", tot_tbl1[:columns][0][:totals_row_function])
-    assert_equal("AVERAGE([T2])", tot_tbl1[:columns][1][:totals_row_formula])
-    assert_equal("custom", tot_tbl1[:columns][1][:totals_row_function])
-    assert_equal("MAX([T3])", tot_tbl1[:columns][2][:totals_row_formula])
-    assert_equal("custom", tot_tbl1[:columns][2][:totals_row_function])
-    assert_equal("SUBTOTAL(109,[T4])", tot_tbl1[:columns][3][:totals_row_formula])
-    assert_equal("sum", tot_tbl1[:columns][3][:totals_row_function])
+    assert_equal("SUBTOTAL(109,[T2])", tot_tbl1[:columns][1][:totals_row_formula])
+    assert_equal("sum", tot_tbl1[:columns][1][:totals_row_function])
   end
 
   # --- absolute_range ---
@@ -390,12 +366,12 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal("'Data'!$A$1:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value("A1:A10", sheet: "Data"))
     assert_equal("'Data'!$A$1", Xlsxrb::DslHelpers.normalize_defined_name_value("A1", sheet: "Data"))
     assert_equal("'O''Connor'!$A$1:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value(range: :"A1:A10", sheet: "O'Connor"))
-    assert_equal("'Sheet1'!$A$2:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value(col: 0, rows: 1..9, sheet: "Sheet1"))
-    assert_equal("'Sheet1'!$C$2:$C$9", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", rows: 1...9, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$A$2:$A$10", Xlsxrb::DslHelpers.normalize_defined_name_value(columns: 0, rows: 1..9, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$C$2:$C$9", Xlsxrb::DslHelpers.normalize_defined_name_value(columns: "C", rows: 1...9, sheet: "Sheet1"))
     assert_equal("'Sheet1'!$A$2:$A$5", Xlsxrb::DslHelpers.normalize_defined_name_value(rows: Class.new(Range).new(1, 4), sheet: "Sheet1"))
-    assert_equal("'Sheet1'!$C$5", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", rows: 4, sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$C$5", Xlsxrb::DslHelpers.normalize_defined_name_value(columns: "C", rows: 4, sheet: "Sheet1"))
     assert_equal("'Sheet1'!$A$5", Xlsxrb::DslHelpers.normalize_defined_name_value(rows: 4, sheet: "Sheet1"))
-    assert_equal("'Sheet1'!$C:$C", Xlsxrb::DslHelpers.normalize_defined_name_value(col: "C", sheet: "Sheet1"))
+    assert_equal("'Sheet1'!$C:$C", Xlsxrb::DslHelpers.normalize_defined_name_value(columns: "C", sheet: "Sheet1"))
     assert_equal("'Sheet1'!$A:$B", Xlsxrb::DslHelpers.normalize_defined_name_value("A:B", sheet: "Sheet1"))
     assert_equal("'Sheet1'!$1:$10", Xlsxrb::DslHelpers.normalize_defined_name_value("1:10", sheet: "Sheet1"))
 
@@ -409,7 +385,7 @@ class DslHelpersTest < Test::Unit::TestCase
   # --- normalize_data_validation ---
 
   test "normalize_data_validation handles list array and message newlines" do
-    res = Xlsxrb::DslHelpers.normalize_data_validation("A1:A10", in: %w[Active Inactive], prompt: "Line1\nLine2", error: "Err1\r\nErr2")
+    res = Xlsxrb::DslHelpers.normalize_data_validation("A1:A10", list: %w[Active Inactive], prompt: "Line1\nLine2", error: "Err1\r\nErr2")
     assert_equal(1, res.size)
     dv = res.first
     assert_equal("A1:A10", dv[:sqref])
@@ -426,14 +402,12 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal(false, res.first[:show_input_message])
   end
 
-  test "normalize_data_validation handles coordinates and except_rows and deletes both col and columns keys" do
-    res = Xlsxrb::DslHelpers.normalize_data_validation(columns: 0, col: 0, rows: 1..4, row: 1..4, except_rows: 2, in: %w[Yes No])
+  test "normalize_data_validation handles coordinates and except_rows and deletes columns keys" do
+    res = Xlsxrb::DslHelpers.normalize_data_validation(columns: 0, rows: 1..4, except_rows: 2, list: %w[Yes No])
     assert_equal(1, res.size)
     assert_equal("A2 A4:A5", res.first[:sqref])
     assert_nil(res.first[:columns])
-    assert_nil(res.first[:col])
     assert_nil(res.first[:rows])
-    assert_nil(res.first[:row])
   end
 
   # --- sheet_name ---
@@ -443,8 +417,6 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal("Sheet", Xlsxrb::DslHelpers.sanitize_sheet_name(""))
     assert_equal("Sheet", Xlsxrb::DslHelpers.sanitize_sheet_name("   "))
     assert_equal("Sales", Xlsxrb::DslHelpers.sanitize_sheet_name("  Sales  "))
-    # Alias sheet_name
-    assert_equal("Sheet", Xlsxrb::DslHelpers.sheet_name(""))
   end
 
   test "sanitize_sheet_name replaces forbidden characters and control characters" do
@@ -496,19 +468,19 @@ class DslHelpersTest < Test::Unit::TestCase
       bold: true,
       italic: false,
       underline: "single",
-      size: 12,
+      font_size: 12,
       fill_color: "FFFF00",
       formula: "100"
     }
     dxf = Xlsxrb::DslHelpers.extract_dxf_from_rule!(rule)
-    assert_equal({ color: "FF0000", bold: true, italic: false, underline: "single", size: 12 }, dxf[:font])
+    assert_equal({ color: "FF0000", bold: true, italic: false, underline: "single", font_size: 12 }, dxf[:font])
     assert_equal({ pattern: "solid", fg_color: "FFFF00" }, dxf[:fill])
     assert_equal({ type: :cell_is, formula: "100" }, rule)
 
-    # With sz key
-    rule_sz = { sz: 14 }
-    dxf_sz = Xlsxrb::DslHelpers.extract_dxf_from_rule!(rule_sz)
-    assert_equal({ sz: 14 }, dxf_sz[:font])
+    # With font_size key
+    rule_fs = { font_size: 14 }
+    dxf_fs = Xlsxrb::DslHelpers.extract_dxf_from_rule!(rule_fs)
+    assert_equal({ font_size: 14 }, dxf_fs[:font])
 
     # Empty when no font or fill
     empty_rule = { type: :cell_is, formula: "50" }
@@ -546,7 +518,7 @@ class DslHelpersTest < Test::Unit::TestCase
 
     # with except_rows
     rules_exc = Xlsxrb::DslHelpers.normalize_conditional_format(
-      col: 2,
+      columns: 2,
       rows: 0..4,
       except_rows: 2,
       type: :expression,

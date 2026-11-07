@@ -16,6 +16,8 @@ module Xlsxrb
     #
     # @api public
     Formula = Data.define(:expression, :cached_value, :type, :ref, :shared_index, :calculate_always, :aca, :bx, :dt2d, :dtr, :r1, :r2) do
+      private :calculate_always
+
       # @param expression [String] Excel formula expression without leading '=' (e.g. "SUM(A1:A10)").
       # @param cached_value [Object, nil] Optional precomputed value.
       # @param type [Symbol, String, nil] Formula type (:shared, :array, etc.).
@@ -87,17 +89,6 @@ module Xlsxrb
         aca ? true : false
       end
 
-      # rubocop:disable Naming/PredicateMethod
-
-      # @deprecated Use {#always_calculate_array?} instead.
-      # @return [Boolean]
-      # @api public
-      #: () -> bool
-      def always_calculate_array
-        warn "[Xlsxrb DEPRECATION] Formula#always_calculate_array is deprecated; use #always_calculate_array? instead.", uplevel: 1
-        always_calculate_array?
-      end
-
       # Returns whether the formula is assigned to a defined name.
       #
       # @return [Boolean]
@@ -105,15 +96,6 @@ module Xlsxrb
       #: () -> bool
       def assign_to_name?
         bx ? true : false
-      end
-
-      # @deprecated Use {#assign_to_name?} instead.
-      # @return [Boolean]
-      # @api public
-      #: () -> bool
-      def assign_to_name
-        warn "[Xlsxrb DEPRECATION] Formula#assign_to_name is deprecated; use #assign_to_name? instead.", uplevel: 1
-        assign_to_name?
       end
 
       # Returns whether this is a 2D data table reference.
@@ -125,15 +107,6 @@ module Xlsxrb
         dt2d ? true : false
       end
 
-      # @deprecated Use {#data_table_2d?} instead.
-      # @return [Boolean]
-      # @api public
-      #: () -> bool
-      def data_table_2d
-        warn "[Xlsxrb DEPRECATION] Formula#data_table_2d is deprecated; use #data_table_2d? instead.", uplevel: 1
-        data_table_2d?
-      end
-
       # Returns whether this is a 1D data table row reference.
       #
       # @return [Boolean]
@@ -142,17 +115,6 @@ module Xlsxrb
       def data_table_row?
         dtr ? true : false
       end
-
-      # @deprecated Use {#data_table_row?} instead.
-      # @return [Boolean]
-      # @api public
-      #: () -> bool
-      def data_table_row
-        warn "[Xlsxrb DEPRECATION] Formula#data_table_row is deprecated; use #data_table_row? instead.", uplevel: 1
-        data_table_row?
-      end
-
-      # rubocop:enable Naming/PredicateMethod
     end
 
     # Represents a cell error value (e.g. #N/A, #REF!, #DIV/0!).
@@ -209,21 +171,6 @@ module Xlsxrb
         super
       end
 
-      # Supports hash-like key access for backwards compatibility.
-      #
-      # @deprecated Use {#text} or {#font} instead.
-      # @param key [Symbol]
-      # @return [Object, nil]
-      # @api public
-      #: (Symbol key) -> untyped
-      def [](key)
-        warn "[Xlsxrb DEPRECATION] RichTextRun#[] is deprecated; use #text or #font instead.", uplevel: 1
-        case key
-        when :text then text
-        when :font then font
-        end
-      end
-
       # Returns the font size in points, if specified.
       #
       # @return [Numeric, nil]
@@ -232,15 +179,8 @@ module Xlsxrb
       def font_size
         return nil unless font
 
-        sz = font[:size] || font[:sz]
+        sz = font[:size]
         sz.is_a?(Numeric) ? sz : nil
-      end
-
-      # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
-      #: () -> Numeric?
-      def sz
-        warn "[DEPRECATION] `sz` is deprecated; use `font_size` instead.", uplevel: 1
-        font_size
       end
 
       # Returns the plain text of this run.
@@ -332,24 +272,6 @@ module Xlsxrb
         super(url: url, display: display, tooltip: tooltip, location: location)
       end
 
-      # Supports hash-like key access for backwards compatibility.
-      #
-      # @deprecated Hash-like access via {#[]} is deprecated and will be removed in 0.2.0; use method calls instead.
-      # @param key [Symbol, String]
-      # @return [Object, nil]
-      # @api public
-      #: (Symbol | String key) -> untyped
-      def [](key)
-        warn "[DEPRECATION] Hash access on Elements::Hyperlink (`#[]`) is deprecated and will be removed in 0.2.0; use method calls instead.", uplevel: 1
-        k = key.is_a?(Symbol) ? key : key.to_s.to_sym
-        case k
-        when :url then url
-        when :display then display
-        when :tooltip then tooltip
-        when :location then location
-        end
-      end
-
       # Returns whether all attributes are nil or empty.
       #
       # @return [Boolean]
@@ -374,21 +296,6 @@ module Xlsxrb
       end
 
       alias_method :to_hash, :to_h
-
-      # Checks equality against another instance or a Hash.
-      #
-      # @param other [Object]
-      # @return [Boolean]
-      # @api public
-      #: (untyped other) -> bool
-      def ==(other)
-        if other.is_a?(Hash)
-          warn "[Xlsxrb DEPRECATION] Comparing Hyperlink with Hash is deprecated; compare with Hyperlink instead.", uplevel: 1
-          to_h == other.transform_keys(&:to_sym).compact
-        else
-          super
-        end
-      end
 
       # Returns the target URL or location string.
       #

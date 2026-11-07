@@ -28,34 +28,6 @@ module Xlsxrb
     #: Integer?
     attr_reader :style_index
 
-    # @deprecated Use {#hidden?} instead. Will be removed in 0.2.0.
-    #: () -> bool
-    def hidden
-      warn "[DEPRECATION] `StreamRow#hidden` is deprecated; use `hidden?` instead.", uplevel: 1
-      hidden?
-    end
-
-    # @deprecated Use {#collapsed?} instead. Will be removed in 0.2.0.
-    #: () -> bool
-    def collapsed
-      warn "[DEPRECATION] `StreamRow#collapsed` is deprecated; use `collapsed?` instead.", uplevel: 1
-      collapsed?
-    end
-
-    # @deprecated Use {#custom_height?} instead. Will be removed in 0.2.0.
-    #: () -> bool
-    def custom_height
-      warn "[DEPRECATION] `StreamRow#custom_height` is deprecated; use `custom_height?` instead.", uplevel: 1
-      custom_height?
-    end
-
-    # @deprecated Use {#pad_empty_cells?} instead. Will be removed in 0.2.0.
-    #: () -> bool
-    def pad_empty_cells
-      warn "[DEPRECATION] `StreamRow#pad_empty_cells` is deprecated; use `pad_empty_cells?` instead.", uplevel: 1
-      pad_empty_cells?
-    end
-
     # @param index [Integer] 0-based row index.
     # @param xml_bytes [String] Raw ASCII-8BIT XML bytes.
     # @param from [Integer] Byte offset where cells start.
@@ -264,44 +236,19 @@ module Xlsxrb
       end
     end
 
-    # Access a cell by 0-based column index, column letter, or access row attributes via Symbol.
+    # Access a cell by 0-based column index, column letter/Symbol, or column range.
     #
-    # @param col_index [Integer, String, Symbol] Column index, column letter, or attribute symbol.
-    # @return [Elements::Cell, Object, nil]
+    # @param col_index_or_range [Integer, String, Symbol, Range<Integer>] Column index, column letter/Symbol, or column index range.
+    # @return [Elements::Cell, Array<Elements::Cell>, nil]
     # @api public
-    #: (Integer | String | Symbol col_index) -> untyped
-    def [](col_index)
-      case col_index
-      when Symbol
-        case col_index
-        when :cells then cells
-        when :values then values
-        when :raw_values then raw_values
-        when :formatted_values then formatted_values
-        when :formula_expressions, :formulas then formula_expressions
-        when :index then index
-        when :height then height
-        when :hidden, :hidden? then hidden?
-        when :custom_height, :custom_height? then custom_height?
-        when :collapsed, :collapsed? then collapsed?
-        when :outline_level then outline_level
-        when :style_index then style_index
-        when :date1904 then date1904?
-        when :pad_empty_cells then @pad_empty_cells
-        when :pad_empty_cells? then pad_empty_cells?
-        when :attributes then attributes
-        when :attrs
-          warn "[DEPRECATION] `:attrs` key is deprecated; use `:attributes` instead.", uplevel: 1
-          h = { height: height, hidden: hidden?, custom_height: custom_height?, collapsed: collapsed?, outline_level: outline_level }
-          h[:style_index] = style_index if style_index
-          h
-        else
-          idx = Elements::Cell._column_index(col_index.to_s)
-          idx ? cell_at(idx) : nil
-        end
+    #: (Integer | String | Symbol col_index_or_range) -> Elements::Cell?
+    #: (Range[Integer] col_index_or_range) -> Array[Elements::Cell]
+    def [](col_index_or_range)
+      case col_index_or_range
+      when Range
+        cells.select { |c| col_index_or_range.cover?(c.column_index) }
       else
-        idx = col_index.is_a?(Integer) ? col_index : Elements::Cell._column_index(col_index)
-        idx ? cell_at(idx) : nil
+        cell_at(col_index_or_range)
       end
     end
 
@@ -316,50 +263,6 @@ module Xlsxrb
       return nil unless col
 
       cells.find { |c| c.column_index == col }
-    end
-
-    # Convert row cells to a coordinate-keyed Hash (e.g. {"A1" => "value", "B1" => 123}).
-    #
-    # @deprecated Use {#values} or {#cells} instead. Will be removed in 0.2.0.
-    # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
-    # @return [Hash{String => Object}]
-    # @api public
-    #: (?type_cast: bool) -> Hash[String, untyped]
-    def to_h(type_cast: false)
-      warn "[DEPRECATION] `StreamRow#to_h` is deprecated; use `values` or `cells` instead.", uplevel: 1
-      result = {}
-      each_cell do |c|
-        val = c.value
-        if type_cast && val.is_a?(Numeric)
-          fmt_type = if c.style_index && @styles
-                       NumberFormatter.format_type_for(c.style_index, @styles)
-                     elsif c.format_code
-                       NumberFormatter.format_type(c.format_code)
-                     end
-          begin
-            case fmt_type
-            when :date
-              val = Ooxml::Utils.serial_to_date(val, date1904: @date1904)
-            when :datetime, :time
-              val = Ooxml::Utils.serial_to_datetime(val, date1904: @date1904)
-            end
-          rescue StandardError
-            # Keep val numeric on failure
-          end
-        end
-        result[c.ref] = val
-      end
-      result
-    end
-
-    # Convert row cells to an Array of raw values (sparse columns get nil).
-    #
-    # @deprecated Use {#values} to get an Array of cell values, or {#cells} for Cell objects. In 0.2.0, {#to_a} will conform to Enumerable#to_a and return Array<Cell>.
-    # @return [Array<Object>]
-    # @api public
-    #: () -> Array[untyped]
-    def to_a
-      values
     end
 
     # Returns cell values as an Array (sparse columns get nil).
@@ -424,13 +327,6 @@ module Xlsxrb
       arr
     end
 
-    # @deprecated Use {#formula_expressions} instead. Will be removed in 0.2.0.
-    #: () -> Array[String?]
-    def formulas
-      warn "[DEPRECATION] `StreamRow#formulas` is deprecated; use `StreamRow#formula_expressions` instead.", uplevel: 1
-      formula_expressions
-    end
-
     # Returns whether the row is valid according to OOXML specifications.
     #
     # @return [Boolean]
@@ -458,7 +354,7 @@ module Xlsxrb
     # @api public
     #: () -> Hash[untyped, untyped]
     def unmapped_data
-      @style_index ? { style_index: @style_index } : Elements::EMPTY_HASH
+      Elements::EMPTY_HASH
     end
 
     # Validation errors for compatibility with Elements::Row.
@@ -476,7 +372,7 @@ module Xlsxrb
     # @api public
     #: () -> String
     def inspect
-      "#<#{self.class.name} index=#{index} height=#{height.inspect} hidden=#{hidden}>"
+      "#<#{self.class.name} index=#{index} height=#{height.inspect} hidden=#{@hidden}>"
     end
 
     private

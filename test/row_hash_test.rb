@@ -37,8 +37,8 @@ class RowHashTest < Test::Unit::TestCase
   end
 
   def check_sheet(xlsx_path)
-    wb = Xlsxrb.read(xlsx_path)
-    sheet = wb.sheets.first.load
+    wb = Xlsxrb.load(xlsx_path)
+    sheet = wb.sheets.first
     assert_equal(1, sheet.rows.size)
 
     cells = sheet.rows[0].cells

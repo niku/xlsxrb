@@ -10,8 +10,8 @@ subtle_bg = [
 ].pack("m")
 
 Xlsxrb.write(output_path) do |wb|
-  wb.tab_ratio(600)
-  wb.active_sheet("Active Summary")
+  wb.tab_ratio = 600
+  wb.active_sheet = "Active Summary"
 
   wb.style(:header, font: { bold: true, color: "FFFFFF" }, fill_color: "1E3A8A", align_horizontal: :center)
   wb.style(:meta_hdr, font: { bold: true, color: "FFFFFF" }, fill_color: "047857", align_horizontal: :center)
@@ -23,8 +23,8 @@ Xlsxrb.write(output_path) do |wb|
     s.column(1, width: 28)
     s.column(2, width: 16)
 
-    s.phonetic_properties(font_id: 0, type: :no_conversion, alignment: :left)
-    s.ignore_error("A2:A4", number_stored_as_text: true)
+    s.phonetic_properties = { font_id: 0, type: :no_conversion, alignment: :left }
+    s.ignored_error("A2:A4", number_stored_as_text: true)
 
     s.row(["Code", "Product Description", "Inventory"], cell_styles: :header)
     s.row(["00101", "Compact Mechanical Keyboard", 42], cell_styles: :border_cell)
@@ -37,8 +37,8 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 22)
     s.column(1, width: 20)
 
-    s.sheet_calc_pr(full_calc_on_load: true)
-    s.background_image(subtle_bg)
+    s.sheet_calc_properties = { full_calc_on_load: true }
+    s.background_image = subtle_bg
 
     s.row(%w[Metric Calculation], cell_styles: :meta_hdr)
     s.row(["Total Units", "=SUM('Active Summary'!C2:C4)"], cell_styles: :border_cell)

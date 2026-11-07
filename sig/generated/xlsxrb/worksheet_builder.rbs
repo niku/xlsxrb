@@ -86,16 +86,11 @@ module Xlsxrb
     # @param custom_height [Boolean] Whether custom row height is enforced.
     # @param outline_level [Integer, nil] Grouping/outline hierarchy level.
     # @param collapsed [Boolean] Whether the row is collapsed.
-    # @param styles [String, Symbol, Array<String | Symbol>, Hash, nil] Deprecated. Use cell_styles: instead.
-    # @param style [Integer, Symbol, String, Hash, nil] Deprecated. Use row_style: instead.
     # @return [void]
     # @raise [ArgumentError] If limits are exceeded when strict_excel_mode is enabled.
     # @api public
-    # : (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?styles: untyped, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
-    def row: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?styles: untyped, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
-
-    # @deprecated Use {#row} instead. Will be removed in 0.2.0 (available via xlsxrb-adapters).
-    alias add_row row
+    # : (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
+    def row: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
 
     # Appends a row to the worksheet and returns self for chaining.
     #
@@ -110,9 +105,6 @@ module Xlsxrb
 
     # Advances the row cursor by count without writing empty row elements.
     #
-    # @example Skip one row
-    #   sheet.skip_row
-    #
     # @example Skip multiple rows
     #   sheet.skip_rows(3)
     #
@@ -121,9 +113,6 @@ module Xlsxrb
     # @api public
     # : (?Integer count) -> void
     def skip_rows: (?Integer count) -> void
-
-    # @deprecated Use {#skip_rows} instead. Will be removed in 0.2.0.
-    alias skip_row skip_rows
 
     # Sets column formatting and properties for one or multiple columns.
     #
@@ -169,15 +158,6 @@ module Xlsxrb
     # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?level: Integer, ?collapsed: bool, ?hidden: bool, ?width: Float | Integer | nil, ?style: untyped) -> void
     def group_columns: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?level: Integer, ?collapsed: bool, ?hidden: bool, ?width: Float | Integer | nil, ?style: untyped) -> void
 
-    # @deprecated Use {#group_columns} instead. Will be removed in 0.2.0.
-    alias group_column group_columns
-
-    # @deprecated Use {#group_columns} instead. Will be removed in 0.2.0.
-    alias group_cols group_columns
-
-    # @deprecated Use {#group_columns} instead. Will be removed in 0.2.0.
-    alias group_col group_columns
-
     # Groups multiple rows with outline hierarchy, either by range or with a block.
     #
     # @example Group rows with a block
@@ -199,9 +179,6 @@ module Xlsxrb
     # : (?untyped rows, ?level: Integer, ?collapsed: bool, ?hidden: bool) ?{ (self) -> void } -> void
     def group_rows: (?untyped rows, ?level: Integer, ?collapsed: bool, ?hidden: bool) ?{ (self) -> void } -> void
 
-    # @deprecated Use {#group_rows} instead. Will be removed in 0.2.0.
-    alias group_row group_rows
-
     # Configures worksheet-level outline and grouping view properties.
     #
     # @example Show summary row below detail rows
@@ -210,16 +187,12 @@ module Xlsxrb
     # @param summary_below [Boolean, nil] Flag indicating if summary rows appear below detail rows.
     # @param summary_right [Boolean, nil] Flag indicating if summary columns appear to the right of detail columns.
     # @param show_outline_symbols [Boolean, nil] Flag indicating whether outline symbols are visible.
-    # @param show_symbols [Boolean, nil] Deprecated alias for show_outline_symbols.
     # @param apply_styles [Boolean, nil] Flag indicating whether automatic styles apply to outlines.
     # @param opts [Hash] Additional options.
     # @return [Hash<Symbol, untyped>, void]
     # @api public
-    # : (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?show_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> (Hash[Symbol, untyped] | void)
-    def outline_properties: (?summary_below: untyped, ?summary_right: untyped, ?show_outline_symbols: untyped, ?show_symbols: untyped, ?apply_styles: untyped, **untyped opts) -> untyped
-
-    # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
-    alias outline_pr outline_properties
+    # : (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> (Hash[Symbol, untyped] | void)
+    def outline_properties: (?summary_below: untyped, ?summary_right: untyped, ?show_outline_symbols: untyped, ?apply_styles: untyped, **untyped opts) -> untyped
 
     # Sets worksheet outline and grouping view properties.
     #
@@ -276,8 +249,8 @@ module Xlsxrb
     # @param filter [Hash] Filter criteria (e.g. values, custom filters).
     # @return [void]
     # @api public
-    # : (Integer | String | Symbol col_id, untyped filter) -> void
-    def filter_column: (Integer | String | Symbol col_id, untyped filter) -> void
+    # : (Integer | String | Symbol col_id, Hash[untyped, untyped] filter) -> void
+    def filter_column: (Integer | String | Symbol col_id, Hash[untyped, untyped] filter) -> void
 
     # Configures column sort state for the sheet.
     #
@@ -306,10 +279,6 @@ module Xlsxrb
     # @api public
     # : (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
     def data_validation: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
-
-    # @deprecated Use {#data_validation} instead.
-    # : (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
-    def validate_data: (?String? sqref, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
 
     # Adds a conditional formatting rule to a cell range.
     # Supports block configuration via {ConditionalFormatBuilder} and coordinate targeting (:columns, :rows).
@@ -343,19 +312,15 @@ module Xlsxrb
     # @param source_ref [String] Source data range (e.g. "DataSheet!A1:D100").
     # @param row_fields [Array<Integer, String>] Field names or indices for row headers.
     # @param data_fields [Array<Hash>] Data aggregation fields.
-    # @param col_fields [Array<Integer, String>] Field names or indices for column headers.
-    # @param dest_ref [String] Top-left destination cell (default "E1").
+    # @param column_fields [Array<String, Integer>, nil] Field names or indices for columns.
+    # @param ref [String, nil] Target cell for pivot table top-left corner (e.g. "E1").
     # @param name [String, nil] Pivot table name.
     # @param field_names [Array<String>, nil] Custom field display names.
     # @param items [Array, nil] Item configuration.
-    # @param column_fields [Array<String, Integer>] Field names or indices for columns.
-    # @param col_fields [Array<String, Integer>] Deprecated alias for column_fields.
-    # @param ref [String] Target cell for pivot table top-left corner (e.g. "E1").
-    # @param dest_ref [String] Deprecated alias for ref.
     # @return [void]
     # @api public
-    # : (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?column_fields: Array[String | Integer]?, ?col_fields: Array[String | Integer]?, ?ref: String?, ?dest_ref: String?, ?name: String?, ?field_names: Array[String]?, ?items: Array[untyped]?, **untyped opts) -> void
-    def pivot_table: (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?column_fields: Array[String | Integer]?, ?col_fields: Array[String | Integer]?, ?ref: String?, ?dest_ref: String?, ?name: String?, ?field_names: Array[String]?, ?items: Array[untyped]?, **untyped opts) -> void
+    # : (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?column_fields: Array[String | Integer]?, ?ref: String?, ?name: String?, ?field_names: Array[String]?, ?items: Array[untyped]?, **untyped opts) -> void
+    def pivot_table: (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?column_fields: Array[String | Integer]?, ?ref: String?, ?name: String?, ?field_names: Array[String]?, ?items: Array[untyped]?, **untyped opts) -> void
 
     # Adds a cell comment / note.
     #
@@ -383,9 +348,6 @@ module Xlsxrb
     # : (String | Integer cell, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?) -> void
     def threaded_comment: (String | Integer cell, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?) -> void
 
-    # @deprecated Use {#threaded_comment} instead. Will be removed in 0.2.0.
-    alias add_threaded_comment threaded_comment
-
     # Adds a sparkline group to the sheet.
     #
     # @param sparklines [Array<Hash>] List of { data_ref:, location_ref: } items.
@@ -396,53 +358,25 @@ module Xlsxrb
     # : (sparklines: Array[String | Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
     def sparkline_group: (sparklines: Array[String | Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
 
-    # Adds a single sparkline to the sheet.
-    #
-    # @example Add a line sparkline
-    #   sheet.add_sparkline(location: "F1", range: "A1:E1")
-    #
-    # @example Add a column sparkline with high/low markers
-    #   sheet.add_sparkline(location: "F2", range: "A2:E2", type: :column, high: true, low: true)
-    #
-    # @example Add a win/loss sparkline
-    #   sheet.add_sparkline(location: "F3", range: "A3:E3", type: :win_loss)
-    #
-    # @deprecated Use {#sparkline_group} instead. Will be removed in 0.2.0.
-    # @param location [String, nil] Target cell for the sparkline (e.g. "F1").
-    # @param range [String, nil] Data range for the sparkline (e.g. "A1:E1").
-    # @param type [Symbol, String, nil] Sparkline type (:line, :column, :win_loss / :stacked).
-    # @param opts [Hash] Additional sparkline options.
-    # @return [void]
-    # @api public
-    # : (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
-    def add_sparkline: (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
-
     # Merges a range of cells into a single cell.
     #
     # @example Merge with string range
     #   sheet.merge("A1:C1")
     #
-    # @deprecated Passing coordinate keyword arguments (row:, col_start:, col_end:, row_start:, row_end:) is deprecated and will be removed in 0.2.0. Use a range string (e.g. merge("A1:C1")) instead.
-    # @param range [String, Hash, nil] Cell range (e.g. "A1:B2") or hash of coordinates.
-    # @param row [Integer, nil] Single row index.
-    # @param col_start [Integer, String, nil] Starting column.
-    # @param col_end [Integer, String, nil] Ending column.
-    # @param row_start [Integer, nil] Starting row index.
-    # @param row_end [Integer, nil] Ending row index.
+    # @param range [String] Cell range (e.g. "A1:B2").
     # @return [void]
     # @api public
-    # : (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
-    def merge: (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
+    # : (String range) -> void
+    def merge: (String range) -> void
 
     # Freezes window panes at the specified row and column, or queries freeze pane settings.
     #
     # @param row [Integer, nil] Number of rows to freeze from top (0-based split position).
     # @param column [Integer, String, nil] Number of columns to freeze from left (0-based or letter).
-    # @param col [Integer, String, nil] Deprecated alias for column.
     # @return [Elements::FreezePane, Hash<Symbol, untyped>, nil, void]
     # @api public
-    # : (?row: Integer | nil, ?column: (Integer | String)?, ?col: (Integer | String)?) -> (untyped | void)
-    def freeze_pane: (?row: untyped, ?column: untyped, ?col: untyped) -> untyped
+    # : (?row: Integer | nil, ?column: (Integer | String)?) -> (untyped | void)
+    def freeze_pane: (?row: untyped, ?column: untyped) -> untyped
 
     # Sets or clears freeze pane configuration.
     #
@@ -490,14 +424,7 @@ module Xlsxrb
     # : (untyped opts) -> void
     def selection=: (untyped opts) -> void
 
-    # @deprecated Use {#selection} instead.
-    # : (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-    def select_cell: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-
-    # Configures or queries page margins in inches for printing (<pageMargins>).
-    #
-    # When called with no arguments, returns the page margins value object or hash.
-    # When called with arguments, configures page margins and returns nil.
+    # Sets page margins in inches for printing.
     #
     # @param left [Float, nil] Left margin.
     # @param right [Float, nil] Right margin.
@@ -537,31 +464,20 @@ module Xlsxrb
     # : (untyped opts) -> void
     def page_setup=: (untyped opts) -> void
 
-    # Configures whether page setup fits content to page width/height.
-    # When enabled, optionally sets fit_to_width and/or fit_to_height on page_setup.
+    # Gets whether page setup fits content to page width/height.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#fit_to_page=} or {#page_setup} with :fit_to_width/:fit_to_height instead.
-    # @param enabled [Boolean, nil] Whether to fit to page.
-    # @param width [Integer, nil] Pages wide to fit to.
-    # @param height [Integer, nil] Pages tall to fit to.
-    # @return [Boolean, void]
-    # @api public
-    # : (?bool? enabled, ?width: Integer?, ?height: Integer?) -> (bool | void)
-    def fit_to_page: (?untyped enabled, ?width: untyped, ?height: untyped) -> untyped
-
-    # @deprecated Use {#fit_to_page} instead. Will be removed in 0.2.0.
     # @return [Boolean]
     # @api public
     # : () -> bool
-    def fit_to_page?: () -> bool
+    def fit_to_page: () -> bool
 
     # Sets whether page setup fits content to page width/height.
     #
     # @param enabled [Boolean, nil] Whether to fit to page.
     # @return [Boolean]
     # @api public
-    # : (bool? enabled) -> bool?
-    def fit_to_page=: (bool? enabled) -> bool?
+    # : (bool? enabled) -> bool
+    def fit_to_page=: (bool? enabled) -> bool
 
     # Configures or queries headers and footers for printing (<headerFooter>).
     #
@@ -609,19 +525,15 @@ module Xlsxrb
     # @param name [String] Defined name identifier.
     # @param value [Object, nil] Cell reference, formula, or constant.
     # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
-    # @param column [Integer, String, nil] Deprecated alias for columns.
     # @param columns [Integer, String, nil] Column index or letter for coordinate-based reference.
-    # @param col [Integer, String, nil] Deprecated alias for column.
-    # @param row [Integer, Range, nil] Deprecated alias for rows.
-    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
+    # @param rows [Integer, Range, nil] Row or row range (0-based) for coordinate-based reference.
     # @param range [String, nil] Cell range reference (e.g. "A1:A10").
     # @param sheet [String, nil] Reference sheet name (defaults to current sheet).
     # @param scope [String, Symbol, nil] Scope identifier (:workbook or sheet name).
-    # @param local [Boolean] Deprecated alias for scope: :current.
     # @return [void]
     # @api public
-    # : (String name, ?untyped value, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?sheet: String?, ?scope: (String | Symbol)?, ?local: bool) -> void
-    def defined_name: (String name, ?untyped value, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?sheet: String?, ?scope: (String | Symbol)?, ?local: bool) -> void
+    # : (String name, ?untyped value, ?hidden: bool, ?columns: untyped, ?rows: untyped, ?range: untyped, ?sheet: String?, ?scope: (String | Symbol)?) -> void
+    def defined_name: (String name, ?untyped value, ?hidden: bool, ?columns: untyped, ?rows: untyped, ?range: untyped, ?sheet: String?, ?scope: (String | Symbol)?) -> void
 
     # Sets or gets the print area for the worksheet.
     #
@@ -656,11 +568,10 @@ module Xlsxrb
     # @param rows [String, nil] Repeating row range (e.g. "1:2").
     # @param rows [String, Integer, Range, nil] Repeating row range (e.g. "1:2" or 0-based 0..1).
     # @param columns [String, Integer, Symbol, Range, nil] Repeating column range (e.g. "A:B" or 0..1).
-    # @param cols [String, Integer, Symbol, Range, nil] Deprecated alias for columns.
     # @return [Elements::PrintTitles, nil, void]
     # @api public
-    # : (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?) -> (Elements::PrintTitles | nil | void)
-    def print_titles: (?rows: untyped, ?columns: untyped, ?cols: untyped) -> untyped
+    # : (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?) -> (Elements::PrintTitles | nil | void)
+    def print_titles: (?rows: untyped, ?columns: untyped) -> untyped
 
     # Sets repeating print titles for the worksheet.
     #
@@ -721,82 +632,55 @@ module Xlsxrb
     # : (untyped opts) -> void
     def sheet_protection=: (untyped opts) -> void
 
-    # @deprecated Use {#sheet_protection} instead.
-    # : (**untyped opts) -> void
-    def protect_sheet: (**untyped opts) -> void
-
     # Inserts an embedded image from raw binary data.
     #
     # @param file_data [String] Binary image data.
     # @param ext [String] File extension ("png", "jpeg", etc.).
     # @param from_column [Integer, nil] Top-left starting column (0-based).
-    # @param from_col [Integer, nil] Deprecated alias for from_column.
     # @param from_row [Integer] Top-left starting row (0-based).
     # @param to_column [Integer, nil] Bottom-right ending column (0-based).
-    # @param to_col [Integer, nil] Deprecated alias for to_column.
     # @param to_row [Integer] Bottom-right ending row (0-based).
     # @param opts [Hash] Additional image anchoring options.
     # @return [void]
     # @api public
-    # : (String file_data, ?ext: ::String, ?from_column: ::Integer?, ?from_col: ::Integer?, ?from_row: ::Integer, ?to_column: ::Integer?, ?to_col: ::Integer?, ?to_row: ::Integer, **untyped opts) -> void
-    def image: (String file_data, ?ext: ::String, ?from_column: ::Integer?, ?from_col: ::Integer?, ?from_row: ::Integer, ?to_column: ::Integer?, ?to_col: ::Integer?, ?to_row: ::Integer, **untyped opts) -> void
+    # : (String file_data, ?ext: ::String, ?from_column: ::Integer?, ?from_row: ::Integer, ?to_column: ::Integer?, ?to_row: ::Integer, **untyped opts) -> void
+    def image: (String file_data, ?ext: ::String, ?from_column: ::Integer?, ?from_row: ::Integer, ?to_column: ::Integer?, ?to_row: ::Integer, **untyped opts) -> void
 
-    # Configures the worksheet background image (<picture>).
+    # Gets the worksheet background image (<picture>).
     #
-    # @example Set background image from binary data
-    #   sheet.background_image(png_bytes, ext: "png")
-    #
-    # @example Set background image from file path
-    #   sheet.background_image("path/to/background.png")
-    #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#background_image=} instead.
-    # @param file_data [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
-    # @param ext [String, nil] Image extension ("png", "jpeg", "jpg", "gif", etc.).
-    # @param opts [Hash] Additional image options.
-    # @return [Hash, nil]
+    # @return [Elements::BackgroundImage, nil]
     # @api public
-    # : (?untyped file_data, ?ext: ::String?, **untyped opts) -> (Elements::BackgroundImage | Hash[Symbol, untyped] | nil)
-    def background_image: (?untyped file_data, ?ext: ::String?, **untyped opts) -> (Elements::BackgroundImage | Hash[Symbol, untyped] | nil)
+    # : () -> Elements::BackgroundImage?
+    def background_image: () -> Elements::BackgroundImage?
 
-    # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
-    alias background_picture background_image
-
-    # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
-    alias picture background_image
-
+    # Sets the worksheet background image (<picture>).
+    #
+    # @param val [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
+    # @return [untyped]
+    # @api public
     # : (untyped val) -> untyped
     def background_image=: (untyped val) -> untyped
-
-    # @deprecated Use {#background_image=} instead. Will be removed in 0.2.0.
-    alias background_picture= background_image=
-
-    # @deprecated Use {#background_image=} instead. Will be removed in 0.2.0.
-    alias picture= background_image=
 
     # Inserts a drawing shape (e.g. rectangle, callout, arrow).
     #
     # @param preset [String] Shape preset name (e.g. "rect", "roundRect").
     # @param text [String, nil] Shape label text.
     # @param from_column [Integer, nil] Top-left column.
-    # @param from_col [Integer, nil] Deprecated alias for from_column.
     # @param from_row [Integer] Top-left row.
     # @param to_column [Integer, nil] Bottom-right column.
-    # @param to_col [Integer, nil] Deprecated alias for to_column.
     # @param to_row [Integer] Bottom-right row.
     # @param opts [Hash] Additional shape formatting options.
     # @return [void]
     # @api public
-    # : (**untyped opts) -> void
-    def shape: (**untyped opts) -> void
+    # : (?preset: String, ?text: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer, **untyped opts) -> void
+    def shape: (?preset: String, ?text: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer, **untyped opts) -> void
 
-    # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
+    # Gets the sheet visibility state (:visible, :hidden, or :very_hidden).
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#state=} instead.
-    # @param new_state [Symbol, nil] The new state.
     # @return [Symbol]
     # @api public
-    # : (?Symbol? new_state) -> Symbol
-    def state: (?Symbol? new_state) -> Symbol
+    # : Symbol
+    attr_reader state: untyped
 
     # Sets the sheet visibility state (:visible, :hidden, or :very_hidden).
     #
@@ -806,20 +690,12 @@ module Xlsxrb
     # : (Symbol | String new_state) -> Symbol
     def state=: (Symbol | String new_state) -> Symbol
 
-    # Gets or sets the worksheet tab color.
+    # Gets the worksheet tab color.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#tab_color=} instead.
-    # @overload tab_color()
-    #   Returns the current tab color specification.
-    #   @return [String, Hash, nil]
-    # @overload tab_color(spec, **opts)
-    #   Sets the tab color using an RGB hex string or color options.
-    #   @param spec [String, Hash, Symbol, nil] RGB hex string (e.g. "FF0000"), theme/indexed hash, or nil.
-    #   @param opts [Hash] Color keyword arguments (e.g. theme: 1, tint: 0.5, indexed: 9, auto: true).
-    #   @return [String, Hash, nil]
+    # @return [String, Hash, nil]
     # @api public
-    # : (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
-    def tab_color: (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
+    # : () -> (String | Hash[Symbol, untyped] | nil)
+    def tab_color: () -> (String | Hash[Symbol, untyped] | nil)
 
     # Sets the tab color of this worksheet.
     #
@@ -915,10 +791,6 @@ module Xlsxrb
     # : (Integer row_index) -> void
     def row_break: (Integer row_index) -> void
 
-    # @deprecated Use {#row_break} instead.
-    # : (Integer row_num) -> void
-    def page_break_row: (Integer row_num) -> void
-
     # Inserts a vertical page break after the specified column.
     #
     # @param col [Integer, String, Symbol] Column index (0-based) or letter ("B", :B).
@@ -926,10 +798,6 @@ module Xlsxrb
     # @api public
     # : (Integer | String | Symbol col) -> void
     def column_break: (Integer | String | Symbol col) -> void
-
-    # @deprecated Use {#column_break} instead.
-    # : (Integer | String | Symbol col_index) -> void
-    def page_break_col: (Integer | String | Symbol col_index) -> void
 
     # Adds a protected range to the worksheet.
     #
@@ -942,9 +810,6 @@ module Xlsxrb
     # : (String name, String sqref, ?password: String?, **untyped opts) -> void
     def protected_range: (String name, String sqref, ?password: String?, **untyped opts) -> void
 
-    # @deprecated Use {#protected_range} instead. Will be removed in 0.2.0.
-    alias add_protected_range protected_range
-
     # Adds a cell watch to the worksheet.
     #
     # @param ref [String] Cell reference (e.g. "A1").
@@ -952,9 +817,6 @@ module Xlsxrb
     # @api public
     # : (String ref) -> void
     def cell_watch: (String ref) -> void
-
-    # @deprecated Use {#cell_watch} instead. Will be removed in 0.2.0.
-    alias add_cell_watch cell_watch
 
     # Adds an ignored error entry for the worksheet.
     #
@@ -965,40 +827,19 @@ module Xlsxrb
     # : (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
     def ignored_error: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
 
-    # @deprecated Use {#ignored_error} instead. Will be removed in 0.2.0.
-    # : (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
-    def ignore_error: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
-
-    # @deprecated Use {#ignored_error} instead. Will be removed in 0.2.0.
-    # : (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
-    def add_ignored_error: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
-
     # Returns ignored error rules configured for this worksheet.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::IgnoredError>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def ignored_errors: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::IgnoredError]
+    def ignored_errors: () -> Array[Elements::IgnoredError]
 
-    # Gets or sets phonetic (furigana) guide properties for the worksheet.
+    # Gets phonetic (furigana) guide properties for the sheet.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#phonetic_properties=} instead.
-    # @overload phonetic_properties()
-    #   Returns the current phonetic properties.
-    #   @return [Hash, nil]
-    # @overload phonetic_properties(props = nil, font_id: nil, type: nil, alignment: nil)
-    #   Sets phonetic properties.
-    #   @param spec [Hash, Integer, nil]
-    #   @param font_id [Integer, nil]
-    #   @param type [Symbol, String, nil]
-    #   @param alignment [Symbol, String, nil]
-    #   @return [Hash, nil]
+    # @return [Elements::PhoneticProperties, nil]
     # @api public
-    # : (?untyped spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> (Elements::PhoneticProperties | Hash[Symbol, untyped] | nil)
-    def phonetic_properties: (?untyped spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> (Elements::PhoneticProperties | Hash[Symbol, untyped] | nil)
-
-    # @deprecated Use {#phonetic_properties} instead. Will be removed in 0.2.0.
-    alias phonetic_pr phonetic_properties
+    # : () -> Elements::PhoneticProperties?
+    def phonetic_properties: () -> Elements::PhoneticProperties?
 
     # Sets phonetic (furigana) guide properties for the sheet.
     #
@@ -1008,9 +849,6 @@ module Xlsxrb
     # : (Hash[Symbol, untyped] | Integer | nil spec) -> (Hash[Symbol, untyped] | Integer | nil)
     def phonetic_properties=: (Hash[Symbol, untyped] | Integer | nil spec) -> (Hash[Symbol, untyped] | Integer | nil)
 
-    # @deprecated Use {#phonetic_properties=} instead. Will be removed in 0.2.0.
-    alias phonetic_pr= phonetic_properties=
-
     # Normalizes phonetic properties to OOXML schema values.
     #
     # @param props [Hash, nil]
@@ -1019,14 +857,12 @@ module Xlsxrb
     # : (Hash[untyped, untyped]? props) -> Hash[Symbol, untyped]?
     def self.normalize_phonetic_properties: (Hash[untyped, untyped]? props) -> Hash[Symbol, untyped]?
 
-    # Sets or gets the internal code name of the worksheet.
+    # Gets the internal code name of the worksheet.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#code_name=} instead.
-    # @param val [String, Symbol, nil] The code name.
     # @return [String, nil]
     # @api public
-    # : (?String | Symbol | nil val) -> String?
-    def code_name: (?String | Symbol | nil val) -> String?
+    # : () -> String?
+    def code_name: () -> String?
 
     # Sets the internal code name of the worksheet.
     #
@@ -1036,18 +872,12 @@ module Xlsxrb
     # : (String | Symbol | nil val) -> String?
     def code_name=: (String | Symbol | nil val) -> String?
 
-    # Configures worksheet calculation properties (<sheetCalcPr>).
+    # Gets worksheet calculation properties (<sheetCalcPr>).
     #
-    # @example Instruct Excel to recalculate formulas when loading sheet
-    #   sheet.sheet_calc_properties = { full_calc_on_load: true }
-    #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#sheet_calc_properties=} instead.
-    # @param spec [Hash, nil] Calculation properties hash.
-    # @param full_calc_on_load [Boolean, nil] Whether to recalculate when loading.
-    # @return [Hash, nil]
+    # @return [Elements::SheetCalcProperties, nil]
     # @api public
-    # : (?untyped spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
-    def sheet_calc_properties: (?untyped spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
+    # : () -> Elements::SheetCalcProperties?
+    def sheet_calc_properties: () -> Elements::SheetCalcProperties?
 
     # Sets worksheet calculation properties (<sheetCalcPr>).
     #
@@ -1056,22 +886,6 @@ module Xlsxrb
     # @api public
     # : (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
     def sheet_calc_properties=: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
-
-    # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-    # : (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
-    def sheet_calc_pr: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
-
-    # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-    # : (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
-    def calc_pr: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
-
-    # @deprecated Use {#sheet_calc_properties=} instead. Will be removed in 0.2.0.
-    # : (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
-    def sheet_calc_pr=: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
-
-    # @deprecated Use {#sheet_calc_properties=} instead. Will be removed in 0.2.0.
-    # : (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
-    def calc_pr=: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
 
     # Builds and returns the in-memory {Elements::Worksheet}.
     #
@@ -1101,24 +915,14 @@ module Xlsxrb
     # : (?String? ref, ?columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
     def initialize: (?String? ref, ?columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
 
-    # @deprecated Use explicit getter methods instead.
-    # : (untyped key) -> untyped
-    def []: (untyped key) -> untyped
-
-    # @deprecated Use explicit setter methods instead.
-    # : (untyped key, untyped value) -> untyped
-    def []=: (untyped key, untyped value) -> untyped
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#ref=} instead.
-    # : (?String? val) -> String?
-    def ref: (?String? val) -> String?
+    # : () -> String?
+    def ref: () -> String?
 
     # : (String val) -> String
     def ref=: (String val) -> String
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#columns=} instead.
-    # : (*untyped cols) -> untyped
-    def columns: (*untyped cols) -> untyped
+    # : () -> Array[untyped]?
+    def columns: () -> Array[untyped]?
 
     # : (untyped cols) -> untyped
     def columns=: (untyped cols) -> untyped
@@ -1131,9 +935,6 @@ module Xlsxrb
     # : (String | Symbol | Hash[Symbol, untyped] col, **untyped opts) -> void
     def column: (String | Symbol | Hash[Symbol, untyped] col, **untyped opts) -> void
 
-    # @deprecated Use {#column} instead. Will be removed in 0.2.0.
-    alias add_column column
-
     # Appends a calculated column with formula and options.
     #
     # @param name [String, Symbol] The column name.
@@ -1143,90 +944,65 @@ module Xlsxrb
     # : (String | Symbol name, String formula, **untyped opts) -> void
     def calculated_column: (String | Symbol name, String formula, **untyped opts) -> void
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#name=} instead.
-    # : (?String? val) -> String?
-    def name: (?String? val) -> String?
+    # : () -> String?
+    def name: () -> String?
 
     # : (String val) -> String
     def name=: (String val) -> String
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#display_name=} instead.
-    # : (?String? val) -> String?
-    def display_name: (?String? val) -> String?
+    # : () -> String?
+    def display_name: () -> String?
 
     # : (String val) -> String
     def display_name=: (String val) -> String
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#style=} instead.
-    # : (?String? val) -> String?
-    def style: (?String? val) -> String?
+    # : () -> String?
+    def style: () -> String?
 
     # : (String val) -> String
     def style=: (String val) -> String
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_row_stripes=} instead.
-    # : (?bool? val) -> bool?
-    def show_row_stripes: (?bool? val) -> bool?
+    # : () -> bool?
+    def show_row_stripes: () -> bool?
 
     # : (bool val) -> bool
     def show_row_stripes=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_column_stripes=} instead.
-    # : (?bool? val) -> bool?
-    def show_column_stripes: (?bool? val) -> bool?
+    # : () -> bool?
+    def show_column_stripes: () -> bool?
 
     # : (bool val) -> bool
     def show_column_stripes=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_first_column=} instead.
-    # : (?bool? val) -> bool?
-    def show_first_column: (?bool? val) -> bool?
+    # : () -> bool?
+    def show_first_column: () -> bool?
 
     # : (bool val) -> bool
     def show_first_column=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_last_column=} instead.
-    # : (?bool? val) -> bool?
-    def show_last_column: (?bool? val) -> bool?
+    # : () -> bool?
+    def show_last_column: () -> bool?
 
     # : (bool val) -> bool
     def show_last_column=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#totals_row_count=} instead.
-    # : (?Integer? val) -> Integer?
-    def totals_row_count: (?Integer? val) -> Integer?
+    # : () -> Integer?
+    def totals_row_count: () -> Integer?
 
     # : (Integer val) -> Integer
     def totals_row_count=: (Integer val) -> Integer
 
-    # @deprecated Use {#totals_row_count} instead. Will be removed in 0.2.0.
-    # : (?Integer? val) -> Integer?
-    def total_row_count: (?Integer? val) -> Integer?
-
-    # @deprecated Use {#totals_row_count=} instead. Will be removed in 0.2.0.
-    # : (Integer val) -> Integer
-    def total_row_count=: (Integer val) -> Integer
-
     # Gets or sets whether the table has a totals row.
     #
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#totals_row=} instead.
-    # : (?untyped val) -> bool?
-    def totals_row: (?untyped val) -> bool?
+    # @return [Boolean, nil]
+    # : () -> bool?
+    def totals_row: () -> bool?
 
     # : (bool val) -> bool
     def totals_row=: (bool val) -> bool
 
-    # @deprecated Use {#totals_row} instead. Will be removed in 0.2.0.
-    # : (?bool? val) -> bool?
-    def total_row: (?bool? val) -> bool?
-
-    # @deprecated Use {#totals_row=} instead. Will be removed in 0.2.0.
-    # : (bool val) -> bool
-    def total_row=: (bool val) -> bool
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#auto_filter=} instead.
-    # : (?bool? val) -> bool?
-    def auto_filter: (?bool? val) -> bool?
+    # : () -> bool?
+    def auto_filter: () -> bool?
 
     # : (bool val) -> bool
     def auto_filter=: (bool val) -> bool
@@ -1244,63 +1020,26 @@ module Xlsxrb
     # : (?String? sqref, **untyped opts) -> void
     def initialize: (?String? sqref, **untyped opts) -> void
 
-    # @deprecated Use dedicated property accessors instead. Will be removed in 0.2.0.
-    # @param key [Symbol, String]
-    # @return [Object, nil]
-    # @api public
-    # : (untyped key) -> untyped
-    def []: (untyped key) -> untyped
-
-    # @deprecated Use dedicated property accessors instead. Will be removed in 0.2.0.
-    # @param key [Symbol, String]
-    # @param value [Object]
-    # @return [Object]
-    # @api public
-    # : (untyped key, untyped value) -> untyped
-    def []=: (untyped key, untyped value) -> untyped
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#sqref=} instead.
-    # : (?String? val) -> String?
-    def sqref: (?String? val) -> String?
+    # : () -> String?
+    def sqref: () -> String?
 
     # : (String val) -> String
     def sqref=: (String val) -> String
 
-    # @deprecated Use {#sqref} instead. Will be removed in 0.2.0.
-    alias range sqref
-
-    # @deprecated Use {#sqref=} instead. Will be removed in 0.2.0.
-    alias range= sqref=
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#columns=} instead.
-    # : (?untyped val) -> untyped
-    def columns: (?untyped val) -> untyped
+    # : () -> untyped
+    def columns: () -> untyped
 
     # : (untyped val) -> untyped
     def columns=: (untyped val) -> untyped
 
-    # @deprecated Use {#columns} instead. Will be removed in 0.2.0.
-    alias col columns
-
-    # @deprecated Use {#columns=} instead. Will be removed in 0.2.0.
-    alias col= columns=
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#rows=} instead.
-    # : (?untyped val) -> untyped
-    def rows: (?untyped val) -> untyped
+    # : () -> untyped
+    def rows: () -> untyped
 
     # : (untyped val) -> untyped
     def rows=: (untyped val) -> untyped
 
-    # @deprecated Use {#rows} instead. Will be removed in 0.2.0.
-    alias row rows
-
-    # @deprecated Use {#rows=} instead. Will be removed in 0.2.0.
-    alias row= rows=
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#except_rows=} instead.
-    # : (?untyped val) -> untyped
-    def except_rows: (?untyped val) -> untyped
+    # : () -> untyped
+    def except_rows: () -> untyped
 
     # : (untyped val) -> untyped
     def except_rows=: (untyped val) -> untyped
@@ -1310,115 +1049,82 @@ module Xlsxrb
     # @example
     #   b.list = ["Option1", "Option2"]
     #
-    # @param val [Array<Object>, nil]
     # @return [Array<Object>, nil]
     # @api public
-    # : (?Array[untyped]? val) -> untyped
-    def list: (?Array[untyped]? val) -> untyped
+    # : () -> untyped
+    def list: () -> untyped
 
     # : (Array[untyped] val) -> untyped
     def list=: (Array[untyped] val) -> untyped
 
-    # @deprecated Use {#list} instead.
-    # : (?Array[untyped]? val) -> untyped
-    def in: (?Array[untyped]? val) -> untyped
-
-    # @deprecated Use {#list=} instead.
-    # : (Array[untyped] val) -> untyped
-    def in=: (Array[untyped] val) -> untyped
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#type=} instead.
-    # : (?untyped val) -> untyped
-    def type: (?untyped val) -> untyped
+    # : () -> untyped
+    def type: () -> untyped
 
     # : (untyped val) -> untyped
     def type=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#operator=} instead.
-    # : (?untyped val) -> untyped
-    def operator: (?untyped val) -> untyped
+    # : () -> untyped
+    def operator: () -> untyped
 
     # : (untyped val) -> untyped
     def operator=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#formula1=} instead.
-    # : (?untyped val) -> untyped
-    def formula1: (?untyped val) -> untyped
+    # : () -> untyped
+    def formula1: () -> untyped
 
     # : (untyped val) -> untyped
     def formula1=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#formula2=} instead.
-    # : (?untyped val) -> untyped
-    def formula2: (?untyped val) -> untyped
+    # : () -> untyped
+    def formula2: () -> untyped
 
     # : (untyped val) -> untyped
     def formula2=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#allow_blank=} instead.
-    # : (?bool? val) -> bool?
-    def allow_blank: (?bool? val) -> bool?
+    # : () -> bool?
+    def allow_blank: () -> bool?
 
     # : (bool val) -> bool
     def allow_blank=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_input_message=} instead.
-    # : (?bool? val) -> bool?
-    def show_input_message: (?bool? val) -> bool?
+    # : () -> bool?
+    def show_input_message: () -> bool?
 
     # : (bool val) -> bool
     def show_input_message=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_error_message=} instead.
-    # : (?bool? val) -> bool?
-    def show_error_message: (?bool? val) -> bool?
+    # : () -> bool?
+    def show_error_message: () -> bool?
 
     # : (bool val) -> bool
     def show_error_message=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#error_title=} instead.
-    # : (?String? val) -> String?
-    def error_title: (?String? val) -> String?
+    # : () -> String?
+    def error_title: () -> String?
 
     # : (String val) -> String
     def error_title=: (String val) -> String
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#error_message=} instead.
-    # : (?String? val) -> String?
-    def error_message: (?String? val) -> String?
+    # : () -> String?
+    def error_message: () -> String?
 
     # : (String val) -> String
     def error_message=: (String val) -> String
 
-    # @deprecated Use {#error_message} instead. Will be removed in 0.2.0.
-    alias error error_message
-
-    # @deprecated Use {#error_message=} instead. Will be removed in 0.2.0.
-    alias error= error_message=
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#prompt_title=} instead.
-    # : (?String? val) -> String?
-    def prompt_title: (?String? val) -> String?
+    # : () -> String?
+    def prompt_title: () -> String?
 
     # : (String val) -> String
     def prompt_title=: (String val) -> String
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#prompt_message=} instead.
-    # : (?String? val) -> String?
-    def prompt_message: (?String? val) -> String?
+    # : () -> String?
+    def prompt_message: () -> String?
 
     # : (String val) -> String
     def prompt_message=: (String val) -> String
 
-    # @deprecated Use {#prompt_message} instead. Will be removed in 0.2.0.
-    alias prompt prompt_message
-
-    # @deprecated Use {#prompt_message=} instead. Will be removed in 0.2.0.
-    alias prompt= prompt_message=
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#error_style=} instead.
-    # : (?untyped val) -> untyped
-    def error_style: (?untyped val) -> untyped
+    # : () -> untyped
+    def error_style: () -> untyped
 
     # : (untyped val) -> untyped
     def error_style=: (untyped val) -> untyped
@@ -1436,281 +1142,192 @@ module Xlsxrb
     # : (?String? sqref, **untyped opts) -> void
     def initialize: (?String? sqref, **untyped opts) -> void
 
-    # @deprecated Use dedicated property accessors instead. Will be removed in 0.2.0.
-    # @param key [Symbol, String]
-    # @return [Object, nil]
-    # @api public
-    # : (untyped key) -> untyped
-    def []: (untyped key) -> untyped
-
-    # @deprecated Use dedicated property accessors instead. Will be removed in 0.2.0.
-    # @param key [Symbol, String]
-    # @param value [Object]
-    # @return [Object]
-    # @api public
-    # : (untyped key, untyped value) -> untyped
-    def []=: (untyped key, untyped value) -> untyped
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#sqref=} instead.
-    # : (?String? val) -> String?
-    def sqref: (?String? val) -> String?
+    # : () -> String?
+    def sqref: () -> String?
 
     # : (String val) -> String
     def sqref=: (String val) -> String
 
-    # @deprecated Use {#sqref} instead. Will be removed in 0.2.0.
-    alias range sqref
-
-    # @deprecated Use {#sqref=} instead. Will be removed in 0.2.0.
-    alias range= sqref=
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#columns=} instead.
-    # : (?untyped val) -> untyped
-    def columns: (?untyped val) -> untyped
+    # : () -> untyped
+    def columns: () -> untyped
 
     # : (untyped val) -> untyped
     def columns=: (untyped val) -> untyped
 
-    # @deprecated Use {#columns} instead. Will be removed in 0.2.0.
-    alias col columns
-
-    # @deprecated Use {#columns=} instead. Will be removed in 0.2.0.
-    alias col= columns=
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#rows=} instead.
-    # : (?untyped val) -> untyped
-    def rows: (?untyped val) -> untyped
+    # : () -> untyped
+    def rows: () -> untyped
 
     # : (untyped val) -> untyped
     def rows=: (untyped val) -> untyped
 
-    # @deprecated Use {#rows} instead. Will be removed in 0.2.0.
-    alias row rows
-
-    # @deprecated Use {#rows=} instead. Will be removed in 0.2.0.
-    alias row= rows=
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#except_rows=} instead.
-    # : (?untyped val) -> untyped
-    def except_rows: (?untyped val) -> untyped
+    # : () -> untyped
+    def except_rows: () -> untyped
 
     # : (untyped val) -> untyped
     def except_rows=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#type=} instead.
-    # : (?untyped val) -> untyped
-    def type: (?untyped val) -> untyped
+    # : () -> untyped
+    def type: () -> untyped
 
     # : (untyped val) -> untyped
     def type=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#operator=} instead.
-    # : (?untyped val) -> untyped
-    def operator: (?untyped val) -> untyped
+    # : () -> untyped
+    def operator: () -> untyped
 
     # : (untyped val) -> untyped
     def operator=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#formula=} instead.
-    # : (?untyped val) -> untyped
-    def formula: (?untyped val) -> untyped
+    # : () -> untyped
+    def formula: () -> untyped
 
     # : (untyped val) -> untyped
     def formula=: (untyped val) -> untyped
 
-    # @deprecated Use {#formula} instead. Will be removed in 0.2.0.
-    # @return [Object]
-    # @api public
-    # : (*untyped vals) -> untyped
-    def formulas: (*untyped vals) -> untyped
-
-    # @deprecated Use {#formula=} instead. Will be removed in 0.2.0.
-    # @param vals [Array, Object]
-    # @return [Array]
-    # @api public
-    # : (untyped vals) -> untyped
-    def formulas=: (untyped vals) -> untyped
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#font=} instead.
-    # : (?untyped val) -> untyped
-    def font: (?untyped val) -> untyped
+    # : () -> untyped
+    def font: () -> untyped
 
     # : (untyped val) -> untyped
     def font=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#fill=} instead.
-    # : (?untyped val) -> untyped
-    def fill: (?untyped val) -> untyped
+    # : () -> untyped
+    def fill: () -> untyped
 
     # : (untyped val) -> untyped
     def fill=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#fill_color=} instead.
-    # : (?untyped val) -> untyped
-    def fill_color: (?untyped val) -> untyped
+    # : () -> untyped
+    def fill_color: () -> untyped
 
     # : (untyped val) -> untyped
     def fill_color=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#font_color=} instead.
-    # : (?untyped val) -> untyped
-    def font_color: (?untyped val) -> untyped
+    # : () -> untyped
+    def font_color: () -> untyped
 
     # : (untyped val) -> untyped
     def font_color=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#bold=} instead.
-    # : (?bool? val) -> bool?
-    def bold: (?bool? val) -> bool?
+    # : () -> bool?
+    def bold: () -> bool?
 
     # : (bool val) -> bool
     def bold=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#italic=} instead.
-    # : (?bool? val) -> bool?
-    def italic: (?bool? val) -> bool?
+    # : () -> bool?
+    def italic: () -> bool?
 
     # : (bool val) -> bool
     def italic=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#underline=} instead.
-    # : (?untyped val) -> untyped
-    def underline: (?untyped val) -> untyped
+    # : () -> untyped
+    def underline: () -> untyped
 
     # : (untyped val) -> untyped
     def underline=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#font_name=} instead.
-    # : (?String? val) -> String?
-    def font_name: (?String? val) -> String?
+    # : () -> String?
+    def font_name: () -> String?
 
     # : (String val) -> String
     def font_name=: (String val) -> String
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#font_size=} instead.
-    # : (?untyped val) -> untyped
-    def font_size: (?untyped val) -> untyped
+    # : () -> untyped
+    def font_size: () -> untyped
 
     # : (untyped val) -> untyped
     def font_size=: (untyped val) -> untyped
 
-    # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
-    def size: (?untyped val) -> untyped
-
-    # @deprecated Use {#font_size=} instead. Will be removed in 0.2.0.
-    def size=: (untyped val) -> untyped
-
-    # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
-    def sz: (?untyped val) -> untyped
-
-    # @deprecated Use {#font_size=} instead. Will be removed in 0.2.0.
-    def sz=: (untyped val) -> untyped
-
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#stop_if_true=} instead.
-    # : (?bool? val) -> bool?
-    def stop_if_true: (?bool? val) -> bool?
+    # : () -> bool?
+    def stop_if_true: () -> bool?
 
     # : (bool val) -> bool
     def stop_if_true=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#priority=} instead.
-    # : (?Integer? val) -> Integer?
-    def priority: (?Integer? val) -> Integer?
+    # : () -> Integer?
+    def priority: () -> Integer?
 
     # : (Integer val) -> Integer
     def priority=: (Integer val) -> Integer
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#above_average=} instead.
-    # : (?bool? val) -> bool?
-    def above_average: (?bool? val) -> bool?
+    # : () -> bool?
+    def above_average: () -> bool?
 
     # : (bool val) -> bool
     def above_average=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#equal_average=} instead.
-    # : (?bool? val) -> bool?
-    def equal_average: (?bool? val) -> bool?
+    # : () -> bool?
+    def equal_average: () -> bool?
 
     # : (bool val) -> bool
     def equal_average=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#std_dev=} instead.
-    # : (?Integer? val) -> Integer?
-    def std_dev: (?Integer? val) -> Integer?
+    # : () -> Integer?
+    def std_dev: () -> Integer?
 
     # : (Integer val) -> Integer
     def std_dev=: (Integer val) -> Integer
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#rank=} instead.
-    # : (?Integer? val) -> Integer?
-    def rank: (?Integer? val) -> Integer?
+    # : () -> Integer?
+    def rank: () -> Integer?
 
     # : (Integer val) -> Integer
     def rank=: (Integer val) -> Integer
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#percent=} instead.
-    # : (?bool? val) -> bool?
-    def percent: (?bool? val) -> bool?
+    # : () -> bool?
+    def percent: () -> bool?
 
     # : (bool val) -> bool
     def percent=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#bottom=} instead.
-    # : (?bool? val) -> bool?
-    def bottom: (?bool? val) -> bool?
+    # : () -> bool?
+    def bottom: () -> bool?
 
     # : (bool val) -> bool
     def bottom=: (bool val) -> bool
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#text=} instead.
-    # : (?String? val) -> String?
-    def text: (?String? val) -> String?
+    # : () -> String?
+    def text: () -> String?
 
     # : (String val) -> String
     def text=: (String val) -> String
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#time_period=} instead.
-    # : (?untyped val) -> untyped
-    def time_period: (?untyped val) -> untyped
+    # : () -> untyped
+    def time_period: () -> untyped
 
     # : (untyped val) -> untyped
     def time_period=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#color_scale=} instead.
-    # : (?untyped val) -> untyped
-    def color_scale: (?untyped val) -> untyped
+    # : () -> untyped
+    def color_scale: () -> untyped
 
     # : (untyped val) -> untyped
     def color_scale=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#data_bar=} instead.
-    # : (?untyped val) -> untyped
-    def data_bar: (?untyped val) -> untyped
+    # : () -> untyped
+    def data_bar: () -> untyped
 
     # : (untyped val) -> untyped
     def data_bar=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#icon_set=} instead.
-    # : (?untyped val) -> untyped
-    def icon_set: (?untyped val) -> untyped
+    # : () -> untyped
+    def icon_set: () -> untyped
 
     # : (untyped val) -> untyped
     def icon_set=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#dxf=} instead.
-    # : (?untyped val) -> untyped
-    def dxf: (?untyped val) -> untyped
+    # : () -> untyped
+    def dxf: () -> untyped
 
     # : (untyped val) -> untyped
     def dxf=: (untyped val) -> untyped
 
-    # Gets or sets the differential format identifier (dxfId).
+    # Gets the differential format identifier (dxfId).
     #
-    # @param val [Integer, nil]
     # @return [Integer, nil]
     # @api public
-    # : (?Integer? val) -> Integer?
-    def dxf_id: (?Integer? val) -> Integer?
+    # : () -> Integer?
+    def dxf_id: () -> Integer?
 
     # Sets the differential format identifier (dxfId).
     #
@@ -1719,14 +1336,6 @@ module Xlsxrb
     # @api public
     # : (Integer val) -> Integer
     def dxf_id=: (Integer val) -> Integer
-
-    # @deprecated Use {#dxf_id} instead. Will be removed in 0.2.0.
-    # : (?Integer? val) -> Integer?
-    def format_id: (?Integer? val) -> Integer?
-
-    # @deprecated Use {#dxf_id=} instead. Will be removed in 0.2.0.
-    # : (Integer val) -> Integer
-    def format_id=: (Integer val) -> Integer
 
     # : () -> Hash[Symbol, untyped]
     def to_h: () -> Hash[Symbol, untyped]

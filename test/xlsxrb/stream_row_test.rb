@@ -22,44 +22,28 @@ class StreamRowTest < Test::Unit::TestCase
     # Basic attributes
     assert_equal(0, row.index)
     assert_equal(22.5, row.height)
-    assert_equal(true, row.hidden)
-    assert_equal(true, row.custom_height)
+    assert_equal(true, row.hidden?)
+    assert_equal(true, row.custom_height?)
+    assert_equal(false, row.collapsed?)
     assert_equal(1, row.outline_level)
     assert_equal(true, row.valid?)
     assert_equal([], row.errors)
     assert_equal({}, row.unmapped_data)
     assert_match(/index=0/, row.inspect)
 
-    # Symbol bracket access & predicates
-    assert_equal(row.cells, row[:cells])
-    assert_equal(0, row[:index])
-    assert_equal(22.5, row[:height])
-    assert_equal(true, row[:hidden])
-    assert_equal(true, row.hidden)
-    assert_equal(true, row.hidden?)
-    assert_equal(true, row[:hidden?])
-    assert_equal(true, row[:custom_height])
-    assert_equal(true, row.custom_height)
-    assert_equal(true, row.custom_height?)
-    assert_equal(true, row[:custom_height?])
-    assert_equal(false, row[:collapsed])
-    assert_equal(false, row.collapsed)
-    assert_equal(false, row.collapsed?)
-    assert_equal(false, row[:collapsed?])
-    assert_equal(1, row[:outline_level])
-    assert_equal(1, row.outline_level)
-    assert_equal({ height: 22.5, hidden: true, custom_height: true, collapsed: false, outline_level: 1 }, row[:attrs])
+    # Attributes hash
     assert_equal({ index: 0, height: 22.5, hidden: true, custom_height: true, collapsed: false, outline_level: 1 }, row.attributes)
-    assert_equal(row.attributes, row[:attributes])
     assert(row.attributes.frozen?)
 
-    # Integer bracket access by column index and column letter
+    # Integer bracket access by column index, column letter, symbol, and range
     assert_equal(42, row[0].value)
     assert_nil(row[1])
     assert_nil(row[2])
     assert_equal("world", row[3].value)
     assert_equal(42, row["A"].value)
+    assert_equal(42, row[:A].value)
     assert_equal("world", row["D"].value)
+    assert_equal([42, "world"], row[0..3].map(&:value))
 
     # cell_at 0-based col index
     assert_equal(42, row.cell_at(0).value)
@@ -67,8 +51,7 @@ class StreamRowTest < Test::Unit::TestCase
     assert_nil(row.cell_at(2))
     assert_equal("world", row.cell_at(3).value)
 
-    # to_a and values sparse array
-    assert_equal([42, nil, nil, "world"], row.to_a)
+    # values sparse array
     assert_equal([42, nil, nil, "world"], row.values)
 
     # Enumerable each and each_cell
@@ -89,7 +72,7 @@ class StreamRowTest < Test::Unit::TestCase
     assert_nil(row.cell_at(0))
   end
 
-  test "stream_row unmapped_data returns hash with style_index when present and EMPTY_HASH when nil" do
+  test "stream_row unmapped_data returns EMPTY_HASH" do
     row_without_style = Xlsxrb::StreamRow.new(
       index: 0,
       xml_bytes: "".b,
@@ -109,11 +92,8 @@ class StreamRowTest < Test::Unit::TestCase
       shared_strings: [],
       style_index: 3
     )
-    assert_equal({ style_index: 3 }, row_with_style.unmapped_data)
-    assert_equal(3, row_with_style.unmapped_data[:style_index])
+    assert_same(Xlsxrb::Elements::EMPTY_HASH, row_with_style.unmapped_data)
     assert_equal(3, row_with_style.style_index)
-    assert_equal(3, row_with_style[:style_index])
-    assert_equal({ height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style_index: 3 }, row_with_style[:attrs])
     assert_equal({ index: 0, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style_index: 3 }, row_with_style.attributes)
     assert(row_with_style.attributes.frozen?)
   end
@@ -127,8 +107,6 @@ class StreamRowTest < Test::Unit::TestCase
     assert_equal(false, row.hidden?)
     assert_equal(true, row.custom_height?)
     assert_equal(true, row.collapsed?)
-    assert_equal(true, row[:collapsed?])
-    assert_equal(true, row[:collapsed])
     assert_equal(2, row.outline_level)
     assert_equal(5, row.style_index)
     expected_attrs = {
@@ -141,7 +119,6 @@ class StreamRowTest < Test::Unit::TestCase
       style_index: 5
     }
     assert_equal(expected_attrs, row.attributes)
-    assert_equal(expected_attrs, row[:attributes])
   end
 
   test "stream_row parses shared formula cells and retains values" do
@@ -170,14 +147,12 @@ class StreamRowTest < Test::Unit::TestCase
     assert_equal([10, 20, 30], row.values)
   end
 
-  test "stream_row date1904? reflects date1904 flag and bracket access" do
+  test "stream_row date1904? reflects date1904 flag" do
     row1900 = Xlsxrb::StreamRow.fast_create(0, "".b, 0, 0, [], "", nil, false, false, nil, nil, nil, false)
     assert_equal(false, row1900.date1904?)
-    assert_equal(false, row1900[:date1904])
 
     row1904 = Xlsxrb::StreamRow.fast_create(0, "".b, 0, 0, [], "", nil, false, false, nil, nil, nil, true)
     assert_equal(true, row1904.date1904?)
-    assert_equal(true, row1904[:date1904])
   end
 
   test "stream_row values parses XML directly without creating Cell objects when cells is nil" do

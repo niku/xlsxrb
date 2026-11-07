@@ -75,13 +75,6 @@ module Xlsxrb
         end
       end
 
-      # @deprecated Use {#number_formats} instead. Will be removed in 0.2.0.
-      #: () -> Hash[Integer, String]
-      def num_fmts
-        warn "[DEPRECATION] #num_fmts is deprecated; use #number_formats instead.", uplevel: 1
-        number_formats
-      end
-
       # Returns array of differential format (dxf) entries from the styles.
       #
       # @return [Array<Elements::Dxf>]
@@ -177,13 +170,6 @@ module Xlsxrb
         sz if sz.is_a?(Numeric)
       end
 
-      # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
-      #: (Integer? id) -> Numeric?
-      def sz(id)
-        warn "[DEPRECATION] `sz` is deprecated; use `font_size` instead.", uplevel: 1
-        font_size(id)
-      end
-
       # Looks up a fill entry by 0-based index.
       #
       # @param id [Integer, nil]
@@ -220,13 +206,6 @@ module Xlsxrb
         cell_xfs[id]
       end
 
-      # @deprecated Use {#cell_xf} instead. Will be removed in 0.2.0.
-      #: (Integer? id) -> Elements::CellXf?
-      def xf(id)
-        warn "[DEPRECATION] #xf is deprecated; use #cell_xf instead.", uplevel: 1
-        cell_xf(id)
-      end
-
       # Looks up a custom format code by numFmtId.
       #
       # @param id [Integer, nil]
@@ -237,12 +216,6 @@ module Xlsxrb
         return nil unless id.is_a?(Integer)
 
         number_formats[id]
-      end
-
-      # @deprecated Use {#number_format_code} instead. Will be removed in 0.2.0.
-      def num_fmt(id)
-        Xlsxrb::Deprecation.warn("Styles#num_fmt is deprecated; use Styles#number_format_code instead.", uplevel: 1)
-        number_format_code(id)
       end
 
       # Looks up a differential format (dxf) entry by 0-based index.
@@ -289,11 +262,7 @@ module Xlsxrb
       #: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
       def add_font(spec = nil, **kwargs)
         entry = (spec || kwargs).dup
-        if entry.key?(:size) && !entry.key?(:sz)
-          entry[:sz] = entry[:size]
-        elsif entry.key?(:sz) && !entry.key?(:size)
-          entry[:size] = entry[:sz]
-        end
+        entry[:size] ||= entry[:sz] if entry.key?(:sz)
         fonts_arr = (@data[:fonts] ||= [])
         fonts_arr << entry
         invalidate_cache!
@@ -308,6 +277,7 @@ module Xlsxrb
       #: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
       def add_fill(spec = nil, **kwargs)
         entry = (spec || kwargs).dup
+        entry[:pattern_type] ||= entry[:pattern] if entry.key?(:pattern)
         fills_arr = (@data[:fills] ||= [])
         fills_arr << entry
         invalidate_cache!
@@ -344,13 +314,6 @@ module Xlsxrb
         id
       end
 
-      # @deprecated Use {#add_number_format} instead. Will be removed in 0.2.0.
-      #: (Integer id, String code) -> Integer
-      def add_num_fmt(id, code)
-        warn "[DEPRECATION] #add_num_fmt is deprecated; use #add_number_format instead.", uplevel: 1
-        add_number_format(id, code)
-      end
-
       # Appends a cell format (cellXf) entry and returns its 0-based index.
       #
       # @param spec [Hash, nil]
@@ -363,13 +326,6 @@ module Xlsxrb
         xfs_arr << entry
         invalidate_cache!
         xfs_arr.size - 1
-      end
-
-      # @deprecated Use {#add_cell_xf} instead. Will be removed in 0.2.0.
-      #: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
-      def add_xf(spec = nil, **kwargs)
-        warn "[DEPRECATION] #add_xf is deprecated; use #add_cell_xf instead.", uplevel: 1
-        add_cell_xf(spec, **kwargs)
       end
 
       # Appends a differential format (dxf) entry and returns its 0-based index.
@@ -410,6 +366,7 @@ module Xlsxrb
         entry = (spec || kwargs).dup
         cs_arr = (@data[:cell_styles] ||= [])
         cs_arr << entry
+        invalidate_cache!
         cs_arr.size - 1
       end
 
@@ -426,10 +383,10 @@ module Xlsxrb
         fill_id = opts[:fill_id] || (opts[:fill] ? add_fill(opts[:fill]) : 0)
         border_id = opts[:border_id] || (opts[:border] ? add_border(opts[:border]) : 0)
         num_fmt_id = opts[:num_fmt_id] || 0
-        if opts[:number_format] || opts[:num_fmt] || opts[:format_code]
-          code = (opts[:number_format] || opts[:num_fmt] || opts[:format_code]).to_s
-          existing_id = num_fmts.key(code) || Ooxml::Utils::BUILTIN_NUM_FMT_CODES.key(code)
-          num_fmt_id = existing_id || add_num_fmt(next_num_fmt_id, code)
+        if opts[:number_format]
+          code = opts[:number_format].to_s
+          existing_id = number_formats.key(code) || Ooxml::Utils::BUILTIN_NUM_FMT_CODES.key(code)
+          num_fmt_id = existing_id || add_number_format(next_num_fmt_id, code)
         end
 
         xf_spec = {
@@ -443,11 +400,11 @@ module Xlsxrb
         xf_spec[:apply_fill] = true if opts[:fill] || opts[:apply_fill]
         xf_spec[:apply_font] = true if opts[:font] || opts[:apply_font]
         xf_spec[:apply_border] = true if opts[:border] || opts[:apply_border]
-        xf_spec[:apply_number_format] = true if opts[:num_fmt] || opts[:format_code] || opts[:apply_number_format]
+        xf_spec[:apply_number_format] = true if opts[:number_format] || opts[:apply_number_format]
         xf_spec[:protection] = opts[:protection] if opts[:protection]
         xf_spec[:apply_protection] = true if opts[:protection] || opts[:apply_protection]
 
-        add_xf(xf_spec)
+        add_cell_xf(xf_spec)
       end
 
       # Returns true if the styles container has no registered definitions.
@@ -469,21 +426,14 @@ module Xlsxrb
       end
       alias to_hash to_h
 
-      # Equality check against another Styles or Hash.
+      # Equality check against another Styles.
       #
       # @param other [Object]
       # @return [Boolean]
       # @api public
       #: (untyped other) -> bool
       def ==(other)
-        if other.is_a?(Styles)
-          @data == other.to_h
-        elsif other.is_a?(Hash)
-          warn "[Xlsxrb DEPRECATION] Comparing Styles with Hash is deprecated; compare with Styles instead.", uplevel: 1
-          @data == other
-        else
-          false
-        end
+        other.is_a?(Styles) ? @data == other.to_h : false
       end
       alias eql? ==
 
@@ -509,23 +459,6 @@ module Xlsxrb
         @format_codes[style_index]
       end
 
-      # @deprecated Use {#number_format} instead.
-      # @param style_index [Integer, nil]
-      # @return [String, nil]
-      # @api public
-      #: (Integer? style_index) -> String?
-      def format_code(style_index)
-        warn "[Xlsxrb DEPRECATION] Styles#format_code is deprecated; use #number_format instead.", uplevel: 1
-        number_format(style_index)
-      end
-
-      # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
-      #: (Integer? style_index) -> String?
-      def format_code_for(style_index)
-        warn "[DEPRECATION] #format_code_for is deprecated; use #number_format instead.", uplevel: 1
-        number_format(style_index)
-      end
-
       # Returns the classified format category (:date, :datetime, :time, :number, :text, :general) for a style index.
       #
       # @param style_index [Integer, nil]
@@ -537,13 +470,6 @@ module Xlsxrb
 
         precompute! unless @format_types
         @format_types[style_index]
-      end
-
-      # @deprecated Use {#format_type} instead. Will be removed in 0.2.0.
-      #: (Integer? style_index) -> Symbol?
-      def classification_for(style_index)
-        warn "[DEPRECATION] #classification_for is deprecated; use #format_type instead.", uplevel: 1
-        format_type(style_index)
       end
 
       # Returns whether the style index represents a date, datetime, or time pattern.
@@ -651,7 +577,7 @@ module Xlsxrb
       private
 
       def next_num_fmt_id
-        max_id = [163, *num_fmts.keys].max
+        max_id = [163, *number_formats.keys].max
         max_id + 1
       end
 

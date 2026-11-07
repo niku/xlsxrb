@@ -61,7 +61,6 @@ class ColorsTest < Test::Unit::TestCase
     assert_equal("0000FF", Xlsxrb.palette_color(12))
     assert_equal("FF0000FF", Xlsxrb.palette_color(12, alpha: true))
     assert_equal("0000FF", Xlsxrb.to_hex_color(12))
-    assert_equal("0000FF", Xlsxrb.color_to_hex(12))
     assert_equal("000080", Xlsxrb.to_hex_color(:navy))
     assert_equal("FF0000", Xlsxrb.to_hex_color("#FF0000"))
   end

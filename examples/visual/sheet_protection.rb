@@ -18,6 +18,6 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Select Unlocked", "Allowed"], cell_styles: :cell)
 
     # Protect worksheet against unauthorized edits
-    s.protect_sheet(password: "secret", select_locked_cells: true, select_unlocked_cells: true)
+    s.sheet_protection(password: "secret", select_locked_cells: true, select_unlocked_cells: true)
   end
 end

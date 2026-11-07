@@ -465,6 +465,10 @@ module Xlsxrb
               @properties[:fit_to_page] = %w[1 true].include?(ftp) unless ftp.nil?
               apb = attributes["autoPageBreaks"]
               @properties[:auto_page_breaks] = %w[1 true].include?(apb) unless apb.nil?
+              @properties[:page_setup_properties] = {
+                fit_to_page: @properties[:fit_to_page],
+                auto_page_breaks: @properties[:auto_page_breaks]
+              }.compact
             end
           when "sheetCalcPr"
             fcol = attributes["fullCalcOnLoad"]

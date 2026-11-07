@@ -123,7 +123,7 @@ class XsdValidationTest < Test::Unit::TestCase
 
           s.auto_filter("A1:C4")
           s.merge("A6:C6")
-          s.freeze_pane(row: 1, col: 0)
+          s.freeze_pane(row: 1, column: 0)
 
           s.conditional_format("B2:B4",
                                type: :cellIs,
@@ -131,7 +131,7 @@ class XsdValidationTest < Test::Unit::TestCase
                                formula: ["150"],
                                dxf: { font: { bold: true, color: "FF006100" }, fill: { fg_color: "FFC6EFCE" } })
 
-          s.validate_data("C2:C4", type: :list, formula1: '"Active,Pending,Closed"')
+          s.data_validation("C2:C4", type: :list, formula1: '"Active,Pending,Closed"')
 
           s.sparkline_group(type: :line,
                             sparklines: [{ location: "D2", sqref: "B2:B4" }])
@@ -139,7 +139,7 @@ class XsdValidationTest < Test::Unit::TestCase
           s.page_margins(left: 0.7, right: 0.7, top: 0.75, bottom: 0.75)
           s.page_setup(orientation: :landscape, paper_size: 9)
           s.header_footer(odd_header: "&L&G&CHeader Title", odd_footer: "&RPage &P of &N")
-          s.protect_sheet(password: "secret", select_locked_cells: true)
+          s.sheet_protection(password: "secret", select_locked_cells: true)
         end
       end
 
@@ -186,7 +186,7 @@ class XsdValidationTest < Test::Unit::TestCase
             t.column(:qty, totals_row_function: :sum)
             t.column(:price, totals_row_function: :average)
             t.calculated_column(:total, "[@Qty]*[@Price]", totals_row_formula: "SUBTOTAL(109,[Total])")
-            t.total_row = true
+            t.totals_row = true
           end
         end
       end
@@ -396,7 +396,7 @@ class XsdValidationTest < Test::Unit::TestCase
     begin
       Xlsxrb.write(tmp.path) do |w|
         w.sheet("ProtectedSheet") do |s|
-          s.protect_sheet(sheet: true)
+          s.sheet_protection(sheet: true)
           s.protected_range("Range1", "A1:B10", password: "pwd")
           s.protected_range("Range2", "C1:D5")
           s.cell_watch("A1")
@@ -527,8 +527,8 @@ class XsdValidationTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path) do |w|
         w.sheet("IgnoredErrorsSheet") do |s|
           s.row(["0123", "=1/0"])
-          s.ignore_error("A1:A10", number_stored_as_text: true)
-          s.ignore_error("B1", eval_error: true, unlocked_formula: true)
+          s.ignored_error("A1:A10", number_stored_as_text: true)
+          s.ignored_error("B1", eval_error: true, unlocked_formula: true)
         end
       end
 
@@ -545,7 +545,7 @@ class XsdValidationTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path) do |w|
         w.sheet("PhoneticSheet") do |s|
           s.row(%w[漢字 かんじ])
-          s.phonetic_properties(font_id: 0, type: :hiragana, alignment: :distributed)
+          s.phonetic_properties = { font_id: 0, type: :hiragana, alignment: :distributed }
           s.merge("A1:B1")
           s.conditional_format("A1:B1", type: :cell_is, operator: "notEqual", formula: ["\"\""], bold: true)
         end
@@ -565,9 +565,10 @@ class XsdValidationTest < Test::Unit::TestCase
         w.code_name = "ThisWorkbook"
         w.sheet("Sheet1", code_name: "Sheet1Code") do |s|
           s.row([1, 2, 3])
-          s.fit_to_page(true, width: 1, height: 2)
-          s.sheet_calc_pr(full_calc_on_load: true)
-          s.protect_sheet(password: "secret")
+          s.fit_to_page = true
+          s.page_setup(fit_to_width: 1, fit_to_height: 2)
+          s.sheet_calc_properties = { full_calc_on_load: true }
+          s.sheet_protection(password: "secret")
         end
       end
 
@@ -595,7 +596,7 @@ class XsdValidationTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path) do |w|
         w.sheet("BgSheet") do |s|
           s.row([1, 2, 3])
-          s.background_image(dummy_png, ext: "png")
+          s.background_image = { data: dummy_png, ext: "png" }
           s.table("A1:C1", columns: %w[Col1 Col2 Col3], name: "Table1")
         end
       end
@@ -717,9 +718,9 @@ class XsdValidationTest < Test::Unit::TestCase
     begin
       Xlsxrb.write(tmp.path) do |w|
         w.sheet("SharedFormulasSheet") do |s|
-          s.row([10, Xlsxrb.shared_formula("A1*2", si: 0, ref: "B1:B3", cached_value: 20)])
-          s.row([20, Xlsxrb.shared_formula(si: 0, cached_value: 40)])
-          s.row([30, { type: :shared, si: 0, cached_value: 60 }])
+          s.row([10, Xlsxrb.shared_formula("A1*2", shared_index: 0, ref: "B1:B3", cached_value: 20)])
+          s.row([20, Xlsxrb.shared_formula(shared_index: 0, cached_value: 40)])
+          s.row([30, { type: :shared, shared_index: 0, cached_value: 60 }])
         end
       end
 

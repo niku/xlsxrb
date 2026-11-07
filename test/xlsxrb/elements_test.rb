@@ -35,7 +35,7 @@ class ElementsTest < Test::Unit::TestCase
     max_cell = Xlsxrb::Elements::Cell.new(row_index: 1_048_575, column_index: 16_383, value: "max")
     assert(max_cell.valid?)
     assert_equal("XFD1048576", max_cell.ref)
-    assert_equal([1_048_575, 16_383], Xlsxrb::Elements::Cell.parse_ref("XFD1048576"))
+    assert_equal([1_048_575, 16_383], Xlsxrb.parse_ref("XFD1048576"))
 
     # Out of boundary
     over_cell = Xlsxrb::Elements::Cell.new(row_index: 1_048_576, column_index: 16_384, value: "over")
@@ -110,16 +110,7 @@ class ElementsTest < Test::Unit::TestCase
     formula = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A10)")
     cell = Xlsxrb::Elements::Cell.new(row_index: 2, column_index: 3, value: "123.45", formula: formula, style_index: 5)
 
-    recorded_msg = nil
-    recorded_uplevel = nil
-    c_unfrozen = cell.dup
-    c_unfrozen.define_singleton_method(:warn) do |msg = nil, uplevel: nil|
-      recorded_msg = msg
-      recorded_uplevel = uplevel
-    end
-    assert_equal("123.45", c_unfrozen.content)
-    assert_equal("[DEPRECATION] `content` is deprecated; use `value` instead.", recorded_msg)
-    assert_equal(1, recorded_uplevel)
+    assert_equal("123.45", cell.value)
     assert_equal("123.45", cell.to_s)
     cell_int = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42)
     assert_equal("42", cell_int.to_s)
@@ -129,25 +120,16 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(123, cell.to_i)
     assert_instance_of(Float, cell.to_f)
     assert_in_delta(123.45, cell.to_f)
-    assert_equal("123.45", cell[:value])
-    assert_equal("SUM(A1:A10)", cell[:formula])
-    assert_equal(5, cell[:style_index])
-    assert_equal("D3", cell[:ref])
-    assert_equal(3, cell[:column_index])
-    assert_equal(2, cell[:row_index])
-    assert_equal("s", cell[:type])
+    assert_equal("123.45", cell.value)
+    assert_equal("SUM(A1:A10)", cell.formula.expression)
+    assert_equal(5, cell.style_index)
+    assert_equal("D3", cell.ref)
+    assert_equal(3, cell.column_index)
+    assert_equal(2, cell.row_index)
 
     # String formula
     cell_str_f = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: true, formula: "A1+1")
-    assert_equal("A1+1", cell_str_f[:formula])
-    assert_equal("b", cell_str_f[:type])
-
-    # Boolean false and numeric type
-    cell_false = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: false)
-    assert_equal("b", cell_false[:type])
-    cell_num = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42)
-    assert_nil(cell_num[:type])
-    assert_nil(cell_num[:unknown_key])
+    assert_equal("A1+1", cell_str_f.formula_expression)
 
     # to_date conversions
     date_val = Date.new(2025, 5, 20)
@@ -216,31 +198,25 @@ class ElementsTest < Test::Unit::TestCase
 
   test "cell hyperlink predicate and url accessor" do
     cell_no_link = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Text")
-    assert_false(cell_no_link.link?)
     assert_false(cell_no_link.hyperlink?)
     assert_nil(cell_no_link.url)
     assert_nil(cell_no_link.hyperlink)
-    assert_nil(cell_no_link[:hyperlink])
 
     cell_link = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Google", hyperlink: { url: "https://google.com", tooltip: "Search" })
-    assert_true(cell_link.link?)
     assert_true(cell_link.hyperlink?)
     assert_equal("https://google.com", cell_link.url)
     assert_equal("Search", cell_link.tooltip)
     assert_instance_of(Xlsxrb::Elements::Hyperlink, cell_link.hyperlink)
     assert_equal(Xlsxrb::Elements::Hyperlink.new(url: "https://google.com", tooltip: "Search"), cell_link.hyperlink)
-    assert_equal({ url: "https://google.com", tooltip: "Search" }, cell_link.hyperlink)
-    assert_equal({ url: "https://google.com", tooltip: "Search" }, cell_link[:hyperlink])
-    assert_equal("https://google.com", cell_link[:url])
-    assert_equal("Search", cell_link[:tooltip])
+    assert_equal({ url: "https://google.com", tooltip: "Search" }, cell_link.hyperlink.to_h)
 
     cell_loc = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: { location: "Sheet2!A1" })
-    assert_true(cell_loc.link?)
+    assert_true(cell_loc.hyperlink?)
     assert_equal("Sheet2!A1", cell_loc.url)
     assert_nil(cell_loc.tooltip)
 
     cell_str = cell_no_link.with(hyperlink: "https://ruby-lang.org")
-    assert_true(cell_str.link?)
+    assert_true(cell_str.hyperlink?)
     assert_equal("https://ruby-lang.org", cell_str.url)
     assert_nil(cell_str.tooltip)
 
@@ -251,20 +227,18 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("Example Site", hl.display)
     assert_equal("Visit website", hl.tooltip)
     assert_equal("Sheet1!A1", hl.location)
-    assert_equal("https://example.com", hl[:url])
-    assert_equal("Visit website", hl[:tooltip])
+    assert_equal("https://example.com", hl.url)
+    assert_equal("Visit website", hl.tooltip)
     assert_equal("https://example.com", hl.to_s)
     assert_equal({ url: "https://example.com", display: "Example Site", tooltip: "Visit website", location: "Sheet1!A1" }, hl.to_h)
 
     cell_hl = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: hl)
-    assert_true(cell_hl.link?)
+    assert_true(cell_hl.hyperlink?)
     assert_equal("https://example.com", cell_hl.url)
     assert_equal("Visit website", cell_hl.tooltip)
-    assert_equal("https://example.com", cell_hl[:url])
-    assert_equal("Visit website", cell_hl[:tooltip])
 
-    assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").link?)
-    assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: {}).link?)
+    assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").hyperlink?)
+    assert_false(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: {}).hyperlink?)
     assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").url)
     assert_nil(Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, hyperlink: "").tooltip)
   end
@@ -274,14 +248,12 @@ class ElementsTest < Test::Unit::TestCase
     assert_false(cell_no_comment.comment?)
     assert_nil(cell_no_comment.comment)
     assert_nil(cell_no_comment.comment_text)
-    assert_nil(cell_no_comment[:comment])
 
     cell_comment = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Text", comment: { author: "Author", text: "Important Note" })
     assert_true(cell_comment.comment?)
     assert_equal("Important Note", cell_comment.comment_text)
     expected_comment = Xlsxrb::Elements::Comment.new(author: "Author", text: "Important Note")
     assert_equal(expected_comment, cell_comment.comment)
-    assert_equal(expected_comment, cell_comment[:comment])
     assert_equal("Author", cell_comment.comment.author)
     assert_equal("Important Note", cell_comment.comment.text)
 
@@ -315,11 +287,6 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(ws.hyperlink(2, 2))
     assert_nil(ws.hyperlink(2, "C"))
     assert_nil(ws.hyperlink(2, :C))
-
-    updated = ws.update_cell("C3", value: "Test", hyperlink: { url: "https://updated.com" })
-    assert_equal("https://updated.com", updated.hyperlink("C3").url)
-    assert_true(updated["C3"].link?)
-    assert_equal("https://updated.com", updated["C3"].url)
   end
 
   test "worksheet comments and comment coordinate lookup" do
@@ -344,11 +311,6 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(ws.comment(2, 2))
     assert_nil(ws.comment(2, "C"))
     assert_nil(ws.comment(2, :C))
-
-    updated = ws.update_cell("C3", value: "Test", comment: { author: "Me", text: "New comment" })
-    assert_equal("New comment", updated.comment("C3").text)
-    assert_true(updated["C3"].comment?)
-    assert_equal("New comment", updated["C3"].comment_text)
   end
 
   test "cell with negative row_index is invalid" do
@@ -402,103 +364,103 @@ class ElementsTest < Test::Unit::TestCase
   end
 
   test "cell column_letter converts index to Excel column" do
-    assert_equal("A", Xlsxrb::Elements::Cell.column_letter(0))
-    assert_equal("Z", Xlsxrb::Elements::Cell.column_letter(25))
-    assert_equal("AA", Xlsxrb::Elements::Cell.column_letter(26))
-    assert_equal("AZ", Xlsxrb::Elements::Cell.column_letter(51))
-    assert_equal("XFD", Xlsxrb::Elements::Cell.column_letter(16_383))
-    assert_equal("XFE", Xlsxrb::Elements::Cell.column_letter(16_384))
-    assert_equal("ZZZ", Xlsxrb::Elements::Cell.column_letter(18_277))
+    assert_equal("A", Xlsxrb.column_letter(0))
+    assert_equal("Z", Xlsxrb.column_letter(25))
+    assert_equal("AA", Xlsxrb.column_letter(26))
+    assert_equal("AZ", Xlsxrb.column_letter(51))
+    assert_equal("XFD", Xlsxrb.column_letter(16_383))
+    assert_equal("XFE", Xlsxrb.column_letter(16_384))
+    assert_equal("ZZZ", Xlsxrb.column_letter(18_277))
 
     # Cached array identity
-    assert_same(Xlsxrb::Elements::Cell.column_letter(0), Xlsxrb::Elements::Cell.column_letter(0))
-    assert_same(Xlsxrb::Elements::Cell.column_letter(25), Xlsxrb::Elements::Cell.column_letter(25))
+    assert_same(Xlsxrb.column_letter(0), Xlsxrb.column_letter(0))
+    assert_same(Xlsxrb.column_letter(25), Xlsxrb.column_letter(25))
   end
 
   test "cell column_letter raises ArgumentError for invalid index" do
-    err_neg = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(-1) }
+    err_neg = assert_raises(ArgumentError) { Xlsxrb.column_letter(-1) }
     assert_equal("Column index must be a non-negative Integer, got -1", err_neg.message)
 
-    err_str = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter("0") }
+    err_str = assert_raises(ArgumentError) { Xlsxrb.column_letter("0") }
     assert_equal('Column index must be a non-negative Integer, got "0"', err_str.message)
 
-    err_sym = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(:foo) }
+    err_sym = assert_raises(ArgumentError) { Xlsxrb.column_letter(:foo) }
     assert_equal("Column index must be a non-negative Integer, got :foo", err_sym.message)
 
-    err_flt = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_letter(1.5) }
+    err_flt = assert_raises(ArgumentError) { Xlsxrb.column_letter(1.5) }
     assert_equal("Column index must be a non-negative Integer, got 1.5", err_flt.message)
   end
 
   test "cell column_index converts string digits correctly" do
-    assert_equal(0, Xlsxrb::Elements::Cell.column_index("0"))
-    assert_equal(25, Xlsxrb::Elements::Cell.column_index("25"))
+    assert_equal(0, Xlsxrb.column_index("0"))
+    assert_equal(25, Xlsxrb.column_index("25"))
   end
 
   test "cell column_index converts letters, symbols, and integers correctly" do
     # Integer pass-through
-    assert_equal(0, Xlsxrb::Elements::Cell.column_index(0))
-    assert_equal(26, Xlsxrb::Elements::Cell.column_index(26))
-    err_neg_int = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index(-1) }
+    assert_equal(0, Xlsxrb.column_index(0))
+    assert_equal(26, Xlsxrb.column_index(26))
+    err_neg_int = assert_raises(ArgumentError) { Xlsxrb.column_index(-1) }
     assert_equal("Column index must be >= 0, got -1", err_neg_int.message)
 
     # Symbol conversion
-    assert_equal(0, Xlsxrb::Elements::Cell.column_index(:A))
-    assert_equal(25, Xlsxrb::Elements::Cell.column_index(:Z))
-    assert_equal(26, Xlsxrb::Elements::Cell.column_index(:AA))
+    assert_equal(0, Xlsxrb.column_index(:A))
+    assert_equal(25, Xlsxrb.column_index(:Z))
+    assert_equal(26, Xlsxrb.column_index(:AA))
 
     # Letter string conversion (both upper and lowercase)
-    assert_equal(0, Xlsxrb::Elements::Cell.column_index("A"))
-    assert_equal(0, Xlsxrb::Elements::Cell.column_index("a"))
-    assert_equal(25, Xlsxrb::Elements::Cell.column_index("z"))
-    assert_equal(26, Xlsxrb::Elements::Cell.column_index("aa"))
-    assert_equal(51, Xlsxrb::Elements::Cell.column_index("AZ"))
-    assert_equal(16_383, Xlsxrb::Elements::Cell.column_index("XFD"))
+    assert_equal(0, Xlsxrb.column_index("A"))
+    assert_equal(0, Xlsxrb.column_index("a"))
+    assert_equal(25, Xlsxrb.column_index("z"))
+    assert_equal(26, Xlsxrb.column_index("aa"))
+    assert_equal(51, Xlsxrb.column_index("AZ"))
+    assert_equal(16_383, Xlsxrb.column_index("XFD"))
   end
 
   test "cell column_index raises ArgumentError for invalid values" do
-    err_neg_str = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("-1") }
+    err_neg_str = assert_raises(ArgumentError) { Xlsxrb.column_index("-1") }
     assert_equal("Column index must be >= 0, got -1", err_neg_str.message)
 
-    err_excl = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("!") }
+    err_excl = assert_raises(ArgumentError) { Xlsxrb.column_index("!") }
     assert_equal('Invalid column letter: "!"', err_excl.message)
 
-    err_mixed = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("A1") }
+    err_mixed = assert_raises(ArgumentError) { Xlsxrb.column_index("A1") }
     assert_equal('Invalid column letter: "A1"', err_mixed.message)
 
-    err_empty = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index("") }
+    err_empty = assert_raises(ArgumentError) { Xlsxrb.column_index("") }
     assert_equal('Invalid column letter: ""', err_empty.message)
 
-    err_sym = assert_raises(ArgumentError) { Xlsxrb::Elements::Cell.column_index(:bad!) }
+    err_sym = assert_raises(ArgumentError) { Xlsxrb.column_index(:bad!) }
     assert_equal("Invalid column letter: :bad!", err_sym.message)
   end
 
   test "cell parse_ref converts A1-style to indices" do
-    assert_equal([0, 0], Xlsxrb::Elements::Cell.parse_ref("A1"))
-    assert_equal([9, 1], Xlsxrb::Elements::Cell.parse_ref("B10"))
-    assert_equal([0, 26], Xlsxrb::Elements::Cell.parse_ref("AA1"))
+    assert_equal([0, 0], Xlsxrb.parse_ref("A1"))
+    assert_equal([9, 1], Xlsxrb.parse_ref("B10"))
+    assert_equal([0, 26], Xlsxrb.parse_ref("AA1"))
   end
 
   test "cell parse_ref handles lowercase, edge cases, and invalid inputs" do
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref(nil))
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref(""))
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref("123"))
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref("1A"))
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref("A"))
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref("ABC"))
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref("A0"))
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref("A-1"))
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref("invalid_ref"))
-    assert_nil(Xlsxrb::Elements::Cell.parse_ref("A1_trailing"))
+    assert_nil(Xlsxrb.parse_ref(nil))
+    assert_nil(Xlsxrb.parse_ref(""))
+    assert_nil(Xlsxrb.parse_ref("123"))
+    assert_nil(Xlsxrb.parse_ref("1A"))
+    assert_nil(Xlsxrb.parse_ref("A"))
+    assert_nil(Xlsxrb.parse_ref("ABC"))
+    assert_nil(Xlsxrb.parse_ref("A0"))
+    assert_nil(Xlsxrb.parse_ref("A-1"))
+    assert_nil(Xlsxrb.parse_ref("invalid_ref"))
+    assert_nil(Xlsxrb.parse_ref("A1_trailing"))
 
     # Lowercase reference
-    assert_equal([0, 0], Xlsxrb::Elements::Cell.parse_ref("a1"))
-    assert_equal([9, 1], Xlsxrb::Elements::Cell.parse_ref("b10"))
-    assert_equal([99, 26], Xlsxrb::Elements::Cell.parse_ref("aa100"))
+    assert_equal([0, 0], Xlsxrb.parse_ref("a1"))
+    assert_equal([9, 1], Xlsxrb.parse_ref("b10"))
+    assert_equal([99, 26], Xlsxrb.parse_ref("aa100"))
   end
 
   test "cell ref round-trips" do
     cell = Xlsxrb::Elements::Cell.new(row_index: 5, column_index: 27, value: 42)
-    parsed = Xlsxrb::Elements::Cell.parse_ref(cell.ref)
+    parsed = Xlsxrb.parse_ref(cell.ref)
     assert_equal([5, 27], parsed)
   end
 
@@ -522,7 +484,6 @@ class ElementsTest < Test::Unit::TestCase
   test "cell with formula" do
     cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 10, formula: "SUM(A2:A5)")
     assert_equal(Xlsxrb::Elements::Formula.new(expression: "SUM(A2:A5)"), cell.formula)
-    assert_equal("SUM(A2:A5)", cell.formula_expression)
     assert(cell.valid?)
   end
 
@@ -603,25 +564,13 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(row.cell_at(1))
     assert_equal(c2, row.cell_at(2))
 
-    # Symbol accessors & predicates
-    assert_equal([c1, c2], row[:cells])
-    assert_equal(2, row[:index])
-    assert_in_delta(30.0, row[:height])
-    assert_equal(true, row[:hidden])
-    assert_equal(true, row.hidden)
+    # Attribute getters & predicates
+    assert_equal(2, row.index)
+    assert_in_delta(30.0, row.height)
     assert_equal(true, row.hidden?)
-    assert_equal(true, row[:hidden?])
-    assert_equal(true, row[:custom_height])
-    assert_equal(true, row.custom_height)
     assert_equal(true, row.custom_height?)
-    assert_equal(true, row[:custom_height?])
-    assert_equal(true, row[:collapsed])
-    assert_equal(true, row.collapsed)
     assert_equal(true, row.collapsed?)
-    assert_equal(true, row[:collapsed?])
-    assert_equal(1, row[:outline_level])
     assert_equal(1, row.outline_level)
-    assert_equal({ height: 30.0, hidden: true, custom_height: true, collapsed: true, outline_level: 1 }, row[:attrs])
 
     expected_attrs = {
       index: 2,
@@ -632,20 +581,13 @@ class ElementsTest < Test::Unit::TestCase
       outline_level: 1
     }
     assert_equal(expected_attrs, row.attributes)
-    assert_equal(expected_attrs, row[:attributes])
     assert(row.attributes.frozen?)
 
     # Defaults and false predicates
     default_row = Xlsxrb::Elements::Row.new(index: 0)
-    assert_equal(false, default_row.hidden)
     assert_equal(false, default_row.hidden?)
-    assert_equal(false, default_row[:hidden?])
-    assert_equal(false, default_row.custom_height)
     assert_equal(false, default_row.custom_height?)
-    assert_equal(false, default_row[:custom_height?])
-    assert_equal(false, default_row.collapsed)
     assert_equal(false, default_row.collapsed?)
-    assert_equal(false, default_row[:collapsed?])
     assert_equal({ index: 0, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil }, default_row.attributes)
     assert(default_row.attributes.frozen?)
 
@@ -658,8 +600,8 @@ class ElementsTest < Test::Unit::TestCase
     row.each_cell { |c| collected_cells << c.value }
     assert_equal(%w[hello world], collected_cells)
 
-    # to_a and values
-    assert_equal(["hello", nil, "world"], row.to_a)
+    # to_a (Enumerable of cells) and values (array of values)
+    assert_equal([c1, c2], row.to_a)
     assert_equal(["hello", nil, "world"], row.values)
 
     # empty row
@@ -671,13 +613,9 @@ class ElementsTest < Test::Unit::TestCase
   test "row style_index and attrs with style_index" do
     row_without_style = Xlsxrb::Elements::Row.new(index: 0)
     assert_nil(row_without_style.style_index)
-    assert_nil(row_without_style[:style_index])
-    assert_equal({ height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil }, row_without_style[:attrs])
 
-    row_with_style = Xlsxrb::Elements::Row.new(index: 1, unmapped_data: { style_index: 4 })
+    row_with_style = Xlsxrb::Elements::Row.new(index: 1, style_index: 4)
     assert_equal(4, row_with_style.style_index)
-    assert_equal(4, row_with_style[:style_index])
-    assert_equal({ height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style_index: 4 }, row_with_style[:attrs])
     assert_equal({ index: 1, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil, style_index: 4 }, row_with_style.attributes)
     assert(row_with_style.attributes.frozen?)
   end
@@ -689,26 +627,17 @@ class ElementsTest < Test::Unit::TestCase
     assert(col.valid?)
     assert_equal(0, col.index)
     assert_in_delta(15.5, col.width)
-    assert_equal(true, col.hidden)
-    assert_equal(true, col.custom_width)
+    assert_equal(true, col.hidden?)
+    assert_equal(true, col.custom_width?)
     assert_equal(2, col.outline_level)
   end
 
-  test "column style_index returns style from keyword or unmapped_data" do
+  test "column style_index returns style from keyword" do
     col1 = Xlsxrb::Elements::Column.new(index: 0)
     assert_nil(col1.style_index)
 
     col_kw = Xlsxrb::Elements::Column.new(index: 0, style_index: 7)
     assert_equal(7, col_kw.style_index)
-
-    col2 = Xlsxrb::Elements::Column.new(index: 1, unmapped_data: { style_index: 2 })
-    assert_equal(2, col2.style_index)
-
-    col3 = Xlsxrb::Elements::Column.new(index: 2, unmapped_data: { style: 5 })
-    assert_equal(5, col3.style_index)
-
-    col_both = Xlsxrb::Elements::Column.new(index: 3, style_index: 9, unmapped_data: { style_index: 2 })
-    assert_equal(9, col_both.style_index)
   end
 
   test "column with negative index is invalid" do
@@ -809,25 +738,6 @@ class ElementsTest < Test::Unit::TestCase
     assert_true(Xlsxrb::Elements::Worksheet.valid_name?("John's Sheet"))
   end
 
-  test "worksheet update_cell creates or modifies cells in rows" do
-    ws = Xlsxrb::Elements::Worksheet.new(name: "Test")
-
-    # Update cell in brand new row
-    ws = ws.update_cell("B2", value: "first_val", style_index: 3)
-    assert_equal("first_val", ws.cell_value("B2"))
-
-    # Update cell in existing row (new column)
-    ws = ws.update_cell("C2", value: "second_val")
-    assert_equal("second_val", ws.cell_value("C2"))
-
-    # Overwrite existing cell in existing row
-    ws = ws.update_cell("B2", value: "updated_val")
-    assert_equal("updated_val", ws.cell_value("B2"))
-
-    # Invalid ref raises ArgumentError
-    assert_raises(ArgumentError) { ws.update_cell("invalid_ref", value: 1) }
-  end
-
   test "worksheet with duplicate row indices is invalid" do
     r1 = Xlsxrb::Elements::Row.new(index: 0)
     r2 = Xlsxrb::Elements::Row.new(index: 0)
@@ -850,11 +760,11 @@ class ElementsTest < Test::Unit::TestCase
     r = Xlsxrb::Elements::Row.new(index: 0, cells: [c])
     ws = Xlsxrb::Elements::Worksheet.new(name: "S", rows: [r])
 
-    assert_equal(42, ws.cell_value("B1"))
-    assert_nil(ws.cell_value("A1"))
+    assert_equal(42, ws["B1"]&.value)
+    assert_nil(ws["A1"]&.value)
   end
 
-  test "coordinate access methods on worksheet (cells, cells_hash, bracket access, first_row, last_row)" do
+  test "coordinate access methods on worksheet (cells, bracket access, first_row, last_row)" do
     c1 = Xlsxrb::Elements::Cell.new(row_index: 3, column_index: 1, value: "B4")
     c2 = Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 0, value: "A2")
     c3 = Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 2, value: "C2")
@@ -868,24 +778,10 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(1, ws.first_row.index)
     assert_equal(3, ws.last_row.index)
 
-    # first_column and last_column (1-based)
-    assert_equal(1, ws.first_column)
-    assert_equal(1, ws.first_col)
-    assert_equal(3, ws.last_column)
-    assert_equal(3, ws.last_col)
-
     # computed dimension
     assert_equal("A2:C4", ws.dimension)
     assert_equal(0..2, ws.column_range)
     assert_equal(1..3, ws.row_range)
-
-    # cells_hash
-    hash = ws.cells_hash
-    assert_equal(c2, hash["A2"])
-    assert_equal(c3, hash["C2"])
-    assert_equal(c4, hash["A3"])
-    assert_equal(c1, hash["B4"])
-    assert_nil(hash["Z99"])
 
     # cells strictly sorted by [row_index, column_index]
     assert_equal([c2, c3, c4, c1], ws.cells)
@@ -912,24 +808,19 @@ class ElementsTest < Test::Unit::TestCase
     assert_true(ws.dimension_bounds.frozen?)
 
     # cell_value edge cases
-    assert_equal("A2", ws.cell_value("A2"))
-    assert_equal("A2", ws.cell_value("a2"))
-    assert_nil(ws.cell_value("A4"))
-    assert_nil(ws.cell_value("B2"))
-    assert_nil(ws.cell_value("invalid_ref"))
+    assert_equal("A2", ws["A2"]&.value)
+    assert_equal("A2", ws["a2"]&.value)
+    assert_nil(ws["A4"]&.value)
+    assert_nil(ws["B2"]&.value)
+    assert_nil(ws["invalid_ref"]&.value)
 
     # Empty worksheet
     empty_ws = Xlsxrb::Elements::Worksheet.new(name: "Empty", rows: [])
     assert_nil(empty_ws.first_row)
     assert_nil(empty_ws.last_row)
     assert_nil(empty_ws.row_range)
-    assert_nil(empty_ws.first_column)
-    assert_nil(empty_ws.first_col)
-    assert_nil(empty_ws.last_column)
-    assert_nil(empty_ws.last_col)
     assert_nil(empty_ws.column_range)
     assert_nil(empty_ws.dimension)
-    assert_equal({}, empty_ws.cells_hash)
     assert_equal([], empty_ws.cells)
     assert_nil(empty_ws["A1"])
     assert_nil(empty_ws[0, 0])
@@ -1005,24 +896,16 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal({ min_row: 1, max_row: 3, min_column: 0, max_column: 2 }, host.dimension_bounds)
 
     # cell_value deprecated method
-    assert_equal(1, host.cell_value("A2"))
-    assert_nil(host.cell_value("invalid"))
-    assert_nil(host.cell_value("Z99"))
-    assert_nil(host.cell_value("B2"))
-
-    # first_column / last_column / aliases
-    assert_equal(1, host.first_column)
-    assert_equal(1, host.first_col)
-    assert_equal(3, host.last_column)
-    assert_equal(3, host.last_col)
+    assert_equal(1, host["A2"]&.value)
+    assert_nil(host["invalid"]&.value)
+    assert_nil(host["Z99"]&.value)
+    assert_nil(host["B2"]&.value)
 
     # row_range when first_row or last_row is nil
     empty_host = custom_class.new([])
     assert_nil(empty_host.first_row)
     assert_nil(empty_host.last_row)
     assert_nil(empty_host.row_range)
-    assert_nil(empty_host.first_column)
-    assert_nil(empty_host.last_column)
 
     # mock where only first_row is nil or only last_row is nil
     half_host = custom_class.new([r1])
@@ -1045,10 +928,9 @@ class ElementsTest < Test::Unit::TestCase
 
   test "worksheet handles first-class conditional_formatting and data_validations" do
     ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
-    assert_equal([], ws.conditional_formatting)
     assert_equal([], ws.conditional_formats)
     assert_equal([], ws.data_validations)
-    assert_predicate(ws.conditional_formatting, :frozen?)
+    assert_predicate(ws.conditional_formats, :frozen?)
     assert_predicate(ws.data_validations, :frozen?)
 
     cf_rule = [{ sqref: "A1:A10", type: "cellIs", operator: "greaterThan", formula: "100" }]
@@ -1056,41 +938,36 @@ class ElementsTest < Test::Unit::TestCase
 
     ws_with_rules = Xlsxrb::Elements::Worksheet.new(
       name: "Sheet1",
-      conditional_formatting: cf_rule,
+      conditional_formats: cf_rule,
       data_validations: dv_rule
     )
     wrapped_cf = cf_rule.map { |r| Xlsxrb::Elements::ConditionalFormat.new(**r) }
     wrapped_dv = dv_rule.map { |r| Xlsxrb::Elements::DataValidation.new(**r) }
-    assert_equal(wrapped_cf, ws_with_rules.conditional_formatting)
     assert_equal(wrapped_cf, ws_with_rules.conditional_formats)
     assert_equal(wrapped_dv, ws_with_rules.data_validations)
 
     # with
     new_cf = [{ sqref: "C1:C10", type: "containsText" }]
     wrapped_new_cf = new_cf.map { |r| Xlsxrb::Elements::ConditionalFormat.new(**r) }
-    ws_updated = ws_with_rules.with(conditional_formatting: new_cf)
-    assert_equal(wrapped_new_cf, ws_updated.conditional_formatting)
+    ws_updated = ws_with_rules.with(conditional_formats: new_cf)
+    assert_equal(wrapped_new_cf, ws_updated.conditional_formats)
     assert_equal(wrapped_dv, ws_updated.data_validations)
-
-    ws_updated_alias = ws_with_rules.with(conditional_formats: new_cf)
-    assert_equal(wrapped_new_cf, ws_updated_alias.conditional_formatting)
 
     new_dv = [{ sqref: "D1:D10", type: "list", formula1: '"A,B,C"' }]
     wrapped_new_dv = new_dv.map { |r| Xlsxrb::Elements::DataValidation.new(**r) }
     ws_updated_dv = ws_with_rules.with(data_validations: new_dv)
-    assert_equal(wrapped_cf, ws_updated_dv.conditional_formatting)
+    assert_equal(wrapped_cf, ws_updated_dv.conditional_formats)
     assert_equal(wrapped_new_dv, ws_updated_dv.data_validations)
 
     # deconstruct_keys
     keys = ws_with_rules.deconstruct_keys(nil)
-    assert_equal(wrapped_cf, keys[:conditional_formatting])
     assert_equal(wrapped_cf, keys[:conditional_formats])
     assert_equal(wrapped_dv, keys[:data_validations])
 
     # == and hash
-    same_ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", conditional_formatting: cf_rule, data_validations: dv_rule)
-    diff_cf_ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", conditional_formatting: new_cf, data_validations: dv_rule)
-    diff_dv_ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", conditional_formatting: cf_rule, data_validations: new_dv)
+    same_ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", conditional_formats: cf_rule, data_validations: dv_rule)
+    diff_cf_ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", conditional_formats: new_cf, data_validations: dv_rule)
+    diff_dv_ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", conditional_formats: cf_rule, data_validations: new_dv)
 
     assert_equal(ws_with_rules, same_ws)
     assert_equal(ws_with_rules.hash, same_ws.hash)
@@ -1162,7 +1039,7 @@ class ElementsTest < Test::Unit::TestCase
   test "worksheet handles sheet structure, print, and view metadata" do
     tables = [{ id: 1, name: "Table1", ref: "A1:C10" }]
     shapes = [{ name: "Box", id: 2 }]
-    freeze = { row: 1, col: 0 }
+    freeze = { row: 1, column: 0 }
     page_setup = { orientation: "landscape" }
     page_margins = { left: 0.7, right: 0.7 }
     header_footer = { odd_header: "Header" }
@@ -1170,7 +1047,7 @@ class ElementsTest < Test::Unit::TestCase
     protection = { sheet: true }
     view = { show_grid_lines: false }
     props = { tab_color: "FFFF0000" }
-    fmt = { default_row_height: 24.0, default_col_width: 15.0 }
+    fmt = { default_row_height: 24.0, default_column_width: 15.0 }
     row_brks = [10]
     col_brks = [5]
 
@@ -1188,7 +1065,7 @@ class ElementsTest < Test::Unit::TestCase
       sheet_properties: props,
       sheet_format: fmt,
       row_breaks: row_brks,
-      col_breaks: col_brks
+      column_breaks: col_brks
     )
 
     assert_equal(1, ws.tables.size)
@@ -1199,9 +1076,9 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("landscape", ws.page_setup.orientation)
     assert_equal(0.7, ws.page_margins.left)
     assert_equal("Header", ws.header_footer.odd_header)
-    assert_equal(true, ws.print_options.grid_lines)
-    assert_equal(true, ws.sheet_protection.sheet)
-    assert_equal(false, ws.sheet_view.show_grid_lines)
+    assert_equal(true, ws.print_options.grid_lines?)
+    assert_equal(true, ws.sheet_protection.sheet?)
+    assert_equal(false, ws.sheet_view.show_grid_lines?)
     assert_equal("FFFF0000", ws.sheet_properties.tab_color)
     assert_equal(24.0, ws.sheet_format.default_row_height)
     assert_equal([{ id: 10, max: 16_383, man: 1 }], ws.row_breaks.map(&:to_h))
@@ -1221,10 +1098,10 @@ class ElementsTest < Test::Unit::TestCase
     assert_true(ws_empty.sheet_properties.empty?)
     assert_true(ws_empty.sheet_format.empty?)
     assert_equal([], ws_empty.row_breaks)
-    assert_equal([], ws_empty.col_breaks)
+    assert_equal([], ws_empty.column_breaks)
 
     # with
-    ws_updated = ws_empty.with(freeze_pane: { row: 2, col: 1 }, sheet_properties: { tab_color: "00FF00" }, sheet_format: { default_row_height: 20 })
+    ws_updated = ws_empty.with(freeze_pane: { row: 2, column: 1 }, sheet_properties: { tab_color: "00FF00" }, sheet_format: { default_row_height: 20 })
     assert_equal(2, ws_updated.freeze_pane.row)
     assert_equal(1, ws_updated.freeze_pane.column)
     assert_equal("00FF00", ws_updated.sheet_properties.tab_color)
@@ -1244,7 +1121,7 @@ class ElementsTest < Test::Unit::TestCase
       page_setup: page_setup, page_margins: page_margins,
       header_footer: header_footer, print_options: print_options,
       sheet_protection: protection, sheet_view: view,
-      sheet_properties: props, sheet_format: fmt, row_breaks: row_brks, col_breaks: col_brks
+      sheet_properties: props, sheet_format: fmt, row_breaks: row_brks, column_breaks: col_brks
     )
     diff_ws = ws.with(freeze_pane: nil)
     diff_ws_fmt = ws.with(sheet_format: {})
@@ -1306,7 +1183,8 @@ class ElementsTest < Test::Unit::TestCase
     ]
     wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1, ws2], defined_names: dns)
 
-    assert_equal(dns, wb.defined_names)
+    wrapped_dns = dns.map { |d| Xlsxrb::Elements::DefinedName.new(**d) }
+    assert_equal(wrapped_dns, wb.defined_names)
     assert_equal("Summary!$B$10", wb.defined_name("TotalRevenue").value)
     assert_nil(wb.defined_name("NonExistent"))
 
@@ -1317,11 +1195,7 @@ class ElementsTest < Test::Unit::TestCase
 
     # Fallback to unmapped_data if defined_names not passed explicitly
     wb_unmapped = Xlsxrb::Elements::Workbook.new(sheets: [ws1], unmapped_data: { defined_names: dns })
-    assert_equal(dns, wb_unmapped.defined_names)
-
-    # load preserves defined_names
-    loaded = wb.load
-    assert_equal(dns, loaded.defined_names)
+    assert_equal(wrapped_dns, wb_unmapped.defined_names)
   end
 
   test "workbook validate checks non-array sheets" do
@@ -1345,34 +1219,10 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(wb.sheet("Missing"))
     assert_nil(wb[:symbol_not_supported])
 
-    # Enumerable each and each_sheet
+    # Enumerable each
     assert_equal(%w[Sales Expenses], wb.map(&:name))
-    collected = []
-    wb.each_sheet { |s| collected << s.name }
+    collected = wb.map(&:name)
     assert_equal(%w[Sales Expenses], collected)
-  end
-
-  test "workbook update_sheet modifies matching sheet and validates block" do
-    ws1 = Xlsxrb::Elements::Worksheet.new(name: "OldName")
-    wb = Xlsxrb::Elements::Workbook.new(sheets: [ws1])
-
-    # Successful update
-    updated_wb = wb.update_sheet("OldName") do |sheet|
-      sheet.with(name: "NewName")
-    end
-    assert_equal("NewName", updated_wb.sheet(0).name)
-    assert_equal("OldName", wb.sheet(0).name) # immutability
-
-    # Block missing
-    assert_raises(ArgumentError) { wb.update_sheet("OldName") }
-
-    # Sheet not found
-    assert_raises(ArgumentError) { wb.update_sheet("NonExistent") { |s| s } }
-
-    # Invalid return type from block
-    expected_errors = [TypeError]
-    expected_errors << RBS::Test::Tester::TypeError if defined?(RBS::Test::Tester::TypeError)
-    assert_raises(*expected_errors) { wb.update_sheet("OldName") { "not_a_worksheet" } }
   end
 
   test "workbook document properties and protection accessors" do
@@ -1385,7 +1235,7 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(wb_empty.workbook_protection)
 
     core_props = { title: "Report", creator: "Alice" }
-    app_props = { application: "xlsxrb" }
+    app_props = { app_name: "xlsxrb" }
     custom_props = [{ name: "Environment", type: :lpwstr, value: "Production" }]
     wb_prot = { lock_structure: true }
 
@@ -1402,7 +1252,7 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("Alice", wb_direct.core_properties.creator)
     assert_equal("xlsxrb", wb_direct.app_properties.app_name)
     assert_equal("Production", wb_direct.custom_properties["Environment"].value)
-    assert_equal(true, wb_direct.workbook_protection.lock_structure)
+    assert_equal(true, wb_direct.workbook_protection.lock_structure?)
 
     wb_facade = Xlsxrb::Elements::Workbook.new(
       sheets: [ws],
@@ -1419,10 +1269,10 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("Alice", wb_facade.core_properties.creator)
     assert_equal("xlsxrb", wb_facade.app_properties.app_name)
     assert_equal("Production", wb_facade.custom_properties["Environment"].value)
-    assert_equal(true, wb_facade.workbook_protection.lock_structure)
+    assert_true(wb_facade.workbook_protection.lock_structure?)
   end
 
-  test "workbook save delegates to Xlsxrb.write_workbook with default arguments" do
+  test "workbook save delegates to Xlsxrb.write with default arguments" do
     ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
     wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
     called = nil
@@ -1515,14 +1365,14 @@ class ElementsTest < Test::Unit::TestCase
     assert_instance_of(Xlsxrb::Elements::Formula, f)
     assert_equal("SUM(A1:A10)", f.expression)
     assert_nil(f.cached_value)
-    assert_equal(true, f.calculate_always)
+    assert_true(f.calculate_always?)
   end
 
   test "Xlsxrb.formula creates a Formula with cached value" do
     f = Xlsxrb.formula("SUM(A1:A10)", cached_value: "55")
     assert_equal("SUM(A1:A10)", f.expression)
     assert_equal("55", f.cached_value)
-    assert_nil(f.calculate_always)
+    assert_false(f.calculate_always?)
   end
 
   test "Xlsxrb.formula supports type and ref" do
@@ -1532,7 +1382,7 @@ class ElementsTest < Test::Unit::TestCase
   end
 
   test "Xlsxrb.array_formula creates an array Formula" do
-    f = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", "A1:C1", cached_value: 0)
+    f = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", ref: "A1:C1", cached_value: 0)
     assert_instance_of(Xlsxrb::Elements::Formula, f)
     assert_equal("SUM(B1:B10*C1:C10)", f.expression)
     assert_equal(:array, f.type)
@@ -1570,13 +1420,10 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("", empty_rt.to_s)
   end
 
-  test "rich_text_run initialization, attributes, to_s, and bracket access" do
+  test "rich_text_run initialization, attributes, and to_s" do
     run = Xlsxrb::Elements::RichTextRun.new(text: "Hello", font: { bold: true })
     assert_equal("Hello", run.text)
     assert_equal({ bold: true }, run.font)
-    assert_equal("Hello", run[:text])
-    assert_equal({ bold: true }, run[:font])
-    assert_nil(run[:unknown])
     assert_equal("Hello", run.to_s)
 
     # empty run
@@ -1686,17 +1533,11 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(c_empty.formatted_value)
     assert_nil(c_empty.raw_value)
     assert_nil(c_empty.format_code)
-    assert_nil(c_empty[:raw_value])
-    assert_nil(c_empty[:format_code])
-    assert_nil(c_empty[:formatted_value])
 
     c_num = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 1042, raw_value: "1042", format_code: "#,##0.00")
     assert_equal("1042", c_num.raw_value)
     assert_equal("#,##0.00", c_num.format_code)
     assert_equal("1,042.00", c_num.formatted_value)
-    assert_equal("1,042.00", c_num[:formatted_value])
-    assert_equal("1042", c_num[:raw_value])
-    assert_equal("#,##0.00", c_num[:format_code])
     assert_equal("$1,042.00", c_num.formatted_value("\"$\"#,##0.00"))
 
     c_date = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: Date.new(2014, 6, 1), format_code: "yyyy-mm-dd")
@@ -1706,11 +1547,11 @@ class ElementsTest < Test::Unit::TestCase
     c_bool = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 2, value: true)
     assert_equal("TRUE", c_bool.formatted_value)
 
-    c_err = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 3, value: Xlsxrb::Error::DIV0)
+    c_err = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 3, value: Xlsxrb::Elements::CellError::DIV0)
     assert_equal("#DIV/0!", c_err.formatted_value)
   end
 
-  test "row raw_values, formatted_values, and formulas" do
+  test "row raw_values and formatted_values" do
     c1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 1042, raw_value: "1042", format_code: "#,##0")
     c2 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 2, value: 50, raw_value: "50", formula: "A1*2")
     row = Xlsxrb::Elements::Row.new(index: 0, cells: [c1, c2])
@@ -1718,11 +1559,6 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal([1042, nil, 50], row.values)
     assert_equal(["1042", nil, "50"], row.raw_values)
     assert_equal(["1,042", nil, "50"], row.formatted_values)
-    assert_equal([nil, nil, "A1*2"], row.formulas)
-    assert_equal(row.values, row[:values])
-    assert_equal(row.raw_values, row[:raw_values])
-    assert_equal(row.formatted_values, row[:formatted_values])
-    assert_equal(row.formulas, row[:formulas])
   end
 
   test "worksheet and workbook cell and formatted_value lookups" do
@@ -1731,10 +1567,10 @@ class ElementsTest < Test::Unit::TestCase
     ws = Xlsxrb::Elements::Worksheet.new(name: "Data", rows: [row])
     wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
-    assert_equal(c1, ws.cell(0, 0))
-    assert_equal(c1, ws.cell("A1"))
-    assert_nil(ws.cell(1, 0))
-    assert_nil(ws.cell("B2"))
+    assert_equal(c1, ws[0, 0])
+    assert_equal(c1, ws["A1"])
+    assert_nil(ws[1, 0])
+    assert_nil(ws["B2"])
     assert_equal("$20.51", ws.formatted_value(0, 0))
     assert_equal("$20.51", ws.formatted_value("A1"))
     assert_nil(ws.formatted_value(1, 0))
@@ -1793,6 +1629,8 @@ class ElementsTest < Test::Unit::TestCase
 
     ws = Xlsxrb::Elements::Worksheet.new(name: "Test", rows: [r1, r2, r3, r4, r5])
     assert_false(ws.trim_empty_rows?)
+    assert_false(ws.pad_empty_rows?)
+    assert_false(ws.pad_empty_cells?)
     assert_equal(5, ws.each_row.to_a.size)
     assert_equal(3, ws.each_row(trim_empty_rows: true).to_a.size)
     assert_equal([["R1"], [], ["R3"]], ws.each_row_values(trim_empty_rows: true).to_a)
@@ -1801,6 +1639,17 @@ class ElementsTest < Test::Unit::TestCase
     assert_true(ws_trimmed.trim_empty_rows?)
     assert_equal(3, ws_trimmed.each_row.to_a.size)
     assert_equal(5, ws_trimmed.each_row(trim_empty_rows: false).to_a.size)
+
+    ws_padded_rows = ws.with(pad_empty_rows: true)
+    assert_true(ws_padded_rows.pad_empty_rows?)
+
+    ws_padded_cells = ws.with(pad_empty_cells: true)
+    assert_true(ws_padded_cells.pad_empty_cells?)
+
+    ws_all = Xlsxrb::Elements::Worksheet.new(name: "TestAll", rows: [], trim_empty_rows: true, pad_empty_rows: true, pad_empty_cells: true)
+    assert_true(ws_all.trim_empty_rows?)
+    assert_true(ws_all.pad_empty_rows?)
+    assert_true(ws_all.pad_empty_cells?)
   end
 
   test "image element properties and methods" do
@@ -1809,9 +1658,9 @@ class ElementsTest < Test::Unit::TestCase
       filename: "logo.png",
       name: "Company Logo",
       data: data,
-      from_col: 1,
+      from_column: 1,
       from_row: 2,
-      to_col: 4,
+      to_column: 4,
       to_row: 6,
       cx: 150_000,
       cy: 200_000
@@ -1821,14 +1670,13 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("Company Logo", img.name)
     assert_equal("image/png", img.content_type)
     assert_equal(data, img.data)
-    assert_equal(1, img.from_col)
+    assert_equal(1, img.from_column)
     assert_equal(2, img.from_row)
-    assert_equal(4, img.to_col)
+    assert_equal(4, img.to_column)
     assert_equal(6, img.to_row)
     assert_equal(150_000, img.cx)
     assert_equal(200_000, img.cy)
     assert_equal("B3", img.ref)
-    assert_equal("B3", img.cell)
     assert_equal("E7", img.to_cell_ref)
     assert_true(img.two_cell_anchor?)
     assert_false(img.one_cell_anchor?)
@@ -1837,7 +1685,7 @@ class ElementsTest < Test::Unit::TestCase
     # 1-cell anchor
     img_1cell = Xlsxrb::Elements::Image.new(
       filename: "icon.jpg",
-      from_col: 0,
+      from_column: 0,
       from_row: 0
     )
     assert_equal("image/jpeg", img_1cell.content_type)
@@ -1882,10 +1730,10 @@ class ElementsTest < Test::Unit::TestCase
     )
     writer.write(xlsx_path)
 
-    wb = Xlsxrb.read(xlsx_path)
+    wb = Xlsxrb.load(xlsx_path)
     sheet = wb.sheets.first
 
-    # 1. StreamSheet access
+    # 1. Elements::Worksheet access
     imgs = sheet.images
     assert_equal(1, imgs.size)
     img = imgs.first
@@ -1903,12 +1751,6 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal([img], sheet.images_at(2, 1))
     assert_equal([], sheet.images_at("A1"))
 
-    # with_images method
-    assert_same(sheet, sheet.with_images)
-    yielded = nil
-    sheet.with_images { |s| yielded = s }
-    assert_same(sheet, yielded)
-
     # 2. Workbook level access
     wb_imgs = wb.images
     assert_equal(1, wb_imgs.size)
@@ -1917,12 +1759,14 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal([img], wb.images_at("Sheet1", "B3"))
     assert_equal([], wb.images_at("NonExistent", "B3"))
 
-    # 3. Elements::Worksheet access after load
-    ws = sheet.load
-    assert_equal(1, ws.images.size)
-    assert_equal([img], ws.images_at("B3"))
-    assert_equal([], ws.images_at("A1"))
-    assert_same(ws, ws.with_images)
+    # 3. StreamSheet access and sheet.load
+    Xlsxrb.read(xlsx_path) do |stream_sheet|
+      assert_equal(1, stream_sheet.images.size)
+      assert_equal([img], stream_sheet.images_at("B3"))
+      loaded_ws = stream_sheet.load
+      assert_equal(1, loaded_ws.images.size)
+      assert_equal([img], loaded_ws.images_at("B3"))
+    end
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -1931,7 +1775,7 @@ class ElementsTest < Test::Unit::TestCase
     ws = Xlsxrb::Elements::Worksheet.new(
       name: "PrintTest",
       print_area: "A1:D10",
-      print_titles: { rows: "1:2", cols: "A:B" }
+      print_titles: { rows: "1:2", columns: "A:B" }
     )
     assert_equal("A1:D10", ws.print_area)
     assert_equal("1:2", ws.print_titles.rows)
@@ -1943,7 +1787,7 @@ class ElementsTest < Test::Unit::TestCase
   end
 
   test "worksheet sparkline_groups initialization, with, and deconstruct_keys" do
-    sgs = [{ type: "line", sparklines: [{ data_ref: "A1:E1", location_ref: "F1" }] }]
+    sgs = [{ type: "line", sparklines: [{ formula: "A1:E1", sqref: "F1" }] }]
     ws = Xlsxrb::Elements::Worksheet.new(name: "SparkTest", sparkline_groups: sgs, print_area: "A1:F10")
     wrapped_sgs = sgs.map do |sg|
       sls = sg[:sparklines].map { |s| Xlsxrb::Elements::Sparkline.new(**s) }
@@ -1957,7 +1801,7 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal([], ws_empty.sparkline_groups)
 
     # with
-    new_sgs = [{ type: "column", sparklines: [{ data_ref: "A2:E2", location_ref: "F2" }] }]
+    new_sgs = [{ type: "column", sparklines: [{ formula: "A2:E2", sqref: "F2" }] }]
     wrapped_new_sgs = new_sgs.map do |sg|
       sls = sg[:sparklines].map { |s| Xlsxrb::Elements::Sparkline.new(**s) }
       Xlsxrb::Elements::SparklineGroup.new(**sg, sparklines: sls)
@@ -1972,26 +1816,24 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal("A1:F10", keys[:print_area])
   end
 
-  test "cell threaded_comments accessors, fast_create, equality, with, deconstruct, and index access" do
+  test "cell threaded_comments accessors, fast_create, equality, with, and deconstruct" do
     tc1 = { text: "Hello", author: "Alice", id: "{11111111-1111-1111-1111-111111111111}" }
     tc2 = { text: "World", author: "Bob", parent_id: "{11111111-1111-1111-1111-111111111111}" }
+    wrapped_tc = [tc1, tc2].map { |t| Xlsxrb::Elements::ThreadedComment.new(**t) }
     cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, threaded_comments: [tc1, tc2])
 
-    assert_true(cell.threaded_comments?)
-    assert_equal([tc1, tc2], cell.threaded_comments)
-    assert_equal(tc1, cell.threaded_comment)
-    assert_equal([tc1, tc2], cell[:threaded_comments])
-    assert_equal(tc1, cell[:threaded_comment])
+    assert_true(cell.threaded_comment?)
+    assert_equal(wrapped_tc, cell.threaded_comments)
+    assert_equal(wrapped_tc.first, cell.threaded_comment)
 
     empty_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42)
-    assert_false(empty_cell.threaded_comments?)
+    assert_false(empty_cell.threaded_comment?)
     assert_equal([], empty_cell.threaded_comments)
     assert_nil(empty_cell.threaded_comment)
-    assert_equal([], empty_cell[:threaded_comments])
-    assert_nil(empty_cell[:threaded_comment])
 
     fast_cell = Xlsxrb::Elements::Cell.fast_create(0, 0, 42, nil, nil)
-    assert_false(fast_cell.threaded_comments?)
+    assert_predicate(fast_cell, :frozen?)
+    assert_false(fast_cell.threaded_comment?)
     assert_equal([], fast_cell.threaded_comments)
 
     cell_clone = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 42, threaded_comments: [tc1, tc2])
@@ -2000,17 +1842,17 @@ class ElementsTest < Test::Unit::TestCase
     refute_equal(cell, empty_cell)
 
     with_cell = empty_cell.with(threaded_comments: [tc1])
-    assert_equal([tc1], with_cell.threaded_comments)
-    assert_equal(tc1, with_cell.threaded_comment)
+    assert_equal([wrapped_tc.first], with_cell.threaded_comments)
+    assert_equal(wrapped_tc.first, with_cell.threaded_comment)
 
-    assert_equal([0, 0, 42, nil, nil, {}, [], nil, nil, nil, nil, [tc1, tc2]], cell.deconstruct)
+    assert_equal([0, 0, 42, nil, nil, {}, [], nil, nil, nil, nil, wrapped_tc], cell.deconstruct)
     keys = cell.deconstruct_keys([:threaded_comments])
-    assert_equal([tc1, tc2], keys[:threaded_comments])
+    assert_equal(wrapped_tc, keys[:threaded_comments])
   end
 
   test "worksheet threaded_comments accessors, ref lookup, with, equality, and hash" do
     tc1 = { ref: "B2", text: "Note 1", author: "Alice" }
-    tc2 = { cell: "B2", text: "Reply 1", author: "Bob" }
+    tc2 = { ref: "B2", text: "Reply 1", author: "Bob" }
     tc3 = { ref: "C3", text: "Other", author: "Charlie" }
     ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1", threaded_comments: [tc1, tc2, tc3])
 
@@ -2045,20 +1887,17 @@ class ElementsTest < Test::Unit::TestCase
 
   def capture_stderr
     old_stderr = $stderr
-    old_verbose = $VERBOSE
-    $VERBOSE = false
     $stderr = StringIO.new
     yield
     $stderr.string
   ensure
     $stderr = old_stderr
-    $VERBOSE = old_verbose
   end
 
   # --- PivotTable ---
 
   test "pivot_table initialization with normalized fields, attributes, and options catch-all" do
-    # Defaults and col_fields normalization
+    # Defaults
     pt1 = Xlsxrb::Elements::PivotTable.new(name: "Pivot1", ref: "A1:D10")
     assert_equal("Pivot1", pt1.name)
     assert_equal("A1:D10", pt1.ref)
@@ -2069,27 +1908,22 @@ class ElementsTest < Test::Unit::TestCase
     assert_nil(pt1.page_fields)
     assert_nil(pt1.data_caption)
     assert_nil(pt1.page_wrap)
-    assert_nil(pt1.column_grand_totals)
-    assert_nil(pt1.row_grand_totals)
-    assert_nil(pt1.show_row_headers)
-    assert_nil(pt1.show_column_headers)
-    assert_nil(pt1.show_row_stripes)
-    assert_nil(pt1.show_column_stripes)
+    assert_false(pt1.column_grand_totals?)
+    assert_false(pt1.row_grand_totals?)
+    assert_false(pt1.show_row_headers?)
+    assert_false(pt1.show_column_headers?)
+    assert_false(pt1.show_row_stripes?)
+    assert_false(pt1.show_column_stripes?)
     assert_nil(pt1.cache)
     assert_nil(pt1.options)
 
-    # location fallback when ref is nil
-    pt_loc = Xlsxrb::Elements::PivotTable.new(location: "C3:E15")
-    assert_equal("C3:E15", pt_loc.ref)
-
-    # Full attributes, location precedence over nil, col_fields keyword normalization, and unknown kwargs options
+    # Full attributes and unknown kwargs options
     pt2 = Xlsxrb::Elements::PivotTable.new(
       name: "Pivot2",
       ref: "B2:E20",
-      location: nil,
       source_ref: "Source!A1:Z100",
       row_fields: ["Region"],
-      col_fields: ["Year"],
+      column_fields: ["Year"],
       data_fields: [{ name: "Sales", fld: 2, subtotal: "sum" }],
       page_fields: ["Department"],
       data_caption: "Data",
@@ -2113,19 +1947,15 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(["Department"], pt2.page_fields)
     assert_equal("Data", pt2.data_caption)
     assert_equal(2, pt2.page_wrap)
-    assert_equal(true, pt2.column_grand_totals)
-    assert_equal(false, pt2.row_grand_totals)
-    assert_equal(true, pt2.show_row_headers)
-    assert_equal(false, pt2.show_column_headers)
-    assert_equal(true, pt2.show_row_stripes)
-    assert_equal(false, pt2.show_column_stripes)
+    assert_true(pt2.column_grand_totals?)
+    assert_false(pt2.row_grand_totals?)
+    assert_true(pt2.show_row_headers?)
+    assert_false(pt2.show_column_headers?)
+    assert_true(pt2.show_row_stripes?)
+    assert_false(pt2.show_column_stripes?)
     assert_equal({ cache_id: 1, source_ref: "Source!A1:Z100" }, pt2.cache)
     assert_equal({ pre_opt: 42, custom_flag: true }, pt2.options)
     assert_true(pt2.options.frozen?)
-
-    # column_fields takes precedence over col_fields
-    pt3 = Xlsxrb::Elements::PivotTable.new(column_fields: ["Month"], col_fields: ["Year"])
-    assert_equal(["Month"], pt3.column_fields)
 
     # options unrolls into top-level Hash in to_h
     h = pt2.to_h
@@ -2136,7 +1966,7 @@ class ElementsTest < Test::Unit::TestCase
 
   # --- TableColumn ---
 
-  test "table_column initialization and calculated_column_formula alias" do
+  test "table_column initialization and calculated_column_formula" do
     tc1 = Xlsxrb::Elements::TableColumn.new(
       id: 1,
       name: "Total",
@@ -2154,84 +1984,44 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(5, tc1.data_dxf_id)
     assert_equal("[@[Price]]*[@[Qty]]", tc1.calculated_column_formula)
 
-    # data_formula keyword compatibility
-    tc2 = Xlsxrb::Elements::TableColumn.new(id: 2, name: "Tax", data_formula: "[@[Total]]*0.1")
-    assert_equal("[@[Total]]*0.1", tc2.calculated_column_formula)
-
-    # calculated_column_formula takes precedence when both provided
-    tc3 = Xlsxrb::Elements::TableColumn.new(id: 3, name: "Disc", calculated_column_formula: "F1", data_formula: "F2")
-    assert_equal("F1", tc3.calculated_column_formula)
-
     # defaults
-    tc4 = Xlsxrb::Elements::TableColumn.new(id: 4, name: "Plain")
-    assert_nil(tc4.calculated_column_formula)
+    tc2 = Xlsxrb::Elements::TableColumn.new(id: 2, name: "Plain")
+    assert_nil(tc2.calculated_column_formula)
   end
 
   # --- ThreadedComment ---
 
-  test "threaded_comment normalization for done, author_id, and created_at aliases" do
-    # ref and cell normalization
-    tc_ref = Xlsxrb::Elements::ThreadedComment.new(ref: "A1", cell: nil)
+  test "threaded_comment initialization and accessors" do
+    tc_ref = Xlsxrb::Elements::ThreadedComment.new(ref: "A1")
     assert_equal("A1", tc_ref.ref)
 
-    tc_cell = Xlsxrb::Elements::ThreadedComment.new(ref: nil, cell: "B2")
-    assert_equal("B2", tc_cell.ref)
+    tc1 = Xlsxrb::Elements::ThreadedComment.new(text: "Hello", resolved: true)
+    assert_true(tc1.resolved?)
 
-    # resolved and done normalization
-    tc1 = Xlsxrb::Elements::ThreadedComment.new(text: "Hello", resolved: true, done: false)
-    assert_equal(true, tc1.resolved)
+    tc2 = Xlsxrb::Elements::ThreadedComment.new(text: "Hello", resolved: false)
+    assert_false(tc2.resolved?)
 
-    tc2 = Xlsxrb::Elements::ThreadedComment.new(text: "Hello", resolved: false, done: true)
-    assert_equal(false, tc2.resolved)
+    tc3 = Xlsxrb::Elements::ThreadedComment.new(text: "Hello")
+    assert_false(tc3.resolved?)
 
-    tc3 = Xlsxrb::Elements::ThreadedComment.new(text: "Hello", done: true)
-    assert_equal(true, tc3.resolved)
+    tc4 = Xlsxrb::Elements::ThreadedComment.new(author_id: "auth1")
+    assert_equal("auth1", tc4.author_id)
 
-    tc4 = Xlsxrb::Elements::ThreadedComment.new(text: "Hello", done: false)
-    assert_equal(false, tc4.resolved)
+    tc5 = Xlsxrb::Elements::ThreadedComment.new(created_at: "2026-01-01")
+    assert_equal("2026-01-01", tc5.created_at)
 
-    tc5 = Xlsxrb::Elements::ThreadedComment.new(text: "Hello")
-    assert_nil(tc5.resolved)
-
-    # author_id and person_id normalization
-    tc6 = Xlsxrb::Elements::ThreadedComment.new(author_id: "auth1", person_id: nil)
-    assert_equal("auth1", tc6.author_id)
-
-    tc7 = Xlsxrb::Elements::ThreadedComment.new(author_id: nil, person_id: "pers1")
-    assert_equal("pers1", tc7.author_id)
-
-    tc8 = Xlsxrb::Elements::ThreadedComment.new(author_id: "auth1", person_id: "pers1")
-    assert_equal("auth1", tc8.author_id)
-
-    # created_at, timestamp, and dt normalization
-    tc9 = Xlsxrb::Elements::ThreadedComment.new(created_at: "2026-01-01", timestamp: nil, dt: nil)
-    assert_equal("2026-01-01", tc9.created_at)
-
-    tc10 = Xlsxrb::Elements::ThreadedComment.new(created_at: nil, timestamp: "2026-01-02", dt: nil)
-    assert_equal("2026-01-02", tc10.created_at)
-
-    tc11 = Xlsxrb::Elements::ThreadedComment.new(created_at: nil, timestamp: nil, dt: "2026-01-03")
-    assert_equal("2026-01-03", tc11.created_at)
-
-    tc12 = Xlsxrb::Elements::ThreadedComment.new(created_at: "2026-01-01", timestamp: "2026-01-02", dt: "2026-01-03")
-    assert_equal("2026-01-01", tc12.created_at)
-
-    tc13 = Xlsxrb::Elements::ThreadedComment.new(created_at: nil, timestamp: "2026-01-02", dt: "2026-01-03")
-    assert_equal("2026-01-02", tc13.created_at)
-
-    # other members
-    tc14 = Xlsxrb::Elements::ThreadedComment.new(id: "tc_id", text: "Comm", author: "User", parent_id: "pid")
-    assert_equal("tc_id", tc14.id)
-    assert_equal("Comm", tc14.text)
-    assert_equal("User", tc14.author)
-    assert_equal("pid", tc14.parent_id)
+    tc6 = Xlsxrb::Elements::ThreadedComment.new(id: "tc_id", text: "Comm", author: "User", parent_id: "pid")
+    assert_equal("tc_id", tc6.id)
+    assert_equal("Comm", tc6.text)
+    assert_equal("User", tc6.author)
+    assert_equal("pid", tc6.parent_id)
   end
 
   # --- Comment ---
 
   test "comment initialization with visible attribute" do
     c_default = Xlsxrb::Elements::Comment.new(text: "Note")
-    assert_equal(false, c_default.visible)
+    assert_false(c_default.visible?)
     assert_nil(c_default.ref)
 
     c_visible = Xlsxrb::Elements::Comment.new(
@@ -2244,29 +2034,28 @@ class ElementsTest < Test::Unit::TestCase
       visible: true
     )
     assert_equal("C5", c_visible.ref)
-    assert_equal("C5", c_visible.cell)
     assert_equal("Note", c_visible.text)
     assert_equal("Alice", c_visible.author)
     assert_equal("rId1", c_visible.r_id)
     assert_equal(1025, c_visible.shape_id)
     assert_equal(2, c_visible.author_id)
-    assert_equal(true, c_visible.visible)
+    assert_true(c_visible.visible?)
 
-    c_hidden = Xlsxrb::Elements::Comment.new(cell: "D6", visible: false)
+    c_hidden = Xlsxrb::Elements::Comment.new(ref: "D6", visible: false)
     assert_equal("D6", c_hidden.ref)
-    assert_equal(false, c_hidden.visible)
+    assert_false(c_hidden.visible?)
   end
 
   # --- FilterColumn ---
 
-  test "filter_column initialization with hidden, show_button, and hidden_button normalization" do
-    fc_default = Xlsxrb::Elements::FilterColumn.new(col_id: 0)
-    assert_equal(0, fc_default.col_id)
-    assert_equal(false, fc_default.hidden)
-    assert_equal(true, fc_default.show_button)
+  test "filter_column initialization with hidden, show_button, and column_id normalization" do
+    fc_default = Xlsxrb::Elements::FilterColumn.new(column_id: 0)
+    assert_equal(0, fc_default.column_id)
+    assert_false(fc_default.hidden?)
+    assert_true(fc_default.show_button?)
 
     fc_all = Xlsxrb::Elements::FilterColumn.new(
-      col_id: 1,
+      column_id: 1,
       filters: ["A"],
       custom_filters: [{ op: "gt", val: "10" }],
       dynamic_filter: { type: "aboveAverage" },
@@ -2276,24 +2065,21 @@ class ElementsTest < Test::Unit::TestCase
       hidden: true,
       show_button: true
     )
-    assert_equal(1, fc_all.col_id)
+    assert_equal(1, fc_all.column_id)
     assert_equal(["A"], fc_all.filters)
     assert_equal([{ op: "gt", val: "10" }], fc_all.custom_filters)
     assert_equal({ type: "aboveAverage" }, fc_all.dynamic_filter)
     assert_equal({ val: 5 }, fc_all.top10)
     assert_equal({ dxf_id: 0 }, fc_all.color_filter)
     assert_equal({ icon_id: 1 }, fc_all.icon_filter)
-    assert_equal(true, fc_all.hidden)
-    assert_equal(true, fc_all.show_button)
+    assert_true(fc_all.hidden?)
+    assert_true(fc_all.show_button?)
 
-    fc_hidden_btn = Xlsxrb::Elements::FilterColumn.new(col_id: 2, hidden_button: true)
-    assert_equal(true, fc_hidden_btn.hidden)
+    fc_hide_button = Xlsxrb::Elements::FilterColumn.new(column_id: 3, show_button: false)
+    assert_false(fc_hide_button.show_button?)
 
-    fc_hide_button = Xlsxrb::Elements::FilterColumn.new(col_id: 3, show_button: false)
-    assert_equal(false, fc_hide_button.show_button)
-
-    fc_show_button = Xlsxrb::Elements::FilterColumn.new(col_id: 4, show_button: true)
-    assert_equal(true, fc_show_button.show_button)
+    fc_show_button = Xlsxrb::Elements::FilterColumn.new(column_id: 4, show_button: true)
+    assert_true(fc_show_button.show_button?)
   end
 
   # --- Worksheet and Workbook repeat_rows and repeat_columns ---
@@ -2319,37 +2105,27 @@ class ElementsTest < Test::Unit::TestCase
     assert_empty(wb_warnings)
   end
 
-  test "worksheet load returns self and emits deprecation warning" do
-    ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
-    target_line = nil
-    err = capture_stderr do
-      target_line = __LINE__ + 1
-      assert_same(ws, ws.load)
-    end
-    assert_match(/(?:elements_test\.rb:#{target_line}|worksheet\.rb:\d+): warning: \[Xlsxrb DEPRECATION\] Elements::Worksheet#load is deprecated; worksheet is already loaded in memory\.\n\z/, err)
-  end
-
   # --- Worksheet#full_calc_on_load? ---
 
   test "worksheet full_calc_on_load? evaluates calculation and sheet properties" do
-    ws1 = Xlsxrb::Elements::Worksheet.new(name: "S1", sheet_calc_pr: { full_calc_on_load: true }, sheet_properties: { full_calc_on_load: false })
+    ws1 = Xlsxrb::Elements::Worksheet.new(name: "S1", sheet_calc_properties: { full_calc_on_load: true }, sheet_properties: { full_calc_on_load: false })
     assert_true(ws1.full_calc_on_load?)
 
-    ws2 = Xlsxrb::Elements::Worksheet.new(name: "S2", sheet_calc_pr: { full_calc_on_load: false }, sheet_properties: { full_calc_on_load: true })
+    ws2 = Xlsxrb::Elements::Worksheet.new(name: "S2", sheet_calc_properties: { full_calc_on_load: false }, sheet_properties: { full_calc_on_load: true })
     assert_true(ws2.full_calc_on_load?)
 
-    ws3 = Xlsxrb::Elements::Worksheet.new(name: "S3", sheet_calc_pr: { full_calc_on_load: false }, sheet_properties: { full_calc_on_load: false })
+    ws3 = Xlsxrb::Elements::Worksheet.new(name: "S3", sheet_calc_properties: { full_calc_on_load: false }, sheet_properties: { full_calc_on_load: false })
     assert_false(ws3.full_calc_on_load?)
 
     ws4 = Xlsxrb::Elements::Worksheet.new(name: "S4")
     assert_false(ws4.full_calc_on_load?)
 
-    ws5 = Xlsxrb::Elements::Worksheet.new(name: "S5", sheet_calc_pr: Xlsxrb::Elements::SheetCalcProperties.new(full_calc_on_load: "truthy_str"), sheet_properties: { full_calc_on_load: false })
+    ws5 = Xlsxrb::Elements::Worksheet.new(name: "S5", sheet_calc_properties: Xlsxrb::Elements::SheetCalcProperties.new(full_calc_on_load: "truthy_str"), sheet_properties: { full_calc_on_load: false })
     assert_false(ws5.full_calc_on_load?)
 
     ws6 = Xlsxrb::Elements::Worksheet.new(
       name: "S6",
-      sheet_calc_pr: Xlsxrb::Elements::SheetCalcProperties.new(full_calc_on_load: false),
+      sheet_calc_properties: Xlsxrb::Elements::SheetCalcProperties.new(full_calc_on_load: false),
       sheet_properties: Xlsxrb::Elements::SheetProperties.new(full_calc_on_load: "truthy_str")
     )
     assert_false(ws6.full_calc_on_load?)
@@ -2604,30 +2380,38 @@ class ElementsTest < Test::Unit::TestCase
     assert_false(scp0.full_calc_on_load?)
 
     # PageBreak
-    pb1 = Xlsxrb::Elements::PageBreak.new(id: 1, manual: true)
+    pb1 = Xlsxrb::Elements::PageBreak.new(id: 1, man: 1)
     assert_true(pb1.manual?)
-    pb0 = Xlsxrb::Elements::PageBreak.new(id: 1, manual: false)
+    pb0 = Xlsxrb::Elements::PageBreak.new(id: 1, man: 0)
     assert_false(pb0.manual?)
 
     # DefinedName
-    dn1 = Xlsxrb::Elements::DefinedName.new(name: "Test", formula: "A1", hidden: true)
+    dn1 = Xlsxrb::Elements::DefinedName.new(name: "Test", value: "A1", hidden: true)
     assert_true(dn1.hidden?)
-    dn0 = Xlsxrb::Elements::DefinedName.new(name: "Test", formula: "A1", hidden: false)
+    dn0 = Xlsxrb::Elements::DefinedName.new(name: "Test", value: "A1", hidden: false)
     assert_false(dn0.hidden?)
 
     # WorkbookProperties
-    wbp1 = Xlsxrb::Elements::WorkbookProperties.new(date1904: true, filter_privacy: true, show_sheet_tabs: true, full_calc_on_load: true, refresh_all: true)
+    wbp1 = Xlsxrb::Elements::WorkbookProperties.new(
+      date1904: true, filter_privacy: true, show_sheet_tabs: true, full_calc_on_load: true, refresh_all: true
+    )
     assert_true(wbp1.date1904?)
     assert_true(wbp1.filter_privacy?)
     assert_true(wbp1.show_sheet_tabs?)
     assert_true(wbp1.full_calc_on_load?)
     assert_true(wbp1.refresh_all?)
-    wbp0 = Xlsxrb::Elements::WorkbookProperties.new(date1904: false, filter_privacy: false, show_sheet_tabs: false, full_calc_on_load: false, refresh_all: false)
+    wbp0 = Xlsxrb::Elements::WorkbookProperties.new(
+      date1904: false, filter_privacy: false, show_sheet_tabs: false, full_calc_on_load: false, refresh_all: false
+    )
     assert_false(wbp0.date1904?)
     assert_false(wbp0.filter_privacy?)
     assert_false(wbp0.show_sheet_tabs?)
     assert_false(wbp0.full_calc_on_load?)
     assert_false(wbp0.refresh_all?)
+    wbp_default = Xlsxrb::Elements::WorkbookProperties.new
+    assert_true(wbp_default.show_sheet_tabs?)
+    assert_false(wbp_default.full_calc_on_load?)
+    assert_false(wbp_default.refresh_all?)
 
     # WorkbookProtection
     wpr1 = Xlsxrb::Elements::WorkbookProtection.new(lock_structure: true, lock_windows: true, lock_revision: true)
@@ -2689,10 +2473,10 @@ class ElementsTest < Test::Unit::TestCase
     assert_false(shp0.select_unlocked_cells?)
 
     # FilterColumn
-    fc1 = Xlsxrb::Elements::FilterColumn.new(col_id: 0, hidden: true, show_button: true)
+    fc1 = Xlsxrb::Elements::FilterColumn.new(column_id: 0, hidden: true, show_button: true)
     assert_true(fc1.hidden?)
     assert_true(fc1.show_button?)
-    fc0 = Xlsxrb::Elements::FilterColumn.new(col_id: 0, hidden: false, show_button: false)
+    fc0 = Xlsxrb::Elements::FilterColumn.new(column_id: 0, hidden: false, show_button: false)
     assert_false(fc0.hidden?)
     assert_false(fc0.show_button?)
 
@@ -2703,9 +2487,9 @@ class ElementsTest < Test::Unit::TestCase
     assert_false(c_invis.visible?)
 
     # ThreadedComment
-    tc_res = Xlsxrb::Elements::ThreadedComment.new(text: "Note", resolved: true, done: true)
+    tc_res = Xlsxrb::Elements::ThreadedComment.new(text: "Note", resolved: true)
     assert_true(tc_res.resolved?)
-    tc_unres = Xlsxrb::Elements::ThreadedComment.new(text: "Note", resolved: false, done: false)
+    tc_unres = Xlsxrb::Elements::ThreadedComment.new(text: "Note", resolved: false)
     assert_false(tc_unres.resolved?)
 
     # DataValidation
@@ -2978,183 +2762,16 @@ class ElementsTest < Test::Unit::TestCase
       col_false.deconstruct_keys(nil)
     )
   end
-end
 
-class ElementsDeprecationTest < Test::Unit::TestCase
-  test "deprecated elements methods emit appropriate deprecation warnings" do
-    # RichTextRun#[]
-    rtr = Xlsxrb::Elements::RichTextRun.new(text: "Hello", font: { bold: true })
-    err = capture_stderr { assert_equal("Hello", rtr[:text]) }
-    assert_match(/\[Xlsxrb DEPRECATION\] RichTextRun#\[\] is deprecated; use #text or #font instead\./, err)
-    err = capture_stderr { assert_equal({ bold: true }, rtr[:font]) }
-    assert_match(/\[Xlsxrb DEPRECATION\] RichTextRun#\[\] is deprecated; use #text or #font instead\./, err)
+  test "value objects reject equality comparison with Hash" do
+    hl = Xlsxrb::Elements::Hyperlink.new(url: "https://example.com", tooltip: "tip")
+    refute_equal(hl, { url: "https://example.com", tooltip: "tip" })
 
-    # Hyperlink#== (Hash)
-    hl = Xlsxrb::Elements::Hyperlink.new(url: "https://example.com")
-    err = capture_stderr { assert_equal(hl, { url: "https://example.com" }) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Comparing Hyperlink with Hash is deprecated; compare with Hyperlink instead\./, err)
+    cp = Xlsxrb::Elements::CustomProperty.new(name: "Author", value: "Test", type: :lpwstr)
+    refute_equal(cp, { name: "Author", value: "Test", type: :lpwstr })
 
-    # CustomProperty#== (Hash)
-    cp = Xlsxrb::Elements::CustomProperty.new(name: "Author", value: "Alice")
-    err = capture_stderr { assert_equal(cp, { name: "Author", value: "Alice" }) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Comparing CustomProperty with Hash is deprecated; compare with CustomProperty instead\./, err)
-
-    # Styles#== (Hash)
-    styles = Xlsxrb::Elements::Styles.new
-    err = capture_stderr { assert_equal(styles, {}) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Comparing Styles with Hash is deprecated; compare with Styles instead\./, err)
-
-    # PrintTitles#cols
-    pt = Xlsxrb::Elements::PrintTitles.new(columns: "$A:$B")
-    err = capture_stderr { assert_equal("$A:$B", pt.cols) }
-    assert_match(/\[Xlsxrb DEPRECATION\] PrintTitles#cols is deprecated; use #columns instead\./, err)
-
-    # FreezePane#col
-    fp = Xlsxrb::Elements::FreezePane.new(column: 2)
-    err = capture_stderr { assert_equal(2, fp.col) }
-    assert_match(/\[Xlsxrb DEPRECATION\] FreezePane#col is deprecated; use #column instead\./, err)
-
-    # WorkbookProperties#first_tab
-    wp = Xlsxrb::Elements::WorkbookProperties.new(first_sheet: 1)
-    err = capture_stderr { assert_equal(1, wp.first_tab) }
-    assert_match(/\[Xlsxrb DEPRECATION\] WorkbookProperties#first_tab is deprecated; use #first_sheet instead\./, err)
-
-    # Table#show_row_stripes
-    tbl = Xlsxrb::Elements::Table.new(name: "T1", ref: "A1:B2", style_info: { show_row_stripes: true })
-    assert_true(tbl.show_row_stripes)
-
-    # SheetProperties#outline_pr
-    sp = Xlsxrb::Elements::SheetProperties.new(outline_properties: { summary_below: true })
-    err = capture_stderr { assert_equal({ summary_below: true }, sp.outline_pr) }
-    assert_match(/\[Xlsxrb DEPRECATION\] SheetProperties#outline_pr is deprecated; use #outline_properties instead\./, err)
-
-    # BackgroundImage#rel_id, #ext, #filename
-    bg = Xlsxrb::Elements::BackgroundImage.new(r_id: "rId1", extension: "png", path: "bg.png")
-    err = capture_stderr { assert_equal("rId1", bg.rel_id) }
-    assert_match(/\[Xlsxrb DEPRECATION\] BackgroundImage#rel_id is deprecated; use #r_id instead\./, err)
-    err = capture_stderr { assert_equal("png", bg.ext) }
-    assert_match(/\[Xlsxrb DEPRECATION\] BackgroundImage#ext is deprecated; use #extension instead\./, err)
-    err = capture_stderr { assert_equal("bg.png", bg.filename) }
-    assert_match(/\[Xlsxrb DEPRECATION\] BackgroundImage#filename is deprecated; use #path instead\./, err)
-
-    # PivotTable#location
-    pvt = Xlsxrb::Elements::PivotTable.new(ref: "A1:C10")
-    err = capture_stderr { assert_equal("A1:C10", pvt.location) }
-    assert_match(/\[Xlsxrb DEPRECATION\] PivotTable#location is deprecated; use #ref instead\./, err)
-
-    # SheetFormat: default_col_width, outline_level_col, base_col_width
-    sf = Xlsxrb::Elements::SheetFormat.new(default_column_width: 10, outline_level_column: 1, base_column_width: 8)
-    err = capture_stderr { assert_equal(10, sf.default_col_width) }
-    assert_match(/\[Xlsxrb DEPRECATION\] SheetFormat#default_col_width is deprecated; use #default_column_width instead\./, err)
-    err = capture_stderr { assert_equal(1, sf.outline_level_col) }
-    assert_match(/\[Xlsxrb DEPRECATION\] SheetFormat#outline_level_col is deprecated; use #outline_level_column instead\./, err)
-    err = capture_stderr { assert_equal(8, sf.base_col_width) }
-    assert_match(/\[Xlsxrb DEPRECATION\] SheetFormat#base_col_width is deprecated; use #base_column_width instead\./, err)
-
-    # Chart: rid, chart_type, from_col, to_col
-    chart = Xlsxrb::Elements::Chart.new(r_id: "rId2", type: "bar", from_column: 1, to_column: 5)
-    err = capture_stderr { assert_equal("rId2", chart.rid) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Chart#rid is deprecated; use #r_id instead\./, err)
-    err = capture_stderr { assert_equal("bar", chart.chart_type) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Chart#chart_type is deprecated; use #type instead\./, err)
-    err = capture_stderr { assert_equal(1, chart.from_col) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Chart#from_col is deprecated; use #from_column instead\./, err)
-    err = capture_stderr { assert_equal(5, chart.to_col) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Chart#to_col is deprecated; use #to_column instead\./, err)
-
-    # Comment: cell
-    comm = Xlsxrb::Elements::Comment.new(ref: "A1", text: "Note")
-    err = capture_stderr { assert_equal("A1", comm.cell) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Comment#cell is deprecated; use #ref instead\./, err)
-
-    # ThreadedComment: cell, done, done?
-    tc = Xlsxrb::Elements::ThreadedComment.new(ref: "B2", resolved: true)
-    err = capture_stderr { assert_equal("B2", tc.cell) }
-    assert_match(/\[Xlsxrb DEPRECATION\] ThreadedComment#cell is deprecated; use #ref instead\./, err)
-    err = capture_stderr { assert_equal(true, tc.done) }
-    assert_match(/\[Xlsxrb DEPRECATION\] ThreadedComment#done is deprecated; use #resolved instead\./, err)
-    err = capture_stderr { assert_true(tc.done?) }
-    assert_match(/\[Xlsxrb DEPRECATION\] ThreadedComment#done\? is deprecated; use #resolved\? instead\./, err)
-
-    # DataValidation: show_dropdown, show_dropdown?
-    dv = Xlsxrb::Elements::DataValidation.new(sqref: "C1", show_drop_down: true)
-    err = capture_stderr { assert_equal(true, dv.show_dropdown) }
-    assert_match(/\[Xlsxrb DEPRECATION\] DataValidation#show_dropdown is deprecated; use #show_drop_down instead\./, err)
-    err = capture_stderr { assert_true(dv.show_dropdown?) }
-    assert_match(/\[Xlsxrb DEPRECATION\] DataValidation#show_dropdown\? is deprecated; use #show_drop_down\? instead\./, err)
-
-    # ConditionalFormatRule & ConditionalFormat: formulas
-    cfr = Xlsxrb::Elements::ConditionalFormatRule.new(type: "expression", formula: "A1>0")
-    err = capture_stderr { assert_equal("A1>0", cfr.formulas) }
-    assert_match(/\[Xlsxrb DEPRECATION\] ConditionalFormatRule#formulas is deprecated; use #formula instead\./, err)
-    cf = Xlsxrb::Elements::ConditionalFormat.new(sqref: "A1:A10", formula: "A1>0")
-    err = capture_stderr { assert_equal("A1>0", cf.formulas) }
-    assert_match(/\[Xlsxrb DEPRECATION\] ConditionalFormat#formulas is deprecated; use #formula instead\./, err)
-
-    # TableColumn: data_formula
-    tcol = Xlsxrb::Elements::TableColumn.new(id: 1, name: "Col1", calculated_column_formula: "F1")
-    err = capture_stderr { assert_equal("F1", tcol.data_formula) }
-    assert_match(/\[Xlsxrb DEPRECATION\] TableColumn#data_formula is deprecated; use #calculated_column_formula instead\./, err)
-
-    # SparklineGroup: display_empty, max, min
-    sg = Xlsxrb::Elements::SparklineGroup.new(display_empty_cells_as: "zero", manual_max: 100.0, manual_min: 0.0)
-    err = capture_stderr { assert_equal("zero", sg.display_empty) }
-    assert_match(/\[Xlsxrb DEPRECATION\] SparklineGroup#display_empty is deprecated; use #display_empty_cells_as instead\./, err)
-    err = capture_stderr { assert_equal(100.0, sg.max) }
-    assert_match(/\[Xlsxrb DEPRECATION\] SparklineGroup#max is deprecated; use #manual_max instead\./, err)
-    err = capture_stderr { assert_equal(0.0, sg.min) }
-    assert_match(/\[Xlsxrb DEPRECATION\] SparklineGroup#min is deprecated; use #manual_min instead\./, err)
-
-    # HeaderFooterImage: ext, filename, rid
-    hfi = Xlsxrb::Elements::HeaderFooterImage.new(r_id: "rId3", path: "logo.png", extension: "png")
-    err = capture_stderr { assert_equal("png", hfi.ext) }
-    assert_match(/\[Xlsxrb DEPRECATION\] HeaderFooterImage#ext is deprecated; use #extension instead\./, err)
-    err = capture_stderr { assert_equal("logo.png", hfi.filename) }
-    assert_match(/\[Xlsxrb DEPRECATION\] HeaderFooterImage#filename is deprecated; use #path instead\./, err)
-    err = capture_stderr { assert_equal("rId3", hfi.rid) }
-    assert_match(/\[Xlsxrb DEPRECATION\] HeaderFooterImage#rid is deprecated; use #r_id instead\./, err)
-
-    # Font: sz
-    fnt = Xlsxrb::Elements::Font.new(size: 12)
-    err = capture_stderr { assert_equal(12, fnt.sz) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Font#sz is deprecated; use #size instead\./, err)
-
-    # Fill: pattern
-    fill = Xlsxrb::Elements::Fill.new(pattern_type: "solid")
-    err = capture_stderr { assert_equal("solid", fill.pattern) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Fill#pattern is deprecated; use #pattern_type instead\./, err)
-
-    # Formula predicates without ?
-    formula = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A2)", aca: true, bx: false, dt2d: true, dtr: false)
-    err = capture_stderr { assert_equal(true, formula.always_calculate_array) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Formula#always_calculate_array is deprecated; use #always_calculate_array\? instead\./, err)
-    err = capture_stderr { assert_equal(false, formula.assign_to_name) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Formula#assign_to_name is deprecated; use #assign_to_name\? instead\./, err)
-    err = capture_stderr { assert_equal(true, formula.data_table_2d) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Formula#data_table_2d is deprecated; use #data_table_2d\? instead\./, err)
-    err = capture_stderr { assert_equal(false, formula.data_table_row) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Formula#data_table_row is deprecated; use #data_table_row\? instead\./, err)
-
-    # Column#letter
-    col = Xlsxrb::Elements::Column.new(index: 0)
-    err = capture_stderr { assert_equal("A", col.letter) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Column#letter is deprecated; use #column_letter instead\./, err)
-
-    # Image#cell_ref
-    img = Xlsxrb::Elements::Image.new(filename: "pic.png", from_col: 0, from_row: 0)
-    err = capture_stderr { assert_equal("A1", img.cell_ref) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Image#cell_ref is deprecated; use #ref instead\./, err)
-
-    # Styles#format_code
-    st = Xlsxrb::Elements::Styles.new(cell_xfs: [{ num_fmt_id: 14 }], num_fmts: { 14 => "yyyy-mm-dd" })
-    err = capture_stderr { assert_equal("yyyy-mm-dd", st.format_code(0)) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Styles#format_code is deprecated; use #number_format instead\./, err)
-
-    # Worksheet#initialize with conditional_formatting: and col_breaks:
-    err = capture_stderr { Xlsxrb::Elements::Worksheet.new(name: "S1", conditional_formatting: [cf]) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Passing conditional_formatting: to Worksheet\.new is deprecated; use conditional_formats: instead\./, err)
-    err = capture_stderr { Xlsxrb::Elements::Worksheet.new(name: "S2", col_breaks: [1, 2]) }
-    assert_match(/\[Xlsxrb DEPRECATION\] Passing col_breaks: to Worksheet\.new is deprecated; use column_breaks: instead\./, err)
+    st = Xlsxrb::Elements::Styles.new
+    refute_equal(st, st.to_h)
   end
 
   test "ADR 0004 & 0006 metadata predicates and normalization" do
@@ -3291,5 +2908,21 @@ class ElementsDeprecationTest < Test::Unit::TestCase
     assert_false(tbl_nil.show_last_column?)
     assert_false(tbl_nil.show_row_stripes?)
     assert_false(tbl_nil.show_column_stripes?)
+
+    # Font size only
+    font = Xlsxrb::Elements::Font.new(name: "Arial", size: 12)
+    assert_equal(12, font.size)
+    assert_false(font.respond_to?(:sz))
+
+    # Cell.normalize_formula
+    formula = Xlsxrb::Elements::Cell.normalize_formula({ formula: "A1+B1", shared_index: 2, type: :shared, calculate_always: true })
+    assert_equal("A1+B1", formula.expression)
+    assert_equal(2, formula.shared_index)
+    assert_equal(:shared, formula.type)
+    assert_true(formula.calculate_always?)
+
+    # RichTextRun font_size
+    run = Xlsxrb::Elements::RichTextRun.new(text: "Hello", font: { size: 14 })
+    assert_equal(14, run.font_size)
   end
 end

@@ -6,18 +6,13 @@ module Xlsxrb
   #
   # @api private
   module DslHelpers
-    # Normalizes merge cell range string or coordinate components into a canonical range reference (e.g. "A1:C3").
+    # Normalizes merge cell range string into a canonical range reference (e.g. "A1:C3").
     #
-    # @param range [String, Hash, nil]
-    # @param row [Integer, nil]
-    # @param col_start [Integer, String, nil]
-    # @param col_end [Integer, String, nil]
-    # @param row_start [Integer, nil]
-    # @param row_end [Integer, nil]
+    # @param range [String]
     # @param strict_excel_mode [Boolean]
     # @return [String]
-    # : (untyped range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?, ?strict_excel_mode: bool) -> String
-    def self.normalize_merge_range: (untyped range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?, ?strict_excel_mode: bool) -> String
+    # : (String range, ?strict_excel_mode: bool) -> String
+    def self.normalize_merge_range: (String range, ?strict_excel_mode: bool) -> String
 
     # Normalizes sheet protection options and hashes plain-text password if supplied.
     #
@@ -151,8 +146,8 @@ module Xlsxrb
     # @param rows [Integer, Range, nil]
     # @param range [String, nil]
     # @return [String]
-    # : (?untyped value, ?sheet: untyped, ?col: untyped, ?rows: untyped, ?range: untyped) -> String
-    def self.normalize_defined_name_value: (?untyped value, ?sheet: untyped, ?col: untyped, ?rows: untyped, ?range: untyped) -> String
+    # : (?untyped value, ?sheet: untyped, ?columns: untyped, ?rows: untyped, ?range: untyped) -> String
+    def self.normalize_defined_name_value: (?untyped value, ?sheet: untyped, ?columns: untyped, ?rows: untyped, ?range: untyped) -> String
 
     # Normalizes print titles repeating row specification to an Excel range string (e.g. "1:2").
     # Accepts 0-based Integer, 0-based Range, or 1-based Excel range string.
@@ -217,9 +212,5 @@ module Xlsxrb
     # @return [String] Excel-compliant worksheet name.
     # : (untyped name, ?replace_char: String) -> String
     def self.sanitize_sheet_name: (untyped name, ?replace_char: String) -> String
-
-    # @deprecated Use {.sanitize_sheet_name} instead.
-    # : (untyped raw) -> String
-    def self.sheet_name: (untyped raw) -> String
   end
 end

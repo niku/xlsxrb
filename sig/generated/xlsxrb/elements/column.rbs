@@ -11,7 +11,6 @@ module Xlsxrb
     # @api public
     # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
     class Column
-      # rubocop:enable Style/DataInheritance
       # @param index [Integer] 0-based column index.
       # @param width [Float, Integer, nil] Column width in characters.
       # @param hidden [Boolean] Whether the column is hidden.
@@ -73,12 +72,6 @@ module Xlsxrb
       # @api public
       # : () -> String
       def column_letter: () -> String
-
-      # @deprecated Use {#column_letter} instead.
-      # @return [String]
-      # @api public
-      # : () -> String
-      def letter: () -> String
 
       # Returns the style identifier or inline style.
       #

@@ -7,6 +7,6 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Department", "Select:"])
-    s.validate_data("B2", in: %w[HR Sales Engineering])
+    s.data_validation("B2", list: %w[HR Sales Engineering])
   end
 end

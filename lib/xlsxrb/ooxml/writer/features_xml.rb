@@ -315,8 +315,8 @@ module Xlsxrb
         # : (untyped rich_text) -> untyped
         def rich_text_xml(rich_text)
           rich_text.runs.map do |run|
-            font = run.is_a?(Hash) ? run[:font] : run.font
-            run_text = run.is_a?(Hash) ? run[:text] : run.text
+            font = run.respond_to?(:font) ? run.font : run[:font]
+            text = run.respond_to?(:text) ? run.text : run[:text]
             if font && !font.empty?
               rpr = +""
               rpr << "<b/>" if font[:bold]
@@ -338,14 +338,15 @@ module Xlsxrb
                 mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
                 rpr << %(<vertAlign val="#{mapped_va}"/>)
               end
-              rpr << %(<sz val="#{font[:sz]}"/>) if font[:sz]
+              font_sz = font[:size] || font[:sz]
+              rpr << %(<sz val="#{font_sz}"/>) if font_sz
               rpr << emit_color_xml(font)
               rpr << %(<rFont val="#{xml_escape(font[:name])}"/>) if font[:name]
               rpr << %(<family val="#{font[:family]}"/>) if font[:family]
               rpr << %(<scheme val="#{font[:scheme]}"/>) if font[:scheme]
-              "<r><rPr>#{rpr}</rPr><t>#{xml_escape(run_text)}</t></r>"
+              "<r><rPr>#{rpr}</rPr><t>#{xml_escape(text)}</t></r>"
             else
-              "<r><t>#{xml_escape(run_text)}</t></r>"
+              "<r><t>#{xml_escape(text)}</t></r>"
             end
           end.join
         end
@@ -372,7 +373,7 @@ module Xlsxrb
               f_attrs << %( r1="#{value.r1}") if value.r1
               f_attrs << %( r2="#{value.r2}") if value.r2
             end
-            f_attrs << ' ca="1"' if value.calculate_always
+            f_attrs << ' ca="1"' if value.calculate_always?
             f_attrs << ' aca="1"' if value.aca
             f_attrs << ' bx="1"' if value.bx
             t_attr = ""
@@ -695,7 +696,8 @@ module Xlsxrb
             XML_HEADER,
             %(<Properties xmlns="#{APP_NS}" xmlns:vt="#{VT_NS}">)
           ]
-          parts << "<Application>#{xml_escape(@app_properties[:application])}</Application>" if @app_properties[:application]
+          app_val = @app_properties[:app_name] || @app_properties[:application]
+          parts << "<Application>#{xml_escape(app_val)}</Application>" if app_val
           parts << "<AppVersion>#{xml_escape(@app_properties[:app_version])}</AppVersion>" if @app_properties[:app_version]
           if @app_properties[:heading_pairs] && @app_properties[:titles_of_parts]
             hp = @app_properties[:heading_pairs]

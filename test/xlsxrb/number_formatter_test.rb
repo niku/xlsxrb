@@ -20,7 +20,7 @@ class NumberFormatterTest < Test::Unit::TestCase
   end
 
   test "cell error formatting" do
-    assert_equal("#DIV/0!", Xlsxrb::NumberFormatter.format(Xlsxrb::Error::DIV0))
+    assert_equal("#DIV/0!", Xlsxrb::NumberFormatter.format(Xlsxrb::Elements::CellError::DIV0))
     assert_equal("#N/A", Xlsxrb::NumberFormatter.format("#N/A"))
     assert_equal("#VALUE!", Xlsxrb::NumberFormatter.format("#VALUE!"))
   end
@@ -306,10 +306,6 @@ class NumberFormatterTest < Test::Unit::TestCase
     empty_parsed = Xlsxrb::Ooxml::StylesParser.parse("")
     assert_instance_of(Xlsxrb::Elements::Styles, empty_parsed)
     assert_nil(empty_parsed.number_format(0))
-
-    # Test format_code_for and classification_for aliases
-    assert_equal("yyyy-mm-dd", parsed.format_code_for(1))
-    assert_equal(:date, parsed.classification_for(1))
   end
 
   test "NumberFormatter checkers accept optional num_fmt_id" do
@@ -334,9 +330,6 @@ class NumberFormatterTest < Test::Unit::TestCase
     assert_equal(:date, date_cell.format_type)
     assert_true(date_cell.date_format?)
     assert_false(date_cell.time_format?)
-    assert_equal(:date, date_cell[:format_type])
-    assert_true(date_cell[:date_format])
-    assert_false(date_cell[:time_format])
 
     time_cell = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: 0.5, format_code: "hh:mm:ss")
     assert_equal(:time, time_cell.format_type)

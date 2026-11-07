@@ -117,30 +117,6 @@ module Xlsxrb
       #: Array[Elements::HeaderFooterImage]
       attr_reader :header_footer_images
 
-      # @deprecated Worksheet instances are immutable value objects. In 0.2.0, #dimension= will be removed.
-      #: (String? new_dim) -> String?
-      def dimension=(new_dim)
-        warn "[DEPRECATION] Elements::Worksheet#dimension= is deprecated; worksheets are immutable.", uplevel: 1
-        @dimension = new_dim
-      end
-
-      # @deprecated Use {#date1904?} instead. Will be removed in 0.2.0.
-      #: () -> bool
-      def date1904
-        warn "[DEPRECATION] Elements::Worksheet#date1904 is deprecated; use #date1904? instead.", uplevel: 1
-        date1904?
-      end
-
-      # Closes the worksheet resources (no-op for in-memory worksheet).
-      #
-      # @return [void]
-      # @api public
-      #: () -> void
-      def close
-        Xlsxrb::Deprecation.warn("Elements::Worksheet#close is deprecated; in-memory worksheets do not hold file handles.", uplevel: 1)
-        nil
-      end
-
       # Support array pattern matching.
       #
       # @return [Array<Object>]
@@ -148,13 +124,6 @@ module Xlsxrb
       #: () -> Array[untyped]
       def deconstruct
         [name, rows, columns]
-      end
-
-      # @deprecated Use {#column_breaks} instead.
-      #: () -> Array[Elements::PageBreak]
-      def col_breaks
-        warn "[DEPRECATION] `col_breaks` is deprecated; use `column_breaks` instead.", uplevel: 1
-        @column_breaks
       end
 
       # Returns worksheet calculation properties (<sheetCalcPr>), or nil if none configured.
@@ -166,38 +135,14 @@ module Xlsxrb
         @sheet_calc_pr
       end
 
-      # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-      #: () -> Elements::SheetCalcProperties?
-      def sheet_calc_pr
-        warn "[DEPRECATION] #sheet_calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
-        sheet_calc_properties
-      end
-
-      # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-      #: () -> Elements::SheetCalcProperties?
-      def calc_pr
-        warn "[DEPRECATION] #calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
-        sheet_calc_properties
-      end
-
-      # @deprecated Use {#conditional_formats} instead. Matches the ECMA-376 XML element name (<conditionalFormatting>), but {#conditional_formats} is canonical in xlsxrb. Will be removed in version 0.2.0.
-      alias conditional_formatting conditional_formats
-      # @deprecated Use {#phonetic_properties} instead. Will be removed in 0.2.0.
-      alias phonetic_pr phonetic_properties
-      # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
-      alias background_picture background_image
-      # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
-      alias picture background_image
-
       # @param name [String] The worksheet name (max 31 characters).
       # @param rows [Array<Elements::Row>] Rows in the sheet.
       # @param columns [Array<Elements::Column>] Column definitions.
       # @param charts [Array<Hash>] Charts in the sheet.
-      # @param conditional_formatting [Array<Hash>, nil] Conditional formatting rules.
+      # @param conditional_formats [Array<Hash, Elements::ConditionalFormat>] Conditional formatting rules.
       # @param data_validations [Array<Hash>] Data validation rules.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
-      # @param conditional_formats [Array<Hash>, nil] Alias for conditional_formatting.
       # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
       # @param hyperlinks [Hash{String => Hash}] Hyperlink mappings by cell reference.
       # @param comments [Array<Hash>] Comments and notes in the sheet.
@@ -225,26 +170,21 @@ module Xlsxrb
       # @param sheet_format [Hash] Sheet format properties (e.g. defaultRowHeight, defaultColWidth).
       # @param row_breaks [Array<Integer | Hash>] Explicit page row breaks.
       # @param column_breaks [Array<Integer | Hash>] Explicit page column breaks.
-      # @param col_breaks [Array<Integer | Hash>] Deprecated alias for column_breaks.
       # @param protected_ranges [Array<Hash>] Protected range definitions.
       # @param cell_watches [Array<String>] Watched cell references.
       # @param ignored_errors [Array<Hash>] Ignored error rules.
       # @param phonetic_properties [Hash, nil] Phonetic text properties.
       # @param selection [Hash, Array<Hash>, nil] Active cell and selection settings.
-      # @param sheet_calc_pr [Hash, nil] Worksheet calculation properties.
+      # @param sheet_calc_properties [Hash, nil] Worksheet calculation properties.
       # @param background_image [Hash, nil] Worksheet background image specification.
       # @param threaded_comments [Array<Hash>] Threaded comments in the sheet.
-      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[untyped], ?conditional_formatting: Array[untyped]?, ?data_validations: Array[untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[untyped]?, ?state: Symbol, ?hyperlinks: Hash[String, untyped], ?comments: Array[untyped], ?images: Array[Elements::Image], ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: untyped, ?sparkline_groups: Array[untyped], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[untyped], ?shapes: Array[untyped], ?freeze_pane: untyped, ?page_setup: untyped, ?page_margins: untyped, ?header_footer: untyped, ?print_options: untyped, ?sheet_protection: untyped, ?sheet_view: untyped, ?sheet_properties: untyped, ?sheet_format: untyped, ?row_breaks: Array[untyped], ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[untyped], ?cell_watches: Array[String], ?ignored_errors: Array[untyped], ?phonetic_properties: untyped, ?selection: untyped, ?sheet_calc_properties: untyped, ?sheet_calc_pr: untyped, ?background_image: untyped, ?threaded_comments: Array[untyped], ?pivot_tables: Array[untyped]?, ?split_pane: untyped, ?filter_columns: Hash[Integer, untyped]?, ?sort_state: untyped, ?header_footer_images: Array[untyped]?) -> void
-      def initialize(name:, rows: [], columns: [], charts: [], conditional_formatting: nil, data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil, tables: [], shapes: [], freeze_pane: nil, page_setup: {}, page_margins: nil, header_footer: {}, print_options: {}, sheet_protection: nil, sheet_view: {}, sheet_properties: {}, sheet_format: {}, row_breaks: [], column_breaks: nil, col_breaks: nil, protected_ranges: [], cell_watches: [], ignored_errors: [], phonetic_properties: nil, selection: nil, sheet_calc_properties: nil, sheet_calc_pr: nil, background_image: nil, threaded_comments: [], pivot_tables: nil, split_pane: nil, filter_columns: nil, sort_state: nil, header_footer_images: nil)
-        warn "[Xlsxrb DEPRECATION] Passing conditional_formatting: to Worksheet.new is deprecated; use conditional_formats: instead.", uplevel: 1 unless conditional_formatting.nil?
-        warn "[Xlsxrb DEPRECATION] Passing col_breaks: to Worksheet.new is deprecated; use column_breaks: instead.", uplevel: 1 unless col_breaks.nil?
-        warn "[Xlsxrb DEPRECATION] Worksheet.new(sheet_calc_pr:) is deprecated and will be removed in v0.2.0. Use sheet_calc_properties: instead.", uplevel: 1 unless sheet_calc_pr.nil?
+      #: (name: String?, ?rows: Array[Elements::Row], ?columns: Array[Elements::Column], ?charts: Array[untyped], ?data_validations: Array[untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?conditional_formats: Array[untyped]?, ?state: Symbol, ?hyperlinks: Hash[String, untyped], ?comments: Array[untyped], ?images: Array[Elements::Image], ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?print_area: String?, ?print_titles: untyped, ?sparkline_groups: Array[untyped], ?merged_cells: Array[String], ?auto_filter: String?, ?tables: Array[untyped], ?shapes: Array[untyped], ?freeze_pane: untyped, ?page_setup: untyped, ?page_margins: untyped, ?header_footer: untyped, ?print_options: untyped, ?sheet_protection: untyped, ?sheet_view: untyped, ?sheet_properties: untyped, ?sheet_format: untyped, ?row_breaks: Array[untyped], ?column_breaks: Array[untyped]?, ?protected_ranges: Array[untyped], ?cell_watches: Array[String], ?ignored_errors: Array[untyped], ?phonetic_properties: untyped, ?selection: untyped, ?sheet_calc_properties: untyped, ?background_image: untyped, ?threaded_comments: Array[untyped], ?pivot_tables: Array[untyped]?, ?split_pane: untyped, ?filter_columns: Hash[Integer, untyped]?, ?sort_state: untyped, ?header_footer_images: Array[untyped]?) -> void
+      def initialize(name:, rows: [], columns: [], charts: [], data_validations: [], unmapped_data: {}, errors: nil, conditional_formats: nil, state: :visible, hyperlinks: {}, comments: [], images: [], styles: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, print_area: nil, print_titles: nil, sparkline_groups: [], merged_cells: [], auto_filter: nil, tables: [], shapes: [], freeze_pane: nil, page_setup: {}, page_margins: nil, header_footer: {}, print_options: {}, sheet_protection: nil, sheet_view: {}, sheet_properties: {}, sheet_format: {}, row_breaks: [], column_breaks: nil, protected_ranges: [], cell_watches: [], ignored_errors: [], phonetic_properties: nil, selection: nil, sheet_calc_properties: nil, background_image: nil, threaded_comments: [], pivot_tables: nil, split_pane: nil, filter_columns: nil, sort_state: nil, header_footer_images: nil)
         @name = name
         @rows = (rows || []).freeze
         @columns = (columns || []).freeze
         @charts = (charts || []).map { |c| c.is_a?(Elements::Chart) ? c : Elements::Chart.new(**c) }.freeze
-        raw_cfs = conditional_formats || conditional_formatting || []
-        cf = raw_cfs.map do |c|
+        cf = (conditional_formats || []).map do |c|
           if c.is_a?(Hash)
             Elements::ConditionalFormat.new(**c)
           else
@@ -252,7 +192,6 @@ module Xlsxrb
           end
         end
         @conditional_formats = cf.freeze
-        @conditional_formatting = @conditional_formats
         @data_validations = (data_validations || []).map { |dv| dv.is_a?(Elements::DataValidation) ? dv : Elements::DataValidation.new(**dv) }.freeze
         @unmapped_data = (unmapped_data || {}).freeze
         computed_errors = errors || self.class.validate(@name, @rows)
@@ -280,13 +219,16 @@ module Xlsxrb
                         elsif print_titles.is_a?(Elements::PrintTitles)
                           print_titles
                         else
-                          Elements::PrintTitles.new(**print_titles)
+                          pt_cols = print_titles[:columns] || print_titles[:cols]
+                          Elements::PrintTitles.new(rows: print_titles[:rows], columns: pt_cols)
                         end
         @sparkline_groups = (sparkline_groups || []).map do |sg|
           if sg.is_a?(Hash)
             sls = (sg[:sparklines] || []).map do |s|
               if s.is_a?(Hash)
-                Elements::Sparkline.new(**s)
+                sqref = s[:sqref] || s[:location_ref] || s[:location]
+                formula = s[:formula] || s[:data_ref] || s[:f] || s[:data]
+                Elements::Sparkline.new(sqref: sqref&.to_s, formula: formula&.to_s)
               elsif s.is_a?(Elements::Sparkline)
                 s
               else
@@ -365,7 +307,7 @@ module Xlsxrb
             Elements::PageBreak.new(id: brk.to_i, max: 16_383, man: 1)
           end
         end.freeze
-        raw_col_breaks = column_breaks || col_breaks || []
+        raw_col_breaks = column_breaks || []
         breaks = raw_col_breaks.map do |brk|
           if brk.is_a?(Elements::PageBreak)
             brk
@@ -377,7 +319,6 @@ module Xlsxrb
           end
         end.freeze
         @column_breaks = breaks
-        @col_breaks = breaks
         pr = protected_ranges || unmapped_data[:protected_ranges] || unmapped_data.dig(:facade, :protected_ranges) || []
         @protected_ranges = pr.map { |r| r.is_a?(Elements::ProtectedRange) ? r : Elements::ProtectedRange.new(**r) }.freeze
         @cell_watches = (cell_watches || unmapped_data[:cell_watches] || unmapped_data.dig(:facade, :cell_watches) || []).freeze
@@ -400,13 +341,12 @@ module Xlsxrb
                      else
                        Elements::Selection.new(**selection)
                      end
-        full_calc = if @sheet_properties.respond_to?(:full_calc_on_load)
-                      @sheet_properties.full_calc_on_load
-                    else
+        full_calc = if @sheet_properties.respond_to?(:full_calc_on_load?)
+                      @sheet_properties.full_calc_on_load?
+                    elsif @sheet_properties.is_a?(Hash)
                       @sheet_properties[:full_calc_on_load]
                     end
-        resolved_calc = sheet_calc_properties || sheet_calc_pr
-        calc = resolved_calc || unmapped_data[:sheet_calc_properties] || unmapped_data[:sheet_calc_pr] || unmapped_data.dig(:facade, :sheet_calc_pr) || (full_calc ? { full_calc_on_load: true } : nil)
+        calc = sheet_calc_properties || unmapped_data[:sheet_calc_properties] || unmapped_data[:sheet_calc_pr] || unmapped_data.dig(:facade, :sheet_calc_properties) || unmapped_data.dig(:facade, :sheet_calc_pr) || (full_calc ? { full_calc_on_load: true } : nil)
         @sheet_calc_pr = if calc.nil?
                            nil
                          elsif calc.is_a?(Elements::SheetCalcProperties)
@@ -434,18 +374,18 @@ module Xlsxrb
                       end
         fc = filter_columns || unmapped_data[:filter_columns] || unmapped_data.dig(:facade, :filter_columns) || {}
         @filter_columns = fc.to_h do |k, v|
-          col_id = k.to_i
+          column_id = k.to_i
           val = case v
                 when Elements::FilterColumn
                   v
                 when Hash
                   Elements::FilterColumn.new(**v)
                 when Array
-                  Elements::FilterColumn.new(col_id: col_id, filters: v)
+                  Elements::FilterColumn.new(column_id: column_id, filters: v)
                 else
-                  Elements::FilterColumn.new(col_id: col_id, filters: [v.to_s])
+                  Elements::FilterColumn.new(column_id: column_id, filters: [v.to_s])
                 end
-          [col_id, val]
+          [column_id, val]
         end.freeze
         st = sort_state || unmapped_data[:sort_state] || unmapped_data.dig(:facade, :sort_state)
         @sort_state = if st.nil?
@@ -465,30 +405,16 @@ module Xlsxrb
       # @api public
       #: () -> bool
       def trim_empty_rows?
-        @trim_empty_rows ? true : false
+        @trim_empty_rows
       end
 
-      # @deprecated Use {#trim_empty_rows?} instead. Will be removed in 0.2.0.
-      #: () -> bool
-      def trim_empty_rows
-        warn "[DEPRECATION] #trim_empty_rows is deprecated; use #trim_empty_rows? instead.", uplevel: 1
-        trim_empty_rows?
-      end
-
-      # Returns whether skipped rows are padded during iteration.
+      # Returns whether empty rows are yielded for skipped row numbers during iteration.
       #
       # @return [Boolean]
       # @api public
       #: () -> bool
       def pad_empty_rows?
-        @pad_empty_rows ? true : false
-      end
-
-      # @deprecated Use {#pad_empty_rows?} instead. Will be removed in 0.2.0.
-      #: () -> bool
-      def pad_empty_rows
-        warn "[DEPRECATION] #pad_empty_rows is deprecated; use #pad_empty_rows? instead.", uplevel: 1
-        pad_empty_rows?
+        @pad_empty_rows
       end
 
       # Returns whether missing cells within rows are padded during iteration.
@@ -497,14 +423,7 @@ module Xlsxrb
       # @api public
       #: () -> bool
       def pad_empty_cells?
-        @pad_empty_cells ? true : false
-      end
-
-      # @deprecated Use {#pad_empty_cells?} instead. Will be removed in 0.2.0.
-      #: () -> bool
-      def pad_empty_cells
-        warn "[DEPRECATION] #pad_empty_cells is deprecated; use #pad_empty_cells? instead.", uplevel: 1
-        pad_empty_cells?
+        @pad_empty_cells
       end
 
       # Returns whether the worksheet uses the 1904 date system.
@@ -548,7 +467,7 @@ module Xlsxrb
       # @api public
       #: () -> String?
       def code_name
-        sheet_properties.respond_to?(:code_name) ? sheet_properties.code_name : sheet_properties[:code_name]
+        sheet_properties.code_name
       end
 
       # Returns whether fit-to-page is enabled for page setup on this worksheet.
@@ -557,18 +476,7 @@ module Xlsxrb
       # @api public
       #: () -> bool
       def fit_to_page?
-        if sheet_properties.respond_to?(:fit_to_page)
-          sheet_properties.fit_to_page ? true : false
-        else
-          sheet_properties[:fit_to_page] ? true : false
-        end
-      end
-
-      # @deprecated Use {#fit_to_page?} instead. Will be removed in 0.2.0.
-      #: () -> bool
-      def fit_to_page
-        warn "[DEPRECATION] #fit_to_page is deprecated; use #fit_to_page? instead.", uplevel: 1
-        fit_to_page?
+        sheet_properties.fit_to_page?
       end
 
       # Returns whether full calculation on load is enabled on this worksheet.
@@ -577,14 +485,7 @@ module Xlsxrb
       # @api public
       #: () -> bool
       def full_calc_on_load?
-        @sheet_calc_pr&.full_calc_on_load == true || sheet_properties.full_calc_on_load == true
-      end
-
-      # @deprecated Use {#full_calc_on_load?} instead. Will be removed in 0.2.0.
-      #: () -> bool
-      def full_calc_on_load
-        warn "[DEPRECATION] #full_calc_on_load is deprecated; use #full_calc_on_load? instead.", uplevel: 1
-        full_calc_on_load?
+        @sheet_calc_pr&.to_h&.[](:full_calc_on_load) == true || sheet_properties.to_h[:full_calc_on_load] == true
       end
 
       # Returns the outline and grouping properties of the worksheet, or an empty hash if none configured.
@@ -604,8 +505,6 @@ module Xlsxrb
         res[:apply_styles] = props[:apply_styles] unless props[:apply_styles].nil?
         res
       end
-      # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
-      alias outline_pr outline_properties
 
       # Iterate over rows in the worksheet.
       #
@@ -701,7 +600,7 @@ module Xlsxrb
           row_consumer = lambda do |row|
             while current_expected_idx < row.index
               empty_row = Row.new(index: current_expected_idx)
-              inner_consumer.call(pad_cells ? empty_row.pad_empty_cells : empty_row)
+              inner_consumer.call(pad_cells ? empty_row.padded : empty_row)
               current_expected_idx += 1
             end
             inner_consumer.call(row)
@@ -710,7 +609,7 @@ module Xlsxrb
         end
 
         rows.each do |row|
-          row_to_yield = pad_cells ? row.pad_empty_cells : row
+          row_to_yield = pad_cells ? row.padded : row
           row_consumer.call(row_to_yield)
         end
       end
@@ -773,25 +672,6 @@ module Xlsxrb
                 ref_or_row.to_s.upcase
               end
         images.select { |img| img.ref == ref }
-      end
-
-      # Yields self with images loaded or returns self.
-      #
-      # @deprecated Access {#images} directly. Lazy-loading is automatic. Will be removed in 0.2.0.
-      # @yield [sheet]
-      # @yieldparam sheet [Elements::Worksheet]
-      # @return [Elements::Worksheet, void]
-      # @api public
-      #: () { (Elements::Worksheet) -> void } -> void
-      #: () -> Elements::Worksheet
-      def with_images
-        warn "[DEPRECATION] `with_images` is deprecated; access `images` directly.", uplevel: 1
-        if block_given?
-          yield self
-          nil
-        else
-          self
-        end
       end
 
       # Returns whether the worksheet is valid according to OOXML specifications.
@@ -927,18 +807,6 @@ module Xlsxrb
       # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter/Symbol.
       # @return [Elements::Cell, nil]
       # @api public
-      # Access a cell by reference (e.g. "A1") or 0-based coordinate indices (row, col).
-      #
-      # @deprecated Use {#[]} instead (e.g. sheet["A1"] or sheet[0, 0]). Will be removed in 0.2.0.
-      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
-      # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter/Symbol.
-      # @return [Elements::Cell, nil]
-      # @api public
-      #: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Cell?
-      def cell(ref_or_row, col = nil)
-        self[ref_or_row, col]
-      end
-
       # Returns the formatted string representation of a cell's value.
       #
       # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
@@ -947,83 +815,7 @@ module Xlsxrb
       # @api public
       #: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> String?
       def formatted_value(ref_or_row, col = nil)
-        cell(ref_or_row, col)&.formatted_value
-      end
-
-      # Returns a new Worksheet with the specified cell updated.
-      #
-      # @example
-      #   new_sheet = sheet.update_cell("B1", value: "Updated")
-      #
-      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "B1") or 0-based row index.
-      # @param col_or_value [Integer, String, Symbol, nil] 0-based column index or column letter/Symbol when ref_or_row is a row index.
-      # @param value [Object] The new cell value.
-      # @param style [String, Symbol, Hash, nil] Optional new style name or inline style properties.
-      # @param style_index [Integer, nil] Optional new 0-based style index.
-      # @param formula [Elements::Formula, nil] Optional new formula.
-      # @param hyperlink [Hash, String, nil] Optional new hyperlink.
-      # @deprecated Use {Xlsxrb.read} + {Xlsxrb.write} for streaming transformations or {Xlsxrb.write} DSL for report generation. Will be removed in 0.2.0.
-      # @param comment [Hash, String, nil] Optional new comment.
-      # @return [Worksheet] A new Worksheet instance.
-      # @api public
-      #: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col_or_value, ?value: untyped, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?formula: Elements::Formula?, ?hyperlink: (Hash[Symbol, untyped] | String)?, ?comment: (Hash[Symbol, untyped] | String)?) -> Elements::Worksheet
-      def update_cell(ref_or_row, col_or_value = nil, value: nil, style: nil, style_index: nil, formula: nil, hyperlink: nil, comment: nil)
-        warn "[DEPRECATION] Elements::Worksheet#update_cell is deprecated and will be removed in 0.2.0; use Xlsxrb.read + Xlsxrb.write for streaming transformations or Xlsxrb.write DSL for report generation.", uplevel: 1
-        if style_index && !style_index.is_a?(Integer)
-          warn "[DEPRECATION] Elements::Worksheet#update_cell passing non-Integer to style_index: is deprecated; use style: instead.", uplevel: 1
-          style ||= style_index
-          style_index = nil
-        end
-        if col_or_value
-          c_idx = col_or_value.is_a?(Integer) ? col_or_value : Cell._column_index(col_or_value)
-          row_idx = ref_or_row.to_i
-          ref = "#{Cell._column_letter(c_idx)}#{row_idx + 1}"
-          col_idx = c_idx
-        else
-          ref = ref_or_row.to_s.upcase
-          parsed = Cell._parse_ref(ref)
-          raise ArgumentError, "invalid cell reference: #{ref}" unless parsed
-
-          row_idx, col_idx = parsed
-        end
-        existing_row = row_at(row_idx)
-
-        if existing_row
-          existing_cell = existing_row.cell_at(col_idx)
-          new_cell = if existing_cell
-                       existing_cell.with(
-                         value: value || existing_cell.value,
-                         style: style || (style_index ? nil : existing_cell.style),
-                         style_index: style_index || (style ? nil : existing_cell.style_index),
-                         formula: formula || existing_cell.formula,
-                         hyperlink: hyperlink || existing_cell.hyperlink,
-                         comment: comment || existing_cell.comment
-                       )
-                     else
-                       Cell.new(row_index: row_idx, column_index: col_idx, value: value, style: style, style_index: style_index, formula: formula, hyperlink: hyperlink, comment: comment)
-                     end
-
-          # Replace cell in the existing row
-          new_cells = existing_row.cells.reject { |c| c.column_index == col_idx }
-          new_cells << new_cell
-          new_cells.sort_by!(&:column_index)
-
-          new_row = existing_row.with(cells: new_cells)
-          new_rows = rows.map { |r| r.index == row_idx ? new_row : r }
-        else
-          # Row doesn't exist, create it
-          new_cell = Cell.new(row_index: row_idx, column_index: col_idx, value: value, style: style, style_index: style_index, formula: formula, hyperlink: hyperlink, comment: comment)
-          new_row = Row.new(index: row_idx, cells: [new_cell])
-          new_rows = (rows + [new_row]).sort_by!(&:index)
-        end
-        new_hyperlinks = hyperlink ? hyperlinks.merge(ref.upcase => hyperlink) : hyperlinks
-        new_comments = if comment
-                         entry = comment.is_a?(Hash) ? comment.merge(ref: ref.upcase) : { ref: ref.upcase, text: comment }
-                         @comments.reject { |c| (c.respond_to?(:ref) ? c.ref : (c[:ref] || c[:cell]))&.to_s&.upcase == ref.upcase } + [entry]
-                       else
-                         @comments
-                       end
-        with(rows: new_rows, hyperlinks: new_hyperlinks, comments: new_comments)
+        self[ref_or_row, col]&.formatted_value
       end
 
       # Returns a new Worksheet with attributes replaced (Data-like behavior).
@@ -1037,13 +829,7 @@ module Xlsxrb
         new_rows = changes.key?(:rows) ? changes[:rows] : rows
         new_cols = changes.key?(:columns) ? changes[:columns] : columns
         new_charts = changes.key?(:charts) ? changes[:charts] : charts
-        new_cf = if changes.key?(:conditional_formatting)
-                   changes[:conditional_formatting]
-                 elsif changes.key?(:conditional_formats)
-                   changes[:conditional_formats]
-                 else
-                   conditional_formatting
-                 end
+        new_cf = changes.key?(:conditional_formats) ? changes[:conditional_formats] : conditional_formats
         new_dv = changes.key?(:data_validations) ? changes[:data_validations] : data_validations
         new_unmapped = changes.key?(:unmapped_data) ? changes[:unmapped_data] : unmapped_data
         if new_unmapped.is_a?(Hash) && new_unmapped[:facade].is_a?(Hash)
@@ -1063,7 +849,7 @@ module Xlsxrb
         new_hyperlinks = changes.key?(:hyperlinks) ? changes[:hyperlinks] : hyperlinks
         new_comments = changes.key?(:comments) ? changes[:comments] : comments
         new_styles = changes.key?(:styles) ? changes[:styles] : styles
-        new_date1904 = changes.key?(:date1904) ? changes[:date1904] : date1904
+        new_date1904 = changes.key?(:date1904) ? changes[:date1904] : date1904?
         new_dim = if changes.key?(:dimension)
                     changes[:dimension]
                   else
@@ -1095,47 +881,14 @@ module Xlsxrb
         new_sheet_properties = changes.key?(:sheet_properties) ? changes[:sheet_properties] : sheet_properties
         new_sheet_format = changes.key?(:sheet_format) ? changes[:sheet_format] : sheet_format
         new_row_breaks = changes.key?(:row_breaks) ? changes[:row_breaks] : row_breaks
-        new_col_breaks = if changes.key?(:column_breaks)
-                           changes[:column_breaks]
-                         elsif changes.key?(:col_breaks)
-                           changes[:col_breaks]
-                         else
-                           @column_breaks
-                         end
+        new_col_breaks = changes.key?(:column_breaks) ? changes[:column_breaks] : @column_breaks
         new_protected_ranges = changes.key?(:protected_ranges) ? changes[:protected_ranges] : protected_ranges
         new_cell_watches = changes.key?(:cell_watches) ? changes[:cell_watches] : cell_watches
         new_ignored_errors = changes.key?(:ignored_errors) ? changes[:ignored_errors] : ignored_errors
-        new_phonetic_properties = if changes.key?(:phonetic_properties)
-                                    changes[:phonetic_properties]
-                                  elsif changes.key?(:phonetic_pr)
-                                    warn "[Xlsxrb DEPRECATION] Worksheet#with(:phonetic_pr) is deprecated and will be removed in v0.2.0. Use :phonetic_properties instead.", uplevel: 1
-                                    changes[:phonetic_pr]
-                                  else
-                                    phonetic_properties
-                                  end
+        new_phonetic_properties = changes.key?(:phonetic_properties) ? changes[:phonetic_properties] : phonetic_properties
         new_selection = changes.key?(:selection) ? changes[:selection] : selection
-        new_sheet_calc_pr = if changes.key?(:sheet_calc_properties)
-                              changes[:sheet_calc_properties]
-                            elsif changes.key?(:sheet_calc_pr)
-                              warn "[Xlsxrb DEPRECATION] Worksheet#with(:sheet_calc_pr) is deprecated and will be removed in v0.2.0. Use :sheet_calc_properties instead.", uplevel: 1
-                              changes[:sheet_calc_pr]
-                            elsif changes.key?(:calc_pr)
-                              warn "[Xlsxrb DEPRECATION] Worksheet#with(:calc_pr) is deprecated and will be removed in v0.2.0. Use :sheet_calc_properties instead.", uplevel: 1
-                              changes[:calc_pr]
-                            else
-                              @sheet_calc_pr
-                            end
-        new_background_image = if changes.key?(:background_image)
-                                 changes[:background_image]
-                               elsif changes.key?(:background_picture)
-                                 warn "[Xlsxrb DEPRECATION] Worksheet#with(:background_picture) is deprecated and will be removed in v0.2.0. Use :background_image instead.", uplevel: 1
-                                 changes[:background_picture]
-                               elsif changes.key?(:picture)
-                                 warn "[Xlsxrb DEPRECATION] Worksheet#with(:picture) is deprecated and will be removed in v0.2.0. Use :background_image instead.", uplevel: 1
-                                 changes[:picture]
-                               else
-                                 background_image
-                               end
+        new_sheet_calc_properties = changes.key?(:sheet_calc_properties) ? changes[:sheet_calc_properties] : @sheet_calc_pr
+        new_background_image = changes.key?(:background_image) ? changes[:background_image] : background_image
         new_threaded_comments = changes.key?(:threaded_comments) ? changes[:threaded_comments] : threaded_comments
 
         self.class.new(
@@ -1185,7 +938,7 @@ module Xlsxrb
           ignored_errors: new_ignored_errors,
           phonetic_properties: new_phonetic_properties,
           selection: new_selection,
-          sheet_calc_properties: new_sheet_calc_pr,
+          sheet_calc_properties: new_sheet_calc_properties,
           background_image: new_background_image,
           threaded_comments: new_threaded_comments
         )
@@ -1199,8 +952,7 @@ module Xlsxrb
           rows: rows,
           columns: columns,
           charts: charts,
-          conditional_formatting: conditional_formatting,
-          conditional_formats: conditional_formatting,
+          conditional_formats: conditional_formats,
           data_validations: data_validations,
           unmapped_data: unmapped_data,
           errors: errors,
@@ -1238,20 +990,14 @@ module Xlsxrb
           sheet_format: sheet_format,
           row_breaks: row_breaks,
           column_breaks: column_breaks,
-          col_breaks: col_breaks,
           protected_ranges: protected_ranges,
           cell_watches: cell_watches,
           ignored_errors: ignored_errors,
           phonetic_properties: phonetic_properties,
-          phonetic_pr: phonetic_properties,
           selection: selection,
           sheet_calc_properties: sheet_calc_properties,
-          sheet_calc_pr: @sheet_calc_pr,
-          calc_pr: @sheet_calc_pr,
           code_name: code_name,
-          background_image: background_image,
-          background_picture: background_image,
-          picture: background_image
+          background_image: background_image
         }
       end
 
@@ -1261,7 +1007,7 @@ module Xlsxrb
         return false unless other.is_a?(Worksheet)
 
         name == other.name && rows == other.rows && columns == other.columns && charts == other.charts &&
-          conditional_formatting == other.conditional_formatting && data_validations == other.data_validations &&
+          conditional_formats == other.conditional_formats && data_validations == other.data_validations &&
           state == other.state && hyperlinks == other.hyperlinks && comments == other.comments &&
           threaded_comments == other.threaded_comments &&
           merged_cells == other.merged_cells && auto_filter == other.auto_filter &&
@@ -1281,29 +1027,12 @@ module Xlsxrb
       #: () -> Integer
       def hash
         [
-          self.class, name, rows, columns, charts, conditional_formatting, data_validations,
+          self.class, name, rows, columns, charts, conditional_formats, data_validations,
           state, hyperlinks, comments, threaded_comments, merged_cells, auto_filter, tables, shapes, freeze_pane,
           page_setup, page_margins, header_footer, print_options, sheet_protection, sheet_view,
-          sheet_properties, sheet_format, row_breaks, col_breaks, protected_ranges,
+          sheet_properties, sheet_format, row_breaks, column_breaks, protected_ranges,
           cell_watches, ignored_errors, phonetic_properties, selection, sheet_calc_properties, background_image
         ].hash
-      end
-
-      # Returns self when load is called on an already in-memory Worksheet.
-      #
-      # @return [Elements::Worksheet]
-      # @api public
-      #: () -> Elements::Worksheet
-      def load
-        Deprecation.warn("Elements::Worksheet#load is deprecated; worksheet is already loaded in memory.")
-        self
-      end
-
-      # @deprecated Use {#load} instead. Will be removed in 0.2.0.
-      #: () -> Elements::Worksheet
-      def to_worksheet
-        warn "[DEPRECATION] #to_worksheet is deprecated; use #load instead.", uplevel: 1
-        load
       end
 
       FORBIDDEN_NAME_CHARS = %r{[\\/?*\[\]:]|[\x00-\x08\x0B\x0C\x0E-\x1F]}

@@ -631,7 +631,7 @@ class OoxmlTest < Test::Unit::TestCase
     XML
 
     result = Xlsxrb::Ooxml::StylesParser.parse(xml)
-    assert_equal({ 164 => "yyyy-mm-dd" }, result.num_fmts)
+    assert_equal({ 164 => "yyyy-mm-dd" }, result.number_formats)
   end
 
   test "styles_parser parses cellXfs" do
@@ -692,8 +692,8 @@ class OoxmlTest < Test::Unit::TestCase
 
     result = Xlsxrb::Ooxml::StylesParser.parse(xml)
     assert_equal(1, result.fonts.size)
-    assert_equal(true, result.font(0).bold)
-    assert_equal(true, result.font(0).italic)
+    assert_true(result.font(0).bold?)
+    assert_true(result.font(0).italic?)
     assert_equal("double", result.font(0).underline)
     assert_equal(14.5, result.font(0).size)
     assert_equal({ rgb: "FFFF0000" }, result.font(0).color.to_h)
@@ -715,14 +715,14 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(1, result.cell_xfs.size)
     xf = result.cell_xf(0)
     assert_equal(14, xf.num_fmt_id)
-    assert_equal(true, xf.apply_number_format)
-    assert_equal(true, xf.apply_font)
+    assert_true(xf.apply_number_format?)
+    assert_true(xf.apply_font?)
     assert_equal({ horizontal: "center", vertical: "top", wrap_text: true, text_rotation: 90 }, xf.alignment.to_h)
   end
 
-  test "styles_parser returns empty hash for nil input" do
-    assert_equal({}, Xlsxrb::Ooxml::StylesParser.parse(nil))
-    assert_equal({}, Xlsxrb::Ooxml::StylesParser.parse(""))
+  test "styles_parser returns empty styles for nil input" do
+    assert_equal(Xlsxrb::Elements::Styles.new, Xlsxrb::Ooxml::StylesParser.parse(nil))
+    assert_equal(Xlsxrb::Elements::Styles.new, Xlsxrb::Ooxml::StylesParser.parse(""))
   end
 
   # --- WorkbookParser ---
@@ -823,10 +823,10 @@ class OoxmlTest < Test::Unit::TestCase
     rows = Xlsxrb::Ooxml::WorksheetParser.parse(xml, shared_strings: shared_strings)
 
     assert_equal(2, rows.size)
-    assert_equal(0, rows[0][:index])
-    assert_equal("Hello", rows[0][:cells][0][:value])
-    assert_equal(42, rows[0][:cells][1][:value])
-    assert_equal(true, rows[1][:cells][0][:value])
+    assert_equal(0, rows[0].index)
+    assert_equal("Hello", rows[0].cells[0].value)
+    assert_equal(42, rows[0].cells[1].value)
+    assert_equal(true, rows[1].cells[0].value)
   end
 
   test "worksheet_parser streaming each_row yields rows" do
@@ -843,7 +843,7 @@ class OoxmlTest < Test::Unit::TestCase
 
     collected = []
     Xlsxrb::Ooxml::WorksheetParser.each_row(xml, shared_strings: []) do |row|
-      collected << row[:index]
+      collected << row.index
     end
 
     assert_equal([0, 1, 2], collected)
@@ -864,7 +864,7 @@ class OoxmlTest < Test::Unit::TestCase
     io = StringIO.new(xml)
     collected = []
     Xlsxrb::Ooxml::WorksheetParser.each_row(io, shared_strings: []) do |row|
-      collected << [row[:index], row[0].value]
+      collected << [row.index, row[0].value]
     end
 
     assert_equal([[0, 10], [1, 20], [2, 30]], collected)
@@ -950,9 +950,9 @@ class OoxmlTest < Test::Unit::TestCase
     XML
 
     rows = Xlsxrb::Ooxml::WorksheetParser.parse(xml, shared_strings: [])
-    cell = rows[0][:cells][0]
-    assert_equal("SUM(B1:B10)", cell[:formula])
-    assert_equal(55, cell[:value])
+    cell = rows[0].cells[0]
+    assert_equal("SUM(B1:B10)", cell.formula_expression)
+    assert_equal(55, cell.value)
   end
 
   test "worksheet_parser parses shared formula cells with self-closing f tags" do
@@ -975,25 +975,25 @@ class OoxmlTest < Test::Unit::TestCase
     rows = Xlsxrb::Ooxml::WorksheetParser.parse(xml, shared_strings: [])
     assert_equal(2, rows.size)
 
-    row1_cells = rows[0][:cells]
+    row1_cells = rows[0].cells
     assert_equal(3, row1_cells.size)
-    assert_equal("A1", row1_cells[0][:ref])
-    assert_equal(10, row1_cells[0][:value])
-    assert_equal("B1+C1", row1_cells[0][:formula])
+    assert_equal("A1", row1_cells[0].ref)
+    assert_equal(10, row1_cells[0].value)
+    assert_equal("B1+C1", row1_cells[0].formula_expression)
 
-    assert_equal("B1", row1_cells[1][:ref])
-    assert_equal(20, row1_cells[1][:value])
-    assert_nil(row1_cells[1][:formula])
+    assert_equal("B1", row1_cells[1].ref)
+    assert_equal(20, row1_cells[1].value)
+    assert_nil(row1_cells[1].formula)
 
-    assert_equal("C1", row1_cells[2][:ref])
-    assert_equal(30, row1_cells[2][:value])
-    assert_nil(row1_cells[2][:formula])
+    assert_equal("C1", row1_cells[2].ref)
+    assert_equal(30, row1_cells[2].value)
+    assert_nil(row1_cells[2].formula)
 
-    row2_cells = rows[1][:cells]
+    row2_cells = rows[1].cells
     assert_equal(1, row2_cells.size)
-    assert_equal("A2", row2_cells[0][:ref])
-    assert_equal(40, row2_cells[0][:value])
-    assert_nil(row2_cells[0][:formula])
+    assert_equal("A2", row2_cells[0].ref)
+    assert_equal(40, row2_cells[0].value)
+    assert_nil(row2_cells[0].formula)
   end
 
   # --- WorksheetWriter ---
@@ -1292,22 +1292,21 @@ class OoxmlTest < Test::Unit::TestCase
 
   test "WorkbookParser and Xlsxrb.read extract and round-trip activeTab and fullCalcOnLoad" do
     bytes = Xlsxrb.write do |w|
-      w.workbook_property(:active_tab, 1)
+      w.workbook_property(:active_sheet, 1)
       w.workbook_property(:full_calc_on_load, true)
       w.sheet("First") { |s| s.row(["A"]) }
       w.sheet("Second") { |s| s.row(["B"]) }
     end
 
-    wb = Xlsxrb.read(bytes).load
-    assert_equal(1, wb.active_tab)
+    wb = Xlsxrb.load(bytes)
+    assert_equal(1, wb.active_sheet_index)
     assert_true(wb.full_calc_on_load?)
-    assert_true(wb.full_calc_on_load)
-    assert_equal(1, wb.workbook_properties[:active_tab])
-    assert_equal(true, wb.workbook_properties[:full_calc_on_load])
+    assert_equal(1, wb.workbook_properties.active_sheet)
+    assert_true(wb.workbook_properties.full_calc_on_load?)
 
     roundtrip_bytes = Xlsxrb.write(wb)
-    wb2 = Xlsxrb.read(roundtrip_bytes).load
-    assert_equal(1, wb2.active_tab)
+    wb2 = Xlsxrb.load(roundtrip_bytes)
+    assert_equal(1, wb2.active_sheet_index)
     assert_true(wb2.full_calc_on_load?)
   end
 
@@ -1336,19 +1335,15 @@ class OoxmlTest < Test::Unit::TestCase
       assert_equal(false, cells["D1"].cached_value)
     end
 
-    wb = Xlsxrb.read(bytes).load
+    wb = Xlsxrb.load(bytes)
     sheet = wb.sheets.first
     assert_equal(true, sheet["A1"].value)
-    assert_equal("b", sheet["A1"][:type])
     assert_equal(false, sheet["B1"].value)
-    assert_equal("b", sheet["B1"][:type])
     assert_equal(true, sheet["C1"].value)
-    assert_equal("b", sheet["C1"][:type])
     assert_equal(false, sheet["D1"].value)
-    assert_equal("b", sheet["D1"][:type])
 
     roundtrip_bytes = Xlsxrb.write(wb)
-    wb2 = Xlsxrb.read(roundtrip_bytes).load
+    wb2 = Xlsxrb.load(roundtrip_bytes)
     sheet2 = wb2.sheets.first
     assert_equal(true, sheet2["A1"].value)
     assert_equal(false, sheet2["B1"].value)

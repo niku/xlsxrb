@@ -270,14 +270,14 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path).load
+    wb = Xlsxrb.load(tmp.path)
     sheet = wb.sheet(0)
-    assert_equal("hello", sheet.cell_value("A1"))
-    assert_equal(42, sheet.cell_value("B1"))
-    assert_in_delta(3.14, sheet.cell_value("C1"))
-    assert_equal(true, sheet.cell_value("D1"))
-    assert_equal(false, sheet.cell_value("E1"))
-    assert_nil(sheet.cell_value("F1"))
+    assert_equal("hello", sheet["A1"]&.value)
+    assert_equal(42, sheet["B1"]&.value)
+    assert_in_delta(3.14, sheet["C1"]&.value)
+    assert_equal(true, sheet["D1"]&.value)
+    assert_equal(false, sheet["E1"]&.value)
+    assert_nil(sheet["F1"]&.value)
   ensure
     tmp&.close!
   end
@@ -289,10 +289,10 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("B") { |s| s.row(["sheet_b"]) }
     end
 
-    wb = Xlsxrb.read(tmp.path).load
+    wb = Xlsxrb.load(tmp.path)
     assert_equal(2, wb.sheets.size)
-    assert_equal("sheet_a", wb.sheet("A").cell_value("A1"))
-    assert_equal("sheet_b", wb.sheet("B").cell_value("A1"))
+    assert_equal("sheet_a", wb.sheet("A")["A1"]&.value)
+    assert_equal("sheet_b", wb.sheet("B")["A1"]&.value)
   ensure
     tmp&.close!
   end
@@ -305,12 +305,12 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path).load
+    wb = Xlsxrb.load(tmp.path)
     sheet = wb.sheet(0)
     assert_equal(100, sheet.rows.size)
-    assert_equal(0, sheet.cell_value("A1"))
-    assert_equal(99, sheet.cell_value("A100"))
-    assert_equal("row50", sheet.cell_value("B51"))
+    assert_equal(0, sheet["A1"]&.value)
+    assert_equal(99, sheet["A100"]&.value)
+    assert_equal("row50", sheet["B51"]&.value)
   ensure
     tmp&.close!
   end
@@ -505,7 +505,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
         s.row(["Value"])
-        s.validate_data("A2:A100", type: :whole, formula1: "1", formula2: "100")
+        s.data_validation("A2:A100", type: :whole, formula1: "1", formula2: "100")
       end
     end
 
@@ -641,7 +641,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Frozen") do |s|
         s.row(["Header"])
         s.row([1])
-        s.freeze_pane(row: 1, col: 0)
+        s.freeze_pane(row: 1, column: 0)
       end
     end
 
@@ -724,7 +724,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Prot") do |s|
         s.row(["Data"])
-        s.protect_sheet(sheet: true, objects: true)
+        s.sheet_protection(sheet: true, objects: true)
       end
     end
 
@@ -739,7 +739,7 @@ class ContractTest < Test::Unit::TestCase
     _reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Prot") do |s|
         s.row(["Data"])
-        s.protect_sheet(sheet: true, password: "secret")
+        s.sheet_protection(sheet: true, password: "secret")
       end
     end
 
@@ -794,7 +794,7 @@ class ContractTest < Test::Unit::TestCase
         s.merge("A1:A1")
         s.freeze_pane(row: 1)
         s.page_margins(left: 1.0, right: 1.0)
-        s.validate_data("B2", type: :whole, formula1: "0", formula2: "100")
+        s.data_validation("B2", type: :whole, formula1: "0", formula2: "100")
       end
     end
 
@@ -841,7 +841,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
         s.split_pane(x_split: 1, y_split: 2, top_left_cell: "B3")
-        s.select_cell("B3", sqref: "B3:C4", pane: :bottomRight)
+        s.selection("B3", sqref: "B3:C4", pane: :bottomRight)
       end
     end
 
@@ -889,13 +889,13 @@ class ContractTest < Test::Unit::TestCase
         s.row(["Data"])
       end
       w.defined_name("MyConstant", "100")
-      w.defined_name("LocalName", "Sheet1!$A$1", sheet: "Sheet1")
+      w.defined_name("LocalName", "Sheet1!$A$1", scope: "Sheet1")
     end
 
     names = reader.defined_names
     assert_equal(2, names.size)
     assert_not_nil(names.find { |n| n[:name] == "MyConstant" && n[:value] == "100" })
-    assert_not_nil(names.find { |n| n[:name] == "LocalName" && n[:local_sheet_id].zero? })
+    assert_not_nil(names.find { |n| n[:name] == "LocalName" && n[:local_sheet_id]&.zero? })
   ensure
     tmp&.close!
   end
@@ -907,7 +907,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(["Data"])
       end
       w.print_area("Sheet1!$A$1:$C$10", sheet: "Sheet1")
-      w.print_titles(rows: "1:2", cols: "A:B", sheet: "Sheet1")
+      w.print_titles(rows: "1:2", columns: "A:B", sheet: "Sheet1")
     end
 
     assert_equal("Sheet1!$A$1:$C$10", reader.print_area(sheet: "Sheet1"))
@@ -940,8 +940,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.page_break_row(1)
-        s.page_break_col(2)
+        s.row_break(1)
+        s.column_break(2)
       end
     end
 
@@ -997,7 +997,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
       end
-      w.protect_workbook(lock_structure: true)
+      w.workbook_protection(lock_structure: true)
     end
 
     prot = reader.workbook_protection
@@ -1052,7 +1052,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Styled") do |s|
         s.style("bold_green") do |style|
-          style.bold.fill_color("00FF00")
+          style.bold(true)
+          style.fill_color("00FF00")
         end
         s.row(["Header"], cell_styles: ["bold_green"])
         s.row(["Normal"])
@@ -1250,7 +1251,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
         s.row(%w[Name Status])
-        s.validate_data("B2:B100", in: %w[Active Inactive Pending])
+        s.data_validation("B2:B100", list: %w[Active Inactive Pending])
       end
     end
 
@@ -1271,8 +1272,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("DV") do |s|
         s.row(%w[Name Score Grade])
-        s.validate_data("B2:B100", type: :whole, formula1: "0", formula2: "100")
-        s.validate_data("C2:C100", in: %w[A B C D F])
+        s.data_validation("B2:B100", type: :whole, formula1: "0", formula2: "100")
+        s.data_validation("C2:C100", list: %w[A B C D F])
       end
     end
 
@@ -1406,14 +1407,14 @@ class ContractTest < Test::Unit::TestCase
 
     raw = File.binread(tmp.path)
     sio = StringIO.new(raw)
-    wb = Xlsxrb.read(sio).load
+    wb = Xlsxrb.load(sio)
     assert_instance_of(Xlsxrb::Elements::Workbook, wb,
                        "Xlsxrb.read(StringIO) should return a Workbook")
     sheet = wb.sheet(0)
     assert_not_nil(sheet, "Sheet 0 should exist when reading from IO")
-    assert_equal("io_string", sheet.cell_value("A1"),
+    assert_equal("io_string", sheet["A1"]&.value,
                  "String cell value mismatch when reading from StringIO [A1]")
-    assert_equal(999, sheet.cell_value("B1"),
+    assert_equal(999, sheet["B1"]&.value,
                  "Numeric cell value mismatch when reading from StringIO [B1]")
   ensure
     tmp&.close!
@@ -1464,7 +1465,10 @@ class ContractTest < Test::Unit::TestCase
     enum = Xlsxrb.read(tmp.path)
     assert_respond_to(enum, :each,
                       "foreach without block should return an Enumerator-like object")
-    values = enum.first.map { |row| row.cells[0]&.value }
+    values = []
+    enum.each do |sheet|
+      sheet.each { |row| values << row.cells[0]&.value }
+    end
     assert_equal(%w[alpha beta], values,
                  "Enumerator should yield correct values [foreach enumerator]")
   ensure
@@ -1479,7 +1483,9 @@ class ContractTest < Test::Unit::TestCase
     end
 
     collected = []
-    Xlsxrb.read(tmp.path).find { |s| s.name == "Second" }&.each { |row| collected << row.cells[0]&.value }
+    Xlsxrb.read(tmp.path).each do |s|
+      s.each { |row| collected << row.cells[0]&.value } if s.name == "Second"
+    end
     assert_equal(["from_second"], collected,
                  "foreach with find should read the named sheet [foreach sheet]. " \
                  "Check Xlsxrb.read streaming integration with Enumerable.")
@@ -1499,10 +1505,10 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path).load
-    assert_equal("", wb.sheet(0).cell_value("A1"),
+    wb = Xlsxrb.load(tmp.path)
+    assert_equal("", wb.sheet(0)["A1"]&.value,
                  "Empty string cell should round-trip as empty string [A1]")
-    assert_equal("non-empty", wb.sheet(0).cell_value("B1"),
+    assert_equal("non-empty", wb.sheet(0)["B1"]&.value,
                  "Adjacent non-empty cell should be unaffected [B1]")
   ensure
     tmp&.close!
@@ -1516,12 +1522,12 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path).load
+    wb = Xlsxrb.load(tmp.path)
     sheet = wb.sheet(0)
-    assert_equal("first", sheet.cell_value("A1"), "A1 should be 'first'")
-    assert_nil(sheet.cell_value("B1"), "B1 should be nil (sparse)")
-    assert_nil(sheet.cell_value("C1"), "C1 should be nil (sparse)")
-    assert_equal("fourth", sheet.cell_value("D1"), "D1 should be 'fourth'")
+    assert_equal("first", sheet["A1"]&.value, "A1 should be 'first'")
+    assert_nil(sheet["B1"]&.value, "B1 should be nil (sparse)")
+    assert_nil(sheet["C1"]&.value, "C1 should be nil (sparse)")
+    assert_equal("fourth", sheet["D1"]&.value, "D1 should be 'fourth'")
   ensure
     tmp&.close!
   end
@@ -1727,22 +1733,22 @@ class ContractTest < Test::Unit::TestCase
 
       # 1. Unencrypted read without password should raise EncryptedFileError
       assert_raises(Xlsxrb::EncryptedFileError) do
-        Xlsxrb.read(tmp.path).load
+        Xlsxrb.load(tmp.path)
       end
 
       # 2. Read with wrong password should raise InvalidPasswordError
       assert_raises(Xlsxrb::InvalidPasswordError) do
-        Xlsxrb.read(tmp.path, password: "wrong_password").load
+        Xlsxrb.load(tmp.path, password: "wrong_password")
       end
 
       # 3. Read with correct password should succeed
-      wb = Xlsxrb.read(tmp.path, password: password).load
+      wb = Xlsxrb.load(tmp.path, password: password)
       assert_equal(1, wb.sheets.size)
       sheet = wb.sheet(0)
       assert_equal("SecureData", sheet.name)
-      assert_equal("Alice", sheet.cell_value("A2"))
-      assert_equal("TOP_SECRET_42", sheet.cell_value("B2"))
-      assert_in_delta(9999.5, sheet.cell_value("C2"))
+      assert_equal("Alice", sheet["A2"]&.value)
+      assert_equal("TOP_SECRET_42", sheet["B2"]&.value)
+      assert_in_delta(9999.5, sheet["C2"]&.value)
     ensure
       tmp.close!
     end
@@ -1773,7 +1779,7 @@ class ContractTest < Test::Unit::TestCase
     assert_equal(3, rows.size)
 
     header_row = rows[0]
-    assert_equal(%w[ColA ColB ColC], header_row.to_a)
+    assert_equal(%w[ColA ColB ColC], header_row.values)
     assert_equal("ColA", header_row[0].value)
     assert_equal("ColB", header_row[1].value)
     assert_equal("ColC", header_row[2].value)
@@ -1799,13 +1805,13 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path).load
+    wb = Xlsxrb.load(tmp.path)
     sheet = wb.sheet(0)
-    assert_equal("First", sheet.cell_value("A1"))
-    assert_nil(sheet.cell_value("B1"))
-    assert_equal("Third", sheet.cell_value("C1"))
-    assert_nil(sheet.cell_value("D1"))
-    assert_equal(500, sheet.cell_value("E1"))
+    assert_equal("First", sheet["A1"]&.value)
+    assert_nil(sheet["B1"]&.value)
+    assert_equal("Third", sheet["C1"]&.value)
+    assert_nil(sheet["D1"]&.value)
+    assert_equal(500, sheet["E1"]&.value)
   ensure
     tmp&.close!
   end
@@ -1823,7 +1829,7 @@ class ContractTest < Test::Unit::TestCase
       end
     end
 
-    wb = Xlsxrb.read(tmp.path).load
+    wb = Xlsxrb.load(tmp.path)
     sheet = wb.sheet(0)
     rt_cell = sheet["A1"]
     assert_not_nil(rt_cell)
@@ -1869,7 +1875,7 @@ class ContractTest < Test::Unit::TestCase
     assert_equal(true, rt_val.runs[0][:font][:bold])
     assert_equal("FFFF0000", rt_val.runs[0][:font][:color])
 
-    wb = Xlsxrb.read(tmp.path).load
+    wb = Xlsxrb.load(tmp.path)
     sheet = wb.sheet(0)
     rt_cell = sheet["A1"]
     assert_not_nil(rt_cell)
@@ -1915,62 +1921,5 @@ class ContractTest < Test::Unit::TestCase
     assert_match(/Production/, entries["docProps/custom.xml"])
   ensure
     tmp&.close!
-  end
-
-  # =====================================================
-  # Template Modification CONTRACT tests (Non-destructive)
-  # =====================================================
-
-  def test_modify_preserves_untouched_media_and_binaries_verbatim
-    source_file = Tempfile.new(["template_source", ".xlsx"])
-    target_file = Tempfile.new(["template_target", ".xlsx"])
-
-    media_bytes = MINIMAL_PNG
-    vba_bytes = "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1VBA_PROJECT_BINARY_PAYLOAD".b
-    drawing_xml = '<?xml version="1.0" encoding="UTF-8"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"/>'
-
-    wb = Xlsxrb.build do |w|
-      w.sheet("Sheet1") do |s|
-        s.row(["Original Title", 100])
-      end
-      w.sheet("Sheet2") do |s|
-        s.row(["Untouched Sheet Data", 200])
-      end
-    end
-
-    buf = StringIO.new
-    Xlsxrb.write(buf, wb)
-    reader = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(buf.string))
-
-    Xlsxrb::Ooxml::ZipWriter.open(source_file.path) do |w|
-      reader.entry_names.each do |name|
-        reader.copy_to_writer(name, w)
-      end
-      w.add_binary_entry("xl/media/image1.png", media_bytes)
-      w.add_binary_entry("xl/vbaProject.bin", vba_bytes)
-      w.add_entry("xl/drawings/drawing1.xml", drawing_xml)
-    end
-
-    Xlsxrb.modify(source_file.path, target_file.path) do |workbook|
-      workbook.update_sheet("Sheet1") do |sheet|
-        sheet.update_cell("A1", value: "Updated Title")
-      end
-    end
-
-    target_reader = Xlsxrb::Ooxml::ZipReader.open(target_file.path)
-    entries = target_reader.read_all
-
-    assert_equal(media_bytes, entries["xl/media/image1.png"].b, "xl/media/image1.png should be identical")
-    assert_equal(vba_bytes, entries["xl/vbaProject.bin"].b, "xl/vbaProject.bin should be identical")
-    assert_equal(drawing_xml, entries["xl/drawings/drawing1.xml"], "xl/drawings/drawing1.xml should be identical")
-
-    result_wb = Xlsxrb.read(target_file.path).load
-    assert_equal("Updated Title", result_wb.sheet("Sheet1").cell_value("A1"))
-    assert_equal(100, result_wb.sheet("Sheet1").cell_value("B1"))
-    assert_equal("Untouched Sheet Data", result_wb.sheet("Sheet2").cell_value("A1"))
-    assert_equal(200, result_wb.sheet("Sheet2").cell_value("B1"))
-  ensure
-    source_file.close!
-    target_file.close!
   end
 end

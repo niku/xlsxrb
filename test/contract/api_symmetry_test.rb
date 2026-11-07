@@ -14,8 +14,6 @@ class ApiSymmetryTest < Test::Unit::TestCase
   PROXY_ONLY_METHODS = %i[
     active_sheet
     active_sheet=
-    active_tab
-    active_tab=
     app_property
     cleanup!
     core_property
@@ -25,9 +23,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
     first_sheet=
     internal_sheet_setup
     properties
-    protect_workbook
     workbook_protection
-    set_default_font
     sheet_names
     show_sheet_tabs
     show_sheet_tabs=
@@ -123,7 +119,6 @@ class ApiSymmetryTest < Test::Unit::TestCase
       compression_level
       current_sheet
       internal_sheet_setup
-      shared_strings
       shared_strings?
       start_sheet_entry
     ]
@@ -172,7 +167,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
         s.row(["Alpha"])
         s.defined_name("GLOBAL_RANGE", range: "A2:A10")
         s.defined_name("COORDS_RANGE", columns: 0, rows: 2..5)
-        s.defined_name("LOCAL_RANGE", "A2:A10", local: true)
+        s.defined_name("LOCAL_RANGE", "A2:A10", scope: "Master's Data")
       end
       # Workbook-level defined name after sheet block must remain global (no localSheetId leak)
       w.defined_name("WORKBOOK_CONST", "0.08")
@@ -199,7 +194,6 @@ class ApiSymmetryTest < Test::Unit::TestCase
   def test_sheet_reader_query_interface_symmetry
     # Expected common query methods on both in-memory Elements::Worksheet and StreamSheet
     expected_query_methods = %i[
-      cell
       each
       name
       state
@@ -213,7 +207,6 @@ class ApiSymmetryTest < Test::Unit::TestCase
       fit_to_page?
       full_calc_on_load?
       sheet_calc_properties
-      sheet_calc_pr
       background_image
     ]
 
@@ -248,8 +241,8 @@ class ApiSymmetryTest < Test::Unit::TestCase
       end
 
       # 2. Read via in-memory
-      wb_mem = Xlsxrb.read(f.path)
-      ws_mem = wb_mem.sheets.first.load
+      wb_mem = Xlsxrb.load(f.path)
+      ws_mem = wb_mem.sheet(0)
       mem_rows = ws_mem.rows.map { |r| r.cells.map(&:value) }
       assert_equal test_data, mem_rows
 
@@ -288,90 +281,5 @@ class ApiSymmetryTest < Test::Unit::TestCase
     stream_wb = Xlsxrb.load(StringIO.new(io.string))
     assert_equal :visible, stream_wb.sheet(0).state
     assert_equal :hidden, stream_wb.sheet(1).state
-  end
-
-  def test_builder_deprecation_warnings_symmetry
-    # 1. WorkbookBuilder sheet hidden: and defined_name column:/row:
-    err_wb = capture_stderr do
-      Xlsxrb.build do |b|
-        b.sheet("VisibleSheet")
-        b.sheet("HiddenSheet", hidden: true)
-        b.defined_name("COL_NAME", range: "A1", column: 0)
-        b.defined_name("ROW_NAME", range: "A1", row: 1)
-      end
-    end
-    assert_match(/\[Xlsxrb DEPRECATION\] sheet keyword hidden: is deprecated; use state: :hidden instead\./, err_wb)
-    assert_match(/\[Xlsxrb DEPRECATION\] defined_name keyword column: is deprecated; use columns: instead\./, err_wb)
-    assert_match(/\[Xlsxrb DEPRECATION\] defined_name keyword row: is deprecated; use rows: instead\./, err_wb)
-
-    # 2. WorksheetBuilder defined_name column:/row:, outline_properties show_symbols:, fit_to_page?
-    ws_builder = Xlsxrb::WorksheetBuilder.new("WS")
-    err_ws = capture_stderr do
-      ws_builder.defined_name("WS_COL", range: "A1", column: 0)
-      ws_builder.defined_name("WS_ROW", range: "A1", row: 1)
-      ws_builder.outline_properties(show_symbols: true)
-      ws_builder.fit_to_page?
-    end
-    assert_match(/\[Xlsxrb DEPRECATION\] defined_name keyword column: is deprecated; use columns: instead\./, err_ws)
-    assert_match(/\[Xlsxrb DEPRECATION\] defined_name keyword row: is deprecated; use rows: instead\./, err_ws)
-    assert_match(/\[Xlsxrb DEPRECATION\] outline_properties keyword show_symbols: is deprecated; use show_outline_symbols: instead\./, err_ws)
-    assert_match(/\[Xlsxrb DEPRECATION\] fit_to_page\? is deprecated; use fit_to_page instead\./, err_ws)
-
-    # 3. StreamWriter sheet hidden:, defined_name column:/row:, outline_properties show_symbols:, fit_to_page?
-    io = StringIO.new
-    err_sw = capture_stderr do
-      Xlsxrb.write(io) do |w|
-        w.sheet("StreamVisible")
-        w.sheet("StreamHidden", hidden: true)
-        w.defined_name("SW_COL", range: "A1", column: 0)
-        w.defined_name("SW_ROW", range: "A1", row: 1)
-        w.outline_properties(show_symbols: true)
-        w.fit_to_page?
-      end
-    end
-    assert_match(/\[Xlsxrb DEPRECATION\] sheet keyword hidden: is deprecated; use state: :hidden instead\./, err_sw)
-    assert_match(/\[Xlsxrb DEPRECATION\] defined_name keyword column: is deprecated; use columns: instead\./, err_sw)
-    assert_match(/\[Xlsxrb DEPRECATION\] defined_name keyword row: is deprecated; use rows: instead\./, err_sw)
-    assert_match(/\[Xlsxrb DEPRECATION\] outline_properties keyword show_symbols: is deprecated; use show_outline_symbols: instead\./, err_sw)
-    assert_match(/\[Xlsxrb DEPRECATION\] fit_to_page\? is deprecated; use fit_to_page instead\./, err_sw)
-
-    # 4. WorksheetProxy defined_name column:/row:, outline_properties show_symbols:, fit_to_page?
-    io2 = StringIO.new
-    err_proxy = capture_stderr do
-      Xlsxrb.write(io2) do |w|
-        w.sheet("ProxySheet") do |s|
-          s.defined_name("PROXY_COL", range: "A1", column: 0)
-          s.defined_name("PROXY_ROW", range: "A1", row: 1)
-          s.outline_properties(show_symbols: true)
-          s.fit_to_page?
-        end
-      end
-    end
-    assert_match(/\[Xlsxrb DEPRECATION\] defined_name keyword column: is deprecated; use columns: instead\./, err_proxy)
-    assert_match(/\[Xlsxrb DEPRECATION\] defined_name keyword row: is deprecated; use rows: instead\./, err_proxy)
-    assert_match(/\[Xlsxrb DEPRECATION\] outline_properties keyword show_symbols: is deprecated; use show_outline_symbols: instead\./, err_proxy)
-    assert_match(/\[Xlsxrb DEPRECATION\] fit_to_page\? is deprecated; use fit_to_page instead\./, err_proxy)
-
-    # 5. DataValidationBuilder #[] and #[]=
-    dv = Xlsxrb::DataValidationBuilder.new("A1")
-    err_dv = capture_stderr do
-      dv[:type] = :list
-      assert_equal(:list, dv[:type])
-    end
-    assert_match(/\[Xlsxrb DEPRECATION\] DataValidationBuilder#\[\]= is deprecated; use dedicated property accessors instead\./, err_dv)
-    assert_match(/\[Xlsxrb DEPRECATION\] DataValidationBuilder#\[\] is deprecated; use dedicated property accessors instead\./, err_dv)
-
-    # 6. ConditionalFormatBuilder #[], #[]=, #formulas, #formulas=
-    cf = Xlsxrb::ConditionalFormatBuilder.new("A1:B2")
-    err_cf = capture_stderr do
-      cf[:type] = :cell_is
-      assert_equal(:cell_is, cf[:type])
-      cf.formulas = ["A1>0"]
-      assert_equal(["A1>0"], cf.formulas)
-    end
-    assert_match(/\[Xlsxrb DEPRECATION\] ConditionalFormatBuilder#\[\]= is deprecated; use dedicated property accessors instead\./, err_cf)
-    assert_match(/\[Xlsxrb DEPRECATION\] ConditionalFormatBuilder#\[\] is deprecated; use dedicated property accessors instead\./, err_cf)
-    assert_match(/\[Xlsxrb DEPRECATION\] ConditionalFormatBuilder#formulas= is deprecated; use #formula= instead\./, err_cf)
-    assert_match(/\[Xlsxrb DEPRECATION\] ConditionalFormatBuilder#formulas is deprecated; use #formula instead\./, err_cf)
   end
 end

@@ -99,13 +99,6 @@ module Xlsxrb
       @trim_empty_rows ? true : false
     end
 
-    # @deprecated Use {#trim_empty_rows?} instead. Will be removed in 0.2.0.
-    #: () -> bool
-    def trim_empty_rows
-      warn "[DEPRECATION] #trim_empty_rows is deprecated; use #trim_empty_rows? instead.", uplevel: 1
-      trim_empty_rows?
-    end
-
     # Returns whether skipped rows are padded during iteration.
     #
     # @return [Boolean]
@@ -115,13 +108,6 @@ module Xlsxrb
       @pad_empty_rows ? true : false
     end
 
-    # @deprecated Use {#pad_empty_rows?} instead. Will be removed in 0.2.0.
-    #: () -> bool
-    def pad_empty_rows
-      warn "[DEPRECATION] #pad_empty_rows is deprecated; use #pad_empty_rows? instead.", uplevel: 1
-      pad_empty_rows?
-    end
-
     # Returns whether missing cells within rows are padded during iteration.
     #
     # @return [Boolean]
@@ -129,13 +115,6 @@ module Xlsxrb
     #: () -> bool
     def pad_empty_cells?
       @pad_empty_cells ? true : false
-    end
-
-    # @deprecated Use {#pad_empty_cells?} instead. Will be removed in 0.2.0.
-    #: () -> bool
-    def pad_empty_cells
-      warn "[DEPRECATION] #pad_empty_cells is deprecated; use #pad_empty_cells? instead.", uplevel: 1
-      pad_empty_cells?
     end
 
     # Returns the dimension reference string (e.g. "A1:Z50000"), or nil if not present.
@@ -149,78 +128,6 @@ module Xlsxrb
       @dimension_checked = true
       @dimension = extract_dimension
     end
-
-    # Returns the 1-based index of the first row defined in the sheet dimension, or nil.
-    #
-    # @deprecated Returning an Integer row number is deprecated and will be removed in 0.2.0. Use {#row_range} or {#dimension_bounds} for row boundaries.
-    # @return [Integer, nil]
-    # @api public
-    #: () -> Integer?
-    def first_row
-      bounds = dimension_bounds
-      bounds ? bounds[:min_row] + 1 : nil
-    end
-
-    # Returns the 0-based index of the first column defined in the sheet dimension, or nil.
-    #
-    # @return [Integer, nil]
-    # @api public
-    #: () -> Integer?
-    def first_column_index
-      Xlsxrb::Deprecation.warn("StreamSheet#first_column_index is deprecated; use #column_range instead.", uplevel: 1)
-      bounds = dimension_bounds
-      bounds ? bounds[:min_column] : nil
-    end
-
-    # Returns the 1-based index of the first column defined in the sheet dimension, or nil.
-    #
-    # @deprecated Use 0-based {#first_column_index} instead. Will be removed in 0.2.0.
-    # @return [Integer, nil]
-    # @api public
-    #: () -> Integer?
-    def first_column
-      warn "[Xlsxrb DEPRECATION] StreamSheet#first_column is deprecated and will be removed in v0.2.0. Use 0-based #first_column_index instead.", uplevel: 1
-      bounds = dimension_bounds
-      bounds ? bounds[:min_column] + 1 : nil
-    end
-    # @deprecated Use {#first_column_index} instead. Will be removed in 0.2.0.
-    alias first_col first_column
-
-    # Returns the 1-based index of the last row defined in the sheet dimension, or nil.
-    #
-    # @deprecated Returning an Integer row number is deprecated and will be removed in 0.2.0. Use {#row_range} or {#dimension_bounds} for row boundaries.
-    # @return [Integer, nil]
-    # @api public
-    #: () -> Integer?
-    def last_row
-      bounds = dimension_bounds
-      bounds ? bounds[:max_row] + 1 : nil
-    end
-
-    # Returns the 0-based index of the last column defined in the sheet dimension, or nil.
-    #
-    # @return [Integer, nil]
-    # @api public
-    #: () -> Integer?
-    def last_column_index
-      Xlsxrb::Deprecation.warn("StreamSheet#last_column_index is deprecated; use #column_range instead.", uplevel: 1)
-      bounds = dimension_bounds
-      bounds ? bounds[:max_column] : nil
-    end
-
-    # Returns the 1-based index of the last column defined in the sheet dimension, or nil.
-    #
-    # @deprecated Use 0-based {#last_column_index} instead. Will be removed in 0.2.0.
-    # @return [Integer, nil]
-    # @api public
-    #: () -> Integer?
-    def last_column
-      warn "[Xlsxrb DEPRECATION] StreamSheet#last_column is deprecated and will be removed in v0.2.0. Use 0-based #last_column_index instead.", uplevel: 1
-      bounds = dimension_bounds
-      bounds ? bounds[:max_column] + 1 : nil
-    end
-    # @deprecated Use {#last_column_index} instead. Will be removed in 0.2.0.
-    alias last_col last_column
 
     # Returns the 0-based range of rows defined in the sheet dimension, or nil.
     #
@@ -412,8 +319,7 @@ module Xlsxrb
     end
 
     # Loads this sheet completely into an in-memory {Elements::Worksheet},
-    # enabling coordinate random access (`sheet["A1"]`), row lookups (`row_at`),
-    # and immutable cell updates (`update_cell`).
+    # enabling coordinate random access (`sheet["A1"]`) and row lookups (`row_at`).
     #
     # @return [Elements::Worksheet] The fully parsed in-memory worksheet.
     # @api public
@@ -470,13 +376,6 @@ module Xlsxrb
         background_image: background_image,
         header_footer_images: header_footer_images
       )
-    end
-
-    # @deprecated Use {Xlsxrb.load} instead. Will be removed in 0.2.0.
-    #: () -> Elements::Worksheet
-    def to_worksheet
-      warn "[DEPRECATION] #to_worksheet is deprecated; use Xlsxrb.load(source) instead.", uplevel: 1
-      load
     end
 
     # Returns hyperlinks configured for this worksheet as a Hash of cell references to {Elements::Hyperlink} objects.
@@ -575,8 +474,9 @@ module Xlsxrb
               author: tc[:author],
               text: tc[:text],
               parent_id: tc[:parent_id],
-              done: tc[:done] || false,
-              created_at: tc[:created_at]
+              resolved: tc[:resolved] || tc[:done] || false,
+              created_at: tc[:created_at] || tc[:dt],
+              author_id: tc[:author_id] || tc[:person_id]
             )
           end
         end.freeze
@@ -653,67 +553,6 @@ module Xlsxrb
               ref_or_row.to_s.upcase
             end
       images.select { |img| img.ref == ref }
-    end
-
-    # Loads and returns images for this worksheet, optionally yielding self for block syntax.
-    #
-    # @deprecated Access {#images} directly. Lazy-loading is automatic. Will be removed in 0.2.0.
-    # @yield [sheet]
-    # @yieldparam sheet [StreamSheet]
-    # @return [StreamSheet, void]
-    # @api public
-    #: () { (StreamSheet) -> void } -> void
-    #: () -> StreamSheet
-    def with_images
-      warn "[DEPRECATION] `with_images` is deprecated; access `images` directly.", uplevel: 1
-      images
-      if block_given?
-        yield self
-        nil
-      else
-        self
-      end
-    end
-
-    # Access a cell by reference or 0-based coordinates.
-    #
-    # @deprecated Use `ws = Xlsxrb.load(source)` to materialize an {Elements::Worksheet} and use {Elements::CoordinateAccess#[]} (e.g. ws["A1"] or ws[0, 0]). Will be removed in 0.2.0.
-    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
-    # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter.
-    # @return [Elements::Cell, nil]
-    # @api public
-    #: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Cell?
-    def cell(ref_or_row, col = nil)
-      warn "[DEPRECATION] StreamSheet#cell is deprecated; use Xlsxrb.load(source) for in-memory random access (e.g. ws[\"A1\"]).", uplevel: 1
-      target_row, target_col = if col
-                                 c_idx = Xlsxrb.column_index(col)
-                                 [ref_or_row.to_i, c_idx]
-                               else
-                                 parsed = Elements::Cell._parse_ref(ref_or_row.to_s)
-                                 return nil unless parsed
-
-                                 parsed
-                               end
-
-      each_row do |row|
-        next if row.index < target_row
-        return row.cell_at(target_col) if row.index == target_row
-        break if row.index > target_row
-      end
-      nil
-    end
-
-    # Returns the formatted string representation of a cell's value.
-    #
-    # @deprecated Use `ws = Xlsxrb.load(source)` to materialize an {Elements::Worksheet} and access `ws["A1"].formatted_value`. Will be removed in 0.2.0.
-    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
-    # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter.
-    # @return [String, nil]
-    # @api public
-    #: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> String?
-    def formatted_value(ref_or_row, col = nil)
-      warn "[DEPRECATION] StreamSheet#formatted_value is deprecated; use Xlsxrb.load(source) for in-memory random access (e.g. ws[\"A1\"].formatted_value).", uplevel: 1
-      cell(ref_or_row, col)&.formatted_value
     end
 
     # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.
@@ -806,8 +645,6 @@ module Xlsxrb
                                  [].freeze
                                end
     end
-    # @deprecated Use {#conditional_formats} instead. Matches the ECMA-376 XML element name (<conditionalFormatting>), but {#conditional_formats} is canonical in xlsxrb. Will be removed in version 0.2.0.
-    alias conditional_formatting conditional_formats
 
     # Returns tables defined in this worksheet.
     #
@@ -892,16 +729,6 @@ module Xlsxrb
       v.is_a?(Elements::SheetView) ? v : Elements::SheetView.new(**v)
     end
 
-    # Returns sheet views for this worksheet.
-    #
-    # @return [Array<Elements::SheetView>]
-    # @api public
-    #: () -> Array[Elements::SheetView]
-    def sheet_views
-      Xlsxrb::Deprecation.warn("StreamSheet#sheet_views is deprecated; use #sheet_view instead.", uplevel: 1)
-      [sheet_view]
-    end
-
     # Returns sort state configuration for this worksheet, or nil if none.
     #
     # @return [Elements::SortState, nil]
@@ -979,14 +806,7 @@ module Xlsxrb
     # @api public
     #: () -> bool
     def fit_to_page?
-      sheet_properties.fit_to_page == true
-    end
-
-    # @deprecated Use {#fit_to_page?} instead. Will be removed in 0.2.0.
-    #: () -> bool
-    def fit_to_page
-      warn "[DEPRECATION] #fit_to_page is deprecated; use #fit_to_page? instead.", uplevel: 1
-      fit_to_page?
+      sheet_properties.fit_to_page?
     end
 
     # Returns whether full calculation on load is enabled on this worksheet.
@@ -995,14 +815,7 @@ module Xlsxrb
     # @api public
     #: () -> bool
     def full_calc_on_load?
-      sheet_calc_properties&.full_calc_on_load == true || sheet_properties.full_calc_on_load == true
-    end
-
-    # @deprecated Use {#full_calc_on_load?} instead. Will be removed in 0.2.0.
-    #: () -> bool
-    def full_calc_on_load
-      warn "[DEPRECATION] #full_calc_on_load is deprecated; use #full_calc_on_load? instead.", uplevel: 1
-      full_calc_on_load?
+      sheet_calc_properties&.to_h&.[](:full_calc_on_load) == true || sheet_properties.to_h[:full_calc_on_load] == true
     end
 
     # Returns sheet calculation properties (<sheetCalcPr>), or nil if not present.
@@ -1011,21 +824,7 @@ module Xlsxrb
     # @api public
     #: () -> Elements::SheetCalcProperties?
     def sheet_calc_properties
-      sheet_properties.full_calc_on_load ? Elements::SheetCalcProperties.new(full_calc_on_load: true) : nil
-    end
-
-    # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-    #: () -> Elements::SheetCalcProperties?
-    def sheet_calc_pr
-      warn "[DEPRECATION] #sheet_calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
-      sheet_calc_properties
-    end
-
-    # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-    #: () -> Elements::SheetCalcProperties?
-    def calc_pr
-      warn "[DEPRECATION] #calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
-      sheet_calc_properties
+      sheet_properties.full_calc_on_load? ? Elements::SheetCalcProperties.new(full_calc_on_load: true) : nil
     end
 
     # Returns the worksheet tab color specification, or nil if not set.
@@ -1061,8 +860,6 @@ module Xlsxrb
       res[:apply_styles] = props[:apply_styles] unless props[:apply_styles].nil?
       res
     end
-    # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
-    alias outline_pr outline_properties
 
     # Returns sheet format properties (defaultRowHeight, defaultColWidth, baseColWidth) for this worksheet.
     #
@@ -1149,16 +946,9 @@ module Xlsxrb
     # @api public
     #: () -> Array[Elements::PageBreak]
     def column_breaks
-      @column_breaks ||= (print_page_data[:column_breaks] || print_page_data[:col_breaks] || []).map do |cb|
+      @column_breaks ||= (print_page_data[:column_breaks] || []).map do |cb|
         cb.is_a?(Elements::PageBreak) ? cb : Elements::PageBreak.new(**cb)
       end.freeze
-    end
-
-    # @deprecated Use {#column_breaks} instead.
-    #: () -> Array[Elements::PageBreak]
-    def col_breaks
-      warn "[DEPRECATION] `col_breaks` is deprecated; use `column_breaks` instead.", uplevel: 1
-      column_breaks
     end
 
     # Returns protected ranges defined for this worksheet.
@@ -1225,8 +1015,6 @@ module Xlsxrb
                                  end
                                end
     end
-    # @deprecated Use {#phonetic_properties} instead. Will be removed in 0.2.0.
-    alias phonetic_pr phonetic_properties
 
     # Returns the background image configured for this worksheet, or nil.
     #
@@ -1241,10 +1029,6 @@ module Xlsxrb
         end
       end
     end
-    # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
-    alias background_picture background_image
-    # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
-    alias picture background_image
 
     # Closes any underlying reader resources.
     #: () -> void
@@ -1384,26 +1168,6 @@ module Xlsxrb
       {}
     end
 
-    # Returns legacy drawing relationship info, or nil.
-    #
-    # @return [Hash[Symbol, untyped], nil]
-    # @api public
-    #: () -> Hash[Symbol, untyped]?
-    def legacy_drawing
-      Xlsxrb::Deprecation.warn("StreamSheet#legacy_drawing is deprecated.", uplevel: 1)
-      nil
-    end
-
-    # Returns extension list elements, or nil.
-    #
-    # @return [Array[untyped], nil]
-    # @api public
-    #: () -> Array[untyped]?
-    def ext_lst
-      Xlsxrb::Deprecation.warn("StreamSheet#ext_lst is deprecated.", uplevel: 1)
-      nil
-    end
-
     # Returns header/footer images configured for this worksheet.
     #
     # @return [Array<Elements::HeaderFooterImage>]
@@ -1455,8 +1219,7 @@ module Xlsxrb
                                header_footer: listener.header_footer,
                                print_options: listener.print_options,
                                row_breaks: listener.row_breaks,
-                               column_breaks: listener.column_breaks,
-                               col_breaks: listener.col_breaks
+                               column_breaks: listener.column_breaks
                              }
                            else
                              {
@@ -1465,8 +1228,7 @@ module Xlsxrb
                                header_footer: {},
                                print_options: {},
                                row_breaks: [],
-                               column_breaks: [],
-                               col_breaks: []
+                               column_breaks: []
                              }
                            end
     end

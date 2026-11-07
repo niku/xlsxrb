@@ -43,8 +43,8 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     reader = Xlsxrb::Ooxml::Reader.new(xlsx_path)
     assert_equal({ "A1" => "hello", "B1" => "world" }, reader.cells)
 
-    wb = Xlsxrb.read(xlsx_path)
-    s = wb.sheets.first.load
+    wb = Xlsxrb.load(xlsx_path)
+    s = wb.sheets.first
     assert_equal("hello", s["A1"]&.value)
     assert_equal("world", s["B1"]&.value)
 
@@ -2999,8 +2999,8 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     assert_equal(false, rf[:rot_with_shape])
 
     assert_equal({ "A1" => "test" }, reader.cells)
-    wb = Xlsxrb.read(xlsx_path)
-    assert_equal("test", wb.sheet(0).load["A1"]&.value)
+    wb = Xlsxrb.load(xlsx_path)
+    assert_equal("test", wb.sheet(0)["A1"]&.value)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end

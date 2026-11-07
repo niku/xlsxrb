@@ -84,8 +84,8 @@ class ConcurrentTest < Test::Unit::TestCase
         end
 
         # 2. In-Memory read
-        mem_wb = Xlsxrb.read(xlsx_bin)
-        mem_sheet = mem_wb.sheets[0].load
+        mem_wb = Xlsxrb.load(xlsx_bin)
+        mem_sheet = mem_wb.sheets[0]
         mem_worker_id = mem_sheet.rows[0].cells[1].value
 
         # 3. Streaming read
@@ -98,15 +98,22 @@ class ConcurrentTest < Test::Unit::TestCase
           end
         end
 
-        # 4. Modify in-place via StringIO
-        mod_io = StringIO.new(xlsx_bin)
-        Xlsxrb.modify(mod_io) do |wb|
-          updated_info = wb.sheets[1].update_cell("B1", value: "Success-#{i}")
-          wb.with(sheets: [wb.sheets[0], updated_info])
+        # 4. Streaming transform
+        mod_io = StringIO.new
+        Xlsxrb.write(mod_io) do |w|
+          Xlsxrb.read(xlsx_bin) do |sheet|
+            w.sheet(sheet.name) do |ws|
+              sheet.each_row do |row|
+                vals = row.values
+                vals[1] = "Success-#{i}" if sheet.name == "Info" && vals[0] == "Metadata"
+                ws.row(vals)
+              end
+            end
+          end
         end
 
-        mod_wb = Xlsxrb.read(mod_io)
-        mod_val = mod_wb.sheets[1].load.rows[0].cells[1].value
+        mod_wb = Xlsxrb.load(mod_io.string)
+        mod_val = mod_wb.sheets[1].rows[0].cells[1].value
 
         {
           success: true,

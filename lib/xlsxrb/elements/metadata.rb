@@ -4,22 +4,10 @@
 
 module Xlsxrb
   module Elements
-    # Shared mixin for metadata Data value objects providing Hash compatibility.
+    # Shared mixin for metadata Data value objects.
     #
     # @api public
     module MetadataRecord
-      # Accesses an attribute by Symbol or String key, supporting key aliases.
-      #
-      # @deprecated Hash-like access via {#[]} is deprecated and will be removed in 0.2.0; use method calls instead.
-      # @param key [Symbol, String]
-      # @return [Object, nil]
-      # @api public
-      #: (Symbol | String key) -> untyped
-      def [](key)
-        warn "[DEPRECATION] Hash access on #{self.class} (`#[]`) is deprecated and will be removed in 0.2.0; use method calls instead.", uplevel: 1
-        _lookup_key(key)
-      end
-
       # Returns whether all attributes are nil or empty.
       #
       # @return [Boolean]
@@ -51,141 +39,7 @@ module Xlsxrb
         res
       end
 
-      # Checks whether a key is present with a non-nil value.
-      #
-      # @deprecated {#key?} is deprecated and will be removed in 0.2.0; check attribute presence directly.
-      # @param key [Symbol, String]
-      # @return [Boolean]
-      # @api public
-      #: (Symbol | String key) -> bool
-      def key?(key)
-        warn "[DEPRECATION] `#{self.class}#key?` is deprecated and will be removed in 0.2.0; check attribute presence directly.", uplevel: 1
-        _has_key?(key)
-      end
-      alias has_key? key?
-
-      # Digs into nested metadata by key path.
-      #
-      # @deprecated {#dig} is deprecated and will be removed in 0.2.0; use method chaining instead.
-      # @param head [Symbol, String]
-      # @param rest [Array<Symbol, String>]
-      # @return [Object, nil]
-      # @api public
-      #: (Symbol | String head, *(Symbol | String) rest) -> untyped
-      def dig(head, *rest)
-        warn "[DEPRECATION] `#{self.class}#dig` is deprecated and will be removed in 0.2.0; use method chaining instead.", uplevel: 1
-        val = _lookup_key(head)
-        return nil if val.nil?
-        return val if rest.empty?
-
-        val.respond_to?(:dig) ? val.dig(*rest) : nil
-      end
-
-      # Fetches a key with an optional default.
-      #
-      # @deprecated {#fetch} is deprecated and will be removed in 0.2.0; use method calls instead.
-      # @param key [Symbol, String]
-      # @param args [Array<Object>]
-      # @return [Object, nil]
-      # @api public
-      #: (Symbol | String key, *untyped args) ?{ (Symbol | String) -> untyped } -> untyped
-      def fetch(key, *args)
-        warn "[DEPRECATION] `#{self.class}#fetch` is deprecated and will be removed in 0.2.0; use method calls instead.", uplevel: 1
-        val = _lookup_key(key)
-        if !val.nil? || (_has_key?(key) && members.include?(key.to_sym))
-          val
-        elsif block_given?
-          yield(key)
-        elsif !args.empty?
-          args.first
-        else
-          raise KeyError, "key not found: #{key.inspect}"
-        end
-      end
-
-      # Merges non-nil attributes with another Hash or MetadataRecord.
-      #
-      # @deprecated {#merge} is deprecated and will be removed in 0.2.0; use {#with} or {#to_h} instead.
-      # @param other [Hash, MetadataRecord]
-      # @return [Hash{Symbol => Object}]
-      # @api public
-      #: (untyped other) -> Hash[Symbol, untyped]
-      def merge(other)
-        warn "[DEPRECATION] `#{self.class}#merge` is deprecated and will be removed in 0.2.0; use `#with` or `#to_h.merge` instead.", uplevel: 1
-        h = to_h
-        other_h = other.respond_to?(:to_h) ? other.to_h : other
-        h.merge(other_h)
-      end
-
       alias to_hash to_h
-
-      # Checks equality against another instance, a Hash, or a scalar.
-      #
-      # @param other [Object]
-      # @return [Boolean]
-      # @api public
-      #: (untyped other) -> bool
-      def ==(other)
-        if other.is_a?(Hash)
-          warn "[DEPRECATION] Comparing `#{self.class}` with a Hash is deprecated and will be removed in 0.2.0; compare attributes directly or use `#to_h`.", uplevel: 1
-          to_h == other.transform_keys(&:to_sym).compact
-        else
-          super
-        end
-      end
-
-      private
-
-      def _lookup_key(key)
-        k = _normalize_key(key)
-        return public_send(k) if members.include?(k)
-
-        if members.include?(:options)
-          opts = options
-          return opts[k] || opts[key] if opts.is_a?(Hash)
-        end
-        nil
-      end
-
-      def _has_key?(key)
-        k = _normalize_key(key)
-        return true if members.include?(k) && !public_send(k).nil?
-
-        if members.include?(:options)
-          opts = options
-          return true if opts.is_a?(Hash) && (opts.key?(k) || opts.key?(key))
-        end
-        false
-      end
-
-      def _normalize_key(key)
-        k = key.is_a?(Symbol) ? key : key.to_s.to_sym
-        k = :size if k == :sz
-        k = :number_format if k == :num_fmt
-        k = :page_setup_properties if k == :page_setup_pr
-        k = :pattern_type if k == :pattern
-        k = :column if k == :col
-        k = :columns if k == :cols
-        k = :ref if k == :cell
-        k = :sheet_calc_properties if %i[sheet_calc_pr calc_pr].include?(k)
-        k = :sqref if %i[location_ref location].include?(k)
-        k = :formula if %i[formulas data_ref f].include?(k)
-        k = :dxf_id if k == :format_id
-        k = :default_column_width if k == :default_col_width
-        k = :outline_level_column if k == :outline_level_col
-        k = :base_column_width if k == :base_col_width
-        k = :from_column if k == :from_col
-        k = :to_column if k == :to_col
-        k = :column_id if k == :col_id
-        k = :active_sheet if k == :active_tab
-        k = :first_sheet if k == :first_tab
-        k = :background_image if %i[background_picture picture].include?(k)
-        k = :local_sheet_name if k == :sheet
-        k = :local_sheet_id if k == :sheet_id
-        k = :value if k == :range
-        k = :app_name if k == :application
-        k
-      end
     end
 
     # Core document properties (docProps/core.xml).
@@ -215,9 +69,10 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
+      private :scale_crop, :links_up_to_date, :shared_doc, :hyperlinks_changed
+
       #: (?app_name: String?, ?app_version: String?, ?doc_security: Integer?, ?scale_crop: bool?, ?heading_pairs: Array[untyped]?, ?titles_of_parts: Array[untyped]?, ?manager: String?, ?company: String?, ?links_up_to_date: bool?, ?shared_doc: bool?, ?hyperlink_base: String?, ?hyperlinks_changed: bool?, **untyped) -> void
-      def initialize(app_name: nil, app_version: nil, doc_security: nil, scale_crop: nil, heading_pairs: nil, titles_of_parts: nil, manager: nil, company: nil, links_up_to_date: nil, shared_doc: nil, hyperlink_base: nil, hyperlinks_changed: nil, **extra)
-        app_name ||= extra[:application]
+      def initialize(app_name: nil, app_version: nil, doc_security: nil, scale_crop: nil, heading_pairs: nil, titles_of_parts: nil, manager: nil, company: nil, links_up_to_date: nil, shared_doc: nil, hyperlink_base: nil, hyperlinks_changed: nil, **_extra)
         super(
           app_name: app_name, app_version: app_version, doc_security: doc_security, scale_crop: scale_crop,
           heading_pairs: heading_pairs, titles_of_parts: titles_of_parts, manager: manager, company: company,
@@ -262,44 +117,21 @@ module Xlsxrb
     # Workbook-level properties (<workbookPr> and <workbookView>).
     # @api public
     WorkbookProperties = Data.define(
-      :date1904, :code_name, :active_sheet, :first_sheet, :first_tab,
+      :date1904, :code_name, :active_sheet, :first_sheet,
       :show_sheet_tabs, :tab_ratio, :full_calc_on_load, :filter_privacy,
       :default_theme_version, :refresh_all
     ) do
       include MetadataRecord
 
-      #: (?date1904: bool?, ?code_name: String?, ?active_sheet: Integer?, ?active_tab: Integer?, ?first_sheet: Integer?, ?first_tab: Integer?, ?show_sheet_tabs: bool?, ?tab_ratio: Integer?, ?full_calc_on_load: bool?, ?filter_privacy: bool?, ?default_theme_version: String?, ?refresh_all: bool?, **untyped) -> void
-      def initialize(date1904: nil, code_name: nil, active_sheet: nil, active_tab: nil, first_sheet: nil, first_tab: nil, show_sheet_tabs: nil, tab_ratio: nil, full_calc_on_load: nil, filter_privacy: nil, default_theme_version: nil, refresh_all: nil, **extra)
-        if (!active_tab.nil? || extra.key?(:active_tab)) && active_sheet.nil?
-          warn "[Xlsxrb DEPRECATION] WorkbookProperties.new(active_tab:) is deprecated and will be removed in v0.2.0. Use active_sheet: instead.", uplevel: 1
-          active_sheet = active_tab || extra[:active_tab]
-        end
-        ft = first_tab || first_sheet
+      private :date1904, :show_sheet_tabs, :full_calc_on_load, :filter_privacy, :refresh_all
+
+      #: (?date1904: bool?, ?code_name: String?, ?active_sheet: Integer?, ?first_sheet: Integer?, ?show_sheet_tabs: bool?, ?tab_ratio: Integer?, ?full_calc_on_load: bool?, ?filter_privacy: bool?, ?default_theme_version: String?, ?refresh_all: bool?, **untyped) -> void
+      def initialize(date1904: nil, code_name: nil, active_sheet: nil, first_sheet: nil, show_sheet_tabs: nil, tab_ratio: nil, full_calc_on_load: nil, filter_privacy: nil, default_theme_version: nil, refresh_all: nil, **_extra)
         super(
-          date1904: date1904, code_name: code_name, active_sheet: active_sheet, first_sheet: ft, first_tab: ft,
+          date1904: date1904, code_name: code_name, active_sheet: active_sheet, first_sheet: first_sheet,
           show_sheet_tabs: show_sheet_tabs, tab_ratio: tab_ratio, full_calc_on_load: full_calc_on_load,
           filter_privacy: filter_privacy, default_theme_version: default_theme_version, refresh_all: refresh_all
         )
-      end
-
-      undef_method :first_tab
-
-      # @deprecated Use {#first_sheet} instead.
-      # @return [Integer, nil]
-      # @api public
-      #: () -> Integer?
-      def first_tab
-        warn "[Xlsxrb DEPRECATION] WorkbookProperties#first_tab is deprecated; use #first_sheet instead.", uplevel: 1
-        first_sheet
-      end
-
-      # @deprecated Use {#active_sheet} instead.
-      # @return [Integer, nil]
-      # @api public
-      #: () -> Integer?
-      def active_tab
-        warn "[Xlsxrb DEPRECATION] WorkbookProperties#active_tab is deprecated and will be removed in v0.2.0. Use #active_sheet instead.", uplevel: 1
-        active_sheet
       end
 
       # Returns whether the 1904 date system is used.
@@ -310,7 +142,15 @@ module Xlsxrb
         date1904 ? true : false
       end
 
-      # Returns whether sheet tabs are shown in the workbook window.
+      # Returns whether filter privacy is enabled.
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def filter_privacy?
+        filter_privacy ? true : false
+      end
+
+      # Returns whether sheet tabs are visible.
       # @return [Boolean]
       # @api public
       #: () -> bool
@@ -318,7 +158,7 @@ module Xlsxrb
         show_sheet_tabs != false
       end
 
-      # Returns whether full calculation is performed when loading the workbook.
+      # Returns whether full calculation is performed on load.
       # @return [Boolean]
       # @api public
       #: () -> bool
@@ -326,20 +166,12 @@ module Xlsxrb
         full_calc_on_load ? true : false
       end
 
-      # Returns whether external data connections are refreshed when opening.
+      # Returns whether all external data ranges and PivotTables are refreshed on open.
       # @return [Boolean]
       # @api public
       #: () -> bool
       def refresh_all?
         refresh_all ? true : false
-      end
-
-      # Returns whether filter privacy is enabled.
-      # @return [Boolean]
-      # @api public
-      #: () -> bool
-      def filter_privacy?
-        filter_privacy ? true : false
       end
     end
 
@@ -350,6 +182,8 @@ module Xlsxrb
       :lock_revision, :algorithm_name, :hash_value, :salt_value, :spin_count
     ) do
       include MetadataRecord
+
+      private :lock_structure, :lock_windows, :lock_revision
 
       #: (?workbook_password: String?, ?lock_structure: bool?, ?lock_windows: bool?, ?revisions_password: String?, ?lock_revision: bool?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?, **untyped) -> void
       def initialize(workbook_password: nil, lock_structure: nil, lock_windows: nil, revisions_password: nil, lock_revision: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil, **_extra)
@@ -394,6 +228,8 @@ module Xlsxrb
       :vertical_centered, :id
     ) do
       include MetadataRecord
+
+      private :use_first_page_number, :black_and_white, :draft, :use_printer_defaults, :horizontal_centered, :vertical_centered
 
       #: (?paper_size: (Integer | String)?, ?orientation: (Symbol | String)?, ?scale: Integer?, ?fit_to_width: Integer?, ?fit_to_height: Integer?, ?first_page_number: Integer?, ?use_first_page_number: bool?, ?black_and_white: bool?, ?draft: bool?, ?cell_comments: String?, ?use_printer_defaults: bool?, ?copies: Integer?, ?horizontal_centered: bool?, ?vertical_centered: bool?, ?id: String?, **untyped) -> void
       def initialize(paper_size: nil, orientation: nil, scale: nil, fit_to_width: nil, fit_to_height: nil, first_page_number: nil, use_first_page_number: nil, black_and_white: nil, draft: nil, cell_comments: nil, use_printer_defaults: nil, copies: nil, horizontal_centered: nil, vertical_centered: nil, id: nil, **_extra)
@@ -475,6 +311,8 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
+      private :different_odd_even, :different_first, :scale_with_doc, :align_with_margins
+
       #: (?odd_header: String?, ?odd_footer: String?, ?even_header: String?, ?even_footer: String?, ?first_header: String?, ?first_footer: String?, ?different_odd_even: bool?, ?different_first: bool?, ?scale_with_doc: bool?, ?align_with_margins: bool?, **untyped) -> void
       def initialize(odd_header: nil, odd_footer: nil, even_header: nil, even_footer: nil, first_header: nil, first_footer: nil, different_odd_even: nil, different_first: nil, scale_with_doc: nil, align_with_margins: nil, **_extra)
         super(
@@ -522,6 +360,8 @@ module Xlsxrb
     # @api public
     PrintOptions = Data.define(:grid_lines, :grid_lines_set, :headings, :horizontal_centered, :vertical_centered) do
       include MetadataRecord
+
+      private :grid_lines, :grid_lines_set, :headings, :horizontal_centered, :vertical_centered
 
       #: (?grid_lines: bool?, ?grid_lines_set: bool?, ?headings: bool?, ?horizontal_centered: bool?, ?vertical_centered: bool?, **untyped) -> void
       def initialize(grid_lines: nil, grid_lines_set: nil, headings: nil, horizontal_centered: nil, vertical_centered: nil, **_extra)
@@ -574,47 +414,23 @@ module Xlsxrb
 
     # Worksheet repeating print titles.
     # @api public
-    PrintTitles = Data.define(:rows, :columns, :cols) do
+    PrintTitles = Data.define(:rows, :columns) do
       include MetadataRecord
 
-      #: (?rows: String?, ?columns: String?, ?cols: String?, **untyped) -> void
-      def initialize(rows: nil, columns: nil, cols: nil, **_extra)
-        c = columns || cols
-        super(rows: rows, columns: c, cols: c)
-      end
-
-      undef_method :cols
-
-      # @deprecated Use {#columns} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def cols
-        warn "[Xlsxrb DEPRECATION] PrintTitles#cols is deprecated; use #columns instead.", uplevel: 1
-        columns
+      #: (?rows: String?, ?columns: String?, **untyped) -> void
+      def initialize(rows: nil, columns: nil, **_extra)
+        super(rows: rows, columns: columns)
       end
     end
 
     # Worksheet freeze pane settings (<pane>).
     # @api public
-    FreezePane = Data.define(:row, :column, :col, :top_row, :left_column, :active_pane, :state) do
+    FreezePane = Data.define(:row, :column, :top_row, :left_column, :active_pane, :state) do
       include MetadataRecord
 
-      #: (?row: Integer?, ?column: (Integer | String | Symbol)?, ?col: (Integer | String | Symbol)?, ?top_row: Integer?, ?left_column: (Integer | String | Symbol)?, ?active_pane: String?, ?state: Symbol?, **untyped) -> void
-      def initialize(row: nil, column: nil, col: nil, top_row: nil, left_column: nil, active_pane: nil, state: :frozen, **_extra)
-        c = column || col
-        super(row: row, column: c, col: c, top_row: top_row, left_column: left_column, active_pane: active_pane, state: state || :frozen)
-      end
-
-      undef_method :col
-
-      # @deprecated Use {#column} instead.
-      # @return [Integer, String, Symbol, nil]
-      # @api public
-      #: () -> (Integer | String | Symbol)?
-      def col
-        warn "[Xlsxrb DEPRECATION] FreezePane#col is deprecated; use #column instead.", uplevel: 1
-        column
+      #: (?row: Integer?, ?column: (Integer | String | Symbol)?, ?top_row: Integer?, ?left_column: (Integer | String | Symbol)?, ?active_pane: String?, ?state: Symbol?, **untyped) -> void
+      def initialize(row: nil, column: nil, top_row: nil, left_column: nil, active_pane: nil, state: :frozen, **_extra)
+        super(row: row, column: column, top_row: top_row, left_column: left_column, active_pane: active_pane, state: state || :frozen)
       end
     end
 
@@ -649,6 +465,8 @@ module Xlsxrb
       :pivot_tables, :algorithm_name, :hash_value, :salt_value, :spin_count
     ) do
       include MetadataRecord
+
+      private :sheet, :objects, :scenarios, :format_cells, :format_columns, :format_rows, :insert_columns, :insert_rows, :insert_hyperlinks, :delete_columns, :delete_rows, :select_locked_cells, :select_unlocked_cells, :sort, :auto_filter, :pivot_tables
 
       #: (?password: String?, ?sheet: bool?, ?objects: bool?, ?scenarios: bool?, ?format_cells: bool?, ?format_columns: bool?, ?format_rows: bool?, ?insert_columns: bool?, ?insert_rows: bool?, ?insert_hyperlinks: bool?, ?delete_columns: bool?, ?delete_rows: bool?, ?select_locked_cells: bool?, ?select_unlocked_cells: bool?, ?sort: bool?, ?auto_filter: bool?, ?pivot_tables: bool?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?, **untyped) -> void
       def initialize(password: nil, sheet: nil, objects: nil, scenarios: nil, format_cells: nil, format_columns: nil, format_rows: nil, insert_columns: nil, insert_rows: nil, insert_hyperlinks: nil, delete_columns: nil, delete_rows: nil, select_locked_cells: nil, select_unlocked_cells: nil, sort: nil, auto_filter: nil, pivot_tables: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil, **_extra)
@@ -795,7 +613,7 @@ module Xlsxrb
     # Worksheet properties (<sheetPr>).
     # @api public
     SheetProperties = Data.define(
-      :tab_color, :filter_mode, :enable_format_conditions_calculation, :outline_pr, :page_setup_properties,
+      :tab_color, :filter_mode, :enable_format_conditions_calculation, :page_setup_properties,
       :code_name, :fit_to_page, :full_calc_on_load, :tab_color_theme, :tab_color_tint, :tab_color_indexed,
       :tab_color_auto, :outline_properties, :auto_page_breaks, :sync_horizontal, :sync_vertical, :sync_ref,
       :transition_evaluation, :transition_entry, :published,
@@ -803,46 +621,37 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
-      #: (?tab_color: String?, ?filter_mode: bool?, ?enable_format_conditions_calculation: bool?, ?outline_pr: Hash[Symbol, untyped]?, ?page_setup_properties: Hash[Symbol, untyped]?, ?code_name: String?, ?fit_to_page: bool?, ?full_calc_on_load: bool?, ?tab_color_theme: Integer?, ?tab_color_tint: Float?, ?tab_color_indexed: Integer?, ?tab_color_auto: bool?, ?outline_properties: Hash[Symbol, untyped]?, ?auto_page_breaks: bool?, ?sync_horizontal: bool?, ?sync_vertical: bool?, ?sync_ref: String?, ?transition_evaluation: bool?, ?transition_entry: bool?, ?published: bool?, ?apply_styles: bool?, ?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, **untyped) -> void
-      def initialize(tab_color: nil, filter_mode: nil, enable_format_conditions_calculation: nil, outline_pr: nil, page_setup_properties: nil, page_setup_pr: nil, code_name: nil, fit_to_page: nil, full_calc_on_load: nil, tab_color_theme: nil, tab_color_tint: nil, tab_color_indexed: nil, tab_color_auto: nil, outline_properties: nil, auto_page_breaks: nil, sync_horizontal: nil, sync_vertical: nil, sync_ref: nil, transition_evaluation: nil, transition_entry: nil, published: nil, apply_styles: nil, summary_below: nil, summary_right: nil, show_outline_symbols: nil, **extra)
+      private :filter_mode, :enable_format_conditions_calculation, :fit_to_page, :full_calc_on_load, :tab_color_auto, :auto_page_breaks, :sync_horizontal, :sync_vertical, :transition_evaluation, :transition_entry, :published, :apply_styles, :summary_below, :summary_right, :show_outline_symbols
+
+      #: (?tab_color: String?, ?filter_mode: bool?, ?enable_format_conditions_calculation: bool?, ?page_setup_properties: Hash[Symbol, untyped]?, ?code_name: String?, ?fit_to_page: bool?, ?full_calc_on_load: bool?, ?tab_color_theme: Integer?, ?tab_color_tint: Float?, ?tab_color_indexed: Integer?, ?tab_color_auto: bool?, ?outline_properties: Hash[Symbol, untyped]?, ?auto_page_breaks: bool?, ?sync_horizontal: bool?, ?sync_vertical: bool?, ?sync_ref: String?, ?transition_evaluation: bool?, ?transition_entry: bool?, ?published: bool?, ?apply_styles: bool?, ?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?) -> void
+      def initialize(tab_color: nil, filter_mode: nil, enable_format_conditions_calculation: nil, page_setup_properties: nil, code_name: nil, fit_to_page: nil, full_calc_on_load: nil, tab_color_theme: nil, tab_color_tint: nil, tab_color_indexed: nil, tab_color_auto: nil, outline_properties: nil, auto_page_breaks: nil, sync_horizontal: nil, sync_vertical: nil, sync_ref: nil, transition_evaluation: nil, transition_entry: nil, published: nil, apply_styles: nil, summary_below: nil, summary_right: nil, show_outline_symbols: nil)
         psp = page_setup_properties
-        if (page_setup_pr || extra.key?(:page_setup_pr) || extra.key?("page_setup_pr")) && psp.nil?
-          Xlsxrb::Deprecation.warn("SheetProperties keyword :page_setup_pr is deprecated; use :page_setup_properties instead.", uplevel: 1)
-          psp = page_setup_pr || extra[:page_setup_pr] || extra["page_setup_pr"]
-        end
-        out_pr = outline_properties || outline_pr || {}
-        app_st = apply_styles.nil? ? (out_pr[:apply_styles] || extra[:apply_styles]) : apply_styles
-        sum_b = summary_below.nil? ? (out_pr[:summary_below] || extra[:summary_below]) : summary_below
-        sum_r = summary_right.nil? ? (out_pr[:summary_right] || extra[:summary_right]) : summary_right
-        show_sym = show_outline_symbols.nil? ? (out_pr[:show_outline_symbols] || out_pr[:show_symbols] || extra[:show_outline_symbols] || extra[:show_symbols]) : show_outline_symbols
+        ftp = if fit_to_page.nil?
+                psp.is_a?(Hash) ? psp[:fit_to_page] : nil
+              else
+                fit_to_page
+              end
+        apb = if auto_page_breaks.nil?
+                psp.is_a?(Hash) ? psp[:auto_page_breaks] : nil
+              else
+                auto_page_breaks
+              end
+        out_pr = outline_properties || {}
+        app_st = apply_styles.nil? ? out_pr[:apply_styles] : apply_styles
+        sum_b = summary_below.nil? ? out_pr[:summary_below] : summary_below
+        sum_r = summary_right.nil? ? out_pr[:summary_right] : summary_right
+        show_sym = show_outline_symbols.nil? ? out_pr[:show_outline_symbols] : show_outline_symbols
         super(
           tab_color: tab_color, filter_mode: filter_mode,
           enable_format_conditions_calculation: enable_format_conditions_calculation,
-          outline_pr: outline_pr, page_setup_properties: psp,
-          code_name: code_name, fit_to_page: fit_to_page, full_calc_on_load: full_calc_on_load,
+          page_setup_properties: psp,
+          code_name: code_name, fit_to_page: ftp, full_calc_on_load: full_calc_on_load,
           tab_color_theme: tab_color_theme, tab_color_tint: tab_color_tint, tab_color_indexed: tab_color_indexed,
-          tab_color_auto: tab_color_auto, outline_properties: outline_properties, auto_page_breaks: auto_page_breaks,
+          tab_color_auto: tab_color_auto, outline_properties: outline_properties, auto_page_breaks: apb,
           sync_horizontal: sync_horizontal, sync_vertical: sync_vertical, sync_ref: sync_ref,
           transition_evaluation: transition_evaluation, transition_entry: transition_entry, published: published,
           apply_styles: app_st, summary_below: sum_b, summary_right: sum_r, show_outline_symbols: show_sym
         )
-      end
-
-      # @deprecated Use {#page_setup_properties} instead. Will be removed in 0.2.0.
-      def page_setup_pr
-        Xlsxrb::Deprecation.warn("SheetProperties#page_setup_pr is deprecated; use SheetProperties#page_setup_properties instead.", uplevel: 1)
-        page_setup_properties
-      end
-
-      undef_method :outline_pr
-
-      # @deprecated Use {#outline_properties} instead.
-      # @return [Hash{Symbol => untyped}, nil]
-      # @api public
-      #: () -> Hash[Symbol, untyped]?
-      def outline_pr
-        warn "[Xlsxrb DEPRECATION] SheetProperties#outline_pr is deprecated; use #outline_properties instead.", uplevel: 1
-        outline_properties
       end
 
       # Returns whether filter mode is enabled.
@@ -974,44 +783,16 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
+      private :custom_height, :zero_height, :thick_top, :thick_bottom
+
       #: (?default_row_height: (Float | Integer)?, ?default_column_width: (Float | Integer)?, ?custom_height: bool?, ?zero_height: bool?, ?thick_top: bool?, ?thick_bottom: bool?, ?outline_level_row: Integer?, ?outline_level_column: Integer?, ?base_column_width: (Float | Integer)?, **untyped) -> void
-      def initialize(default_row_height: nil, default_column_width: nil, custom_height: nil, zero_height: nil, thick_top: nil, thick_bottom: nil, outline_level_row: nil, outline_level_column: nil, base_column_width: nil, **extra)
-        default_column_width ||= extra[:default_col_width]
-        outline_level_column ||= extra[:outline_level_col]
-        base_column_width ||= extra[:base_col_width]
+      def initialize(default_row_height: nil, default_column_width: nil, custom_height: nil, zero_height: nil, thick_top: nil, thick_bottom: nil, outline_level_row: nil, outline_level_column: nil, base_column_width: nil, **_extra)
         super(
           default_row_height: default_row_height, default_column_width: default_column_width,
           custom_height: custom_height, zero_height: zero_height, thick_top: thick_top,
           thick_bottom: thick_bottom, outline_level_row: outline_level_row,
           outline_level_column: outline_level_column, base_column_width: base_column_width
         )
-      end
-
-      # @deprecated Use {#default_column_width} instead.
-      # @return [Float, Integer, nil]
-      # @api public
-      #: () -> (Float | Integer)?
-      def default_col_width
-        warn "[Xlsxrb DEPRECATION] SheetFormat#default_col_width is deprecated; use #default_column_width instead.", uplevel: 1
-        default_column_width
-      end
-
-      # @deprecated Use {#outline_level_column} instead.
-      # @return [Integer, nil]
-      # @api public
-      #: () -> Integer?
-      def outline_level_col
-        warn "[Xlsxrb DEPRECATION] SheetFormat#outline_level_col is deprecated; use #outline_level_column instead.", uplevel: 1
-        outline_level_column
-      end
-
-      # @deprecated Use {#base_column_width} instead.
-      # @return [Float, Integer, nil]
-      # @api public
-      #: () -> (Float | Integer)?
-      def base_col_width
-        warn "[Xlsxrb DEPRECATION] SheetFormat#base_col_width is deprecated; use #base_column_width instead.", uplevel: 1
-        base_column_width
       end
 
       # Returns whether custom row height is set.
@@ -1057,6 +838,8 @@ module Xlsxrb
       :top_left_cell, :color_id
     ) do
       include MetadataRecord
+
+      private :show_grid_lines, :show_row_col_headers, :show_ruler, :show_zeros, :right_to_left, :tab_selected, :window_protection, :show_formulas, :show_outline_symbols, :default_grid_color, :show_white_space
 
       #: (?workbook_view_id: Integer?, ?show_grid_lines: bool?, ?show_row_col_headers: bool?, ?show_ruler: bool?, ?show_zeros: bool?, ?right_to_left: bool?, ?tab_selected: bool?, ?zoom_scale: Integer?, ?zoom_scale_normal: Integer?, ?zoom_scale_page_layout_view: Integer?, ?zoom_scale_sheet_layout_view: Integer?, ?view: String?, ?window_protection: bool?, ?show_formulas: bool?, ?show_outline_symbols: bool?, ?default_grid_color: bool?, ?show_white_space: bool?, ?top_left_cell: String?, ?color_id: Integer?, **untyped) -> void
       def initialize(
@@ -1184,6 +967,8 @@ module Xlsxrb
     SheetCalcProperties = Data.define(:full_calc_on_load) do
       include MetadataRecord
 
+      private :full_calc_on_load
+
       #: (?full_calc_on_load: bool?, **untyped) -> void
       def initialize(full_calc_on_load: nil, **_extra)
         super(full_calc_on_load: full_calc_on_load)
@@ -1203,9 +988,12 @@ module Xlsxrb
     SortState = Data.define(:ref, :case_sensitive, :sort_method, :conditions) do
       include MetadataRecord
 
+      private :case_sensitive
+
       #: (?ref: String?, ?case_sensitive: bool?, ?sort_method: String?, ?conditions: Array[Hash[Symbol, untyped]]?, **untyped) -> void
-      def initialize(ref: nil, case_sensitive: nil, sort_method: nil, conditions: nil, **_extra)
-        super(ref: ref, case_sensitive: case_sensitive, sort_method: sort_method, conditions: conditions)
+      def initialize(ref: nil, case_sensitive: nil, sort_method: nil, conditions: nil, **extra)
+        conds = conditions || extra[:sort_conditions]
+        super(ref: ref, case_sensitive: case_sensitive, sort_method: sort_method, conditions: conds)
       end
 
       # Returns whether sorting is case sensitive.
@@ -1219,47 +1007,12 @@ module Xlsxrb
 
     # Worksheet background image (<picture>).
     # @api public
-    BackgroundImage = Data.define(:r_id, :rel_id, :path, :extension, :data, :ext, :filename, :content_type) do
+    BackgroundImage = Data.define(:r_id, :path, :extension, :data, :content_type) do
       include MetadataRecord
 
-      #: (?r_id: String?, ?rel_id: String?, ?path: String?, ?extension: String?, ?data: String?, ?ext: String?, ?filename: String?, ?content_type: String?, **untyped) -> void
-      def initialize(r_id: nil, rel_id: nil, path: nil, extension: nil, data: nil, ext: nil, filename: nil, content_type: nil, **extra)
-        rid = r_id || rel_id
-        e = extension || ext || extra[:ext]
-        d = data || extra[:file_data]
-        p = path || filename
-        super(r_id: rid, rel_id: rid, path: p, extension: e, data: d, ext: e, filename: p, content_type: content_type)
-      end
-
-      undef_method :rel_id
-      undef_method :ext
-      undef_method :filename
-
-      # @deprecated Use {#r_id} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def rel_id
-        warn "[Xlsxrb DEPRECATION] BackgroundImage#rel_id is deprecated; use #r_id instead.", uplevel: 1
-        r_id
-      end
-
-      # @deprecated Use {#extension} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def ext
-        warn "[Xlsxrb DEPRECATION] BackgroundImage#ext is deprecated; use #extension instead.", uplevel: 1
-        extension
-      end
-
-      # @deprecated Use {#path} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def filename
-        warn "[Xlsxrb DEPRECATION] BackgroundImage#filename is deprecated; use #path instead.", uplevel: 1
-        path
+      #: (?r_id: String?, ?path: String?, ?extension: String?, ?data: String?, ?content_type: String?, **untyped) -> void
+      def initialize(r_id: nil, path: nil, extension: nil, data: nil, content_type: nil, **_extra)
+        super(r_id: r_id, path: path, extension: extension, data: data, content_type: content_type)
       end
     end
 
@@ -1302,14 +1055,11 @@ module Xlsxrb
         value.to_s
       end
 
-      # Matches against scalar values or hashes.
+      # Matches against another CustomProperty or scalar value.
       #: (untyped other) -> bool
       def ==(other)
         if other.is_a?(CustomProperty)
           super
-        elsif other.is_a?(Hash)
-          warn "[Xlsxrb DEPRECATION] Comparing CustomProperty with Hash is deprecated; compare with CustomProperty instead.", uplevel: 1
-          to_h == other.transform_keys(&:to_sym).compact
         else
           value == other
         end
@@ -1321,23 +1071,11 @@ module Xlsxrb
     FilterColumn = Data.define(:column_id, :filters, :custom_filters, :dynamic_filter, :top10, :color_filter, :icon_filter, :hidden, :show_button) do
       include MetadataRecord
 
-      #: (?column_id: Integer?, ?col_id: Integer?, ?filters: Array[untyped]?, ?custom_filters: Array[untyped]?, ?dynamic_filter: Hash[Symbol, untyped]?, ?top10: Hash[Symbol, untyped]?, ?color_filter: Hash[Symbol, untyped]?, ?icon_filter: Hash[Symbol, untyped]?, ?hidden: bool?, ?show_button: bool?, ?hidden_button: bool?, **untyped) -> void
-      def initialize(column_id: nil, col_id: nil, filters: nil, custom_filters: nil, dynamic_filter: nil, top10: nil, color_filter: nil, icon_filter: nil, hidden: false, show_button: true, hidden_button: nil, **extra)
-        if (!col_id.nil? || extra.key?(:col_id)) && column_id.nil?
-          warn "[Xlsxrb DEPRECATION] FilterColumn.new(col_id:) is deprecated and will be removed in v0.2.0. Use column_id: instead.", uplevel: 1
-          column_id = col_id || extra[:col_id]
-        end
-        h = hidden || hidden_button || false
-        super(column_id: column_id, filters: filters, custom_filters: custom_filters, dynamic_filter: dynamic_filter, top10: top10, color_filter: color_filter, icon_filter: icon_filter, hidden: h, show_button: show_button)
-      end
+      private :hidden, :show_button
 
-      # @deprecated Use {#column_id} instead.
-      # @return [Integer, nil]
-      # @api public
-      #: () -> Integer?
-      def col_id
-        warn "[Xlsxrb DEPRECATION] FilterColumn#col_id is deprecated and will be removed in v0.2.0. Use #column_id instead.", uplevel: 1
-        column_id
+      #: (?column_id: Integer?, ?filters: Array[untyped]?, ?custom_filters: Array[untyped]?, ?dynamic_filter: Hash[Symbol, untyped]?, ?top10: Hash[Symbol, untyped]?, ?color_filter: Hash[Symbol, untyped]?, ?icon_filter: Hash[Symbol, untyped]?, ?hidden: bool?, ?show_button: bool?, **untyped) -> void
+      def initialize(column_id: nil, filters: nil, custom_filters: nil, dynamic_filter: nil, top10: nil, color_filter: nil, icon_filter: nil, hidden: false, show_button: true, **_extra)
+        super(column_id: column_id, filters: filters, custom_filters: custom_filters, dynamic_filter: dynamic_filter, top10: top10, color_filter: color_filter, icon_filter: icon_filter, hidden: hidden || false, show_button: show_button != false)
       end
 
       # Returns whether the filter column is hidden.
@@ -1362,13 +1100,10 @@ module Xlsxrb
     DefinedName = Data.define(:name, :value, :local_sheet_id, :local_sheet_name, :hidden, :comment) do
       include MetadataRecord
 
+      private :hidden
+
       #: (?name: String?, ?value: String?, ?local_sheet_id: Integer?, ?local_sheet_name: String?, ?hidden: bool?, ?comment: String?, **untyped) -> void
-      def initialize(name: nil, value: nil, local_sheet_id: nil, local_sheet_name: nil, hidden: nil, comment: nil, **extra)
-        local_sheet_name ||= extra[:sheet]
-        value ||= extra[:formula]
-        if (value.nil? || (value.respond_to?(:empty?) && value.empty?)) && extra[:range]
-          value = local_sheet_name ? "'#{local_sheet_name}'!#{extra[:range]}" : extra[:range].to_s
-        end
+      def initialize(name: nil, value: nil, local_sheet_id: nil, local_sheet_name: nil, hidden: nil, comment: nil, **_extra)
         super(name: name, value: value || "", local_sheet_id: local_sheet_id, local_sheet_name: local_sheet_name, hidden: hidden, comment: comment)
       end
 
@@ -1393,15 +1128,10 @@ module Xlsxrb
     PageBreak = Data.define(:id, :max, :min, :man, :pt) do
       include MetadataRecord
 
-      #: (?id: Integer?, ?max: Integer?, ?min: Integer?, ?man: (Integer | bool)?, ?pt: bool?, ?manual: bool?, **untyped) -> void
+      #: (?id: Integer?, ?max: Integer?, ?min: Integer?, ?man: (Integer | bool)?, ?pt: bool?, **untyped) -> void
       # rubocop:disable Naming/MethodParameterName
-      def initialize(id: nil, max: nil, min: nil, man: nil, pt: nil, manual: nil, **_extra)
-        m = if manual.nil?
-              man
-            else
-              manual ? 1 : 0
-            end
-        super(id: id, max: max, min: min, man: m, pt: pt)
+      def initialize(id: nil, max: nil, min: nil, man: nil, pt: nil, **_extra)
+        super(id: id, max: max, min: min, man: man, pt: pt)
       end
       # rubocop:enable Naming/MethodParameterName
 
@@ -1419,19 +1149,11 @@ module Xlsxrb
     Comment = Data.define(:ref, :text, :author, :r_id, :shape_id, :author_id, :visible) do
       include MetadataRecord
 
-      #: (?ref: String?, ?cell: String?, ?text: String?, ?author: String?, ?r_id: String?, ?shape_id: Integer?, ?author_id: Integer?, ?visible: bool?, **untyped) -> void
-      def initialize(ref: nil, cell: nil, text: nil, author: nil, r_id: nil, shape_id: nil, author_id: nil, visible: false, **_extra)
-        r = ref || cell
-        super(ref: r, text: text, author: author, r_id: r_id, shape_id: shape_id, author_id: author_id, visible: visible)
-      end
+      private :visible
 
-      # @deprecated Use {#ref} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def cell
-        warn "[Xlsxrb DEPRECATION] Comment#cell is deprecated; use #ref instead.", uplevel: 1
-        ref
+      #: (?ref: String?, ?text: String?, ?author: String?, ?r_id: String?, ?shape_id: Integer?, ?author_id: Integer?, ?visible: bool?, **untyped) -> void
+      def initialize(ref: nil, text: nil, author: nil, r_id: nil, shape_id: nil, author_id: nil, visible: false, **_extra)
+        super(ref: ref, text: text, author: author, r_id: r_id, shape_id: shape_id, author_id: author_id, visible: visible)
       end
 
       # Returns whether the comment is visible by default.
@@ -1464,37 +1186,15 @@ module Xlsxrb
     ThreadedComment = Data.define(:id, :ref, :text, :author, :author_id, :created_at, :parent_id, :resolved) do
       include MetadataRecord
 
-      #: (?id: String?, ?ref: String?, ?cell: String?, ?text: String?, ?author: String?, ?author_id: String?, ?person_id: String?, ?created_at: untyped, ?timestamp: untyped, ?dt: untyped, ?parent_id: String?, ?resolved: bool?, ?done: bool?, **untyped) -> void
-      # rubocop:disable Naming/MethodParameterName
+      private :resolved
+
+      #: (?id: String?, ?ref: String?, ?text: String?, ?author: String?, ?author_id: String?, ?created_at: untyped, ?parent_id: String?, ?resolved: bool?, **untyped) -> void
       def initialize(
-        id: nil, ref: nil, cell: nil, text: nil, author: nil,
-        author_id: nil, person_id: nil, created_at: nil, timestamp: nil, dt: nil,
-        parent_id: nil, resolved: nil, done: nil, **_extra
+        id: nil, ref: nil, text: nil, author: nil,
+        author_id: nil, created_at: nil,
+        parent_id: nil, resolved: nil, **_extra
       )
-        r = ref || cell
-        res = resolved.nil? ? done : resolved
-        aid = author_id || person_id
-        cat = created_at || timestamp || dt
-        super(id: id, ref: r, text: text, author: author, author_id: aid, created_at: cat, parent_id: parent_id, resolved: res)
-      end
-      # rubocop:enable Naming/MethodParameterName
-
-      # @deprecated Use {#ref} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def cell
-        warn "[Xlsxrb DEPRECATION] ThreadedComment#cell is deprecated; use #ref instead.", uplevel: 1
-        ref
-      end
-
-      # @deprecated Use {#resolved} instead.
-      # @return [Boolean, nil]
-      # @api public
-      #: () -> bool?
-      def done
-        warn "[Xlsxrb DEPRECATION] ThreadedComment#done is deprecated; use #resolved instead.", uplevel: 1
-        resolved
+        super(id: id, ref: ref, text: text, author: author, author_id: author_id, created_at: created_at, parent_id: parent_id, resolved: resolved)
       end
 
       # Returns whether the threaded comment is resolved.
@@ -1503,15 +1203,6 @@ module Xlsxrb
       #: () -> bool
       def resolved?
         resolved ? true : false
-      end
-
-      # @deprecated Use {#resolved?} instead.
-      # @return [Boolean]
-      # @api public
-      #: () -> bool
-      def done?
-        warn "[Xlsxrb DEPRECATION] ThreadedComment#done? is deprecated; use #resolved? instead.", uplevel: 1
-        resolved?
       end
 
       # @return [String]
@@ -1531,25 +1222,17 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
+      private :allow_blank, :show_input_message, :show_error_message, :show_drop_down
+
       #: (?sqref: String?, ?type: String?, ?error_style: String?, ?operator: String?, ?allow_blank: bool?, ?show_input_message: bool?, ?show_error_message: bool?, ?prompt_title: String?, ?prompt: String?, ?error_title: String?, ?error: String?, ?formula1: String?, ?formula2: String?, ?ime_mode: String?, ?show_drop_down: bool?, **untyped) -> void
-      def initialize(sqref: nil, type: nil, error_style: nil, operator: nil, allow_blank: nil, show_input_message: nil, show_error_message: nil, prompt_title: nil, prompt: nil, error_title: nil, error: nil, formula1: nil, formula2: nil, ime_mode: nil, show_drop_down: nil, **extra)
-        sdd = show_drop_down.nil? ? extra[:show_dropdown] : show_drop_down
+      def initialize(sqref: nil, type: nil, error_style: nil, operator: nil, allow_blank: nil, show_input_message: nil, show_error_message: nil, prompt_title: nil, prompt: nil, error_title: nil, error: nil, formula1: nil, formula2: nil, ime_mode: nil, show_drop_down: nil, **_extra)
         super(
           sqref: sqref, type: type, error_style: error_style, operator: operator,
           allow_blank: allow_blank, show_input_message: show_input_message,
           show_error_message: show_error_message, prompt_title: prompt_title, prompt: prompt,
           error_title: error_title, error: error, formula1: formula1, formula2: formula2,
-          ime_mode: ime_mode, show_drop_down: sdd
+          ime_mode: ime_mode, show_drop_down: show_drop_down
         )
-      end
-
-      # @deprecated Use {#show_drop_down} instead.
-      # @return [Boolean, nil]
-      # @api public
-      #: () -> bool?
-      def show_dropdown
-        warn "[Xlsxrb DEPRECATION] DataValidation#show_dropdown is deprecated; use #show_drop_down instead.", uplevel: 1
-        show_drop_down
       end
 
       # Returns whether blank cells are allowed in validation.
@@ -1583,15 +1266,6 @@ module Xlsxrb
       def show_drop_down?
         show_drop_down ? true : false
       end
-
-      # @deprecated Use {#show_drop_down?} instead.
-      # @return [Boolean]
-      # @api public
-      #: () -> bool
-      def show_dropdown?
-        warn "[Xlsxrb DEPRECATION] DataValidation#show_dropdown? is deprecated; use #show_drop_down? instead.", uplevel: 1
-        show_drop_down?
-      end
     end
 
     # Conditional formatting rule (<cfRule>).
@@ -1603,27 +1277,18 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
+      private :above_average, :equal_average, :bottom, :percent, :stop_if_true
+
       #: (?type: (Symbol | String)?, ?dxf_id: Integer?, ?priority: Integer?, ?operator: (Symbol | String)?, ?formula: untyped, ?text: String?, ?time_period: (Symbol | String)?, ?rank: Integer?, ?std_dev: Integer?, ?above_average: bool?, ?equal_average: bool?, ?bottom: bool?, ?percent: bool?, ?stop_if_true: bool?, ?color_scale: Hash[Symbol, untyped]?, ?data_bar: Hash[Symbol, untyped]?, ?icon_set: Hash[Symbol, untyped]?, ?options: Hash[Symbol, untyped]?, **untyped) -> void
       def initialize(type: nil, dxf_id: nil, priority: nil, operator: nil, formula: nil, text: nil, time_period: nil, rank: nil, std_dev: nil, above_average: nil, equal_average: nil, bottom: nil, percent: nil, stop_if_true: nil, color_scale: nil, data_bar: nil, icon_set: nil, options: nil, **extra)
-        dxf_id ||= extra.delete(:format_id)
-        f = formula || extra.delete(:formulas)
         opts = (options || {}).merge(extra)
         super(
-          type: type, dxf_id: dxf_id, priority: priority, operator: operator, formula: f,
+          type: type, dxf_id: dxf_id, priority: priority, operator: operator, formula: formula,
           text: text, time_period: time_period, rank: rank, std_dev: std_dev,
           above_average: above_average, equal_average: equal_average, bottom: bottom,
           percent: percent, stop_if_true: stop_if_true, color_scale: color_scale,
           data_bar: data_bar, icon_set: icon_set, options: opts.empty? ? nil : opts
         )
-      end
-
-      # @deprecated Use {#formula} instead.
-      # @return [Object]
-      # @api public
-      #: () -> untyped
-      def formulas
-        warn "[Xlsxrb DEPRECATION] ConditionalFormatRule#formulas is deprecated; use #formula instead.", uplevel: 1
-        formula
       end
 
       # Returns whether rule matches above average values.
@@ -1677,31 +1342,22 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
+      private :above_average, :equal_average, :bottom, :percent, :stop_if_true, :pivot
+
       #: (?sqref: String?, ?type: (Symbol | String)?, ?dxf_id: Integer?, ?priority: Integer?, ?operator: (Symbol | String)?, ?formula: untyped, ?text: String?, ?time_period: (Symbol | String)?, ?rank: Integer?, ?std_dev: Integer?, ?above_average: bool?, ?equal_average: bool?, ?bottom: bool?, ?percent: bool?, ?stop_if_true: bool?, ?color_scale: Hash[Symbol, untyped]?, ?data_bar: Hash[Symbol, untyped]?, ?icon_set: Hash[Symbol, untyped]?, ?pivot: bool?, ?rules: Array[untyped]?, ?options: Hash[Symbol, untyped]?, **untyped) -> void
       def initialize(sqref: nil, type: nil, dxf_id: nil, priority: nil, operator: nil, formula: nil, text: nil, time_period: nil, rank: nil, std_dev: nil, above_average: nil, equal_average: nil, bottom: nil, percent: nil, stop_if_true: nil, color_scale: nil, data_bar: nil, icon_set: nil, pivot: nil, rules: nil, options: nil, **extra)
-        dxf_id ||= extra.delete(:format_id)
-        f = formula || extra.delete(:formulas)
         wrapped_rules = if rules && !rules.empty?
                           rules.map { |r| r.is_a?(ConditionalFormatRule) ? r : ConditionalFormatRule.new(**r) }
                         end
         opts = (options || {}).merge(extra)
         super(
-          sqref: sqref, type: type, dxf_id: dxf_id, priority: priority, operator: operator, formula: f,
+          sqref: sqref, type: type, dxf_id: dxf_id, priority: priority, operator: operator, formula: formula,
           text: text, time_period: time_period, rank: rank, std_dev: std_dev,
           above_average: above_average, equal_average: equal_average, bottom: bottom,
           percent: percent, stop_if_true: stop_if_true, color_scale: color_scale,
           data_bar: data_bar, icon_set: icon_set, pivot: pivot, rules: wrapped_rules,
           options: opts.empty? ? nil : opts
         )
-      end
-
-      # @deprecated Use {#formula} instead.
-      # @return [Object]
-      # @api public
-      #: () -> untyped
-      def formulas
-        warn "[Xlsxrb DEPRECATION] ConditionalFormat#formulas is deprecated; use #formula instead.", uplevel: 1
-        formula
       end
 
       # Returns whether rule matches above average values.
@@ -1758,23 +1414,14 @@ module Xlsxrb
     TableColumn = Data.define(:id, :name, :totals_row_function, :totals_row_label, :totals_row_formula, :data_dxf_id, :calculated_column_formula) do
       include MetadataRecord
 
-      #: (?id: Integer?, ?name: String?, ?totals_row_function: String?, ?totals_row_label: String?, ?totals_row_formula: String?, ?data_dxf_id: Integer?, ?calculated_column_formula: String?, ?data_formula: String?, **untyped) -> void
-      def initialize(id: nil, name: nil, totals_row_function: nil, totals_row_label: nil, totals_row_formula: nil, data_dxf_id: nil, calculated_column_formula: nil, data_formula: nil, **_extra)
+      #: (?id: Integer?, ?name: String?, ?totals_row_function: String?, ?totals_row_label: String?, ?totals_row_formula: String?, ?data_dxf_id: Integer?, ?calculated_column_formula: String?, **untyped) -> void
+      def initialize(id: nil, name: nil, totals_row_function: nil, totals_row_label: nil, totals_row_formula: nil, data_dxf_id: nil, calculated_column_formula: nil, **_extra)
         super(
           id: id, name: name, totals_row_function: totals_row_function,
           totals_row_label: totals_row_label, totals_row_formula: totals_row_formula,
           data_dxf_id: data_dxf_id,
-          calculated_column_formula: calculated_column_formula || data_formula
+          calculated_column_formula: calculated_column_formula
         )
-      end
-
-      # @deprecated Use {#calculated_column_formula} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def data_formula
-        warn "[Xlsxrb DEPRECATION] TableColumn#data_formula is deprecated; use #calculated_column_formula instead.", uplevel: 1
-        calculated_column_formula
       end
     end
 
@@ -1782,6 +1429,8 @@ module Xlsxrb
     # @api public
     TableStyleInfo = Data.define(:name, :show_first_column, :show_last_column, :show_row_stripes, :show_column_stripes) do
       include MetadataRecord
+
+      private :show_first_column, :show_last_column, :show_row_stripes, :show_column_stripes
 
       #: (?name: String?, ?show_first_column: bool?, ?show_last_column: bool?, ?show_row_stripes: bool?, ?show_column_stripes: bool?, **untyped) -> void
       def initialize(name: nil, show_first_column: nil, show_last_column: nil, show_row_stripes: nil, show_column_stripes: nil, **_extra)
@@ -1850,26 +1499,6 @@ module Xlsxrb
         )
       end
 
-      #: (Symbol | String key) -> untyped
-      def [](key)
-        warn "[DEPRECATION] Hash access on Elements::Table (`#[]`) is deprecated and will be removed in 0.2.0; use method calls instead.", uplevel: 1
-        k = key.is_a?(Symbol) ? key : key.to_s.to_sym
-        case k
-        when :style
-          style_info&.name
-        when :show_row_stripes
-          style_info&.show_row_stripes
-        when :show_first_column
-          style_info&.show_first_column
-        when :show_last_column
-          style_info&.show_last_column
-        when :show_column_stripes
-          style_info&.show_column_stripes
-        else
-          super
-        end
-      end
-
       # Returns whether the table totals row is shown.
       # @return [Boolean]
       # @api public
@@ -1917,7 +1546,6 @@ module Xlsxrb
       def show_row_stripes?
         style_info ? style_info.show_row_stripes? : false
       end
-      alias_method :show_row_stripes, :show_row_stripes?
 
       # Returns whether column stripes are shown.
       # @return [Boolean]
@@ -1934,9 +1562,7 @@ module Xlsxrb
       include MetadataRecord
 
       #: (?sqref: String?, ?formula: String?, **untyped) -> void
-      def initialize(sqref: nil, formula: nil, **extra)
-        sqref ||= extra[:location_ref] || extra[:location]
-        formula ||= extra[:data_ref] || extra[:f] || extra[:data]
+      def initialize(sqref: nil, formula: nil, **_extra)
         super(sqref: sqref, formula: formula)
       end
     end
@@ -1951,48 +1577,20 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
+      private :markers, :high, :low, :first, :last, :negative
+
       #: (?type: String?, ?color_series: String?, ?color_negative: String?, ?color_axis: String?, ?color_markers: String?, ?color_first: String?, ?color_last: String?, ?color_high: String?, ?color_low: String?, ?sparklines: Array[Elements::Sparkline | Hash[Symbol, untyped]]?, ?display_empty_cells_as: String?, ?markers: bool?, ?high: bool?, ?low: bool?, ?first: bool?, ?last: bool?, ?negative: bool?, ?manual_max: (Integer | Float)?, ?manual_min: (Integer | Float)?, ?line_weight: (Integer | Float)?, **untyped) -> void
       def initialize(type: nil, color_series: nil, color_negative: nil, color_axis: nil, color_markers: nil, color_first: nil, color_last: nil, color_high: nil, color_low: nil, sparklines: nil, display_empty_cells_as: nil, markers: nil, high: nil, low: nil, first: nil, last: nil, negative: nil, manual_max: nil, manual_min: nil, line_weight: nil, **extra)
         wrapped_sps = (sparklines || []).map { |s| s.is_a?(Sparkline) ? s : Sparkline.new(**s) }
-        disp = display_empty_cells_as || extra[:display_empty]
-        m_max = manual_max || extra[:max]
-        m_min = manual_min || extra[:min]
         lw = line_weight || extra[:line_weight]
         super(
           type: type, color_series: color_series, color_negative: color_negative,
           color_axis: color_axis, color_markers: color_markers, color_first: color_first,
           color_last: color_last, color_high: color_high, color_low: color_low,
-          sparklines: wrapped_sps, display_empty_cells_as: disp,
+          sparklines: wrapped_sps, display_empty_cells_as: display_empty_cells_as,
           markers: markers, high: high, low: low, first: first, last: last, negative: negative,
-          manual_max: m_max, manual_min: m_min, line_weight: lw
+          manual_max: manual_max, manual_min: manual_min, line_weight: lw
         )
-      end
-
-      # @deprecated Use {#display_empty_cells_as} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def display_empty
-        warn "[Xlsxrb DEPRECATION] SparklineGroup#display_empty is deprecated; use #display_empty_cells_as instead.", uplevel: 1
-        display_empty_cells_as
-      end
-
-      # @deprecated Use {#manual_max} instead.
-      # @return [Integer, Float, nil]
-      # @api public
-      #: () -> (Integer | Float)?
-      def max
-        warn "[Xlsxrb DEPRECATION] SparklineGroup#max is deprecated; use #manual_max instead.", uplevel: 1
-        manual_max
-      end
-
-      # @deprecated Use {#manual_min} instead.
-      # @return [Integer, Float, nil]
-      # @api public
-      #: () -> (Integer | Float)?
-      def min
-        warn "[Xlsxrb DEPRECATION] SparklineGroup#min is deprecated; use #manual_min instead.", uplevel: 1
-        manual_min
       end
 
       # Returns whether data markers are displayed.
@@ -2066,6 +1664,8 @@ module Xlsxrb
       :list_data_validation, :calculated_column
     ) do
       include MetadataRecord
+
+      private :eval_error, :two_digit_text_year, :number_stored_as_text, :formula, :formula_range, :unlocked_formula, :empty_cell_reference, :list_data_validation, :calculated_column
 
       #: (?sqref: String?, ?eval_error: bool?, ?two_digit_text_year: bool?, ?number_stored_as_text: bool?, ?formula: bool?, ?formula_range: bool?, ?unlocked_formula: bool?, ?empty_cell_reference: bool?, ?list_data_validation: bool?, ?calculated_column: bool?, **untyped) -> void
       def initialize(sqref: nil, eval_error: nil, two_digit_text_year: nil, number_stored_as_text: nil, formula: nil, formula_range: nil, unlocked_formula: nil, empty_cell_reference: nil, list_data_validation: nil, calculated_column: nil, **_extra)
@@ -2160,16 +1760,8 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
-      #: (?r_id: String?, ?name: String?, ?title: String?, ?type: String?, ?anchor: String?, ?from: untyped, ?to: untyped, ?series: Array[untyped]?, ?legend: untyped, ?category_axis: untyped, ?value_axis: untyped, ?secondary_value_axis: untyped, ?grouping: untyped, ?gap_width: untyped, ?overlap: untyped, ?target: untyped, ?from_column: untyped, ?from_row: untyped, ?to_column: untyped, ?to_row: untyped, ?data_labels: untyped?, ?cat_axis_title: String?, ?val_axis_title: String?, ?options: Hash[Symbol, untyped]?, **untyped) -> void
-      def initialize(r_id: nil, name: nil, title: nil, type: nil, anchor: nil, from: nil, to: nil, series: nil, legend: nil, category_axis: nil, value_axis: nil, secondary_value_axis: nil, grouping: nil, gap_width: nil, overlap: nil, target: nil, from_column: nil, from_row: nil, to_column: nil, to_row: nil, data_labels: nil, cat_axis_title: nil, val_axis_title: nil, options: nil, **extra)
-        from_column ||= extra.delete(:from_col)
-        to_column ||= extra.delete(:to_col)
-        r_id ||= extra.delete(:rid)
-        type ||= extra.delete(:chart_type)
-        cat_title = cat_axis_title || extra.delete(:cat_axis_title)
-        val_title = val_axis_title || extra.delete(:val_axis_title)
-        category_axis ||= { title: cat_title } if cat_title
-        value_axis ||= { title: val_title } if val_title
+      #: (?r_id: String?, ?name: String?, ?title: String?, ?type: String?, ?anchor: String?, ?from: untyped, ?to: untyped, ?series: Array[untyped]?, ?legend: untyped, ?category_axis: untyped, ?value_axis: untyped, ?secondary_value_axis: untyped, ?grouping: untyped, ?gap_width: untyped, ?overlap: untyped, ?target: untyped, ?from_column: untyped, ?from_row: untyped, ?to_column: untyped, ?to_row: untyped, ?data_labels: untyped?, ?options: Hash[Symbol, untyped]?, **untyped) -> void
+      def initialize(r_id: nil, name: nil, title: nil, type: nil, anchor: nil, from: nil, to: nil, series: nil, legend: nil, category_axis: nil, value_axis: nil, secondary_value_axis: nil, grouping: nil, gap_width: nil, overlap: nil, target: nil, from_column: nil, from_row: nil, to_column: nil, to_row: nil, data_labels: nil, options: nil, **extra)
         opts = (options || {}).merge(extra)
         super(
           r_id: r_id, name: name, title: title, type: type, anchor: anchor, from: from, to: to,
@@ -2179,60 +1771,6 @@ module Xlsxrb
           to_column: to_column, to_row: to_row, data_labels: data_labels,
           options: opts.empty? ? nil : opts
         )
-      end
-
-      # @deprecated Use {#category_axis}[:title] instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def cat_axis_title
-        warn "[Xlsxrb DEPRECATION] Chart#cat_axis_title is deprecated and will be removed in v0.2.0. Use #category_axis[:title] instead.", uplevel: 1
-        category_axis&.[](:title) || options&.[](:cat_axis_title)
-      end
-
-      # @deprecated Use {#value_axis}[:title] instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def val_axis_title
-        warn "[Xlsxrb DEPRECATION] Chart#val_axis_title is deprecated and will be removed in v0.2.0. Use #value_axis[:title] instead.", uplevel: 1
-        value_axis&.[](:title) || options&.[](:val_axis_title)
-      end
-
-      # @deprecated Use {#r_id} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def rid
-        warn "[Xlsxrb DEPRECATION] Chart#rid is deprecated; use #r_id instead.", uplevel: 1
-        r_id
-      end
-
-      # @deprecated Use {#type} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def chart_type
-        warn "[Xlsxrb DEPRECATION] Chart#chart_type is deprecated; use #type instead.", uplevel: 1
-        type
-      end
-
-      # @deprecated Use {#from_column} instead.
-      # @return [Object]
-      # @api public
-      #: () -> untyped
-      def from_col
-        warn "[Xlsxrb DEPRECATION] Chart#from_col is deprecated; use #from_column instead.", uplevel: 1
-        from_column
-      end
-
-      # @deprecated Use {#to_column} instead.
-      # @return [Object]
-      # @api public
-      #: () -> untyped
-      def to_col
-        warn "[Xlsxrb DEPRECATION] Chart#to_col is deprecated; use #to_column instead.", uplevel: 1
-        to_column
       end
     end
 
@@ -2255,7 +1793,7 @@ module Xlsxrb
     # Pivot table entry (<pivotTableDefinition>).
     # @api public
     PivotTable = Data.define(
-      :name, :ref, :location, :source_ref, :row_fields, :column_fields,
+      :name, :ref, :source_ref, :row_fields, :column_fields,
       :data_fields, :page_fields, :data_caption, :page_wrap,
       :column_grand_totals, :row_grand_totals, :show_row_headers,
       :show_column_headers, :show_row_stripes, :show_column_stripes,
@@ -2263,19 +1801,20 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
-      #: (?name: String?, ?ref: String?, ?location: String?, ?source_ref: String?, ?row_fields: Array[untyped]?, ?column_fields: Array[untyped]?, ?col_fields: Array[untyped]?, ?data_fields: Array[untyped]?, ?page_fields: Array[untyped]?, ?data_caption: String?, ?page_wrap: Integer?, ?column_grand_totals: bool?, ?row_grand_totals: bool?, ?show_row_headers: bool?, ?show_column_headers: bool?, ?show_row_stripes: bool?, ?show_column_stripes: bool?, ?cache: Hash[Symbol, untyped]?, ?options: Hash[Symbol, untyped]?, **untyped) -> void
+      private :column_grand_totals, :row_grand_totals, :show_row_headers, :show_column_headers, :show_row_stripes, :show_column_stripes
+
+      #: (?name: String?, ?ref: String?, ?source_ref: String?, ?row_fields: Array[untyped]?, ?column_fields: Array[untyped]?, ?data_fields: Array[untyped]?, ?page_fields: Array[untyped]?, ?data_caption: String?, ?page_wrap: Integer?, ?column_grand_totals: bool?, ?row_grand_totals: bool?, ?show_row_headers: bool?, ?show_column_headers: bool?, ?show_row_stripes: bool?, ?show_column_stripes: bool?, ?cache: Hash[Symbol, untyped]?, ?options: Hash[Symbol, untyped]?, **untyped) -> void
       def initialize(
-        name: nil, ref: nil, location: nil, source_ref: nil,
-        row_fields: nil, column_fields: nil, col_fields: nil, data_fields: nil, page_fields: nil,
+        name: nil, ref: nil, source_ref: nil,
+        row_fields: nil, column_fields: nil, data_fields: nil, page_fields: nil,
         data_caption: nil, page_wrap: nil, column_grand_totals: nil, row_grand_totals: nil,
         show_row_headers: nil, show_column_headers: nil, show_row_stripes: nil, show_column_stripes: nil,
         cache: nil, options: nil, **extra
       )
-        r = ref || location
-        cols = column_fields || col_fields || []
+        cols = column_fields || []
         merged_opts = (options || {}).merge(extra).freeze
         super(
-          name: name, ref: r, location: r, source_ref: source_ref,
+          name: name, ref: ref, source_ref: source_ref,
           row_fields: row_fields, column_fields: cols, data_fields: data_fields, page_fields: page_fields,
           data_caption: data_caption, page_wrap: page_wrap,
           column_grand_totals: column_grand_totals, row_grand_totals: row_grand_totals,
@@ -2283,17 +1822,6 @@ module Xlsxrb
           show_row_stripes: show_row_stripes, show_column_stripes: show_column_stripes,
           cache: cache, options: merged_opts.empty? ? nil : merged_opts
         )
-      end
-
-      undef_method :location
-
-      # @deprecated Use {#ref} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def location
-        warn "[Xlsxrb DEPRECATION] PivotTable#location is deprecated; use #ref instead.", uplevel: 1
-        ref
       end
 
       # Returns whether column grand totals are displayed.
@@ -2351,39 +1879,8 @@ module Xlsxrb
       include MetadataRecord
 
       #: (?position: String?, ?r_id: String?, ?path: String?, ?extension: String?, ?data: String?, ?content_type: String?, **untyped) -> void
-      def initialize(position: nil, r_id: nil, path: nil, extension: nil, data: nil, content_type: nil, **extra)
-        rid = r_id || extra[:rid]
-        ext = extension || extra[:ext]
-        p = path || extra[:filename]
-        ct = content_type || extra[:content_type]
-        super(position: position, r_id: rid, path: p, extension: ext, data: data, content_type: ct)
-      end
-
-      # @deprecated Use {#extension} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def ext
-        warn "[Xlsxrb DEPRECATION] HeaderFooterImage#ext is deprecated; use #extension instead.", uplevel: 1
-        extension
-      end
-
-      # @deprecated Use {#path} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def filename
-        warn "[Xlsxrb DEPRECATION] HeaderFooterImage#filename is deprecated; use #path instead.", uplevel: 1
-        path
-      end
-
-      # @deprecated Use {#r_id} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def rid
-        warn "[Xlsxrb DEPRECATION] HeaderFooterImage#rid is deprecated; use #r_id instead.", uplevel: 1
-        r_id
+      def initialize(position: nil, r_id: nil, path: nil, extension: nil, data: nil, content_type: nil, **_extra)
+        super(position: position, r_id: r_id, path: path, extension: extension, data: data, content_type: content_type)
       end
     end
 
@@ -2394,19 +1891,11 @@ module Xlsxrb
       # rubocop:enable Lint/DataDefineOverride
       include MetadataRecord
 
-      #: (?name: String?, ?size: (Integer | Float)?, ?bold: bool?, ?italic: bool?, ?underline: (String | bool)?, ?strike: bool?, ?color: Hash[Symbol, untyped]?, ?family: Integer?, ?scheme: String?, ?outline: bool?, ?shadow: bool?, ?condense: bool?, ?extend: bool?, **untyped) -> void
-      def initialize(name: nil, size: nil, bold: nil, italic: nil, underline: nil, strike: nil, color: nil, family: nil, scheme: nil, outline: nil, shadow: nil, condense: nil, extend: nil, **extra)
-        sz = size || extra[:sz]
-        super(name: name, size: sz, bold: bold, italic: italic, underline: underline, strike: strike, color: color, family: family, scheme: scheme, outline: outline, shadow: shadow, condense: condense, extend: extend)
-      end
+      private :bold, :italic, :strike, :outline, :shadow, :condense, :extend
 
-      # @deprecated Use {#size} instead.
-      # @return [Integer, Float, nil]
-      # @api public
-      #: () -> (Integer | Float)?
-      def sz
-        warn "[Xlsxrb DEPRECATION] Font#sz is deprecated; use #size instead.", uplevel: 1
-        size
+      #: (?name: String?, ?size: (Integer | Float)?, ?bold: bool?, ?italic: bool?, ?underline: (String | bool)?, ?strike: bool?, ?color: Hash[Symbol, untyped]?, ?family: Integer?, ?scheme: String?, ?outline: bool?, ?shadow: bool?, ?condense: bool?, ?extend: bool?, **untyped) -> void
+      def initialize(name: nil, size: nil, bold: nil, italic: nil, underline: nil, strike: nil, color: nil, family: nil, scheme: nil, outline: nil, shadow: nil, condense: nil, extend: nil, **_extra)
+        super(name: name, size: size, bold: bold, italic: italic, underline: underline, strike: strike, color: color, family: family, scheme: scheme, outline: outline, shadow: shadow, condense: condense, extend: extend)
       end
 
       # Returns whether the font is bold.
@@ -2472,18 +1961,8 @@ module Xlsxrb
       include MetadataRecord
 
       #: (?pattern_type: String?, ?fg_color: Hash[Symbol, untyped]?, ?bg_color: Hash[Symbol, untyped]?, **untyped) -> void
-      def initialize(pattern_type: nil, fg_color: nil, bg_color: nil, **extra)
-        pt = pattern_type || extra[:pattern]
-        super(pattern_type: pt, fg_color: fg_color, bg_color: bg_color)
-      end
-
-      # @deprecated Use {#pattern_type} instead.
-      # @return [String, nil]
-      # @api public
-      #: () -> String?
-      def pattern
-        warn "[Xlsxrb DEPRECATION] Fill#pattern is deprecated; use #pattern_type instead.", uplevel: 1
-        pattern_type
+      def initialize(pattern_type: nil, fg_color: nil, bg_color: nil, **_extra)
+        super(pattern_type: pattern_type, fg_color: fg_color, bg_color: bg_color)
       end
     end
 
@@ -2491,6 +1970,8 @@ module Xlsxrb
     # @api public
     Border = Data.define(:left, :right, :top, :bottom, :diagonal, :diagonal_up, :diagonal_down) do
       include MetadataRecord
+
+      private :diagonal_up, :diagonal_down
 
       #: (?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?, ?diagonal_up: bool?, ?diagonal_down: bool?, **untyped) -> void
       def initialize(left: nil, right: nil, top: nil, bottom: nil, diagonal: nil, diagonal_up: nil, diagonal_down: nil, **_extra)
@@ -2521,6 +2002,8 @@ module Xlsxrb
       :relative_indent, :shrink_to_fit, :reading_order, :justify_last_line
     ) do
       include MetadataRecord
+
+      private :wrap_text, :shrink_to_fit, :justify_last_line
 
       #: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Numeric?, ?indent: Integer?, ?relative_indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, **untyped) -> void
       def initialize(horizontal: nil, vertical: nil, wrap_text: nil, text_rotation: nil, indent: nil, relative_indent: nil, shrink_to_fit: nil, reading_order: nil, justify_last_line: nil, **_extra)
@@ -2557,6 +2040,8 @@ module Xlsxrb
     Protection = Data.define(:locked, :hidden) do
       include MetadataRecord
 
+      private :locked, :hidden
+
       #: (?locked: bool?, ?hidden: bool?, **untyped) -> void
       def initialize(locked: nil, hidden: nil, **_extra)
         super(locked: locked, hidden: hidden)
@@ -2589,6 +2074,8 @@ module Xlsxrb
     ) do
       include MetadataRecord
 
+      private :apply_number_format, :apply_font, :apply_fill, :apply_border, :apply_alignment, :apply_protection, :quote_prefix, :pivot_button
+
       #: (?num_fmt_id: Integer?, ?font_id: Integer?, ?fill_id: Integer?, ?border_id: Integer?, ?xf_id: Integer?, ?apply_number_format: bool?, ?apply_font: bool?, ?apply_fill: bool?, ?apply_border: bool?, ?apply_alignment: bool?, ?apply_protection: bool?, ?alignment: (Elements::Alignment | Hash[Symbol, untyped])?, ?protection: (Elements::Protection | Hash[Symbol, untyped])?, ?quote_prefix: bool?, ?pivot_button: bool?, **untyped) -> void
       def initialize(
         num_fmt_id: nil, font_id: nil, fill_id: nil, border_id: nil, xf_id: nil,
@@ -2605,15 +2092,6 @@ module Xlsxrb
           apply_protection: apply_protection, alignment: align_obj, protection: prot_obj,
           quote_prefix: quote_prefix, pivot_button: pivot_button
         )
-      end
-
-      # @deprecated Use {#num_fmt_id} instead.
-      # @return [Integer, nil]
-      # @api public
-      #: () -> Integer?
-      def number_format_id
-        warn "[Xlsxrb DEPRECATION] CellXf#number_format_id is deprecated; use #num_fmt_id instead.", uplevel: 1
-        num_fmt_id
       end
 
       # Returns whether quote prefix is enabled.
@@ -2686,25 +2164,14 @@ module Xlsxrb
     Dxf = Data.define(:font, :fill, :border, :number_format, :alignment, :protection) do
       include MetadataRecord
 
-      #: (?font: (Elements::Font | Hash[Symbol, untyped])?, ?fill: (Elements::Fill | Hash[Symbol, untyped])?, ?border: (Elements::Border | Hash[Symbol, untyped])?, ?number_format: Hash[Symbol, untyped]?, ?alignment: (Elements::Alignment | Hash[Symbol, untyped])?, ?protection: (Elements::Protection | Hash[Symbol, untyped])?, **untyped) -> void
-      def initialize(font: nil, fill: nil, border: nil, number_format: nil, alignment: nil, protection: nil, **extra)
-        nf = number_format
-        if (extra.key?(:num_fmt) || extra.key?("num_fmt")) && nf.nil?
-          Xlsxrb::Deprecation.warn("Dxf keyword :num_fmt is deprecated; use :number_format instead.", uplevel: 1)
-          nf = extra[:num_fmt] || extra["num_fmt"]
-        end
+      #: (?font: (Elements::Font | Hash[Symbol, untyped])?, ?fill: (Elements::Fill | Hash[Symbol, untyped])?, ?border: (Elements::Border | Hash[Symbol, untyped])?, ?number_format: Hash[Symbol, untyped]?, ?alignment: (Elements::Alignment | Hash[Symbol, untyped])?, ?protection: (Elements::Protection | Hash[Symbol, untyped])?) -> void
+      def initialize(font: nil, fill: nil, border: nil, number_format: nil, alignment: nil, protection: nil)
         f = font.is_a?(Hash) ? Font.new(**font) : font
         fi = fill.is_a?(Hash) ? Fill.new(**fill) : fill
         b = border.is_a?(Hash) ? Border.new(**border) : border
         align = alignment.is_a?(Hash) ? Alignment.new(**alignment) : alignment
         prot = protection.is_a?(Hash) ? Protection.new(**protection) : protection
-        super(font: f, fill: fi, border: b, number_format: nf, alignment: align, protection: prot)
-      end
-
-      # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
-      def num_fmt
-        Xlsxrb::Deprecation.warn("Dxf#num_fmt is deprecated; use Dxf#number_format instead.", uplevel: 1)
-        number_format
+        super(font: f, fill: fi, border: b, number_format: number_format, alignment: align, protection: prot)
       end
     end
 

@@ -118,9 +118,9 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("DV") do |s|
         s.row(["Value"])
-        s.validate_data("A2:A100", type: :whole, operator: :between,
-                                   formula1: "1", formula2: "100",
-                                   show_error_message: true, error: "Enter 1-100")
+        s.data_validation("A2:A100", type: :whole, operator: :between,
+                                     formula1: "1", formula2: "100",
+                                     show_error_message: true, error: "Enter 1-100")
       end
     end
 
@@ -140,7 +140,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     Xlsxrb.write(tmp.path) do |w|
       w.sheet("DV") do |s|
         s.row(["Value"])
-        s.validate_data("A2:A100", in: %w[A B C], show_error_message: true)
+        s.data_validation("A2:A100", list: %w[A B C], show_error_message: true)
       end
     end
 
@@ -302,7 +302,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
           t.column(:qty, totals_row_function: :sum)
           t.column(:price, totals_row_function: :average)
           t.style = "TableStyleLight1"
-          t.total_row = true
+          t.totals_row = true
           t.auto_filter = false
           t.show_column_stripes = true
         end
@@ -354,7 +354,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
             t.column(:qty, totals_row_function: :sum)
             t.column(:price, totals_row_function: :average)
             t.calculated_column(:total, "[@Qty]*[@Price]", totals_row_formula: "SUBTOTAL(109,[Total])")
-            t.total_row = true
+            t.totals_row = true
           end
         end
       end
@@ -384,9 +384,9 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     begin
       Xlsxrb.write(tmp.path) do |w|
         w.sheet("Formulas") do |s|
-          s.row([10, Xlsxrb.shared_formula("A1*2", si: 0, ref: "B1:B3", cached_value: 20)])
-          s.row([20, Xlsxrb.shared_formula(si: 0, cached_value: 40)])
-          s.row([30, { type: :shared, si: 0, cached_value: 60 }])
+          s.row([10, Xlsxrb.shared_formula("A1*2", shared_index: 0, ref: "B1:B3", cached_value: 20)])
+          s.row([20, Xlsxrb.shared_formula(shared_index: 0, cached_value: 40)])
+          s.row([30, { type: :shared, shared_index: 0, cached_value: 60 }])
         end
       end
 
@@ -517,7 +517,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("Frozen") do |s|
         s.row(["Header"])
         s.row([1])
-        s.freeze_pane(row: 1, col: 0)
+        s.freeze_pane(row: 1, column: 0)
       end
     end
 
@@ -539,7 +539,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("Frozen") do |s|
         s.row(["Header"])
         s.row([1])
-        s.freeze_pane(row: 1, col: 1)
+        s.freeze_pane(row: 1, column: 1)
       end
     end
 
@@ -703,7 +703,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Protected") do |s|
         s.row(["Data"])
-        s.protect_sheet(sheet: true, objects: true)
+        s.sheet_protection(sheet: true, objects: true)
       end
     end
 
@@ -722,7 +722,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     Xlsxrb.write(tmp.path) do |w|
       w.sheet("Protected") do |s|
         s.row(["Data"])
-        s.protect_sheet(sheet: true, scenarios: true)
+        s.sheet_protection(sheet: true, scenarios: true)
       end
     end
 
@@ -738,7 +738,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     Xlsxrb.write(tmp.path) do |w|
       w.sheet("Protected") do |s|
         s.row(["Data"])
-        s.protect_sheet(sheet: true, password: "secret")
+        s.sheet_protection(sheet: true, password: "secret")
       end
     end
 
@@ -762,8 +762,8 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Breaks") do |s|
         10.times { |i| s.row(["Row #{i}"]) }
-        s.page_break_row(5)
-        s.page_break_col(3)
+        s.row_break(5)
+        s.column_break(3)
       end
     end
 
@@ -909,7 +909,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       name: "DirectSheet",
       rows: [Xlsxrb::Elements::Row.new(index: 0, cells: [Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "Hi")])],
       print_area: "A1:B20",
-      print_titles: { rows: "1:2", cols: "A:A" }
+      print_titles: { rows: "1:2", columns: "A:A" }
     )
     wb = Xlsxrb::Elements::Workbook.new(sheets: [ws])
 
@@ -931,7 +931,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   test "protect_workbook in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.protect_workbook(lock_structure: true)
+      w.workbook_protection(lock_structure: true)
     end
 
     tmp = Tempfile.new(["facade_wbprot_build", ".xlsx"])
@@ -948,7 +948,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_wbprot_stream", ".xlsx"])
     Xlsxrb.write(tmp.path) do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.protect_workbook(lock_structure: true, lock_windows: true)
+      w.workbook_protection(lock_structure: true, lock_windows: true)
     end
 
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
@@ -1054,7 +1054,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Sel") do |s|
         s.row(%w[A B])
-        s.select_cell("B1")
+        s.selection("B1")
       end
     end
 
@@ -1224,7 +1224,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.page_margins(left: 1.0, right: 1.0)
         s.page_setup(orientation: :landscape)
         s.hyperlink("A2", "https://example.com")
-        s.validate_data("B2:B3", type: :whole, formula1: "0", formula2: "100")
+        s.data_validation("B2:B3", type: :whole, formula1: "0", formula2: "100")
       end
       w.core_property(:creator, "Combined Test")
     end
@@ -1288,7 +1288,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_formula_build", ".xlsx"])
     Xlsxrb.write(tmp.path, workbook)
 
-    result = Xlsxrb.read(tmp.path).load
+    result = Xlsxrb.load(tmp.path)
     sheet = result.sheet(0)
     cell = sheet.row_at(0).cell_at(2)
     assert_not_nil(cell, "Cell at column 2 (C1) should exist")
@@ -1307,7 +1307,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       end
     end
 
-    result = Xlsxrb.read(tmp.path).load
+    result = Xlsxrb.load(tmp.path)
     sheet = result.sheet(0)
     cell = sheet.row_at(0).cell_at(2)
     assert_not_nil(cell, "Cell at column 2 (C1) should exist")
@@ -1328,7 +1328,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_formula_cached", ".xlsx"])
     Xlsxrb.write(tmp.path, workbook)
 
-    result = Xlsxrb.read(tmp.path).load
+    result = Xlsxrb.load(tmp.path)
     sheet = result.sheet(0)
     cell = sheet.row_at(0).cell_at(2)
     assert_not_nil(cell, "Cell at column 2 (C1) should exist")
@@ -1497,21 +1497,21 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_sparkline helper in build API maps win_loss to stacked and preserves options" do
+  test "sparkline_group helper in build API maps win_loss to stacked and preserves options" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Metrics") do |s|
         s.row([1, 2, 3])
         s.row([4, -2, 3])
         s.row([10, 20, 30])
-        s.add_sparkline(location: "D1", range: "A1:C1", type: :line)
-        s.add_sparkline(location: "D2", range: "A2:C2", type: :win_loss, high: true, low: true)
-        s.add_sparkline(location: "D3", range: "A3:C3", type: "column", markers: true)
+        s.sparkline_group(sparklines: [{ location_ref: "D1", data_ref: "A1:C1" }], type: :line)
+        s.sparkline_group(sparklines: [{ location_ref: "D2", data_ref: "A2:C2" }], type: :stacked, high: true, low: true)
+        s.sparkline_group(sparklines: [{ location_ref: "D3", data_ref: "A3:C3" }], type: "column", markers: true)
       end
     end
 
     ws = workbook.sheets.first
     assert_equal(3, ws.sparkline_groups.size)
-    assert_equal("stacked", ws.sparkline_groups[1].type)
+    assert_equal(:stacked, ws.sparkline_groups[1].type.to_sym)
     assert_equal(true, ws.sparkline_groups[1].high)
     assert_equal(true, ws.sparkline_groups[1].low)
 
@@ -1531,12 +1531,12 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_sparkline helper in stream API writes valid sparklines" do
+  test "sparkline_group helper in stream API writes valid sparklines" do
     tmp = Tempfile.new(["facade_add_sparkline_stream", ".xlsx"])
     Xlsxrb.write(tmp.path) do |w|
       w.sheet("StreamMetrics") do |s|
         s.row([5, 10, -5, 20])
-        s.add_sparkline(location: "E1", range: "A1:D1", type: :win_loss)
+        s.sparkline_group(sparklines: [{ location_ref: "E1", data_ref: "A1:D1" }], type: :stacked)
       end
     end
 
@@ -1550,26 +1550,16 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "add_sparkline raises ArgumentError if location or range is missing" do
+  test "sparkline_group raises ArgumentError if sparklines is missing" do
     assert_raises(ArgumentError) do
       Xlsxrb.build do |w|
-        w.sheet("Errors") do |s|
-          s.add_sparkline(range: "A1:D1")
-        end
-      end
-    end
-
-    assert_raises(ArgumentError) do
-      Xlsxrb.build do |w|
-        w.sheet("Errors") do |s|
-          s.add_sparkline(location: "E1")
-        end
+        w.sheet("Errors", &:sparkline_group)
       end
     end
   end
 
   test "Xlsxrb.write serializes sparkline_groups from direct Elements::Worksheet" do
-    sgs = [{ type: "stacked", sparklines: [{ location_ref: "E1", data_ref: "A1:D1" }] }]
+    sgs = [{ type: "stacked", sparklines: [{ sqref: "E1", formula: "A1:D1" }] }]
     c1 = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: 10)
     row = Xlsxrb::Elements::Row.new(index: 0, cells: [c1])
     ws = Xlsxrb::Elements::Worksheet.new(name: "DirectWS", rows: [row], sparkline_groups: sgs)
@@ -1669,18 +1659,18 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
         # Block with top10
         s.conditional_format("A1:A10") do |cf|
-          cf.rank 5
-          cf.percent true
-          cf.bottom true
-          cf.bold true
+          cf.rank = 5
+          cf.percent = true
+          cf.bottom = true
+          cf.bold = true
         end
 
         # Block with above_average
         s.conditional_format("B1:B10") do |cf|
-          cf.above_average true
-          cf.equal_average true
-          cf.std_dev 1
-          cf.fill_color "00FF00"
+          cf.above_average = true
+          cf.equal_average = true
+          cf.std_dev = 1
+          cf.fill_color = "00FF00"
         end
 
         # Options with time_period
@@ -1787,7 +1777,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   test "row and column grouping and outline_properties in in-memory build" do
     wb = Xlsxrb.build do |w|
       w.sheet("BuildGroupSheet") do |s|
-        s.outline_pr(summary_below: false, summary_right: true, show_outline_symbols: false)
+        s.outline_properties(summary_below: false, summary_right: true, show_outline_symbols: false)
         s.group_columns(0..2, level: 2, collapsed: false)
 
         s.row(["Header 1", "Header 2", "Header 3"])

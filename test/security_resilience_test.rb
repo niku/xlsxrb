@@ -123,8 +123,8 @@ class SecurityResilienceTest < Test::Unit::TestCase
 
       # In-memory and streaming read must correctly preserve the exact verbatim string
       # without interpreting or executing command prefixes
-      wb = Xlsxrb.read(f.path)
-      rows = wb.sheets[0].load.rows
+      wb = Xlsxrb.load(f.path)
+      rows = wb.sheets[0].rows
       formula_values.each_with_index do |expected, idx|
         assert_equal expected, rows[idx].cells[0].value
       end

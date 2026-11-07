@@ -9,12 +9,6 @@ module Xlsxrb
     #
     # @api public
     module CoordinateAccess
-      # Returns a Hash mapping Excel cell references (e.g. "A1") to Cell objects.
-      #
-      # @return [Hash<String, Elements::Cell>]
-      # : () -> Hash[String, Elements::Cell]
-      def cells_hash: () -> Hash[String, Elements::Cell]
-
       # Returns all cells ordered by row and column index.
       #
       # @return [Array<Elements::Cell>]
@@ -70,30 +64,6 @@ module Xlsxrb
       # : () -> Hash[Symbol, Integer]?
       def dimension_bounds: () -> Hash[Symbol, Integer]?
 
-      # Returns the 1-based index of the first column containing data, or nil.
-      #
-      # @deprecated Use {#column_range} or {#dimension_bounds} instead.
-      # @return [Integer, nil]
-      # @api public
-      # : () -> Integer?
-      def first_column: () -> Integer?
-
-      # @deprecated Use {#column_range} or {#dimension_bounds} instead. Will be removed in 0.2.0.
-      # : () -> Integer?
-      def first_col: () -> Integer?
-
-      # Returns the 1-based index of the last column containing data, or nil.
-      #
-      # @deprecated Use {#column_range} or {#dimension_bounds} instead.
-      # @return [Integer, nil]
-      # @api public
-      # : () -> Integer?
-      def last_column: () -> Integer?
-
-      # @deprecated Use {#column_range} or {#dimension_bounds} instead. Will be removed in 0.2.0.
-      # : () -> Integer?
-      def last_col: () -> Integer?
-
       # Returns the 0-based range of rows containing data, or nil.
       #
       # @example
@@ -114,17 +84,11 @@ module Xlsxrb
       # : () -> Range[Integer]?
       def column_range: () -> Range[Integer]?
 
-      # Returns the raw cell value at the given Excel-style reference (e.g. "A1").
-      #
-      # @deprecated Use `sheet["A1"]&.value` instead.
-      # @example
-      #   sheet.cell_value("A1") #=> "Sales Report"
-      #
-      # @param ref [String] Cell reference (e.g. "A1").
-      # @return [Object, nil]
-      # @api public
-      # : (String ref) -> untyped
-      def cell_value: (String ref) -> untyped
+      private
+
+      # Returns a Hash mapping Excel cell references (e.g. "A1") to Cell objects.
+      # : () -> Hash[String, Elements::Cell]
+      def _cells_hash: () -> Hash[String, Elements::Cell]
     end
   end
 end

@@ -52,9 +52,6 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(100, ws["A1"].value)
     assert_equal("Hello", ws["B1"].value)
     assert_equal(200, ws["A2"].value)
-
-    # to_worksheet alias
-    assert_equal(ws["A1"].value, sheet.to_worksheet["A1"].value)
   end
 
   test "stream_sheet feature accessors: merged_cells, auto_filter, data_validations, conditional_formats" do
@@ -85,15 +82,15 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal("A1:E100", sheet.auto_filter)
 
     assert_equal(1, sheet.data_validations.size)
-    assert_equal("C2:C50", sheet.data_validations.first[:sqref])
-    assert_equal("list", sheet.data_validations.first[:type])
-    assert_equal(true, sheet.data_validations.first[:allow_blank])
+    assert_equal("C2:C50", sheet.data_validations.first.sqref)
+    assert_equal("list", sheet.data_validations.first.type)
+    assert_true(sheet.data_validations.first.allow_blank?)
 
     assert_equal(1, sheet.conditional_formats.size)
-    assert_equal("B2:B20", sheet.conditional_formats.first[:sqref])
-    assert_equal("cellIs", sheet.conditional_formats.first[:type])
-    assert_equal("greaterThan", sheet.conditional_formats.first[:operator])
-    assert_equal(["50"], sheet.conditional_formats.first[:formulas])
+    assert_equal("B2:B20", sheet.conditional_formats.first.sqref)
+    assert_equal("cellIs", sheet.conditional_formats.first.type)
+    assert_equal("greaterThan", sheet.conditional_formats.first.operator)
+    assert_equal(["50"], sheet.conditional_formats.first.formula)
   end
 
   test "stream_sheet structure metadata: freeze_pane, sheet_view, sheet_properties, sheet_protection, page_setup, page_margins, header_footer, print_options, breaks" do
@@ -122,16 +119,16 @@ class StreamSheetTest < Test::Unit::TestCase
 
     sheet = Xlsxrb::StreamSheet.new("Structure", xml.b, [])
 
-    assert_equal({ tab_color: "FFFF0000" }, sheet.sheet_properties)
-    assert_equal({ show_grid_lines: false, zoom_scale: 125 }, sheet.sheet_view)
-    assert_equal({ row: 1, column: 2, col: 2, state: :frozen }, sheet.freeze_pane)
-    assert_equal({ sheet: true }, sheet.sheet_protection)
-    assert_equal({ grid_lines: true, headings: true }, sheet.print_options)
-    assert_equal({ left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 }, sheet.page_margins)
-    assert_equal({ orientation: "landscape", paper_size: 9 }, sheet.page_setup)
-    assert_equal({ odd_header: "&CHeader" }, sheet.header_footer)
-    assert_equal([{ id: 10, max: 16_383, man: true }], sheet.row_breaks)
-    assert_equal([{ id: 5, max: 1_048_575, man: true }], sheet.column_breaks)
+    assert_equal({ tab_color: "FFFF0000" }, sheet.sheet_properties.to_h)
+    assert_equal({ show_grid_lines: false, zoom_scale: 125 }, sheet.sheet_view.to_h)
+    assert_equal({ row: 1, column: 2, state: :frozen }, sheet.freeze_pane.to_h)
+    assert_equal({ sheet: true }, sheet.sheet_protection.to_h)
+    assert_equal({ grid_lines: true, headings: true }, sheet.print_options.to_h)
+    assert_equal({ left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 }, sheet.page_margins.to_h)
+    assert_equal({ orientation: "landscape", paper_size: 9 }, sheet.page_setup.to_h)
+    assert_equal({ odd_header: "&CHeader" }, sheet.header_footer.to_h)
+    assert_equal([{ id: 10, max: 16_383, man: true }], sheet.row_breaks.map(&:to_h))
+    assert_equal([{ id: 5, max: 1_048_575, man: true }], sheet.column_breaks.map(&:to_h))
 
     # Propagation to Elements::Worksheet via load
     ws = sheet.load
@@ -144,7 +141,7 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(sheet.page_setup, ws.page_setup)
     assert_equal(sheet.header_footer, ws.header_footer)
     assert_equal(sheet.row_breaks, ws.row_breaks)
-    assert_equal(sheet.col_breaks, ws.col_breaks)
+    assert_equal(sheet.column_breaks, ws.column_breaks)
   end
 
   test "stream_sheet visibility state and propagation to in-memory Worksheet on load" do
@@ -193,17 +190,16 @@ class StreamSheetTest < Test::Unit::TestCase
 
     sheet = Xlsxrb::StreamSheet.new("Links", xml.b, [])
     assert_equal(2, sheet.hyperlinks.size)
-    assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, sheet.hyperlink("A1"))
-    assert_equal({ location: "Sheet1!C3" }, sheet.hyperlink("B2"))
+    assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, sheet.hyperlink("A1").to_h)
+    assert_equal({ location: "Sheet1!C3" }, sheet.hyperlink("B2").to_h)
     assert_nil(sheet.hyperlink("C3"))
 
     ws = sheet.load
     assert_equal(2, ws.hyperlinks.size)
-    assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, ws.hyperlink("A1"))
-    assert_true(ws["A1"].link?)
+    assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, ws.hyperlink("A1").to_h)
     assert_true(ws["A1"].hyperlink?)
     assert_equal("Sheet2!A1", ws["A1"].url)
-    assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, ws["A1"].hyperlink)
+    assert_equal({ location: "Sheet2!A1", display: "Go to Sheet2", tooltip: "Click" }, ws["A1"].hyperlink.to_h)
   end
 
   test "stream_sheet comments without zip_reader returns empty and nil lookup" do
@@ -217,7 +213,7 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_nil(ws.comment("A1"))
   end
 
-  test "stream_sheet cell and formatted_value lookups and raw_values on StreamRow" do
+  test "stream_sheet formatted_value lookups and raw_values on StreamRow" do
     xml = <<~XML
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
         <sheetData>
@@ -239,31 +235,26 @@ class StreamSheetTest < Test::Unit::TestCase
     sheet = Xlsxrb::StreamSheet.new("Data", xml.b, [], styles, zip_reader: nil)
     assert_equal(styles, sheet.styles)
 
-    cell_a1 = sheet.cell("A1")
+    row = sheet.each_row.first
+    cell_a1 = row["A"]
     assert_not_nil(cell_a1)
     assert_equal("1042", cell_a1.raw_value)
     assert_equal("#,##0.00", cell_a1.format_code)
     assert_equal("1,042.00", cell_a1.formatted_value)
 
-    assert_equal("1,042.00", sheet.formatted_value("A1"))
-    assert_equal("1,042.00", sheet.formatted_value(0, 0))
-    assert_equal("2084", sheet.formatted_value("B1"))
-    assert_nil(sheet.formatted_value("C1"))
-
-    row = sheet.each_row.first
     assert_equal([1042, 2084], row.values)
     assert_equal(%w[1042 2084], row.raw_values)
     assert_equal(["1,042.00", "2084"], row.formatted_values)
-    assert_equal([nil, "A1*2"], row.formulas)
-    assert_equal(row.raw_values, row[:raw_values])
-    assert_equal(row.formatted_values, row[:formatted_values])
-    assert_equal(row.formulas, row[:formulas])
+    assert_equal([nil, "A1*2"], row.formula_expressions)
 
     # load into in-memory Worksheet
     ws = sheet.load
     assert_equal(styles, ws.styles)
     assert_equal("1,042.00", ws["A1"].formatted_value)
     assert_equal("1,042.00", ws.formatted_value("A1"))
+    assert_equal("1,042.00", ws.formatted_value(0, 0))
+    assert_equal("2084", ws.formatted_value("B1"))
+    assert_nil(ws.formatted_value("C1"))
     assert_equal(%w[1042 2084], ws.rows.first.raw_values)
     assert_equal(["1,042.00", "2084"], ws.rows.first.formatted_values)
   end
@@ -283,7 +274,6 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(false, sheet1900.date1904?)
     row1900 = sheet1900.each_row.first
     assert_equal(false, row1900.date1904?)
-    assert_equal(false, row1900[:date1904])
     assert_equal(false, row1900.cells.first.date1904?)
     assert_equal(Date.new(1899, 12, 31), row1900.cells.first.to_date)
 
@@ -291,7 +281,6 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(true, sheet1904.date1904?)
     row1904 = sheet1904.each_row.first
     assert_equal(true, row1904.date1904?)
-    assert_equal(true, row1904[:date1904])
     assert_equal(true, row1904.cells.first.date1904?)
     assert_equal(Date.new(1904, 1, 1), row1904.cells.first.to_date)
 
@@ -300,7 +289,7 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(Date.new(1904, 1, 1), ws1904["A1"].to_date)
   end
 
-  test "stream_sheet exposes dimension and 1-based bounds" do
+  test "stream_sheet exposes dimension and bounds" do
     xml = <<~XML
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
         <dimension ref="A1:Z50000"/>
@@ -312,12 +301,8 @@ class StreamSheetTest < Test::Unit::TestCase
 
     sheet = Xlsxrb::StreamSheet.new("Sheet1", xml.b, [])
     assert_equal("A1:Z50000", sheet.dimension)
-    assert_equal(1, sheet.first_row)
-    assert_equal(1, sheet.first_column)
-    assert_equal(1, sheet.first_col)
-    assert_equal(50_000, sheet.last_row)
-    assert_equal(26, sheet.last_column)
-    assert_equal(26, sheet.last_col)
+    assert_equal(0..49_999, sheet.row_range)
+    assert_equal(0..25, sheet.column_range)
 
     ws = sheet.load
     assert_equal("A1:Z50000", ws.dimension)
@@ -333,10 +318,6 @@ class StreamSheetTest < Test::Unit::TestCase
     sheet_range = Xlsxrb::StreamSheet.new("RangeSheet", xml_range.b, [])
     assert_equal("B2:D10", sheet_range.dimension)
     assert_equal({ min_row: 1, max_row: 9, min_column: 1, max_column: 3 }, sheet_range.dimension_bounds)
-    assert_equal(2, sheet_range.first_row)
-    assert_equal(2, sheet_range.first_col)
-    assert_equal(10, sheet_range.last_row)
-    assert_equal(4, sheet_range.last_col)
     assert_equal(1..9, sheet_range.row_range)
     assert_equal(1..3, sheet_range.column_range)
 
@@ -349,10 +330,6 @@ class StreamSheetTest < Test::Unit::TestCase
     sheet_single = Xlsxrb::StreamSheet.new("SingleSheet", xml_single.b, [])
     assert_equal("C5", sheet_single.dimension)
     assert_equal({ min_row: 4, max_row: 4, min_column: 2, max_column: 2 }, sheet_single.dimension_bounds)
-    assert_equal(5, sheet_single.first_row)
-    assert_equal(3, sheet_single.first_col)
-    assert_equal(5, sheet_single.last_row)
-    assert_equal(3, sheet_single.last_col)
     assert_equal(4..4, sheet_single.row_range)
     assert_equal(2..2, sheet_single.column_range)
   end
@@ -365,10 +342,6 @@ class StreamSheetTest < Test::Unit::TestCase
     XML
     sheet_missing = Xlsxrb::StreamSheet.new("Missing", xml_missing.b, [])
     assert_nil(sheet_missing.dimension)
-    assert_nil(sheet_missing.first_row)
-    assert_nil(sheet_missing.first_col)
-    assert_nil(sheet_missing.last_row)
-    assert_nil(sheet_missing.last_col)
     assert_nil(sheet_missing.row_range)
     assert_nil(sheet_missing.column_range)
 
@@ -380,16 +353,14 @@ class StreamSheetTest < Test::Unit::TestCase
     XML
     sheet_malformed = Xlsxrb::StreamSheet.new("Malformed", xml_malformed.b, [])
     assert_equal("NOT_A_VALID_REF", sheet_malformed.dimension)
-    assert_nil(sheet_malformed.first_row)
-    assert_nil(sheet_malformed.last_row)
+    assert_nil(sheet_malformed.row_range)
+    assert_nil(sheet_malformed.column_range)
 
     # Explicit dimension keyword argument
     sheet_explicit = Xlsxrb::StreamSheet.new("Explicit", xml_missing.b, [], dimension: "X1:Y2")
     assert_equal("X1:Y2", sheet_explicit.dimension)
-    assert_equal(1, sheet_explicit.first_row)
-    assert_equal(24, sheet_explicit.first_col)
-    assert_equal(2, sheet_explicit.last_row)
-    assert_equal(25, sheet_explicit.last_col)
+    assert_equal(0..1, sheet_explicit.row_range)
+    assert_equal(23..24, sheet_explicit.column_range)
   end
 
   test "stream_sheet lazily extracts dimension from chunk supplier without reading later chunks" do
@@ -408,9 +379,8 @@ class StreamSheetTest < Test::Unit::TestCase
 
     sheet = Xlsxrb::StreamSheet.new("Supplier", supplier, [])
     assert_equal("A1:F30", sheet.dimension)
-    assert_equal(1, sheet.first_row)
-    assert_equal(30, sheet.last_row)
-    assert_equal(6, sheet.last_col)
+    assert_equal(0..29, sheet.row_range)
+    assert_equal(0..5, sheet.column_range)
     # Stopped on first chunk where dimension and sheetData appeared
     assert_equal(1, chunks_read)
   end
@@ -452,13 +422,14 @@ class StreamSheetTest < Test::Unit::TestCase
     sheet.each_row_values(type_cast: true) { |row_vals| typecast_collected << row_vals }
     assert_equal([[10, "hello"], [Date.new(2023, 1, 1), nil, 30]], typecast_collected)
 
-    # cell access on StreamSheet by coordinate string and 0-based indices (deprecated in favor of sheet.load[...])
-    assert_equal(10, sheet.cell("A1").value)
-    assert_equal("hello", sheet.cell("B1").value)
-    assert_equal(10, sheet.cell(0, 0).value)
-    assert_equal("hello", sheet.cell(0, "B").value)
-    assert_nil(sheet.cell("Z99"))
-    assert_nil(sheet.cell(99, 0))
+    # Coordinate access on loaded Worksheet
+    ws = sheet.load
+    assert_equal(10, ws["A1"].value)
+    assert_equal("hello", ws["B1"].value)
+    assert_equal(10, ws[0, 0].value)
+    assert_equal("hello", ws[0, "B"].value)
+    assert_nil(ws["Z99"])
+    assert_nil(ws[99, 0])
   end
 
   test "stream_sheet trim_empty_rows omits trailing empty rows while preserving inner empty rows" do
@@ -544,10 +515,6 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_true(r1.hidden?)
     assert_true(r1.collapsed?)
     assert_equal(2, r1.outline_level)
-    assert_equal(true, r1[:collapsed])
-    assert_equal(true, r1[:collapsed?])
-    assert_equal(true, r1[:hidden?])
-    assert_equal(true, r1[:custom_height?])
 
     r2 = rows[1]
     assert_equal(1, r2.index)
@@ -577,16 +544,16 @@ class StreamSheetTest < Test::Unit::TestCase
     end
 
     buffer.rewind
-    wb = Xlsxrb.read(buffer)
-    sheet = wb.sheets.first
-    rows = sheet.each_row.to_a
-    assert_equal(2, rows.size)
-    assert_true(rows[0].collapsed?)
-    assert_true(rows[0].hidden?)
-    assert_in_delta(35.0, rows[0].height)
-    assert_equal(1, rows[0].outline_level)
-    assert_false(rows[1].collapsed?)
-    assert_false(rows[1].hidden?)
+    Xlsxrb.read(buffer) do |sheet|
+      rows = sheet.each_row.to_a
+      assert_equal(2, rows.size)
+      assert_true(rows[0].collapsed?)
+      assert_true(rows[0].hidden?)
+      assert_in_delta(35.0, rows[0].height)
+      assert_equal(1, rows[0].outline_level)
+      assert_false(rows[1].collapsed?)
+      assert_false(rows[1].hidden?)
+    end
   end
 
   test "stream_sheet and elements worksheet configurable sparse vs padded row and cell iteration" do
@@ -614,8 +581,8 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(0, rows[0].index)
     assert_equal(2, rows[1].index)
     assert_equal(2, rows[0].cells.size)
-    assert_equal({ "A1" => 10, "C1" => 30 }, rows[0].to_h)
-    assert_equal({ "B3" => "Hello" }, rows[1].to_h)
+    assert_equal([10, nil, 30], rows[0].values)
+    assert_equal([nil, "Hello"], rows[1].values)
 
     # 2. Padded rows only
     padded_rows = sheet.each_row(pad_empty_rows: true).to_a
@@ -660,8 +627,7 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(10, ws_both[0][0].value)
     assert_nil(ws_both[0][1].value)
     assert_equal(30, ws_both[0][2].value)
-    assert_equal({ "A1" => 10, "C1" => 30 }, ws.rows[0].cells_hash)
-    assert_equal({ "A1" => 10, "C1" => 30 }, ws.rows[0][:cells_hash])
+    assert_equal([10, nil, 30], ws.rows[0].values)
 
     # 6. each_row_values with padding
     vals = sheet.each_row_values(pad_empty_rows: true).to_a

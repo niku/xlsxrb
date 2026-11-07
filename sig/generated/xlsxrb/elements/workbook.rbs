@@ -12,7 +12,7 @@ module Xlsxrb
     # @api public
     # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
     class Workbook
-      # @param sheets [Array<Elements::Worksheet, StreamSheet>] Worksheets in the workbook.
+      # @param sheets [Array<Elements::Worksheet>] Worksheets in the workbook.
       # @param shared_strings [Array<String>] Shared strings table.
       # @param styles [Elements::Styles, Hash] Styles definition.
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
@@ -24,8 +24,8 @@ module Xlsxrb
       # @param workbook_protection [Elements::WorkbookProtection, Hash, nil] Workbook protection.
       # @param custom_properties [Hash, Array, nil] Custom properties.
       # @param date1904 [Boolean] Whether the workbook uses the 1904 date system.
-      # : (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Elements::Styles | Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[untyped]?, ?workbook_properties: (Elements::WorkbookProperties | Hash[Symbol, untyped])?, ?core_properties: (Elements::CoreProperties | Hash[Symbol, untyped])?, ?app_properties: (Elements::AppProperties | Hash[Symbol, untyped])?, ?workbook_protection: (Elements::WorkbookProtection | Hash[Symbol, untyped])?, ?custom_properties: (Hash[String, Elements::CustomProperty] | Hash[untyped, untyped] | Array[untyped])?, ?date1904: bool) -> void
-      def initialize: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Elements::Styles | Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[untyped]?, ?workbook_properties: (Elements::WorkbookProperties | Hash[Symbol, untyped])?, ?core_properties: (Elements::CoreProperties | Hash[Symbol, untyped])?, ?app_properties: (Elements::AppProperties | Hash[Symbol, untyped])?, ?workbook_protection: (Elements::WorkbookProtection | Hash[Symbol, untyped])?, ?custom_properties: (Hash[String, Elements::CustomProperty] | Hash[untyped, untyped] | Array[untyped])?, ?date1904: bool) -> void
+      # : (?sheets: Array[Elements::Worksheet], ?shared_strings: Array[String], ?styles: Elements::Styles | Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[untyped]?, ?workbook_properties: (Elements::WorkbookProperties | Hash[Symbol, untyped])?, ?core_properties: (Elements::CoreProperties | Hash[Symbol, untyped])?, ?app_properties: (Elements::AppProperties | Hash[Symbol, untyped])?, ?workbook_protection: (Elements::WorkbookProtection | Hash[Symbol, untyped])?, ?custom_properties: (Hash[String, Elements::CustomProperty] | Hash[untyped, untyped] | Array[untyped])?, ?date1904: bool) -> void
+      def initialize: (?sheets: Array[Elements::Worksheet], ?shared_strings: Array[String], ?styles: Elements::Styles | Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[untyped]?, ?workbook_properties: (Elements::WorkbookProperties | Hash[Symbol, untyped])?, ?core_properties: (Elements::CoreProperties | Hash[Symbol, untyped])?, ?app_properties: (Elements::AppProperties | Hash[Symbol, untyped])?, ?workbook_protection: (Elements::WorkbookProtection | Hash[Symbol, untyped])?, ?custom_properties: (Hash[String, Elements::CustomProperty] | Hash[untyped, untyped] | Array[untyped])?, ?date1904: bool) -> void
 
       # Iterate over worksheets.
       #
@@ -35,18 +35,12 @@ module Xlsxrb
       #   end
       #
       # @yield [sheet]
-      # @yieldparam sheet [Elements::Worksheet, StreamSheet]
+      # @yieldparam sheet [Elements::Worksheet]
       # @return [Enumerator, void]
-      # : () { (Elements::Worksheet | StreamSheet) -> void } -> void
-      # : () -> Enumerator[Elements::Worksheet | StreamSheet, void]
-      def each: () { (Elements::Worksheet | StreamSheet) -> void } -> void
-              | () -> Enumerator[Elements::Worksheet | StreamSheet, void]
-
-      # @deprecated Use {#each} instead. Will be removed in 0.2.0.
-      # : () { (Elements::Worksheet | StreamSheet) -> void } -> void
-      # : () -> Enumerator[Elements::Worksheet | StreamSheet, void]
-      def each_sheet: () { (Elements::Worksheet | StreamSheet) -> void } -> void
-                    | () -> Enumerator[Elements::Worksheet | StreamSheet, void]
+      # : () { (Elements::Worksheet) -> void } -> void
+      # : () -> Enumerator[Elements::Worksheet, void]
+      def each: () { (Elements::Worksheet) -> void } -> void
+              | () -> Enumerator[Elements::Worksheet, void]
 
       # Returns whether the workbook is valid according to ECMA-376 rules.
       #
@@ -75,18 +69,12 @@ module Xlsxrb
       # : () -> Integer?
       def active_sheet_index: () -> Integer?
 
-      # @deprecated Use {#active_sheet_index} or {#active_sheet} instead.
-      # @return [Integer, nil]
-      # @api public
-      # : () -> Integer?
-      def active_tab: () -> Integer?
-
       # Returns the active worksheet in the workbook, or the first worksheet if not set.
       #
-      # @return [Elements::Worksheet, StreamSheet, nil]
+      # @return [Elements::Worksheet, nil]
       # @api public
-      # : () -> (Elements::Worksheet | StreamSheet)?
-      def active_sheet: () -> (Elements::Worksheet | StreamSheet)?
+      # : () -> Elements::Worksheet?
+      def active_sheet: () -> Elements::Worksheet?
 
       # Returns the index of the first sheet tab visible in the sheet tab scroll area.
       #
@@ -102,10 +90,6 @@ module Xlsxrb
       # : () -> bool
       def show_sheet_tabs?: () -> bool
 
-      # @deprecated Use {#show_sheet_tabs?} instead. Will be removed in 0.2.0.
-      # : () -> bool
-      def show_sheet_tabs: () -> bool
-
       # Returns the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
       #
       # @return [Integer, nil]
@@ -119,10 +103,6 @@ module Xlsxrb
       # @api public
       # : () -> bool
       def full_calc_on_load?: () -> bool
-
-      # @deprecated Use {#full_calc_on_load?} instead. Will be removed in 0.2.0.
-      # : () -> bool
-      def full_calc_on_load: () -> bool
 
       # Returns the defined name matching name (and optionally sheet), or nil.
       #
@@ -145,10 +125,10 @@ module Xlsxrb
       #   wb.sheet(:Sales)
       #
       # @param identifier [Integer, String, Symbol, untyped] 0-based index or sheet name.
-      # @return [Elements::Worksheet, StreamSheet, nil]
+      # @return [Elements::Worksheet, nil]
       # @api public
-      # : (?Integer | String | Symbol | untyped identifier) -> (Elements::Worksheet | StreamSheet)?
-      def sheet: (?Integer | String | Symbol | untyped identifier) -> (Elements::Worksheet | StreamSheet)?
+      # : (?Integer | String | Symbol | untyped identifier) -> Elements::Worksheet?
+      def sheet: (?Integer | String | Symbol | untyped identifier) -> Elements::Worksheet?
 
       alias [] sheet
 
@@ -179,53 +159,9 @@ module Xlsxrb
       # : (Integer | String | untyped sheet_identifier, String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Elements::Image]
       def images_at: (Integer | String | untyped sheet_identifier, String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Elements::Image]
 
-      # Internal load helper without deprecation warning.
-      # @api private
-      # : () -> Elements::Workbook
-      def _load: () -> Elements::Workbook
-
       # Loads all sheets into memory, returning an Elements::Workbook where every
       # worksheet is a fully-parsed Elements::Worksheet supporting coordinate random access.
       #
-      # @example
-      #   wb = Xlsxrb.load("file.xlsx")
-      #   puts wb["Sheet1"]["A1"].value
-      #
-      # @deprecated Use {Xlsxrb.load} instead. Will be removed in 0.2.0.
-      # @return [Elements::Workbook]
-      # @api public
-      # : () -> Elements::Workbook
-      def load: () -> Elements::Workbook
-
-      # @deprecated Use {Xlsxrb.load} instead. Will be removed in 0.2.0.
-      # : () -> Elements::Workbook
-      def to_workbook: () -> Elements::Workbook
-
-      # Closes any streaming resources associated with worksheets.
-      #
-      # @return [void]
-      # @api public
-      # : () -> void
-      def close: () -> void
-
-      # Returns a new Workbook with the specified sheet updated.
-      # Yields the matched worksheet to the block, which must return a new Worksheet.
-      #
-      # @deprecated Use {Xlsxrb.read} + {Xlsxrb.write} for streaming transformations or {Xlsxrb.write} DSL for report generation. Will be removed in 0.2.0.
-      # @example
-      #   new_wb = wb.update_sheet("Sheet1") do |sheet|
-      #     sheet.update_cell("A1", value: "New Title")
-      #   end
-      #
-      # @param identifier [Integer, String] 0-based index or sheet name.
-      # @yield [sheet]
-      # @yieldparam sheet [Elements::Worksheet] The worksheet to update.
-      # @yieldreturn [Elements::Worksheet] The modified worksheet.
-      # @return [Elements::Workbook] A new Workbook instance.
-      # @api public
-      # : (Integer | String identifier) ?{ (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
-      def update_sheet: (Integer | String identifier) ?{ (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
-
       # Returns an Array of all worksheet names.
       #
       # @return [Array<String>]

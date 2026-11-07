@@ -53,7 +53,7 @@ class OpenxmlEncryptionInteropTest < Test::Unit::TestCase
       assert_true Xlsxrb::Ooxml::Crypto.encrypted?(File.binread(enc_xlsx_path))
 
       # Decrypt and read with Xlsxrb
-      wb = Xlsxrb.read(enc_xlsx_path, password: password).load
+      wb = Xlsxrb.load(enc_xlsx_path, password: password)
       assert_not_nil wb
       assert_operator wb.sheets.size, :>, 0
     end

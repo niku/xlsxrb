@@ -53,10 +53,6 @@ module Xlsxrb
       # : Array[Elements::ThreadedComment]
       attr_reader threaded_comments: untyped
 
-      # @deprecated Use {#date1904?} instead.
-      # : () -> bool
-      def date1904: () -> bool
-
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
       # @param value [Object, nil] The cell's value.
@@ -71,18 +67,14 @@ module Xlsxrb
       # @param format_code [String, nil] Optional OpenXML number/date format code.
       # @param date1904 [Boolean] Whether the cell belongs to a 1904 date system workbook.
       # @param threaded_comments [Array<Elements::ThreadedComment, Hash>, nil] Optional threaded comments.
-      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Elements::Hyperlink | Hash[Symbol, untyped] | String)?, ?comment: (Elements::Comment | Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Elements::ThreadedComment | Hash[Symbol, untyped]]?) -> void
-      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Elements::Hyperlink | Hash[Symbol, untyped] | String)?, ?comment: (Elements::Comment | Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Elements::ThreadedComment | Hash[Symbol, untyped]]?) -> void
+      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String | Hash[Symbol, untyped])?, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: Integer?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Elements::Hyperlink | Hash[Symbol, untyped] | String)?, ?comment: (Elements::Comment | Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Elements::ThreadedComment | Hash[Symbol, untyped]]?) -> void
+      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String | Hash[Symbol, untyped])?, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: Integer?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Elements::Hyperlink | Hash[Symbol, untyped] | String)?, ?comment: (Elements::Comment | Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Elements::ThreadedComment | Hash[Symbol, untyped]]?) -> void
 
       # @api private
       # rubocop:disable Style/OptionalBooleanParameter
       def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula, ?untyped raw_value, ?untyped format_code, ?untyped date1904) -> untyped
 
-      # Normalizes formula representations to an {Elements::Formula} object or nil.
-      #
-      # @param formula [Elements::Formula, String, Hash, Object, nil]
-      # @return [Elements::Formula, nil]
-      # @api public
+      # @api private
       # : (untyped formula) -> Elements::Formula?
       def self.normalize_formula: (untyped formula) -> Elements::Formula?
 
@@ -138,10 +130,6 @@ module Xlsxrb
       # : () -> bool
       def hyperlink?: () -> bool
 
-      # @deprecated Use {#hyperlink?} instead.
-      # : () -> bool
-      def link?: () -> bool
-
       # Returns the hyperlink target URL or location string, or nil.
       #
       # @return [String, nil]
@@ -177,10 +165,6 @@ module Xlsxrb
       # : () -> bool
       def threaded_comment?: () -> bool
 
-      # @deprecated Use {#threaded_comment?} instead.
-      # : () -> bool
-      def threaded_comments?: () -> bool
-
       # Returns the root threaded comment for this cell, or nil.
       #
       # @return [Elements::ThreadedComment, nil]
@@ -195,14 +179,6 @@ module Xlsxrb
       # @api public
       # : (?String? custom_format_code) -> String?
       def formatted_value: (?String? custom_format_code) -> String?
-
-      # Access cell attributes by Symbol key.
-      #
-      # @param key [Symbol] Attribute key (:value, :formula, :style_index, :ref, :column_index, :row_index, :type, :raw_value, :format_code, :formatted_value).
-      # @return [Object, nil]
-      # @api public
-      # : (Symbol key) -> untyped
-      def []: (Symbol key) -> untyped
 
       # Returns the classified format category for this cell (:date, :datetime, :time, :number, :text, :general, or nil).
       #
@@ -253,13 +229,6 @@ module Xlsxrb
       # : () -> bool
       def date1904?: () -> bool
 
-      # @deprecated Use {#value} instead.
-      #
-      # @return [Object, nil]
-      # @api public
-      # : () -> untyped
-      def content: () -> untyped
-
       # Returns the string representation of the cell value.
       #
       # @return [String]
@@ -283,19 +252,17 @@ module Xlsxrb
 
       # Converts the cell value (numeric serial date or date string) to Date.
       #
-      # @param date1904 [Boolean, nil] Deprecated parameter. Cell's date1904? setting is used.
       # @return [Date, nil]
       # @api public
-      # : (?date1904: bool?) -> Date?
-      def to_date: (?date1904: bool?) -> Date?
+      # : () -> Date?
+      def to_date: () -> Date?
 
       # Converts the cell value (numeric serial datetime or datetime string) to Time.
       #
-      # @param date1904 [Boolean, nil] Deprecated parameter. Cell's date1904? setting is used.
       # @return [Time, nil]
       # @api public
-      # : (?date1904: bool?) -> Time?
-      def to_time: (?date1904: bool?) -> Time?
+      # : () -> Time?
+      def to_time: () -> Time?
 
       # Pure calculation: converts a 0-based column index to an Excel letter.
       #
@@ -308,18 +275,6 @@ module Xlsxrb
       # @api private
       def self._column_letter: (untyped index) -> untyped
 
-      # Converts a 0-based column index to an Excel letter (0 -> "A", 25 -> "Z", 26 -> "AA").
-      #
-      # @example
-      #   Cell.column_letter(0)  #=> "A"
-      #   Cell.column_letter(26) #=> "AA"
-      #
-      # @deprecated Use {Xlsxrb.column_letter} instead. Will be removed in 0.2.0.
-      # @param index [Integer] 0-based column index.
-      # @return [String] Excel column letter.
-      # : (untyped index) -> String
-      def self.column_letter: (untyped index) -> String
-
       # Pure calculation: converts an uppercase column letter string to a 0-based index.
       #
       # @param letter [String] Uppercase column letter string (e.g. "A", "AA").
@@ -331,32 +286,8 @@ module Xlsxrb
       # @api private
       def self._column_index: (untyped letter) -> untyped
 
-      # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
-      #
-      # @example
-      #   Cell.column_index("A")  #=> 0
-      #   Cell.column_index(:AA)  #=> 26
-      #
-      # @deprecated Use {Xlsxrb.column_index} instead. Will be removed in 0.2.0.
-      # @param letter [String, Symbol, Integer] Column letter or integer index.
-      # @return [Integer] 0-based column index.
-      # : (String | Symbol | Integer letter) -> Integer
-      def self.column_index: (String | Symbol | Integer letter) -> Integer
-
       # @api private
       def self._parse_ref: (untyped ref) -> untyped
-
-      # Parses an Excel-style reference to [row_index, col_index] (both 0-based).
-      #
-      # @example
-      #   Cell.parse_ref("A1")  #=> [0, 0]
-      #   Cell.parse_ref("C10") #=> [9, 2]
-      #
-      # @deprecated Use {Xlsxrb.parse_ref} instead. Will be removed in 0.2.0.
-      # @param ref [String, nil] Excel cell reference.
-      # @return [Array(Integer, Integer), nil] 0-based [row_index, col_index].
-      # : (String? ref) -> [Integer, Integer]?
-      def self.parse_ref: (String? ref) -> [ Integer, Integer ]?
 
       # Returns whether the coordinates are within OOXML limits (row: 0..1,048,575, col: 0..16,383).
       #

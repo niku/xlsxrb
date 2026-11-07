@@ -192,7 +192,7 @@ module Xlsxrb
           if formula
             if formula.is_a?(Xlsxrb::Elements::Formula)
               formula_expr = formula.expression
-              formula_ca = formula.calculate_always
+              formula_ca = formula.calculate_always?
               formula_type = formula.type
               formula_ref = formula.ref
               formula_si = formula.shared_index
@@ -394,7 +394,7 @@ module Xlsxrb
                   f_attrs << %( ref="#{value.ref}") if value.ref
                 end
               end
-              f_attrs << ' ca="1"' if value.calculate_always
+              f_attrs << ' ca="1"' if value.calculate_always?
               c_type = ""
               case value.cached_value
               when true
@@ -609,7 +609,7 @@ module Xlsxrb
           case value
           when Xlsxrb::Elements::Formula
             formula_expr = value.expression
-            formula_ca = value.calculate_always
+            formula_ca = value.calculate_always?
             formula_type = value.type
             formula_ref = value.ref
             formula_si = value.shared_index
@@ -819,7 +819,7 @@ module Xlsxrb
         apply_styles = props.fetch(:apply_styles, outline_props[:apply_styles])
         summary_below = props.fetch(:summary_below, props.fetch(:outline_below, outline_props[:summary_below]))
         summary_right = props.fetch(:summary_right, props.fetch(:outline_right, outline_props[:summary_right]))
-        show_outline_symbols = props.fetch(:show_outline_symbols, props.fetch(:show_symbols, outline_props[:show_outline_symbols]))
+        show_outline_symbols = props.fetch(:show_outline_symbols, outline_props[:show_outline_symbols])
         has_outline = !apply_styles.nil? || !summary_below.nil? || !summary_right.nil? || !show_outline_symbols.nil?
 
         has_children = tc_attrs || !props[:fit_to_page].nil? || has_outline
@@ -836,8 +836,11 @@ module Xlsxrb
             @builder.empty_tag("outlinePr", outline_attrs) unless outline_attrs.empty?
           end
 
-          unless props[:fit_to_page].nil?
-            @builder.empty_tag("pageSetUpPr", { fitToPage: props[:fit_to_page] ? "1" : "0" })
+          psp = props[:page_setup_properties] || props[:page_setup_pr]
+          fit_to_page = props[:fit_to_page]
+          fit_to_page = psp[:fit_to_page] if fit_to_page.nil? && psp.is_a?(Hash)
+          unless fit_to_page.nil?
+            @builder.empty_tag("pageSetUpPr", { fitToPage: fit_to_page ? "1" : "0" })
           end
 
           @builder.close_tag("sheetPr")
@@ -895,16 +898,18 @@ module Xlsxrb
         @builder.open_tag("sheetView", sv_attrs)
         if freeze_pane
           pane_attrs = {}
-          pane_attrs[:xSplit] = freeze_pane[:col].to_s if freeze_pane[:col]&.positive?
-          pane_attrs[:ySplit] = freeze_pane[:row].to_s if freeze_pane[:row]&.positive?
-          top_left_col = column_letter(freeze_pane[:col] || 0)
-          top_left_row = (freeze_pane[:row] || 0) + 1
+          col_val = freeze_pane[:column] || freeze_pane[:col]
+          row_val = freeze_pane[:row]
+          pane_attrs[:xSplit] = col_val.to_s if col_val&.positive?
+          pane_attrs[:ySplit] = row_val.to_s if row_val&.positive?
+          top_left_col = column_letter(col_val || 0)
+          top_left_row = (row_val || 0) + 1
           pane_attrs[:topLeftCell] = freeze_pane[:top_left_cell] || "#{top_left_col}#{top_left_row}"
           pane_attrs[:state] = "frozen"
           # Determine active pane
-          pane_attrs[:activePane] = freeze_pane[:active_pane] || if (freeze_pane[:col] || 0).positive? && (freeze_pane[:row] || 0).positive?
+          pane_attrs[:activePane] = freeze_pane[:active_pane] || if (col_val || 0).positive? && (row_val || 0).positive?
                                                                    "bottomRight"
-                                                                 elsif (freeze_pane[:col] || 0).positive?
+                                                                 elsif (col_val || 0).positive?
                                                                    "topRight"
                                                                  else
                                                                    "bottomLeft"
@@ -1474,7 +1479,8 @@ module Xlsxrb
           group = group.to_h if group.is_a?(Elements::MetadataRecord)
           sg_attrs = {}
           sg_attrs[:type] = group[:type] if group[:type]
-          sg_attrs[:displayEmptyCellsAs] = group[:display_empty] if group[:display_empty]
+          disp_empty = group[:display_empty_cells_as] || group[:display_empty]
+          sg_attrs[:displayEmptyCellsAs] = disp_empty if disp_empty
           sg_attrs[:markers] = "1" if group[:markers]
           sg_attrs[:high] = "1" if group[:high]
           sg_attrs[:low] = "1" if group[:low]
@@ -1504,10 +1510,10 @@ module Xlsxrb
             sp = sp.to_h if sp.is_a?(Elements::MetadataRecord)
             @builder.open_tag("x14:sparkline")
             @builder.open_tag("xm:f")
-            @builder.text(sp[:data_ref] || sp[:formula] || sp[:f])
+            @builder.text(sp[:formula] || sp[:data_ref] || sp[:f])
             @builder.close_tag("xm:f")
             @builder.open_tag("xm:sqref")
-            @builder.text(sp[:location_ref] || sp[:sqref] || sp[:location])
+            @builder.text(sp[:sqref] || sp[:location_ref] || sp[:location])
             @builder.close_tag("xm:sqref")
             @builder.close_tag("x14:sparkline")
           end
@@ -1535,10 +1541,7 @@ module Xlsxrb
       # --- Columns ---
 
       def write_columns(columns)
-        default_width = if @sheet_format
-                          @sheet_format[:default_column_width] || @sheet_format[:default_col_width] ||
-                            @sheet_format["default_column_width"] || @sheet_format["default_col_width"]
-                        end
+        default_width = @sheet_format ? (@sheet_format[:default_col_width] || @sheet_format["default_col_width"]) : nil
         @builder.open_tag("cols")
         columns.each do |col|
           if col.is_a?(Elements::Column)
@@ -1546,11 +1549,11 @@ module Xlsxrb
             max = col.unmapped_data[:max] || (col.index + 1)
             style_id = col.style_index
             width = col.width || (style_id ? default_width : nil)
-            hidden = col.hidden
-            custom_width = col.custom_width || !width.nil?
+            hidden = col.hidden?
+            custom_width = col.custom_width? || !width.nil?
             outline_level = col.outline_level
-            collapsed = col.unmapped_data[:collapsed]
-            best_fit = (col.respond_to?(:best_fit) && col.best_fit) || col.unmapped_data[:best_fit]
+            collapsed = col.collapsed? || col.unmapped_data[:collapsed]
+            best_fit = col.best_fit? || col.unmapped_data[:best_fit]
           else
             min = col[:min] || ((col[:index] || 0) + 1)
             max = col[:max] || ((col[:index] || 0) + 1)
@@ -1619,7 +1622,7 @@ module Xlsxrb
             f_attrs[:t] = formula.type.to_s if formula.type
             f_attrs[:ref] = formula.ref if formula.ref
             f_attrs[:si] = formula.shared_index.to_s if formula.shared_index
-            f_attrs[:ca] = "1" if formula.calculate_always
+            f_attrs[:ca] = "1" if formula.calculate_always?
           else
             formula_text = formula_text[1..] if formula_text.is_a?(String) && formula_text.start_with?("=")
             f_type = cell[:formula_type] || cell[:type]
@@ -1673,8 +1676,8 @@ module Xlsxrb
       def write_inline_rich_text(buf, rich_text)
         buf << "><is>"
         rich_text.runs.each do |run|
-          font = run.is_a?(Hash) ? run[:font] : run.font
-          run_text = run.is_a?(Hash) ? run[:text] : run.text
+          font = run.respond_to?(:font) ? run.font : run[:font]
+          text = run.respond_to?(:text) ? run.text : run[:text]
           if font && !font.empty?
             buf << "<r><rPr>"
             buf << "<b/>" if font[:bold]
@@ -1732,7 +1735,7 @@ module Xlsxrb
           else
             buf << "<r><t>"
           end
-          buf << escape_xml(run_text.to_s) << "</t></r>"
+          buf << escape_xml(text.to_s) << "</t></r>"
         end
         buf << "</is></c>"
       end

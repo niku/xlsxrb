@@ -26,57 +26,29 @@ module Xlsxrb
       # : (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: (Integer | Symbol | String | Hash[Symbol, untyped] | nil), ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
       def initialize: (index: Integer, ?cells: Array[Elements::Cell], ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | Symbol | String | Hash[Symbol, untyped] | nil, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
 
-      # Access a cell by 0-based column index, column letter, or access row attributes via Symbol.
+      # Access a cell by 0-based column index, column letter/Symbol, or column range.
       #
       # @example
       #   row[0]          #=> Cell at column 0 (or nil if sparse)
       #   row["A"]        #=> Cell at column "A"
       #   row[:A]         #=> Cell at column "A"
-      #   row[:height]    #=> 25.0
-      #   row[:cells]     #=> [Cell, Cell, ...]
+      #   row[0..2]       #=> [Cell, Cell, ...]
       #
-      # @param col_index [Integer, String, Symbol] Column index, column letter, or attribute symbol.
-      # @return [Elements::Cell, Object, nil]
+      # @param col_index_or_range [Integer, String, Symbol, Range<Integer>] Column index, column letter/Symbol, or column index range.
+      # @return [Elements::Cell, Array<Elements::Cell>, nil]
       # @api public
-      # : (Integer | String | Symbol col_index) -> untyped
-      def []: (Integer | String | Symbol col_index) -> untyped
+      # : (Integer | String | Symbol col_index_or_range) -> Elements::Cell?
+      # : (Range[Integer] col_index_or_range) -> Array[Elements::Cell]
+      def []: (Integer | String | Symbol col_index_or_range) -> Elements::Cell?
+            | (Range[Integer] col_index_or_range) -> Array[Elements::Cell]
 
       # Returns a new Row with missing cells padded up to max_column (or maximum cell column index if nil).
       #
       # @param max_column [Integer, nil] Maximum 0-based column index to pad up to.
-      # @param max_col [Integer, nil] Deprecated alias for max_column.
       # @return [Elements::Row]
       # @api public
-      # : (?max_column: Integer?, ?max_col: Integer?) -> Elements::Row
-      def padded: (?max_column: Integer?, ?max_col: Integer?) -> Elements::Row
-
-      # @deprecated Use {#padded} instead. Will be removed in 0.2.0.
-      #
-      # @param max_col [Integer, nil] Deprecated parameter.
-      # @return [Elements::Row]
-      # : (?max_col: Integer?) -> Elements::Row
-      def pad_empty_cells: (?max_col: Integer?) -> Elements::Row
-
-      # Returns a coordinate-keyed Hash of cell values (e.g. {"A1" => "value", "B1" => 123}).
-      #
-      # @deprecated Use {#cells} or sheet.cells_hash instead. Will be removed in 0.2.0.
-      # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
-      # @return [Hash{String => Object}]
-      # @api public
-      # : (?type_cast: bool) -> Hash[String, untyped]
-      def cells_hash: (?type_cast: bool) -> Hash[String, untyped]
-
-      # @deprecated Use {#hidden?} instead. Will be removed in 0.2.0.
-      # : () -> bool
-      def hidden: () -> bool
-
-      # @deprecated Use {#collapsed?} instead. Will be removed in 0.2.0.
-      # : () -> bool
-      def collapsed: () -> bool
-
-      # @deprecated Use {#custom_height?} instead. Will be removed in 0.2.0.
-      # : () -> bool
-      def custom_height: () -> bool
+      # : (?max_column: Integer?) -> Elements::Row
+      def padded: (?max_column: Integer?) -> Elements::Row
 
       # Returns whether the row is hidden.
       #
@@ -153,17 +125,6 @@ module Xlsxrb
       def each_cell: () { (Elements::Cell) -> void } -> void
                    | () -> Enumerator[Elements::Cell, void]
 
-      # Convert row cells to an Array of raw values.
-      #
-      # @deprecated Use {#values} to get an Array of cell values, or {#cells} for Cell objects. In 0.2.0, {#to_a} will conform to Enumerable#to_a and return Array<Cell>.
-      # @example
-      #   row.values #=> ["ID", "Name", "Total"]
-      #
-      # @return [Array<Object>]
-      # @api public
-      # : () -> Array[untyped]
-      def to_a: () -> Array[untyped]
-
       # Returns whether the row is valid according to OOXML specifications.
       #
       # @return [Boolean]
@@ -213,10 +174,6 @@ module Xlsxrb
       # @api public
       # : () -> Array[String?]
       def formula_expressions: () -> Array[String?]
-
-      # @deprecated Use {#formula_expressions} instead. Will be removed in 0.2.0.
-      # : () -> Array[String?]
-      def formulas: () -> Array[String?]
 
       # Returns whether the row index is within valid OOXML range (0..1048575).
       #

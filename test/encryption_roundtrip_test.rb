@@ -47,7 +47,7 @@ class EncryptionRoundtripTest < Test::Unit::TestCase
       assert_equal ["Bob", "Department B", 25_000], collected_rows[2]
 
       # 5. In-memory load with correct password
-      wb = Xlsxrb.read(file_path, password: password).load
+      wb = Xlsxrb.load(file_path, password: password)
       sheet = wb.sheets.first
       assert_equal "Confidential", sheet.name
       assert_equal "Alice", sheet["A2"].value
@@ -70,39 +70,11 @@ class EncryptionRoundtripTest < Test::Unit::TestCase
     assert_true Xlsxrb::Ooxml::Crypto.encrypted?(encrypted_bytes)
 
     # Read from StringIO with password
-    read_wb = Xlsxrb.read(StringIO.new(encrypted_bytes), password: password).load
+    read_wb = Xlsxrb.load(StringIO.new(encrypted_bytes), password: password)
     assert_equal 1, read_wb.sheets.size
     sales_sheet = read_wb.sheets[0]
     assert_equal "Sales", sales_sheet.name
     assert_equal "Laptop", sales_sheet["A2"].value
     assert_equal 1200.5, sales_sheet["B2"].value
-  end
-
-  def test_modify_encrypted_file
-    Dir.mktmpdir do |dir|
-      file_path = File.join(dir, "modify_test.xlsx")
-      password = "SecretModifyKey"
-
-      Xlsxrb.write(file_path, password: password) do |wb|
-        wb.sheet("Data") do |s|
-          s.row(["Original Value"])
-        end
-      end
-
-      # Modify file with password
-      Xlsxrb.modify(file_path, password: password) do |workbook|
-        workbook.update_sheet("Data") do |sheet|
-          sheet.update_cell("A1", value: "Updated Secure Value")
-        end
-      end
-
-      # Verify modified content
-      assert_true Xlsxrb::Ooxml::Crypto.encrypted?(File.binread(file_path))
-      assert_raise(Xlsxrb::EncryptedFileError) { Xlsxrb.read(file_path) }
-      assert_raise(Xlsxrb::InvalidPasswordError) { Xlsxrb.read(file_path, password: "wrong").load }
-
-      reloaded_wb = Xlsxrb.read(file_path, password: password).load
-      assert_equal "Updated Secure Value", reloaded_wb.sheets[0]["A1"].value
-    end
   end
 end

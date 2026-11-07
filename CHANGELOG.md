@@ -1,3 +1,86 @@
+## [Unreleased]
+
+### Added
+- Value object delegators (`formula`, `array_formula`, `shared_formula`, `rich_text`, `hyperlink`, `comment`, `cell_error`) on `WorkbookBuilder`, and (`formula`, `array_formula`, `shared_formula`, `rich_text`, `cell_error`) on `WorksheetBuilder`, `StreamWriter`, and `StreamWriter::WorksheetProxy`.
+- Expose `:style_index` as a canonical `Data.define` member on `Elements::Row`.
+
+### Changed
+- Separate internal pipelines of `Xlsxrb.read` and `Xlsxrb.load`: `Xlsxrb.read` parses minimal streaming metadata directly yielding `StreamSheet` instances, while `Xlsxrb.load` materializes `Elements::Worksheet` directly without allocating intermediate `StreamSheet` instances or double-validating.
+- Make `Elements::Cell` fully immutable by freezing instances upon instantiation in `Cell#initialize` and `Cell.fast_create`.
+- Restrict `Elements::Workbook#sheets`, `#sheet`, `#[]`, `#each`, and `#active_sheet` signatures to `Elements::Worksheet` instances only.
+- Rename `Elements::Styles#num_fmt` to `number_format_code`.
+- Rename `Elements::Dxf` member and keyword `:num_fmt` to `:number_format`.
+- Rename `Elements::SheetProperties` member and keyword `:page_setup_pr` to `:page_setup_properties`.
+- Unify `StyleBuilder` property methods to act as pure zero-argument getters returning current values and mutate state returning `nil` when called with arguments (ADR 0005).
+- Add getter methods (`superscript?`, `subscript?`, `wrap_text?`, `shrink_to_fit?`, `locked?`, `hidden?`) and assignment setters (`font=`, `vert_align=`, `superscript=`, `subscript=`, `fill=`, `border=`) on `StyleBuilder`.
+- Return frozen `Elements::IgnoredError` value objects from `WorksheetBuilder#ignored_errors`, `StreamWriter#ignored_errors`, and `StreamWriter::WorksheetProxy#ignored_errors`.
+- Encapsulate internal methods by making `StyleBuilder#resolve_color` and `StreamSheet#auto_filter_data` private.
+- Update blockless `Xlsxrb.read` to return an `Enumerator[StreamSheet, void]` with managed zip container lifecycle; use `Xlsxrb.load` for in-memory random access.
+- Update `WorkbookBuilder#sheet` and `StreamWriter#sheet` parameter signatures with explicit keyword arguments `state: nil, tab_color: nil, code_name: nil`.
+- Update `StyleBuilder#border` and `StyleBuilder#alignment` parameter signatures with explicit keyword arguments.
+- Synchronize `RubyLsp::Xlsxrb::CompletionListener` completion items with the canonical v0.2.0 API.
+- Unify `Xlsxrb.array_formula` signature to remove optional positional `ref` in favor of keyword `ref:`.
+- Rename `Elements::FilterColumn` member `:col_id` to `:column_id` (with backward-compatible keyword fallback).
+- Rename `Elements::WorkbookProperties` member `:active_tab` to `:active_sheet`, and rename `Elements::Workbook#active_tab` to `#active_sheet_index`.
+- Unify `Elements::Worksheet` constructor parameter `sheet_calc_pr:` to `sheet_calc_properties:` and simplify `#with` to canonical keyword arguments.
+
+### Removed
+- Remove in-memory `#close` on `Elements::Workbook` and `Elements::Worksheet`, and remove `#load` on `Elements::Worksheet` (`StreamSheet#close` and `StreamSheet#load` remain intact).
+- Remove asymmetric legacy methods on `StreamSheet`: `#sheet_views`, `#first_column_index`, `#last_column_index`, `#legacy_drawing`, and `#ext_lst` in favor of `#sheet_view` and `#column_range`.
+- Remove `Xlsxrb._read_workbook` and `Elements::Workbook#_load`.
+- Remove deprecated alias `DslHelpers.sheet_name` in favor of `DslHelpers.sanitize_sheet_name`.
+- Remove unused private cell serialization methods `build_raw_cell`, `build_row_attrs`, and `self.build_raw_cell_from_value` in `lib/xlsxrb.rb`.
+- Remove empty `Xlsxrb::Utils` module and `lib/xlsxrb/utils.rb`.
+- Remove positional offset arguments and `col_delta:` keyword from `Xlsxrb.expand_formula`, unifying the signature to `def self.expand_formula(formula, from_ref: nil, to_ref: nil, row_delta: nil, column_delta: nil)`.
+- Remove singular `column:` and `row:` keyword arguments from `defined_name` across `WorkbookBuilder`, `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` (unified to `columns:` and `rows:`), and align `DslHelpers.normalize_defined_name_value`.
+- Remove `show_symbols:` keyword argument from `outline_properties` across `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` (unified to `show_outline_symbols:`).
+- Remove `alias fit_to_page? fit_to_page` on builder classes (`WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy`), retaining `fit_to_page` as the 0-argument getter.
+- Remove positional argument setters from `ChartBuilder` and `SeriesBuilder` in favor of pure 0-argument getters, dedicated `=` assignment setters, `title(**kwargs)`, keyword dictionary methods (`legend(**kwargs)`, `plot_area(**kwargs)`, etc.), and `series(**kwargs, &block)`.
+- Remove `#[]`, `#[]=`, and `:in` fallback from `DataValidationBuilder` and `DslHelpers.normalize_data_validation`.
+- Remove `#[]`, `#[]=`, `formulas`, `formulas=`, and fallbacks for `:size` and `:format_id` from `ConditionalFormatBuilder`.
+- Remove `number_format_id` and `number_format_id=` from `StyleBuilder` in favor of `number_format` and `number_format=`.
+- Remove duplicate and ambiguous keys in `StyleBuilder#font` (retaining `:name`, `:size`, `:color`, `:vert_align`) and top-level `StyleBuilder#apply_options!` (retaining `:font_name`, `:font_size`, `:font_color`, `:vert_align`, `:number_format`).
+- Remove all remaining deprecated builder methods and aliases across `WorkbookBuilder`, `WorksheetBuilder`, `StreamWriter`, and `StreamWriter::WorksheetProxy`:
+  - Removed `set_default_font`, `active_tab`, `active_tab=`, `protect_workbook`, `protect_sheet`, `validate_data`, `select_cell`, `page_break_row`, `page_break_col`, `add_row`, `skip_row`, `group_column`, `group_cols`, `group_col`, `group_row`, `outline_pr`, `add_sparkline`, `add_comment`, `add_threaded_comment`, `background_picture`, `background_picture=`, `picture`, `picture=`, `add_protected_range`, `add_cell_watch`, `ignore_error`, `add_ignored_error`, `sheet_calc_pr`, `sheet_calc_pr=`, `calc_pr`, `calc_pr=`, `phonetic_pr`, `phonetic_pr=`.
+  - Removed `ChartBuilder#secondary_axis`, `ChartBuilder#secondary_axis=`, and `SeriesBuilder#secondary_axis`.
+  - Removed deprecated methods on `StyleBuilder`: `size`, `size=`, `sz`, `sz=`, `num_fmt`, `num_fmt=`, `num_fmt_id`, `num_fmt_id=`.
+  - Removed deprecated methods on `TableBuilder`: `add_column`, `total_row`, `total_row=`, `total_row_count`, `total_row_count=`.
+  - Removed deprecated methods on `DataValidationBuilder`: `range`, `range=`, `col`, `col=`, `row`, `row=`, `in`, `in=`, `error`, `error=`, `prompt`, `prompt=`.
+  - Removed deprecated methods on `ConditionalFormatBuilder`: `range`, `range=`, `col`, `col=`, `row`, `row=`, `format_id`, `format_id=`, `size`, `size=`, `sz`, `sz=`.
+  - Removed dual getter/setter argument branches across builders (`active_sheet`, `first_sheet`, `show_sheet_tabs`, `tab_ratio`, `code_name`, `fit_to_page`, `tab_color`, `sheet_calc_properties`, `phonetic_properties`, `background_image`, `state`, `auto_filter`, `print_area`), strictly enforcing zero-argument getters and dedicated arity-1 assignment setters (`xxx=`).
+  - Removed deprecated keyword arguments: `styles:` and `style:` on `row` (use `cell_styles:` and `row_style:`); coordinate kwargs `row:`, `col_start:`, `col_end:`, `row_start:`, `row_end:` on `merge` (use `merge(range)`); `from_col:` and `to_col:` on `image` and `shape` (use `from_column:` and `to_column:`); `default_col_width:`, `base_col_width:`, and `outline_level_col:` on `sheet_format` (use `default_column_width:`, `base_column_width:`, `outline_level_column:`); `cols:` on `print_titles` (use `columns:`); `col:`, `ref_sheet:`, and `local:` on `defined_name` (use `column:` and `scope:`); `col:` and `except_col:` on `data_validation`, `conditional_format`, and `ignored_error` (use `columns:` and `except_columns:`); `si:` on `Formula` (use `shared_index:`).
+- Remove `StreamWriter#shared_strings` reader method in favor of `shared_strings?`.
+- Remove constant `Xlsxrb::MAX_COL` in favor of `Xlsxrb::MAX_COLUMN`.
+- Remove `Xlsxrb::Error::DIV0`..`VALUE` cell error constants on the exception class in favor of `Elements::CellError::*`.
+- Remove `Elements::RichTextRun#sz` in favor of `font_size`.
+- Remove deprecated `Xlsxrb.modify`, `Elements::Workbook#update_sheet`, and `Elements::Worksheet#update_cell` in favor of streaming transformations (`Xlsxrb.read` + `Xlsxrb.write`) or template generation via `Xlsxrb.write`.
+- Remove Hash-like access (`#[]`, `#key?`, `#dig`, `#fetch`, `#merge`, and `== Hash`) on `Elements::MetadataRecord` value objects and `Elements::Hyperlink#[]` in favor of direct reader method calls and `#to_h`.
+- Remove deprecated methods on `Elements::Row`: `pad_empty_cells` (use `padded`), `cells_hash` (use `cells`), `formulas` (use `formula_expressions`), and bare boolean queries (`hidden`, `custom_height`, `collapsed` in favor of `?`-suffixed predicates).
+- Remove deprecated methods on `StreamRow`: `to_h` (use `values` or `cells`), `formulas` (use `formula_expressions`), and bare boolean queries (`hidden`, `custom_height`, `collapsed` in favor of `?`-suffixed predicates).
+- Remove deprecated methods on `Elements::Cell`: `content` (use `value`), `column_index`, `column_letter`, `parse_ref`, `date1904` (use `date1904?`), `link?` (use `hyperlink?`), and `threaded_comments?` (use `threaded_comment?`).
+- Remove keyword argument `date1904:` on `Cell#to_date` and `Cell#to_time`.
+- Remove deprecated `StreamSheet#cell` and `Elements::Worksheet#cell` in favor of coordinate bracket access (`sheet[...]`).
+- Remove deprecated `StreamSheet#first_row` and `StreamSheet#last_row` in favor of `row_range` or `dimension_bounds`.
+- Remove deprecated `CoordinateAccess#cells_hash`, `first_column`, `first_col`, `last_column`, `last_col`, and `cell_value`.
+- Remove deprecated `Elements::Image#cell` and `cell_ref` (use `ref`), `from_col` (use `from_column`), and `to_col` (use `to_column`).
+- Remove remaining deprecated aliases, duplicate Data members, and initialization fallbacks across `Elements::*` Value Objects:
+  - Remove duplicate `Data.define` members: `:cols` from `Elements::PrintTitles` (use `:columns`), `:col` from `Elements::FreezePane` (use `:column`), `:first_tab` from `Elements::WorkbookProperties` (use `:first_sheet`), `:outline_pr` from `Elements::SheetProperties` (use `:outline_properties`), `:rel_id`, `:ext`, and `:filename` from `Elements::BackgroundImage` (use `:r_id`, `:extension`, `:path`), and `:location` from `Elements::PivotTable` (use `:ref`).
+  - Remove `Elements::RichTextRun#[]` and `other.is_a?(Hash)` branches from `Elements::Hyperlink#==`, `Elements::CustomProperty#==`, and `Elements::Styles#==`.
+  - Remove non-predicate formula aliases on `Elements::Formula`: `always_calculate_array`, `assign_to_name`, `data_table_2d`, and `data_table_row` in favor of predicate methods (`?`).
+  - Remove `Elements::Column#letter` in favor of canonical `column_letter`.
+  - Remove `Elements::Styles#format_code` in favor of `number_format`.
+  - Remove `StreamSheet#_load` in favor of `StreamSheet#load`.
+  - Remove deprecated `conditional_formatting:` and `col_breaks:` keyword arguments in `Elements::Worksheet#initialize` in favor of `conditional_formats:` and `column_breaks:`.
+  - Remove legacy keyword arguments and aliases on element Value Objects: `SheetFormat` (`default_col_width`, `outline_level_col`, `base_col_width`), `FilterColumn` (`hidden_button:`), `PageBreak` (`manual:`), `Comment` (`cell:` and `alias cell ref`), `ThreadedComment` (`cell:`, `person_id:`, `dt:`, `timestamp:`, `done:`, and `alias done resolved`), `DataValidation` (`show_dropdown` and `show_dropdown?`), `ConditionalFormatRule` (`format_id` and `alias formulas formula`), `TableColumn` (`data_formula:` and `alias data_formula calculated_column_formula`), `Sparkline` (`location_ref`, `location`, `data_ref`, `f`, `data`), `SparklineGroup` (`display_empty`, `max`, `min`), `Chart` (`rid`, `chart_type`, `from_col`, `to_col`), `HeaderFooterImage` (`rid`, `ext`, `filename`), `Font` (`sz`), `Fill` (`pattern`), and `CellXf` (`number_format_id`).
+- Remove deprecated `Elements::Worksheet#dimension=` (use `with(dimension: ...)`), `Elements::Worksheet#with_images`, and `StreamSheet#with_images`.
+- Remove deprecated `Elements::Worksheet#conditional_formatting` and `StreamSheet#conditional_formatting` in favor of `conditional_formats`.
+- Remove deprecated `Elements::Styles#add_xf`, `add_num_fmt`, and `num_fmts` in favor of `add_cell_xf`, `add_number_format`, and `number_formats`.
+- Remove deprecated `Elements::Styles#xf`, `num_fmt`, `format_code_for`, `classification_for`, and `sz`.
+- Remove deprecated `Xlsxrb::Utils` coordinate and date conversion methods (`col_name_to_index`, `col_index_to_name`, `ref_to_row_col`, `row_col_to_ref`, `parse_range`, `range_to_ref`, `date_to_serial`, `serial_to_date`, `serial_to_time`, `time_to_serial`, `split_coordinate`, `valid_excel_date?`, `expand_formula`, `datetime_to_serial`) in favor of canonical `Xlsxrb.*` entry points.
+- Remove deprecated transitional top-level aliases on `Xlsxrb`: `datetime_to_serial`, `serial_to_datetime`, `color_to_hex`, `sheet_name`, `stream`, and `format` (use `Xlsxrb.format_value`).
+- Remove deprecated transitional aliases `to_workbook` on `Workbook`, `to_worksheet` on `Worksheet` and `StreamSheet`, `each_sheet` on `Workbook`, and `col_breaks` on `Worksheet` and `StreamSheet`.
+- Remove non-predicate boolean queries on element readers (`trim_empty_rows`, `pad_empty_rows`, `pad_empty_cells`, `fit_to_page`, `show_sheet_tabs`, `full_calc_on_load`) in favor of `?`-suffixed methods (`trim_empty_rows?`, `pad_empty_rows?`, `pad_empty_cells?`, `fit_to_page?`, `show_sheet_tabs?`, `full_calc_on_load?`).
+
 ## [0.1.18] - 2026-11-07
 
 ### Added

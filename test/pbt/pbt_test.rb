@@ -189,7 +189,7 @@ class PbtTest < Test::Unit::TestCase
         begin
           Xlsxrb.write(tmp.path, workbook)
 
-          read_wb = Xlsxrb.read(tmp.path).load
+          read_wb = Xlsxrb.load(tmp.path)
 
           assert_equal sheet_names.size, read_wb.sheets.size
 
@@ -213,16 +213,16 @@ class PbtTest < Test::Unit::TestCase
                 assert_not_nil actual_cell, "Cell at row #{row_idx}, col #{col_idx} should exist for expected #{expected_val.inspect}"
 
                 actual_val = actual_cell.value
-                actual_formula = actual_cell.formula_expression
+                actual_formula = actual_cell.formula
 
                 case expected_val
                 when Xlsxrb::Elements::Formula
                   expected_expr = expected_val.expression.delete_prefix("=")
-                  assert_equal expected_expr, actual_formula
+                  assert_equal expected_expr, actual_formula&.expression
                   assert_equal expected_val.cached_value, actual_val unless expected_val.cached_value.nil?
                 when Hash
                   expected_expr = expected_val[:formula].delete_prefix("=")
-                  assert_equal expected_expr, actual_formula
+                  assert_equal expected_expr, actual_formula&.expression
                 when Xlsxrb::Elements::CellError
                   assert_equal expected_val.code, actual_val.to_s
                 when Xlsxrb::Elements::RichText
@@ -280,8 +280,8 @@ class PbtTest < Test::Unit::TestCase
           Xlsxrb.write(in_memory_path, wb)
 
           # Invariant: Both write modes yield identical sheets and cell values
-          streaming_wb = Xlsxrb.read(streaming_path).load
-          in_memory_wb = Xlsxrb.read(in_memory_path).load
+          streaming_wb = Xlsxrb.load(streaming_path)
+          in_memory_wb = Xlsxrb.load(in_memory_path)
 
           assert_equal 1, streaming_wb.sheets.size
           assert_equal 1, in_memory_wb.sheets.size
@@ -321,17 +321,17 @@ class PbtTest < Test::Unit::TestCase
         Pbt.choose(0..1_048_575)
       ) do |col_idx, row_idx|
         # 1. Bijection: column_letter <-> column_index
-        letter = Xlsxrb::Elements::Cell.column_letter(col_idx)
-        assert_equal col_idx, Xlsxrb::Elements::Cell.column_index(letter)
-        assert_equal col_idx, Xlsxrb::Elements::Cell.column_index(letter.downcase)
-        assert_equal col_idx, Xlsxrb::Elements::Cell.column_index(letter.to_sym)
+        letter = Xlsxrb.column_letter(col_idx)
+        assert_equal col_idx, Xlsxrb.column_index(letter)
+        assert_equal col_idx, Xlsxrb.column_index(letter.downcase)
+        assert_equal col_idx, Xlsxrb.column_index(letter.to_sym)
 
         # 2. Reference bijection: parse_ref <-> ref
         ref = "#{letter}#{row_idx + 1}"
-        parsed = Xlsxrb::Elements::Cell.parse_ref(ref)
+        parsed = Xlsxrb.parse_ref(ref)
         assert_equal [row_idx, col_idx], parsed
 
-        parsed_lower = Xlsxrb::Elements::Cell.parse_ref(ref.downcase)
+        parsed_lower = Xlsxrb.parse_ref(ref.downcase)
         assert_equal [row_idx, col_idx], parsed_lower
 
         # 3. Cell object reference and validation
@@ -355,11 +355,8 @@ class PbtTest < Test::Unit::TestCase
 
         assert_true cell.valid?
         assert_equal val, cell.value
-        assert_equal val, cell.content
-        assert_equal val, cell[:value]
-        assert_equal cell.ref, cell[:ref]
-        assert_equal row_idx, cell[:row_index]
-        assert_equal col_idx, cell[:column_index]
+        assert_equal row_idx, cell.row_index
+        assert_equal col_idx, cell.column_index
 
         # Coercion invariant checks
         case val
@@ -376,16 +373,9 @@ class PbtTest < Test::Unit::TestCase
           assert_equal val, cell.to_time
         when Xlsxrb::Elements::CellError
           assert_equal val.code, cell.to_s
-        when Xlsxrb::Elements::RichText
+        when Xlsxrb::Elements::RichText, true, false, String
           assert_equal val.to_s, cell.to_s
-        when true, false
-          assert_equal "b", cell[:type]
-          assert_equal val.to_s, cell.to_s
-        when String
-          assert_equal "s", cell[:type]
-          assert_equal val, cell.to_s
         when nil
-          assert_nil cell[:type]
           assert_equal "", cell.to_s
         end
       end
@@ -436,11 +426,9 @@ class PbtTest < Test::Unit::TestCase
         assert_true row.valid?
         assert_equal idx, row.index
         assert_equal row_height, row.height
-        assert_equal row_hidden, row.hidden
-        assert_equal row_custom_height, row.custom_height
+        assert_equal row_hidden, row.hidden?
+        assert_equal row_custom_height, row.custom_height?
         assert_equal row_outline, row.outline_level
-        assert_equal row_height, row[:height]
-        assert_equal row_hidden, row[:hidden]
 
         assert_equal cells[0], row[0]
         assert_nil row[1]
@@ -449,7 +437,7 @@ class PbtTest < Test::Unit::TestCase
         assert_nil row.cell_at(1)
         assert_equal cells[1], row.cell_at(2)
 
-        assert_equal ["A", nil, "C"], row.to_a
+        assert_equal cells, row.to_a
         assert_equal ["A", nil, "C"], row.values
         assert_equal 2, row.each.to_a.size
 
@@ -464,8 +452,8 @@ class PbtTest < Test::Unit::TestCase
         assert_true col.valid?
         assert_equal idx % 16_384, col.index
         assert_equal col_width, col.width
-        assert_equal col_hidden, col.hidden
-        assert_equal col_custom_width, col.custom_width
+        assert_equal col_hidden, col.hidden?
+        assert_equal col_custom_width, col.custom_width?
         assert_equal col_outline, col.outline_level
       end
     end
@@ -477,7 +465,7 @@ class PbtTest < Test::Unit::TestCase
         sheet_name_generator,
         Pbt.array(Pbt.tuple(Pbt.choose(0..4), Pbt.choose(0..4), Pbt.choose(1..100)), min: 1, max: 8),
         Pbt.choose(1000..2000)
-      ) do |sheet_name, cell_specs, update_val|
+      ) do |sheet_name, cell_specs, _update_val|
         unique_cells = {}
         cell_specs.each do |r, c, v|
           unique_cells[[r, c]] = v
@@ -498,32 +486,16 @@ class PbtTest < Test::Unit::TestCase
 
         sheet = wb.sheets.first
 
-        # Invariant 1: Random coordinate access
+        # Invariant: Random coordinate access and 2D access equivalence
         unique_cells.each do |(r, c), expected_val|
-          ref = "#{Xlsxrb::Elements::Cell.column_letter(c)}#{r + 1}"
+          ref = "#{Xlsxrb.column_letter(c)}#{r + 1}"
           cell = sheet[ref]
           assert_not_nil cell
           assert_equal expected_val, cell.value
-        end
 
-        # Invariant 2: Immutable update_cell
-        target_r, target_c = unique_cells.keys.first
-        target_ref = "#{Xlsxrb::Elements::Cell.column_letter(target_c)}#{target_r + 1}"
-        original_val = unique_cells[[target_r, target_c]]
-
-        updated_sheet = sheet.update_cell(target_ref, value: update_val)
-
-        # Original worksheet is not modified
-        assert_equal original_val, sheet[target_ref].value
-        # Updated worksheet has new value
-        assert_equal update_val, updated_sheet[target_ref].value
-
-        # Other cells remain identical
-        unique_cells.each do |(r, c), expected_val|
-          next if r == target_r && c == target_c
-
-          ref = "#{Xlsxrb::Elements::Cell.column_letter(c)}#{r + 1}"
-          assert_equal expected_val, updated_sheet[ref].value
+          cell_2d = sheet[r, c]
+          assert_not_nil cell_2d
+          assert_equal expected_val, cell_2d.value
         end
       end
     end
@@ -551,7 +523,7 @@ class PbtTest < Test::Unit::TestCase
           assert_true File.exist?(xlsx_path)
 
           # Invariant: File must load and parse valid styles without XML parse errors
-          wb = Xlsxrb.read(xlsx_path).load
+          wb = Xlsxrb.load(xlsx_path)
           assert_equal 1, wb.sheets.size
           sheet = wb.sheets.first
           assert_equal rows.size, sheet.rows.size
@@ -572,17 +544,17 @@ class PbtTest < Test::Unit::TestCase
 
           Xlsxrb.write(xlsx_path) do |w|
             w.sheet("ConfiguredSheet") do |s|
-              s.freeze_pane(row: opts[:freeze_row], col: opts[:freeze_col]) if opts[:freeze_row].positive? || opts[:freeze_col].positive?
-              s.sheet_view(:zoom_scale, opts[:zoom_scale])
-              s.sheet_properties(:tab_color, opts[:tab_color])
-              s.protect_sheet(sheet: opts[:protect_sheet], password: opts[:password])
+              s.freeze_pane(row: opts[:freeze_row], column: opts[:freeze_col]) if opts[:freeze_row].positive? || opts[:freeze_col].positive?
+              s.sheet_view(zoom_scale: opts[:zoom_scale])
+              s.sheet_properties(tab_color: opts[:tab_color])
+              s.sheet_protection(sheet: opts[:protect_sheet], password: opts[:password])
               s.row(%w[Col1 Col2 Col3])
               s.row([100, 200, 300])
             end
           end
 
           # Invariant: Complex options roundtrip and load cleanly without XML corruption
-          wb = Xlsxrb.read(xlsx_path).load
+          wb = Xlsxrb.load(xlsx_path)
           assert_equal 1, wb.sheets.size
           assert_equal "ConfiguredSheet", wb.sheets.first.name
           assert_equal 2, wb.sheets.first.rows.size
@@ -739,7 +711,7 @@ class PbtTest < Test::Unit::TestCase
           end
 
           # 3. Read with correct password (In-memory load)
-          wb = Xlsxrb.read(xlsx_path, password: password).load
+          wb = Xlsxrb.load(xlsx_path, password: password)
           assert_equal 1, wb.sheets.size
           assert_equal "PbtSheet", wb.sheets[0].name
 
@@ -782,7 +754,7 @@ class PbtTest < Test::Unit::TestCase
 
           # Invariant: Tampered payload MUST either raise an expected safe error or load safely without crashing
           begin
-            wb = Xlsxrb.read(corrupted, password: password).load
+            wb = Xlsxrb.load(corrupted, password: password)
             assert_instance_of Xlsxrb::Elements::Workbook, wb
           rescue Xlsxrb::Error, ArgumentError, OpenSSL::OpenSSLError, Zlib::Error, REXML::ParseException => e
             # Expected graceful failure on corrupted bytes with known exception types
@@ -821,8 +793,8 @@ class PbtTest < Test::Unit::TestCase
           Xlsxrb.write(in_memory_path, wb, password: password)
 
           # Invariant: Both methods produce equivalent decrypted data
-          streaming_data = Xlsxrb.read(streaming_path, password: password).load.sheets[0].map(&:to_a)
-          in_memory_data = Xlsxrb.read(in_memory_path, password: password).load.sheets[0].map(&:to_a)
+          streaming_data = Xlsxrb.load(streaming_path, password: password).sheets[0].map(&:to_a)
+          in_memory_data = Xlsxrb.load(in_memory_path, password: password).sheets[0].map(&:to_a)
 
           assert_equal streaming_data, in_memory_data
         end

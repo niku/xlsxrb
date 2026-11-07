@@ -39,7 +39,7 @@ class DosProtectionTest < Test::Unit::TestCase
       generator.generate
 
       error = assert_raises(RuntimeError) do
-        Xlsxrb.read(zip_path)
+        Xlsxrb.load(zip_path)
       end
 
       # REXML limits entity expansions and raises RuntimeError.
