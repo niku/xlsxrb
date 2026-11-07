@@ -8032,16 +8032,16 @@ class WriterTest < Test::Unit::TestCase
       wb = Xlsxrb.read(path)
       s1 = wb.sheets[0]
       assert_equal({ active_cell: "B2", sqref: "B2:C3", pane: "bottomRight" }, s1.selection)
-      assert_equal(true, s1.sheet_view[:tab_selected])
-      assert_equal(120, s1.sheet_view[:zoom_scale_normal])
+      assert_equal(true, s1.sheet_view.tab_selected)
+      assert_equal(120, s1.sheet_view.zoom_scale_normal)
 
       s1_loaded = s1.load
       assert_equal({ active_cell: "B2", sqref: "B2:C3", pane: "bottomRight" }, s1_loaded.selection)
 
       s2 = wb.sheets[1]
       assert_nil(s2.selection)
-      assert_nil(s2.sheet_view[:tab_selected])
-      assert_equal(85, s2.sheet_view[:zoom_scale])
+      assert_nil(s2.sheet_view.tab_selected)
+      assert_equal(85, s2.sheet_view.zoom_scale)
     end
   end
 
@@ -8067,8 +8067,8 @@ class WriterTest < Test::Unit::TestCase
 
       wb = Xlsxrb.read(path)
       dv = wb.sheet(0).data_validations.first
-      assert_equal(true, dv[:show_drop_down])
-      assert_equal("off", dv[:ime_mode])
+      assert_equal(true, dv.show_drop_down)
+      assert_equal("off", dv.ime_mode)
     end
   end
 
@@ -8444,8 +8444,8 @@ class WriterTest < Test::Unit::TestCase
 
     sheet = wb.sheets.first
     assert_not_nil sheet.background_image
-    assert_equal "png", sheet.background_image[:ext]
-    assert_equal dummy_png.b, sheet.background_image[:data]
+    assert_equal "png", sheet.background_image.ext
+    assert_equal dummy_png.b, sheet.background_image.data
 
     # Write out and re-read
     buf = StringIO.new
@@ -8466,9 +8466,9 @@ class WriterTest < Test::Unit::TestCase
     read_wb = Xlsxrb.read(buf.string)
     read_sheet = read_wb.sheets.first
     assert_not_nil read_sheet.background_image
-    assert_equal dummy_png.b, read_sheet.background_image[:data]
-    assert_equal "png", read_sheet.background_image[:ext]
-    assert_equal "image/png", read_sheet.background_image[:content_type]
+    assert_equal dummy_png.b, read_sheet.background_image.data
+    assert_equal "png", read_sheet.background_image.ext
+    assert_equal "image/png", read_sheet.background_image.content_type
 
     # Lossless round-trip write
     buf2 = StringIO.new
@@ -8514,8 +8514,8 @@ class WriterTest < Test::Unit::TestCase
       bg_from_stream = s.background_image
     end
     assert_not_nil bg_from_stream
-    assert_equal dummy_png.b, bg_from_stream[:data]
-    assert_equal "png", bg_from_stream[:ext]
+    assert_equal dummy_png.b, bg_from_stream.data
+    assert_equal "png", bg_from_stream.ext
   ensure
     tmp_img&.close!
   end
@@ -9186,7 +9186,7 @@ class WriterTest < Test::Unit::TestCase
         s.row(["Item 1"])
         s.defined_name("CATEGORIES", range: "A2:A10")
         s.defined_name("FIRST_ITEM", "A2")
-        s.defined_name("COORDINATES", col: 0, rows: 1..4)
+        s.defined_name("COORDINATES", columns: 0, rows: 1..4)
         s.defined_name("LOCAL_ITEM", "A2", local: true)
         s.defined_name("TAX_RATE", "0.10")
       end
@@ -9277,12 +9277,13 @@ class WriterTest < Test::Unit::TestCase
     doc = Xlsxrb.read(xlsx_path).load
     sheet = doc.sheets.first
     assert_equal(2, sheet.threaded_comments.size)
-    assert_equal(2, sheet.threaded_comment("A1").size)
+    assert_equal(2, sheet.threaded_comments_at("A1").size)
+    assert_equal("Is this complete?", sheet.threaded_comment("A1").text)
     cell = sheet["A1"]
     assert_true(cell.threaded_comments?)
     assert_equal(2, cell.threaded_comments.size)
-    assert_equal("Is this complete?", cell.threaded_comment[:text])
-    assert_equal("Alice", cell.threaded_comment[:author])
+    assert_equal("Is this complete?", cell.threaded_comment.text)
+    assert_equal("Alice", cell.threaded_comment.author)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -9310,7 +9311,7 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(1, sheet.threaded_comments.size)
     cell = sheet["B1"]
     assert_true(cell.threaded_comments?)
-    assert_equal("Auditor", cell.threaded_comment[:author])
+    assert_equal("Auditor", cell.threaded_comment.author)
 
     # In-memory WorksheetBuilder
     wb = Xlsxrb.build do |book|
@@ -9321,7 +9322,7 @@ class WriterTest < Test::Unit::TestCase
     end
     ws = wb.sheets.first
     assert_equal(1, ws.threaded_comments.size)
-    assert_equal("CFO", ws.threaded_comment("A1").first[:author])
+    assert_equal("CFO", ws.threaded_comment("A1").author)
   end
 
   def read_xml_from_xlsx(xlsx_path, entry_name)

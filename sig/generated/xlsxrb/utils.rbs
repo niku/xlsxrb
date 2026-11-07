@@ -93,9 +93,9 @@ module Xlsxrb
     #   Xlsxrb::Utils.split_coordinate("A1")    #=> ["A", 1]
     #   Xlsxrb::Utils.split_coordinate("BC100") #=> ["BC", 100]
     #
+    # @deprecated Use {Xlsxrb.split_coordinate} instead. Will be removed in 0.2.0.
     # @param cell_ref [String, nil] Excel cell reference string.
     # @return [Array(String, Integer), nil] [col_name, row_number] tuple (1-based row), or nil if invalid.
-    # @api public
     # : (String? cell_ref) -> [String, Integer]?
     def self.split_coordinate: (String? cell_ref) -> [ String, Integer ]?
 
@@ -117,10 +117,10 @@ module Xlsxrb
     #   Xlsxrb::Utils.valid_excel_date?(46023) #=> true
     #   Xlsxrb::Utils.valid_excel_date?(-1)    #=> false
     #
+    # @deprecated Use {Xlsxrb.valid_excel_date?} instead. Will be removed in 0.2.0.
     # @param serial [Object] Serial number candidate.
     # @param date1904 [Boolean] Whether to use the 1904 date system.
     # @return [Boolean]
-    # @api public
     # : (untyped serial, ?date1904: bool) -> bool
     def self.valid_excel_date?: (untyped serial, ?date1904: bool) -> bool
 
@@ -182,14 +182,14 @@ module Xlsxrb
     # @example Shift formula with absolute references
     #   Xlsxrb::Utils.expand_formula("$A$1+A2", from_ref: "B2", to_ref: "B4") #=> "$A$1+A4"
     #
-    # @param formula [String] Formula expression to expand.
+    # @deprecated Use {Xlsxrb.expand_formula} instead. Will be removed in 0.2.0.
+    # @param formula [String, nil] Formula expression to expand.
     # @param from_ref [String, nil] Master cell reference (e.g. "B2").
     # @param to_ref [String, nil] Target cell reference (e.g. "B3").
     # @param row_delta [Integer, nil] Row shift amount (positive = down, negative = up).
     # @param column_delta [Integer, nil] Column shift amount (positive = right, negative = left).
     # @param col_delta [Integer, nil] Deprecated alias for column_delta.
     # @return [String, nil] Expanded formula expression.
-    # @api public
     # : (String? formula, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?col_delta: Integer?, ?column_delta: Integer?) -> String?
     def self.expand_formula: (String? formula, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?col_delta: Integer?, ?column_delta: Integer?) -> String?
 

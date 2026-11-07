@@ -13,7 +13,7 @@ module Xlsxrb
     #
     # @api public
     # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
-    class Workbook < Data.define(:sheets, :shared_strings, :styles, :unmapped_data, :errors, :defined_names)
+    class Workbook < Data.define(:sheets, :shared_strings, :styles, :unmapped_data, :errors, :defined_names, :workbook_properties, :core_properties, :app_properties, :workbook_protection, :custom_properties)
       # rubocop:enable Style/DataInheritance
       [Enumerable].each { |m| include m }
 
@@ -23,18 +23,76 @@ module Xlsxrb
       # @param unmapped_data [Hash] Additional metadata for round-tripping.
       # @param errors [Array<String>, nil] Validation errors.
       # @param defined_names [Array<Hash>, nil] Defined names list.
+      # @param workbook_properties [Elements::WorkbookProperties, Hash, nil] Workbook properties.
+      # @param core_properties [Elements::CoreProperties, Hash, nil] Core properties.
+      # @param app_properties [Elements::AppProperties, Hash, nil] App properties.
+      # @param workbook_protection [Elements::WorkbookProtection, Hash, nil] Workbook protection.
+      # @param custom_properties [Hash, Array, nil] Custom properties.
       # @param date1904 [Boolean] Whether the workbook uses the 1904 date system.
-      #: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Elements::Styles | Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[Hash[Symbol, untyped]]?, ?date1904: bool) -> void
-      def initialize(sheets: [], shared_strings: [], styles: {}, unmapped_data: {}, errors: nil, defined_names: nil, date1904: false)
-        dns = defined_names || unmapped_data[:defined_names] || unmapped_data.dig(:facade, :defined_names) || []
+      #: (?sheets: Array[Elements::Worksheet | StreamSheet], ?shared_strings: Array[String], ?styles: Elements::Styles | Hash[untyped, untyped], ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?defined_names: Array[untyped]?, ?workbook_properties: (Elements::WorkbookProperties | Hash[Symbol, untyped])?, ?core_properties: (Elements::CoreProperties | Hash[Symbol, untyped])?, ?app_properties: (Elements::AppProperties | Hash[Symbol, untyped])?, ?workbook_protection: (Elements::WorkbookProtection | Hash[Symbol, untyped])?, ?custom_properties: (Hash[String, Elements::CustomProperty] | Hash[untyped, untyped] | Array[untyped])?, ?date1904: bool) -> void
+      def initialize(sheets: [], shared_strings: [], styles: {}, unmapped_data: {}, errors: nil, defined_names: nil,
+                     workbook_properties: nil, core_properties: nil, app_properties: nil, workbook_protection: nil,
+                     custom_properties: nil, date1904: false)
+        dns = (defined_names || unmapped_data[:defined_names] || unmapped_data.dig(:facade, :defined_names) || []).map do |dn|
+          dn.is_a?(Elements::DefinedName) ? dn : Elements::DefinedName.new(**dn)
+        end
         computed_errors = errors || self.class.validate(sheets)
         unmapped = unmapped_data
-        if date1904 && !unmapped.dig(:workbook_properties, :date1904) && !unmapped.dig(:facade, :workbook_properties, :date1904)
+
+        raw_wb_props = workbook_properties || unmapped[:workbook_properties] || unmapped.dig(:facade, :workbook_properties) || {}
+        norm_wb_props = raw_wb_props.is_a?(Elements::WorkbookProperties) ? raw_wb_props : Elements::WorkbookProperties.new(**raw_wb_props)
+        if date1904 && !norm_wb_props.date1904?
+          norm_wb_props = norm_wb_props.with(date1904: true)
           unmapped = unmapped.dup
           unmapped[:workbook_properties] = (unmapped[:workbook_properties] || {}).merge(date1904: true)
         end
-        super(sheets: sheets.freeze, shared_strings: shared_strings.freeze, styles: styles,
-              unmapped_data: unmapped, errors: computed_errors.freeze, defined_names: dns.freeze)
+
+        raw_core = core_properties || unmapped[:core_properties] || unmapped.dig(:facade, :core_properties) || {}
+        norm_core = raw_core.is_a?(Elements::CoreProperties) ? raw_core : Elements::CoreProperties.new(**raw_core)
+
+        raw_app = app_properties || unmapped[:app_properties] || unmapped.dig(:facade, :app_properties) || {}
+        norm_app = raw_app.is_a?(Elements::AppProperties) ? raw_app : Elements::AppProperties.new(**raw_app)
+
+        raw_prot = workbook_protection || unmapped[:workbook_protection] || unmapped.dig(:facade, :workbook_protection)
+        norm_prot = if raw_prot.nil?
+                      nil
+                    elsif raw_prot.is_a?(Elements::WorkbookProtection)
+                      raw_prot
+                    else
+                      Elements::WorkbookProtection.new(**raw_prot)
+                    end
+
+        raw_custom = custom_properties || unmapped[:custom_properties] || unmapped.dig(:facade, :custom_properties)
+        norm_custom = if raw_custom.nil?
+                        nil
+                      elsif raw_custom.is_a?(Hash)
+                        raw_custom.map do |k, v|
+                          if v.is_a?(Elements::CustomProperty)
+                            v
+                          elsif v.is_a?(Hash)
+                            Elements::CustomProperty.new(name: (v[:name] || v["name"] || k).to_s, value: v[:value] || v["value"], type: v[:type] || v["type"])
+                          else
+                            Elements::CustomProperty.new(name: k.to_s, value: v)
+                          end
+                        end
+                      elsif raw_custom.is_a?(Array)
+                        raw_custom.map do |v|
+                          if v.is_a?(Hash)
+                            Elements::CustomProperty.new(name: (v[:name] || v["name"]).to_s, value: v[:value] || v["value"], type: v[:type] || v["type"])
+                          else
+                            v
+                          end
+                        end
+                      else
+                        []
+                      end.to_h { |cp| [cp.name.to_s, cp] }.freeze
+
+        norm_styles = styles.is_a?(Elements::Styles) ? styles : Elements::Styles.new(styles || {})
+
+        super(sheets: sheets.freeze, shared_strings: shared_strings.freeze, styles: norm_styles,
+              unmapped_data: unmapped, errors: computed_errors.freeze, defined_names: dns.freeze,
+              workbook_properties: norm_wb_props, core_properties: norm_core, app_properties: norm_app,
+              workbook_protection: norm_prot, custom_properties: norm_custom)
       end
 
       # Iterate over worksheets.
@@ -56,9 +114,9 @@ module Xlsxrb
       # @deprecated Use {#each} instead. Will be removed in 0.2.0.
       #: () { (Elements::Worksheet | StreamSheet) -> void } -> void
       #: () -> Enumerator[Elements::Worksheet | StreamSheet, void]
-      def each_sheet(&block)
+      def each_sheet(&)
         warn "[DEPRECATION] #each_sheet is deprecated; use #each instead.", uplevel: 1
-        each(&block)
+        each(&)
       end
 
       # Returns whether the workbook is valid according to ECMA-376 rules.
@@ -69,22 +127,13 @@ module Xlsxrb
         errors.empty?
       end
 
-      # Returns workbook-level properties (e.g. date1904, active_tab, full_calc_on_load), or an empty hash.
-      #
-      # @return [Hash<Symbol, untyped>]
-      # @api public
-      #: () -> Hash[Symbol, untyped]
-      def workbook_properties
-        unmapped_data[:workbook_properties] || unmapped_data.dig(:facade, :workbook_properties) || {}
-      end
-
       # Returns whether the workbook uses the 1904 date system.
       #
       # @return [Boolean]
       # @api public
       #: () -> bool
       def date1904?
-        workbook_properties[:date1904] ? true : false
+        workbook_properties.date1904?
       end
 
       # Returns the internal VBA or application code name of the workbook, or nil if not specified.
@@ -93,7 +142,7 @@ module Xlsxrb
       # @api public
       #: () -> String?
       def code_name
-        workbook_properties[:code_name]
+        workbook_properties.code_name
       end
 
       # Returns the 0-based active worksheet index from workbookView, or nil if not set.
@@ -102,8 +151,7 @@ module Xlsxrb
       # @api public
       #: () -> Integer?
       def active_sheet_index
-        props = workbook_properties
-        props[:active_sheet] || props[:active_tab]
+        workbook_properties.active_sheet
       end
 
       # @deprecated Use {#active_sheet_index} or {#active_sheet} instead.
@@ -131,7 +179,7 @@ module Xlsxrb
       # @api public
       #: () -> Integer?
       def first_sheet
-        workbook_properties[:first_sheet]
+        workbook_properties.first_sheet
       end
 
       # Returns whether sheet tabs are displayed in the workbook window.
@@ -140,8 +188,7 @@ module Xlsxrb
       # @api public
       #: () -> bool
       def show_sheet_tabs?
-        val = workbook_properties[:show_sheet_tabs]
-        val != false
+        workbook_properties.show_sheet_tabs != false
       end
 
       # @deprecated Use {#show_sheet_tabs?} instead. Will be removed in 0.2.0.
@@ -157,7 +204,7 @@ module Xlsxrb
       # @api public
       #: () -> Integer?
       def tab_ratio
-        workbook_properties[:tab_ratio]
+        workbook_properties.tab_ratio
       end
 
       # Returns whether Excel is instructed to perform a full recalculation when loading the workbook.
@@ -166,7 +213,7 @@ module Xlsxrb
       # @api public
       #: () -> bool
       def full_calc_on_load?
-        workbook_properties[:full_calc_on_load] ? true : false
+        workbook_properties.full_calc_on_load ? true : false
       end
 
       # @deprecated Use {#full_calc_on_load?} instead. Will be removed in 0.2.0.
@@ -176,42 +223,6 @@ module Xlsxrb
         full_calc_on_load?
       end
 
-      # Returns core document properties (e.g. title, creator, created), or an empty hash.
-      #
-      # @return [Hash<Symbol, untyped>]
-      # @api public
-      #: () -> Hash[Symbol, untyped]
-      def core_properties
-        unmapped_data[:core_properties] || unmapped_data.dig(:facade, :core_properties) || {}
-      end
-
-      # Returns application properties (e.g. app_name, doc_security), or an empty hash.
-      #
-      # @return [Hash<Symbol, untyped>]
-      # @api public
-      #: () -> Hash[Symbol, untyped]
-      def app_properties
-        unmapped_data[:app_properties] || unmapped_data.dig(:facade, :app_properties) || {}
-      end
-
-      # Returns custom document properties as an array of property hashes, or an empty array.
-      #
-      # @return [Array<Hash[Symbol, untyped]>]
-      # @api public
-      #: () -> Array[Hash[Symbol, untyped]]
-      def custom_properties
-        unmapped_data[:custom_properties] || unmapped_data.dig(:facade, :custom_properties) || []
-      end
-
-      # Returns workbook protection settings as a hash, or nil if unprotected.
-      #
-      # @return [Hash[Symbol, untyped], nil]
-      # @api public
-      #: () -> Hash[Symbol, untyped]?
-      def workbook_protection
-        unmapped_data[:workbook_protection] || unmapped_data.dig(:facade, :workbook_protection)
-      end
-
       # Returns the defined name matching name (and optionally sheet), or nil.
       #
       # @example
@@ -219,21 +230,26 @@ module Xlsxrb
       #   wb.defined_name("Print_Area", sheet: "Sheet1")
       #
       # @param name [String] The defined name.
-      # @param sheet [String, Integer, nil] Optional sheet name or 0-based index.
-      # @return [Hash[Symbol, untyped], nil]
+      # @param sheet [String, Symbol, Integer, nil] Optional sheet name or 0-based index.
+      # @return [Elements::DefinedName, nil]
       # @api public
-      #: (String name, ?sheet: (String | Integer)?) -> Hash[Symbol, untyped]?
+      #: (String name, ?sheet: (String | Symbol | Integer)?) -> Elements::DefinedName?
       def defined_name(name, sheet: nil)
         sheet_idx = case sheet
                     when Integer then sheet
-                    when String then sheets.find_index { |s| s.name == sheet }
+                    when String, Symbol
+                      target = sheet.to_s
+                      sheets.find_index { |s| s.name == target }
                     end
 
+        dn_name = ->(dn) { dn.respond_to?(:name) ? dn.name : dn[:name] }
+        dn_local = ->(dn) { dn.respond_to?(:local_sheet_id) ? dn.local_sheet_id : dn[:local_sheet_id] }
+
         if sheet_idx
-          defined_names.find { |dn| dn[:name] == name && dn[:local_sheet_id] == sheet_idx }
+          defined_names.find { |dn| dn_name.call(dn) == name && dn_local.call(dn) == sheet_idx }
         else
-          defined_names.find { |dn| dn[:name] == name && dn[:local_sheet_id].nil? } ||
-            defined_names.find { |dn| dn[:name] == name }
+          defined_names.find { |dn| dn_name.call(dn) == name && dn_local.call(dn).nil? } ||
+            defined_names.find { |dn| dn_name.call(dn) == name }
         end
       end
 
@@ -242,17 +258,19 @@ module Xlsxrb
       # @example
       #   wb.sheet(0)
       #   wb.sheet("Sales")
+      #   wb.sheet(:Sales)
       #
-      # @param identifier [Integer, String, untyped] 0-based index or sheet name.
+      # @param identifier [Integer, String, Symbol, untyped] 0-based index or sheet name.
       # @return [Elements::Worksheet, StreamSheet, nil]
       # @api public
-      #: (?Integer | String | untyped identifier) -> (Elements::Worksheet | StreamSheet)?
+      #: (?Integer | String | Symbol | untyped identifier) -> (Elements::Worksheet | StreamSheet)?
       def sheet(identifier = 0)
         case identifier
         when Integer
           sheets[identifier]
-        when String
-          sheets.find { |s| s.name == identifier }
+        when String, Symbol
+          target = identifier.to_s
+          sheets.find { |s| s.name == target }
         end
       end
       alias [] sheet
@@ -295,27 +313,38 @@ module Xlsxrb
         target_sheet.images_at(ref_or_row, col)
       end
 
-      # Loads all sheets into memory, returning an Elements::Workbook where every
-      # worksheet is a fully-parsed Elements::Worksheet supporting coordinate random access.
-      #
-      # @example
-      #   wb = Xlsxrb.read("file.xlsx").load
-      #   puts wb["Sheet1"]["A1"].value
-      #
-      # @return [Elements::Workbook]
-      # @api public
+      # Internal load helper without deprecation warning.
+      # @api private
       #: () -> Elements::Workbook
-      def load
-        loaded_sheets = sheets.map { |s| s.respond_to?(:load) ? s.load : s }
+      def _load
+        loaded_sheets = sheets.map do |s|
+          s.respond_to?(:load) ? s.load : s
+        end
         close
         with(sheets: loaded_sheets)
       end
 
-      # @deprecated Use {#load} instead. Will be removed in 0.2.0.
+      # Loads all sheets into memory, returning an Elements::Workbook where every
+      # worksheet is a fully-parsed Elements::Worksheet supporting coordinate random access.
+      #
+      # @example
+      #   wb = Xlsxrb.load("file.xlsx")
+      #   puts wb["Sheet1"]["A1"].value
+      #
+      # @deprecated Use {Xlsxrb.load} instead. Will be removed in 0.2.0.
+      # @return [Elements::Workbook]
+      # @api public
+      #: () -> Elements::Workbook
+      def load
+        warn "[DEPRECATION] Elements::Workbook#load is deprecated; use Xlsxrb.load(source) instead.", uplevel: 1
+        _load
+      end
+
+      # @deprecated Use {Xlsxrb.load} instead. Will be removed in 0.2.0.
       #: () -> Elements::Workbook
       def to_workbook
-        warn "[DEPRECATION] #to_workbook is deprecated; use #load instead.", uplevel: 1
-        load
+        warn "[DEPRECATION] #to_workbook is deprecated; use Xlsxrb.load(source) instead.", uplevel: 1
+        _load
       end
 
       # Closes any streaming resources associated with worksheets.
@@ -331,6 +360,7 @@ module Xlsxrb
       # Returns a new Workbook with the specified sheet updated.
       # Yields the matched worksheet to the block, which must return a new Worksheet.
       #
+      # @deprecated Use {Xlsxrb.read} + {Xlsxrb.write} for streaming transformations or {Xlsxrb.write} DSL for report generation. Will be removed in 0.2.0.
       # @example
       #   new_wb = wb.update_sheet("Sheet1") do |sheet|
       #     sheet.update_cell("A1", value: "New Title")
@@ -344,6 +374,7 @@ module Xlsxrb
       # @api public
       #: (Integer | String identifier) ?{ (Elements::Worksheet) -> Elements::Worksheet } -> Elements::Workbook
       def update_sheet(identifier)
+        warn "[DEPRECATION] Elements::Workbook#update_sheet is deprecated and will be removed in 0.2.0; use Xlsxrb.read + Xlsxrb.write for streaming transformations or Xlsxrb.write DSL for report generation.", uplevel: 1
         raise ArgumentError, "block is required" unless block_given?
 
         sheet_to_update = sheet(identifier)
@@ -372,17 +403,36 @@ module Xlsxrb
       #   wb.save("output.xlsx")
       #
       # @param filepath [String, IO, StringIO] Destination file path or IO stream.
+      # @param shared_strings [Boolean] Whether to intern strings into a shared strings table.
+      # @param compression_level [Integer, nil] ZIP deflate compression level (0..9).
+      # @param options [Hash] Optional write options forwarded to {Xlsxrb.write} (e.g. `password:`, `encryption_mode:`).
       # @return [void]
       # @api public
-      #: (String | IO | StringIO filepath) -> void
-      def save(filepath)
-        Xlsxrb.write(filepath, self)
+      #: (String | IO | StringIO filepath, ?shared_strings: bool, ?compression_level: Integer?, **untyped options) -> void
+      def save(filepath, shared_strings: true, compression_level: nil, **options)
+        Xlsxrb.write(filepath, self, shared_strings: shared_strings, compression_level: compression_level, **options)
+      end
+
+      # Serializes the workbook to a binary XLSX data string in memory.
+      #
+      # @example Export workbook bytes
+      #   data = wb.to_data
+      #
+      # @param shared_strings [Boolean] Whether to intern strings into a shared strings table.
+      # @param compression_level [Integer, nil] ZIP deflate compression level (0..9).
+      # @param options [Hash] Additional write options forwarded to {Xlsxrb.write} (e.g. `password:`, `encryption_mode:`).
+      # @return [String] Binary XLSX data.
+      # @api public
+      #: (?shared_strings: bool, ?compression_level: Integer?, **untyped options) -> String
+      def to_data(shared_strings: true, compression_level: nil, **options)
+        Xlsxrb.write(self, shared_strings: shared_strings, compression_level: compression_level, **options)
       end
 
       # Validates workbook structure according to OOXML specifications.
       #
       # @param sheets [Array<Elements::Worksheet>]
       # @return [Array<String>] List of error messages.
+      # @api private
       #: (untyped sheets) -> Array[String]
       def self.validate(sheets)
         errs = []

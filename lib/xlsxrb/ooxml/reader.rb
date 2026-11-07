@@ -1045,6 +1045,7 @@ module Xlsxrb
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
         "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument"
       ].freeze
+      private_constant :OFFICE_DOC_REL_TYPES
 
       # Returns :strict or :transitional based on the namespace of the workbook XML.
       def format_variant

@@ -53,8 +53,15 @@ module Xlsxrb
     # @param pad_empty_rows [Boolean] Whether to yield empty rows for skipped row numbers.
     # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows.
     # @param images [Array<Elements::Image>, nil] Optional preloaded images array.
-    # : (String name, untyped sheet_source, Array[String] shared_strings, ?(Elements::Styles | Hash[untyped, untyped])? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?images: Array[Elements::Image]?) -> void
-    def initialize: (String name, untyped sheet_source, Array[String] shared_strings, ?(Elements::Styles | Hash[untyped, untyped])? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?images: Array[Elements::Image]?) -> void
+    # @param defined_names [Array<Hash, Elements::DefinedName>, nil] Optional workbook defined names.
+    # @param sheet_index [Integer, nil] 0-based worksheet index.
+    # @param charts [Array<Elements::Chart>, nil] Optional preloaded charts.
+    # @param sparkline_groups [Array<Elements::SparklineGroup>, nil] Optional preloaded sparkline groups.
+    # @param print_area [String, nil] Optional print area range.
+    # @param print_titles [Elements::PrintTitles, nil] Optional repeating print titles.
+    # @param header_footer_images [Array<Elements::HeaderFooterImage>, nil] Optional preloaded header/footer images.
+    # : (String name, untyped sheet_source, Array[String] shared_strings, ?(Elements::Styles | Hash[untyped, untyped])? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?images: Array[Elements::Image]?, ?defined_names: Array[untyped]?, ?sheet_index: Integer?, ?charts: Array[Elements::Chart]?, ?sparkline_groups: Array[Elements::SparklineGroup]?, ?print_area: String?, ?print_titles: Elements::PrintTitles?, ?header_footer_images: Array[Elements::HeaderFooterImage]?) -> void
+    def initialize: (String name, untyped sheet_source, Array[String] shared_strings, ?(Elements::Styles | Hash[untyped, untyped])? styles, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?state: Symbol, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?images: Array[Elements::Image]?, ?defined_names: Array[untyped]?, ?sheet_index: Integer?, ?charts: Array[Elements::Chart]?, ?sparkline_groups: Array[Elements::SparklineGroup]?, ?print_area: String?, ?print_titles: Elements::PrintTitles?, ?header_footer_images: Array[Elements::HeaderFooterImage]?) -> void
 
     # Returns whether trailing empty rows are omitted during iteration.
     #
@@ -104,14 +111,22 @@ module Xlsxrb
     # : () -> Integer?
     def first_row: () -> Integer?
 
+    # Returns the 0-based index of the first column defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    # : () -> Integer?
+    def first_column_index: () -> Integer?
+
     # Returns the 1-based index of the first column defined in the sheet dimension, or nil.
     #
+    # @deprecated Use 0-based {#first_column_index} instead. Will be removed in 0.2.0.
     # @return [Integer, nil]
     # @api public
     # : () -> Integer?
     def first_column: () -> Integer?
 
-    # @deprecated Use {#first_column} instead. Will be removed in 0.2.0.
+    # @deprecated Use {#first_column_index} instead. Will be removed in 0.2.0.
     alias first_col first_column
 
     # Returns the 1-based index of the last row defined in the sheet dimension, or nil.
@@ -122,30 +137,38 @@ module Xlsxrb
     # : () -> Integer?
     def last_row: () -> Integer?
 
+    # Returns the 0-based index of the last column defined in the sheet dimension, or nil.
+    #
+    # @return [Integer, nil]
+    # @api public
+    # : () -> Integer?
+    def last_column_index: () -> Integer?
+
     # Returns the 1-based index of the last column defined in the sheet dimension, or nil.
     #
+    # @deprecated Use 0-based {#last_column_index} instead. Will be removed in 0.2.0.
     # @return [Integer, nil]
     # @api public
     # : () -> Integer?
     def last_column: () -> Integer?
 
-    # @deprecated Use {#last_column} instead. Will be removed in 0.2.0.
+    # @deprecated Use {#last_column_index} instead. Will be removed in 0.2.0.
     alias last_col last_column
 
-    # Returns the 1-based range of rows defined in the sheet dimension, or nil.
+    # Returns the 0-based range of rows defined in the sheet dimension, or nil.
     #
     # @example
-    #   sheet.row_range #=> 1..10
+    #   sheet.row_range #=> 0..9
     #
     # @return [Range<Integer>, nil]
     # @api public
     # : () -> Range[Integer]?
     def row_range: () -> Range[Integer]?
 
-    # Returns the 1-based range of columns defined in the sheet dimension, or nil.
+    # Returns the 0-based range of columns defined in the sheet dimension, or nil.
     #
     # @example
-    #   sheet.column_range #=> 1..5
+    #   sheet.column_range #=> 0..4
     #
     # @return [Range<Integer>, nil]
     # @api public
@@ -276,71 +299,80 @@ module Xlsxrb
     # : () -> Elements::Worksheet
     def load: () -> Elements::Worksheet
 
-    # @deprecated Use {#load} instead. Will be removed in 0.2.0.
+    # @deprecated Use {Xlsxrb.load} instead. Will be removed in 0.2.0.
     # : () -> Elements::Worksheet
     def to_worksheet: () -> Elements::Worksheet
 
-    # Returns hyperlinks configured for this worksheet as a Hash of cell references to hyperlink hashes.
+    # Returns hyperlinks configured for this worksheet as a Hash of cell references to {Elements::Hyperlink} objects.
     #
-    # @return [Hash<String, Hash[Symbol, untyped]>]
+    # @return [Hash<String, Elements::Hyperlink>]
     # @api public
-    # : () -> Hash[String, Hash[Symbol, untyped]]
-    def hyperlinks: () -> Hash[String, Hash[Symbol, untyped]]
+    # : () -> Hash[String, Elements::Hyperlink]
+    def hyperlinks: () -> Hash[String, Elements::Hyperlink]
 
     # Returns hyperlink metadata for a specific cell reference, or nil.
     #
     # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
-    # @param col [Integer, nil] Optional 0-based column index.
-    # @return [Hash, nil]
+    # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter/Symbol.
+    # @return [Elements::Hyperlink, nil]
     # @api public
-    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
-    def hyperlink: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+    # : (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Hyperlink?
+    def hyperlink: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Hyperlink?
 
-    # Returns comments configured for this worksheet as an Array of comment hashes.
+    # Returns comments configured for this worksheet as an Array of {Elements::Comment} objects.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::Comment>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def comments: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::Comment]
+    def comments: () -> Array[Elements::Comment]
 
     # Returns comment metadata for a specific cell reference, or nil.
     #
     # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
-    # @param col [Integer, nil] Optional 0-based column index.
-    # @return [Hash, nil]
+    # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter/Symbol.
+    # @return [Elements::Comment, nil]
     # @api public
-    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
-    def comment: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Hash[Symbol, untyped]?
+    # : (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Comment?
+    def comment: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Comment?
 
     # Returns comments indexed by cell reference.
     #
-    # @return [Hash<String, Hash[Symbol, untyped]>]
+    # @return [Hash<String, Elements::Comment>]
     # @api public
-    # : () -> Hash[String, Hash[Symbol, untyped]]
-    def comments_by_ref: () -> Hash[String, Hash[Symbol, untyped]]
+    # : () -> Hash[String, Elements::Comment]
+    def comments_by_ref: () -> Hash[String, Elements::Comment]
 
-    # Returns threaded comments configured for this worksheet as an Array of comment hashes.
+    # Returns threaded comments configured for this worksheet as an Array of {Elements::ThreadedComment} objects.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::ThreadedComment>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def threaded_comments: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::ThreadedComment]
+    def threaded_comments: () -> Array[Elements::ThreadedComment]
+
+    # Returns the root threaded comment for a specific cell reference, or nil.
+    #
+    # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+    # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter/Symbol.
+    # @return [Elements::ThreadedComment, nil]
+    # @api public
+    # : (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::ThreadedComment?
+    def threaded_comment: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::ThreadedComment?
 
     # Returns threaded comments for a specific cell reference, or empty array.
     #
     # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
-    # @param col [Integer, nil] Optional 0-based column index.
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter/Symbol.
+    # @return [Array<Elements::ThreadedComment>]
     # @api public
-    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Hash[Symbol, untyped]]
-    def threaded_comment: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Hash[Symbol, untyped]]
+    # : (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Array[Elements::ThreadedComment]
+    def threaded_comments_at: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Array[Elements::ThreadedComment]
 
     # Returns threaded comments indexed by cell reference.
     #
-    # @return [Hash<String, Array<Hash[Symbol, untyped]>>]
+    # @return [Hash<String, Array<Elements::ThreadedComment>>]
     # @api public
-    # : () -> Hash[String, Array[Hash[Symbol, untyped]]]
-    def threaded_comments_by_ref: () -> Hash[String, Array[Hash[Symbol, untyped]]]
+    # : () -> Hash[String, Array[Elements::ThreadedComment]]
+    def threaded_comments_by_ref: () -> Hash[String, Array[Elements::ThreadedComment]]
 
     # Returns all embedded images in this worksheet.
     #
@@ -352,14 +384,15 @@ module Xlsxrb
     # Returns all images anchored at a specific cell reference or 0-based coordinate.
     #
     # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
-    # @param col [Integer, nil] Optional 0-based column index.
+    # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter/Symbol.
     # @return [Array<Elements::Image>]
     # @api public
-    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Elements::Image]
-    def images_at: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Array[Elements::Image]
+    # : (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Array[Elements::Image]
+    def images_at: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Array[Elements::Image]
 
     # Loads and returns images for this worksheet, optionally yielding self for block syntax.
     #
+    # @deprecated Access {#images} directly. Lazy-loading is automatic. Will be removed in 0.2.0.
     # @yield [sheet]
     # @yieldparam sheet [StreamSheet]
     # @return [StreamSheet, void]
@@ -371,7 +404,7 @@ module Xlsxrb
 
     # Access a cell by reference or 0-based coordinates.
     #
-    # @deprecated Use {#load} to materialize an {Elements::Worksheet} and use {Elements::CoordinateAccess#[]} (e.g. sheet.load["A1"] or sheet.load[0, 0]). Will be removed in 0.2.0.
+    # @deprecated Use `ws = Xlsxrb.load(source)` to materialize an {Elements::Worksheet} and use {Elements::CoordinateAccess#[]} (e.g. ws["A1"] or ws[0, 0]). Will be removed in 0.2.0.
     # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
     # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter.
     # @return [Elements::Cell, nil]
@@ -381,12 +414,13 @@ module Xlsxrb
 
     # Returns the formatted string representation of a cell's value.
     #
+    # @deprecated Use `ws = Xlsxrb.load(source)` to materialize an {Elements::Worksheet} and access `ws["A1"].formatted_value`. Will be removed in 0.2.0.
     # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
-    # @param col [Integer, nil] Optional 0-based column index.
+    # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter.
     # @return [String, nil]
     # @api public
-    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> String?
-    def formatted_value: (String | Symbol | Integer ref_or_row, ?Integer? col) -> String?
+    # : (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> String?
+    def formatted_value: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> String?
 
     # Returns merged cell ranges (e.g. ["A1:B2"]) for this worksheet.
     #
@@ -402,80 +436,108 @@ module Xlsxrb
     # : () -> String?
     def auto_filter: () -> String?
 
+    # Returns column filter rules defined for this worksheet.
+    #
+    # @return [Hash<Integer, Elements::FilterColumn>]
+    # @api public
+    # : () -> Hash[Integer, Elements::FilterColumn]
+    def filter_columns: () -> Hash[Integer, Elements::FilterColumn]
+
     # Returns data validation rules configured for this worksheet.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::DataValidation>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def data_validations: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::DataValidation]
+    def data_validations: () -> Array[Elements::DataValidation]
 
     # Returns conditional formatting rules configured for this worksheet.
     #
     # Corresponds to ECMA-376 Part 4 §18.3.1.18 (<conditionalFormatting> and <cfRule> elements).
-    # In the OpenXML specification, conditional formatting definitions are emitted as
-    # `<conditionalFormatting>` elements containing individual rule definitions (`<cfRule>`).
-    # While ECMA-376 uses the uncountable noun `conditionalFormatting` as the XML element name,
-    # xlsxrb exposes these rules collectively as {#conditional_formats} (Array of Hashes)
-    # to maintain symmetric plural collection naming alongside other collections
-    # (e.g. {#tables}, {#data_validations}, {#merged_cells}) and paired with the singular builder
-    # method {WorksheetBuilder#conditional_format}.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::ConditionalFormat>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def conditional_formats: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::ConditionalFormat]
+    def conditional_formats: () -> Array[Elements::ConditionalFormat]
 
     # @deprecated Use {#conditional_formats} instead. Matches the ECMA-376 XML element name (<conditionalFormatting>), but {#conditional_formats} is canonical in xlsxrb. Will be removed in version 0.2.0.
     alias conditional_formatting conditional_formats
 
     # Returns tables defined in this worksheet.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::Table>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def tables: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::Table]
+    def tables: () -> Array[Elements::Table]
+
+    # Returns pivot tables defined in this worksheet.
+    #
+    # @return [Array<Elements::PivotTable>]
+    # @api public
+    # : () -> Array[Elements::PivotTable]
+    def pivot_tables: () -> Array[Elements::PivotTable]
 
     # Returns shapes defined in this worksheet.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::Shape>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def shapes: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::Shape]
+    def shapes: () -> Array[Elements::Shape]
 
     # Returns freeze pane settings for this worksheet, or nil if none.
     #
-    # @return [Hash[Symbol, untyped], nil]
+    # @return [Elements::FreezePane, nil]
     # @api public
-    # : () -> Hash[Symbol, untyped]?
-    def freeze_pane: () -> Hash[Symbol, untyped]?
+    # : () -> Elements::FreezePane?
+    def freeze_pane: () -> Elements::FreezePane?
+
+    # Returns split pane settings for this worksheet, or nil if none.
+    #
+    # @return [Elements::SplitPane, nil]
+    # @api public
+    # : () -> Elements::SplitPane?
+    def split_pane: () -> Elements::SplitPane?
 
     # Returns sheet view properties for this worksheet.
     #
-    # @return [Hash[Symbol, untyped]]
+    # @return [Elements::SheetView]
     # @api public
-    # : () -> Hash[Symbol, untyped]
-    def sheet_view: () -> Hash[Symbol, untyped]
+    # : () -> Elements::SheetView
+    def sheet_view: () -> Elements::SheetView
+
+    # Returns sheet views for this worksheet.
+    #
+    # @return [Array<Elements::SheetView>]
+    # @api public
+    # : () -> Array[Elements::SheetView]
+    def sheet_views: () -> Array[Elements::SheetView]
+
+    # Returns sort state configuration for this worksheet, or nil if none.
+    #
+    # @return [Elements::SortState, nil]
+    # @api public
+    # : () -> Elements::SortState?
+    def sort_state: () -> Elements::SortState?
 
     # Returns selection settings for this worksheet, or nil if none.
     #
-    # @return [Hash[Symbol, untyped], nil]
+    # @return [Elements::Selection, nil]
     # @api public
-    # : () -> Hash[Symbol, untyped]?
-    def selection: () -> Hash[Symbol, untyped]?
+    # : () -> Elements::Selection?
+    def selection: () -> Elements::Selection?
 
     # Returns sheet protection settings as a hash, or nil if unprotected.
     #
-    # @return [Hash[Symbol, untyped], nil]
+    # @return [Elements::SheetProtection, nil]
     # @api public
-    # : () -> Hash[Symbol, untyped]?
-    def sheet_protection: () -> Hash[Symbol, untyped]?
+    # : () -> Elements::SheetProtection?
+    def sheet_protection: () -> Elements::SheetProtection?
 
     # Returns sheet-level properties (tabColor, outlinePr, sheetPr) for this worksheet.
     #
-    # @return [Hash[Symbol, untyped]]
+    # @return [Elements::SheetProperties]
     # @api public
-    # : () -> Hash[Symbol, untyped]
-    def sheet_properties: () -> Hash[Symbol, untyped]
+    # : () -> Elements::SheetProperties
+    def sheet_properties: () -> Elements::SheetProperties
 
     # Returns the internal VBA or application code name of the worksheet, or nil if not specified.
     #
@@ -508,18 +570,18 @@ module Xlsxrb
 
     # Returns sheet calculation properties (<sheetCalcPr>), or nil if not present.
     #
-    # @return [Hash, nil]
+    # @return [Elements::SheetCalcProperties, nil]
     # @api public
-    # : () -> Hash[Symbol, untyped]?
-    def sheet_calc_properties: () -> Hash[Symbol, untyped]?
+    # : () -> Elements::SheetCalcProperties?
+    def sheet_calc_properties: () -> Elements::SheetCalcProperties?
 
     # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-    # : () -> Hash[Symbol, untyped]?
-    def sheet_calc_pr: () -> Hash[Symbol, untyped]?
+    # : () -> Elements::SheetCalcProperties?
+    def sheet_calc_pr: () -> Elements::SheetCalcProperties?
 
     # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-    # : () -> Hash[Symbol, untyped]?
-    def calc_pr: () -> Hash[Symbol, untyped]?
+    # : () -> Elements::SheetCalcProperties?
+    def calc_pr: () -> Elements::SheetCalcProperties?
 
     # Returns the worksheet tab color specification, or nil if not set.
     #
@@ -540,63 +602,63 @@ module Xlsxrb
 
     # Returns sheet format properties (defaultRowHeight, defaultColWidth, baseColWidth) for this worksheet.
     #
-    # @return [Hash[Symbol, untyped]]
+    # @return [Elements::SheetFormat]
     # @api public
-    # : () -> Hash[Symbol, untyped]
-    def sheet_format: () -> Hash[Symbol, untyped]
+    # : () -> Elements::SheetFormat
+    def sheet_format: () -> Elements::SheetFormat
 
     # Returns page setup configurations for this worksheet.
     #
-    # @return [Hash[Symbol, untyped]]
+    # @return [Elements::PageSetup]
     # @api public
-    # : () -> Hash[Symbol, untyped]
-    def page_setup: () -> Hash[Symbol, untyped]
+    # : () -> Elements::PageSetup
+    def page_setup: () -> Elements::PageSetup
 
     # Returns page margins for this worksheet, or nil if none.
     #
-    # @return [Hash[Symbol, untyped], nil]
+    # @return [Elements::PageMargins, nil]
     # @api public
-    # : () -> Hash[Symbol, untyped]?
-    def page_margins: () -> Hash[Symbol, untyped]?
+    # : () -> Elements::PageMargins?
+    def page_margins: () -> Elements::PageMargins?
 
     # Returns header/footer configurations for this worksheet.
     #
-    # @return [Hash[Symbol, untyped]]
+    # @return [Elements::HeaderFooter]
     # @api public
-    # : () -> Hash[Symbol, untyped]
-    def header_footer: () -> Hash[Symbol, untyped]
+    # : () -> Elements::HeaderFooter
+    def header_footer: () -> Elements::HeaderFooter
 
     # Returns print options for this worksheet.
     #
-    # @return [Hash[Symbol, untyped]]
+    # @return [Elements::PrintOptions]
     # @api public
-    # : () -> Hash[Symbol, untyped]
-    def print_options: () -> Hash[Symbol, untyped]
+    # : () -> Elements::PrintOptions
+    def print_options: () -> Elements::PrintOptions
 
     # Returns explicit row page breaks for this worksheet.
     #
-    # @return [Array<untyped>]
+    # @return [Array<Elements::PageBreak>]
     # @api public
-    # : () -> Array[untyped]
-    def row_breaks: () -> Array[untyped]
+    # : () -> Array[Elements::PageBreak]
+    def row_breaks: () -> Array[Elements::PageBreak]
 
     # Returns explicit column page breaks for this worksheet.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::PageBreak>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def column_breaks: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::PageBreak]
+    def column_breaks: () -> Array[Elements::PageBreak]
 
     # @deprecated Use {#column_breaks} instead.
-    # : () -> Array[Hash[Symbol, untyped]]
-    def col_breaks: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::PageBreak]
+    def col_breaks: () -> Array[Elements::PageBreak]
 
     # Returns protected ranges defined for this worksheet.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::ProtectedRange>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def protected_ranges: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::ProtectedRange]
+    def protected_ranges: () -> Array[Elements::ProtectedRange]
 
     # Returns cell watch cell references defined for this worksheet.
     #
@@ -607,27 +669,27 @@ module Xlsxrb
 
     # Returns ignored error rules defined for this worksheet.
     #
-    # @return [Array<Hash[Symbol, untyped]>]
+    # @return [Array<Elements::IgnoredError>]
     # @api public
-    # : () -> Array[Hash[Symbol, untyped]]
-    def ignored_errors: () -> Array[Hash[Symbol, untyped]]
+    # : () -> Array[Elements::IgnoredError]
+    def ignored_errors: () -> Array[Elements::IgnoredError]
 
     # Returns phonetic properties defined for this worksheet, or nil.
     #
-    # @return [Hash[Symbol, untyped], nil]
+    # @return [Elements::PhoneticProperties, nil]
     # @api public
-    # : () -> Hash[Symbol, untyped]?
-    def phonetic_properties: () -> Hash[Symbol, untyped]?
+    # : () -> Elements::PhoneticProperties?
+    def phonetic_properties: () -> Elements::PhoneticProperties?
 
     # @deprecated Use {#phonetic_properties} instead. Will be removed in 0.2.0.
     alias phonetic_pr phonetic_properties
 
     # Returns the background image configured for this worksheet, or nil.
     #
-    # @return [Hash[Symbol, untyped], nil]
+    # @return [Elements::BackgroundImage, nil]
     # @api public
-    # : () -> Hash[Symbol, untyped]?
-    def background_image: () -> Hash[Symbol, untyped]?
+    # : () -> Elements::BackgroundImage?
+    def background_image: () -> Elements::BackgroundImage?
 
     # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
     alias background_picture background_image
@@ -639,7 +701,97 @@ module Xlsxrb
     # : () -> void
     def close: () -> void
 
+    # Returns 0-based bounds { min_row: r1, max_row: r2, min_column: c1, max_column: c2 } from dimension ref.
+    #
+    # @example
+    #   sheet.dimension_bounds #=> { min_row: 0, max_row: 4, min_column: 0, max_column: 2 }
+    #
+    # @return [Hash{Symbol => Integer}, nil]
+    # @api public
+    # : () -> Hash[Symbol, Integer]?
+    def dimension_bounds: () -> Hash[Symbol, Integer]?
+
+    # Returns column definitions for this worksheet.
+    #
+    # @return [Array<Elements::Column>]
+    # @api public
+    # : () -> Array[Elements::Column]
+    def columns: () -> Array[Elements::Column]
+
+    # Returns charts defined in this worksheet.
+    #
+    # @return [Array<Elements::Chart>]
+    # @api public
+    # : () -> Array[Elements::Chart]
+    def charts: () -> Array[Elements::Chart]
+
+    # Returns sparkline groups defined in this worksheet.
+    #
+    # @return [Array<Elements::SparklineGroup>]
+    # @api public
+    # : () -> Array[Elements::SparklineGroup]
+    def sparkline_groups: () -> Array[Elements::SparklineGroup]
+
+    # Returns the print area range for this worksheet, or nil if unset.
+    #
+    # @return [String, nil]
+    # @api public
+    # : () -> String?
+    def print_area: () -> String?
+
+    # Returns print titles configuration for this worksheet, or nil if unset.
+    #
+    # @return [Elements::PrintTitles, nil]
+    # @api public
+    # : () -> Elements::PrintTitles?
+    def print_titles: () -> Elements::PrintTitles?
+
+    # Returns whether the worksheet has any structural or schema validation errors.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def valid?: () -> bool
+
+    # Returns validation error messages for this worksheet.
+    #
+    # @return [Array<String>]
+    # @api public
+    # : () -> Array[String]
+    def errors: () -> Array[String]
+
+    # Returns unmapped metadata for this worksheet.
+    #
+    # @return [Hash[Symbol, untyped]]
+    # @api public
+    # : () -> Hash[Symbol, untyped]
+    def unmapped_data: () -> Hash[Symbol, untyped]
+
+    # Returns legacy drawing relationship info, or nil.
+    #
+    # @return [Hash[Symbol, untyped], nil]
+    # @api public
+    # : () -> Hash[Symbol, untyped]?
+    def legacy_drawing: () -> Hash[Symbol, untyped]?
+
+    # Returns extension list elements, or nil.
+    #
+    # @return [Array[untyped], nil]
+    # @api public
+    # : () -> Array[untyped]?
+    def ext_lst: () -> Array[untyped]?
+
+    # Returns header/footer images configured for this worksheet.
+    #
+    # @return [Array<Elements::HeaderFooterImage>]
+    # @api public
+    # : () -> Array[Elements::HeaderFooterImage]
+    def header_footer_images: () -> Array[Elements::HeaderFooterImage]
+
     private
+
+    # : () -> Hash[Symbol, untyped]
+    def auto_filter_data: () -> Hash[Symbol, untyped]
 
     # : () -> Hash[Symbol, untyped]
     def sheet_view_data: () -> Hash[Symbol, untyped]
@@ -649,10 +801,6 @@ module Xlsxrb
 
     # : () -> String
     def raw_sheet_xml: () -> String
-
-    # Returns 1-based bounds [first_row, first_col, last_row, last_col] from dimension ref.
-    # : () -> Array[Integer]?
-    def dimension_bounds: () -> Array[Integer]?
 
     # Extracts dimension reference from XML source lazily without parsing the entire file.
     # : () -> String?

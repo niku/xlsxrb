@@ -19,66 +19,70 @@ module Xlsxrb
 
       # Returns array of font entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Font>]
       # @api public
-      # : () -> Array[Hash[Symbol, untyped]]
-      def fonts: () -> Array[Hash[Symbol, untyped]]
+      # : () -> Array[Elements::Font]
+      def fonts: () -> Array[Elements::Font]
 
       # Returns array of fill entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Fill>]
       # @api public
-      # : () -> Array[Hash[Symbol, untyped]]
-      def fills: () -> Array[Hash[Symbol, untyped]]
+      # : () -> Array[Elements::Fill]
+      def fills: () -> Array[Elements::Fill]
 
       # Returns array of border entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Border>]
       # @api public
-      # : () -> Array[Hash[Symbol, untyped]]
-      def borders: () -> Array[Hash[Symbol, untyped]]
+      # : () -> Array[Elements::Border]
+      def borders: () -> Array[Elements::Border]
 
       # Returns array of cell format (cellXfs) entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::CellXf>]
       # @api public
-      # : () -> Array[Hash[Symbol, untyped]]
-      def cell_xfs: () -> Array[Hash[Symbol, untyped]]
+      # : () -> Array[Elements::CellXf]
+      def cell_xfs: () -> Array[Elements::CellXf]
 
       # Returns custom number formats as { numFmtId => formatCode }.
       #
       # @return [Hash<Integer, String>]
       # @api public
       # : () -> Hash[Integer, String]
+      def number_formats: () -> Hash[Integer, String]
+
+      # @deprecated Use {#number_formats} instead. Will be removed in 0.2.0.
+      # : () -> Hash[Integer, String]
       def num_fmts: () -> Hash[Integer, String]
 
       # Returns array of differential format (dxf) entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Dxf>]
       # @api public
-      # : () -> Array[Hash[Symbol, untyped]]
-      def dxfs: () -> Array[Hash[Symbol, untyped]]
+      # : () -> Array[Elements::Dxf]
+      def dxfs: () -> Array[Elements::Dxf]
 
       # Returns array of cell style format (cellStyleXfs) entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::CellXf>]
       # @api public
-      # : () -> Array[Hash[Symbol, untyped]]
-      def cell_style_xfs: () -> Array[Hash[Symbol, untyped]]
+      # : () -> Array[Elements::CellXf]
+      def cell_style_xfs: () -> Array[Elements::CellXf]
 
       # Returns array of named cell styles from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::CellStyle>]
       # @api public
-      # : () -> Array[Hash[Symbol, untyped]]
-      def cell_styles: () -> Array[Hash[Symbol, untyped]]
+      # : () -> Array[Elements::CellStyle]
+      def cell_styles: () -> Array[Elements::CellStyle]
 
       # Returns table styles configuration dictionary from the styles.
       #
-      # @return [Hash, Array]
+      # @return [Elements::TableStyles]
       # @api public
-      # : () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
-      def table_styles: () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
+      # : () -> Elements::TableStyles
+      def table_styles: () -> Elements::TableStyles
 
       # Returns array of indexed color strings (ARGB hex).
       #
@@ -89,25 +93,25 @@ module Xlsxrb
 
       # Returns array of MRU (most recently used) color dictionaries.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Color>]
       # @api public
-      # : () -> Array[Hash[Symbol, untyped]]
-      def mru_colors: () -> Array[Hash[Symbol, untyped]]
+      # : () -> Array[Elements::Color]
+      def mru_colors: () -> Array[Elements::Color]
 
       # Returns colors dictionary or palette.
       #
-      # @return [Hash, Array]
+      # @return [Elements::Colors]
       # @api public
-      # : () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
-      def colors: () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
+      # : () -> Elements::Colors
+      def colors: () -> Elements::Colors
 
       # Looks up a font entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::Font, nil]
       # @api public
-      # : (Integer? id) -> Hash[Symbol, untyped]?
-      def font: (Integer? id) -> Hash[Symbol, untyped]?
+      # : (Integer? id) -> Elements::Font?
+      def font: (Integer? id) -> Elements::Font?
 
       # Returns the font size in points for the font entry at index id.
       #
@@ -124,30 +128,30 @@ module Xlsxrb
       # Looks up a fill entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::Fill, nil]
       # @api public
-      # : (Integer? id) -> Hash[Symbol, untyped]?
-      def fill: (Integer? id) -> Hash[Symbol, untyped]?
+      # : (Integer? id) -> Elements::Fill?
+      def fill: (Integer? id) -> Elements::Fill?
 
       # Looks up a border entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::Border, nil]
       # @api public
-      # : (Integer? id) -> Hash[Symbol, untyped]?
-      def border: (Integer? id) -> Hash[Symbol, untyped]?
+      # : (Integer? id) -> Elements::Border?
+      def border: (Integer? id) -> Elements::Border?
 
       # Looks up a cell format (cellXf) entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::CellXf, nil]
       # @api public
-      # : (Integer? id) -> Hash[Symbol, untyped]?
-      def cell_xf: (Integer? id) -> Hash[Symbol, untyped]?
+      # : (Integer? id) -> Elements::CellXf?
+      def cell_xf: (Integer? id) -> Elements::CellXf?
 
       # @deprecated Use {#cell_xf} instead. Will be removed in 0.2.0.
-      # : (Integer? id) -> Hash[Symbol, untyped]?
-      def xf: (Integer? id) -> Hash[Symbol, untyped]?
+      # : (Integer? id) -> Elements::CellXf?
+      def xf: (Integer? id) -> Elements::CellXf?
 
       # Looks up a custom format code by numFmtId.
       #
@@ -155,31 +159,34 @@ module Xlsxrb
       # @return [String, nil]
       # @api public
       # : (Integer? id) -> String?
-      def num_fmt: (Integer? id) -> String?
+      def number_format_code: (Integer? id) -> String?
+
+      # @deprecated Use {#number_format_code} instead. Will be removed in 0.2.0.
+      def num_fmt: (untyped id) -> untyped
 
       # Looks up a differential format (dxf) entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::Dxf, nil]
       # @api public
-      # : (Integer? id) -> Hash[Symbol, untyped]?
-      def dxf: (Integer? id) -> Hash[Symbol, untyped]?
+      # : (Integer? id) -> Elements::Dxf?
+      def dxf: (Integer? id) -> Elements::Dxf?
 
       # Looks up a cell style format (cellStyleXf) entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::CellXf, nil]
       # @api public
-      # : (Integer? id) -> Hash[Symbol, untyped]?
-      def cell_style_xf: (Integer? id) -> Hash[Symbol, untyped]?
+      # : (Integer? id) -> Elements::CellXf?
+      def cell_style_xf: (Integer? id) -> Elements::CellXf?
 
       # Looks up a named cell style entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::CellStyle, nil]
       # @api public
-      # : (Integer? id) -> Hash[Symbol, untyped]?
-      def cell_style: (Integer? id) -> Hash[Symbol, untyped]?
+      # : (Integer? id) -> Elements::CellStyle?
+      def cell_style: (Integer? id) -> Elements::CellStyle?
 
       # Appends a font entry to the stylesheet and returns its 0-based index.
       #
@@ -205,12 +212,16 @@ module Xlsxrb
       # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
       def add_border: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
 
-      # Sets a custom number format code and returns the num_fmt_id.
+      # Sets a custom number format code and returns the format id.
       #
       # @param id [Integer] Format ID (custom formats typically start at 164).
       # @param code [String] Format code pattern.
       # @return [Integer]
       # @api public
+      # : (Integer id, String code) -> Integer
+      def add_number_format: (Integer id, String code) -> Integer
+
+      # @deprecated Use {#add_number_format} instead. Will be removed in 0.2.0.
       # : (Integer id, String code) -> Integer
       def add_num_fmt: (Integer id, String code) -> Integer
 
@@ -219,6 +230,10 @@ module Xlsxrb
       # @param spec [Hash, nil]
       # @return [Integer]
       # @api public
+      # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_cell_xf: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+
+      # @deprecated Use {#add_cell_xf} instead. Will be removed in 0.2.0.
       # : (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
       def add_xf: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
 
@@ -296,7 +311,12 @@ module Xlsxrb
       # : (Integer? style_index) -> String?
       def number_format: (Integer? style_index) -> String?
 
-      alias format_code number_format
+      # @deprecated Use {#number_format} instead.
+      # @param style_index [Integer, nil]
+      # @return [String, nil]
+      # @api public
+      # : (Integer? style_index) -> String?
+      def format_code: (Integer? style_index) -> String?
 
       # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
       # : (Integer? style_index) -> String?
@@ -349,7 +369,7 @@ module Xlsxrb
       # Precomputes format code and type classification lookups for all cellXfs.
       #
       # @return [self]
-      # @api public
+      # @api private
       # : () -> self
       def precompute!: () -> self
 

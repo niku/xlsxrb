@@ -14,6 +14,7 @@ module Xlsxrb
     class Styles
       EMPTY_ARRAY = [].freeze
       EMPTY_HASH = {}.freeze
+      private_constant :EMPTY_ARRAY, :EMPTY_HASH
 
       # Initializes the styles container, optionally wrapping an existing styles dictionary.
       #
@@ -21,47 +22,43 @@ module Xlsxrb
       #: (?Hash[untyped, untyped]? initial_hash) -> void
       def initialize(initial_hash = nil)
         @data = initial_hash.is_a?(Hash) ? initial_hash.dup : {}
-        @format_codes = nil
-        @format_types = nil
-        @date_flags = nil
-        @datetime_flags = nil
-        @time_flags = nil
+        invalidate_cache!
       end
 
       # Returns array of font entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Font>]
       # @api public
-      #: () -> Array[Hash[Symbol, untyped]]
+      #: () -> Array[Elements::Font]
       def fonts
-        @data[:fonts] || EMPTY_ARRAY
+        @fonts ||= (@data[:fonts] || EMPTY_ARRAY).map { |f| f.is_a?(Elements::Font) ? f : Elements::Font.new(**f) }.freeze
       end
 
       # Returns array of fill entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Fill>]
       # @api public
-      #: () -> Array[Hash[Symbol, untyped]]
+      #: () -> Array[Elements::Fill]
       def fills
-        @data[:fills] || EMPTY_ARRAY
+        @fills ||= (@data[:fills] || EMPTY_ARRAY).map { |f| f.is_a?(Elements::Fill) ? f : Elements::Fill.new(**f) }.freeze
       end
 
       # Returns array of border entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Border>]
       # @api public
-      #: () -> Array[Hash[Symbol, untyped]]
+      #: () -> Array[Elements::Border]
       def borders
-        @data[:borders] || EMPTY_ARRAY
+        @borders ||= (@data[:borders] || EMPTY_ARRAY).map { |b| b.is_a?(Elements::Border) ? b : Elements::Border.new(**b) }.freeze
       end
 
       # Returns array of cell format (cellXfs) entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::CellXf>]
       # @api public
-      #: () -> Array[Hash[Symbol, untyped]]
+      #: () -> Array[Elements::CellXf]
       def cell_xfs
-        @data[:cell_xfs] || EMPTY_ARRAY
+        @cell_xfs ||= (@data[:cell_xfs] || EMPTY_ARRAY).map { |x| x.is_a?(Elements::CellXf) ? x : Elements::CellXf.new(**x) }.freeze
       end
 
       # Returns custom number formats as { numFmtId => formatCode }.
@@ -69,44 +66,59 @@ module Xlsxrb
       # @return [Hash<Integer, String>]
       # @api public
       #: () -> Hash[Integer, String]
+      def number_formats
+        raw = @data[:num_fmts]
+        if raw.is_a?(Array)
+          raw.to_h { |nf| [nf[:num_fmt_id] || nf["num_fmt_id"], nf[:format_code] || nf["format_code"]] }
+        else
+          raw || EMPTY_HASH
+        end
+      end
+
+      # @deprecated Use {#number_formats} instead. Will be removed in 0.2.0.
+      #: () -> Hash[Integer, String]
       def num_fmts
-        @data[:num_fmts] || EMPTY_HASH
+        warn "[DEPRECATION] #num_fmts is deprecated; use #number_formats instead.", uplevel: 1
+        number_formats
       end
 
       # Returns array of differential format (dxf) entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Dxf>]
       # @api public
-      #: () -> Array[Hash[Symbol, untyped]]
+      #: () -> Array[Elements::Dxf]
       def dxfs
-        @data[:dxfs] || EMPTY_ARRAY
+        @dxfs ||= (@data[:dxfs] || EMPTY_ARRAY).map { |d| d.is_a?(Elements::Dxf) ? d : Elements::Dxf.new(**d) }.freeze
       end
 
       # Returns array of cell style format (cellStyleXfs) entries from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::CellXf>]
       # @api public
-      #: () -> Array[Hash[Symbol, untyped]]
+      #: () -> Array[Elements::CellXf]
       def cell_style_xfs
-        @data[:cell_style_xfs] || EMPTY_ARRAY
+        @cell_style_xfs ||= (@data[:cell_style_xfs] || EMPTY_ARRAY).map { |x| x.is_a?(Elements::CellXf) ? x : Elements::CellXf.new(**x) }.freeze
       end
 
       # Returns array of named cell styles from the styles.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::CellStyle>]
       # @api public
-      #: () -> Array[Hash[Symbol, untyped]]
+      #: () -> Array[Elements::CellStyle]
       def cell_styles
-        @data[:cell_styles] || EMPTY_ARRAY
+        @cell_styles ||= (@data[:cell_styles] || EMPTY_ARRAY).map { |s| s.is_a?(Elements::CellStyle) ? s : Elements::CellStyle.new(**s) }.freeze
       end
 
       # Returns table styles configuration dictionary from the styles.
       #
-      # @return [Hash, Array]
+      # @return [Elements::TableStyles]
       # @api public
-      #: () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
+      #: () -> Elements::TableStyles
       def table_styles
-        @data[:table_styles] || EMPTY_HASH
+        @table_styles ||= begin
+          raw = @data[:table_styles] || EMPTY_HASH
+          raw.is_a?(Elements::TableStyles) ? raw : Elements::TableStyles.new(**raw)
+        end
       end
 
       # Returns array of indexed color strings (ARGB hex).
@@ -120,32 +132,35 @@ module Xlsxrb
 
       # Returns array of MRU (most recently used) color dictionaries.
       #
-      # @return [Array<Hash>]
+      # @return [Array<Elements::Color>]
       # @api public
-      #: () -> Array[Hash[Symbol, untyped]]
+      #: () -> Array[Elements::Color]
       def mru_colors
-        @data[:mru_colors] || EMPTY_ARRAY
+        @mru_colors ||= (@data[:mru_colors] || EMPTY_ARRAY).map { |c| c.is_a?(Elements::Color) ? c : Elements::Color.new(**c) }.freeze
       end
 
       # Returns colors dictionary or palette.
       #
-      # @return [Hash, Array]
+      # @return [Elements::Colors]
       # @api public
-      #: () -> (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])
+      #: () -> Elements::Colors
       def colors
-        @data[:colors] || EMPTY_HASH
+        @colors ||= begin
+          raw = @data[:colors] || EMPTY_HASH
+          raw.is_a?(Elements::Colors) ? raw : Elements::Colors.new(**raw)
+        end
       end
 
       # Looks up a font entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::Font, nil]
       # @api public
-      #: (Integer? id) -> Hash[Symbol, untyped]?
+      #: (Integer? id) -> Elements::Font?
       def font(id)
         return nil unless id.is_a?(Integer) && id >= 0
 
-        @data[:fonts]&.at(id)
+        fonts[id]
       end
 
       # Returns the font size in points for the font entry at index id.
@@ -158,8 +173,8 @@ module Xlsxrb
         f = font(id)
         return nil unless f
 
-        sz = f[:size] || f[:sz]
-        sz.is_a?(Numeric) ? sz : nil
+        sz = f.size
+        sz if sz.is_a?(Numeric)
       end
 
       # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
@@ -172,41 +187,41 @@ module Xlsxrb
       # Looks up a fill entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::Fill, nil]
       # @api public
-      #: (Integer? id) -> Hash[Symbol, untyped]?
+      #: (Integer? id) -> Elements::Fill?
       def fill(id)
         return nil unless id.is_a?(Integer) && id >= 0
 
-        @data[:fills]&.at(id)
+        fills[id]
       end
 
       # Looks up a border entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::Border, nil]
       # @api public
-      #: (Integer? id) -> Hash[Symbol, untyped]?
+      #: (Integer? id) -> Elements::Border?
       def border(id)
         return nil unless id.is_a?(Integer) && id >= 0
 
-        @data[:borders]&.at(id)
+        borders[id]
       end
 
       # Looks up a cell format (cellXf) entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::CellXf, nil]
       # @api public
-      #: (Integer? id) -> Hash[Symbol, untyped]?
+      #: (Integer? id) -> Elements::CellXf?
       def cell_xf(id)
         return nil unless id.is_a?(Integer) && id >= 0
 
-        @data[:cell_xfs]&.at(id)
+        cell_xfs[id]
       end
 
       # @deprecated Use {#cell_xf} instead. Will be removed in 0.2.0.
-      #: (Integer? id) -> Hash[Symbol, untyped]?
+      #: (Integer? id) -> Elements::CellXf?
       def xf(id)
         warn "[DEPRECATION] #xf is deprecated; use #cell_xf instead.", uplevel: 1
         cell_xf(id)
@@ -218,46 +233,52 @@ module Xlsxrb
       # @return [String, nil]
       # @api public
       #: (Integer? id) -> String?
-      def num_fmt(id)
+      def number_format_code(id)
         return nil unless id.is_a?(Integer)
 
-        @data[:num_fmts]&.[](id)
+        number_formats[id]
+      end
+
+      # @deprecated Use {#number_format_code} instead. Will be removed in 0.2.0.
+      def num_fmt(id)
+        Xlsxrb::Deprecation.warn("Styles#num_fmt is deprecated; use Styles#number_format_code instead.", uplevel: 1)
+        number_format_code(id)
       end
 
       # Looks up a differential format (dxf) entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::Dxf, nil]
       # @api public
-      #: (Integer? id) -> Hash[Symbol, untyped]?
+      #: (Integer? id) -> Elements::Dxf?
       def dxf(id)
         return nil unless id.is_a?(Integer) && id >= 0
 
-        @data[:dxfs]&.at(id)
+        dxfs[id]
       end
 
       # Looks up a cell style format (cellStyleXf) entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::CellXf, nil]
       # @api public
-      #: (Integer? id) -> Hash[Symbol, untyped]?
+      #: (Integer? id) -> Elements::CellXf?
       def cell_style_xf(id)
         return nil unless id.is_a?(Integer) && id >= 0
 
-        @data[:cell_style_xfs]&.at(id)
+        cell_style_xfs[id]
       end
 
       # Looks up a named cell style entry by 0-based index.
       #
       # @param id [Integer, nil]
-      # @return [Hash, nil]
+      # @return [Elements::CellStyle, nil]
       # @api public
-      #: (Integer? id) -> Hash[Symbol, untyped]?
+      #: (Integer? id) -> Elements::CellStyle?
       def cell_style(id)
         return nil unless id.is_a?(Integer) && id >= 0
 
-        @data[:cell_styles]&.at(id)
+        cell_styles[id]
       end
 
       # Appends a font entry to the stylesheet and returns its 0-based index.
@@ -275,6 +296,7 @@ module Xlsxrb
         end
         fonts_arr = (@data[:fonts] ||= [])
         fonts_arr << entry
+        invalidate_cache!
         fonts_arr.size - 1
       end
 
@@ -288,6 +310,7 @@ module Xlsxrb
         entry = (spec || kwargs).dup
         fills_arr = (@data[:fills] ||= [])
         fills_arr << entry
+        invalidate_cache!
         fills_arr.size - 1
       end
 
@@ -301,17 +324,18 @@ module Xlsxrb
         entry = (spec || kwargs).dup
         borders_arr = (@data[:borders] ||= [])
         borders_arr << entry
+        invalidate_cache!
         borders_arr.size - 1
       end
 
-      # Sets a custom number format code and returns the num_fmt_id.
+      # Sets a custom number format code and returns the format id.
       #
       # @param id [Integer] Format ID (custom formats typically start at 164).
       # @param code [String] Format code pattern.
       # @return [Integer]
       # @api public
       #: (Integer id, String code) -> Integer
-      def add_num_fmt(id, code)
+      def add_number_format(id, code)
         raise ArgumentError, "num_fmt_id must be an Integer" unless id.is_a?(Integer)
         raise ArgumentError, "format_code must be a String" unless code.is_a?(String)
 
@@ -320,18 +344,32 @@ module Xlsxrb
         id
       end
 
+      # @deprecated Use {#add_number_format} instead. Will be removed in 0.2.0.
+      #: (Integer id, String code) -> Integer
+      def add_num_fmt(id, code)
+        warn "[DEPRECATION] #add_num_fmt is deprecated; use #add_number_format instead.", uplevel: 1
+        add_number_format(id, code)
+      end
+
       # Appends a cell format (cellXf) entry and returns its 0-based index.
       #
       # @param spec [Hash, nil]
       # @return [Integer]
       # @api public
       #: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
-      def add_xf(spec = nil, **kwargs)
+      def add_cell_xf(spec = nil, **kwargs)
         entry = (spec || kwargs).dup
         xfs_arr = (@data[:cell_xfs] ||= [])
         xfs_arr << entry
         invalidate_cache!
         xfs_arr.size - 1
+      end
+
+      # @deprecated Use {#add_cell_xf} instead. Will be removed in 0.2.0.
+      #: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
+      def add_xf(spec = nil, **kwargs)
+        warn "[DEPRECATION] #add_xf is deprecated; use #add_cell_xf instead.", uplevel: 1
+        add_cell_xf(spec, **kwargs)
       end
 
       # Appends a differential format (dxf) entry and returns its 0-based index.
@@ -344,6 +382,7 @@ module Xlsxrb
         entry = (spec || kwargs).dup
         dxfs_arr = (@data[:dxfs] ||= [])
         dxfs_arr << entry
+        invalidate_cache!
         dxfs_arr.size - 1
       end
 
@@ -440,6 +479,7 @@ module Xlsxrb
         if other.is_a?(Styles)
           @data == other.to_h
         elsif other.is_a?(Hash)
+          warn "[Xlsxrb DEPRECATION] Comparing Styles with Hash is deprecated; compare with Styles instead.", uplevel: 1
           @data == other
         else
           false
@@ -468,7 +508,16 @@ module Xlsxrb
         precompute! unless @format_codes
         @format_codes[style_index]
       end
-      alias format_code number_format
+
+      # @deprecated Use {#number_format} instead.
+      # @param style_index [Integer, nil]
+      # @return [String, nil]
+      # @api public
+      #: (Integer? style_index) -> String?
+      def format_code(style_index)
+        warn "[Xlsxrb DEPRECATION] Styles#format_code is deprecated; use #number_format instead.", uplevel: 1
+        number_format(style_index)
+      end
 
       # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
       #: (Integer? style_index) -> String?
@@ -549,7 +598,7 @@ module Xlsxrb
       # Precomputes format code and type classification lookups for all cellXfs.
       #
       # @return [self]
-      # @api public
+      # @api private
       #: () -> self
       def precompute!
         xfs = cell_xfs
@@ -563,16 +612,21 @@ module Xlsxrb
 
         if size.positive?
           cs_xfs = cell_style_xfs
-          n_fmts = num_fmts
+          n_fmts = number_formats
 
           size.times do |i|
             xf = xfs[i]
-            next unless xf.is_a?(Hash)
+            next unless xf.is_a?(Hash) || xf.is_a?(Elements::CellXf)
 
-            num_fmt_id = xf[:num_fmt_id]
-            if (num_fmt_id.nil? || num_fmt_id.zero?) && xf[:xf_id] && cs_xfs.is_a?(Array)
-              parent_xf = cs_xfs[xf[:xf_id]]
-              num_fmt_id = parent_xf[:num_fmt_id] if parent_xf.is_a?(Hash)
+            num_fmt_id = xf.is_a?(Elements::CellXf) ? xf.num_fmt_id : xf[:num_fmt_id]
+            xf_id = xf.is_a?(Elements::CellXf) ? xf.xf_id : xf[:xf_id]
+            if (num_fmt_id.nil? || num_fmt_id.zero?) && xf_id && cs_xfs.is_a?(Array)
+              parent_xf = cs_xfs[xf_id]
+              if parent_xf.is_a?(Elements::CellXf)
+                num_fmt_id = parent_xf.num_fmt_id
+              elsif parent_xf.is_a?(Hash)
+                num_fmt_id = parent_xf[:num_fmt_id]
+              end
             end
 
             code = num_fmt_id ? (n_fmts[num_fmt_id] || Ooxml::Utils::BUILTIN_NUM_FMT_CODES[num_fmt_id]) : nil
@@ -602,6 +656,16 @@ module Xlsxrb
       end
 
       def invalidate_cache!
+        @fonts = nil
+        @fills = nil
+        @borders = nil
+        @cell_xfs = nil
+        @dxfs = nil
+        @cell_style_xfs = nil
+        @cell_styles = nil
+        @table_styles = nil
+        @mru_colors = nil
+        @colors = nil
         @format_codes = nil
         @format_types = nil
         @date_flags = nil

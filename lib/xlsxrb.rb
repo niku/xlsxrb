@@ -103,7 +103,7 @@ module Xlsxrb
     xl/dialogsheets/
     xl/macrosheets/
   ].freeze
-  private_constant :OMITTED_TARGET, :OFFICE_DOC_REL_TYPES, :NON_WORKSHEET_REL_SUFFIXES, :NON_WORKSHEET_TARGET_PREFIXES
+  private_constant :OMITTED_TARGET, :VALID_SHEET_STATES, :OFFICE_DOC_REL_TYPES, :NON_WORKSHEET_REL_SUFFIXES, :NON_WORKSHEET_TARGET_PREFIXES
 
   # Raised when cell, row, or workbook parameters fail specification validation.
   class ValidationError < Error; end
@@ -248,9 +248,7 @@ module Xlsxrb
   # @api public
   #: (?String? expression, ?shared_index: Integer?, ?si: Integer?, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
   def self.shared_formula(expression = nil, shared_index: nil, si: nil, ref: nil, cached_value: nil)
-    if si && shared_index.nil?
-      warn "[DEPRECATION] Xlsxrb.shared_formula keyword :si is deprecated; use :shared_index instead.", uplevel: 1
-    end
+    warn "[DEPRECATION] Xlsxrb.shared_formula keyword :si is deprecated; use :shared_index instead.", uplevel: 1 if si && shared_index.nil?
     s_idx = shared_index || si
     raise ArgumentError, "shared_index is required for shared formula" if s_idx.nil?
 
@@ -324,13 +322,9 @@ module Xlsxrb
   # @param ref [String, nil] Cell coordinate (e.g. "A1").
   # @return [Elements::Comment]
   # @api public
-  #: (?String? text, ?author: String, ?visible: bool, ?ref: String?, **untyped extra) -> untyped
+  #: (?String? text, ?author: String, ?visible: bool, ?ref: String?, **untyped extra) -> Elements::Comment
   def self.comment(text = nil, author: "Author", visible: false, ref: nil, **extra)
-    if Elements.const_defined?(:Comment)
-      Elements::Comment.new(text: text, author: author, visible: visible, ref: ref, **extra)
-    else
-      { text: text, author: author, visible: visible, ref: ref, **extra }
-    end
+    Elements::Comment.new(text: text, author: author, visible: visible, ref: ref, **extra)
   end
 
   # Creates or returns an {Elements::CellError} object.
@@ -593,6 +587,99 @@ module Xlsxrb
     end
   end
 
+  # Splits an A1-style cell reference into its column name and 1-based row number.
+  #
+  # @example
+  #   Xlsxrb.split_coordinate("A1")    #=> ["A", 1]
+  #   Xlsxrb.split_coordinate("BC100") #=> ["BC", 100]
+  #
+  # @param cell_ref [String, nil] Excel cell reference string.
+  # @return [Array(String, Integer), nil] [col_name, row_number] tuple (1-based row), or nil if invalid.
+  # @api public
+  #: (String? cell_ref) -> [String, Integer]?
+  def self.split_coordinate(cell_ref)
+    return nil unless cell_ref
+
+    coords = Elements::Cell._parse_ref(cell_ref)
+    return nil unless coords
+
+    row_idx, col_idx = coords
+    [Elements::Cell._column_letter(col_idx), row_idx + 1]
+  end
+
+  FORMULA_TOKEN_RE = %r{(?<str>"(?:[^"]|"")*")|(?<ref>(?<=\b|\A|[$!:,()+\-*/^<>=& \r\n])(?<col_abs>\$?)(?<col>[A-Za-z]{1,3})(?<row_abs>\$?)(?<row>\d+)(?!\w|\())}
+  private_constant :FORMULA_TOKEN_RE
+
+  # Expands a formula by shifting relative cell references from a master cell to a target cell or by offset amounts.
+  #
+  # @example Shift formula down one row
+  #   Xlsxrb.expand_formula("A2*2", 1, 0) #=> "A3*2"
+  #   Xlsxrb.expand_formula("A2*2", from_ref: "B2", to_ref: "B3") #=> "A3*2"
+  #
+  # @example Shift formula with absolute references
+  #   Xlsxrb.expand_formula("$A$1+A2", 2, 0) #=> "$A$1+A4"
+  #
+  # @param formula [String, nil] Formula expression to expand.
+  # @param offset_row [Integer, nil] Optional row shift amount (positive = down, negative = up).
+  # @param offset_col [Integer, nil] Optional column shift amount (positive = right, negative = left).
+  # @param from_ref [String, nil] Master cell reference (e.g. "B2").
+  # @param to_ref [String, nil] Target cell reference (e.g. "B3").
+  # @param row_delta [Integer, nil] Row shift amount (positive = down, negative = up).
+  # @param column_delta [Integer, nil] Column shift amount (positive = right, negative = left).
+  # @param col_delta [Integer, nil] Deprecated alias for column_delta.
+  # @return [String, nil] Expanded formula expression.
+  # @api public
+  #: (String? formula, ?Integer? offset_row, ?Integer? offset_col, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?column_delta: Integer?, ?col_delta: Integer?) -> String?
+  def self.expand_formula(formula, offset_row = nil, offset_col = nil, from_ref: nil, to_ref: nil, row_delta: nil, column_delta: nil, col_delta: nil)
+    warn "[Xlsxrb DEPRECATION] Passing positional offset arguments to expand_formula is deprecated; use row_delta: and column_delta: instead.", uplevel: 1 unless offset_row.nil? && offset_col.nil?
+    warn "[Xlsxrb DEPRECATION] Keyword col_delta: in expand_formula is deprecated; use column_delta: instead.", uplevel: 1 unless col_delta.nil?
+
+    return formula if formula.nil? || formula.empty?
+
+    if from_ref && to_ref
+      f_coords = Elements::Cell._parse_ref(from_ref)
+      t_coords = Elements::Cell._parse_ref(to_ref)
+      return formula unless f_coords && t_coords
+
+      rd = t_coords[0] - f_coords[0]
+      cd = t_coords[1] - f_coords[1]
+    else
+      rd = row_delta || offset_row || 0
+      cd = column_delta || col_delta || offset_col || 0
+    end
+
+    return formula if rd.zero? && cd.zero?
+
+    formula.gsub(FORMULA_TOKEN_RE) do |match|
+      m = Regexp.last_match
+      if m[:str]
+        match
+      else
+        c_abs = !m[:col_abs].empty?
+        r_abs = !m[:row_abs].empty?
+        col = m[:col]
+        row = m[:row].to_i
+
+        new_col = if c_abs || cd.zero?
+                    col
+                  else
+                    ci = Elements::Cell._column_index(col) + cd
+                    ci = ci.clamp(0, 16_383)
+                    Elements::Cell._column_letter(ci)
+                  end
+
+        new_row = if r_abs || rd.zero?
+                    row
+                  else
+                    ri = row + rd
+                    ri.clamp(1, 1_048_576)
+                  end
+
+        "#{m[:col_abs]}#{new_col}#{m[:row_abs]}#{new_row}"
+      end
+    end
+  end
+
   # Resolves an ECMA-376 indexed color palette index (0..63) to an RRGGBB hex string (or AARRGGBB if alpha: true).
   #
   # @example
@@ -696,6 +783,11 @@ module Xlsxrb
   #   doc_sheet = sheet.load         # explicitly load into memory
   #   puts doc_sheet["A1"].value     # coordinate random access
   #
+  # Reads an XLSX file or IO stream. When called with a block, yields each {StreamSheet}
+  # for low-memory streaming iteration. When called without a block, returns an {Elements::Workbook}
+  # containing {StreamSheet} instances.
+  #
+  # @deprecated Calling {Xlsxrb.read} without a block is deprecated; use {Xlsxrb.load} for in-memory random access. Will be removed in 0.2.0.
   # @param max_uncompressed_size [Integer, nil] Maximum allowed uncompressed size in bytes per entry (ZIP bomb defense).
   # @raise [ZipBombError] If an uncompressed entry exceeds max_uncompressed_size.
   # @raise [EncryptedFileError] If the file is encrypted and no password was supplied.
@@ -705,123 +797,181 @@ module Xlsxrb
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
   def self.read(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil, &)
+    if block_given?
+      wb = _read_workbook(
+        source,
+        password: password,
+        trim_empty_rows: trim_empty_rows,
+        pad_empty_rows: pad_empty_rows,
+        pad_empty_cells: pad_empty_cells,
+        max_uncompressed_size: max_uncompressed_size
+      )
+      begin
+        wb.sheets.each(&)
+        nil
+      ensure
+        wb.close
+      end
+    else
+      warn "[DEPRECATION] Calling Xlsxrb.read without a block is deprecated; use Xlsxrb.load(source) for in-memory random access or pass a block to Xlsxrb.read(source) { |sheet| ... } for streaming.", uplevel: 1
+      _read_workbook(
+        source,
+        password: password,
+        trim_empty_rows: trim_empty_rows,
+        pad_empty_rows: pad_empty_rows,
+        pad_empty_cells: pad_empty_cells,
+        max_uncompressed_size: max_uncompressed_size
+      )
+    end
+  end
+
+  # Loads all sheets into memory, returning an {Elements::Workbook} where every
+  # worksheet is a fully-parsed {Elements::Worksheet} supporting coordinate random access.
+  # The underlying zip resources are closed immediately.
+  #
+  # @example
+  #   wb = Xlsxrb.load("report.xlsx")
+  #   puts wb["Sheet1"]["A1"].value
+  #
+  # @param source [String, IO, StringIO] Path to the .xlsx file or an IO-like stream.
+  # @param password [String, nil] Password for decrypting password-protected (ECMA-376 Standard/Agile) workbooks.
+  # @param trim_empty_rows [Boolean] Whether to omit trailing empty rows from worksheet data.
+  # @param pad_empty_rows [Boolean] Whether to pad missing rows with empty row objects.
+  # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows with nil cells.
+  # @param max_uncompressed_size [Integer, nil] Maximum uncompressed file size threshold in bytes for zip bomb protection.
+  # @return [Elements::Workbook] The fully loaded in-memory workbook.
+  # @api public
+  #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
+  def self.load(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil)
+    wb = _read_workbook(
+      source,
+      password: password,
+      trim_empty_rows: trim_empty_rows,
+      pad_empty_rows: pad_empty_rows,
+      pad_empty_cells: pad_empty_cells,
+      max_uncompressed_size: max_uncompressed_size
+    )
+    begin
+      wb._load
+    ensure
+      wb.close
+    end
+  end
+
+  # Internal reader helper returning a Workbook with StreamSheet instances without deprecation warning.
+  # @api private
+  #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
+  def self._read_workbook(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil)
     prepared_source = prepare_source_io(source, password)
     zip_options = {}
     zip_options[:max_uncompressed_size] = max_uncompressed_size if max_uncompressed_size
     zip_reader = Ooxml::ZipReader.open(prepared_source, **zip_options)
-    begin
-      workbook_path = resolve_workbook_entry(zip_reader)
-      wb_dir = File.dirname(workbook_path)
-      wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
-      rels_xml = zip_reader.read_entry(wb_rels_name)
-      rels, rel_types = parse_workbook_relationships(rels_xml)
 
-      sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
-      shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
-      shared_strings = shared_strings_xml ? Ooxml::SharedStringsParser.parse(shared_strings_xml) : []
+    workbook_path = resolve_workbook_entry(zip_reader)
+    wb_dir = File.dirname(workbook_path)
+    wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
+    rels_xml = zip_reader.read_entry(wb_rels_name)
+    rels, rel_types = parse_workbook_relationships(rels_xml)
 
-      styles_entry = resolve_part_entry(zip_reader, rels, "styles", "styles.xml", wb_dir)
-      styles_xml = styles_entry ? zip_reader.read_entry(styles_entry) : nil
-      styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
+    sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
+    shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
+    shared_strings = shared_strings_xml ? Ooxml::SharedStringsParser.parse(shared_strings_xml) : []
 
-      workbook_xml = zip_reader.read_entry(workbook_path)
-      wb_parsed = Ooxml::WorkbookParser.parse_with_properties(workbook_xml)
-      workbook_sheets = wb_parsed[:sheets]
-      is_date1904 = wb_parsed[:date1904]
+    styles_entry = resolve_part_entry(zip_reader, rels, "styles", "styles.xml", wb_dir)
+    styles_xml = styles_entry ? zip_reader.read_entry(styles_entry) : nil
+    styles = styles_xml ? Ooxml::StylesParser.parse(styles_xml) : {}
 
-      non_worksheet_sheets = []
-      ws_idx = 0
-      sheets = workbook_sheets.filter_map do |sheet_info|
-        r_id = sheet_info[:r_id]
-        target = rels[r_id]
-        rel_type = rel_types[r_id]
-        if non_worksheet_relationship?(rel_type, target)
-          non_worksheet_sheets << sheet_info.merge(target: target, type: rel_type)
-          next
-        end
+    workbook_xml = zip_reader.read_entry(workbook_path)
+    wb_parsed = Ooxml::WorkbookParser.parse_with_properties(workbook_xml)
+    workbook_sheets = wb_parsed[:sheets]
+    is_date1904 = wb_parsed[:date1904]
 
-        sheet_path = resolve_sheet_entry(zip_reader, target, wb_dir, ws_idx)
-        ws_idx += 1
-        next unless sheet_path
-
-        chunk_supplier = ->(&blk) { zip_reader.each_entry_chunk(sheet_path, &blk) }
-
-        StreamSheet.new(
-          sheet_info[:name],
-          chunk_supplier,
-          shared_strings,
-          styles,
-          zip_reader: zip_reader,
-          entry_name: sheet_path,
-          state: sheet_info[:state] || :visible,
-          date1904: is_date1904,
-          trim_empty_rows: trim_empty_rows,
-          pad_empty_rows: pad_empty_rows,
-          pad_empty_cells: pad_empty_cells
-        )
+    non_worksheet_sheets = []
+    ws_idx = 0
+    sheets = workbook_sheets.filter_map do |sheet_info|
+      r_id = sheet_info[:r_id]
+      target = rels[r_id]
+      rel_type = rel_types[r_id]
+      if non_worksheet_relationship?(rel_type, target)
+        non_worksheet_sheets << sheet_info.merge(target: target, type: rel_type)
+        next
       end
 
-      wb_unmapped = {}
-      wb_props = {}
-      wb_props[:date1904] = true if is_date1904
-      wb_props[:active_sheet] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
-      wb_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
-      wb_props[:first_sheet] = wb_parsed[:first_sheet] unless wb_parsed[:first_sheet].nil?
-      wb_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
-      wb_props[:tab_ratio] = wb_parsed[:tab_ratio] unless wb_parsed[:tab_ratio].nil?
-      wb_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
-      wb_props[:code_name] = wb_parsed[:code_name] if wb_parsed[:code_name]
-      wb_unmapped[:workbook_properties] = wb_props unless wb_props.empty?
-      wb_unmapped[:non_worksheet_sheets] = non_worksheet_sheets unless non_worksheet_sheets.empty?
+      sheet_path = resolve_sheet_entry(zip_reader, target, wb_dir, ws_idx)
+      current_sheet_idx = ws_idx
+      ws_idx += 1
+      next unless sheet_path
 
-      if workbook_xml&.include?("<workbookProtection")
-        prot_match = workbook_xml.match(%r{<workbookProtection\b([^>]*)/>})
-        if prot_match
-          prot = {}
-          prot[:lock_structure] = true if prot_match[1].include?('lockStructure="1"') || prot_match[1].include?('lockStructure="true"')
-          prot[:lock_windows] = true if prot_match[1].include?('lockWindows="1"') || prot_match[1].include?('lockWindows="true"')
-          wb_unmapped[:workbook_protection] = prot unless prot.empty?
-        end
-      end
+      chunk_supplier = ->(&blk) { zip_reader.each_entry_chunk(sheet_path, &blk) }
 
-      core_xml = zip_reader.read_entry("docProps/core.xml")
-      if core_xml && !core_xml.empty?
-        c_listener = Ooxml::Reader::CorePropertiesListener.new
-        Ooxml::XmlParser.parse(core_xml, c_listener)
-        wb_unmapped[:core_properties] = c_listener.properties unless c_listener.properties.empty?
-      end
-
-      app_xml = zip_reader.read_entry("docProps/app.xml")
-      if app_xml && !app_xml.empty?
-        a_listener = Ooxml::Reader::AppPropertiesListener.new
-        Ooxml::XmlParser.parse(app_xml, a_listener)
-        wb_unmapped[:app_properties] = a_listener.properties unless a_listener.properties.empty?
-      end
-
-      custom_xml = zip_reader.read_entry("docProps/custom.xml")
-      if custom_xml && !custom_xml.empty?
-        cu_listener = Ooxml::Reader::CustomPropertiesListener.new
-        Ooxml::XmlParser.parse(custom_xml, cu_listener)
-        wb_unmapped[:custom_properties] = cu_listener.properties unless cu_listener.properties.empty?
-      end
-      defined_names = wb_parsed[:defined_names] || []
-      wb = Elements::Workbook.new(
-        sheets: sheets,
-        shared_strings: shared_strings,
-        styles: styles,
-        unmapped_data: wb_unmapped,
-        defined_names: defined_names
+      StreamSheet.new(
+        sheet_info[:name],
+        chunk_supplier,
+        shared_strings,
+        styles,
+        zip_reader: zip_reader,
+        entry_name: sheet_path,
+        state: sheet_info[:state] || :visible,
+        date1904: is_date1904,
+        trim_empty_rows: trim_empty_rows,
+        pad_empty_rows: pad_empty_rows,
+        pad_empty_cells: pad_empty_cells,
+        defined_names: wb_parsed[:defined_names] || [],
+        sheet_index: current_sheet_idx
       )
-
-      if block_given?
-        sheets.each(&)
-        nil
-      else
-        wb
-      end
-    ensure
-      zip_reader.close if block_given?
     end
+
+    wb_unmapped = {}
+    wb_props = {}
+    wb_props[:date1904] = true if is_date1904
+    wb_props[:active_sheet] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
+    wb_props[:active_tab] = wb_parsed[:active_tab] unless wb_parsed[:active_tab].nil?
+    wb_props[:first_sheet] = wb_parsed[:first_sheet] unless wb_parsed[:first_sheet].nil?
+    wb_props[:show_sheet_tabs] = wb_parsed[:show_sheet_tabs] unless wb_parsed[:show_sheet_tabs].nil?
+    wb_props[:tab_ratio] = wb_parsed[:tab_ratio] unless wb_parsed[:tab_ratio].nil?
+    wb_props[:full_calc_on_load] = wb_parsed[:full_calc_on_load] unless wb_parsed[:full_calc_on_load].nil?
+    wb_props[:code_name] = wb_parsed[:code_name] if wb_parsed[:code_name]
+    wb_unmapped[:workbook_properties] = wb_props unless wb_props.empty?
+    wb_unmapped[:non_worksheet_sheets] = non_worksheet_sheets unless non_worksheet_sheets.empty?
+
+    if workbook_xml&.include?("<workbookProtection")
+      prot_match = workbook_xml.match(%r{<workbookProtection\b([^>]*)/>})
+      if prot_match
+        prot = {}
+        prot[:lock_structure] = true if prot_match[1].include?('lockStructure="1"') || prot_match[1].include?('lockStructure="true"')
+        prot[:lock_windows] = true if prot_match[1].include?('lockWindows="1"') || prot_match[1].include?('lockWindows="true"')
+        wb_unmapped[:workbook_protection] = prot unless prot.empty?
+      end
+    end
+
+    core_xml = zip_reader.read_entry("docProps/core.xml")
+    if core_xml && !core_xml.empty?
+      c_listener = Ooxml::Reader::CorePropertiesListener.new
+      Ooxml::XmlParser.parse(core_xml, c_listener)
+      wb_unmapped[:core_properties] = c_listener.properties unless c_listener.properties.empty?
+    end
+
+    app_xml = zip_reader.read_entry("docProps/app.xml")
+    if app_xml && !app_xml.empty?
+      a_listener = Ooxml::Reader::AppPropertiesListener.new
+      Ooxml::XmlParser.parse(app_xml, a_listener)
+      wb_unmapped[:app_properties] = a_listener.properties unless a_listener.properties.empty?
+    end
+
+    custom_xml = zip_reader.read_entry("docProps/custom.xml")
+    if custom_xml && !custom_xml.empty?
+      cu_listener = Ooxml::Reader::CustomPropertiesListener.new
+      Ooxml::XmlParser.parse(custom_xml, cu_listener)
+      wb_unmapped[:custom_properties] = cu_listener.properties unless cu_listener.properties.empty?
+    end
+    defined_names = wb_parsed[:defined_names] || []
+    Elements::Workbook.new(
+      sheets: sheets,
+      shared_strings: shared_strings,
+      styles: styles,
+      unmapped_data: wb_unmapped,
+      defined_names: defined_names
+    )
   end
 
   # @deprecated Use {.read} instead. Will be removed in 0.2.0.
@@ -997,7 +1147,11 @@ module Xlsxrb
       if ws.respond_to?(:hyperlinks) && !ws.hyperlinks.empty?
         sd[:hyperlinks] ||= if ws.hyperlinks.is_a?(Hash)
                               ws.hyperlinks.map do |cell_ref, link|
-                                entry = link.is_a?(Hash) ? link.dup : { url: link }
+                                entry = if link.is_a?(Hash)
+                                          link.dup
+                                        else
+                                          (link.respond_to?(:to_h) ? link.to_h : { url: link })
+                                        end
                                 entry[:ref] ||= cell_ref
                                 entry
                               end
@@ -1080,6 +1234,7 @@ module Xlsxrb
       next unless ws.respond_to?(:print_titles) && ws.print_titles && defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && (dn[:local_sheet_id] == idx || dn[:local_sheet_name] == sheet_name) }
 
       pt = ws.print_titles
+      pt = pt.to_h if pt.is_a?(Elements::MetadataRecord)
       parts = []
       col_val = pt[:columns] || pt[:cols]
       parts << "'#{sheet_name}'!$#{col_val.sub(":", ":$")}" if col_val
@@ -1129,6 +1284,39 @@ module Xlsxrb
     end
   end
 
+  # Serializes an in-memory workbook to a destination target (path or IO).
+  #
+  # @deprecated Use {.write} instead. Will be removed in 0.2.0.
+  # @param target [String, IO, StringIO] Target destination.
+  # @param workbook [Elements::Workbook] The workbook instance to write.
+  # @param shared_strings [Boolean] Whether to intern strings into sharedStrings.xml.
+  # @param compression_level [Integer, nil] ZIP deflate compression level (0..9).
+  # @param password [String, nil] Optional encryption password.
+  # @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
+  # @return [void]
+  # @api public
+  #: (String | IO | StringIO target, Elements::Workbook workbook, ?shared_strings: bool, ?compression_level: Integer?, ?password: String?, ?encryption_mode: Symbol) -> void
+  def self.write_workbook(target, workbook, shared_strings: true, compression_level: nil, password: nil, encryption_mode: :standard)
+    warn "[Xlsxrb DEPRECATION] Xlsxrb.write_workbook is deprecated and will be removed in v0.2.0. Use Xlsxrb.write instead.", uplevel: 1
+    write(target, workbook, password: password, encryption_mode: encryption_mode, shared_strings: shared_strings, compression_level: compression_level || Zlib::DEFAULT_COMPRESSION)
+  end
+
+  # Serializes an in-memory workbook to a binary XLSX data string.
+  #
+  # @deprecated Use {.write} instead. Will be removed in 0.2.0.
+  # @param workbook [Elements::Workbook] The workbook instance to serialize.
+  # @param shared_strings [Boolean] Whether to intern strings into sharedStrings.xml.
+  # @param compression_level [Integer, nil] ZIP deflate compression level (0..9).
+  # @param password [String, nil] Optional encryption password.
+  # @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
+  # @return [String] Binary XLSX data.
+  # @api public
+  #: (Elements::Workbook workbook, ?shared_strings: bool, ?compression_level: Integer?, ?password: String?, ?encryption_mode: Symbol) -> String
+  def self.workbook_to_data(workbook, shared_strings: true, compression_level: nil, password: nil, encryption_mode: :standard)
+    warn "[Xlsxrb DEPRECATION] Xlsxrb.workbook_to_data is deprecated and will be removed in v0.2.0. Use Xlsxrb.write instead.", uplevel: 1
+    write(workbook, password: password, encryption_mode: encryption_mode, shared_strings: shared_strings, compression_level: compression_level || Zlib::DEFAULT_COMPRESSION)
+  end
+
   # Modifies an existing XLSX file in-memory using an immutable transformation block.
   #
   # Reads the workbook, passes it to the block, and writes the resulting workbook.
@@ -1145,6 +1333,7 @@ module Xlsxrb
   # @param source [String, IO, StringIO] The source file path or IO object.
   # @param target [String, IO, StringIO, nil] Target file path or IO object (overwrites source if nil).
   # @param password [String, nil] Optional password for decrypting encrypted source files.
+  # @deprecated Use {Xlsxrb.read} + {Xlsxrb.write} for streaming transformations or {Xlsxrb.write} DSL for report generation. Will be removed in 0.2.0.
   # @param new_password [String, nil] Optional password for encrypting the output file (defaults to password).
   # @yield [workbook]
   # @yieldparam workbook [Elements::Workbook] The loaded workbook.
@@ -1153,6 +1342,7 @@ module Xlsxrb
   # @api public
   #: (untyped source, ?untyped target, ?password: String?, ?new_password: String?, **untyped opts) ?{ (Elements::Workbook) -> untyped } -> untyped
   def self.modify(source, target = nil, password: nil, new_password: nil, **opts)
+    warn "[DEPRECATION] Xlsxrb.modify is deprecated and will be removed in 0.2.0; use Xlsxrb.read + Xlsxrb.write for streaming transformations or Xlsxrb.write DSL for report generation.", uplevel: 1
     raise Error, "source is required" if source.nil?
     raise Error, "block is required" unless block_given?
 
@@ -1209,11 +1399,14 @@ module Xlsxrb
           next if non_worksheet_relationship?(rel_types[r_id], target_path)
 
           sheet_path = resolve_sheet_entry(zip_reader, target_path, wb_dir, ws_idx)
+          current_ws_idx = ws_idx
           ws_idx += 1
           next unless sheet_path
 
           sheet_entry_map[sheet_info[:name]] = sheet_path
           sheet_xml = zip_reader.read_entry(sheet_path) || ""
+          sheet_print_area = extract_sheet_print_area(wb_parsed[:defined_names], sheet_info[:name], current_ws_idx)
+          sheet_print_titles = extract_sheet_print_titles(wb_parsed[:defined_names], sheet_info[:name], current_ws_idx)
           build_worksheet(
             sheet_info[:name],
             sheet_xml,
@@ -1222,6 +1415,8 @@ module Xlsxrb
             state: sheet_info[:state] || :visible,
             zip_reader: zip_reader,
             entry_name: sheet_path,
+            print_area: sheet_print_area,
+            print_titles: sheet_print_titles,
             trim_empty_rows: opts.fetch(:trim_empty_rows, false),
             pad_empty_rows: opts.fetch(:pad_empty_rows, false),
             pad_empty_cells: opts.fetch(:pad_empty_cells, false)
@@ -1382,15 +1577,17 @@ module Xlsxrb
   #   end
   #
   # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
+  # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+  # @param default_font [Hash, nil] Optional default font options.
   # @yield [builder]
   # @yieldparam builder [Xlsxrb::WorkbookBuilder]
   # @return [Elements::Workbook] The compiled in-memory workbook.
   # @api public
-  #: (?strict_excel_mode: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
-  def self.build(strict_excel_mode: true, default_font: nil)
+  #: (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
+  def self.build(strict_excel_mode: true, escape_formulas: false, default_font: nil)
     raise Error, "block is required" unless block_given?
 
-    builder = WorkbookBuilder.new(strict_excel_mode: strict_excel_mode, default_font: default_font)
+    builder = WorkbookBuilder.new(strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font)
     yield builder
     builder.build
   end
@@ -1476,20 +1673,29 @@ module Xlsxrb
       fallbacks.find { |f| zip_reader.entry?(f) }
     end
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, column_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_pr: nil, background_image: nil, threaded_comments: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_properties: Hash[Symbol, untyped]?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?, ?columns: Array[Elements::Column]?, ?pivot_tables: Array[Hash[Symbol, untyped]]?, ?split_pane: Hash[Symbol, untyped]?, ?filter_columns: Hash[Integer, Hash[Symbol, untyped]]?, ?sort_state: Hash[Symbol, untyped]?, ?header_footer_images: (Array[Elements::HeaderFooterImage] | Array[Hash[Symbol, untyped]])?, ?charts: (Array[Elements::Chart] | Array[Hash[Symbol, untyped]])?, ?sparkline_groups: (Array[Elements::SparklineGroup] | Array[Hash[Symbol, untyped]])?, ?print_area: String?, ?print_titles: (Elements::PrintTitles | Hash[Symbol, untyped])?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, column_breaks: nil, col_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_properties: nil, sheet_calc_pr: nil, background_image: nil, threaded_comments: nil, columns: nil, pivot_tables: nil, split_pane: nil, filter_columns: nil, sort_state: nil, header_footer_images: nil, charts: nil, sparkline_groups: nil, print_area: nil, print_titles: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
+      resolved_calc_pr = sheet_calc_properties || sheet_calc_pr
       if sheet_xml.nil? || sheet_xml.empty?
         return Elements::Worksheet.new(
           name: name, state: state, styles: styles, images: images || [], date1904: date1904,
           dimension: sheet_dimension, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells,
+          columns: columns || [],
+          charts: charts || [],
+          sparkline_groups: sparkline_groups || [],
+          print_area: print_area,
+          print_titles: print_titles,
           merged_cells: merged_cells || [], auto_filter: auto_filter,
           tables: tables || [], shapes: shapes || [], freeze_pane: freeze_pane,
+          split_pane: split_pane, pivot_tables: pivot_tables || [],
+          filter_columns: filter_columns || {}, sort_state: sort_state,
+          header_footer_images: header_footer_images || [],
           page_setup: page_setup || {}, page_margins: page_margins, header_footer: header_footer || {},
           print_options: print_options || {}, sheet_protection: sheet_protection, sheet_view: sheet_view || {},
           sheet_properties: sheet_properties || {}, sheet_format: sheet_format || {}, row_breaks: row_breaks || [], column_breaks: column_breaks || col_breaks || [],
           protected_ranges: protected_ranges || [], cell_watches: cell_watches || [], ignored_errors: ignored_errors || [],
-          phonetic_properties: phonetic_properties, selection: selection, sheet_calc_properties: sheet_calc_pr,
+          phonetic_properties: phonetic_properties, selection: selection, sheet_calc_properties: resolved_calc_pr,
           background_image: background_image,
           threaded_comments: threaded_comments || []
         )
@@ -1503,7 +1709,7 @@ module Xlsxrb
       raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
 
       rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks, sheet_comments, styles, date1904: date1904, threaded_comments: sheet_threaded_comments) }
-      columns = raw_columns.map do |rc|
+      sheet_columns = columns || raw_columns.map do |rc|
         # Columns from OOXML are 1-based min/max ranges; convert to 0-based
         col_unmapped = {}
         col_unmapped[:style_index] = rc[:style_index] if rc[:style_index]
@@ -1544,16 +1750,27 @@ module Xlsxrb
                                              []
                                            end
 
-      sheet_auto_filter = auto_filter || if sheet_xml.include?("<autoFilter")
-                                           listener = Ooxml::Reader::AutoFilterListener.new
-                                           Ooxml::XmlParser.parse(sheet_xml, listener)
-                                           listener.ref
-                                         end
+      sheet_auto_filter = auto_filter
+      sheet_filter_columns = filter_columns
+      if sheet_auto_filter.nil? && sheet_xml.include?("<autoFilter")
+        af_listener = Ooxml::Reader::AutoFilterListener.new
+        Ooxml::XmlParser.parse(sheet_xml, af_listener)
+        sheet_auto_filter = af_listener.ref
+        sheet_filter_columns ||= af_listener.filter_columns
+      end
+      sheet_filter_columns ||= {}
+
+      sheet_sort_state = sort_state || if sheet_xml.include?("<sortState")
+                                         ss_listener = Ooxml::Reader::SortStateListener.new
+                                         Ooxml::XmlParser.parse(sheet_xml, ss_listener)
+                                         ss_listener.sort_state
+                                       end
 
       sheet_tables = tables || resolve_tables(zip_reader: zip_reader, entry_name: entry_name)
+      sheet_pivot_tables = pivot_tables || resolve_pivot_tables(zip_reader: zip_reader, entry_name: entry_name)
       sheet_shapes = shapes || resolve_shapes(zip_reader: zip_reader, entry_name: entry_name)
 
-      sheet_view_data = if freeze_pane.nil? || sheet_view.nil? || selection.nil?
+      sheet_view_data = if freeze_pane.nil? || split_pane.nil? || sheet_view.nil? || selection.nil?
                           if sheet_xml.include?("<sheetView")
                             v_listener = Ooxml::Reader::SheetViewListener.new
                             Ooxml::XmlParser.parse(sheet_xml, v_listener)
@@ -1562,9 +1779,10 @@ module Xlsxrb
                             { view: {}, pane: nil, selection: nil }
                           end
                         else
-                          { view: sheet_view, pane: freeze_pane, selection: selection }
+                          { view: sheet_view, pane: freeze_pane || split_pane, selection: selection }
                         end
-      sheet_freeze_pane = freeze_pane || sheet_view_data[:pane]
+      sheet_freeze_pane = freeze_pane || (sheet_view_data[:pane] if sheet_view_data[:pane] && sheet_view_data[:pane][:state] == :frozen)
+      sheet_split_pane = split_pane || (sheet_view_data[:pane] if sheet_view_data[:pane] && sheet_view_data[:pane][:state] != :frozen)
       sheet_view_val = sheet_view || sheet_view_data[:view] || {}
       sheet_selection = selection || sheet_view_data[:selection]
 
@@ -1641,11 +1859,19 @@ module Xlsxrb
                                                 pp_listener.phonetic_pr
                                               end
 
+      sheet_charts = charts || resolve_charts(zip_reader: zip_reader, entry_name: entry_name)
+      sheet_sparkline_groups = sparkline_groups || (sheet_xml.include?("sparklineGroup") ? resolve_sparkline_groups(sheet_xml) : [])
+      sheet_hf_images = header_footer_images || (sheet_xml.include?("legacyDrawingHF") ? resolve_header_footer_images(sheet_xml, zip_reader: zip_reader, entry_name: entry_name) : [])
+
       Elements::Worksheet.new(
         name: name,
         rows: rows,
-        columns: columns,
-        conditional_formatting: cfs,
+        columns: sheet_columns,
+        charts: sheet_charts,
+        sparkline_groups: sheet_sparkline_groups,
+        print_area: print_area,
+        print_titles: print_titles,
+        conditional_formats: cfs,
         data_validations: dvs,
         state: state,
         hyperlinks: sheet_hyperlinks,
@@ -1660,8 +1886,13 @@ module Xlsxrb
         merged_cells: sheet_merged_cells,
         auto_filter: sheet_auto_filter,
         tables: sheet_tables,
+        pivot_tables: sheet_pivot_tables,
         shapes: sheet_shapes,
         freeze_pane: sheet_freeze_pane,
+        split_pane: sheet_split_pane,
+        filter_columns: sheet_filter_columns,
+        sort_state: sheet_sort_state,
+        header_footer_images: sheet_hf_images,
         page_setup: page_setup || print_data[:page_setup] || {},
         page_margins: page_margins || print_data[:page_margins],
         header_footer: header_footer || print_data[:header_footer] || {},
@@ -1677,7 +1908,7 @@ module Xlsxrb
         ignored_errors: sheet_ignored_errors,
         phonetic_properties: sheet_phonetic,
         selection: sheet_selection,
-        sheet_calc_properties: sheet_calc_pr,
+        sheet_calc_properties: resolved_calc_pr,
         background_image: background_image || (sheet_xml.include?("<picture") ? resolve_background_image(sheet_xml, zip_reader: zip_reader, entry_name: entry_name) : nil),
         threaded_comments: sheet_threaded_comments
       )
@@ -1709,7 +1940,14 @@ module Xlsxrb
         entry[:display] = link[:display] if link[:display]
         entry[:tooltip] = link[:tooltip] if link[:tooltip]
         entry[:location] = link[:location] if link[:location]
-        result[link[:ref]] = entry unless entry.empty?
+        next if entry.empty?
+
+        result[link[:ref]] = Elements::Hyperlink.new(
+          url: entry[:url],
+          location: entry[:location],
+          tooltip: entry[:tooltip],
+          display: entry[:display]
+        )
       end
       result
     end
@@ -1999,31 +2237,551 @@ module Xlsxrb
       d_listener.shapes
     end
 
-    #: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool, ?threaded_comments: (Array[Hash[Symbol, untyped]] | Hash[String, Array[Hash[Symbol, untyped]]])) -> (Elements::Row | untyped)
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
+    def resolve_pivot_tables(zip_reader: nil, entry_name: nil)
+      return [] unless zip_reader && entry_name
+
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = Ooxml::Reader::RelsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      pivot_rels = listener.relationships.select { |r| r[:type]&.end_with?("/pivotTable") }
+      return [] if pivot_rels.empty?
+
+      base_dir = File.dirname(entry_name)
+      pivot_rels.filter_map do |rel|
+        pt_path = resolve_relative_path(base_dir, rel[:target])
+        pt_xml = zip_reader.read_entry(pt_path)
+        next if pt_xml.nil? || pt_xml.empty?
+
+        p_parser = REXML::Parsers::SAX2Parser.new(pt_xml)
+        p_listener = Ooxml::Reader::PivotTableListener.new
+        p_parser.listen(p_listener)
+        p_parser.parse
+        pt = p_listener.pivot_table
+        next unless pt
+
+        pt_rels_path = pt_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
+        pt_rels_xml = zip_reader.read_entry(pt_rels_path)
+        if pt_rels_xml && !pt_rels_xml.empty?
+          c_parser = REXML::Parsers::SAX2Parser.new(pt_rels_xml)
+          c_listener = Ooxml::Reader::RelsListener.new
+          c_parser.listen(c_listener)
+          c_parser.parse
+          cache_rel = c_listener.relationships.find { |r| r[:type]&.end_with?("/pivotCacheDefinition") }
+          if cache_rel
+            c_path = resolve_relative_path(File.dirname(pt_path), cache_rel[:target])
+            c_xml = zip_reader.read_entry(c_path)
+            if c_xml && !c_xml.empty?
+              cd_parser = REXML::Parsers::SAX2Parser.new(c_xml)
+              cd_listener = Ooxml::Reader::PivotCacheDefinitionListener.new
+              cd_parser.listen(cd_listener)
+              cd_parser.parse
+              cache_info = cd_listener.cache_definition
+              if cache_info
+                cd_rels_path = c_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
+                cd_rels_xml = zip_reader.read_entry(cd_rels_path)
+                if cd_rels_xml && !cd_rels_xml.empty?
+                  rec_parser = REXML::Parsers::SAX2Parser.new(cd_rels_xml)
+                  rec_rels_listener = Ooxml::Reader::RelsListener.new
+                  rec_parser.listen(rec_rels_listener)
+                  rec_parser.parse
+                  rec_rel = rec_rels_listener.relationships.find { |r| r[:type]&.end_with?("/pivotCacheRecords") }
+                  if rec_rel
+                    rec_path = resolve_relative_path(File.dirname(c_path), rec_rel[:target])
+                    rec_xml = zip_reader.read_entry(rec_path)
+                    if rec_xml && !rec_xml.empty?
+                      r_parser = REXML::Parsers::SAX2Parser.new(rec_xml)
+                      r_listener = Ooxml::Reader::PivotCacheRecordsListener.new
+                      r_parser.listen(r_listener)
+                      r_parser.parse
+                      cache_info[:records] = r_listener.records unless r_listener.records.empty?
+                    end
+                  end
+                end
+                pt[:cache] = cache_info
+              end
+            end
+          end
+        end
+        pt
+      end
+    end
+
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::Chart]
+    def resolve_charts(zip_reader: nil, entry_name: nil)
+      return [] unless zip_reader && entry_name
+
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = Ooxml::Reader::RelsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      drawing_rel = listener.relationships.find { |r| r[:type]&.end_with?("/drawing") }
+      return [] unless drawing_rel
+
+      base_dir = File.dirname(entry_name)
+      drawing_path = resolve_relative_path(base_dir, drawing_rel[:target])
+      drawing_xml = zip_reader.read_entry(drawing_path)
+      return [] if drawing_xml.nil? || drawing_xml.empty?
+
+      drawing_rels_path = drawing_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      drawing_rels_xml = zip_reader.read_entry(drawing_rels_path)
+      drawing_rels = {}
+      if drawing_rels_xml && !drawing_rels_xml.empty?
+        d_parser = REXML::Parsers::SAX2Parser.new(drawing_rels_xml)
+        d_listener = Ooxml::Reader::RelsListener.new
+        d_parser.listen(d_listener)
+        d_parser.parse
+        d_listener.relationships.each do |r|
+          drawing_rels[r[:id]] = r[:target]
+        end
+      end
+
+      d_parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+      dc_listener = Ooxml::Reader::DrawingChartsListener.new
+      d_parser.listen(dc_listener)
+      d_parser.parse
+
+      drawing_dir = File.dirname(drawing_path)
+      dc_listener.charts.map do |raw_chart|
+        chart = raw_chart.dup
+        target = drawing_rels[chart[:rid]]
+        if target
+          chart[:target] = target
+          chart_path = resolve_relative_path(drawing_dir, target)
+          chart_xml = zip_reader.read_entry(chart_path)
+          if chart_xml && !chart_xml.empty?
+            cp = REXML::Parsers::SAX2Parser.new(chart_xml)
+            cl = Ooxml::Reader::ChartTypeListener.new
+            cp.listen(cl)
+            cp.parse
+            chart[:chart_type] = cl.chart_type
+            chart[:type] = cl.chart_type
+            chart[:title] = cl.title
+            chart[:title_overlay] = cl.title_overlay unless cl.title_overlay.nil?
+            chart[:title_font] = cl.title_font if cl.title_font
+            chart[:title_fill_color] = cl.title_fill_color if cl.title_fill_color
+            chart[:title_no_fill] = cl.title_no_fill if cl.title_no_fill
+            chart[:title_line_color] = cl.title_line_color if cl.title_line_color
+            chart[:title_line_width] = cl.title_line_width if cl.title_line_width
+            chart[:title_line_dash] = cl.title_line_dash if cl.title_line_dash
+            chart[:series] = cl.series unless cl.series.empty?
+            chart[:legend] = cl.legend unless cl.legend.empty?
+            if cl.legend_font
+              chart[:legend] ||= {}
+              chart[:legend][:font] = cl.legend_font
+            end
+            chart[:data_labels] = cl.data_labels unless cl.data_labels.empty?
+            chart[:cat_axis_title] = cl.cat_axis_title if cl.cat_axis_title
+            chart[:val_axis_title] = cl.val_axis_title if cl.val_axis_title
+            chart[:cat_axis_title_font] = cl.cat_axis_title_font if cl.cat_axis_title_font
+            chart[:val_axis_title_font] = cl.val_axis_title_font if cl.val_axis_title_font
+            chart[:cat_axis_title_fill] = cl.cat_axis_title_fill if cl.cat_axis_title_fill
+            chart[:cat_axis_title_no_fill] = cl.cat_axis_title_no_fill if cl.cat_axis_title_no_fill
+            chart[:cat_axis_title_line_color] = cl.cat_axis_title_line_color if cl.cat_axis_title_line_color
+            chart[:cat_axis_title_line_width] = cl.cat_axis_title_line_width if cl.cat_axis_title_line_width
+            chart[:cat_axis_title_line_dash] = cl.cat_axis_title_line_dash if cl.cat_axis_title_line_dash
+            chart[:val_axis_title_fill] = cl.val_axis_title_fill if cl.val_axis_title_fill
+            chart[:val_axis_title_no_fill] = cl.val_axis_title_no_fill if cl.val_axis_title_no_fill
+            chart[:val_axis_title_line_color] = cl.val_axis_title_line_color if cl.val_axis_title_line_color
+            chart[:val_axis_title_line_width] = cl.val_axis_title_line_width if cl.val_axis_title_line_width
+            chart[:val_axis_title_line_dash] = cl.val_axis_title_line_dash if cl.val_axis_title_line_dash
+            chart[:title_layout] = cl.title_layout if cl.title_layout
+            chart[:cat_axis_title_layout] = cl.cat_axis_title_layout if cl.cat_axis_title_layout
+            chart[:val_axis_title_layout] = cl.val_axis_title_layout if cl.val_axis_title_layout
+            chart[:title_rotation] = cl.title_rotation if cl.title_rotation
+            chart[:cat_axis_title_rotation] = cl.cat_axis_title_rotation if cl.cat_axis_title_rotation
+            chart[:val_axis_title_rotation] = cl.val_axis_title_rotation if cl.val_axis_title_rotation
+            chart[:grouping] = cl.grouping if cl.grouping
+            chart[:bar_dir] = cl.bar_dir if cl.bar_dir
+            chart[:vary_colors] = cl.vary_colors unless cl.vary_colors.nil?
+            chart[:plot_vis_only] = cl.plot_vis_only unless cl.plot_vis_only.nil?
+            chart[:disp_blanks_as] = cl.disp_blanks_as if cl.disp_blanks_as
+            chart[:style] = cl.style if cl.style
+            chart[:auto_title_deleted] = cl.auto_title_deleted unless cl.auto_title_deleted.nil?
+            chart[:rounded_corners] = cl.rounded_corners unless cl.rounded_corners.nil?
+            chart[:cat_axis_tick_lbl_pos] = cl.cat_axis_tick_lbl_pos if cl.cat_axis_tick_lbl_pos
+            chart[:val_axis_tick_lbl_pos] = cl.val_axis_tick_lbl_pos if cl.val_axis_tick_lbl_pos
+            chart[:cat_axis_major_gridlines] = cl.cat_axis_major_gridlines if cl.cat_axis_major_gridlines
+            chart[:val_axis_major_gridlines] = cl.val_axis_major_gridlines if cl.val_axis_major_gridlines
+            chart[:cat_axis_minor_gridlines] = cl.cat_axis_minor_gridlines if cl.cat_axis_minor_gridlines
+            chart[:val_axis_minor_gridlines] = cl.val_axis_minor_gridlines if cl.val_axis_minor_gridlines
+            chart[:show_d_lbls_over_max] = cl.show_d_lbls_over_max unless cl.show_d_lbls_over_max.nil?
+            chart[:cat_axis_delete] = cl.cat_axis_delete unless cl.cat_axis_delete.nil?
+            chart[:val_axis_delete] = cl.val_axis_delete unless cl.val_axis_delete.nil?
+            chart[:cat_axis_orientation] = cl.cat_axis_orientation if cl.cat_axis_orientation
+            chart[:val_axis_orientation] = cl.val_axis_orientation if cl.val_axis_orientation
+            chart[:gap_width] = cl.gap_width if cl.gap_width
+            chart[:overlap] = cl.overlap if cl.overlap
+            chart[:gap_depth] = cl.gap_depth if cl.gap_depth
+            chart[:bar_shape] = cl.bar_shape if cl.bar_shape
+            chart[:bubble_3d] = cl.bubble_3d unless cl.bubble_3d.nil?
+            chart[:bubble_scale] = cl.bubble_scale if cl.bubble_scale
+            chart[:show_neg_bubbles] = cl.show_neg_bubbles unless cl.show_neg_bubbles.nil?
+            chart[:size_represents] = cl.size_represents if cl.size_represents
+            chart[:view_3d] = cl.view_3d if cl.view_3d
+            chart[:cat_axis_num_fmt] = cl.cat_axis_num_fmt if cl.cat_axis_num_fmt
+            chart[:val_axis_num_fmt] = cl.val_axis_num_fmt if cl.val_axis_num_fmt
+            chart[:cat_axis_major_tick_mark] = cl.cat_axis_major_tick_mark if cl.cat_axis_major_tick_mark
+            chart[:cat_axis_minor_tick_mark] = cl.cat_axis_minor_tick_mark if cl.cat_axis_minor_tick_mark
+            chart[:val_axis_major_tick_mark] = cl.val_axis_major_tick_mark if cl.val_axis_major_tick_mark
+            chart[:val_axis_minor_tick_mark] = cl.val_axis_minor_tick_mark if cl.val_axis_minor_tick_mark
+            chart[:cat_axis_crosses] = cl.cat_axis_crosses if cl.cat_axis_crosses
+            chart[:val_axis_crosses] = cl.val_axis_crosses if cl.val_axis_crosses
+            chart[:cat_axis_crosses_at] = cl.cat_axis_crosses_at if cl.cat_axis_crosses_at
+            chart[:val_axis_crosses_at] = cl.val_axis_crosses_at if cl.val_axis_crosses_at
+            chart[:cat_axis_tick_lbl_skip] = cl.cat_axis_tick_lbl_skip if cl.cat_axis_tick_lbl_skip
+            chart[:cat_axis_tick_mark_skip] = cl.cat_axis_tick_mark_skip if cl.cat_axis_tick_mark_skip
+            chart[:cat_axis_lbl_offset] = cl.cat_axis_lbl_offset if cl.cat_axis_lbl_offset
+            chart[:cat_axis_auto] = cl.cat_axis_auto unless cl.cat_axis_auto.nil?
+            chart[:cat_axis_lbl_algn] = cl.cat_axis_lbl_algn if cl.cat_axis_lbl_algn
+            chart[:cat_axis_no_multi_lvl_lbl] = cl.cat_axis_no_multi_lvl_lbl unless cl.cat_axis_no_multi_lvl_lbl.nil?
+            chart[:val_axis_cross_between] = cl.val_axis_cross_between if cl.val_axis_cross_between
+            chart[:val_axis_major_unit] = cl.val_axis_major_unit if cl.val_axis_major_unit
+            chart[:val_axis_minor_unit] = cl.val_axis_minor_unit if cl.val_axis_minor_unit
+            chart[:val_axis_disp_units] = cl.val_axis_disp_units if cl.val_axis_disp_units
+            chart[:cat_axis_scaling_max] = cl.cat_axis_scaling_max if cl.cat_axis_scaling_max
+            chart[:cat_axis_scaling_min] = cl.cat_axis_scaling_min if cl.cat_axis_scaling_min
+            chart[:val_axis_scaling_max] = cl.val_axis_scaling_max if cl.val_axis_scaling_max
+            chart[:val_axis_scaling_min] = cl.val_axis_scaling_min if cl.val_axis_scaling_min
+            chart[:cat_axis_log_base] = cl.cat_axis_log_base if cl.cat_axis_log_base
+            chart[:val_axis_log_base] = cl.val_axis_log_base if cl.val_axis_log_base
+            chart[:first_slice_ang] = cl.first_slice_ang if cl.first_slice_ang
+            chart[:hole_size] = cl.hole_size if cl.hole_size
+            chart[:smooth] = cl.smooth unless cl.smooth.nil?
+            chart[:marker] = cl.marker unless cl.marker.nil?
+            chart[:drop_lines] = cl.drop_lines unless cl.drop_lines.nil?
+            chart[:hi_low_lines] = cl.hi_low_lines unless cl.hi_low_lines.nil?
+            chart[:ser_lines] = cl.ser_lines unless cl.ser_lines.nil?
+            chart[:up_down_bars] = cl.up_down_bars if cl.up_down_bars
+            chart[:scatter_style] = cl.scatter_style if cl.scatter_style
+            chart[:radar_style] = cl.radar_style if cl.radar_style
+            chart[:cat_axis_pos] = cl.cat_axis_pos if cl.cat_axis_pos
+            chart[:val_axis_pos] = cl.val_axis_pos if cl.val_axis_pos
+            chart[:wireframe] = cl.wireframe unless cl.wireframe.nil?
+            chart[:band_fmts] = cl.band_fmts if cl.band_fmts
+            chart[:of_pie_type] = cl.of_pie_type if cl.of_pie_type
+            chart[:split_type] = cl.split_type if cl.split_type
+            chart[:split_pos] = cl.split_pos if cl.split_pos
+            chart[:cust_split] = cl.cust_split if cl.cust_split&.any?
+            chart[:second_pie_size] = cl.second_pie_size if cl.second_pie_size
+            chart[:data_table] = cl.data_table if cl.data_table
+            chart[:plot_area_fill] = cl.plot_area_fill if cl.plot_area_fill
+            chart[:plot_area_line_color] = cl.plot_area_line_color if cl.plot_area_line_color
+            chart[:plot_area_line_width] = cl.plot_area_line_width if cl.plot_area_line_width
+            chart[:plot_area_line_dash] = cl.plot_area_line_dash if cl.plot_area_line_dash
+            chart[:plot_area_no_fill] = cl.plot_area_no_fill if cl.plot_area_no_fill
+            chart[:plot_area_layout] = cl.plot_area_layout if cl.plot_area_layout
+            chart[:cat_axis_label_rotation] = cl.cat_axis_label_rotation if cl.cat_axis_label_rotation
+            chart[:val_axis_label_rotation] = cl.val_axis_label_rotation if cl.val_axis_label_rotation
+            chart[:cat_axis_font] = cl.cat_axis_font if cl.cat_axis_font
+            chart[:val_axis_font] = cl.val_axis_font if cl.val_axis_font
+            chart[:cat_axis_fill] = cl.cat_axis_fill if cl.cat_axis_fill
+            chart[:cat_axis_no_fill] = cl.cat_axis_no_fill if cl.cat_axis_no_fill
+            chart[:val_axis_fill] = cl.val_axis_fill if cl.val_axis_fill
+            chart[:val_axis_no_fill] = cl.val_axis_no_fill if cl.val_axis_no_fill
+            chart[:cat_axis_line_color] = cl.cat_axis_line_color if cl.cat_axis_line_color
+            chart[:cat_axis_line_width] = cl.cat_axis_line_width if cl.cat_axis_line_width
+            chart[:cat_axis_line_dash] = cl.cat_axis_line_dash if cl.cat_axis_line_dash
+            chart[:val_axis_line_color] = cl.val_axis_line_color if cl.val_axis_line_color
+            chart[:val_axis_line_width] = cl.val_axis_line_width if cl.val_axis_line_width
+            chart[:val_axis_line_dash] = cl.val_axis_line_dash if cl.val_axis_line_dash
+            chart[:floor] = cl.floor if cl.floor
+            chart[:side_wall] = cl.side_wall if cl.side_wall
+            chart[:back_wall] = cl.back_wall if cl.back_wall
+            chart[:cat_axis_type] = cl.cat_axis_type if cl.cat_axis_type
+            chart[:cat_axis_base_time_unit] = cl.cat_axis_base_time_unit if cl.cat_axis_base_time_unit
+            chart[:cat_axis_major_time_unit] = cl.cat_axis_major_time_unit if cl.cat_axis_major_time_unit
+            chart[:cat_axis_minor_time_unit] = cl.cat_axis_minor_time_unit if cl.cat_axis_minor_time_unit
+            chart[:cat_axis_major_unit] = cl.cat_axis_major_unit if cl.cat_axis_major_unit
+            chart[:cat_axis_minor_unit] = cl.cat_axis_minor_unit if cl.cat_axis_minor_unit
+            chart[:chart_fill] = cl.chart_fill if cl.chart_fill
+            chart[:chart_no_fill] = cl.chart_no_fill if cl.chart_no_fill
+            chart[:chart_line_color] = cl.chart_line_color if cl.chart_line_color
+            chart[:chart_line_width] = cl.chart_line_width if cl.chart_line_width
+            chart[:chart_line_dash] = cl.chart_line_dash if cl.chart_line_dash
+            chart[:protection] = cl.protection if cl.protection
+            chart[:print_settings] = cl.print_settings if cl.print_settings
+            chart[:chart_font] = cl.chart_font if cl.chart_font
+            ca = {
+              title: cl.cat_axis_title,
+              major_gridlines: cl.cat_axis_major_gridlines,
+              minor_gridlines: cl.cat_axis_minor_gridlines,
+              num_fmt: cl.cat_axis_num_fmt,
+              pos: cl.cat_axis_pos,
+              max: cl.cat_axis_scaling_max,
+              min: cl.cat_axis_scaling_min,
+              major_unit: cl.cat_axis_major_unit,
+              minor_unit: cl.cat_axis_minor_unit,
+              delete: cl.cat_axis_delete
+            }.compact
+            chart[:category_axis] = ca unless ca.empty?
+
+            va = {
+              title: cl.val_axis_title,
+              major_gridlines: cl.val_axis_major_gridlines,
+              minor_gridlines: cl.val_axis_minor_gridlines,
+              num_fmt: cl.val_axis_num_fmt,
+              pos: cl.val_axis_pos,
+              max: cl.val_axis_scaling_max,
+              min: cl.val_axis_scaling_min,
+              major_unit: cl.val_axis_major_unit,
+              minor_unit: cl.val_axis_minor_unit,
+              delete: cl.val_axis_delete
+            }.compact
+            chart[:value_axis] = va unless va.empty?
+
+            chart[:sec_val_axis_title] = cl.sec_val_axis_title if cl.sec_val_axis_title
+            chart[:sec_val_axis_major_gridlines] = cl.sec_val_axis_major_gridlines if cl.sec_val_axis_major_gridlines
+            chart[:sec_val_axis_minor_gridlines] = cl.sec_val_axis_minor_gridlines if cl.sec_val_axis_minor_gridlines
+            chart[:sec_val_axis_num_fmt] = cl.sec_val_axis_num_fmt if cl.sec_val_axis_num_fmt
+            chart[:sec_val_axis_pos] = cl.sec_val_axis_pos if cl.sec_val_axis_pos
+            chart[:sec_val_axis_scaling_max] = cl.sec_val_axis_scaling_max if cl.sec_val_axis_scaling_max
+            chart[:sec_val_axis_scaling_min] = cl.sec_val_axis_scaling_min if cl.sec_val_axis_scaling_min
+            chart[:sec_val_axis_major_unit] = cl.sec_val_axis_major_unit if cl.sec_val_axis_major_unit
+            chart[:sec_val_axis_minor_unit] = cl.sec_val_axis_minor_unit if cl.sec_val_axis_minor_unit
+            if cl.sec_val_axis_title || cl.sec_val_axis_major_gridlines || cl.sec_val_axis_scaling_max ||
+               cl.sec_val_axis_scaling_min || cl.sec_val_axis_num_fmt || cl.sec_val_axis_pos
+              sva = {
+                title: cl.sec_val_axis_title,
+                major_gridlines: cl.sec_val_axis_major_gridlines,
+                minor_gridlines: cl.sec_val_axis_minor_gridlines,
+                num_fmt: cl.sec_val_axis_num_fmt,
+                pos: cl.sec_val_axis_pos,
+                max: cl.sec_val_axis_scaling_max,
+                min: cl.sec_val_axis_scaling_min,
+                major_unit: cl.sec_val_axis_major_unit,
+                minor_unit: cl.sec_val_axis_minor_unit
+              }.compact
+              chart[:secondary_value_axis] = sva unless sva.empty?
+            end
+          end
+        end
+        chart[:from_column] ||= chart[:from_col]
+        chart[:to_column] ||= chart[:to_col]
+        chart[:r_id] ||= chart[:rid]
+        chart[:type] ||= chart[:chart_type]
+        Elements::Chart.new(**chart)
+      end
+    end
+
+    #: (String? sheet_xml) -> Array[Elements::SparklineGroup]
+    def resolve_sparkline_groups(sheet_xml)
+      return [] if sheet_xml.nil? || !sheet_xml.include?("sparklineGroup")
+
+      listener = Ooxml::Reader::SparklineGroupsListener.new
+      parser = REXML::Parsers::SAX2Parser.new(sheet_xml)
+      parser.listen(listener)
+      parser.parse
+      listener.groups.map do |grp|
+        grp.is_a?(Elements::SparklineGroup) ? grp : Elements::SparklineGroup.new(**grp)
+      end
+    end
+
+    #: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::HeaderFooterImage]
+    def resolve_header_footer_images(sheet_xml, zip_reader: nil, entry_name: nil)
+      return [] unless sheet_xml && zip_reader && entry_name
+      return [] unless sheet_xml.include?("legacyDrawingHF")
+
+      m = sheet_xml.match(/<(?:[a-zA-Z0-9_]+:)?legacyDrawingHF\b[^>]*\br:id=["']([^"']+)["']/)
+      return [] unless m
+
+      hf_rid = m[1]
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return [] if rels_xml.nil? || rels_xml.empty?
+
+      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      listener = Ooxml::Reader::RelsListener.new
+      parser.listen(listener)
+      parser.parse
+
+      vml_rel = listener.relationships.find { |r| r[:id] == hf_rid }
+      return [] unless vml_rel
+
+      base_dir = File.dirname(entry_name)
+      vml_path = resolve_relative_path(base_dir, vml_rel[:target])
+      vml_xml = zip_reader.read_entry(vml_path)
+      return [] if vml_xml.nil? || vml_xml.empty?
+
+      vml_rels_path = vml_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      vml_rels_xml = zip_reader.read_entry(vml_rels_path)
+      vml_rels = {}
+      if vml_rels_xml && !vml_rels_xml.empty?
+        vr_parser = REXML::Parsers::SAX2Parser.new(vml_rels_xml)
+        vr_listener = Ooxml::Reader::RelsListener.new
+        vr_parser.listen(vr_listener)
+        vr_parser.parse
+        vr_listener.relationships.each do |r|
+          vml_rels[r[:id]] = r[:target]
+        end
+      end
+
+      vml_parser = REXML::Parsers::SAX2Parser.new(vml_xml)
+      hf_listener = Ooxml::Reader::VmlHeaderFooterListener.new
+      vml_parser.listen(hf_listener)
+      vml_parser.parse
+
+      vml_dir = File.dirname(vml_path)
+      hf_listener.shapes.filter_map do |shape|
+        rel_id = shape[:rel_id]
+        media_target = vml_rels[rel_id]
+        next unless media_target
+
+        media_path = resolve_relative_path(vml_dir, media_target)
+        img_data = zip_reader.read_entry(media_path)
+        next unless img_data
+
+        img_data = img_data.b
+        filename = File.basename(media_path)
+        ext = File.extname(media_path).delete_prefix(".").downcase
+        content_type = case ext
+                       when "png" then "image/png"
+                       when "jpg", "jpeg" then "image/jpeg"
+                       when "gif" then "image/gif"
+                       when "emf" then "image/x-emf"
+                       when "wmf" then "image/x-wmf"
+                       else "application/octet-stream"
+                       end
+
+        Elements::HeaderFooterImage.new(
+          position: shape[:id],
+          r_id: rel_id,
+          path: media_path,
+          filename: filename,
+          extension: ext,
+          ext: ext,
+          data: img_data,
+          content_type: content_type
+        )
+      end
+    end
+
+    #: (Array[untyped]? defined_names, String? sheet_name, Integer? sheet_index) -> String?
+    def extract_sheet_print_area(defined_names, sheet_name, sheet_index)
+      return nil unless defined_names && !defined_names.empty?
+
+      dn = defined_names.find do |d|
+        d_name = d.respond_to?(:name) ? d.name : (d[:name] || d["name"])
+        d_name == "_xlnm.Print_Area" && match_sheet_defined_name?(d, sheet_name, sheet_index)
+      end
+      return nil unless dn
+
+      val = dn.respond_to?(:value) ? dn.value : (dn[:value] || dn["value"])
+      return nil unless val && !val.empty?
+
+      val.split(",").map { |part| part.sub(/\A(?:'(?:''|[^'])*'|[^!]+)!/, "").delete("$").strip }.join(",")
+    end
+
+    #: (Array[untyped]? defined_names, String? sheet_name, Integer? sheet_index) -> Elements::PrintTitles?
+    def extract_sheet_print_titles(defined_names, sheet_name, sheet_index)
+      return nil unless defined_names && !defined_names.empty?
+
+      dn = defined_names.find do |d|
+        d_name = d.respond_to?(:name) ? d.name : (d[:name] || d["name"])
+        d_name == "_xlnm.Print_Titles" && match_sheet_defined_name?(d, sheet_name, sheet_index)
+      end
+      return nil unless dn
+
+      val = dn.respond_to?(:value) ? dn.value : (dn[:value] || dn["value"])
+      return nil unless val && !val.empty?
+
+      rows = nil
+      cols = nil
+      val.split(",").each do |raw_part|
+        part = raw_part.sub(/\A(?:'(?:''|[^'])*'|[^!]+)!/, "").delete("$").strip
+        if part =~ /\A\d+(?::\d+)?\z/
+          rows = part
+        elsif part =~ /\A[A-Za-z]+(?::[A-Za-z]+)?\z/
+          cols = part
+        end
+      end
+
+      return nil if rows.nil? && cols.nil?
+
+      Elements::PrintTitles.new(rows: rows, columns: cols, cols: cols)
+    end
+
+    #: (untyped defined_name, String? sheet_name, Integer? sheet_index) -> bool
+    def match_sheet_defined_name?(defined_name, sheet_name, sheet_index)
+      d_id = if defined_name.respond_to?(:local_sheet_id)
+               defined_name.local_sheet_id
+             else
+               defined_name[:local_sheet_id] || defined_name["local_sheet_id"]
+             end
+      d_name = if defined_name.respond_to?(:local_sheet_name)
+                 defined_name.local_sheet_name
+               else
+                 defined_name[:local_sheet_name] || defined_name["local_sheet_name"] ||
+                   (defined_name.respond_to?(:sheet) ? defined_name.sheet : defined_name[:sheet])
+               end
+      d_val = defined_name.respond_to?(:value) ? defined_name.value : (defined_name[:value] || defined_name["value"])
+
+      return true if !d_id.nil? && !sheet_index.nil? && d_id.to_i == sheet_index
+      return true if d_name && sheet_name && d_name.to_s == sheet_name.to_s
+
+      if d_id.nil? && sheet_name && d_val
+        quoted = Regexp.escape(sheet_name)
+        return true if d_val =~ /\A(?:'#{quoted}'|#{quoted})!/
+      end
+      false
+    end
+
+    #: (untyped raw_row, ?Hash[String, untyped] hyperlinks, ?(Array[untyped] | Hash[String, untyped]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool, ?threaded_comments: (Array[untyped] | Hash[String, untyped])) -> (Elements::Row | untyped)
     def build_row_from_raw(raw_row, hyperlinks = {}, comments = [], styles = nil, date1904: false, threaded_comments: [])
       return raw_row if raw_row.is_a?(Elements::Row)
 
       comments_map = if comments.is_a?(Hash)
-                       comments
+                       comments.each_with_object({}) do |(k, c), acc|
+                         acc[k.to_s.upcase] = c.is_a?(Elements::Comment) ? c : Elements::Comment.new(**c)
+                       end
                      else
-                       comments.each_with_object({}) { |c, acc| (r = c[:ref] || c[:cell]) && (acc[r.to_s.upcase] = c) }
+                       comments.each_with_object({}) do |c, acc|
+                         obj = c.is_a?(Elements::Comment) ? c : Elements::Comment.new(**c)
+                         r = obj.ref
+                         acc[r.to_s.upcase] = obj if r
+                       end
                      end
 
       threaded_comments_map = if threaded_comments.is_a?(Hash)
-                                threaded_comments
+                                threaded_comments.each_with_object({}) do |(k, tcs), acc|
+                                  arr = Array(tcs).map do |tc|
+                                    tc.is_a?(Elements::ThreadedComment) ? tc : Elements::ThreadedComment.new(**tc)
+                                  end
+                                  acc[k.to_s.upcase] = arr
+                                end
                               else
                                 threaded_comments.each_with_object({}) do |c, acc|
-                                  r = c[:ref] || c[:cell]
-                                  (acc[r.to_s.upcase] ||= []) << c if r
+                                  obj = c.is_a?(Elements::ThreadedComment) ? c : Elements::ThreadedComment.new(**c)
+                                  r = obj.ref
+                                  (acc[r.to_s.upcase] ||= []) << obj if r
                                 end
                               end
+
+      hyperlinks_map = if hyperlinks && !hyperlinks.empty?
+                         hyperlinks.each_with_object({}) do |(k, hl), acc|
+                           acc[k.to_s.upcase] = hl.is_a?(Elements::Hyperlink) ? hl : Elements::Hyperlink.new(**hl)
+                         end
+                       else
+                         {}
+                       end
 
       raw_cells = raw_row[:cells]
       cells = raw_cells.map do |rc|
         if rc.is_a?(Elements::Cell)
-          hl = hyperlinks && !hyperlinks.empty? ? hyperlinks[rc.ref] : nil
-          cm = comments_map && !comments_map.empty? ? comments_map[rc.ref] : nil
-          tcs = threaded_comments_map && !threaded_comments_map.empty? ? threaded_comments_map[rc.ref] : nil
+          hl = hyperlinks_map[rc.ref]
+          cm = comments_map[rc.ref]
+          tcs = threaded_comments_map[rc.ref]
           fmt = rc.format_code || (NumberFormatter.format_code_for(rc.style_index, styles) if styles && rc.style_index)
           if hl || cm || tcs || (fmt && rc.format_code != fmt) || (date1904 && !rc.date1904?)
             rc.with(
@@ -2041,9 +2799,10 @@ module Xlsxrb
           row_idx = parsed ? parsed[0] : raw_row[:index]
           col_idx = parsed ? parsed[1] : 0
           ref = rc[:ref] || "#{Elements::Cell._column_letter(col_idx)}#{row_idx + 1}"
-          hl = hyperlinks ? hyperlinks[ref] : nil
-          cm = comments_map ? comments_map[ref] : nil
-          tcs = threaded_comments_map ? threaded_comments_map[ref] : nil
+          ref_key = ref.upcase
+          hl = hyperlinks_map[ref_key]
+          cm = comments_map[ref_key]
+          tcs = threaded_comments_map[ref_key]
           fmt = rc[:format_code] || (NumberFormatter.format_code_for(rc[:style_index], styles) if styles && rc[:style_index])
 
           val = rc[:value]
@@ -2096,8 +2855,6 @@ module Xlsxrb
         errors: row_errors
       )
     end
-
-
 
     #: (untyped source, String? password) -> untyped
     def prepare_source_io(source, password)
@@ -2579,9 +3336,4 @@ module Xlsxrb
       io.string
     end
   end
-
-  # Builds a raw cell hash from a value for streaming writes.
-  #
-  # @param row_index [Integer] 0-based row index.
-  # @param col_index [Integer] 0-based column index.
 end

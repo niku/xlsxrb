@@ -335,17 +335,17 @@ class ReaderTest < Test::Unit::TestCase
     # Also verify via Xlsxrb.read (StreamSheet and loaded Elements::Worksheet)
     wb = Xlsxrb.read(xlsx_path)
     sheet = wb.sheets.first
-    assert_equal(expected, sheet.hyperlinks)
-    assert_equal(expected["A1"], sheet.hyperlink("A1"))
-    assert_equal(expected["B1"], sheet.hyperlink("B1"))
+    assert_equal(expected, sheet.hyperlinks.transform_values(&:to_h))
+    assert_equal(expected["A1"], sheet.hyperlink("A1").to_h)
+    assert_equal(expected["B1"], sheet.hyperlink("B1").to_h)
     assert_nil(sheet.hyperlink("D1"))
 
     doc = sheet.load
-    assert_equal(expected, doc.hyperlinks)
+    assert_equal(expected, doc.hyperlinks.transform_values(&:to_h))
     assert_true(doc["A1"].link?)
     assert_true(doc["A1"].hyperlink?)
     assert_equal("https://example.com", doc["A1"].url)
-    assert_equal(expected["A1"], doc["A1"].hyperlink)
+    assert_equal(expected["A1"], doc["A1"].hyperlink.to_h)
     assert_true(doc["B1"].link?)
     assert_equal("https://example.com/page", doc["B1"].url)
     assert_true(doc["C1"].link?)
@@ -597,14 +597,14 @@ class ReaderTest < Test::Unit::TestCase
 
     wb = Xlsxrb.read(xlsx_path)
     assert_equal(3, wb.defined_names.size)
-    assert_equal("Sheet1!$A$1:$B$10", wb.defined_name("MyRange")[:value])
-    assert_equal("Data!$C$1", wb.defined_name("LocalName", sheet: "Data")[:value])
-    assert_equal("42", wb.defined_name("HiddenName")[:value])
-    assert_true(wb.defined_name("HiddenName")[:hidden])
+    assert_equal("Sheet1!$A$1:$B$10", wb.defined_name("MyRange").value)
+    assert_equal("Data!$C$1", wb.defined_name("LocalName", sheet: "Data").value)
+    assert_equal("42", wb.defined_name("HiddenName").value)
+    assert_true(wb.defined_name("HiddenName").hidden)
 
     loaded_wb = wb.load
     assert_equal(3, loaded_wb.defined_names.size)
-    assert_equal("Sheet1!$A$1:$B$10", loaded_wb.defined_name("MyRange")[:value])
+    assert_equal("Sheet1!$A$1:$B$10", loaded_wb.defined_name("MyRange").value)
   ensure
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
@@ -3631,7 +3631,7 @@ class ReaderTest < Test::Unit::TestCase
     writer.set_cell("A1", "hello")
     writer.add_dxf(
       font: { bold: true, color: "FFFF0000" },
-      num_fmt: { num_fmt_id: 164, format_code: "#,##0.00" },
+      number_format: { num_fmt_id: 164, format_code: "#,##0.00" },
       alignment: { horizontal: "center", wrap_text: true },
       protection: { locked: false, hidden: true }
     )
@@ -3643,8 +3643,8 @@ class ReaderTest < Test::Unit::TestCase
     dxf = dxfs[0]
 
     assert_equal(true, dxf[:font][:bold])
-    assert_equal(164, dxf[:num_fmt][:num_fmt_id])
-    assert_equal("#,##0.00", dxf[:num_fmt][:format_code])
+    assert_equal(164, dxf[:number_format][:num_fmt_id])
+    assert_equal("#,##0.00", dxf[:number_format][:format_code])
     assert_equal("center", dxf[:alignment][:horizontal])
     assert_equal(true, dxf[:alignment][:wrap_text])
     assert_equal(false, dxf[:protection][:locked])
@@ -11312,5 +11312,144 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal("FallbackSheet", wb.sheet(0).name)
     assert_equal("Data1", wb.sheet(0).cell("A1").value)
     assert_equal(42, wb.sheet(0).cell("B1").value)
+  end
+
+  test "SparklineGroupsListener parses sparkline groups and elements" do
+    xml = <<~XML
+      <x14:sparklineGroups xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"
+                           xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">
+        <x14:sparklineGroup type="column" displayEmptyCellsAs="gap" markers="1" high="true" manualMax="100.5" manualMin="10.0" lineWeight="2.5">
+          <x14:colorSeries rgb="FFFF0000"/>
+          <x14:colorHigh rgb="FF00FF00"/>
+          <x14:sparklines>
+            <x14:sparkline>
+              <xm:f>Sheet1!A1:A5</xm:f>
+              <xm:sqref>B1</xm:sqref>
+            </x14:sparkline>
+          </x14:sparklines>
+        </x14:sparklineGroup>
+      </x14:sparklineGroups>
+    XML
+    listener = Xlsxrb::Ooxml::Reader::SparklineGroupsListener.new
+    parser = REXML::Parsers::SAX2Parser.new(xml)
+    parser.listen(listener)
+    parser.parse
+
+    assert_equal(1, listener.groups.size)
+    g = listener.groups.first
+    assert_equal("column", g[:type])
+    assert_equal("gap", g[:display_empty])
+    assert_equal(true, g[:markers])
+    assert_equal(true, g[:high])
+    assert_equal(false, g[:low])
+    assert_equal(100.5, g[:max])
+    assert_equal(10.0, g[:min])
+    assert_equal(2.5, g[:line_weight])
+    assert_equal("FFFF0000", g[:color_series])
+    assert_equal("FF00FF00", g[:color_high])
+    assert_equal(1, g[:sparklines].size)
+    assert_equal("Sheet1!A1:A5", g[:sparklines].first[:data_ref])
+    assert_equal("B1", g[:sparklines].first[:location_ref])
+  end
+
+  test "VmlHeaderFooterListener parses VML drawing shapes and image relations" do
+    vml = <<~XML
+      <xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <v:shape id="LH" o:spid="_x0000_s1025" type="#_x0000_t75">
+          <v:imagedata o:relid="rId1" o:title="company_logo"/>
+        </v:shape>
+        <v:shape id="RF" o:spid="_x0000_s1026" type="#_x0000_t75">
+          <v:imagedata o:relid="rId2" o:title="signature"/>
+        </v:shape>
+      </xml>
+    XML
+    listener = Xlsxrb::Ooxml::Reader::VmlHeaderFooterListener.new
+    parser = REXML::Parsers::SAX2Parser.new(vml)
+    parser.listen(listener)
+    parser.parse
+
+    assert_equal(2, listener.shapes.size)
+    assert_equal("LH", listener.shapes[0][:id])
+    assert_equal("rId1", listener.shapes[0][:rel_id])
+    assert_equal("company_logo", listener.shapes[0][:title])
+    assert_equal("RF", listener.shapes[1][:id])
+    assert_equal("rId2", listener.shapes[1][:rel_id])
+  end
+
+  test "resolves header_footer_images via load and read from zip containing legacyDrawingHF" do
+    wb = Xlsxrb.build do |b|
+      b.sheet("Report") do |s|
+        s.add_row(["Header Image Test"])
+      end
+    end
+    raw_xlsx = Xlsxrb.write(wb)
+
+    fake_png = "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4".b
+    vml_content = <<~VML
+      <xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <v:shape id="LH" o:spid="_x0000_s1025" type="#_x0000_t75">
+          <v:imagedata o:relid="rIdImage1" o:title="logo"/>
+        </v:shape>
+      </xml>
+    VML
+    vml_rels = <<~RELS
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rIdImage1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image_lh.png"/>
+      </Relationships>
+    RELS
+
+    rels_content = <<~RELS
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rIdHF1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing" Target="../drawings/vmlDrawing1.vml"/>
+      </Relationships>
+    RELS
+
+    modified_io = StringIO.new
+    src_reader = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(raw_xlsx))
+    Xlsxrb::Ooxml::ZipWriter.open(modified_io) do |w|
+      src_reader.each_entry do |name, content|
+        if name == "xl/worksheets/sheet1.xml"
+          injected = content.sub("</worksheet>", '<legacyDrawingHF r:id="rIdHF1"/></worksheet>')
+          w.add_binary_entry(name, injected.b)
+        else
+          w.add_binary_entry(name, (content || "").b)
+        end
+      end
+      w.add_binary_entry("xl/worksheets/_rels/sheet1.xml.rels", rels_content.b)
+      w.add_binary_entry("xl/drawings/vmlDrawing1.vml", vml_content.b)
+      w.add_binary_entry("xl/drawings/_rels/vmlDrawing1.vml.rels", vml_rels.b)
+      w.add_binary_entry("xl/media/image_lh.png", fake_png)
+    end
+    src_reader.close
+
+    loaded = Xlsxrb.load(StringIO.new(modified_io.string))
+    ws = loaded.sheet(0)
+    assert_equal(1, ws.header_footer_images.size)
+    hf_img = ws.header_footer_images.first
+    assert_instance_of(Xlsxrb::Elements::HeaderFooterImage, hf_img)
+    assert_equal("LH", hf_img.position)
+    assert_equal("xl/media/image_lh.png", hf_img.path)
+    assert_equal("xl/media/image_lh.png", hf_img.filename)
+    assert_equal("png", hf_img.extension)
+    assert_equal("image/png", hf_img.content_type)
+    assert_equal(fake_png, hf_img.data)
+
+    Xlsxrb.read(StringIO.new(modified_io.string)) do |st_sheet|
+      assert_equal(1, st_sheet.header_footer_images.size)
+      st_img = st_sheet.header_footer_images.first
+      assert_instance_of(Xlsxrb::Elements::HeaderFooterImage, st_img)
+      assert_equal("LH", st_img.position)
+      assert_equal("xl/media/image_lh.png", st_img.path)
+      assert_equal("xl/media/image_lh.png", st_img.filename)
+      assert_equal("png", st_img.ext)
+      assert_equal("image/png", st_img.content_type)
+      assert_equal(fake_png, st_img.data)
+
+      mat = st_sheet.load
+      assert_equal(1, mat.header_footer_images.size)
+      assert_equal("LH", mat.header_footer_images.first.position)
+    end
   end
 end

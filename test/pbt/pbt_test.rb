@@ -213,7 +213,7 @@ class PbtTest < Test::Unit::TestCase
                 assert_not_nil actual_cell, "Cell at row #{row_idx}, col #{col_idx} should exist for expected #{expected_val.inspect}"
 
                 actual_val = actual_cell.value
-                actual_formula = actual_cell.formula
+                actual_formula = actual_cell.formula_expression
 
                 case expected_val
                 when Xlsxrb::Elements::Formula

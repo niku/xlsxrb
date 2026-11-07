@@ -54,6 +54,12 @@ module Xlsxrb
         return if @started
 
         @started = true
+        sheet_properties = sheet_properties.to_h if sheet_properties.is_a?(Elements::MetadataRecord)
+        sheet_format = sheet_format.to_h if sheet_format.is_a?(Elements::MetadataRecord)
+        freeze_pane = freeze_pane.to_h if freeze_pane.is_a?(Elements::MetadataRecord)
+        split_pane = split_pane.to_h if split_pane.is_a?(Elements::MetadataRecord)
+        selection = selection.to_h if selection.is_a?(Elements::MetadataRecord)
+        sheet_view = sheet_view.to_h if sheet_view.is_a?(Elements::MetadataRecord)
         @sheet_properties = sheet_properties
         @sheet_format = sheet_format
         @builder.declaration
@@ -751,6 +757,14 @@ module Xlsxrb
         @builder.close_tag("sheetData")
 
         # Elements must appear in OOXML specification order after sheetData
+        sheet_protection = sheet_protection.to_h if sheet_protection.is_a?(Elements::MetadataRecord)
+        print_options = print_options.to_h if print_options.is_a?(Elements::MetadataRecord)
+        page_margins = page_margins.to_h if page_margins.is_a?(Elements::MetadataRecord)
+        page_setup = page_setup.to_h if page_setup.is_a?(Elements::MetadataRecord)
+        header_footer = header_footer.to_h if header_footer.is_a?(Elements::MetadataRecord)
+        phonetic_pr = phonetic_pr.to_h if phonetic_pr.is_a?(Elements::MetadataRecord)
+        sheet_calc_pr = sheet_calc_pr.to_h if sheet_calc_pr.is_a?(Elements::MetadataRecord)
+
         calc_pr = sheet_calc_pr || (@sheet_properties if @sheet_properties && !@sheet_properties[:full_calc_on_load].nil?)
         write_sheet_calc_pr(calc_pr) if calc_pr
         write_sheet_protection(sheet_protection) if sheet_protection
@@ -795,6 +809,7 @@ module Xlsxrb
       # --- Pre-sheetData elements ---
 
       def write_sheet_properties(props)
+        props = props.to_h if props.is_a?(Elements::MetadataRecord)
         attrs = {}
         attrs[:codeName] = props[:code_name].to_s if props[:code_name]
         tc_attrs = build_tab_color_attrs(props)
@@ -921,6 +936,7 @@ module Xlsxrb
       end
 
       def write_sheet_format_pr(fmt)
+        fmt = fmt.to_h if fmt.is_a?(Elements::MetadataRecord)
         return if fmt.nil? || fmt.empty?
 
         attrs = {}
@@ -939,6 +955,7 @@ module Xlsxrb
       # --- Post-sheetData elements (in OOXML order) ---
 
       def write_sheet_protection(opts)
+        opts = opts.to_h if opts.is_a?(Elements::MetadataRecord)
         attrs = {}
         attrs[:sheet] = "1" if opts[:sheet] != false
         attrs[:objects] = "1" if opts[:objects]
@@ -1055,6 +1072,7 @@ module Xlsxrb
       end
 
       def write_conditional_formatting(rules)
+        rules = rules.map { |r| r.is_a?(Elements::MetadataRecord) ? r.to_h : r }
         # Group rules by sqref
         grouped = {}
         rules.each do |rule|
@@ -1236,6 +1254,7 @@ module Xlsxrb
       end
 
       def write_data_validations(validations)
+        validations = validations.map { |v| v.is_a?(Elements::MetadataRecord) ? v.to_h : v }
         validations = validations.reject { |dv| dv[:sqref].nil? || dv[:sqref].to_s.empty? }
         return if validations.empty?
 
@@ -1289,6 +1308,7 @@ module Xlsxrb
       def write_hyperlinks(links)
         @builder.open_tag("hyperlinks")
         links.each_with_index do |link, idx|
+          link = link.to_h if link.is_a?(Elements::MetadataRecord)
           cell_ref = link[:cell] || link[:ref]
           h_attrs = { ref: cell_ref }
           h_attrs[:"r:id"] = "rId#{link[:_rid] || (idx + 1)}" if link[:url]
@@ -1301,6 +1321,7 @@ module Xlsxrb
       end
 
       def write_print_options(opts)
+        opts = opts.to_h if opts.is_a?(Elements::MetadataRecord)
         attrs = {}
         attrs[:gridLines] = "1" if opts[:grid_lines]
         attrs[:headings] = "1" if opts[:headings]
@@ -1310,6 +1331,7 @@ module Xlsxrb
       end
 
       def write_page_margins(margins)
+        margins = margins.to_h if margins.is_a?(Elements::MetadataRecord)
         attrs = {
           left: (margins[:left] || 0.7).to_s,
           right: (margins[:right] || 0.7).to_s,
@@ -1322,6 +1344,7 @@ module Xlsxrb
       end
 
       def write_page_setup(opts)
+        opts = opts.to_h if opts.is_a?(Elements::MetadataRecord)
         attrs = {}
         attrs[:orientation] = opts[:orientation].to_s if opts[:orientation]
         attrs[:paperSize] = opts[:paper_size].to_s if opts[:paper_size]
@@ -1336,6 +1359,7 @@ module Xlsxrb
       end
 
       def write_header_footer(opts)
+        opts = opts.to_h if opts.is_a?(Elements::MetadataRecord)
         @builder.open_tag("headerFooter")
         @builder.tag("oddHeader") { |b| b.text(opts[:odd_header]) } if opts[:odd_header]
         @builder.tag("oddFooter") { |b| b.text(opts[:odd_footer]) } if opts[:odd_footer]
@@ -1347,7 +1371,8 @@ module Xlsxrb
       def write_row_breaks(breaks)
         @builder.open_tag("rowBreaks", { count: breaks.size.to_s, manualBreakCount: breaks.size.to_s })
         breaks.each do |brk|
-          attrs = if brk.is_a?(Hash)
+          brk = brk.to_h if brk.is_a?(Elements::MetadataRecord)
+          attrs = if brk.is_a?(Hash) || brk.is_a?(Elements::PageBreak)
                     a = { id: (brk[:id] || brk[:row] || 0).to_s, max: (brk[:max] || 16_383).to_s, man: brk.fetch(:man, true) ? "1" : "0" }
                     a[:min] = brk[:min].to_s if brk[:min]
                     a
@@ -1362,7 +1387,8 @@ module Xlsxrb
       def write_col_breaks(breaks)
         @builder.open_tag("colBreaks", { count: breaks.size.to_s, manualBreakCount: breaks.size.to_s })
         breaks.each do |brk|
-          attrs = if brk.is_a?(Hash)
+          brk = brk.to_h if brk.is_a?(Elements::MetadataRecord)
+          attrs = if brk.is_a?(Hash) || brk.is_a?(Elements::PageBreak)
                     a = { id: (brk[:id] || brk[:col] || 0).to_s, max: (brk[:max] || 1_048_575).to_s, man: brk.fetch(:man, true) ? "1" : "0" }
                     a[:min] = brk[:min].to_s if brk[:min]
                     a
@@ -1385,6 +1411,7 @@ module Xlsxrb
       def write_ignored_errors(errors)
         @builder.open_tag("ignoredErrors")
         errors.each do |ie|
+          ie = ie.to_h if ie.is_a?(Elements::MetadataRecord)
           attrs = { sqref: ie[:sqref].to_s }
           attrs[:evalError] = "1" if ie[:eval_error]
           attrs[:twoDigitTextYear] = "1" if ie[:two_digit_text_year]
@@ -1401,6 +1428,7 @@ module Xlsxrb
       end
 
       def write_phonetic_pr(props)
+        props = props.to_h if props.is_a?(Elements::MetadataRecord)
         attrs = { fontId: (props[:font_id] || props["font_id"] || 0).to_s }
         type = props[:type] || props["type"]
         attrs[:type] = type.to_s if type
@@ -1412,6 +1440,7 @@ module Xlsxrb
       def write_sheet_calc_pr(props)
         return unless props
 
+        props = props.to_h if props.is_a?(Elements::MetadataRecord)
         attrs = {}
         attrs[:fullCalcOnLoad] = props[:full_calc_on_load] ? "1" : "0" unless props[:full_calc_on_load].nil?
         @builder.empty_tag("sheetCalcPr", attrs) unless attrs.empty?
@@ -1438,6 +1467,7 @@ module Xlsxrb
                             "xmlns:xm": "http://schemas.microsoft.com/office/excel/2006/main"
                           })
         groups.each do |group|
+          group = group.to_h if group.is_a?(Elements::MetadataRecord)
           sg_attrs = {}
           sg_attrs[:type] = group[:type] if group[:type]
           sg_attrs[:displayEmptyCellsAs] = group[:display_empty] if group[:display_empty]
@@ -1447,8 +1477,10 @@ module Xlsxrb
           sg_attrs[:first] = "1" if group[:first]
           sg_attrs[:last] = "1" if group[:last]
           sg_attrs[:negative] = "1" if group[:negative]
-          sg_attrs[:manualMax] = group[:max].to_s if group[:max]
-          sg_attrs[:manualMin] = group[:min].to_s if group[:min]
+          max_val = group[:manual_max] || group[:max]
+          min_val = group[:manual_min] || group[:min]
+          sg_attrs[:manualMax] = max_val.to_s if max_val
+          sg_attrs[:manualMin] = min_val.to_s if min_val
           sg_attrs[:lineWeight] = group[:line_weight].to_s if group[:line_weight]
 
           @builder.open_tag("x14:sparklineGroup", sg_attrs)
@@ -1465,12 +1497,13 @@ module Xlsxrb
           @builder.open_tag("x14:sparklines")
           sparklines = group[:sparklines] || []
           sparklines.each do |sp|
+            sp = sp.to_h if sp.is_a?(Elements::MetadataRecord)
             @builder.open_tag("x14:sparkline")
             @builder.open_tag("xm:f")
-            @builder.text(sp[:data_ref])
+            @builder.text(sp[:data_ref] || sp[:formula] || sp[:f])
             @builder.close_tag("xm:f")
             @builder.open_tag("xm:sqref")
-            @builder.text(sp[:location_ref])
+            @builder.text(sp[:location_ref] || sp[:sqref] || sp[:location])
             @builder.close_tag("xm:sqref")
             @builder.close_tag("x14:sparkline")
           end
@@ -1633,7 +1666,8 @@ module Xlsxrb
       def write_inline_rich_text(buf, rich_text)
         buf << "><is>"
         rich_text.runs.each do |run|
-          font = run[:font]
+          font = run.is_a?(Hash) ? run[:font] : run.font
+          run_text = run.is_a?(Hash) ? run[:text] : run.text
           if font && !font.empty?
             buf << "<r><rPr>"
             buf << "<b/>" if font[:bold]
@@ -1691,7 +1725,7 @@ module Xlsxrb
           else
             buf << "<r><t>"
           end
-          buf << escape_xml(run[:text].to_s) << "</t></r>"
+          buf << escape_xml(run_text.to_s) << "</t></r>"
         end
         buf << "</is></c>"
       end

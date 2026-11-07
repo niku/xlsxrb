@@ -97,6 +97,11 @@ module Xlsxrb
         when :to_col
           warn "[DEPRECATION] `:to_col` is deprecated; use `:to_column` instead.", uplevel: 1
           to_column
+        when :cell
+          warn "[DEPRECATION] `:cell` is deprecated; use `:cell_ref` instead.", uplevel: 1
+          ref
+        when :ref
+          ref
         else
           super
         end
@@ -115,11 +120,25 @@ module Xlsxrb
       # @return [String]
       # @api public
       #: () -> String
-      def cell_ref
+      def ref
         "#{Cell._column_letter(from_column)}#{from_row + 1}"
       end
-      alias cell cell_ref
-      alias ref cell_ref
+
+      # @deprecated Use {#ref} instead.
+      # @return [String]
+      # @api public
+      #: () -> String
+      def cell_ref
+        warn "[Xlsxrb DEPRECATION] Image#cell_ref is deprecated; use #ref instead.", uplevel: 1
+        ref
+      end
+
+      # @deprecated Use {#ref} instead.
+      #: () -> String
+      def cell
+        warn "[DEPRECATION] `cell` is deprecated; use `cell_ref` instead.", uplevel: 1
+        ref
+      end
 
       # Returns the bottom-right cell coordinate reference string (e.g. "B5"), or nil for 1-cell anchors.
       #

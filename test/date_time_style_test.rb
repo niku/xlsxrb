@@ -23,8 +23,16 @@ class DateTimeStyleTest < Test::Unit::TestCase
     date_xf = wb.styles.cell_xf(date_cell.style_index)
     time_xf = wb.styles.cell_xf(time_cell.style_index)
 
-    assert date_xf[:num_fmt_id].positive?
-    assert time_xf[:num_fmt_id].positive?
+    assert date_xf.num_fmt_id.positive?
+    assert time_xf.num_fmt_id.positive?
+  end
+
+  test "CellXf#number_format_id deprecation warning" do
+    xf = Xlsxrb::Elements::CellXf.new(num_fmt_id: 14)
+    err = capture_stderr do
+      assert_equal(14, xf.number_format_id)
+    end
+    assert_match(/\[Xlsxrb DEPRECATION\] CellXf#number_format_id is deprecated; use #num_fmt_id instead\./, err)
   end
 
   test "stream writer with date1904 property serializes dates with 1904 epoch and reads back correctly" do
@@ -53,8 +61,14 @@ class DateTimeStyleTest < Test::Unit::TestCase
     wb = Xlsxrb.read(temp.path).load
     assert_true(wb.date1904?)
     sheet = wb["Dates1904"]
-    assert_equal(target_date, sheet["A1"].to_date(date1904: true))
-    assert_equal(target_time, sheet["B1"].to_time(date1904: true))
+    assert_equal(target_date, sheet["A1"].to_date)
+    assert_equal(target_time, sheet["B1"].to_time)
+
+    # Deprecated date1904: argument warning
+    err_date = capture_stderr { sheet["A1"].to_date(date1904: true) }
+    assert_match(/\[Xlsxrb DEPRECATION\] Passing date1904: to Cell#to_date is deprecated; Cell#date1904\? is used automatically\./, err_date)
+    err_time = capture_stderr { sheet["B1"].to_time(date1904: true) }
+    assert_match(/\[Xlsxrb DEPRECATION\] Passing date1904: to Cell#to_time is deprecated; Cell#date1904\? is used automatically\./, err_time)
 
     # Verify raw serial values in sheet XML are 1462 less than 1900 system
     sheet_xml = reader.send(:load_worksheet_xml, "Dates1904")
@@ -86,12 +100,12 @@ class DateTimeStyleTest < Test::Unit::TestCase
     # Read back and verify round-trip
     wb_read = Xlsxrb.read(temp.path).load
     assert_true(wb_read.date1904?)
-    assert_equal(target_date, wb_read["Sheet1"]["A1"].to_date(date1904: wb_read.date1904?))
+    assert_equal(target_date, wb_read["Sheet1"]["A1"].to_date)
 
     # Verify reading back in-memory binary string
     wb_buf = Xlsxrb.read(File.binread(temp.path)).load
     assert_true(wb_buf.date1904?)
-    assert_equal(target_date, wb_buf["Sheet1"]["A1"].to_date(date1904: wb_buf.date1904?))
+    assert_equal(target_date, wb_buf["Sheet1"]["A1"].to_date)
 
     reader = Xlsxrb::Ooxml::Reader.new(temp.path)
     assert_equal(true, reader.workbook_properties[:date1904])

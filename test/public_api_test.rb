@@ -1246,10 +1246,11 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
 
-    assert_equal({ title: "Quarterly Report", creator: "Finance Team" }, wb.core_properties)
-    assert_equal({ company: "Acme Corp" }, wb.app_properties)
-    assert_equal([{ name: "Confidential", value: true, type: :boolean }], wb.custom_properties)
-    assert_equal({ lock_structure: true }, wb.workbook_protection)
+    assert_equal("Quarterly Report", wb.core_properties.title)
+    assert_equal("Finance Team", wb.core_properties.creator)
+    assert_equal("Acme Corp", wb.app_properties.company)
+    assert_equal(true, wb.custom_properties["Confidential"].value)
+    assert_equal(true, wb.workbook_protection.lock_structure)
 
     # Test round-trip via write and read
     binary = Xlsxrb.write(wb)
@@ -1259,8 +1260,8 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("Finance Team", read_wb.core_properties[:creator])
     assert_equal("Acme Corp", read_wb.app_properties[:company])
     assert_equal(1, read_wb.custom_properties.size)
-    assert_equal("Confidential", read_wb.custom_properties.first[:name])
-    assert_equal(true, read_wb.custom_properties.first[:value])
+    assert_equal("Confidential", read_wb.custom_properties["Confidential"].name)
+    assert_equal(true, read_wb.custom_properties["Confidential"].value)
     assert_equal(true, read_wb.workbook_protection[:lock_structure])
   end
 
@@ -1705,9 +1706,9 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     shapes = wb.sheet(0).shapes
-    assert_equal "rect", shapes.first[:preset]
-    assert_equal "Hi", shapes.first[:text]
-    assert_equal shapes, wb.sheet(0).unmapped_data.dig(:facade, :shapes)
+    assert_equal "rect", shapes.first.preset
+    assert_equal "Hi", shapes.first.text
+    assert_equal 1, shapes.size
   end
 
   test "WorksheetBuilder#table captures values" do
@@ -2793,22 +2794,22 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
 
-    assert_equal(24.5, wb_built.sheet(0).sheet_format[:default_row_height])
-    assert_equal(18.0, wb_built.sheet(0).sheet_format[:default_col_width])
-    assert_equal(2, wb_built.sheet(0).sheet_format[:outline_level_row])
+    assert_equal(24.5, wb_built.sheet(0).sheet_format.default_row_height)
+    assert_equal(18.0, wb_built.sheet(0).sheet_format.default_col_width)
+    assert_equal(2, wb_built.sheet(0).sheet_format.outline_level_row)
 
     # Write and read back
     data = Xlsxrb.write(wb_built)
     wb_read = Xlsxrb.read(data)
     stream_sheet = wb_read.sheet(0)
-    assert_equal(24.5, stream_sheet.sheet_format[:default_row_height])
-    assert_equal(18.0, stream_sheet.sheet_format[:default_col_width])
-    assert_equal(2, stream_sheet.sheet_format[:outline_level_row])
+    assert_equal(24.5, stream_sheet.sheet_format.default_row_height)
+    assert_equal(18.0, stream_sheet.sheet_format.default_col_width)
+    assert_equal(2, stream_sheet.sheet_format.outline_level_row)
 
     loaded_sheet = stream_sheet.load
-    assert_equal(24.5, loaded_sheet.sheet_format[:default_row_height])
-    assert_equal(18.0, loaded_sheet.sheet_format[:default_col_width])
-    assert_equal(2, loaded_sheet.sheet_format[:outline_level_row])
+    assert_equal(24.5, loaded_sheet.sheet_format.default_row_height)
+    assert_equal(18.0, loaded_sheet.sheet_format.default_col_width)
+    assert_equal(2, loaded_sheet.sheet_format.outline_level_row)
 
     # 2. Via streaming Xlsxrb.write
     stream_data = Xlsxrb.write do |w|
@@ -2819,10 +2820,10 @@ class PublicApiTest < Test::Unit::TestCase
     end
 
     wb_stream_read = Xlsxrb.read(stream_data)
-    assert_equal(30.0, wb_stream_read.sheet(0).sheet_format[:default_row_height])
-    assert_equal(12.5, wb_stream_read.sheet(0).sheet_format[:default_col_width])
-    assert_equal(30.0, wb_stream_read.sheet(0).load.sheet_format[:default_row_height])
-    assert_equal(12.5, wb_stream_read.sheet(0).load.sheet_format[:default_col_width])
+    assert_equal(30.0, wb_stream_read.sheet(0).sheet_format.default_row_height)
+    assert_equal(12.5, wb_stream_read.sheet(0).sheet_format.default_col_width)
+    assert_equal(30.0, wb_stream_read.sheet(0).load.sheet_format.default_row_height)
+    assert_equal(12.5, wb_stream_read.sheet(0).load.sheet_format.default_col_width)
   end
 
   test "protected_range and cell_watch configured via build and streaming write round-trips correctly" do
@@ -2839,13 +2840,13 @@ class PublicApiTest < Test::Unit::TestCase
 
     built_sheet = wb_built.sheet(0)
     assert_equal(2, built_sheet.protected_ranges.size)
-    assert_equal("Range1", built_sheet.protected_ranges[0][:name])
-    assert_equal("A1:B10", built_sheet.protected_ranges[0][:sqref])
-    assert_equal("CCEE", built_sheet.protected_ranges[0][:password])
-    assert_equal("Range2", built_sheet.protected_ranges[1][:name])
-    assert_equal("C1:D5", built_sheet.protected_ranges[1][:sqref])
-    assert_equal("SHA-512", built_sheet.protected_ranges[1][:algorithm_name])
-    assert_not_nil(built_sheet.protected_ranges[1][:hash_value])
+    assert_equal("Range1", built_sheet.protected_ranges[0].name)
+    assert_equal("A1:B10", built_sheet.protected_ranges[0].sqref)
+    assert_equal("CCEE", built_sheet.protected_ranges[0].password)
+    assert_equal("Range2", built_sheet.protected_ranges[1].name)
+    assert_equal("C1:D5", built_sheet.protected_ranges[1].sqref)
+    assert_equal("SHA-512", built_sheet.protected_ranges[1].algorithm_name)
+    assert_not_nil(built_sheet.protected_ranges[1].hash_value)
 
     assert_equal(%w[A1 B10], built_sheet.cell_watches)
 
@@ -2855,17 +2856,17 @@ class PublicApiTest < Test::Unit::TestCase
     stream_sheet = wb_read.sheet(0)
 
     assert_equal(2, stream_sheet.protected_ranges.size)
-    assert_equal("Range1", stream_sheet.protected_ranges[0][:name])
-    assert_equal("A1:B10", stream_sheet.protected_ranges[0][:sqref])
-    assert_equal("Range2", stream_sheet.protected_ranges[1][:name])
-    assert_equal("C1:D5", stream_sheet.protected_ranges[1][:sqref])
-    assert_equal("SHA-512", stream_sheet.protected_ranges[1][:algorithm_name])
+    assert_equal("Range1", stream_sheet.protected_ranges[0].name)
+    assert_equal("A1:B10", stream_sheet.protected_ranges[0].sqref)
+    assert_equal("Range2", stream_sheet.protected_ranges[1].name)
+    assert_equal("C1:D5", stream_sheet.protected_ranges[1].sqref)
+    assert_equal("SHA-512", stream_sheet.protected_ranges[1].algorithm_name)
     assert_equal(%w[A1 B10], stream_sheet.cell_watches)
 
     loaded_sheet = stream_sheet.load
     assert_equal(2, loaded_sheet.protected_ranges.size)
-    assert_equal("Range1", loaded_sheet.protected_ranges[0][:name])
-    assert_equal("A1:B10", loaded_sheet.protected_ranges[0][:sqref])
+    assert_equal("Range1", loaded_sheet.protected_ranges[0].name)
+    assert_equal("A1:B10", loaded_sheet.protected_ranges[0].sqref)
     assert_equal(%w[A1 B10], loaded_sheet.cell_watches)
 
     # 2. Via streaming Xlsxrb.write
@@ -2880,13 +2881,13 @@ class PublicApiTest < Test::Unit::TestCase
     wb_stream_read = Xlsxrb.read(stream_data)
     ss = wb_stream_read.sheet(0)
     assert_equal(1, ss.protected_ranges.size)
-    assert_equal("StreamRange", ss.protected_ranges[0][:name])
-    assert_equal("B2:F20", ss.protected_ranges[0][:sqref])
+    assert_equal("StreamRange", ss.protected_ranges[0].name)
+    assert_equal("B2:F20", ss.protected_ranges[0].sqref)
     assert_equal(["C3"], ss.cell_watches)
 
     ls = ss.load
     assert_equal(1, ls.protected_ranges.size)
-    assert_equal("StreamRange", ls.protected_ranges[0][:name])
+    assert_equal("StreamRange", ls.protected_ranges[0].name)
     assert_equal(["C3"], ls.cell_watches)
   end
 
@@ -2921,7 +2922,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(1, built_sheet.tables.size)
     table_cfg = built_sheet.tables.first
     assert_equal("A1:C5", table_cfg[:ref])
-    assert_equal(%w[ID Name Score], table_cfg[:columns])
+    assert_equal(%w[ID Name Score], table_cfg.columns.map(&:name))
     assert_equal("ScoreTable", table_cfg[:name])
     assert_equal("TableStyleMedium2", table_cfg[:style])
     assert_equal(true, table_cfg[:show_row_stripes])
@@ -2941,12 +2942,12 @@ class PublicApiTest < Test::Unit::TestCase
     stream_sheet = wb_read.sheet(0)
 
     assert_equal(1, stream_sheet.tables.size)
-    assert_equal("ScoreTable", stream_sheet.tables.first[:name])
-    assert_equal("A1:C5", stream_sheet.tables.first[:ref])
+    assert_equal("ScoreTable", stream_sheet.tables.first.name)
+    assert_equal("A1:C5", stream_sheet.tables.first.ref)
 
     assert_equal(1, stream_sheet.data_validations.size)
-    assert_equal("B2:B5", stream_sheet.data_validations.first[:sqref])
-    assert_equal("list", stream_sheet.data_validations.first[:type])
+    assert_equal("B2:B5", stream_sheet.data_validations.first.sqref)
+    assert_equal("list", stream_sheet.data_validations.first.type)
 
     # 2. Via streaming Xlsxrb.write
     stream_data = Xlsxrb.write do |w|
@@ -2967,9 +2968,9 @@ class PublicApiTest < Test::Unit::TestCase
 
     wb_stream = Xlsxrb.read(stream_data)
     assert_equal(1, wb_stream.sheet(0).tables.size)
-    assert_equal("A1:B3", wb_stream.sheet(0).tables.first[:ref])
+    assert_equal("A1:B3", wb_stream.sheet(0).tables.first.ref)
     assert_equal(1, wb_stream.sheet(0).data_validations.size)
-    assert_equal("B2:B3", wb_stream.sheet(0).data_validations.first[:sqref])
+    assert_equal("B2:B3", wb_stream.sheet(0).data_validations.first.sqref)
 
     # 3. Validation errors
     assert_raise(ArgumentError) do
@@ -3555,7 +3556,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal :very_hidden, wb2.sheet(2).state
   end
 
-  test "merge accepts coordinate range string, row_range and column_range report 1-based bounds, and bracket access supports 2D indexing" do
+  test "merge accepts coordinate range string, row_range and column_range report 0-based bounds, and bracket access supports 2D indexing" do
     wb_dom = Xlsxrb.build do |b|
       b.sheet("Grid") do |s|
         s.row([10, 20, 30])
@@ -3573,8 +3574,8 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(["A1:C1"], sheet.merged_cells)
 
     # row_range and column_range
-    assert_equal(1..3, sheet.row_range)
-    assert_equal(1..3, sheet.column_range)
+    assert_equal(0..2, sheet.row_range)
+    assert_equal(0..2, sheet.column_range)
 
     # 2D bracket access and coordinate string access
     assert_equal(10, sheet[0, 0].value)
@@ -3705,6 +3706,18 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(/\[DEPRECATION\] Xlsxrb::Elements::Cell\.parse_ref is deprecated/, capture_stderr { Xlsxrb::Elements::Cell.parse_ref("A1") })
     assert_match(/\[DEPRECATION\] Xlsxrb\.shared_formula keyword :si is deprecated/, capture_stderr { Xlsxrb.shared_formula("A1", si: 0) })
     assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.expand_formula keyword :col_delta is deprecated/, capture_stderr { Xlsxrb::Utils.expand_formula("A1", col_delta: 1) })
+
+    # 8. MetadataRecord hash compatibility deprecation warnings
+    ps = Xlsxrb::Elements::PageSetup.new(orientation: "landscape", paper_size: 9)
+    assert_match(/\[DEPRECATION\] Hash access on Xlsxrb::Elements::PageSetup \(`#\[\]`\) is deprecated/, capture_stderr { ps[:orientation] })
+    assert_match(/\[DEPRECATION\] `Xlsxrb::Elements::PageSetup#key\?` is deprecated/, capture_stderr { ps.key?(:orientation) })
+    assert_match(/\[DEPRECATION\] `Xlsxrb::Elements::PageSetup#dig` is deprecated/, capture_stderr { ps.dig(:orientation, :dummy) })
+    assert_match(/\[DEPRECATION\] `Xlsxrb::Elements::PageSetup#fetch` is deprecated/, capture_stderr { ps.fetch(:orientation) })
+    assert_match(/\[DEPRECATION\] `Xlsxrb::Elements::PageSetup#merge` is deprecated/, capture_stderr { ps.merge(paper_size: 1) })
+    assert_match(/\[DEPRECATION\] Comparing `Xlsxrb::Elements::PageSetup` with a Hash is deprecated/, capture_stderr { ps == { orientation: "landscape", paper_size: 9 } })
+
+    hl = Xlsxrb::Elements::Hyperlink.new(url: "https://example.com")
+    assert_match(/\[DEPRECATION\] Hash access on Elements::Hyperlink \(`#\[\]`\) is deprecated/, capture_stderr { hl[:url] })
   end
 
   test "Commit 2: top-level Xlsxrb coordinate and date facade" do
@@ -3866,8 +3879,8 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Worksheet#update_cell with style:
     sheet = Xlsxrb::Elements::Worksheet.new(name: "S", rows: [
-      Xlsxrb::Elements::Row.new(index: 0, cells: [c1])
-    ])
+                                              Xlsxrb::Elements::Row.new(index: 0, cells: [c1])
+                                            ])
     s2 = sheet.update_cell("A1", style: :green)
     assert_equal(:green, s2.cell("A1").style)
     assert_nil(s2.cell("A1").style_index)
@@ -3906,7 +3919,12 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal false, ws.sheet_view[:show_grid_lines]
 
     # Deprecation warnings for legacy methods
-    w_protect = capture_stderr { Xlsxrb.build { |b| b.protect_workbook(lock_structure: true); b.sheet("S") } }
+    w_protect = capture_stderr do
+      Xlsxrb.build do |b|
+        b.protect_workbook(lock_structure: true)
+        b.sheet("S")
+      end
+    end
     assert_match(/\[DEPRECATION\] `protect_workbook` is deprecated; use `workbook_protection` instead/, w_protect)
 
     w_sheet_methods = capture_stderr do
@@ -3968,9 +3986,9 @@ class PublicApiTest < Test::Unit::TestCase
       b.defined_name("GlobalRate", "0.15", scope: :workbook)
       b.sheet("S1") do |s|
         s.auto_filter("A1:D10")
-        s.filter_column("B", ["Active", "Pending"])
+        s.filter_column("B", %w[Active Pending])
         s.filter_column(:C, ["High"])
-        s.defined_name("LocalRef", column: "B", row: 2, scope: "S1")
+        s.defined_name("LocalRef", columns: "B", rows: 2, scope: "S1")
       end
     end
     ws = wb.sheet(0)
@@ -3997,11 +4015,11 @@ class PublicApiTest < Test::Unit::TestCase
     cb = Xlsxrb::ChartBuilder.new
     cb.title = "Sales Report"
     assert_equal "Sales Report", cb.title
-    assert_equal "Sales Report", cb.title()
+    assert_equal "Sales Report", cb.title
 
     cb.type = :bar
     assert_equal :bar, cb.type
-    assert_equal :bar, cb.type()
+    assert_equal :bar, cb.type
 
     cb.legend(position: :bottom)
     assert_equal({ position: :bottom }, cb.legend)
@@ -4009,15 +4027,15 @@ class PublicApiTest < Test::Unit::TestCase
     sb = Xlsxrb::ChartBuilder::SeriesBuilder.new
     sb.name = "Revenue"
     assert_equal "Revenue", sb.name
-    assert_equal "Revenue", sb.name()
+    assert_equal "Revenue", sb.name
 
     sb.values = "Sheet1!B2:B10"
     assert_equal "Sheet1!B2:B10", sb.values
-    assert_equal "Sheet1!B2:B10", sb.values()
+    assert_equal "Sheet1!B2:B10", sb.values
 
     sb.categories = "Sheet1!A2:A10"
     assert_equal "Sheet1!A2:A10", sb.categories
-    assert_equal "Sheet1!A2:A10", sb.categories()
+    assert_equal "Sheet1!A2:A10", sb.categories
 
     # Deprecation on secondary_axis
     w_chart_sec = capture_stderr do
@@ -4042,7 +4060,7 @@ class PublicApiTest < Test::Unit::TestCase
     sb.strike = true
 
     assert_equal 14, sb.font_size
-    assert_equal 14, sb.font_size()
+    assert_equal 14, sb.font_size
 
     sb.align_horizontal = :center
     sb.align_vertical = :top
@@ -4090,11 +4108,11 @@ class PublicApiTest < Test::Unit::TestCase
     cf = Xlsxrb::ConditionalFormatBuilder.new("A1:A10")
     cf.dxf_id = 3
     assert_equal 3, cf.dxf_id
-    assert_equal 3, cf.dxf_id()
+    assert_equal 3, cf.dxf_id
 
     cf.font_size = 12
     assert_equal 12, cf.font_size
-    assert_equal 12, cf.font_size()
+    assert_equal 12, cf.font_size
 
     w_cf = capture_stderr do
       assert_equal 3, cf.format_id
@@ -4147,5 +4165,265 @@ class PublicApiTest < Test::Unit::TestCase
       assert_instance_of Xlsxrb::StreamWriter::WorksheetProxy, proxy
       assert_equal "First", w.current_sheet
     end
+  end
+
+  test "sheet_view, sheet_format, sheet_properties, and print_options unification across WorksheetBuilder, StreamWriter, and WorksheetProxy" do
+    # 1. WorksheetBuilder
+    Xlsxrb.build do |b|
+      b.sheet("BuilderSheet") do |s|
+        # 0 arguments return Value Objects
+        assert_instance_of(Xlsxrb::Elements::SheetView, s.sheet_view)
+        assert_instance_of(Xlsxrb::Elements::SheetFormat, s.sheet_format)
+        assert_instance_of(Xlsxrb::Elements::SheetProperties, s.sheet_properties)
+        assert_instance_of(Xlsxrb::Elements::PrintOptions, s.print_options)
+
+        # Keyword arguments return nil
+        ret_sv = s.sheet_view(show_grid_lines: false, zoom_scale: 120)
+        assert_nil(ret_sv)
+        assert_equal(false, s.sheet_view.show_grid_lines)
+        assert_equal(120, s.sheet_view.zoom_scale)
+
+        ret_sf = s.sheet_format(default_row_height: 25.5, default_column_width: 14.0)
+        assert_nil(ret_sf)
+        assert_equal(25.5, s.sheet_format.default_row_height)
+        assert_equal(14.0, s.sheet_format.default_column_width)
+
+        ret_sp = s.sheet_properties(tab_color: "FF0000", filter_mode: true)
+        assert_nil(ret_sp)
+        assert_equal("FF0000", s.sheet_properties.tab_color)
+        assert_equal(true, s.sheet_properties.filter_mode)
+
+        ret_po = s.print_options(grid_lines: true, headings: false)
+        assert_nil(ret_po)
+        assert_equal(true, s.print_options.grid_lines)
+        assert_equal(false, s.print_options.headings)
+
+        # 2 positional arguments return nil
+        assert_nil(s.sheet_view(:show_zeros, false))
+        assert_equal(false, s.sheet_view.show_zeros)
+
+        assert_nil(s.sheet_format(:outline_level_row, 3))
+        assert_equal(3, s.sheet_format.outline_level_row)
+
+        assert_nil(s.sheet_properties(:code_name, "SheetCode"))
+        assert_equal("SheetCode", s.sheet_properties.code_name)
+
+        assert_nil(s.print_options(:horizontal_centered, true))
+        assert_equal(true, s.print_options.horizontal_centered)
+
+        # 1 positional Hash argument returns nil
+        assert_nil(s.sheet_view({ view: "pageLayout" }))
+        assert_equal("pageLayout", s.sheet_view.view)
+
+        assert_nil(s.sheet_format({ thick_top: true }))
+        assert_equal(true, s.sheet_format.thick_top)
+
+        assert_nil(s.sheet_properties({ fit_to_page: true }))
+        assert_equal(true, s.sheet_properties.fit_to_page)
+
+        assert_nil(s.print_options({ vertical_centered: true }))
+        assert_equal(true, s.print_options.vertical_centered)
+
+        # 1 positional Value Object argument returns nil
+        existing_sv = s.sheet_view
+        assert_nil(s.sheet_view(existing_sv))
+        existing_sf = s.sheet_format
+        assert_nil(s.sheet_format(existing_sf))
+        existing_sp = s.sheet_properties
+        assert_nil(s.sheet_properties(existing_sp))
+        existing_po = s.print_options
+        assert_nil(s.print_options(existing_po))
+
+        # Setter methods = accept Hash and Value Object
+        s.sheet_view = { zoom_scale: 150 }
+        assert_equal(150, s.sheet_view.zoom_scale)
+        s.sheet_view = Xlsxrb::Elements::SheetView.new(zoom_scale: 90)
+        assert_equal(90, s.sheet_view.zoom_scale)
+
+        s.sheet_format = { default_row_height: 30 }
+        assert_equal(30, s.sheet_format.default_row_height)
+        s.sheet_format = Xlsxrb::Elements::SheetFormat.new(default_row_height: 22)
+        assert_equal(22, s.sheet_format.default_row_height)
+
+        s.sheet_properties = { tab_color: "00FF00" }
+        assert_equal("00FF00", s.sheet_properties.tab_color)
+        s.sheet_properties = Xlsxrb::Elements::SheetProperties.new(tab_color: "0000FF")
+        assert_equal("0000FF", s.sheet_properties.tab_color)
+
+        s.print_options = { grid_lines: false }
+        assert_equal(false, s.print_options.grid_lines)
+        s.print_options = Xlsxrb::Elements::PrintOptions.new(grid_lines: true)
+        assert_equal(true, s.print_options.grid_lines)
+      end
+    end
+
+    # 2. StreamWriter and WorksheetProxy
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.sheet("StreamSheet") do |proxy|
+        # 0 arguments via proxy and direct writer
+        assert_instance_of(Xlsxrb::Elements::SheetView, proxy.sheet_view)
+        assert_instance_of(Xlsxrb::Elements::SheetFormat, proxy.sheet_format)
+        assert_instance_of(Xlsxrb::Elements::SheetProperties, proxy.sheet_properties)
+        assert_instance_of(Xlsxrb::Elements::PrintOptions, proxy.print_options)
+
+        assert_instance_of(Xlsxrb::Elements::SheetView, w.sheet_view)
+        assert_instance_of(Xlsxrb::Elements::SheetFormat, w.sheet_format)
+        assert_instance_of(Xlsxrb::Elements::SheetProperties, w.sheet_properties)
+        assert_instance_of(Xlsxrb::Elements::PrintOptions, w.print_options)
+
+        # Keyword args return nil
+        assert_nil(proxy.sheet_view(show_grid_lines: false, zoom_scale: 125))
+        assert_equal(false, proxy.sheet_view.show_grid_lines)
+        assert_equal(125, proxy.sheet_view.zoom_scale)
+
+        assert_nil(proxy.sheet_format(default_row_height: 28.0, default_column_width: 16.0))
+        assert_equal(28.0, proxy.sheet_format.default_row_height)
+        assert_equal(16.0, proxy.sheet_format.default_column_width)
+
+        assert_nil(proxy.sheet_properties(tab_color: "AABBCC"))
+        assert_equal("AABBCC", proxy.sheet_properties.tab_color)
+
+        assert_nil(proxy.print_options(headings: true))
+        assert_equal(true, proxy.print_options.headings)
+
+        # 2 positional args
+        assert_nil(proxy.sheet_view(:tab_selected, true))
+        assert_equal(true, proxy.sheet_view.tab_selected)
+
+        assert_nil(proxy.sheet_format(:zero_height, true))
+        assert_equal(true, proxy.sheet_format.zero_height)
+
+        assert_nil(proxy.sheet_properties(:code_name, "CodeStream"))
+        assert_equal("CodeStream", proxy.sheet_properties.code_name)
+
+        assert_nil(proxy.print_options(:horizontal_centered, false))
+        assert_equal(false, proxy.print_options.horizontal_centered)
+
+        # Setters = on proxy and writer
+        proxy.sheet_view = { zoom_scale: 110 }
+        assert_equal(110, proxy.sheet_view.zoom_scale)
+        proxy.sheet_format = { default_row_height: 32 }
+        assert_equal(32, proxy.sheet_format.default_row_height)
+        proxy.sheet_properties = { tab_color: "112233" }
+        assert_equal("112233", proxy.sheet_properties.tab_color)
+        proxy.print_options = { grid_lines: true }
+        assert_equal(true, proxy.print_options.grid_lines)
+
+        w.sheet_view = { zoom_scale: 100 }
+        assert_equal(100, w.sheet_view.zoom_scale)
+        w.sheet_format = { default_row_height: 20 }
+        assert_equal(20, w.sheet_format.default_row_height)
+        w.sheet_properties = { tab_color: "FFFFFF" }
+        assert_equal("FFFFFF", w.sheet_properties.tab_color)
+        w.print_options = { grid_lines: false }
+        assert_equal(false, w.print_options.grid_lines)
+
+        proxy.row([1, 2, 3])
+      end
+    end
+  end
+
+  test "Phase 6: WorkbookBuilder and StreamWriter symmetry and top-level utility facade" do
+    # 1. WorkbookBuilder getters and escape_formulas
+    wb = Xlsxrb.build(escape_formulas: true) do |b|
+      assert_equal(true, b.escape_formulas?)
+      assert_equal(true, b.escape_formulas)
+
+      b.core_property(:creator, "Tester")
+      assert_equal("Tester", b.core_properties.creator)
+      assert_instance_of(Xlsxrb::Elements::CoreProperties, b.core_properties)
+
+      b.app_property(:company, "Acme Corp")
+      assert_equal("Acme Corp", b.app_properties.company)
+      assert_instance_of(Xlsxrb::Elements::AppProperties, b.app_properties)
+
+      b.custom_property("Department", "Engineering")
+      assert_equal("Engineering", b.custom_properties["Department"].value)
+      assert_instance_of(Xlsxrb::Elements::CustomProperty, b.custom_properties["Department"])
+
+      b.workbook_protection(lock_structure: true)
+      assert_equal(true, b.workbook_protection.lock_structure)
+      assert_instance_of(Xlsxrb::Elements::WorkbookProtection, b.workbook_protection)
+      b.workbook_protection = { lock_structure: false }
+      assert_equal(false, b.workbook_protection.lock_structure)
+
+      b.workbook_properties = { update_links: "never", filter_privacy: true }
+      assert_equal(true, b.workbook_properties.filter_privacy)
+      assert_instance_of(Xlsxrb::Elements::WorkbookProperties, b.workbook_properties)
+
+      b.defined_name("TAX_RATE", "0.10")
+      assert_equal(1, b.defined_names.size)
+      assert_instance_of(Xlsxrb::Elements::DefinedName, b.defined_names.first)
+      assert_equal("TAX_RATE", b.defined_names.first.name)
+
+      b.style(:bold_num, bold: true, number_format: "#,##0")
+      assert_include(b.styles.keys, "bold_num")
+
+      b.sheet("SheetOne") do |s|
+        assert_equal(true, s.escape_formulas?)
+        s.row(["=1+1", 100])
+      end
+      assert_equal(["SheetOne"], b.sheet_names)
+    end
+
+    # 2. StreamWriter getters and symmetry
+    Tempfile.create(["sw_symmetry", ".xlsx"]) do |f|
+      Xlsxrb.write(f.path, escape_formulas: true) do |w|
+        assert_equal(true, w.escape_formulas?)
+        assert_equal(true, w.escape_formulas)
+
+        w.core_property(:creator, "StreamTester")
+        assert_equal("StreamTester", w.core_properties.creator)
+        assert_instance_of(Xlsxrb::Elements::CoreProperties, w.core_properties)
+
+        w.app_property(:company, "StreamCorp")
+        assert_equal("StreamCorp", w.app_properties.company)
+        assert_instance_of(Xlsxrb::Elements::AppProperties, w.app_properties)
+
+        w.custom_property("Client", "Beta")
+        assert_equal("Beta", w.custom_properties["Client"].value)
+        assert_instance_of(Xlsxrb::Elements::CustomProperty, w.custom_properties["Client"])
+
+        w.workbook_protection(lock_structure: true)
+        assert_equal(true, w.workbook_protection.lock_structure)
+        assert_instance_of(Xlsxrb::Elements::WorkbookProtection, w.workbook_protection)
+        w.workbook_protection = { lock_structure: false }
+        assert_equal(false, w.workbook_protection.lock_structure)
+
+        w.workbook_properties = { update_links: "never", filter_privacy: true }
+        assert_equal(true, w.workbook_properties.filter_privacy)
+        assert_instance_of(Xlsxrb::Elements::WorkbookProperties, w.workbook_properties)
+
+        w.defined_name("DISCOUNT", "0.05")
+        assert_equal(1, w.defined_names.size)
+        assert_instance_of(Xlsxrb::Elements::DefinedName, w.defined_names.first)
+        assert_equal("DISCOUNT", w.defined_names.first.name)
+
+        w.style(:stream_style, italic: true)
+        assert_include(w.styles.keys, "stream_style")
+
+        w.repeat_rows(0)
+        w.repeat_columns("A", "B")
+
+        w.sheet("StreamSheet") do |s|
+          assert_equal(true, s.escape_formulas?)
+          s.row(["Data", 50])
+        end
+        assert_equal(["StreamSheet"], w.sheet_names)
+      end
+    end
+
+    # 3. Top-level Xlsxrb write_workbook and workbook_to_data
+    Tempfile.create(["ww_test", ".xlsx"]) do |f|
+      Xlsxrb.write_workbook(f.path, wb, shared_strings: true, compression_level: 6)
+      assert_true(File.size(f.path).positive?)
+      loaded = Xlsxrb.read(f.path)
+      assert_equal(["SheetOne"], loaded.sheet_names)
+    end
+
+    data = Xlsxrb.workbook_to_data(wb, shared_strings: false, compression_level: 0)
+    assert_instance_of(String, data)
+    assert_true(data.start_with?("PK\x03\x04".b))
   end
 end

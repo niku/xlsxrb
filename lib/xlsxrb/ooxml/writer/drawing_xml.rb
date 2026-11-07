@@ -89,6 +89,7 @@ module Xlsxrb
               parts << "</xdr:twoCellAnchor>"
             when :sp
               shape = dp[:shape]
+              shape = shape.to_h if shape.is_a?(Elements::MetadataRecord)
               shape_ea_attr = shape[:edit_as] ? %( editAs="#{xml_escape(shape[:edit_as])}") : ""
               shape_pub_attr = shape[:published] ? ' fPublished="1"' : ""
               parts << "<xdr:twoCellAnchor#{shape_ea_attr}#{shape_pub_attr}>"
@@ -393,8 +394,10 @@ module Xlsxrb
           end_para_rpr_xml = para[:end_para_rpr] ? text_char_props_xml("a:endParaRPr", para[:end_para_rpr]) : ""
           runs_xml = if para[:runs]
                        para[:runs].map do |run|
-                         run_rpr = run[:font] ? text_char_props_xml("a:rPr", run[:font]) : ""
-                         "<a:r>#{run_rpr}<a:t>#{xml_escape(run[:text] || "")}</a:t></a:r>"
+                         r_font = run.respond_to?(:font) ? run.font : run[:font]
+                         r_text = run.respond_to?(:text) ? run.text : run[:text]
+                         run_rpr = r_font ? text_char_props_xml("a:rPr", r_font) : ""
+                         "<a:r>#{run_rpr}<a:t>#{xml_escape(r_text || "")}</a:t></a:r>"
                        end.join
                      else
                        rpr_xml = para[:font] ? text_char_props_xml("a:rPr", para[:font]) : ""

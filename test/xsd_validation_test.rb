@@ -662,7 +662,7 @@ class XsdValidationTest < Test::Unit::TestCase
     begin
       Xlsxrb.write(tmp.path) do |w|
         w.sheet("OutlinesSheet") do |s|
-          s.outline_properties(apply_styles: true, summary_below: true, summary_right: false, show_symbols: true)
+          s.outline_properties(apply_styles: true, summary_below: true, summary_right: false, show_outline_symbols: true)
           s.group_columns(0..2, level: 1, collapsed: true)
 
           s.row(%w[A B C D])

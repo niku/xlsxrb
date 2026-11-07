@@ -51,7 +51,7 @@ module Xlsxrb
       #: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Cell?
       def [](ref_or_row, col = nil)
         if col
-          row_at(ref_or_row)&.cell_at(Cell._column_index(col))
+          row_at(ref_or_row)&.cell_at(col)
         else
           cells_hash[ref_or_row.to_s.upcase]
         end
@@ -85,12 +85,49 @@ module Xlsxrb
         rows.max_by(&:index)
       end
 
+      # Returns 0-based bounds { min_row: r1, max_row: r2, min_column: c1, max_column: c2 } from dimension ref.
+      #
+      # @example
+      #   sheet.dimension_bounds #=> { min_row: 0, max_row: 4, min_column: 0, max_column: 2 }
+      #
+      # @return [Hash{Symbol => Integer}, nil]
+      # @api public
+      #: () -> Hash[Symbol, Integer]?
+      def dimension_bounds
+        return nil unless respond_to?(:dimension)
+
+        ref = dimension
+        return nil unless ref
+
+        parts = ref.split(":")
+        return nil unless [1, 2].include?(parts.size)
+
+        ref1, ref2 = parts
+        first_coords = Cell._parse_ref(ref1)
+        return nil unless first_coords
+
+        last_coords = ref2 ? Cell._parse_ref(ref2) : first_coords
+        return nil unless last_coords
+
+        min_r, min_c = first_coords
+        max_r, max_c = last_coords
+
+        {
+          min_row: min_r,
+          max_row: max_r,
+          min_column: min_c,
+          max_column: max_c
+        }.freeze
+      end
+
       # Returns the 1-based index of the first column containing data, or nil.
       #
+      # @deprecated Use {#column_range} or {#dimension_bounds} instead.
       # @return [Integer, nil]
       # @api public
       #: () -> Integer?
       def first_column
+        warn "[DEPRECATION] `first_column` is deprecated; use `column_range` or `dimension_bounds` instead.", uplevel: 1
         min_c = nil
         rows.each do |r|
           r.cells.each do |c|
@@ -99,15 +136,22 @@ module Xlsxrb
         end
         min_c ? min_c + 1 : nil
       end
-      # @deprecated Use {#first_column} instead. Will be removed in 0.2.0.
-      alias first_col first_column
+
+      # @deprecated Use {#column_range} or {#dimension_bounds} instead. Will be removed in 0.2.0.
+      #: () -> Integer?
+      def first_col
+        warn "[DEPRECATION] `first_col` is deprecated; use `column_range` or `dimension_bounds` instead.", uplevel: 1
+        first_column
+      end
 
       # Returns the 1-based index of the last column containing data, or nil.
       #
+      # @deprecated Use {#column_range} or {#dimension_bounds} instead.
       # @return [Integer, nil]
       # @api public
       #: () -> Integer?
       def last_column
+        warn "[DEPRECATION] `last_column` is deprecated; use `column_range` or `dimension_bounds` instead.", uplevel: 1
         max_c = nil
         rows.each do |r|
           r.cells.each do |c|
@@ -116,13 +160,18 @@ module Xlsxrb
         end
         max_c ? max_c + 1 : nil
       end
-      # @deprecated Use {#last_column} instead. Will be removed in 0.2.0.
-      alias last_col last_column
 
-      # Returns the 1-based range of rows containing data, or nil.
+      # @deprecated Use {#column_range} or {#dimension_bounds} instead. Will be removed in 0.2.0.
+      #: () -> Integer?
+      def last_col
+        warn "[DEPRECATION] `last_col` is deprecated; use `column_range` or `dimension_bounds` instead.", uplevel: 1
+        last_column
+      end
+
+      # Returns the 0-based range of rows containing data, or nil.
       #
       # @example
-      #   sheet.row_range #=> 1..10
+      #   sheet.row_range #=> 0..9
       #
       # @return [Range<Integer>, nil]
       # @api public
@@ -132,27 +181,32 @@ module Xlsxrb
         r_last = last_row&.index
         return nil unless r_first && r_last
 
-        ((r_first + 1)..(r_last + 1))
+        (r_first..r_last)
       end
 
-      # Returns the 1-based range of columns containing data, or nil.
+      # Returns the 0-based range of columns containing data, or nil.
       #
       # @example
-      #   sheet.column_range #=> 1..5
+      #   sheet.column_range #=> 0..4
       #
       # @return [Range<Integer>, nil]
       # @api public
       #: () -> Range[Integer]?
       def column_range
-        c_first = first_column
-        c_last = last_column
-        return nil unless c_first && c_last
+        indices = [] #: Array[Integer]
+        rows.each do |r|
+          r.cells.each do |c|
+            indices << c.column_index
+          end
+        end
+        return nil if indices.empty?
 
-        (c_first..c_last)
+        (indices.min..indices.max)
       end
 
       # Returns the raw cell value at the given Excel-style reference (e.g. "A1").
       #
+      # @deprecated Use `sheet["A1"]&.value` instead.
       # @example
       #   sheet.cell_value("A1") #=> "Sales Report"
       #
@@ -161,6 +215,7 @@ module Xlsxrb
       # @api public
       #: (String ref) -> untyped
       def cell_value(ref)
+        warn "[DEPRECATION] `cell_value` is deprecated; use `sheet[\"#{ref}\"]&.value` instead.", uplevel: 1
         parsed = Cell._parse_ref(ref)
         return nil unless parsed
 

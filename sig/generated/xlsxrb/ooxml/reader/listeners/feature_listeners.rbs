@@ -475,6 +475,65 @@ module Xlsxrb
 
         def element_name: (untyped local_name, untyped qname) -> untyped
       end
+
+      # SAX2 listener for parsing <x14:sparklineGroups> and child <x14:sparklineGroup> elements.
+      class SparklineGroupsListener
+        include REXML::SAX2Listener
+
+        COLOR_TAG_MAP: untyped
+
+        # @return [Array<Hash[Symbol, untyped]>]
+        # : Array[Hash[Symbol, untyped]]
+        attr_reader groups: untyped
+
+        alias sparkline_groups groups
+
+        # : () -> void
+        def initialize: () -> void
+
+        # : (untyped _uri, String? local_name, String? qname, Hash[String, String] attributes) -> void
+        def start_element: (untyped _uri, String? local_name, String? qname, Hash[String, String] attributes) -> void
+
+        # : (String text) -> void
+        def characters: (String text) -> void
+
+        # : (untyped _uri, String? local_name, String? qname) -> void
+        def end_element: (untyped _uri, String? local_name, String? qname) -> void
+
+        private
+
+        # : (String? str) -> (Integer | Float | nil)
+        def parse_numeric: (String? str) -> (Integer | Float | nil)
+
+        # : (Hash[String, String] attributes) -> (String | Hash[Symbol, untyped] | nil)
+        def parse_color: (Hash[String, String] attributes) -> (String | Hash[Symbol, untyped] | nil)
+
+        # : (String? local_name, String? qname) -> String
+        def element_name: (String? local_name, String? qname) -> String
+      end
+
+      # SAX2 listener for parsing VML drawings of header and footer images (<v:shape> and <v:imagedata>).
+      class VmlHeaderFooterListener
+        include REXML::SAX2Listener
+
+        # @return [Array<Hash[Symbol, untyped]>]
+        # : Array[Hash[Symbol, untyped]]
+        attr_reader shapes: untyped
+
+        # : () -> void
+        def initialize: () -> void
+
+        # : (untyped _uri, String? local_name, String? qname, Hash[String, String] attributes) -> void
+        def start_element: (untyped _uri, String? local_name, String? qname, Hash[String, String] attributes) -> void
+
+        # : (untyped _uri, String? local_name, String? qname) -> void
+        def end_element: (untyped _uri, String? local_name, String? qname) -> void
+
+        private
+
+        # : (String? local_name, String? qname) -> String
+        def element_name: (String? local_name, String? qname) -> String
+      end
     end
   end
 end

@@ -355,7 +355,7 @@ module Xlsxrb
               if !expr.empty?
                 @shared_formula_masters[@formula_si] = { cell: @current_cell_ref, expression: expr }
               elsif (master = @shared_formula_masters[@formula_si])
-                expr = Xlsxrb::Utils.expand_formula(master[:expression], from_ref: master[:cell], to_ref: @current_cell_ref)
+                expr = Xlsxrb.expand_formula(master[:expression], from_ref: master[:cell], to_ref: @current_cell_ref)
               end
             end
             @cells[@current_cell_ref] = Xlsxrb::Elements::Formula.new(
@@ -401,7 +401,7 @@ module Xlsxrb
             next unless val.is_a?(Xlsxrb::Elements::Formula) && val.type == :shared && (val.expression.nil? || val.expression.empty?)
             next unless val.shared_index && (master = @shared_formula_masters[val.shared_index])
 
-            expanded = Xlsxrb::Utils.expand_formula(master[:expression], from_ref: master[:cell], to_ref: ref)
+            expanded = Xlsxrb.expand_formula(master[:expression], from_ref: master[:cell], to_ref: ref)
             @cells[ref] = val.with(expression: expanded)
           end
         end

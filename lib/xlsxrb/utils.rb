@@ -116,18 +116,13 @@ module Xlsxrb
     #   Xlsxrb::Utils.split_coordinate("A1")    #=> ["A", 1]
     #   Xlsxrb::Utils.split_coordinate("BC100") #=> ["BC", 100]
     #
+    # @deprecated Use {Xlsxrb.split_coordinate} instead. Will be removed in 0.2.0.
     # @param cell_ref [String, nil] Excel cell reference string.
     # @return [Array(String, Integer), nil] [col_name, row_number] tuple (1-based row), or nil if invalid.
-    # @api public
     #: (String? cell_ref) -> [String, Integer]?
     def self.split_coordinate(cell_ref)
-      return nil unless cell_ref
-
-      coords = Elements::Cell._parse_ref(cell_ref)
-      return nil unless coords
-
-      row_idx, col_idx = coords
-      [Elements::Cell._column_letter(col_idx), row_idx + 1]
+      warn "[DEPRECATION] Xlsxrb::Utils.split_coordinate is deprecated; use Xlsxrb.split_coordinate instead.", uplevel: 1
+      Xlsxrb.split_coordinate(cell_ref)
     end
 
     # Converts a Date or Time to an Excel numeric serial number (1900 or 1904 system).
@@ -151,13 +146,14 @@ module Xlsxrb
     #   Xlsxrb::Utils.valid_excel_date?(46023) #=> true
     #   Xlsxrb::Utils.valid_excel_date?(-1)    #=> false
     #
+    # @deprecated Use {Xlsxrb.valid_excel_date?} instead. Will be removed in 0.2.0.
     # @param serial [Object] Serial number candidate.
     # @param date1904 [Boolean] Whether to use the 1904 date system.
     # @return [Boolean]
-    # @api public
     #: (untyped serial, ?date1904: bool) -> bool
     def self.valid_excel_date?(serial, date1904: false)
-      Ooxml::Utils.valid_excel_date?(serial, date1904: date1904)
+      warn "[DEPRECATION] Xlsxrb::Utils.valid_excel_date? is deprecated; use Xlsxrb.valid_excel_date? instead.", uplevel: 1
+      Xlsxrb.valid_excel_date?(serial, date1904: date1904)
     end
 
     # Converts an Excel serial number to a Date.
@@ -230,64 +226,19 @@ module Xlsxrb
     # @example Shift formula with absolute references
     #   Xlsxrb::Utils.expand_formula("$A$1+A2", from_ref: "B2", to_ref: "B4") #=> "$A$1+A4"
     #
-    # @param formula [String] Formula expression to expand.
+    # @deprecated Use {Xlsxrb.expand_formula} instead. Will be removed in 0.2.0.
+    # @param formula [String, nil] Formula expression to expand.
     # @param from_ref [String, nil] Master cell reference (e.g. "B2").
     # @param to_ref [String, nil] Target cell reference (e.g. "B3").
     # @param row_delta [Integer, nil] Row shift amount (positive = down, negative = up).
     # @param column_delta [Integer, nil] Column shift amount (positive = right, negative = left).
     # @param col_delta [Integer, nil] Deprecated alias for column_delta.
     # @return [String, nil] Expanded formula expression.
-    # @api public
     #: (String? formula, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?col_delta: Integer?, ?column_delta: Integer?) -> String?
     def self.expand_formula(formula, from_ref: nil, to_ref: nil, row_delta: nil, col_delta: nil, column_delta: nil)
-      return formula if formula.nil? || formula.empty?
-
-      if col_delta && column_delta.nil?
-        warn "[DEPRECATION] Xlsxrb::Utils.expand_formula keyword :col_delta is deprecated; use :column_delta instead.", uplevel: 1
-      end
-
-      if from_ref && to_ref
-        f_coords = Elements::Cell._parse_ref(from_ref)
-        t_coords = Elements::Cell._parse_ref(to_ref)
-        return formula unless f_coords && t_coords
-
-        rd = t_coords[0] - f_coords[0]
-        cd = t_coords[1] - f_coords[1]
-      else
-        rd = row_delta || 0
-        cd = column_delta || col_delta || 0
-      end
-
-      return formula if rd.zero? && cd.zero?
-
-      formula.gsub(FORMULA_TOKEN_RE) do |match|
-        m = Regexp.last_match
-        if m[:str]
-          match
-        else
-          c_abs = !m[:col_abs].empty?
-          r_abs = !m[:row_abs].empty?
-          col = m[:col]
-          row = m[:row].to_i
-
-          new_col = if c_abs || cd.zero?
-                      col
-                    else
-                      ci = Elements::Cell._column_index(col) + cd
-                      ci = ci.clamp(0, 16_383)
-                      Elements::Cell._column_letter(ci)
-                    end
-
-          new_row = if r_abs || rd.zero?
-                      row
-                    else
-                      ri = row + rd
-                      ri.clamp(1, 1_048_576)
-                    end
-
-          "#{m[:col_abs]}#{new_col}#{m[:row_abs]}#{new_row}"
-        end
-      end
+      warn "[DEPRECATION] Xlsxrb::Utils.expand_formula is deprecated; use Xlsxrb.expand_formula instead.", uplevel: 1
+      warn "[DEPRECATION] Xlsxrb::Utils.expand_formula keyword :col_delta is deprecated; use :column_delta instead.", uplevel: 1 if col_delta && column_delta.nil?
+      Xlsxrb.expand_formula(formula, from_ref: from_ref, to_ref: to_ref, row_delta: row_delta, column_delta: column_delta || col_delta)
     end
 
     # @deprecated Use {Xlsxrb.serial_to_time} instead. Will be removed in 0.2.0.

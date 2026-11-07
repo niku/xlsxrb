@@ -189,8 +189,8 @@ module Xlsxrb
   # @param ref [String, nil] Cell coordinate (e.g. "A1").
   # @return [Elements::Comment]
   # @api public
-  # : (?String? text, ?author: String, ?visible: bool, ?ref: String?, **untyped extra) -> untyped
-  def self.comment: (?String? text, ?author: String, ?visible: bool, ?ref: String?, **untyped extra) -> untyped
+  # : (?String? text, ?author: String, ?visible: bool, ?ref: String?, **untyped extra) -> Elements::Comment
+  def self.comment: (?String? text, ?author: String, ?visible: bool, ?ref: String?, **untyped extra) -> Elements::Comment
 
   # Creates or returns an {Elements::CellError} object.
   #
@@ -366,6 +366,42 @@ module Xlsxrb
   # : (Integer | [[Integer, Integer], [Integer, Integer]] top_row_or_bounds, ?Integer? left_column, ?Integer? bottom_row, ?Integer? right_column) -> String
   def self.range_to_ref: (Integer | [ [ Integer, Integer ], [ Integer, Integer ] ] top_row_or_bounds, ?Integer? left_column, ?Integer? bottom_row, ?Integer? right_column) -> String
 
+  # Splits an A1-style cell reference into its column name and 1-based row number.
+  #
+  # @example
+  #   Xlsxrb.split_coordinate("A1")    #=> ["A", 1]
+  #   Xlsxrb.split_coordinate("BC100") #=> ["BC", 100]
+  #
+  # @param cell_ref [String, nil] Excel cell reference string.
+  # @return [Array(String, Integer), nil] [col_name, row_number] tuple (1-based row), or nil if invalid.
+  # @api public
+  # : (String? cell_ref) -> [String, Integer]?
+  def self.split_coordinate: (String? cell_ref) -> [ String, Integer ]?
+
+  FORMULA_TOKEN_RE: ::Regexp
+
+  # Expands a formula by shifting relative cell references from a master cell to a target cell or by offset amounts.
+  #
+  # @example Shift formula down one row
+  #   Xlsxrb.expand_formula("A2*2", 1, 0) #=> "A3*2"
+  #   Xlsxrb.expand_formula("A2*2", from_ref: "B2", to_ref: "B3") #=> "A3*2"
+  #
+  # @example Shift formula with absolute references
+  #   Xlsxrb.expand_formula("$A$1+A2", 2, 0) #=> "$A$1+A4"
+  #
+  # @param formula [String, nil] Formula expression to expand.
+  # @param offset_row [Integer, nil] Optional row shift amount (positive = down, negative = up).
+  # @param offset_col [Integer, nil] Optional column shift amount (positive = right, negative = left).
+  # @param from_ref [String, nil] Master cell reference (e.g. "B2").
+  # @param to_ref [String, nil] Target cell reference (e.g. "B3").
+  # @param row_delta [Integer, nil] Row shift amount (positive = down, negative = up).
+  # @param column_delta [Integer, nil] Column shift amount (positive = right, negative = left).
+  # @param col_delta [Integer, nil] Deprecated alias for column_delta.
+  # @return [String, nil] Expanded formula expression.
+  # @api public
+  # : (String? formula, ?Integer? offset_row, ?Integer? offset_col, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?column_delta: Integer?, ?col_delta: Integer?) -> String?
+  def self.expand_formula: (String? formula, ?Integer? offset_row, ?Integer? offset_col, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?column_delta: Integer?, ?col_delta: Integer?) -> String?
+
   # Resolves an ECMA-376 indexed color palette index (0..63) to an RRGGBB hex string (or AARRGGBB if alpha: true).
   #
   # @example
@@ -457,6 +493,11 @@ module Xlsxrb
   #   doc_sheet = sheet.load         # explicitly load into memory
   #   puts doc_sheet["A1"].value     # coordinate random access
   #
+  # Reads an XLSX file or IO stream. When called with a block, yields each {StreamSheet}
+  # for low-memory streaming iteration. When called without a block, returns an {Elements::Workbook}
+  # containing {StreamSheet} instances.
+  #
+  # @deprecated Calling {Xlsxrb.read} without a block is deprecated; use {Xlsxrb.load} for in-memory random access. Will be removed in 0.2.0.
   # @param max_uncompressed_size [Integer, nil] Maximum allowed uncompressed size in bytes per entry (ZIP bomb defense).
   # @raise [ZipBombError] If an uncompressed entry exceeds max_uncompressed_size.
   # @raise [EncryptedFileError] If the file is encrypted and no password was supplied.
@@ -467,6 +508,30 @@ module Xlsxrb
   # : (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
   def self.read: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
                | (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
+
+  # Loads all sheets into memory, returning an {Elements::Workbook} where every
+  # worksheet is a fully-parsed {Elements::Worksheet} supporting coordinate random access.
+  # The underlying zip resources are closed immediately.
+  #
+  # @example
+  #   wb = Xlsxrb.load("report.xlsx")
+  #   puts wb["Sheet1"]["A1"].value
+  #
+  # @param source [String, IO, StringIO] Path to the .xlsx file or an IO-like stream.
+  # @param password [String, nil] Password for decrypting password-protected (ECMA-376 Standard/Agile) workbooks.
+  # @param trim_empty_rows [Boolean] Whether to omit trailing empty rows from worksheet data.
+  # @param pad_empty_rows [Boolean] Whether to pad missing rows with empty row objects.
+  # @param pad_empty_cells [Boolean] Whether to pad missing cells within rows with nil cells.
+  # @param max_uncompressed_size [Integer, nil] Maximum uncompressed file size threshold in bytes for zip bomb protection.
+  # @return [Elements::Workbook] The fully loaded in-memory workbook.
+  # @api public
+  # : (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
+  def self.load: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
+
+  # Internal reader helper returning a Workbook with StreamSheet instances without deprecation warning.
+  # @api private
+  # : (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
+  def self._read_workbook: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Elements::Workbook
 
   # @deprecated Use {.read} instead. Will be removed in 0.2.0.
   def self.stream: () -> untyped
@@ -528,6 +593,33 @@ module Xlsxrb
   # : (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
   def self.write: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
 
+  # Serializes an in-memory workbook to a destination target (path or IO).
+  #
+  # @deprecated Use {.write} instead. Will be removed in 0.2.0.
+  # @param target [String, IO, StringIO] Target destination.
+  # @param workbook [Elements::Workbook] The workbook instance to write.
+  # @param shared_strings [Boolean] Whether to intern strings into sharedStrings.xml.
+  # @param compression_level [Integer, nil] ZIP deflate compression level (0..9).
+  # @param password [String, nil] Optional encryption password.
+  # @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
+  # @return [void]
+  # @api public
+  # : (String | IO | StringIO target, Elements::Workbook workbook, ?shared_strings: bool, ?compression_level: Integer?, ?password: String?, ?encryption_mode: Symbol) -> void
+  def self.write_workbook: (String | IO | StringIO target, Elements::Workbook workbook, ?shared_strings: bool, ?compression_level: Integer?, ?password: String?, ?encryption_mode: Symbol) -> void
+
+  # Serializes an in-memory workbook to a binary XLSX data string.
+  #
+  # @deprecated Use {.write} instead. Will be removed in 0.2.0.
+  # @param workbook [Elements::Workbook] The workbook instance to serialize.
+  # @param shared_strings [Boolean] Whether to intern strings into sharedStrings.xml.
+  # @param compression_level [Integer, nil] ZIP deflate compression level (0..9).
+  # @param password [String, nil] Optional encryption password.
+  # @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
+  # @return [String] Binary XLSX data.
+  # @api public
+  # : (Elements::Workbook workbook, ?shared_strings: bool, ?compression_level: Integer?, ?password: String?, ?encryption_mode: Symbol) -> String
+  def self.workbook_to_data: (Elements::Workbook workbook, ?shared_strings: bool, ?compression_level: Integer?, ?password: String?, ?encryption_mode: Symbol) -> String
+
   # Modifies an existing XLSX file in-memory using an immutable transformation block.
   #
   # Reads the workbook, passes it to the block, and writes the resulting workbook.
@@ -544,6 +636,7 @@ module Xlsxrb
   # @param source [String, IO, StringIO] The source file path or IO object.
   # @param target [String, IO, StringIO, nil] Target file path or IO object (overwrites source if nil).
   # @param password [String, nil] Optional password for decrypting encrypted source files.
+  # @deprecated Use {Xlsxrb.read} + {Xlsxrb.write} for streaming transformations or {Xlsxrb.write} DSL for report generation. Will be removed in 0.2.0.
   # @param new_password [String, nil] Optional password for encrypting the output file (defaults to password).
   # @yield [workbook]
   # @yieldparam workbook [Elements::Workbook] The loaded workbook.
@@ -564,12 +657,14 @@ module Xlsxrb
   #   end
   #
   # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
+  # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+  # @param default_font [Hash, nil] Optional default font options.
   # @yield [builder]
   # @yieldparam builder [Xlsxrb::WorkbookBuilder]
   # @return [Elements::Workbook] The compiled in-memory workbook.
   # @api public
-  # : (?strict_excel_mode: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
-  def self.build: (?strict_excel_mode: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
+  # : (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
+  def self.build: (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
   private def self.resolve_workbook_entry: (untyped zip_reader) -> untyped
 
@@ -583,8 +678,8 @@ module Xlsxrb
 
   private def self.resolve_part_entry: (untyped zip_reader, untyped rels, untyped rel_type_sub, untyped fallback_name, untyped wb_dir) -> untyped
 
-  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
-  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> Elements::Worksheet
+  # : (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_properties: Hash[Symbol, untyped]?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?, ?columns: Array[Elements::Column]?, ?pivot_tables: Array[Hash[Symbol, untyped]]?, ?split_pane: Hash[Symbol, untyped]?, ?filter_columns: Hash[Integer, Hash[Symbol, untyped]]?, ?sort_state: Hash[Symbol, untyped]?, ?header_footer_images: (Array[Elements::HeaderFooterImage] | Array[Hash[Symbol, untyped]])?, ?charts: (Array[Elements::Chart] | Array[Hash[Symbol, untyped]])?, ?sparkline_groups: (Array[Elements::SparklineGroup] | Array[Hash[Symbol, untyped]])?, ?print_area: String?, ?print_titles: (Elements::PrintTitles | Hash[Symbol, untyped])?) -> Elements::Worksheet
+  private def self.build_worksheet: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_properties: Hash[Symbol, untyped]?, ?sheet_calc_pr: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?, ?columns: Array[Elements::Column]?, ?pivot_tables: Array[Hash[Symbol, untyped]]?, ?split_pane: Hash[Symbol, untyped]?, ?filter_columns: Hash[Integer, Hash[Symbol, untyped]]?, ?sort_state: Hash[Symbol, untyped]?, ?header_footer_images: (Array[Elements::HeaderFooterImage] | Array[Hash[Symbol, untyped]])?, ?charts: (Array[Elements::Chart] | Array[Hash[Symbol, untyped]])?, ?sparkline_groups: (Array[Elements::SparklineGroup] | Array[Hash[Symbol, untyped]])?, ?print_area: String?, ?print_titles: (Elements::PrintTitles | Hash[Symbol, untyped])?) -> Elements::Worksheet
 
   # : (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
   private def self.resolve_hyperlinks: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
@@ -613,8 +708,29 @@ module Xlsxrb
   # : (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
   private def self.resolve_shapes: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
 
-  # : (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?(Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool, ?threaded_comments: (Array[Hash[Symbol, untyped]] | Hash[String, Array[Hash[Symbol, untyped]]])) -> (Elements::Row | untyped)
-  private def self.build_row_from_raw: (untyped raw_row, ?Hash[String, Hash[Symbol, untyped]] hyperlinks, ?Array[Hash[Symbol, untyped]] | Hash[String, Hash[Symbol, untyped]] comments, ?Hash[untyped, untyped]? styles, ?date1904: bool, ?threaded_comments: Array[Hash[Symbol, untyped]] | Hash[String, Array[Hash[Symbol, untyped]]]) -> (Elements::Row | untyped)
+  # : (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
+  private def self.resolve_pivot_tables: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
+
+  # : (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::Chart]
+  private def self.resolve_charts: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::Chart]
+
+  # : (String? sheet_xml) -> Array[Elements::SparklineGroup]
+  private def self.resolve_sparkline_groups: (String? sheet_xml) -> Array[Elements::SparklineGroup]
+
+  # : (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::HeaderFooterImage]
+  private def self.resolve_header_footer_images: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::HeaderFooterImage]
+
+  # : (Array[untyped]? defined_names, String? sheet_name, Integer? sheet_index) -> String?
+  private def self.extract_sheet_print_area: (Array[untyped]? defined_names, String? sheet_name, Integer? sheet_index) -> String?
+
+  # : (Array[untyped]? defined_names, String? sheet_name, Integer? sheet_index) -> Elements::PrintTitles?
+  private def self.extract_sheet_print_titles: (Array[untyped]? defined_names, String? sheet_name, Integer? sheet_index) -> Elements::PrintTitles?
+
+  # : (untyped defined_name, String? sheet_name, Integer? sheet_index) -> bool
+  private def self.match_sheet_defined_name?: (untyped defined_name, String? sheet_name, Integer? sheet_index) -> bool
+
+  # : (untyped raw_row, ?Hash[String, untyped] hyperlinks, ?(Array[untyped] | Hash[String, untyped]) comments, ?Hash[untyped, untyped]? styles, ?date1904: bool, ?threaded_comments: (Array[untyped] | Hash[String, untyped])) -> (Elements::Row | untyped)
+  private def self.build_row_from_raw: (untyped raw_row, ?Hash[String, untyped] hyperlinks, ?Array[untyped] | Hash[String, untyped] comments, ?Hash[untyped, untyped]? styles, ?date1904: bool, ?threaded_comments: Array[untyped] | Hash[String, untyped]) -> (Elements::Row | untyped)
 
   # : (untyped source, String? password) -> untyped
   private def self.prepare_source_io: (untyped source, String? password) -> untyped

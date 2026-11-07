@@ -15,21 +15,33 @@ module Xlsxrb
   #
   # @api public
   class StreamRow
+    # : Integer
     attr_reader index: untyped
 
+    # : (Float | Integer)?
     attr_reader height: untyped
 
-    attr_reader hidden: untyped
-
-    attr_reader custom_height: untyped
-
-    attr_reader collapsed: untyped
-
+    # : Integer?
     attr_reader outline_level: untyped
 
+    # : Integer?
     attr_reader style_index: untyped
 
-    attr_reader pad_empty_cells: untyped
+    # @deprecated Use {#hidden?} instead. Will be removed in 0.2.0.
+    # : () -> bool
+    def hidden: () -> bool
+
+    # @deprecated Use {#collapsed?} instead. Will be removed in 0.2.0.
+    # : () -> bool
+    def collapsed: () -> bool
+
+    # @deprecated Use {#custom_height?} instead. Will be removed in 0.2.0.
+    # : () -> bool
+    def custom_height: () -> bool
+
+    # @deprecated Use {#pad_empty_cells?} instead. Will be removed in 0.2.0.
+    # : () -> bool
+    def pad_empty_cells: () -> bool
 
     # @param index [Integer] 0-based row index.
     # @param xml_bytes [String] Raw ASCII-8BIT XML bytes.
@@ -49,6 +61,7 @@ module Xlsxrb
     # : (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?pad_empty_cells: bool) -> void
     def initialize: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?pad_empty_cells: bool) -> void
 
+    # @api private
     # rubocop:disable Style/OptionalBooleanParameter
     def self.fast_create: (untyped index, untyped xml_bytes, untyped from, untyped to, untyped shared_strings, ?untyped prefix, ?untyped height, ?untyped hidden, ?untyped custom_height, ?untyped outline_level, ?untyped style_index, ?untyped styles, ?untyped date1904, ?untyped collapsed, ?untyped pad_empty_cells) -> untyped
 
@@ -72,6 +85,21 @@ module Xlsxrb
     # @api public
     # : () -> bool
     def custom_height?: () -> bool
+
+    # Deconstructs row values for positional pattern matching.
+    #
+    # @return [Array<Object>]
+    # @api public
+    # : () -> Array[untyped]
+    def deconstruct: () -> Array[untyped]
+
+    # Deconstructs row attributes for pattern matching.
+    #
+    # @param _keys [Array<Symbol>, nil]
+    # @return [Hash{Symbol => Object}]
+    # @api public
+    # : (Array[Symbol]? _keys) -> Hash[Symbol, untyped]
+    def deconstruct_keys: (Array[Symbol]? _keys) -> Hash[Symbol, untyped]
 
     # Returns a frozen Hash of row attributes.
     #
@@ -123,24 +151,25 @@ module Xlsxrb
     # : () -> Array[Elements::Cell]
     def cells: () -> Array[Elements::Cell]
 
-    # Access a cell by 0-based column index, or access row attributes via Symbol.
+    # Access a cell by 0-based column index, column letter, or access row attributes via Symbol.
     #
-    # @param col_index [Integer, Symbol] Column index or attribute symbol.
+    # @param col_index [Integer, String, Symbol] Column index, column letter, or attribute symbol.
     # @return [Elements::Cell, Object, nil]
     # @api public
-    # : (Integer | Symbol col_index) -> untyped
-    def []: (Integer | Symbol col_index) -> untyped
+    # : (Integer | String | Symbol col_index) -> untyped
+    def []: (Integer | String | Symbol col_index) -> untyped
 
-    # Access a cell by 0-based column index.
+    # Access a cell by 0-based column index or column letter/Symbol.
     #
-    # @param col_index [Integer] 0-based column index.
+    # @param col_index [Integer, String, Symbol] 0-based column index or column letter/Symbol.
     # @return [Elements::Cell, nil]
     # @api public
-    # : (Integer col_index) -> Elements::Cell?
-    def cell_at: (Integer col_index) -> Elements::Cell?
+    # : (Integer | String | Symbol col_index) -> Elements::Cell?
+    def cell_at: (Integer | String | Symbol col_index) -> Elements::Cell?
 
     # Convert row cells to a coordinate-keyed Hash (e.g. {"A1" => "value", "B1" => 123}).
     #
+    # @deprecated Use {#values} or {#cells} instead. Will be removed in 0.2.0.
     # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
     # @return [Hash{String => Object}]
     # @api public
@@ -181,6 +210,10 @@ module Xlsxrb
     #
     # @return [Array<String, nil>]
     # @api public
+    # : () -> Array[String?]
+    def formula_expressions: () -> Array[String?]
+
+    # @deprecated Use {#formula_expressions} instead. Will be removed in 0.2.0.
     # : () -> Array[String?]
     def formulas: () -> Array[String?]
 

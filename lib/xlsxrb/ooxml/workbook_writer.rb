@@ -51,11 +51,11 @@ module Xlsxrb
         @shared_strings_index = shared_strings_index
         @styles = styles || {}
         @defined_names = defined_names || []
-        @core_properties = core_properties || {}
-        @app_properties = app_properties || {}
+        @core_properties = core_properties.is_a?(Elements::MetadataRecord) ? core_properties.to_h : (core_properties || {})
+        @app_properties = app_properties.is_a?(Elements::MetadataRecord) ? app_properties.to_h : (app_properties || {})
         @custom_properties = custom_properties || []
-        @workbook_protection = workbook_protection
-        @workbook_properties = workbook_properties || { update_links: "never" }
+        @workbook_protection = workbook_protection.is_a?(Elements::MetadataRecord) ? workbook_protection.to_h : workbook_protection
+        @workbook_properties = workbook_properties.is_a?(Elements::MetadataRecord) ? workbook_properties.to_h : (workbook_properties || { update_links: "never" })
         @compression_level = compression_level || Zlib::DEFAULT_COMPRESSION
         @drawing_count = 0
         @chart_count = 0
@@ -82,7 +82,7 @@ module Xlsxrb
             if idx == effective_active_idx
               sv = (sv || {}).merge(tab_selected: true)
             elsif sv&.key?(:tab_selected)
-              sv = sv.dup
+              sv = sv.is_a?(Hash) ? sv.dup : sv.to_h
               sv.delete(:tab_selected)
             end
 
@@ -220,8 +220,12 @@ module Xlsxrb
             bg_data = File.binread(bg_data)
           else
             bg_ext = if bg_img.is_a?(Hash)
-                       (bg_img[:ext] || (bg_img[:filename] && File.extname(bg_img[:filename]).delete_prefix(".")) || "png").to_s.downcase
-                     elsif bg_img.respond_to?(:filename)
+                       (bg_img[:extension] || bg_img[:ext] || (bg_img[:path] && File.extname(bg_img[:path]).delete_prefix(".")) || (bg_img[:filename] && File.extname(bg_img[:filename]).delete_prefix(".")) || "png").to_s.downcase
+                     elsif bg_img.respond_to?(:extension) && bg_img.extension
+                       bg_img.extension.to_s.downcase
+                     elsif bg_img.respond_to?(:path) && bg_img.path
+                       File.extname(bg_img.path).delete_prefix(".").downcase
+                     elsif bg_img.respond_to?(:filename) && bg_img.filename
                        File.extname(bg_img.filename).delete_prefix(".").downcase
                      else
                        "png"
@@ -321,6 +325,7 @@ module Xlsxrb
             comment_idx += 1
             comment_writer = Xlsxrb::Ooxml::Writer.new
             sheet_comments.each do |c|
+              c = c.to_h if c.is_a?(Elements::MetadataRecord)
               comment_writer.add_comment(c[:cell] || c[:ref], c[:text], author: c[:author] || "Author")
             end
             zip.add_entry("xl/comments#{comment_idx}.xml", comment_writer.send(:generate_comments_xml, comment_writer.comments))
@@ -332,6 +337,7 @@ module Xlsxrb
             tc_idx += 1
             tc_writer = Xlsxrb::Ooxml::Writer.new
             sheet_threaded_comments.each do |c|
+              c = c.to_h if c.is_a?(Elements::MetadataRecord)
               tc_writer.add_threaded_comment(
                 c[:cell] || c[:ref],
                 c[:text],
@@ -648,16 +654,17 @@ module Xlsxrb
         unless @defined_names.empty?
           b.open_tag("definedNames")
           @defined_names.each do |dn|
+            dn = dn.to_h if dn.is_a?(Elements::MetadataRecord)
             dn_attrs = { name: dn[:name] }
             local_id = dn[:local_sheet_id]
-            if !local_id && dn[:sheet]
-              target_name = dn[:sheet].to_s
+            target_name = (dn[:sheet] || dn[:local_sheet_name])&.to_s
+            if !local_id && target_name
               matched_idx = @sheets.find_index { |s| (s.respond_to?(:name) ? s.name : s[:name]) == target_name }
               local_id = matched_idx if matched_idx
             end
             dn_attrs[:localSheetId] = local_id.to_s if local_id
             dn_attrs[:hidden] = "1" if dn[:hidden]
-            val = dn[:value] || (dn[:sheet] && dn[:range] ? "'#{dn[:sheet]}'!#{dn[:range]}" : dn[:range])
+            val = dn[:value] || (target_name && dn[:range] ? "'#{target_name}'!#{dn[:range]}" : dn[:range])
             b.tag("definedName", dn_attrs) { |_| b.text(val) }
           end
           b.close_tag("definedNames")
@@ -741,7 +748,9 @@ module Xlsxrb
         b.open_tag("styleSheet", { xmlns: SSML_NS })
 
         # Number formats
-        raw_num_fmts = if @styles.respond_to?(:num_fmts)
+        raw_num_fmts = if @styles.respond_to?(:number_formats)
+                         @styles.number_formats
+                       elsif @styles.respond_to?(:num_fmts)
                          @styles.num_fmts
                        else
                          @styles&.dig(:num_fmts) || []
@@ -778,6 +787,7 @@ module Xlsxrb
         fonts = [{}] if fonts.empty? # At least one default font
         b.tag("fonts", { count: fonts.size.to_s }) do |_|
           fonts.each do |font_props|
+            font_props = font_props.to_h if font_props.is_a?(Elements::MetadataRecord)
             b.tag("font") do |_|
               b.empty_tag("b") if font_props[:bold]
               b.empty_tag("i") if font_props[:italic]
@@ -798,7 +808,8 @@ module Xlsxrb
                 mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val.to_s
                 b.empty_tag("vertAlign", { val: mapped_va })
               end
-              b.empty_tag("sz", { val: (font_props[:sz] || 11).to_s }) if font_props[:sz] || fonts == [{}]
+              sz_val = font_props[:size] || font_props[:sz]
+              b.empty_tag("sz", { val: (sz_val || 11).to_s }) if sz_val || (fonts.first.is_a?(Hash) && fonts == [{}])
               color_attrs = color_tag_attrs(font_props[:color] || (font_props.key?(:rgb) || font_props.key?(:theme) || font_props.key?(:indexed) ? font_props : nil))
               b.empty_tag("color", color_attrs) if color_attrs
               b.empty_tag("name", { val: font_props[:name] || "Calibri" })
@@ -818,6 +829,7 @@ module Xlsxrb
         fills = [{ pattern: "none" }, { pattern: "gray125" }] if fills.empty?
         b.tag("fills", { count: fills.size.to_s }) do |_|
           fills.each do |fill_props|
+            fill_props = fill_props.to_h if fill_props.is_a?(Elements::MetadataRecord)
             b.tag("fill") do |_|
               if fill_props[:gradient]
                 b.open_tag("gradientFill", { type: fill_props[:gradient][:type], degree: fill_props[:gradient][:degree]&.to_s }.compact)
@@ -850,6 +862,7 @@ module Xlsxrb
         borders = [{}] if borders.empty?
         b.tag("borders", { count: borders.size.to_s }) do |_|
           borders.each do |border_props|
+            border_props = border_props.to_h if border_props.is_a?(Elements::MetadataRecord)
             border_attrs = {}
             border_attrs[:diagonalUp] = "1" if border_props[:diagonal_up]
             border_attrs[:diagonalDown] = "1" if border_props[:diagonal_down]
@@ -883,6 +896,7 @@ module Xlsxrb
         xf_count = [xf_entries.size, 1].max
         b.tag("cellXfs", { count: xf_count.to_s }) do |_|
           xf_entries.each do |xf|
+            xf = xf.to_h if xf.is_a?(Elements::MetadataRecord)
             attrs = {
               numFmtId: (xf[:num_fmt_id] || 0).to_s,
               fontId: (xf[:font_id] || 0).to_s,
@@ -936,16 +950,18 @@ module Xlsxrb
         unless dxfs.empty?
           b.tag("dxfs", { count: dxfs.size.to_s }) do |_|
             dxfs.each do |dxf|
+              d = dxf.is_a?(Elements::MetadataRecord) ? dxf.to_h : dxf
               b.tag("dxf") do |_|
-                write_dxf_font(b, dxf[:font]) if dxf[:font]
-                if dxf[:num_fmt]
-                  nf = dxf[:num_fmt]
-                  b.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id].to_s, formatCode: nf[:format_code].to_s })
+                write_dxf_font(b, d[:font]) if d[:font]
+                nf = d[:number_format] || d[:num_fmt]
+                if nf
+                  nf_h = nf.is_a?(Elements::MetadataRecord) ? nf.to_h : nf
+                  b.empty_tag("numFmt", { numFmtId: nf_h[:num_fmt_id].to_s, formatCode: nf_h[:format_code].to_s })
                 end
-                write_dxf_fill(b, dxf[:fill]) if dxf[:fill]
-                write_dxf_alignment(b, dxf[:alignment]) if dxf[:alignment]
-                write_dxf_border(b, dxf[:border]) if dxf[:border]
-                write_dxf_protection(b, dxf[:protection]) if dxf[:protection]
+                write_dxf_fill(b, d[:fill]) if d[:fill]
+                write_dxf_alignment(b, d[:alignment]) if d[:alignment]
+                write_dxf_border(b, d[:border]) if d[:border]
+                write_dxf_protection(b, d[:protection]) if d[:protection]
               end
             end
           end
@@ -963,7 +979,7 @@ module Xlsxrb
           sheet[:conditional_formats] = rules.map do |rule|
             next rule if rule.respond_to?(:dxf_id) ? rule.dxf_id : (rule.is_a?(Hash) && (rule[:dxf_id] || rule[:format_id]))
 
-            normalized = rule.dup
+            normalized = rule.is_a?(Hash) ? rule.dup : rule.to_h
             dxf = normalized.delete(:dxf) || extract_dxf_from_rule!(normalized)
             next normalized unless dxf
 
@@ -988,6 +1004,7 @@ module Xlsxrb
       end
 
       def write_dxf_font(builder, font)
+        font = font.to_h if font.is_a?(Elements::MetadataRecord)
         builder.tag("font") do |_|
           if font.key?(:bold)
             font[:bold] ? builder.empty_tag("b") : builder.empty_tag("b", { val: "0" })
@@ -1022,6 +1039,7 @@ module Xlsxrb
       end
 
       def write_dxf_fill(builder, fill)
+        fill = fill.to_h if fill.is_a?(Elements::MetadataRecord)
         builder.tag("fill") do |_|
           pattern_attrs = {}
           pattern = fill[:pattern] || fill[:pattern_type]
@@ -1038,6 +1056,7 @@ module Xlsxrb
       end
 
       def write_dxf_alignment(builder, alignment)
+        alignment = alignment.to_h if alignment.is_a?(Elements::MetadataRecord)
         return if alignment.nil? || alignment.empty?
 
         align_attrs = {}
@@ -1054,6 +1073,7 @@ module Xlsxrb
       end
 
       def write_dxf_border(builder, border)
+        border = border.to_h if border.is_a?(Elements::MetadataRecord)
         return if border.nil? || border.empty?
 
         border_attrs = {}
@@ -1082,6 +1102,7 @@ module Xlsxrb
       end
 
       def write_dxf_protection(builder, protection)
+        protection = protection.to_h if protection.is_a?(Elements::MetadataRecord)
         return if protection.nil? || protection.empty?
 
         prot_attrs = {}
@@ -1168,7 +1189,8 @@ module Xlsxrb
           if str.is_a?(Xlsxrb::Elements::RichText)
             buf << "<si>"
             str.runs.each do |run|
-              font = run[:font]
+              font = run.is_a?(Hash) ? run[:font] : run.font
+              run_text = run.is_a?(Hash) ? run[:text] : run.text
               if font && !font.empty?
                 buf << "<r><rPr>"
                 buf << "<b/>" if font[:bold]
@@ -1203,7 +1225,7 @@ module Xlsxrb
               else
                 buf << "<r><t>"
               end
-              buf << escape_xml(run[:text].to_s) << "</t></r>"
+              buf << escape_xml(run_text.to_s) << "</t></r>"
             end
             buf << "</si>"
           else
@@ -1257,8 +1279,8 @@ module Xlsxrb
             else
               attrs = {}
               attrs[:height] = row.height if row.height
-              attrs[:hidden] = true if row.hidden
-              attrs[:custom_height] = true if row.custom_height
+              attrs[:hidden] = true if row.hidden?
+              attrs[:custom_height] = true if row.custom_height?
               attrs[:outline_level] = row.outline_level if row.outline_level
               style_idx = row.unmapped_data&.[](:style_index) || (row.respond_to?(:style_index) && row.style_index)
               attrs[:style_index] = style_idx if style_idx
@@ -1296,6 +1318,7 @@ module Xlsxrb
       end
 
       def build_table_xml(tbl, table_id)
+        tbl = tbl.to_h if tbl.is_a?(Elements::MetadataRecord)
         io = StringIO.new
         b = XmlBuilder.new(io)
         b.declaration
@@ -1317,11 +1340,18 @@ module Xlsxrb
         columns = tbl[:columns] || []
         b.open_tag("tableColumns", { count: columns.size.to_s })
         columns.each_with_index do |col, ci|
-          col_name = col.is_a?(Hash) ? col[:name] : col
+          col = col.to_h if col.is_a?(Elements::MetadataRecord)
+          col_name = if col.is_a?(Hash)
+                       col[:name]
+                     elsif col.is_a?(Elements::TableColumn)
+                       col.name
+                     else
+                       col
+                     end
           col_attrs = { id: (ci + 1).to_s, name: col_name.to_s }
           calc_formula = nil
           tot_formula = nil
-          if col.is_a?(Hash)
+          if col.is_a?(Hash) || col.is_a?(Elements::TableColumn)
             calc_formula = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
             tot_formula = col[:totals_row_formula] || col[:total_row_formula] || col[:total_formula]
             trf = col[:totals_row_function] || ("custom" if tot_formula)
@@ -1420,7 +1450,8 @@ module Xlsxrb
                      xmlns: "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties",
                      "xmlns:vt": "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
                    })
-        b.tag("Application") { |_| b.text(@app_properties[:application]) } if @app_properties[:application]
+        app_val = @app_properties[:application] || @app_properties[:app_name]
+        b.tag("Application") { |_| b.text(app_val) } if app_val
         b.tag("Company") { |_| b.text(@app_properties[:company]) } if @app_properties[:company]
         b.tag("Manager") { |_| b.text(@app_properties[:manager]) } if @app_properties[:manager]
         b.close_tag("Properties")
@@ -1435,7 +1466,26 @@ module Xlsxrb
                      xmlns: "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties",
                      "xmlns:vt": "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
                    })
-        @custom_properties.each_with_index do |prop, idx|
+        list = if @custom_properties.is_a?(Hash)
+                 @custom_properties.map do |name, val|
+                   if val.is_a?(Elements::CustomProperty) || (val.respond_to?(:name) && val.respond_to?(:value))
+                     { name: val.name || name.to_s, value: val.value, type: val.type }
+                   elsif val.is_a?(Hash)
+                     { name: val[:name] || name.to_s, value: val[:value], type: val[:type] }
+                   else
+                     { name: name.to_s, value: val, type: nil }
+                   end
+                 end
+               else
+                 @custom_properties.map do |prop|
+                   if prop.is_a?(Elements::CustomProperty) || (prop.respond_to?(:name) && prop.respond_to?(:value))
+                     { name: prop.name, value: prop.value, type: prop.type }
+                   else
+                     prop
+                   end
+                 end
+               end
+        list.each_with_index do |prop, idx|
           b.open_tag("property", { fmtid: "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}", pid: (idx + 2).to_s, name: prop[:name] })
           case prop[:type]
           when :number, :int, :i4

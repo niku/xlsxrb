@@ -31,6 +31,7 @@ module Xlsxrb
       # @example
       #   row[0]          #=> Cell at column 0 (or nil if sparse)
       #   row["A"]        #=> Cell at column "A"
+      #   row[:A]         #=> Cell at column "A"
       #   row[:height]    #=> 25.0
       #   row[:cells]     #=> [Cell, Cell, ...]
       #
@@ -40,20 +41,42 @@ module Xlsxrb
       # : (Integer | String | Symbol col_index) -> untyped
       def []: (Integer | String | Symbol col_index) -> untyped
 
-      # Returns a new Row with missing cells padded up to the maximum column index.
+      # Returns a new Row with missing cells padded up to max_column (or maximum cell column index if nil).
       #
+      # @param max_column [Integer, nil] Maximum 0-based column index to pad up to.
+      # @param max_col [Integer, nil] Deprecated alias for max_column.
       # @return [Elements::Row]
       # @api public
-      # : () -> Elements::Row
-      def pad_empty_cells: () -> Elements::Row
+      # : (?max_column: Integer?, ?max_col: Integer?) -> Elements::Row
+      def padded: (?max_column: Integer?, ?max_col: Integer?) -> Elements::Row
+
+      # @deprecated Use {#padded} instead. Will be removed in 0.2.0.
+      #
+      # @param max_col [Integer, nil] Deprecated parameter.
+      # @return [Elements::Row]
+      # : (?max_col: Integer?) -> Elements::Row
+      def pad_empty_cells: (?max_col: Integer?) -> Elements::Row
 
       # Returns a coordinate-keyed Hash of cell values (e.g. {"A1" => "value", "B1" => 123}).
       #
+      # @deprecated Use {#cells} or sheet.cells_hash instead. Will be removed in 0.2.0.
       # @param type_cast [Boolean] Whether to coerce date/time serial numbers into Date/Time instances.
       # @return [Hash{String => Object}]
       # @api public
       # : (?type_cast: bool) -> Hash[String, untyped]
       def cells_hash: (?type_cast: bool) -> Hash[String, untyped]
+
+      # @deprecated Use {#hidden?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def hidden: () -> bool
+
+      # @deprecated Use {#collapsed?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def collapsed: () -> bool
+
+      # @deprecated Use {#custom_height?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def custom_height: () -> bool
 
       # Returns whether the row is hidden.
       #
@@ -75,6 +98,21 @@ module Xlsxrb
       # @api public
       # : () -> bool
       def custom_height?: () -> bool
+
+      # Deconstructs row values for positional pattern matching.
+      #
+      # @return [Array<Object>]
+      # @api public
+      # : () -> Array[untyped]
+      def deconstruct: () -> Array[untyped]
+
+      # Deconstructs row attributes for pattern matching.
+      #
+      # @param _keys [Array<Symbol>, nil]
+      # @return [Hash{Symbol => Object}]
+      # @api public
+      # : (Array[Symbol]? _keys) -> Hash[Symbol, untyped]
+      def deconstruct_keys: (Array[Symbol]? _keys) -> Hash[Symbol, untyped]
 
       # Returns a frozen Hash of row attributes.
       #
@@ -139,13 +177,13 @@ module Xlsxrb
       # : () -> bool
       def empty?: () -> bool
 
-      # Returns the cell at the given 0-based column index, or nil.
+      # Returns the cell at the given 0-based column index, column letter, or Symbol, or nil.
       #
-      # @param column_index [Integer] 0-based column index.
+      # @param column_index [Integer, String, Symbol] 0-based column index or column letter/Symbol.
       # @return [Elements::Cell, nil]
       # @api public
-      # : (Integer column_index) -> Elements::Cell?
-      def cell_at: (Integer column_index) -> Elements::Cell?
+      # : (Integer | String | Symbol column_index) -> Elements::Cell?
+      def cell_at: (Integer | String | Symbol column_index) -> Elements::Cell?
 
       # Returns cell values as an Array (sparse columns get nil).
       #
@@ -174,6 +212,10 @@ module Xlsxrb
       # @return [Array<String, nil>]
       # @api public
       # : () -> Array[String?]
+      def formula_expressions: () -> Array[String?]
+
+      # @deprecated Use {#formula_expressions} instead. Will be removed in 0.2.0.
+      # : () -> Array[String?]
       def formulas: () -> Array[String?]
 
       # Returns whether the row index is within valid OOXML range (0..1048575).
@@ -188,6 +230,7 @@ module Xlsxrb
       # @param index [Integer]
       # @param cells [Array<Elements::Cell>]
       # @return [Array<String>] List of errors.
+      # @api private
       # : (untyped index, untyped cells) -> Array[String]
       def self.validate: (untyped index, untyped cells) -> Array[String]
     end

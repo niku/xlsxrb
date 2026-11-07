@@ -332,12 +332,13 @@ class StreamSheetTest < Test::Unit::TestCase
     XML
     sheet_range = Xlsxrb::StreamSheet.new("RangeSheet", xml_range.b, [])
     assert_equal("B2:D10", sheet_range.dimension)
+    assert_equal({ min_row: 1, max_row: 9, min_column: 1, max_column: 3 }, sheet_range.dimension_bounds)
     assert_equal(2, sheet_range.first_row)
     assert_equal(2, sheet_range.first_col)
     assert_equal(10, sheet_range.last_row)
     assert_equal(4, sheet_range.last_col)
-    assert_equal(2..10, sheet_range.row_range)
-    assert_equal(2..4, sheet_range.column_range)
+    assert_equal(1..9, sheet_range.row_range)
+    assert_equal(1..3, sheet_range.column_range)
 
     xml_single = <<~XML
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -347,12 +348,13 @@ class StreamSheetTest < Test::Unit::TestCase
     XML
     sheet_single = Xlsxrb::StreamSheet.new("SingleSheet", xml_single.b, [])
     assert_equal("C5", sheet_single.dimension)
+    assert_equal({ min_row: 4, max_row: 4, min_column: 2, max_column: 2 }, sheet_single.dimension_bounds)
     assert_equal(5, sheet_single.first_row)
     assert_equal(3, sheet_single.first_col)
     assert_equal(5, sheet_single.last_row)
     assert_equal(3, sheet_single.last_col)
-    assert_equal(5..5, sheet_single.row_range)
-    assert_equal(3..3, sheet_single.column_range)
+    assert_equal(4..4, sheet_single.row_range)
+    assert_equal(2..2, sheet_single.column_range)
   end
 
   test "stream_sheet dimension handles missing and malformed tags" do

@@ -25,11 +25,18 @@
 - Add zero-argument property getters across builders and `StyleBuilder`.
 - Add predicate methods (`bold?`, `italic?`, `strike?`, `wrap_text?`, `shrink_to_fit?`, `locked?`, `hidden?`, `superscript?`, `subscript?`) and assignment setters (`font=`, `fill=`, `border=`, `vert_align=`, `superscript=`, `subscript=`, `wrap_text=`, `shrink_to_fit=`, `locked=`, `hidden=`, `protection=`, `number_format=`) on `StyleBuilder`.
 - Re-affirm `totals_row`, `totals_row=`, `totals_row_count`, and `totals_row_count=` as canonical on `TableBuilder` to align with ECMA-376 `totalsRowCount`.
+- Promote reader metadata to immutable Data value objects across `Elements::Styles`, `Elements::Workbook`, and `Elements::Cell`.
+- Add `Elements::Styles#number_format_code(id)`.
+- Support Symbol sheet lookup in `Elements::Workbook#sheet` and `Elements::Workbook#[]`.
+- Freeze `Elements::Cell` instances on instantiation (`initialize` and `fast_create`).
+- Return frozen `Array[Elements::IgnoredError]` from `WorksheetBuilder#ignored_errors`, `StreamWriter#ignored_errors`, and `WorksheetProxy#ignored_errors`.
+- Add XML element existence guards for `merged_cells`, `data_validations`, `conditional_formats` on `StreamSheet`.
 
 ### Changed
 - Update `Elements::Row#[]` and `StreamRow#[]` to resolve column indices and column letters via `cell_at` instead of indexing the raw sparse `cells` array, returning `nil` when a cell at the specified column is absent.
 - Separate builder getter (`xxx`) and setter (`xxx=`) methods, allowing explicit `nil` resets.
 - Encapsulate `StyleBuilder#resolve_color` as `private`.
+- Encapsulate `StreamSheet#auto_filter_data` as `private`.
 
 ### Deprecated
 - `DslHelpers.sheet_name` is deprecated in favor of `DslHelpers.sanitize_sheet_name`; will be removed in version 0.2.0.
@@ -61,6 +68,16 @@
 - Calling `StyleBuilder` boolean mutator methods (`bold`, `italic`, `underline`, `strike`, `superscript`, `subscript`, `wrap_text`, `shrink_to_fit`, `locked`, `hidden`) with zero arguments to mutate state is deprecated; pass `true` explicitly (e.g. `bold(true)`).
 - `TableBuilder#[]` and `#[]=` are deprecated in favor of `#column(name)` and `#add_column`; will be removed in version 0.2.0.
 - `TableBuilder#total_row`, `#total_row=`, `#total_row_count`, and `#total_row_count=` are deprecated in favor of `totals_row`, `totals_row=`, `totals_row_count`, and `totals_row_count=`; will be removed in version 0.2.0.
+- `Elements::Styles#num_fmt` is deprecated in favor of `Styles#number_format_code`; will be removed in version 0.2.0.
+- `Elements::Dxf#num_fmt` is deprecated in favor of `Dxf#number_format`; will be removed in version 0.2.0.
+- `Elements::SheetProperties#page_setup_pr` is deprecated in favor of `SheetProperties#page_setup_properties`; will be removed in version 0.2.0.
+- `StreamSheet#first_column` and `StreamSheet#last_column` are deprecated in favor of `column_range`; will be removed in version 0.2.0.
+- `StreamSheet#sheet_views`, `#first_column_index`, `#last_column_index`, `#legacy_drawing`, and `#ext_lst` are deprecated in favor of `#sheet_view` and `#column_range`; will be removed in version 0.2.0.
+- `Elements::Worksheet#conditional_formatting` and `StreamSheet#conditional_formatting` are deprecated in favor of `conditional_formats`; will be removed in version 0.2.0.
+- `Elements::Row#to_a` and `StreamRow#to_a` returning cell values are deprecated in favor of `row.values`; in version 0.2.0, `to_a` will return `Array[Elements::Cell]` to conform to `Enumerable#to_a`.
+- Non-predicate boolean queries on element readers (`trim_empty_rows`, `pad_empty_rows`, `pad_empty_cells`, `fit_to_page`, `show_sheet_tabs`, `full_calc_on_load`) are deprecated in favor of `?`-suffixed methods (`trim_empty_rows?`, `pad_empty_rows?`, `pad_empty_cells?`, `fit_to_page?`, `show_sheet_tabs?`, `full_calc_on_load?`); will be removed in version 0.2.0.
+- Transitional aliases `to_workbook` on `Workbook`, `to_worksheet` on `Worksheet` and `StreamSheet`, and `each_sheet` on `Workbook` are deprecated in favor of `load` and `each`; will be removed in version 0.2.0.
+- Style aliases `Styles#xf`, `Styles#format_code_for`, `Styles#classification_for`, and `StyleBuilder#num_fmt` are deprecated in favor of `cell_xf`, `number_format`, and `format_type`; will be removed in version 0.2.0.
 
 ### Fixed
 - Prevent attribute loss in `Elements::PivotTable`, `Elements::TableColumn`, `Elements::ThreadedComment`, `Elements::Comment`, and `Elements::FilterColumn` by retaining full schema attributes and capturing unmapped keyword options into `options:`.

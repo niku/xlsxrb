@@ -14,33 +14,48 @@ module Xlsxrb
     #
     # @api public
     class Cell
+      # : Integer
       attr_reader row_index: untyped
 
+      # : Integer
       attr_reader column_index: untyped
 
+      # : untyped
       attr_reader value: untyped
 
+      # : Elements::Formula?
       attr_reader formula: untyped
 
+      # : (String | Symbol | Hash[Symbol, untyped])?
       attr_reader style: untyped
 
+      # : Integer?
       attr_reader style_index: untyped
 
+      # : Hash[untyped, untyped]
       attr_reader unmapped_data: untyped
 
+      # : Array[String]
       attr_reader errors: untyped
 
+      # : Elements::Hyperlink?
       attr_reader hyperlink: untyped
 
+      # : Elements::Comment?
       attr_reader comment: untyped
 
+      # : String?
       attr_reader raw_value: untyped
 
+      # : String?
       attr_reader format_code: untyped
 
-      attr_reader date1904: untyped
-
+      # : Array[Elements::ThreadedComment]
       attr_reader threaded_comments: untyped
+
+      # @deprecated Use {#date1904?} instead.
+      # : () -> bool
+      def date1904: () -> bool
 
       # @param row_index [Integer] 0-based row index.
       # @param column_index [Integer] 0-based column index.
@@ -50,17 +65,26 @@ module Xlsxrb
       # @param style_index [Integer, nil] 0-based style index.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      # @param hyperlink [Hash, String, Elements::Hyperlink, nil] Optional hyperlink metadata or URL.
-      # @param comment [Hash, String, nil] Optional cell comment or note.
+      # @param hyperlink [Elements::Hyperlink, Hash, String, nil] Optional hyperlink metadata or URL.
+      # @param comment [Elements::Comment, Hash, String, nil] Optional cell comment or note.
       # @param raw_value [String, nil] Optional unparsed raw string value.
       # @param format_code [String, nil] Optional OpenXML number/date format code.
       # @param date1904 [Boolean] Whether the cell belongs to a 1904 date system workbook.
-      # @param threaded_comments [Array<Hash>, nil] Optional threaded comments.
-      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> void
-      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Hash[Symbol, untyped] | String | Elements::Hyperlink)?, ?comment: (Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Hash[Symbol, untyped]]?) -> void
+      # @param threaded_comments [Array<Elements::ThreadedComment, Hash>, nil] Optional threaded comments.
+      # : (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Elements::Hyperlink | Hash[Symbol, untyped] | String)?, ?comment: (Elements::Comment | Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Elements::ThreadedComment | Hash[Symbol, untyped]]?) -> void
+      def initialize: (row_index: untyped, column_index: untyped, ?value: untyped, ?formula: (Elements::Formula | String)?, ?style: (String | Symbol | Hash[Symbol, untyped])?, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?hyperlink: (Elements::Hyperlink | Hash[Symbol, untyped] | String)?, ?comment: (Elements::Comment | Hash[Symbol, untyped] | String)?, ?raw_value: String?, ?format_code: String?, ?date1904: bool, ?threaded_comments: Array[Elements::ThreadedComment | Hash[Symbol, untyped]]?) -> void
 
+      # @api private
       # rubocop:disable Style/OptionalBooleanParameter
       def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula, ?untyped raw_value, ?untyped format_code, ?untyped date1904) -> untyped
+
+      # Normalizes formula representations to an {Elements::Formula} object or nil.
+      #
+      # @param formula [Elements::Formula, String, Hash, Object, nil]
+      # @return [Elements::Formula, nil]
+      # @api public
+      # : (untyped formula) -> Elements::Formula?
+      def self.normalize_formula: (untyped formula) -> Elements::Formula?
 
       def ==: (untyped other) -> untyped
 
@@ -70,7 +94,13 @@ module Xlsxrb
 
       def deconstruct: () -> untyped
 
-      def deconstruct_keys: (untyped keys) -> untyped
+      # Deconstructs cell attributes for pattern matching.
+      #
+      # @param _keys [Array<Symbol>, nil]
+      # @return [Hash{Symbol => Object}]
+      # @api public
+      # : (Array[Symbol]? _keys) -> Hash[Symbol, untyped]
+      def deconstruct_keys: (Array[Symbol]? _keys) -> Hash[Symbol, untyped]
 
       def with: (**untyped changes) -> untyped
 
@@ -106,9 +136,11 @@ module Xlsxrb
       # @return [Boolean]
       # @api public
       # : () -> bool
-      def link?: () -> bool
+      def hyperlink?: () -> bool
 
-      alias hyperlink? link?
+      # @deprecated Use {#hyperlink?} instead.
+      # : () -> bool
+      def link?: () -> bool
 
       # Returns the hyperlink target URL or location string, or nil.
       #
@@ -143,14 +175,18 @@ module Xlsxrb
       # @return [Boolean]
       # @api public
       # : () -> bool
+      def threaded_comment?: () -> bool
+
+      # @deprecated Use {#threaded_comment?} instead.
+      # : () -> bool
       def threaded_comments?: () -> bool
 
       # Returns the root threaded comment for this cell, or nil.
       #
-      # @return [Hash[Symbol, untyped], nil]
+      # @return [Elements::ThreadedComment, nil]
       # @api public
-      # : () -> Hash[Symbol, untyped]?
-      def threaded_comment: () -> Hash[Symbol, untyped]?
+      # : () -> Elements::ThreadedComment?
+      def threaded_comment: () -> Elements::ThreadedComment?
 
       # Returns the formatted string representation of the cell value according to its format code.
       #
@@ -175,12 +211,33 @@ module Xlsxrb
       # : () -> Symbol?
       def format_type: () -> Symbol?
 
+      # Returns the number format code for this cell.
+      #
+      # @return [String, nil]
+      # @api public
+      # : () -> String?
+      def number_format: () -> String?
+
       # Returns whether the cell has a date, datetime, or time format.
       #
       # @return [Boolean]
       # @api public
       # : () -> bool
       def date_format?: () -> bool
+
+      # Returns whether the cell has a datetime format (date with time).
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def datetime_format?: () -> bool
+
+      # Returns whether the cell has a date-only format.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def date_only_format?: () -> bool
 
       # Returns whether the cell has a time-only format.
       #
@@ -196,7 +253,7 @@ module Xlsxrb
       # : () -> bool
       def date1904?: () -> bool
 
-      # Returns the cell value.
+      # @deprecated Use {#value} instead.
       #
       # @return [Object, nil]
       # @api public
@@ -226,7 +283,7 @@ module Xlsxrb
 
       # Converts the cell value (numeric serial date or date string) to Date.
       #
-      # @param date1904 [Boolean, nil] Whether to use the 1904 date system (defaults to cell's date1904 setting).
+      # @param date1904 [Boolean, nil] Deprecated parameter. Cell's date1904? setting is used.
       # @return [Date, nil]
       # @api public
       # : (?date1904: bool?) -> Date?
@@ -234,7 +291,7 @@ module Xlsxrb
 
       # Converts the cell value (numeric serial datetime or datetime string) to Time.
       #
-      # @param date1904 [Boolean, nil] Whether to use the 1904 date system (defaults to cell's date1904 setting).
+      # @param date1904 [Boolean, nil] Deprecated parameter. Cell's date1904? setting is used.
       # @return [Time, nil]
       # @api public
       # : (?date1904: bool?) -> Time?
@@ -322,6 +379,7 @@ module Xlsxrb
       # @param column_index [Integer]
       # @param value [Object]
       # @return [Array<String>] List of errors.
+      # @api private
       # : (untyped row_index, untyped column_index, untyped value) -> Array[String]
       def self.validate: (untyped row_index, untyped column_index, untyped value) -> Array[String]
     end

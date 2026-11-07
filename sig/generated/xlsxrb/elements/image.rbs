@@ -52,11 +52,17 @@ module Xlsxrb
       # @return [String]
       # @api public
       # : () -> String
+      def ref: () -> String
+
+      # @deprecated Use {#ref} instead.
+      # @return [String]
+      # @api public
+      # : () -> String
       def cell_ref: () -> String
 
-      alias cell cell_ref
-
-      alias ref cell_ref
+      # @deprecated Use {#ref} instead.
+      # : () -> String
+      def cell: () -> String
 
       # Returns the bottom-right cell coordinate reference string (e.g. "B5"), or nil for 1-cell anchors.
       #

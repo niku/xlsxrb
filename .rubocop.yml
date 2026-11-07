@@ -148,6 +148,18 @@ Naming/BlockForwarding: # new in 1.24
   Enabled: true
 Naming/PredicateMethod: # new in 1.76
   Enabled: true
+  AllowedMethods:
+    - date1904
+    - show_sheet_tabs
+    - full_calc_on_load
+    - trim_empty_rows
+    - pad_empty_rows
+    - pad_empty_cells
+    - fit_to_page
+    - hidden
+    - collapsed
+    - custom_height
+    - shared_strings
 Security/CompoundHash: # new in 1.28
   Enabled: true
 Security/IoMethods: # new in 1.22

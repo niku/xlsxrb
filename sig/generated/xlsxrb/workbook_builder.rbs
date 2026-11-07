@@ -15,9 +15,52 @@ module Xlsxrb
   # @api public
   class WorkbookBuilder
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specifications.
+    # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
     # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
-    # : (?strict_excel_mode: bool, ?default_font: untyped?) -> void
-    def initialize: (?strict_excel_mode: bool, ?default_font: untyped?) -> void
+    # : (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) -> void
+    def initialize: (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) -> void
+
+    # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+    # : bool
+    attr_accessor escape_formulas: untyped
+
+    # Returns whether formula escaping is enabled.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def escape_formulas?: () -> bool
+
+    # Sets or configures the workbook-wide default font.
+    #
+    # @param name [String, Hash, nil] Font name or font options Hash.
+    # @param size [Float, Integer, nil] Font size in points.
+    # @param opts [Hash] Additional font options (e.g. `bold:`, `italic:`, `family:`, `charset:`, `color:`).
+    # @return [void]
+    # @api public
+    # : (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+    def default_font: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+
+    # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
+    alias set_default_font default_font
+
+    # @return [Hash{String => StyleBuilder}]
+    # : Hash[String, StyleBuilder]
+    attr_reader styles: untyped
+
+    # Defines or configures a named cell style at the workbook level.
+    #
+    # @example
+    #   workbook.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF")
+    #
+    # @param name [String, Symbol] The name of the style.
+    # @param opts [Hash] Style options (e.g. bold: true, fill_color: "FF0000").
+    # @yield [style_builder]
+    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
+    # @return [StyleBuilder]
+    # @api public
+    # : (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+    def style: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
 
     # Creates an {Elements::Formula} object.
     #
@@ -67,37 +110,6 @@ module Xlsxrb
     # @api public
     # : (String | Symbol | Elements::CellError code) -> Elements::CellError
     def cell_error: (String | Symbol | Elements::CellError code) -> Elements::CellError
-
-    # Sets or configures the workbook-wide default font.
-    #
-    # @param name [String, Hash, nil] Font name or font options Hash.
-    # @param size [Float, Integer, nil] Font size in points.
-    # @param opts [Hash] Additional font options (e.g. `bold:`, `italic:`, `family:`, `charset:`, `color:`).
-    # @return [void]
-    # @api public
-    # : (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
-    def default_font: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
-
-    # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
-    alias set_default_font default_font
-
-    # @return [Hash{String => StyleBuilder}]
-    # : Hash[String, StyleBuilder]
-    attr_reader styles: untyped
-
-    # Defines or configures a named cell style at the workbook level.
-    #
-    # @example
-    #   workbook.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF")
-    #
-    # @param name [String, Symbol] The name of the style.
-    # @param opts [Hash] Style options (e.g. bold: true, fill_color: "FF0000").
-    # @yield [style_builder]
-    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
-    # @return [StyleBuilder]
-    # @api public
-    # : (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
-    def style: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
 
     OMITTED: untyped
 
@@ -201,6 +213,21 @@ module Xlsxrb
     # : (Symbol name, String | Integer | bool value) -> void
     def workbook_property: (Symbol name, String | Integer | bool value) -> void
 
+    # Returns workbook-level properties.
+    #
+    # @return [Elements::WorkbookProperties]
+    # @api public
+    # : () -> Elements::WorkbookProperties
+    def workbook_properties: () -> Elements::WorkbookProperties
+
+    # Sets workbook-level properties.
+    #
+    # @param props [Hash, Elements::MetadataRecord]
+    # @return [void]
+    # @api public
+    # : (untyped props) -> void
+    def workbook_properties=: (untyped props) -> void
+
     # Returns the list of worksheet names added to this workbook so far.
     #
     # @return [Array<String>] Worksheet names.
@@ -211,16 +238,27 @@ module Xlsxrb
     # Adds a new worksheet to the workbook.
     #
     # @param name [String, nil] Sheet name (max 31 chars, no forbidden chars `[ ] * ? / \ :`).
-    # @param opts [Hash] Sheet properties.
+    # @param state [Symbol, String, nil] Sheet visibility state (:visible, :hidden, :very_hidden).
+    # @param tab_color [String, Hash, nil] Tab color hex string or color hash.
+    # @param code_name [String, nil] VBA code name.
+    # @param hidden [Boolean, nil] Deprecated alias for state: :hidden.
+    # @param opts [Hash] Additional sheet properties.
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
     # @return [Elements::Worksheet]
     # @raise [ArgumentError] If sheet name violates Excel limits in strict mode.
     # @api public
-    # : (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
-    def sheet: (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
+    # : (?String? name, ?state: (Symbol | String)?, ?tab_color: untyped, ?code_name: String?, ?hidden: bool?, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    def sheet: (?String? name, ?state: (Symbol | String)?, ?tab_color: untyped, ?code_name: String?, ?hidden: bool?, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
 
-    alias [] sheet
+    # Accesses or defines a worksheet by name.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil]
+    # @yield [sheet_builder]
+    # @return [Elements::Worksheet]
+    # @api public
+    # : (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    def []: (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
 
     # Adds a defined name (named range or formula) to the workbook.
     # Bare cell references and coordinate keywords are automatically formatted with sheet quotes and absolute $ references.
@@ -230,11 +268,11 @@ module Xlsxrb
     # @param sheet [String, nil] Reference sheet name for coordinates/formula.
     # @param scope [String, Symbol, nil] Optional sheet name or :workbook for scope (defaults to workbook).
     # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
-    # @param column [Integer, String, nil] Column index or letter for coordinate-based reference.
-    # @param columns [Integer, String, nil] Alias for column.
+    # @param column [Integer, String, nil] Deprecated alias for columns.
+    # @param columns [Integer, String, nil] Column index or letter for coordinate-based reference.
     # @param col [Integer, String, nil] Deprecated alias for column.
-    # @param row [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
-    # @param rows [Integer, Range, nil] Alias for row.
+    # @param row [Integer, Range, nil] Deprecated alias for rows.
+    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
     # @param range [String, nil] Cell range reference.
     # @param ref_sheet [String, nil] Deprecated alias for sheet.
     # @param local [Boolean] Deprecated alias for scope.
@@ -242,6 +280,13 @@ module Xlsxrb
     # @api public
     # : (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
     def defined_name: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
+
+    # Returns workbook-level defined names.
+    #
+    # @return [Array<Elements::DefinedName>]
+    # @api public
+    # : () -> Array[Elements::DefinedName]
+    def defined_names: () -> Array[Elements::DefinedName]
 
     # Sets or gets the print area for a sheet.
     #
@@ -262,9 +307,9 @@ module Xlsxrb
 
     # Sets repeating print titles (rows and/or columns) for pagination.
     #
-    # @param rows [String, Integer, Range, nil] Repeating row range (e.g. "1:2" or 0-based 0..1).
-    # @param columns [String, Integer, Symbol, Range, nil] Repeating column range (e.g. "A:B" or 0..1).
-    # @param cols [String, Integer, Symbol, Range, nil] Deprecated alias for columns.
+    # @param rows [String, nil] Repeating row range (e.g. "1:2").
+    # @param columns [String, nil] Repeating column range (e.g. "A:B").
+    # @param cols [String, nil] Deprecated alias for columns.
     # @param sheet [String, nil] Target sheet name.
     # @return [void]
     # @api public
@@ -273,11 +318,11 @@ module Xlsxrb
 
     # Sets repeating print titles.
     #
-    # @param opts [Hash, Object] Options with :rows and/or :columns.
-    # @return [Hash, Object]
+    # @param opts [Elements::PrintTitles, Hash] Options with :rows and/or :columns.
+    # @return [Elements::PrintTitles, Hash]
     # @api public
-    # : (untyped opts) -> untyped
-    def print_titles=: (untyped opts) -> untyped
+    # : (Elements::PrintTitles | Hash[Symbol, untyped] opts) -> (Elements::PrintTitles | Hash[Symbol, untyped])
+    def print_titles=: (Elements::PrintTitles | Hash[Symbol, untyped] opts) -> (Elements::PrintTitles | Hash[Symbol, untyped])
 
     # Sets repeating title rows for pagination on the target or active sheet.
     #
@@ -305,13 +350,21 @@ module Xlsxrb
     # : (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
     def repeat_columns: (Integer | String first, ?(Integer | String)? last, ?sheet: String?) -> void
 
-    # Sets workbook structure and window protection.
+    # Sets or returns workbook structure and window protection.
     #
     # @param opts [Hash] Protection options (e.g. lock_structure: true, password: "secret").
+    # @return [Elements::WorkbookProtection, nil, void]
+    # @api public
+    # : (**String | Integer | bool | nil opts) -> (Elements::WorkbookProtection | nil)
+    def workbook_protection: (**String | Integer | bool | nil opts) -> (Elements::WorkbookProtection | nil)
+
+    # Sets workbook protection settings.
+    #
+    # @param opts [Hash, Elements::MetadataRecord, nil]
     # @return [void]
     # @api public
-    # : (**String | Integer | bool | nil opts) -> void
-    def workbook_protection: (**String | Integer | bool | nil opts) -> void
+    # : (untyped opts) -> void
+    def workbook_protection=: (untyped opts) -> void
 
     # @deprecated Use {#workbook_protection} instead.
     # : (**String | Integer | bool | nil opts) -> void
@@ -326,6 +379,13 @@ module Xlsxrb
     # : (Symbol name, String | Integer | Time value) -> void
     def core_property: (Symbol name, String | Integer | Time value) -> void
 
+    # Returns core document properties.
+    #
+    # @return [Elements::CoreProperties]
+    # @api public
+    # : () -> Elements::CoreProperties
+    def core_properties: () -> Elements::CoreProperties
+
     # Sets an extended application metadata property.
     #
     # @param name [Symbol] Application property name (:company, :manager, :app_version, etc.).
@@ -334,6 +394,13 @@ module Xlsxrb
     # @api public
     # : (Symbol name, String | Integer | Time value) -> void
     def app_property: (Symbol name, String | Integer | Time value) -> void
+
+    # Returns application document properties.
+    #
+    # @return [Elements::AppProperties]
+    # @api public
+    # : () -> Elements::AppProperties
+    def app_properties: () -> Elements::AppProperties
 
     # Sets multiple core, app, and/or custom properties simultaneously.
     #
@@ -355,6 +422,13 @@ module Xlsxrb
     # : (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
     def custom_property: (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
 
+    # Returns custom document properties.
+    #
+    # @return [Hash<String, Elements::CustomProperty>]
+    # @api public
+    # : () -> Hash[String, Elements::CustomProperty]
+    def custom_properties: () -> Hash[String, Elements::CustomProperty]
+
     # Builds and returns the compiled {Elements::Workbook}.
     #
     # @return [Elements::Workbook]
@@ -374,7 +448,7 @@ module Xlsxrb
     # : (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
     def process_styles: (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
 
-    # : (untyped writer) -> { fonts: untyped, fills: untyped, borders: untyped, xf_entries: untyped, num_fmts: untyped }
-    def extract_styles_from_writer: (untyped writer) -> { fonts: untyped, fills: untyped, borders: untyped, xf_entries: untyped, num_fmts: untyped }
+    # : (untyped writer) -> Hash[Symbol, untyped]
+    def extract_styles_from_writer: (untyped writer) -> Hash[Symbol, untyped]
   end
 end

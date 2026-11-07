@@ -56,7 +56,7 @@ module Xlsxrb
             id = attrs["numFmtId"]&.to_i
             code = attrs["formatCode"]
             if @current_dxf
-              @current_dxf[:num_fmt] = { num_fmt_id: id, format_code: code } if id && code
+              @current_dxf[:number_format] = { num_fmt_id: id, format_code: code } if id && code
             elsif parent_context?("numFmts") && id && code
               @result[:num_fmts][id] = code
             end
@@ -132,7 +132,10 @@ module Xlsxrb
             end
           when "fill"
             if @current_fill
-              @current_fill[:pattern] = @current_fill_pattern if @current_fill_pattern
+              if @current_fill_pattern
+                @current_fill[:pattern_type] = @current_fill_pattern
+                @current_fill[:pattern] = @current_fill_pattern
+              end
               if @current_dxf
                 @current_dxf[:fill] = @current_fill
               else

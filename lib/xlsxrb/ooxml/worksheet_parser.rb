@@ -399,7 +399,7 @@ module Xlsxrb
                 si = is_shared ? tag_attr(f_tag_slice, ' si="') : nil
                 if xml.getbyte(f_tag_end - 1) == 47 # self-closing <f ... />
                   if si && (master = shared_masters[si])
-                    formula = Xlsxrb::Utils.expand_formula(master[:formula], from_ref: master[:ref], to_ref: ref)
+                    formula = Xlsxrb.expand_formula(master[:formula], from_ref: master[:ref], to_ref: ref)
                   end
                   cpos = f_tag_end + 1
                 else
@@ -411,7 +411,7 @@ module Xlsxrb
                       if formula && !formula.empty?
                         shared_masters[si] = { ref: ref, formula: formula }
                       elsif (master = shared_masters[si])
-                        formula = Xlsxrb::Utils.expand_formula(master[:formula], from_ref: master[:ref], to_ref: ref)
+                        formula = Xlsxrb.expand_formula(master[:formula], from_ref: master[:ref], to_ref: ref)
                       end
                     end
                     cpos = f_end + f_tag_end_len

@@ -337,4 +337,49 @@ class StreamRowTest < Test::Unit::TestCase
     assert_equal("日本語と絵文字🎉", fast_row[0].value)
     assert_equal(100, fast_row[1].value)
   end
+
+  test "stream_row pattern matching deconstruct and deconstruct_keys" do
+    xml = %(<c r="A1"><v>42</v></c><c r="B1" t="s"><v>0</v></c>).b
+    row = Xlsxrb::StreamRow.new(
+      index: 2,
+      xml_bytes: xml,
+      from: 0,
+      to: xml.bytesize,
+      shared_strings: ["test"],
+      height: 28.5,
+      custom_height: true,
+      outline_level: 1
+    )
+
+    # Array pattern match via deconstruct
+    case row
+    in [42, "test"]
+      assert_true(true)
+    else
+      flunk("StreamRow array pattern match failed")
+    end
+
+    # Hash pattern match via deconstruct_keys
+    case row
+    in { index: 2, values: [42, "test"], custom_height: true, outline_level: 1 }
+      assert_true(true)
+    else
+      flunk("StreamRow hash pattern match failed")
+    end
+
+    keys = row.deconstruct_keys(nil)
+    assert_equal(
+      {
+        index: 2,
+        cells: row.cells,
+        values: [42, "test"],
+        height: 28.5,
+        hidden: false,
+        custom_height: true,
+        collapsed: false,
+        outline_level: 1
+      },
+      keys
+    )
+  end
 end

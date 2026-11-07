@@ -1948,6 +1948,211 @@ module Xlsxrb
           end
         end
       end
+
+      # SAX2 listener for parsing <x14:sparklineGroups> and child <x14:sparklineGroup> elements.
+      class SparklineGroupsListener
+        include REXML::SAX2Listener
+
+        COLOR_TAG_MAP = {
+          "colorSeries" => :color_series,
+          "colorNegative" => :color_negative,
+          "colorAxis" => :color_axis,
+          "colorMarkers" => :color_markers,
+          "colorFirst" => :color_first,
+          "colorLast" => :color_last,
+          "colorHigh" => :color_high,
+          "colorLow" => :color_low
+        }.freeze
+
+        # @return [Array<Hash[Symbol, untyped]>]
+        #: Array[Hash[Symbol, untyped]]
+        attr_reader :groups
+        alias sparkline_groups groups
+
+        #: () -> void
+        def initialize
+          @groups = []
+          @current_group = nil
+          @current_sparkline = nil
+          @inside_f = false
+          @inside_sqref = false
+          @text_buffer = +""
+        end
+
+        #: (untyped _uri, String? local_name, String? qname, Hash[String, String] attributes) -> void
+        def start_element(_uri, local_name, qname, attributes)
+          name = element_name(local_name, qname)
+          case name
+          when "sparklineGroup"
+            disp = attributes["displayEmptyCellsAs"]
+            max_attr = attributes["manualMax"]
+            min_attr = attributes["manualMin"]
+            lw_attr = attributes["lineWeight"]
+            max = parse_numeric(max_attr)
+            min = parse_numeric(min_attr)
+            line_weight = parse_numeric(lw_attr)
+
+            @current_group = {
+              type: attributes["type"] || "line",
+              display_empty: disp,
+              display_empty_cells_as: disp,
+              markers: %w[1 true].include?(attributes["markers"]),
+              high: %w[1 true].include?(attributes["high"]),
+              low: %w[1 true].include?(attributes["low"]),
+              first: %w[1 true].include?(attributes["first"]),
+              last: %w[1 true].include?(attributes["last"]),
+              negative: %w[1 true].include?(attributes["negative"]),
+              max: max,
+              manual_max: max,
+              min: min,
+              manual_min: min,
+              line_weight: line_weight,
+              sparklines: []
+            }
+          when "colorSeries", "colorNegative", "colorAxis", "colorMarkers", "colorFirst", "colorLast", "colorHigh", "colorLow"
+            if @current_group
+              color = parse_color(attributes)
+              key = COLOR_TAG_MAP[name]
+              @current_group[key] = color if color && key
+            end
+          when "sparkline"
+            @current_sparkline = {}
+          when "f"
+            if @current_sparkline
+              @inside_f = true
+              @text_buffer = +""
+            end
+          when "sqref"
+            if @current_sparkline
+              @inside_sqref = true
+              @text_buffer = +""
+            end
+          end
+        end
+
+        #: (String text) -> void
+        def characters(text)
+          @text_buffer << text if @inside_f || @inside_sqref
+        end
+
+        #: (untyped _uri, String? local_name, String? qname) -> void
+        def end_element(_uri, local_name, qname)
+          name = element_name(local_name, qname)
+          case name
+          when "f"
+            if @current_sparkline && @inside_f
+              val = @text_buffer.strip
+              @current_sparkline[:data_ref] = val
+              @current_sparkline[:formula] = val
+              @inside_f = false
+            end
+          when "sqref"
+            if @current_sparkline && @inside_sqref
+              val = @text_buffer.strip
+              @current_sparkline[:location_ref] = val
+              @current_sparkline[:sqref] = val
+              @inside_sqref = false
+            end
+          when "sparkline"
+            if @current_group && @current_sparkline
+              @current_group[:sparklines] << @current_sparkline
+              @current_sparkline = nil
+            end
+          when "sparklineGroup"
+            if @current_group
+              @groups << @current_group
+              @current_group = nil
+            end
+          end
+        end
+
+        private
+
+        #: (String? str) -> (Integer | Float | nil)
+        def parse_numeric(str)
+          return nil if str.nil? || str.empty?
+
+          str.include?(".") ? str.to_f : str.to_i
+        end
+
+        #: (Hash[String, String] attributes) -> (String | Hash[Symbol, untyped] | nil)
+        def parse_color(attributes)
+          if attributes["rgb"]
+            attributes["rgb"]
+          elsif attributes["theme"] || attributes["tint"]
+            c = {}
+            c[:theme] = attributes["theme"].to_i if attributes["theme"]
+            c[:tint] = attributes["tint"].to_f if attributes["tint"]
+            c
+          end
+        end
+
+        #: (String? local_name, String? qname) -> String
+        def element_name(local_name, qname)
+          if local_name.nil? || local_name.empty?
+            qname.to_s.split(":").last
+          else
+            local_name
+          end
+        end
+      end
+
+      # SAX2 listener for parsing VML drawings of header and footer images (<v:shape> and <v:imagedata>).
+      class VmlHeaderFooterListener
+        include REXML::SAX2Listener
+
+        # @return [Array<Hash[Symbol, untyped]>]
+        #: Array[Hash[Symbol, untyped]]
+        attr_reader :shapes
+
+        #: () -> void
+        def initialize
+          @shapes = []
+          @current_shape = nil
+        end
+
+        #: (untyped _uri, String? local_name, String? qname, Hash[String, String] attributes) -> void
+        def start_element(_uri, local_name, qname, attributes)
+          name = element_name(local_name, qname)
+          case name
+          when "shape"
+            @current_shape = {
+              id: attributes["id"]
+            }
+          when "imagedata"
+            if @current_shape
+              rel_id = attributes["o:relid"] || attributes["relid"] || attributes["r:id"] ||
+                       attributes.find { |k, _| k.to_s.end_with?(":relid") }&.last ||
+                       attributes.find { |k, _| k.to_s.end_with?(":id") }&.last
+              title = attributes["o:title"] || attributes["title"] ||
+                      attributes.find { |k, _| k.to_s.end_with?(":title") }&.last
+              @current_shape[:rel_id] = rel_id
+              @current_shape[:title] = title if title
+            end
+          end
+        end
+
+        #: (untyped _uri, String? local_name, String? qname) -> void
+        def end_element(_uri, local_name, qname)
+          name = element_name(local_name, qname)
+          case name
+          when "shape"
+            @shapes << @current_shape if @current_shape && @current_shape[:rel_id]
+            @current_shape = nil
+          end
+        end
+
+        private
+
+        #: (String? local_name, String? qname) -> String
+        def element_name(local_name, qname)
+          if local_name.nil? || local_name.empty?
+            qname.to_s.split(":").last
+          else
+            local_name
+          end
+        end
+      end
     end
   end
 end

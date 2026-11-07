@@ -870,7 +870,8 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     end
 
     assert_equal("A1:C10", workbook.sheet(0).print_area)
-    assert_equal({ rows: "1:1", cols: "A:B" }, workbook.sheet(0).print_titles)
+    assert_equal("1:1", workbook.sheet(0).print_titles.rows)
+    assert_equal("A:B", workbook.sheet(0).print_titles.columns)
 
     tmp = Tempfile.new(["facade_sheet_print", ".xlsx"])
     begin
@@ -1510,9 +1511,9 @@ class FacadeFeaturesTest < Test::Unit::TestCase
 
     ws = workbook.sheets.first
     assert_equal(3, ws.sparkline_groups.size)
-    assert_equal("stacked", ws.sparkline_groups[1][:type])
-    assert_equal(true, ws.sparkline_groups[1][:high])
-    assert_equal(true, ws.sparkline_groups[1][:low])
+    assert_equal("stacked", ws.sparkline_groups[1].type)
+    assert_equal(true, ws.sparkline_groups[1].high)
+    assert_equal(true, ws.sparkline_groups[1].low)
 
     tmp = Tempfile.new(["facade_add_sparkline_build", ".xlsx"])
     Xlsxrb.write(tmp.path, workbook)

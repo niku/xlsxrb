@@ -60,40 +60,54 @@ module Xlsxrb
       # : () -> Elements::Row?
       def last_row: () -> Elements::Row?
 
+      # Returns 0-based bounds { min_row: r1, max_row: r2, min_column: c1, max_column: c2 } from dimension ref.
+      #
+      # @example
+      #   sheet.dimension_bounds #=> { min_row: 0, max_row: 4, min_column: 0, max_column: 2 }
+      #
+      # @return [Hash{Symbol => Integer}, nil]
+      # @api public
+      # : () -> Hash[Symbol, Integer]?
+      def dimension_bounds: () -> Hash[Symbol, Integer]?
+
       # Returns the 1-based index of the first column containing data, or nil.
       #
+      # @deprecated Use {#column_range} or {#dimension_bounds} instead.
       # @return [Integer, nil]
       # @api public
       # : () -> Integer?
       def first_column: () -> Integer?
 
-      # @deprecated Use {#first_column} instead. Will be removed in 0.2.0.
-      alias first_col first_column
+      # @deprecated Use {#column_range} or {#dimension_bounds} instead. Will be removed in 0.2.0.
+      # : () -> Integer?
+      def first_col: () -> Integer?
 
       # Returns the 1-based index of the last column containing data, or nil.
       #
+      # @deprecated Use {#column_range} or {#dimension_bounds} instead.
       # @return [Integer, nil]
       # @api public
       # : () -> Integer?
       def last_column: () -> Integer?
 
-      # @deprecated Use {#last_column} instead. Will be removed in 0.2.0.
-      alias last_col last_column
+      # @deprecated Use {#column_range} or {#dimension_bounds} instead. Will be removed in 0.2.0.
+      # : () -> Integer?
+      def last_col: () -> Integer?
 
-      # Returns the 1-based range of rows containing data, or nil.
+      # Returns the 0-based range of rows containing data, or nil.
       #
       # @example
-      #   sheet.row_range #=> 1..10
+      #   sheet.row_range #=> 0..9
       #
       # @return [Range<Integer>, nil]
       # @api public
       # : () -> Range[Integer]?
       def row_range: () -> Range[Integer]?
 
-      # Returns the 1-based range of columns containing data, or nil.
+      # Returns the 0-based range of columns containing data, or nil.
       #
       # @example
-      #   sheet.column_range #=> 1..5
+      #   sheet.column_range #=> 0..4
       #
       # @return [Range<Integer>, nil]
       # @api public
@@ -102,6 +116,7 @@ module Xlsxrb
 
       # Returns the raw cell value at the given Excel-style reference (e.g. "A1").
       #
+      # @deprecated Use `sheet["A1"]&.value` instead.
       # @example
       #   sheet.cell_value("A1") #=> "Sales Report"
       #

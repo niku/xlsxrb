@@ -3015,7 +3015,7 @@ module Xlsxrb
 
         # Emit <rowBreaks> if defined.
         unless sheet_rb.empty?
-          manual_count = sheet_rb.count { |r| r.is_a?(Hash) ? r.fetch(:man, true) : true }
+          manual_count = sheet_rb.count { |r| r.is_a?(Hash) || r.respond_to?(:fetch) ? r.fetch(:man, true) : true }
           parts << %(<rowBreaks count="#{sheet_rb.size}" manualBreakCount="#{manual_count}">)
           sheet_rb.each { |r| parts << emit_brk_xml(r, default_max: 16_383) }
           parts << "</rowBreaks>"
@@ -3023,7 +3023,7 @@ module Xlsxrb
 
         # Emit <colBreaks> if defined.
         unless sheet_cb.empty?
-          manual_count = sheet_cb.count { |c| c.is_a?(Hash) ? c.fetch(:man, true) : true }
+          manual_count = sheet_cb.count { |c| c.is_a?(Hash) || c.respond_to?(:fetch) ? c.fetch(:man, true) : true }
           parts << %(<colBreaks count="#{sheet_cb.size}" manualBreakCount="#{manual_count}">)
           sheet_cb.each { |c| parts << emit_brk_xml(c, default_max: 1_048_575) }
           parts << "</colBreaks>"
@@ -3151,9 +3151,16 @@ module Xlsxrb
         parts << %(<autoFilter ref="#{tbl[:ref]}"/>) unless tbl[:auto_filter] == false
         parts << %(<tableColumns count="#{tbl[:columns].size}">)
         tbl[:columns].each_with_index do |col, i|
-          col_name = col.is_a?(Hash) ? col[:name] : col
+          col = col.to_h if col.is_a?(Elements::MetadataRecord)
+          col_name = if col.is_a?(Hash)
+                       col[:name]
+                     elsif col.is_a?(Elements::TableColumn)
+                       col.name
+                     else
+                       col
+                     end
           col_attrs = %(id="#{i + 1}" name="#{xml_escape(col_name)}")
-          if col.is_a?(Hash)
+          if col.is_a?(Hash) || col.is_a?(Elements::TableColumn)
             calc_formula = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
             tot_formula = col[:totals_row_formula] || col[:total_row_formula] || col[:total_formula]
             trf = col[:totals_row_function] || ("custom" if tot_formula)

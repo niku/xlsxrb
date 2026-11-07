@@ -5,6 +5,18 @@ require "test_helper"
 class UtilsTest < Test::Unit::TestCase
   cover Xlsxrb::Utils
 
+  def capture_stderr
+    old_stderr = $stderr
+    old_verbose = $VERBOSE
+    $stderr = StringIO.new
+    $VERBOSE = true
+    yield
+    $stderr.string
+  ensure
+    $stderr = old_stderr
+    $VERBOSE = old_verbose
+  end
+
   test "ref_to_row_col converts cell references to 0-based row and column coordinates" do
     assert_equal([0, 0], Xlsxrb::Utils.ref_to_row_col("A1"))
     assert_equal([0, 1], Xlsxrb::Utils.ref_to_row_col("B1"))
@@ -58,12 +70,19 @@ class UtilsTest < Test::Unit::TestCase
     assert_equal("BC", Xlsxrb::Utils.col_index_to_name(54))
   end
 
-  test "split_coordinate splits cell reference into column name and 1-based row number" do
-    assert_equal(["A", 1], Xlsxrb::Utils.split_coordinate("A1"))
-    assert_equal(["BC", 100], Xlsxrb::Utils.split_coordinate("BC100"))
-    assert_equal(["Z", 5], Xlsxrb::Utils.split_coordinate("Z5"))
-    assert_nil(Xlsxrb::Utils.split_coordinate(nil))
-    assert_nil(Xlsxrb::Utils.split_coordinate("invalid"))
+  test "Xlsxrb.split_coordinate splits cell reference into column name and 1-based row number" do
+    assert_equal(["A", 1], Xlsxrb.split_coordinate("A1"))
+    assert_equal(["BC", 100], Xlsxrb.split_coordinate("BC100"))
+    assert_equal(["Z", 5], Xlsxrb.split_coordinate("Z5"))
+    assert_nil(Xlsxrb.split_coordinate(nil))
+    assert_nil(Xlsxrb.split_coordinate("invalid"))
+  end
+
+  test "split_coordinate splits cell reference into column name and 1-based row number with deprecation" do
+    res = nil
+    err = capture_stderr { res = Xlsxrb::Utils.split_coordinate("A1") }
+    assert_equal(["A", 1], res)
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.split_coordinate is deprecated/, err)
   end
 
   test "date_to_serial and serial_to_date convert dates across 1900 and 1904 systems" do
@@ -97,14 +116,44 @@ class UtilsTest < Test::Unit::TestCase
     assert_in_delta(46_023.0, Xlsxrb::Utils.datetime_to_serial(d), 1e-6)
   end
 
-  test "valid_excel_date? delegates to Ooxml::Utils" do
-    assert_true(Xlsxrb::Utils.valid_excel_date?(46_023))
-    assert_false(Xlsxrb::Utils.valid_excel_date?(-1))
-    assert_true(Xlsxrb::Utils.valid_excel_date?(44_561, date1904: true))
-    assert_false(Xlsxrb::Utils.valid_excel_date?(3_000_000, date1904: true))
+  test "valid_excel_date? validates supported serial numbers and checks deprecation" do
+    assert_true(Xlsxrb.valid_excel_date?(46_023))
+    assert_false(Xlsxrb.valid_excel_date?(-1))
+    assert_true(Xlsxrb.valid_excel_date?(44_561, date1904: true))
+    assert_false(Xlsxrb.valid_excel_date?(3_000_000, date1904: true))
+
+    res = nil
+    err = capture_stderr { res = Xlsxrb::Utils.valid_excel_date?(46_023) }
+    assert_true(res)
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.valid_excel_date\? is deprecated/, err)
   end
 
-  test "expand_formula shifts relative cell references by coordinates or delta" do
+  test "Xlsxrb.expand_formula supports row_delta: and column_delta: without deprecation" do
+    err = capture_stderr do
+      assert_equal("A3*2", Xlsxrb.expand_formula("A2*2", row_delta: 1, column_delta: 0))
+      assert_equal("C4*2", Xlsxrb.expand_formula("A2*2", row_delta: 2, column_delta: 2))
+      assert_equal("$A$1+A4", Xlsxrb.expand_formula("$A$1+A2", row_delta: 2, column_delta: 0))
+    end
+    assert_empty(err)
+  end
+
+  test "Xlsxrb.expand_formula deprecates positional offsets and col_delta:" do
+    err = capture_stderr do
+      assert_equal("A3*2", Xlsxrb.expand_formula("A2*2", 1, 0))
+    end
+    assert_match(/\[Xlsxrb DEPRECATION\] Passing positional offset arguments to expand_formula is deprecated; use row_delta: and column_delta: instead\./, err)
+
+    err_col = capture_stderr do
+      assert_equal("B2*2", Xlsxrb.expand_formula("A2*2", row_delta: 0, col_delta: 1))
+    end
+    assert_match(/\[Xlsxrb DEPRECATION\] Keyword col_delta: in expand_formula is deprecated; use column_delta: instead\./, err_col)
+  end
+
+  test "expand_formula shifts relative cell references by coordinates or delta with deprecation" do
+    err = capture_stderr do
+      assert_equal("A3*2", Xlsxrb::Utils.expand_formula("A2*2", from_ref: "B2", to_ref: "B3"))
+    end
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.expand_formula is deprecated/, err)
     # Simple shift
     assert_equal("A3*2", Xlsxrb::Utils.expand_formula("A2*2", from_ref: "B2", to_ref: "B3"))
     assert_equal("B2*2", Xlsxrb::Utils.expand_formula("A2*2", from_ref: "A2", to_ref: "B2"))

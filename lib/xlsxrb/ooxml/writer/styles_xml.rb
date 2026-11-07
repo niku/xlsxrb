@@ -260,7 +260,8 @@ module Xlsxrb
             mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
             parts << %(<vertAlign val="#{mapped_va}"/>)
           end
-          parts << %(<sz val="#{font[:sz]}"/>) if font[:sz]
+          font_sz = font[:size] || font[:sz]
+          parts << %(<sz val="#{font_sz}"/>) if font_sz
           parts << emit_color_xml(font)
           parts << %(<name val="#{xml_escape(font[:name])}"/>) if font[:name]
           parts << %(<family val="#{font[:family]}"/>) if font[:family]
@@ -276,10 +277,11 @@ module Xlsxrb
 
           has_fg = fill[:fg_color] || fill[:fg_color_theme] || fill[:fg_color_indexed] || fill[:fg_color_auto]
           has_bg = fill[:bg_color] || fill[:bg_color_theme] || fill[:bg_color_indexed] || fill[:bg_color_auto]
-          return "<fill><patternFill patternType=\"#{fill[:pattern]}\"/></fill>" if fill[:pattern] && !has_fg && !has_bg
+          fill_pattern = fill[:pattern_type] || fill[:pattern]
+          return "<fill><patternFill patternType=\"#{fill_pattern}\"/></fill>" if fill_pattern && !has_fg && !has_bg
 
           parts = ["<fill>"]
-          pt = fill[:pattern] || "solid"
+          pt = fill_pattern || "solid"
           parts << %(<patternFill patternType="#{pt}">)
           parts << emit_fill_color_xml("fgColor", fill, :fg)
           parts << emit_fill_color_xml("bgColor", fill, :bg)
@@ -332,11 +334,17 @@ module Xlsxrb
 
         # : (untyped brk, default_max: untyped) -> ::String
         def emit_brk_xml(brk, default_max:)
-          if brk.is_a?(Hash)
+          brk = brk.to_h if brk.is_a?(Elements::MetadataRecord)
+          if brk.is_a?(Hash) || brk.is_a?(Elements::PageBreak)
             attrs = %(id="#{brk[:id]}")
             attrs << %( min="#{brk[:min]}") if brk[:min]
-            attrs << %( max="#{brk.fetch(:max, default_max)}")
-            attrs << ' man="1"' if brk.fetch(:man, true)
+            attrs << %( max="#{brk.respond_to?(:fetch) ? brk.fetch(:max, default_max) : (brk[:max] || default_max)}")
+            man_val = if brk.respond_to?(:fetch)
+                        brk.fetch(:man, true)
+                      else
+                        brk[:man].nil? || brk[:man]
+                      end
+            attrs << ' man="1"' if man_val
             attrs << ' pt="1"' if brk[:pt]
             "<brk #{attrs}/>"
           else
@@ -367,11 +375,13 @@ module Xlsxrb
 
         # : (untyped dxf) -> untyped
         def emit_dxf_xml(dxf)
+          dxf = dxf.to_h if dxf.is_a?(Elements::MetadataRecord)
           parts = ["<dxf>"]
           parts << emit_font_xml(dxf[:font]) if dxf[:font]
-          if dxf[:num_fmt]
-            nf = dxf[:num_fmt]
-            parts << %(<numFmt numFmtId="#{nf[:num_fmt_id]}" formatCode="#{xml_escape(nf[:format_code])}"/>)
+          nf = dxf.is_a?(Elements::MetadataRecord) ? dxf.number_format : (dxf[:number_format] || dxf[:num_fmt])
+          if nf
+            nf_h = nf.is_a?(Elements::MetadataRecord) ? nf.to_h : nf
+            parts << %(<numFmt numFmtId="#{nf_h[:num_fmt_id]}" formatCode="#{xml_escape(nf_h[:format_code])}"/>)
           end
           parts << emit_fill_xml(dxf[:fill]) if dxf[:fill]
           parts << emit_alignment_xml(dxf[:alignment]) if dxf[:alignment]

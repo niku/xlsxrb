@@ -315,7 +315,8 @@ module Xlsxrb
         # : (untyped rich_text) -> untyped
         def rich_text_xml(rich_text)
           rich_text.runs.map do |run|
-            font = run[:font]
+            font = run.is_a?(Hash) ? run[:font] : run.font
+            run_text = run.is_a?(Hash) ? run[:text] : run.text
             if font && !font.empty?
               rpr = +""
               rpr << "<b/>" if font[:bold]
@@ -342,9 +343,9 @@ module Xlsxrb
               rpr << %(<rFont val="#{xml_escape(font[:name])}"/>) if font[:name]
               rpr << %(<family val="#{font[:family]}"/>) if font[:family]
               rpr << %(<scheme val="#{font[:scheme]}"/>) if font[:scheme]
-              "<r><rPr>#{rpr}</rPr><t>#{xml_escape(run[:text])}</t></r>"
+              "<r><rPr>#{rpr}</rPr><t>#{xml_escape(run_text)}</t></r>"
             else
-              "<r><t>#{xml_escape(run[:text])}</t></r>"
+              "<r><t>#{xml_escape(run_text)}</t></r>"
             end
           end.join
         end
@@ -724,7 +725,26 @@ module Xlsxrb
             XML_HEADER,
             %(<Properties xmlns="#{custom_ns}" xmlns:vt="#{VT_NS}">)
           ]
-          @custom_properties.each_with_index do |prop, idx|
+          list = if @custom_properties.is_a?(Hash)
+                   @custom_properties.map do |name, val|
+                     if val.is_a?(Elements::CustomProperty) || (val.respond_to?(:name) && val.respond_to?(:value))
+                       { name: val.name || name.to_s, value: val.value, type: val.type }
+                     elsif val.is_a?(Hash)
+                       { name: val[:name] || name.to_s, value: val[:value], type: val[:type] }
+                     else
+                       { name: name.to_s, value: val, type: nil }
+                     end
+                   end
+                 else
+                   @custom_properties.map do |prop|
+                     if prop.is_a?(Elements::CustomProperty) || (prop.respond_to?(:name) && prop.respond_to?(:value))
+                       { name: prop.name, value: prop.value, type: prop.type }
+                     else
+                       prop
+                     end
+                   end
+                 end
+          list.each_with_index do |prop, idx|
             fmtid = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"
             pid = idx + 2 # pids start at 2
             parts << %(<property fmtid="#{fmtid}" pid="#{pid}" name="#{xml_escape(prop[:name])}">)

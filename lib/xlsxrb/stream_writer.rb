@@ -28,18 +28,46 @@ module Xlsxrb
     private_constant :OMITTED
 
     # @return [String, nil] Name of the currently active worksheet.
+    # @api private
     #: String?
     attr_reader :current_sheet
 
     # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+    #: bool
     attr_accessor :escape_formulas
 
-    # @return [Boolean] Whether the shared strings table is enabled.
-    attr_reader :shared_strings
-    alias shared_strings? shared_strings
+    # Returns whether formula escaping is enabled.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def escape_formulas?
+      @escape_formulas ? true : false
+    end
+
+    # Returns whether the shared strings table is enabled.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def shared_strings?
+      @shared_strings ? true : false
+    end
+
+    # @deprecated Use {#shared_strings?} instead. Will be removed in 0.2.0.
+    #: () -> bool
+    def shared_strings
+      warn "[DEPRECATION] StreamWriter#shared_strings is deprecated; use #shared_strings? instead.", uplevel: 1
+      shared_strings?
+    end
 
     # @return [Integer] The ZIP deflate compression level (0..9).
+    #: Integer
     attr_reader :compression_level
+
+    # @return [Hash{String => StyleBuilder}]
+    #: Hash[String, StyleBuilder]
+    attr_reader :styles
 
     # Initializes a streaming writer context.
     #
@@ -247,6 +275,25 @@ module Xlsxrb
       @workbook_properties[name] = value
     end
 
+    # Returns workbook-level properties.
+    #
+    # @return [Elements::WorkbookProperties]
+    # @api public
+    #: () -> Elements::WorkbookProperties
+    def workbook_properties
+      Elements::WorkbookProperties.new(**@workbook_properties)
+    end
+
+    # Sets workbook-level properties.
+    #
+    # @param props [Hash, Elements::MetadataRecord]
+    # @return [void]
+    # @api public
+    #: (untyped props) -> void
+    def workbook_properties=(props)
+      @workbook_properties = props.is_a?(Elements::MetadataRecord) ? props.to_h : props
+    end
+
     # Defines or configures a named cell style.
     #
     # @param name [String, Symbol] The name of the style.
@@ -328,6 +375,20 @@ module Xlsxrb
         @sheet_name = sheet_name
       end
 
+      # Sets or configures the workbook-wide default font.
+      #
+      # @param name [String, Hash, nil] Font name or font options Hash.
+      # @param size [Float, Integer, nil] Font size in points.
+      # @param opts [Hash] Additional font options.
+      # @return [void]
+      # @api public
+      #: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+      def default_font(...)
+        @writer.default_font(...)
+      end
+      # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
+      alias set_default_font default_font
+
       # Creates an {Elements::Formula} object.
       # @api public
       #: (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?, ?shared_index: Integer?) -> Elements::Formula
@@ -381,20 +442,6 @@ module Xlsxrb
         @writer.columns
       end
 
-      # Sets or configures the workbook-wide default font.
-      #
-      # @param name [String, Hash, nil] Font name or font options Hash.
-      # @param size [Float, Integer, nil] Font size in points.
-      # @param opts [Hash] Additional font options.
-      # @return [void]
-      # @api public
-      #: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
-      def default_font(...)
-        @writer.default_font(...)
-      end
-      # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
-      alias set_default_font default_font
-
       # Returns the list of worksheet names created in this workbook so far.
       #
       # @return [Array<String>] Worksheet names.
@@ -402,6 +449,31 @@ module Xlsxrb
       #: () -> Array[String]
       def sheet_names
         @writer.sheet_names
+      end
+
+      # Returns whether formula escaping is enabled.
+      #
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def escape_formulas?
+        @writer.escape_formulas?
+      end
+
+      # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+      #: bool
+      def escape_formulas
+        @writer.escape_formulas
+      end
+
+      # Sets whether to treat strings starting with formula prefixes as plain text.
+      #
+      # @param val [Boolean]
+      # @return [Boolean]
+      # @api public
+      #: (bool val) -> bool
+      def escape_formulas=(val, ...)
+        @writer.escape_formulas = val
       end
 
       # Defines or configures a named cell style on the active sheet.
@@ -623,16 +695,17 @@ module Xlsxrb
       # @param summary_below [Boolean, nil] Summary rows below detail rows.
       # @param summary_right [Boolean, nil] Summary columns to the right of detail columns.
       # @param show_outline_symbols [Boolean, nil] Outline symbols visible.
-      # @param show_symbols [Boolean, nil] Alias for show_outline_symbols.
+      # @param show_symbols [Boolean, nil] Deprecated alias for show_outline_symbols.
       # @param apply_styles [Boolean, nil] Automatic styles applied.
       # @param opts [Hash] Additional options.
       # @return [void]
       # @api public
       #: (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?show_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> void
-      def outline_properties(...)
+      def outline_properties(summary_below: nil, summary_right: nil, show_outline_symbols: nil, show_symbols: nil, apply_styles: nil, **opts)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.outline_properties(...)
+        warn "[Xlsxrb DEPRECATION] outline_properties keyword show_symbols: is deprecated; use show_outline_symbols: instead.", uplevel: 1 unless show_symbols.nil?
+        @writer.outline_properties(summary_below: summary_below, summary_right: summary_right, show_outline_symbols: show_outline_symbols || show_symbols, apply_styles: apply_styles, **opts)
       end
       # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
       alias outline_pr outline_properties
@@ -1157,17 +1230,28 @@ module Xlsxrb
         @writer.sheet_properties(...)
       end
 
+      # Replaces worksheet properties.
+      # @param opts [Hash, Elements::SheetProperties]
+      # @return [void]
+      # @api public
+      #: (Hash[Symbol, untyped] | Elements::SheetProperties opts) -> void
+      def sheet_properties=(opts)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sheet_properties = opts
+      end
+
       # Adds a defined name (named range or formula) scoped to this sheet or workbook.
       # Bare cell references and coordinate keywords are automatically formatted with sheet quotes and absolute $ references.
       #
       # @param name [String] Defined name identifier.
       # @param value [Object, nil] Value or formula expression.
       # @param hidden [Boolean] Whether the defined name is hidden.
-      # @param column [Integer, String, nil] Column index or letter for coordinate-based reference.
-      # @param columns [Integer, String, nil] Alias for column.
+      # @param column [Integer, String, nil] Deprecated alias for columns.
+      # @param columns [Integer, String, nil] Column index or letter for coordinate-based reference.
       # @param col [Integer, String, nil] Deprecated alias for column.
-      # @param row [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
-      # @param rows [Integer, Range, nil] Alias for row.
+      # @param row [Integer, Range, nil] Deprecated alias for rows.
+      # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
       # @param range [String, nil] Cell range reference.
       # @param sheet [String, nil] Reference sheet name (defaults to current sheet).
       # @param scope [String, Symbol, nil] Scope identifier (:workbook or sheet name).
@@ -1178,12 +1262,10 @@ module Xlsxrb
       def defined_name(name, value = nil, hidden: false, column: nil, columns: nil, col: nil, row: nil, rows: nil, range: nil, sheet: nil, scope: nil, local: false)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        if col
-          warn "[DEPRECATION] `col:` is deprecated; use `column:` (or `columns:`) instead.", uplevel: 1
-        end
-        if local
-          warn "[DEPRECATION] `local:` is deprecated; use `scope:` instead.", uplevel: 1
-        end
+        warn "[DEPRECATION] `col:` is deprecated; use `column:` (or `columns:`) instead.", uplevel: 1 if col
+        warn "[DEPRECATION] `local:` is deprecated; use `scope:` instead.", uplevel: 1 if local
+        warn "[Xlsxrb DEPRECATION] defined_name keyword column: is deprecated; use columns: instead.", uplevel: 1 unless column.nil?
+        warn "[Xlsxrb DEPRECATION] defined_name keyword row: is deprecated; use rows: instead.", uplevel: 1 unless row.nil?
         c_arg = column || columns || col
         r_arg = row || rows
         ref_sheet = sheet || @sheet_name
@@ -1194,7 +1276,7 @@ module Xlsxrb
                       else
                         sheet
                       end
-        @writer.defined_name(name, value, sheet: local_sheet, hidden: hidden, column: c_arg, row: r_arg, range: range, ref_sheet: ref_sheet)
+        @writer.defined_name(name, value, sheet: local_sheet, hidden: hidden, columns: c_arg, rows: r_arg, range: range, ref_sheet: ref_sheet)
       end
 
       # Freezes rows and/or columns for scrolling.
@@ -1229,11 +1311,6 @@ module Xlsxrb
         @writer.freeze_pane = opts
       end
 
-      # simplecov:disable
-      # Edge case / untested delegation block
-      # Sets the print area range for the sheet.
-      #
-      # @param ref [String] Range reference.
       # Sets or gets the print area range for the sheet.
       #
       # @param range [String, Object, nil] Range reference.
@@ -1268,9 +1345,9 @@ module Xlsxrb
       # @param rows [String, Integer, Range, Object, nil] Row range to repeat (e.g. "1:2").
       # @param columns [String, Integer, Symbol, Range, Object, nil] Column range to repeat (e.g. "A:B").
       # @param cols [String, Integer, Symbol, Range, Object, nil] Deprecated alias for columns.
-      # @return [untyped]
+      # @return [Elements::PrintTitles, nil, void]
       # @api public
-      #: (?rows: untyped, ?columns: untyped, ?cols: untyped) -> untyped
+      #: (?rows: untyped, ?columns: untyped, ?cols: untyped) -> (Elements::PrintTitles | nil | void)
       def print_titles(rows: OMITTED, columns: OMITTED, cols: OMITTED)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1283,10 +1360,10 @@ module Xlsxrb
 
       # Sets repeating print titles for this worksheet.
       #
-      # @param opts [untyped] Options with :rows and/or :columns.
-      # @return [untyped]
+      # @param opts [Elements::PrintTitles, Hash, nil] Options with :rows and/or :columns.
+      # @return [Elements::PrintTitles, Hash, nil]
       # @api public
-      #: (untyped opts) -> untyped
+      #: (Elements::PrintTitles | Hash[Symbol, untyped] | nil opts) -> (Elements::PrintTitles | Hash[Symbol, untyped] | nil)
       def print_titles=(opts)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1516,6 +1593,17 @@ module Xlsxrb
         @writer.print_options(...)
       end
 
+      # Replaces print options.
+      # @param opts [Hash, Elements::PrintOptions]
+      # @return [void]
+      # @api public
+      #: (Hash[Symbol, untyped] | Elements::PrintOptions opts) -> void
+      def print_options=(opts)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.print_options = opts
+      end
+
       # simplecov:disable
       # Edge case / untested delegation block
       # Sets document metadata properties (core, app, custom).
@@ -1664,6 +1752,17 @@ module Xlsxrb
         @writer.sheet_view(...)
       end
 
+      # Replaces sheet view properties.
+      # @param opts [Hash, Elements::SheetView]
+      # @return [void]
+      # @api public
+      #: (Hash[Symbol, untyped] | Elements::SheetView opts) -> void
+      def sheet_view=(opts)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sheet_view = opts
+      end
+
       # Configures sheet format properties (e.g. default_row_height, default_col_width).
       #
       # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
@@ -1671,11 +1770,22 @@ module Xlsxrb
       # @param opts [Hash] Keyword arguments for sheet format properties.
       # @return [Hash[Symbol, untyped]]
       # @api public
-      #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+      #: (?Symbol | String | Hash[Symbol, untyped] | Elements::MetadataRecord | nil name, ?untyped value, **untyped opts) -> (Elements::SheetFormat | void)
       def sheet_format(name = nil, value = nil, **opts)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.sheet_format(name, value, **opts)
+      end
+
+      # Replaces sheet format properties.
+      # @param opts [Hash, Elements::SheetFormat]
+      # @return [void]
+      # @api public
+      #: (Hash[Symbol, untyped] | Elements::SheetFormat opts) -> void
+      def sheet_format=(opts)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sheet_format = opts
       end
 
       # simplecov:disable
@@ -1793,7 +1903,7 @@ module Xlsxrb
       #
       # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#phonetic_properties=} instead.
       # @api public
-      #: (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
+      #: (?untyped spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> (Elements::PhoneticProperties | Hash[Symbol, untyped] | nil)
       def phonetic_properties(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1856,7 +1966,17 @@ module Xlsxrb
 
         @writer.fit_to_page(enabled, width: width, height: height)
       end
-      alias fit_to_page? fit_to_page
+
+      # @deprecated Use {#fit_to_page} instead. Will be removed in 0.2.0.
+      # @return [Boolean]
+      # @api public
+      #: () -> bool
+      def fit_to_page?
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        warn "[Xlsxrb DEPRECATION] fit_to_page? is deprecated; use fit_to_page instead.", uplevel: 1
+        @writer.fit_to_page
+      end
 
       # Sets whether page setup fits content to page width/height.
       #
@@ -1877,7 +1997,7 @@ module Xlsxrb
       # @param full_calc_on_load [Boolean, nil] Whether to recalculate when loading.
       # @return [Hash, nil]
       # @api public
-      #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+      #: (?untyped spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
       def sheet_calc_properties(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -1897,14 +2017,14 @@ module Xlsxrb
       end
 
       # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-      #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+      #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
       def sheet_calc_pr(...)
         warn "[DEPRECATION] #sheet_calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
         sheet_calc_properties(...)
       end
 
       # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-      #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+      #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
       def calc_pr(...)
         warn "[DEPRECATION] #calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
         sheet_calc_properties(...)
@@ -1939,17 +2059,21 @@ module Xlsxrb
     # Adds a new sheet to the workbook and starts streaming rows into it.
     #
     # @param name [String, nil] Sheet name (max 31 characters).
+    # @param state [Symbol, String, nil] Sheet visibility state (:visible, :hidden, :very_hidden).
+    # @param tab_color [String, Hash, nil] Tab color hex string or color hash.
+    # @param code_name [String, nil] VBA code name.
+    # @param hidden [Boolean, nil] Deprecated alias for state: :hidden.
     # @param opts [Hash] Sheet-level configuration.
     # @yield [sheet_proxy]
     # @yieldparam sheet_proxy [WorksheetProxy] The streaming sheet proxy.
     # @return [String] The sheet name.
     # @api public
-    #: (?String? name, **untyped opts) ?{ (WorksheetProxy) -> void } -> untyped
-    def sheet(name = nil, **opts)
+    #: (?String? name, ?state: (Symbol | String)?, ?tab_color: untyped, ?code_name: String?, ?hidden: bool?, **untyped opts) ?{ (WorksheetProxy) -> void } -> String
+    def sheet(name = nil, state: nil, tab_color: nil, code_name: nil, hidden: nil, **opts)
       sheet_count = @sheets.size + (@current_sheet ? 1 : 0)
       name ||= "Sheet#{sheet_count + 1}"
       raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
-      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (Excel limitation)" if name.match?(Elements::Worksheet::FORBIDDEN_NAME_CHARS)
+      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (Excel limitation)" if name.match?(Elements::Worksheet.forbidden_name_chars)
       raise ArgumentError, "Sheet name '#{name}' cannot start or end with an apostrophe (Excel limitation)" if @strict_excel_mode && (name.start_with?("'") || name.end_with?("'"))
       raise ArgumentError, "Sheet name '#{name}' is reserved by Excel (Excel limitation)" if @strict_excel_mode && name.casecmp?("History")
 
@@ -1958,8 +2082,12 @@ module Xlsxrb
       raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && existing_names.include?(name.downcase)
 
       active = opts.delete(:active)
-      state = opts.delete(:state)
-      hidden = opts.delete(:hidden)
+      state = opts.delete(:state) if opts.key?(:state)
+      hidden = opts.delete(:hidden) if opts.key?(:hidden)
+      code_name = opts.delete(:code_name) if opts.key?(:code_name)
+      tab_color = opts.delete(:tab_color) if opts.key?(:tab_color)
+
+      warn "[Xlsxrb DEPRECATION] sheet keyword hidden: is deprecated; use state: :hidden instead.", uplevel: 1 unless hidden.nil?
       state ||= :hidden if hidden
       state ||= :visible
       state = state.to_sym
@@ -1970,6 +2098,8 @@ module Xlsxrb
         @active_sheet = name
         @current_sheet_view[:tab_selected] = true
       end
+      self.tab_color = tab_color if tab_color
+      self.code_name = code_name if code_name
       opts.each { |k, v| sheet_properties(k, v) }
 
       yield WorksheetProxy.new(self, @current_sheet) if block_given?
@@ -2066,6 +2196,8 @@ module Xlsxrb
       # simplecov:enable
     end
 
+    # @api private
+    #: () -> void
     def start_sheet_entry
       return if @sheet_entry_started
 
@@ -2371,7 +2503,7 @@ module Xlsxrb
     # @param summary_below [Boolean, nil] Flag indicating if summary rows appear below detail rows.
     # @param summary_right [Boolean, nil] Flag indicating if summary columns appear to the right of detail columns.
     # @param show_outline_symbols [Boolean, nil] Flag indicating whether outline symbols are visible.
-    # @param show_symbols [Boolean, nil] Alias for show_outline_symbols.
+    # @param show_symbols [Boolean, nil] Deprecated alias for show_outline_symbols.
     # @param apply_styles [Boolean, nil] Flag indicating whether automatic styles apply to outlines.
     # @param opts [Hash] Additional options.
     # @return [Hash<Symbol, untyped>, void]
@@ -2626,12 +2758,8 @@ module Xlsxrb
     #: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?column_fields: untyped, ?col_fields: untyped, ?ref: untyped, ?dest_ref: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
     def pivot_table(source_ref, row_fields:, data_fields:, column_fields: nil, col_fields: nil, ref: nil, dest_ref: nil, name: nil, field_names: nil, items: nil, **opts)
       sheet if @current_sheet.nil?
-      if col_fields && column_fields.nil?
-        warn "[DEPRECATION] `col_fields:` is deprecated; use `column_fields:` instead.", uplevel: 1
-      end
-      if dest_ref && ref.nil?
-        warn "[DEPRECATION] `dest_ref:` is deprecated; use `ref:` instead.", uplevel: 1
-      end
+      warn "[DEPRECATION] `col_fields:` is deprecated; use `column_fields:` instead.", uplevel: 1 if col_fields && column_fields.nil?
+      warn "[DEPRECATION] `dest_ref:` is deprecated; use `ref:` instead.", uplevel: 1 if dest_ref && ref.nil?
       c_fields = column_fields || col_fields || []
       target_ref = ref || dest_ref || "E1"
       @current_pivot_tables ||= []
@@ -2786,9 +2914,7 @@ module Xlsxrb
         return @current_freeze_pane
       end
 
-      if col && column.nil?
-        warn "[DEPRECATION] `col:` is deprecated; use `column:` instead.", uplevel: 1
-      end
+      warn "[DEPRECATION] `col:` is deprecated; use `column:` instead.", uplevel: 1 if col && column.nil?
       col_val = Elements::Cell._column_index(column || col || 0)
       @current_freeze_pane = { row: row || 0, col: col_val, column: col_val }
       nil
@@ -3028,22 +3154,41 @@ module Xlsxrb
       nil
     end
 
-    # Configures print options (e.g. grid_lines: true).
+    # Configures or queries print options (<printOptions>).
     #
-    # @param name [Symbol, String, Hash, nil] Option name or hash of options.
+    # When called with no arguments, returns the {Elements::PrintOptions} value object.
+    # When called with arguments or keyword options, configures print options and returns nil.
+    #
+    # @param name [Symbol, String, Hash, Elements::MetadataRecord, nil] Option name or hash/record of options.
     # @param value [Object, nil] Option value.
     # @param opts [Hash] Additional print options.
-    # @return [void]
+    # @return [Elements::PrintOptions, void]
     # @api public
-    #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> void
+    #: (?Symbol | String | Hash[Symbol, untyped] | Elements::MetadataRecord | nil name, ?untyped value, **untyped opts) -> (Elements::PrintOptions | void)
     def print_options(name = nil, value = nil, **opts)
       sheet if @current_sheet.nil?
-      if name.is_a?(Hash)
-        opts = name.merge(opts)
+      return Elements::PrintOptions.new(**@current_print_options) if name.nil? && value.nil? && opts.empty?
+
+      if name.is_a?(Hash) || (name.respond_to?(:to_h) && !name.is_a?(Symbol) && !name.is_a?(String))
+        opts = name.to_h.merge(opts)
         name = nil
       end
       @current_print_options[name.to_sym] = value if name && !value.nil?
       opts.each { |k, v| @current_print_options[k.to_sym] = v }
+      nil
+    end
+
+    # Replaces print options with the given hash or {Elements::PrintOptions} object.
+    #
+    # @param opts [Hash, Elements::PrintOptions]
+    # @return [void]
+    # @api public
+    #: (Hash[Symbol, untyped] | Elements::PrintOptions opts) -> void
+    def print_options=(opts)
+      sheet if @current_sheet.nil?
+      h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
+      @current_print_options = h.transform_keys(&:to_sym)
+      nil
     end
 
     # Configures or queries sheet-level protection with optional password hashing (<sheetProtection>).
@@ -3109,12 +3254,8 @@ module Xlsxrb
     # @api public
     #: (String file_data, ?ext: ::String, ?from_column: ::Integer?, ?from_col: ::Integer?, ?from_row: ::Integer, ?to_column: ::Integer?, ?to_col: ::Integer?, ?to_row: ::Integer, **untyped opts) -> void
     def image(file_data, ext: "png", from_column: nil, from_col: nil, from_row: 0, to_column: nil, to_col: nil, to_row: 10, **opts)
-      if from_col && from_column.nil?
-        warn "[DEPRECATION] `from_col:` is deprecated; use `from_column:` instead.", uplevel: 1
-      end
-      if to_col && to_column.nil?
-        warn "[DEPRECATION] `to_col:` is deprecated; use `to_column:` instead.", uplevel: 1
-      end
+      warn "[DEPRECATION] `from_col:` is deprecated; use `from_column:` instead.", uplevel: 1 if from_col && from_column.nil?
+      warn "[DEPRECATION] `to_col:` is deprecated; use `to_column:` instead.", uplevel: 1 if to_col && to_column.nil?
       fc = from_column || from_col || 0
       tc = to_column || to_col || 5
       sheet if @current_sheet.nil?
@@ -3139,7 +3280,11 @@ module Xlsxrb
     # @api public
     #: (?untyped file_data, ?ext: ::String?, **untyped opts) -> Hash[Symbol, untyped]?
     def background_image(file_data = nil, ext: nil, **opts)
-      return @current_background_image if file_data.nil? && ext.nil? && opts.empty?
+      if file_data.nil? && ext.nil? && opts.empty?
+        return nil unless @current_background_image
+
+        return @current_background_image.is_a?(Elements::BackgroundImage) ? @current_background_image : Elements::BackgroundImage.new(**@current_background_image)
+      end
 
       sheet if @current_sheet.nil?
 
@@ -3210,12 +3355,8 @@ module Xlsxrb
     # @api public
     #: (**untyped opts) -> void
     def shape(preset: "rect", text: nil, from_column: nil, from_col: nil, from_row: 0, to_column: nil, to_col: nil, to_row: 5, **opts)
-      if from_col && from_column.nil?
-        warn "[DEPRECATION] `from_col:` is deprecated; use `from_column:` instead.", uplevel: 1
-      end
-      if to_col && to_column.nil?
-        warn "[DEPRECATION] `to_col:` is deprecated; use `to_column:` instead.", uplevel: 1
-      end
+      warn "[DEPRECATION] `from_col:` is deprecated; use `from_column:` instead.", uplevel: 1 if from_col && from_column.nil?
+      warn "[DEPRECATION] `to_col:` is deprecated; use `to_column:` instead.", uplevel: 1 if to_col && to_column.nil?
       fc = from_column || from_col || 0
       tc = to_column || to_col || 5
       sheet if @current_sheet.nil?
@@ -3298,18 +3439,23 @@ module Xlsxrb
       sheet_properties(name, value)
     end
 
-    # Sets worksheet properties. Accepts name/value pair or keyword arguments.
+    # Configures or queries sheet properties (<sheetPr>).
     #
-    # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
+    # When called with no arguments, returns the {Elements::SheetProperties} value object.
+    # When called with arguments or keyword options, configures properties and returns nil.
+    #
+    # @param name [Symbol, String, Hash, Elements::MetadataRecord, nil] Property name or hash/record of properties.
     # @param value [Object, nil] Property value when name is provided.
     # @param opts [Hash] Additional sheet properties.
-    # @return [void]
+    # @return [Elements::SheetProperties, void]
     # @api public
-    #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> void
+    #: (?Symbol | String | Hash[Symbol, untyped] | Elements::MetadataRecord | nil name, ?untyped value, **untyped opts) -> (Elements::SheetProperties | void)
     def sheet_properties(name = nil, value = nil, **opts)
       sheet if @current_sheet.nil?
-      if name.is_a?(Hash)
-        opts = name.merge(opts)
+      return Elements::SheetProperties.new(**@current_sheet_properties) if name.nil? && value.nil? && opts.empty?
+
+      if name.is_a?(Hash) || (name.respond_to?(:to_h) && !name.is_a?(Symbol) && !name.is_a?(String))
+        opts = name.to_h.merge(opts)
         name = nil
       end
       if name && !value.nil?
@@ -3319,46 +3465,85 @@ module Xlsxrb
           raise ArgumentError, "Invalid sheet state ':#{val}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(val)
 
           @current_sheet_state = val
-          return
+          return nil
         elsif sym == :hidden
           @current_sheet_state = value ? :hidden : :visible
-          return
+          return nil
         end
         @current_sheet_properties[name.to_sym] = value
       end
       opts.each { |k, v| sheet_properties(k, v) }
+      nil
     end
 
-    # Sets a sheet view property (e.g. zoom_scale: 120).
+    # Replaces worksheet properties with the given hash or {Elements::SheetProperties} object.
     #
-    # @param name [Symbol, String, Hash, nil] View property name or hash of properties.
-    # @param value [Object, nil] View property value when name is provided.
-    # @param opts [Hash] Additional view properties.
+    # @param opts [Hash, Elements::SheetProperties]
     # @return [void]
     # @api public
-    #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> void
+    #: (Hash[Symbol, untyped] | Elements::SheetProperties opts) -> void
+    def sheet_properties=(opts)
+      sheet if @current_sheet.nil?
+      h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
+      @current_sheet_properties = {}
+      h.each { |k, v| sheet_properties(k, v) }
+      nil
+    end
+
+    # Configures or queries sheet view display properties (<sheetView>).
+    #
+    # When called with no arguments, returns the {Elements::SheetView} value object.
+    # When called with arguments or keyword options, configures view properties and returns nil.
+    #
+    # @param name [Symbol, String, Hash, Elements::MetadataRecord, nil] View property name or hash/record of properties.
+    # @param value [Object, nil] View property value when name is provided.
+    # @param opts [Hash] Additional view properties.
+    # @return [Elements::SheetView, void]
+    # @api public
+    #: (?Symbol | String | Hash[Symbol, untyped] | Elements::MetadataRecord | nil name, ?untyped value, **untyped opts) -> (Elements::SheetView | void)
     def sheet_view(name = nil, value = nil, **opts)
       sheet if @current_sheet.nil?
-      if name.is_a?(Hash)
-        opts = name.merge(opts)
+      return Elements::SheetView.new(**@current_sheet_view) if name.nil? && value.nil? && opts.empty?
+
+      if name.is_a?(Hash) || (name.respond_to?(:to_h) && !name.is_a?(Symbol) && !name.is_a?(String))
+        opts = name.to_h.merge(opts)
         name = nil
       end
       @current_sheet_view[name.to_sym] = value if name && !value.nil?
       opts.each { |k, v| @current_sheet_view[k.to_sym] = v }
+      nil
     end
 
-    # Configures sheet format properties (e.g. default_row_height, default_column_width).
+    # Replaces sheet view properties with the given hash or {Elements::SheetView} object.
     #
-    # @param name [Symbol, String, Hash, nil] Property name or hash of properties.
+    # @param opts [Hash, Elements::SheetView]
+    # @return [void]
+    # @api public
+    #: (Hash[Symbol, untyped] | Elements::SheetView opts) -> void
+    def sheet_view=(opts)
+      sheet if @current_sheet.nil?
+      h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
+      @current_sheet_view = h.transform_keys(&:to_sym)
+      nil
+    end
+
+    # Configures or queries sheet format properties (<sheetFormatPr>).
+    #
+    # When called with no arguments, returns the {Elements::SheetFormat} value object.
+    # When called with arguments or keyword options, configures format properties and returns nil.
+    #
+    # @param name [Symbol, String, Hash, Elements::MetadataRecord, nil] Property name or hash/record of properties.
     # @param value [Object, nil] Property value when name is provided.
     # @param opts [Hash] Keyword arguments for sheet format properties.
-    # @return [Hash[Symbol, untyped]]
+    # @return [Elements::SheetFormat, void]
     # @api public
-    #: (?Symbol | String | Hash[Symbol, untyped] | nil name, ?untyped value, **untyped opts) -> Hash[Symbol, untyped]
+    #: (?Symbol | String | Hash[Symbol, untyped] | Elements::MetadataRecord | nil name, ?untyped value, **untyped opts) -> (Elements::SheetFormat | void)
     def sheet_format(name = nil, value = nil, **opts)
       sheet if @current_sheet.nil?
-      if name.is_a?(Hash)
-        @current_sheet_format.merge!(name)
+      return Elements::SheetFormat.new(**@current_sheet_format) if name.nil? && value.nil? && opts.empty?
+
+      if name.is_a?(Hash) || (name.respond_to?(:to_h) && !name.is_a?(Symbol) && !name.is_a?(String))
+        @current_sheet_format.merge!(name.to_h)
       elsif name && value
         @current_sheet_format[name.to_sym] = value
       end
@@ -3375,7 +3560,21 @@ module Xlsxrb
         opts[:outline_level_column] = opts[:outline_level_col]
       end
       @current_sheet_format.merge!(opts) unless opts.empty?
-      @current_sheet_format
+      nil
+    end
+
+    # Replaces sheet format properties with the given hash or {Elements::SheetFormat} object.
+    #
+    # @param opts [Hash, Elements::SheetFormat]
+    # @return [void]
+    # @api public
+    #: (Hash[Symbol, untyped] | Elements::SheetFormat opts) -> void
+    def sheet_format=(opts)
+      sheet if @current_sheet.nil?
+      h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
+      @current_sheet_format = {}
+      sheet_format(h)
+      nil
     end
 
     # Inserts a horizontal page break after the given 0-based row.
@@ -3479,7 +3678,7 @@ module Xlsxrb
     # @api public
     #: () -> Array[Hash[Symbol, untyped]]
     def ignored_errors
-      @current_ignored_errors.dup
+      @current_ignored_errors.map { |ie| ie.is_a?(Elements::IgnoredError) ? ie : Elements::IgnoredError.new(**ie) }.freeze
     end
 
     # Gets or sets phonetic (furigana) guide properties for the current sheet.
@@ -3496,11 +3695,13 @@ module Xlsxrb
     #   @param alignment [Symbol, String, nil]
     #   @return [Hash, nil]
     # @api public
-    #: (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
+    #: (?untyped spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> (Elements::PhoneticProperties | Hash[Symbol, untyped] | nil)
     def phonetic_properties(spec = OMITTED, font_id: nil, type: nil, alignment: nil, **opts)
       sheet if @current_sheet.nil?
       if spec.equal?(OMITTED) && font_id.nil? && type.nil? && alignment.nil? && opts.empty?
-        @current_phonetic_properties
+        return nil unless @current_phonetic_properties
+
+        @current_phonetic_properties.is_a?(Elements::PhoneticProperties) ? @current_phonetic_properties : Elements::PhoneticProperties.new(**@current_phonetic_properties)
       elsif !spec.equal?(OMITTED) && spec.nil? && font_id.nil? && type.nil? && alignment.nil? && opts.empty?
         @current_phonetic_properties = nil
       else
@@ -3602,7 +3803,15 @@ module Xlsxrb
       page_setup(fit_to_width: width) if width
       page_setup(fit_to_height: height) if height
     end
-    alias fit_to_page? fit_to_page
+
+    # @deprecated Use {#fit_to_page} instead. Will be removed in 0.2.0.
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def fit_to_page?
+      warn "[Xlsxrb DEPRECATION] fit_to_page? is deprecated; use fit_to_page instead.", uplevel: 1
+      fit_to_page
+    end
 
     # Sets whether page setup fits content to page width/height for the current sheet.
     #
@@ -3625,11 +3834,14 @@ module Xlsxrb
     # @param full_calc_on_load [Boolean, nil] Whether to recalculate when loading.
     # @return [Hash, nil]
     # @api public
-    #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+    #: (?untyped spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
     def sheet_calc_properties(spec = OMITTED, full_calc_on_load: nil, **opts)
       sheet if @current_sheet.nil?
       if spec.equal?(OMITTED) && full_calc_on_load.nil? && opts.empty?
-        return @current_sheet_calc_pr || (@current_sheet_properties[:full_calc_on_load] ? { full_calc_on_load: true } : nil)
+        calc = @current_sheet_calc_pr || (@current_sheet_properties[:full_calc_on_load] ? { full_calc_on_load: true } : nil)
+        return nil unless calc
+
+        return calc.is_a?(Elements::SheetCalcProperties) ? calc : Elements::SheetCalcProperties.new(**calc)
       end
 
       warn "[DEPRECATION] Calling #sheet_calc_properties with arguments is deprecated and will be removed in 0.2.0. Use #sheet_calc_properties= instead.", uplevel: 1
@@ -3665,14 +3877,14 @@ module Xlsxrb
     end
 
     # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-    #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+    #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
     def sheet_calc_pr(spec = OMITTED, full_calc_on_load: nil, **opts)
       warn "[DEPRECATION] #sheet_calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
       sheet_calc_properties(spec, full_calc_on_load: full_calc_on_load, **opts)
     end
 
     # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
-    #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+    #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> (Elements::SheetCalcProperties | Hash[Symbol, untyped] | nil)
     def calc_pr(spec = OMITTED, full_calc_on_load: nil, **opts)
       warn "[DEPRECATION] #calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
       sheet_calc_properties(spec, full_calc_on_load: full_calc_on_load, **opts)
@@ -3701,11 +3913,11 @@ module Xlsxrb
     # @param sheet [String, nil] Reference sheet name.
     # @param scope [String, Symbol, nil] Local scope sheet name or :workbook.
     # @param hidden [Boolean] Whether the defined name is hidden.
-    # @param column [Integer, String, nil] Column index or letter for coordinate-based reference.
-    # @param columns [Integer, String, nil] Alias for column.
+    # @param column [Integer, String, nil] Deprecated alias for columns.
+    # @param columns [Integer, String, nil] Column index or letter for coordinate-based reference.
     # @param col [Integer, String, nil] Deprecated alias for column.
-    # @param row [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
-    # @param rows [Integer, Range, nil] Alias for row.
+    # @param row [Integer, Range, nil] Deprecated alias for rows.
+    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
     # @param range [String, nil] Cell range reference.
     # @param ref_sheet [String, nil] Deprecated alias for sheet.
     # @param local [Boolean] Deprecated alias for scope.
@@ -3713,15 +3925,11 @@ module Xlsxrb
     # @api public
     #: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
     def defined_name(name, value = nil, sheet: nil, scope: nil, hidden: false, column: nil, columns: nil, col: nil, row: nil, rows: nil, range: nil, ref_sheet: nil, local: false)
-      if col
-        warn "[DEPRECATION] `col:` is deprecated; use `column:` (or `columns:`) instead.", uplevel: 1
-      end
-      if ref_sheet
-        warn "[DEPRECATION] `ref_sheet:` is deprecated; use `sheet:` for reference sheet and `scope:` for scope instead.", uplevel: 1
-      end
-      if local
-        warn "[DEPRECATION] `local:` is deprecated; use `scope:` instead.", uplevel: 1
-      end
+      warn "[DEPRECATION] `col:` is deprecated; use `column:` (or `columns:`) instead.", uplevel: 1 if col
+      warn "[DEPRECATION] `ref_sheet:` is deprecated; use `sheet:` for reference sheet and `scope:` for scope instead.", uplevel: 1 if ref_sheet
+      warn "[DEPRECATION] `local:` is deprecated; use `scope:` instead.", uplevel: 1 if local
+      warn "[Xlsxrb DEPRECATION] defined_name keyword column: is deprecated; use columns: instead.", uplevel: 1 unless column.nil?
+      warn "[Xlsxrb DEPRECATION] defined_name keyword row: is deprecated; use rows: instead.", uplevel: 1 unless row.nil?
       target_ref_sheet = ref_sheet || sheet
       c_arg = column || columns || col
       r_arg = row || rows
@@ -3729,11 +3937,7 @@ module Xlsxrb
       entry = { name: name, value: normalized_val, hidden: hidden }
       local_sheet = if scope
                       scope == :workbook ? nil : scope.to_s
-                    elsif ref_sheet
-                      sheet
-                    elsif local
-                      sheet
-                    else
+                    elsif sheet || local || ref_sheet
                       sheet
                     end
       if local_sheet
@@ -3741,6 +3945,15 @@ module Xlsxrb
         entry[:local_sheet_name] = local_sheet
       end
       @defined_names << entry
+    end
+
+    # Returns workbook-level defined names.
+    #
+    # @return [Array<Elements::DefinedName>]
+    # @api public
+    #: () -> Array[Elements::DefinedName]
+    def defined_names
+      @defined_names.map { |dn| dn.is_a?(Elements::DefinedName) ? dn : Elements::DefinedName.new(**dn) }
     end
 
     # Sets or gets the print area for the current or named sheet.
@@ -3780,15 +3993,14 @@ module Xlsxrb
     # @param columns [String, Integer, Symbol, Range, Object, nil] Repeating column range (e.g. "A:B" or 0..1).
     # @param cols [String, Integer, Symbol, Range, Object, nil] Deprecated alias for columns.
     # @param sheet [String, nil] Target sheet name.
-    # @return [untyped]
+    # @return [Elements::PrintTitles, nil, void]
     # @api public
-    #: (?rows: untyped, ?columns: untyped, ?cols: untyped, ?sheet: String?) -> untyped
+    #: (?rows: untyped, ?columns: untyped, ?cols: untyped, ?sheet: String?) -> (Elements::PrintTitles | nil | void)
     def print_titles(rows: OMITTED, columns: OMITTED, cols: OMITTED, sheet: nil)
       if rows.equal?(OMITTED) && columns.equal?(OMITTED) && cols.equal?(OMITTED)
         return nil unless @current_print_titles
-        return Elements::PrintTitles.new(rows: @current_print_titles[:rows], columns: @current_print_titles[:columns] || @current_print_titles[:cols]) if Elements.const_defined?(:PrintTitles)
 
-        return @current_print_titles
+        return Elements::PrintTitles.new(rows: @current_print_titles[:rows], columns: @current_print_titles[:columns] || @current_print_titles[:cols])
       end
 
       warn "[DEPRECATION] `cols:` is deprecated; use `columns:` instead.", uplevel: 1 if cols && !cols.equal?(OMITTED) && columns.equal?(OMITTED)
@@ -3819,10 +4031,10 @@ module Xlsxrb
 
     # Sets repeating print titles for the current worksheet.
     #
-    # @param opts [untyped] Options with :rows and/or :columns.
-    # @return [untyped]
+    # @param opts [Elements::PrintTitles, Hash, nil] Options with :rows and/or :columns.
+    # @return [Elements::PrintTitles, Hash, nil]
     # @api public
-    #: (untyped opts) -> untyped
+    #: (Elements::PrintTitles | Hash[Symbol, untyped] | nil opts) -> (Elements::PrintTitles | Hash[Symbol, untyped] | nil)
     def print_titles=(opts)
       if opts.nil?
         @current_print_titles = nil
@@ -3881,17 +4093,32 @@ module Xlsxrb
                                end
                    "#{first_name}:#{last_name}"
                  end
-      print_titles(cols: cols_str, sheet: sheet)
+      print_titles(columns: cols_str, sheet: sheet)
     end
 
-    # Sets workbook protection.
+    # Sets or returns workbook protection settings.
     #
     # @param opts [Hash] Protection options.
+    # @return [Elements::WorkbookProtection, nil, void]
+    # @api public
+    #: (**String | Integer | bool | nil opts) -> (Elements::WorkbookProtection | nil)
+    def workbook_protection(**opts)
+      if opts.empty?
+        @workbook_protection ? Elements::WorkbookProtection.new(**@workbook_protection) : nil
+      else
+        @workbook_protection = opts
+        nil
+      end
+    end
+
+    # Sets workbook protection settings.
+    #
+    # @param opts [Hash, Elements::MetadataRecord, nil]
     # @return [void]
     # @api public
-    #: (**String | Integer | bool | nil opts) -> void
-    def workbook_protection(**opts)
-      @workbook_protection = opts
+    #: (untyped opts) -> void
+    def workbook_protection=(opts)
+      @workbook_protection = opts.is_a?(Elements::MetadataRecord) ? opts.to_h : opts
     end
 
     # @deprecated Use {#workbook_protection} instead.
@@ -3912,6 +4139,15 @@ module Xlsxrb
       @core_properties[name] = value
     end
 
+    # Returns core document properties.
+    #
+    # @return [Elements::CoreProperties]
+    # @api public
+    #: () -> Elements::CoreProperties
+    def core_properties
+      Elements::CoreProperties.new(**@core_properties)
+    end
+
     # Sets an app document property.
     #
     # @param name [Symbol] Property name.
@@ -3922,8 +4158,18 @@ module Xlsxrb
     def app_property(name, value)
       # simplecov:disable
       # Edge case / untested delegation block
-      @app_properties[name] = value
+      norm_name = name.to_sym == :application ? :app_name : name.to_sym
+      @app_properties[norm_name] = value
       # simplecov:enable
+    end
+
+    # Returns application document properties.
+    #
+    # @return [Elements::AppProperties]
+    # @api public
+    #: () -> Elements::AppProperties
+    def app_properties
+      Elements::AppProperties.new(**@app_properties)
     end
 
     # Sets multiple core and/or app properties.
@@ -3958,6 +4204,18 @@ module Xlsxrb
       # simplecov:enable
     end
 
+    # Returns custom document properties.
+    #
+    # @return [Hash<String, Elements::CustomProperty>]
+    # @api public
+    #: () -> Hash[String, Elements::CustomProperty]
+    def custom_properties
+      @custom_properties.to_h do |cp|
+        prop = cp.is_a?(Elements::CustomProperty) ? cp : Elements::CustomProperty.new(name: (cp[:name] || cp["name"]).to_s, value: cp[:value] || cp["value"], type: cp[:type] || cp["type"] || :string)
+        [prop.name.to_s, prop]
+      end.freeze
+    end
+
     # Finalizes and writes all streaming sheet contents to the destination target.
     #
     # @return [void]
@@ -3981,6 +4239,7 @@ module Xlsxrb
 
       resolved_names = resolve_defined_names(@defined_names, @sheets)
 
+      @workbook_properties[:active_sheet] = @active_sheet unless @active_sheet.nil?
       @workbook_properties[:active_tab] = @active_sheet unless @active_sheet.nil?
       @workbook_properties[:first_sheet] = @first_sheet unless @first_sheet.nil?
       @workbook_properties[:show_sheet_tabs] = @show_sheet_tabs unless @show_sheet_tabs.nil?
@@ -4009,7 +4268,7 @@ module Xlsxrb
     # Explicitly cleans up any resources if not already closed.
     #
     # @return [void]
-    # @api public
+    # @api private
     #: () -> void
     def cleanup!
       if @zip && !@zip.instance_variable_get(:@closed)

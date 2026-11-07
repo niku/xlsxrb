@@ -19,10 +19,12 @@ module Xlsxrb
   # @api public
   class WorkbookBuilder
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specifications.
+    # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
     # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
-    #: (?strict_excel_mode: bool, ?default_font: untyped?) -> void
-    def initialize(strict_excel_mode: true, default_font: nil)
+    #: (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) -> void
+    def initialize(strict_excel_mode: true, escape_formulas: false, default_font: nil)
       @strict_excel_mode = strict_excel_mode
+      @escape_formulas = escape_formulas ? true : false
       @default_font = default_font
       @sheets = []
       @sheet_builders = [] # Keep track of sheet builders for style processing
@@ -37,6 +39,64 @@ module Xlsxrb
       @first_sheet = nil
       @show_sheet_tabs = nil
       @tab_ratio = nil
+    end
+
+    # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
+    #: bool
+    attr_accessor :escape_formulas
+
+    # Returns whether formula escaping is enabled.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def escape_formulas?
+      @escape_formulas ? true : false
+    end
+
+    # Sets or configures the workbook-wide default font.
+    #
+    # @param name [String, Hash, nil] Font name or font options Hash.
+    # @param size [Float, Integer, nil] Font size in points.
+    # @param opts [Hash] Additional font options (e.g. `bold:`, `italic:`, `family:`, `charset:`, `color:`).
+    # @return [void]
+    # @api public
+    #: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
+    def default_font(name = nil, size = nil, **opts)
+      existing = @default_font.is_a?(Hash) ? @default_font.dup : {}
+      if name.is_a?(Hash)
+        opts = name.merge(opts)
+        name = opts[:name]
+      end
+      existing[:name] = name if name
+      existing[:size] = size if size
+      @default_font = existing.merge(opts)
+    end
+    # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
+    alias set_default_font default_font
+
+    # @return [Hash{String => StyleBuilder}]
+    #: Hash[String, StyleBuilder]
+    attr_reader :styles
+
+    # Defines or configures a named cell style at the workbook level.
+    #
+    # @example
+    #   workbook.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF")
+    #
+    # @param name [String, Symbol] The name of the style.
+    # @param opts [Hash] Style options (e.g. bold: true, fill_color: "FF0000").
+    # @yield [style_builder]
+    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
+    # @return [StyleBuilder]
+    # @api public
+    #: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+    def style(name, **opts)
+      style_name = name.to_s
+      style_builder = StyleBuilder.new(style_name)
+      style_builder.apply_options!(**opts) unless opts.empty?
+      yield style_builder if block_given?
+      @styles[style_name] = style_builder
     end
 
     # Creates an {Elements::Formula} object.
@@ -96,51 +156,6 @@ module Xlsxrb
     #: (String | Symbol | Elements::CellError code) -> Elements::CellError
     def cell_error(...)
       Xlsxrb.cell_error(...)
-    end
-
-    # Sets or configures the workbook-wide default font.
-    #
-    # @param name [String, Hash, nil] Font name or font options Hash.
-    # @param size [Float, Integer, nil] Font size in points.
-    # @param opts [Hash] Additional font options (e.g. `bold:`, `italic:`, `family:`, `charset:`, `color:`).
-    # @return [void]
-    # @api public
-    #: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
-    def default_font(name = nil, size = nil, **opts)
-      existing = @default_font.is_a?(Hash) ? @default_font.dup : {}
-      if name.is_a?(Hash)
-        opts = name.merge(opts)
-        name = opts[:name]
-      end
-      existing[:name] = name if name
-      existing[:size] = size if size
-      @default_font = existing.merge(opts)
-    end
-    # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
-    alias set_default_font default_font
-
-    # @return [Hash{String => StyleBuilder}]
-    #: Hash[String, StyleBuilder]
-    attr_reader :styles
-
-    # Defines or configures a named cell style at the workbook level.
-    #
-    # @example
-    #   workbook.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF")
-    #
-    # @param name [String, Symbol] The name of the style.
-    # @param opts [Hash] Style options (e.g. bold: true, fill_color: "FF0000").
-    # @yield [style_builder]
-    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
-    # @return [StyleBuilder]
-    # @api public
-    #: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
-    def style(name, **opts)
-      style_name = name.to_s
-      style_builder = StyleBuilder.new(style_name)
-      style_builder.apply_options!(**opts) unless opts.empty?
-      yield style_builder if block_given?
-      @styles[style_name] = style_builder
     end
 
     OMITTED = Object.new.freeze
@@ -279,6 +294,25 @@ module Xlsxrb
       nil
     end
 
+    # Returns workbook-level properties.
+    #
+    # @return [Elements::WorkbookProperties]
+    # @api public
+    #: () -> Elements::WorkbookProperties
+    def workbook_properties
+      Elements::WorkbookProperties.new(**@workbook_properties)
+    end
+
+    # Sets workbook-level properties.
+    #
+    # @param props [Hash, Elements::MetadataRecord]
+    # @return [void]
+    # @api public
+    #: (untyped props) -> void
+    def workbook_properties=(props)
+      @workbook_properties = props.is_a?(Elements::MetadataRecord) ? props.to_h : props
+    end
+
     # Returns the list of worksheet names added to this workbook so far.
     #
     # @return [Array<String>] Worksheet names.
@@ -291,18 +325,22 @@ module Xlsxrb
     # Adds a new worksheet to the workbook.
     #
     # @param name [String, nil] Sheet name (max 31 chars, no forbidden chars `[ ] * ? / \ :`).
-    # @param opts [Hash] Sheet properties.
+    # @param state [Symbol, String, nil] Sheet visibility state (:visible, :hidden, :very_hidden).
+    # @param tab_color [String, Hash, nil] Tab color hex string or color hash.
+    # @param code_name [String, nil] VBA code name.
+    # @param hidden [Boolean, nil] Deprecated alias for state: :hidden.
+    # @param opts [Hash] Additional sheet properties.
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
     # @return [Elements::Worksheet]
     # @raise [ArgumentError] If sheet name violates Excel limits in strict mode.
     # @api public
-    #: (?String? name, **untyped opts) ?{ (WorksheetBuilder) -> void } -> untyped
-    def sheet(name = nil, **opts)
+    #: (?String? name, ?state: (Symbol | String)?, ?tab_color: untyped, ?code_name: String?, ?hidden: bool?, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    def sheet(name = nil, state: nil, tab_color: nil, code_name: nil, hidden: nil, **opts)
       sheet_count = [@sheets.size, @sheet_builders.size].max
       name ||= "Sheet#{sheet_count + 1}"
       raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
-      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (Excel limitation)" if name.match?(Elements::Worksheet::FORBIDDEN_NAME_CHARS)
+      raise ArgumentError, "Sheet name '#{name}' contains invalid characters (Excel limitation)" if name.match?(Elements::Worksheet.forbidden_name_chars)
       raise ArgumentError, "Sheet name '#{name}' cannot start or end with an apostrophe (Excel limitation)" if @strict_excel_mode && (name.start_with?("'") || name.end_with?("'"))
       raise ArgumentError, "Sheet name '#{name}' is reserved by Excel (Excel limitation)" if @strict_excel_mode && name.casecmp?("History")
 
@@ -310,9 +348,12 @@ module Xlsxrb
       raise ArgumentError, "Sheet name '#{name}' is already used. Excel requires unique sheet names." if @strict_excel_mode && existing_names.include?(name.downcase)
 
       active = opts.delete(:active)
-      state = opts.delete(:state)
-      hidden = opts.delete(:hidden)
-      code_name = opts.delete(:code_name)
+      state = opts.delete(:state) if opts.key?(:state)
+      hidden = opts.delete(:hidden) if opts.key?(:hidden)
+      code_name = opts.delete(:code_name) if opts.key?(:code_name)
+      tab_color = opts.delete(:tab_color) if opts.key?(:tab_color)
+
+      warn "[Xlsxrb DEPRECATION] sheet keyword hidden: is deprecated; use state: :hidden instead.", uplevel: 1 unless hidden.nil?
       state ||= :hidden if hidden
       state ||= :visible
       state = state.to_sym
@@ -320,16 +361,29 @@ module Xlsxrb
 
       @active_sheet = name if active
 
-      sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state)
-      sheet_builder.code_name(code_name) if code_name
+      sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state, escape_formulas: @escape_formulas)
+      sheet_builder.code_name = code_name if code_name
+      sheet_builder.tab_color = tab_color if tab_color
       opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
       @sheet_builders << sheet_builder
       yield sheet_builder if block_given?
       @defined_names.concat(sheet_builder.defined_names)
       sheet_builder.defined_names.clear
-      @sheets << sheet_builder.build
+      built = sheet_builder.build
+      @sheets << built
+      built
     end
-    alias [] sheet
+
+    # Accesses or defines a worksheet by name.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil]
+    # @yield [sheet_builder]
+    # @return [Elements::Worksheet]
+    # @api public
+    #: (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    def [](name_or_index = nil, &)
+      sheet(name_or_index&.to_s, &)
+    end
 
     # --- Workbook-Level Methods ---
 
@@ -341,11 +395,11 @@ module Xlsxrb
     # @param sheet [String, nil] Reference sheet name for coordinates/formula.
     # @param scope [String, Symbol, nil] Optional sheet name or :workbook for scope (defaults to workbook).
     # @param hidden [Boolean] Whether the defined name is hidden from Excel's UI.
-    # @param column [Integer, String, nil] Column index or letter for coordinate-based reference.
-    # @param columns [Integer, String, nil] Alias for column.
+    # @param column [Integer, String, nil] Deprecated alias for columns.
+    # @param columns [Integer, String, nil] Column index or letter for coordinate-based reference.
     # @param col [Integer, String, nil] Deprecated alias for column.
-    # @param row [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
-    # @param rows [Integer, Range, nil] Alias for row.
+    # @param row [Integer, Range, nil] Deprecated alias for rows.
+    # @param rows [Integer, Range, nil] Row or row range (1-based) for coordinate-based reference.
     # @param range [String, nil] Cell range reference.
     # @param ref_sheet [String, nil] Deprecated alias for sheet.
     # @param local [Boolean] Deprecated alias for scope.
@@ -353,15 +407,11 @@ module Xlsxrb
     # @api public
     #: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
     def defined_name(name, value = nil, sheet: nil, scope: nil, hidden: false, column: nil, columns: nil, col: nil, row: nil, rows: nil, range: nil, ref_sheet: nil, local: false)
-      if col
-        warn "[DEPRECATION] `col:` is deprecated; use `column:` (or `columns:`) instead.", uplevel: 1
-      end
-      if ref_sheet
-        warn "[DEPRECATION] `ref_sheet:` is deprecated; use `sheet:` for reference sheet and `scope:` for scope instead.", uplevel: 1
-      end
-      if local
-        warn "[DEPRECATION] `local:` is deprecated; use `scope:` instead.", uplevel: 1
-      end
+      warn "[DEPRECATION] `col:` is deprecated; use `column:` (or `columns:`) instead.", uplevel: 1 if col
+      warn "[DEPRECATION] `ref_sheet:` is deprecated; use `sheet:` for reference sheet and `scope:` for scope instead.", uplevel: 1 if ref_sheet
+      warn "[DEPRECATION] `local:` is deprecated; use `scope:` instead.", uplevel: 1 if local
+      warn "[Xlsxrb DEPRECATION] defined_name keyword column: is deprecated; use columns: instead.", uplevel: 1 unless column.nil?
+      warn "[Xlsxrb DEPRECATION] defined_name keyword row: is deprecated; use rows: instead.", uplevel: 1 unless row.nil?
       target_ref_sheet = ref_sheet || sheet
       c_arg = column || columns || col
       r_arg = row || rows
@@ -369,15 +419,20 @@ module Xlsxrb
       entry = { name: name, value: normalized_val, hidden: hidden }
       local_sheet = if scope
                       scope == :workbook ? nil : scope.to_s
-                    elsif ref_sheet
-                      sheet
-                    elsif local
-                      sheet
-                    else
+                    elsif sheet || local || ref_sheet
                       sheet
                     end
       entry[:local_sheet_name] = local_sheet if local_sheet
       @defined_names << entry
+    end
+
+    # Returns workbook-level defined names.
+    #
+    # @return [Array<Elements::DefinedName>]
+    # @api public
+    #: () -> Array[Elements::DefinedName]
+    def defined_names
+      @defined_names.map { |dn| dn.is_a?(Elements::DefinedName) ? dn : Elements::DefinedName.new(**dn) }
     end
 
     # Sets or gets the print area for a sheet.
@@ -415,17 +470,15 @@ module Xlsxrb
 
     # Sets repeating print titles (rows and/or columns) for pagination.
     #
-    # @param rows [String, Integer, Range, nil] Repeating row range (e.g. "1:2" or 0-based 0..1).
-    # @param columns [String, Integer, Symbol, Range, nil] Repeating column range (e.g. "A:B" or 0..1).
-    # @param cols [String, Integer, Symbol, Range, nil] Deprecated alias for columns.
+    # @param rows [String, nil] Repeating row range (e.g. "1:2").
+    # @param columns [String, nil] Repeating column range (e.g. "A:B").
+    # @param cols [String, nil] Deprecated alias for columns.
     # @param sheet [String, nil] Target sheet name.
     # @return [void]
     # @api public
     #: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
     def print_titles(rows: nil, columns: nil, cols: nil, sheet: nil)
-      if cols && columns.nil?
-        warn "[DEPRECATION] `cols:` is deprecated; use `columns:` instead.", uplevel: 1
-      end
+      warn "[DEPRECATION] `cols:` is deprecated; use `columns:` instead.", uplevel: 1 if cols && columns.nil?
       c = DslHelpers.normalize_print_titles_columns(columns || cols)
       r = DslHelpers.normalize_print_titles_rows(rows)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
@@ -445,10 +498,10 @@ module Xlsxrb
 
     # Sets repeating print titles.
     #
-    # @param opts [Hash, Object] Options with :rows and/or :columns.
-    # @return [Hash, Object]
+    # @param opts [Elements::PrintTitles, Hash] Options with :rows and/or :columns.
+    # @return [Elements::PrintTitles, Hash]
     # @api public
-    #: (untyped opts) -> untyped
+    #: (Elements::PrintTitles | Hash[Symbol, untyped] opts) -> (Elements::PrintTitles | Hash[Symbol, untyped])
     def print_titles=(opts)
       h = opts.respond_to?(:to_h) ? opts.to_h : opts
       print_titles(**h)
@@ -501,17 +554,32 @@ module Xlsxrb
                                end
                    "#{first_name}:#{last_name}"
                  end
-      print_titles(cols: cols_str, sheet: sheet)
+      print_titles(columns: cols_str, sheet: sheet)
     end
 
-    # Sets workbook structure and window protection.
+    # Sets or returns workbook structure and window protection.
     #
     # @param opts [Hash] Protection options (e.g. lock_structure: true, password: "secret").
+    # @return [Elements::WorkbookProtection, nil, void]
+    # @api public
+    #: (**String | Integer | bool | nil opts) -> (Elements::WorkbookProtection | nil)
+    def workbook_protection(**opts)
+      if opts.empty?
+        @workbook_protection ? Elements::WorkbookProtection.new(**@workbook_protection) : nil
+      else
+        @workbook_protection = opts
+        nil
+      end
+    end
+
+    # Sets workbook protection settings.
+    #
+    # @param opts [Hash, Elements::MetadataRecord, nil]
     # @return [void]
     # @api public
-    #: (**String | Integer | bool | nil opts) -> void
-    def workbook_protection(**opts)
-      @workbook_protection = opts
+    #: (untyped opts) -> void
+    def workbook_protection=(opts)
+      @workbook_protection = opts.is_a?(Elements::MetadataRecord) ? opts.to_h : opts
     end
 
     # @deprecated Use {#workbook_protection} instead.
@@ -532,6 +600,15 @@ module Xlsxrb
       @core_properties[name] = value
     end
 
+    # Returns core document properties.
+    #
+    # @return [Elements::CoreProperties]
+    # @api public
+    #: () -> Elements::CoreProperties
+    def core_properties
+      Elements::CoreProperties.new(**@core_properties)
+    end
+
     # Sets an extended application metadata property.
     #
     # @param name [Symbol] Application property name (:company, :manager, :app_version, etc.).
@@ -541,6 +618,15 @@ module Xlsxrb
     #: (Symbol name, String | Integer | Time value) -> void
     def app_property(name, value)
       @app_properties[name] = value
+    end
+
+    # Returns application document properties.
+    #
+    # @return [Elements::AppProperties]
+    # @api public
+    #: () -> Elements::AppProperties
+    def app_properties
+      Elements::AppProperties.new(**@app_properties)
     end
 
     # Sets multiple core, app, and/or custom properties simultaneously.
@@ -567,6 +653,18 @@ module Xlsxrb
     #: (String name, String | Integer | Float | bool | Time value, ?type: ::Symbol) -> void
     def custom_property(name, value, type: :string)
       @custom_properties << { name: name, value: value, type: type }
+    end
+
+    # Returns custom document properties.
+    #
+    # @return [Hash<String, Elements::CustomProperty>]
+    # @api public
+    #: () -> Hash[String, Elements::CustomProperty]
+    def custom_properties
+      @custom_properties.to_h do |cp|
+        prop = cp.is_a?(Elements::CustomProperty) ? cp : Elements::CustomProperty.new(name: (cp[:name] || cp["name"]).to_s, value: cp[:value] || cp["value"], type: cp[:type] || cp["type"] || :string)
+        [prop.name.to_s, prop]
+      end.freeze
     end
 
     # Builds and returns the compiled {Elements::Workbook}.
@@ -622,6 +720,7 @@ module Xlsxrb
                           idx || @first_sheet
                         end
 
+      @workbook_properties[:active_sheet] = active_tab_idx unless active_tab_idx.nil?
       @workbook_properties[:active_tab] = active_tab_idx unless active_tab_idx.nil?
       @workbook_properties[:first_sheet] = first_sheet_idx unless first_sheet_idx.nil?
       @workbook_properties[:show_sheet_tabs] = @show_sheet_tabs unless @show_sheet_tabs.nil?
@@ -732,14 +831,14 @@ module Xlsxrb
           resolved_col_style = if raw_col_style.is_a?(Hash)
                                  inline_name = "__inline_col_#{raw_col_style.hash}"
                                  sb = all_style_builders[inline_name]
-                                 if sb&.num_fmt_id
-                                   col_fmt_map[col.index] = sb.num_fmt_id.is_a?(String) ? sb.num_fmt_id : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[sb.num_fmt_id]
+                                 if sb&.number_format
+                                   col_fmt_map[col.index] = sb.number_format.is_a?(String) ? sb.number_format : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[sb.number_format]
                                  end
                                  style_name_to_id[inline_name]
                                elsif (raw_col_style.is_a?(String) || raw_col_style.is_a?(Symbol)) && style_name_to_id.key?(raw_col_style.to_s)
                                  sb = all_style_builders[raw_col_style.to_s]
-                                 if sb&.num_fmt_id
-                                   col_fmt_map[col.index] = sb.num_fmt_id.is_a?(String) ? sb.num_fmt_id : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[sb.num_fmt_id]
+                                 if sb&.number_format
+                                   col_fmt_map[col.index] = sb.number_format.is_a?(String) ? sb.number_format : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[sb.number_format]
                                  end
                                  style_name_to_id[raw_col_style.to_s]
                                else
@@ -818,9 +917,9 @@ module Xlsxrb
             index: row.index,
             cells: new_cells,
             height: row.height,
-            hidden: row.hidden,
-            custom_height: row.custom_height,
-            collapsed: row.collapsed,
+            hidden: row.hidden?,
+            custom_height: row.custom_height?,
+            collapsed: row.collapsed?,
             outline_level: row.outline_level,
             style_index: resolved_row_style,
             unmapped_data: row_unmapped,
@@ -834,7 +933,7 @@ module Xlsxrb
       [updated_sheets, styles_definition]
     end
 
-    #: (untyped writer) -> { fonts: untyped, fills: untyped, borders: untyped, xf_entries: untyped, num_fmts: untyped }
+    #: (untyped writer) -> Hash[Symbol, untyped]
     def extract_styles_from_writer(writer)
       # Extract style definitions from the writer that can be reused
       # This captures the fonts, fills, borders, and xf entries that were created
@@ -842,6 +941,7 @@ module Xlsxrb
         fonts: writer.fonts.dup,
         fills: writer.fills.dup,
         borders: writer.borders.dup,
+        cell_xfs: writer.xf_entries.dup,
         xf_entries: writer.xf_entries.dup,
         num_fmts: writer.num_fmts.dup
       }

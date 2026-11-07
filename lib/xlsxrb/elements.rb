@@ -3,6 +3,7 @@
 # rbs_inline: enabled
 
 require_relative "elements/types"
+require_relative "elements/metadata"
 require_relative "elements/cell"
 require_relative "elements/row"
 require_relative "elements/column"

@@ -55,7 +55,11 @@ module Xlsxrb
             id = attributes["numFmtId"]&.to_i
             code = attributes["formatCode"]
             if @inside_dxfs && @current_dxf
-              @current_dxf[:num_fmt] = { num_fmt_id: id, format_code: code } if id && code
+              if id && code
+                nf = { num_fmt_id: id, format_code: code }
+                @current_dxf[:number_format] = nf
+                @current_dxf[:num_fmt] = nf
+              end
             elsif id && code
               @num_fmts[id] = code
             end
@@ -174,7 +178,13 @@ module Xlsxrb
           when "fill"
             @current_fill = {} if @inside_fills || @inside_dxfs
           when "patternFill"
-            @current_fill[:pattern] = attributes["patternType"] if @current_fill
+            if @current_fill
+              pt = attributes["patternType"]
+              if pt
+                @current_fill[:pattern_type] = pt
+                @current_fill[:pattern] = pt
+              end
+            end
           when "gradientFill"
             if @current_fill
               gradient = {}

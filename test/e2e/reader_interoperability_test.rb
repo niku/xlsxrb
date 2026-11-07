@@ -1835,8 +1835,8 @@ class ReaderInteroperabilityTest < Test::Unit::TestCase
     dxf = dxfs[0]
 
     assert_equal(true, dxf[:font][:bold])
-    assert_equal(164, dxf[:num_fmt][:num_fmt_id])
-    assert_equal("#,##0.00", dxf[:num_fmt][:format_code])
+    assert_equal(164, (dxf[:number_format] || dxf[:num_fmt])[:num_fmt_id])
+    assert_equal("#,##0.00", (dxf[:number_format] || dxf[:num_fmt])[:format_code])
     assert_equal("center", dxf[:alignment][:horizontal])
     assert_equal(true, dxf[:alignment][:wrap_text])
     assert_equal(false, dxf[:protection][:locked])

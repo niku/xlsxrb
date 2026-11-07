@@ -20,14 +20,72 @@ module Xlsxrb
       # @param style_index [Integer, String, Symbol, Hash, nil] Optional style identifier or inline style.
       # @param unmapped_data [Hash] Additional metadata.
       # @param errors [Array<String>, nil] Validation errors.
-      # : (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
-      def initialize: (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?) -> void
+      # @param best_fit [Boolean] Whether the column automatically fits content.
+      # @param collapsed [Boolean] Whether the column is collapsed.
+      # : (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?best_fit: bool, ?collapsed: bool) -> void
+      def initialize: (index: Integer, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?style_index: (Integer | String | Symbol | Hash[Symbol, untyped])?, ?unmapped_data: Hash[untyped, untyped], ?errors: Array[String]?, ?best_fit: bool, ?collapsed: bool) -> void
 
       # Returns whether the column definition is valid according to OOXML specifications.
       #
       # @return [Boolean]
       # : () -> bool
       def valid?: () -> bool
+
+      # Returns whether the column is hidden.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def hidden?: () -> bool
+
+      # Returns whether custom width is set.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def custom_width?: () -> bool
+
+      # Returns whether best fit is enabled.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def best_fit?: () -> bool
+
+      # Returns whether the column is collapsed.
+      #
+      # @return [Boolean]
+      # @api public
+      # : () -> bool
+      def collapsed?: () -> bool
+
+      # Deconstructs column attributes for pattern matching.
+      #
+      # @param _keys [Array<Symbol>, nil]
+      # @return [Hash{Symbol => Object}]
+      # @api public
+      # : (Array[Symbol]? _keys) -> Hash[Symbol, untyped]
+      def deconstruct_keys: (Array[Symbol]? _keys) -> Hash[Symbol, untyped]
+
+      # Returns the column letter (e.g. "A", "B", "AA").
+      #
+      # @return [String]
+      # @api public
+      # : () -> String
+      def column_letter: () -> String
+
+      # @deprecated Use {#column_letter} instead.
+      # @return [String]
+      # @api public
+      # : () -> String
+      def letter: () -> String
+
+      # Returns the style identifier or inline style.
+      #
+      # @return [Integer, String, Symbol, Hash, nil]
+      # @api public
+      # : () -> (Integer | String | Symbol | Hash[Symbol, untyped])?
+      def style: () -> (Integer | String | Symbol | Hash[Symbol, untyped])?
 
       # Returns whether the column index is within valid OOXML range (0..16383).
       #
@@ -40,6 +98,7 @@ module Xlsxrb
       #
       # @param index [Integer]
       # @return [Array<String>] List of errors.
+      # @api private
       # : (untyped index) -> Array[String]
       def self.validate: (untyped index) -> Array[String]
     end
