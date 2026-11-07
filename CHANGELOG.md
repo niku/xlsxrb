@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.1.18] - 2026-11-07
 
 ### Added
 - Add Value Object factory delegator methods (`formula`, `array_formula`, `shared_formula`, `rich_text`, `comment`, `cell_error`, `hyperlink`) across `WorkbookBuilder`, `WorksheetBuilder`, `StreamWriter`, and `StreamWriter::WorksheetProxy`.
