@@ -926,9 +926,15 @@ module Xlsxrb
 
         normalized_list = DslHelpers.normalize_conditional_format(sqref, **opts, &)
         normalized_list.each do |rule|
-          if (rule[:dxf] || rule[:font_color] || rule[:fill_color] || rule[:bold] || rule[:italic]) && rule[:format_id].nil?
+          if (rule[:dxf] || rule[:font_color] || rule[:fill_color] || rule[:bold] || rule[:italic]) && (rule[:dxf_id] || rule[:format_id]).nil?
             dxf = rule.delete(:dxf) || DslHelpers.extract_dxf_from_rule!(rule)
-            rule[:format_id] = @dxfs.index(dxf) || add_dxf(**dxf) if dxf
+            did = @dxfs.index(dxf) || add_dxf(**dxf) if dxf
+            rule[:dxf_id] = did
+            rule[:format_id] = did
+          elsif rule[:dxf_id] && rule[:format_id].nil?
+            rule[:format_id] = rule[:dxf_id]
+          elsif rule[:format_id] && rule[:dxf_id].nil?
+            rule[:dxf_id] = rule[:format_id]
           end
           @conditional_formats[sheet_name] << rule
         end

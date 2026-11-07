@@ -57,6 +57,13 @@ module Xlsxrb
   # Maximum number of individual cell/range references allowed in a single data validation element by Excel.
   MAX_REFS_PER_VALIDATION = 32_767
 
+  # @api private
+  module Deprecation
+    def self.warn(message, uplevel: 1)
+      Kernel.warn("[Xlsxrb DEPRECATION] #{message}", uplevel: uplevel + 1)
+    end
+  end
+
   # Base class for all exceptions raised by Xlsxrb.
   # Predefined cell error constants are exposed on this class for convenience.
   class Error < StandardError

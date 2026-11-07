@@ -10,32 +10,32 @@ class StyleBuilderTest < Test::Unit::TestCase
   test "resolve_color resolves symbols, prefixed strings, hex, and nil" do
     b = Xlsxrb::StyleBuilder.new
 
-    assert_nil(b.resolve_color(nil))
-    assert_equal("FF000000", b.resolve_color(:black))
-    assert_equal("FFFFFFFF", b.resolve_color(:white))
-    assert_equal("FFFF0000", b.resolve_color(:red))
-    assert_equal("FF00FF00", b.resolve_color(:green))
-    assert_equal("FF0000FF", b.resolve_color(:blue))
-    assert_equal("FFFFFF00", b.resolve_color(:yellow))
-    assert_equal("FF00FFFF", b.resolve_color(:cyan))
-    assert_equal("FFFF00FF", b.resolve_color(:magenta))
-    assert_equal("FF808080", b.resolve_color(:gray))
-    assert_equal("FF808080", b.resolve_color(:grey))
+    assert_nil(b.send(:resolve_color, nil))
+    assert_equal("FF000000", b.send(:resolve_color, :black))
+    assert_equal("FFFFFFFF", b.send(:resolve_color, :white))
+    assert_equal("FFFF0000", b.send(:resolve_color, :red))
+    assert_equal("FF00FF00", b.send(:resolve_color, :green))
+    assert_equal("FF0000FF", b.send(:resolve_color, :blue))
+    assert_equal("FFFFFF00", b.send(:resolve_color, :yellow))
+    assert_equal("FF00FFFF", b.send(:resolve_color, :cyan))
+    assert_equal("FFFF00FF", b.send(:resolve_color, :magenta))
+    assert_equal("FF808080", b.send(:resolve_color, :gray))
+    assert_equal("FF808080", b.send(:resolve_color, :grey))
 
     # Colon-prefixed string and single colon boundary
-    assert_equal("FFFF0000", b.resolve_color(":red"))
-    assert_equal("FF0000FF", b.resolve_color(":blue"))
-    assert_equal(":not_in_colors", b.resolve_color(":not_in_colors"))
-    assert_equal(":", b.resolve_color(":"))
+    assert_equal("FFFF0000", b.send(:resolve_color, ":red"))
+    assert_equal("FF0000FF", b.send(:resolve_color, ":blue"))
+    assert_equal(":not_in_colors", b.send(:resolve_color, ":not_in_colors"))
+    assert_equal(":", b.send(:resolve_color, ":"))
 
     # Unknown symbol falls back to symbol to_s
-    assert_equal("custom_sym", b.resolve_color(:custom_sym))
+    assert_equal("custom_sym", b.send(:resolve_color, :custom_sym))
 
     # Custom hex, empty string, and arbitrary types
-    assert_equal("FF112233", b.resolve_color("FF112233"))
-    assert_equal("custom_color", b.resolve_color("custom_color"))
-    assert_equal("", b.resolve_color(""))
-    assert_equal("12345", b.resolve_color(12_345))
+    assert_equal("FF112233", b.send(:resolve_color, "FF112233"))
+    assert_equal("custom_color", b.send(:resolve_color, "custom_color"))
+    assert_equal("", b.send(:resolve_color, ""))
+    assert_equal("12345", b.send(:resolve_color, 12_345))
 
     # Pure class method direct calls
     assert_nil(Xlsxrb::StyleBuilder.resolve_color(nil))
@@ -114,12 +114,12 @@ class StyleBuilderTest < Test::Unit::TestCase
 
   test "font fluent DSL and individual property setters" do
     b = Xlsxrb::StyleBuilder.new("header")
-    ret = b.bold.italic.size(14).font_name("Arial").font_color(:red).underline("double").strike.vert_align("superscript")
+    ret = b.bold.italic.font_size(14).font_name("Arial").font_color(:red).underline("double").strike.vert_align("superscript")
 
     assert_same(b, ret)
     assert_equal(true, b.font_props[:bold])
     assert_equal(true, b.font_props[:italic])
-    assert_equal(14, b.font_props[:sz])
+    assert_equal(14, b.font_size)
     assert_equal("Arial", b.font_props[:name])
     assert_equal("FFFF0000", b.font_props[:color])
     assert_equal("double", b.font_props[:underline])
@@ -130,7 +130,8 @@ class StyleBuilderTest < Test::Unit::TestCase
     b2 = Xlsxrb::StyleBuilder.new
     b2.font(bold: false, size: 10.5, name: "Calibri", color: :blue)
     assert_equal(false, b2.font_props[:bold])
-    assert_equal(10, b2.font_props[:sz])
+    assert_equal(10.5, b2.font_props[:sz])
+    assert_equal(10.5, b2.font_props[:size])
     assert_equal("Calibri", b2.font_props[:name])
     assert_equal("FF0000FF", b2.font_props[:color])
   end
@@ -215,7 +216,7 @@ class StyleBuilderTest < Test::Unit::TestCase
   test "number format and apply_options! option hash" do
     b = Xlsxrb::StyleBuilder.new
     b.number_format("$#,##0.00")
-    assert_equal("$#,##0.00", b.num_fmt_id)
+    assert_equal("$#,##0.00", b.number_format)
 
     # apply_options! with nested hashes
     b_opt = Xlsxrb::StyleBuilder.new
@@ -233,6 +234,234 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_equal({ style: "thin", color: "FF000000" }, b_opt.border_props[:left])
     assert_equal("right", b_opt.alignment[:horizontal])
     assert_equal(true, b_opt.alignment[:wrap_text])
-    assert_equal(49, b_opt.num_fmt_id)
+    assert_equal(49, b_opt.number_format)
+  end
+
+  test "fractional font_size preserves Float and serializes to sz val in styles XML" do
+    b1 = Xlsxrb::StyleBuilder.new
+    b1.font_size(10.5)
+    assert_equal(10.5, b1.font_size)
+    assert_equal(10.5, b1.font_props[:sz])
+    assert_equal(10.5, b1.font_props[:size])
+
+    b2 = Xlsxrb::StyleBuilder.new
+    b2.font_size = 10.5
+    assert_equal(10.5, b2.font_size)
+    assert_equal(10.5, b2.font_props[:sz])
+    assert_equal(10.5, b2.font_props[:size])
+
+    # Normalization of whole Float to Integer
+    b3 = Xlsxrb::StyleBuilder.new
+    b3.font_size(12.0)
+    assert_equal(12, b3.font_size)
+    assert_instance_of(Integer, b3.font_props[:sz])
+
+    # XML serialization contains <sz val="10.5"/>
+    wb = Xlsxrb.build do |b|
+      b.style(:half_pt, font_size: 10.5)
+      b.sheet("Sheet1") do |s|
+        s.row(["Test"], row_style: :half_pt)
+      end
+    end
+    data = Xlsxrb.write(wb)
+    styles_xml = Xlsxrb::Ooxml::ZipReader.open(data) { |reader| reader.read_entry("xl/styles.xml") }
+    assert_include(styles_xml, '<sz val="10.5"/>')
+  end
+
+  test "border and alignment accept explicit keyword arguments" do
+    sb = Xlsxrb::StyleBuilder.new
+    sb.border(
+      left: { style: "thin", color: :red },
+      right: { style: "double", color: :blue },
+      top: { style: "dashed" },
+      bottom: { style: "thick" },
+      diagonal: { style: "thin", up: true }
+    )
+    assert_equal("thin", sb.border_props[:left][:style])
+    assert_equal("FFFF0000", sb.border_props[:left][:color])
+    assert_equal("double", sb.border_props[:right][:style])
+    assert_equal("0000FF", sb.border_props[:right][:color].sub(/\AFF/, ""))
+    assert_equal("dashed", sb.border_props[:top][:style])
+    assert_equal("thick", sb.border_props[:bottom][:style])
+    assert_equal("thin", sb.border_props[:diagonal][:style])
+    assert_equal(true, sb.border_props[:diagonal_up])
+
+    sb.alignment(
+      horizontal: :center,
+      vertical: :top,
+      wrap_text: true,
+      text_rotation: 45,
+      indent: 2,
+      shrink_to_fit: false,
+      reading_order: 1,
+      justify_last_line: true,
+      relative_indent: 3
+    )
+    assert_equal(:center, sb.alignment[:horizontal])
+    assert_equal(:top, sb.alignment[:vertical])
+    assert_equal(true, sb.alignment[:wrap_text])
+    assert_equal(45, sb.alignment[:text_rotation])
+    assert_equal(2, sb.alignment[:indent])
+    assert_equal(false, sb.alignment[:shrink_to_fit])
+    assert_equal(1, sb.alignment[:reading_order])
+    assert_equal(true, sb.alignment[:justify_last_line])
+    assert_equal(3, sb.alignment[:relative_indent])
+  end
+
+  test "StyleBuilder emits deprecation warnings on legacy options and methods" do
+    sb = Xlsxrb::StyleBuilder.new
+
+    err_num_fmt = capture_stderr do
+      sb.number_format_id = "0.00"
+      assert_equal("0.00", sb.number_format_id)
+    end
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder#number_format_id= is deprecated; use #number_format= instead./, err_num_fmt)
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder#number_format_id is deprecated; use #number_format instead./, err_num_fmt)
+
+    err_font_opts = capture_stderr do
+      sb.font(font_size: 11, font_name: "Arial", font_color: :red, vertical_align: :superscript)
+    end
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder font option :font_size is deprecated; use :size instead./, err_font_opts)
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder font option :font_name is deprecated; use :name instead./, err_font_opts)
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder font option :font_color is deprecated; use :color instead./, err_font_opts)
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder font option :vertical_align is deprecated; use :vert_align instead./, err_font_opts)
+
+    err_flat_opts = capture_stderr do
+      sb.apply_options!(size: 12, name: "Calibri", color: :blue, vertical_align: :subscript, number_format_id: 1)
+    end
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder option :size is deprecated; use :font_size instead./, err_flat_opts)
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder option :name is deprecated; use :font_name instead./, err_flat_opts)
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder option :color is deprecated; use :font_color instead./, err_flat_opts)
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder option :vertical_align is deprecated; use :vert_align instead./, err_flat_opts)
+    assert_match(/\[Xlsxrb DEPRECATION\] StyleBuilder option :number_format_id is deprecated; use :number_format instead./, err_flat_opts)
+  end
+
+  test "resolve_color is private on instance" do
+    b = Xlsxrb::StyleBuilder.new
+    assert_raise(NoMethodError) { b.resolve_color(:red) }
+  end
+
+  test "0-argument boolean mutators warn when nil and act as getters when set" do
+    b = Xlsxrb::StyleBuilder.new
+    err = capture_stderr do
+      ret = b.bold
+      assert_same(b, ret)
+      assert_equal(true, b.bold?)
+    end
+    assert_match(/Calling StyleBuilder#bold with zero arguments as a mutator is deprecated/, err)
+
+    # Calling again returns getter value without warning
+    err2 = capture_stderr do
+      assert_equal(true, b.bold)
+    end
+    assert_equal("", err2)
+
+    # Test italic
+    b2 = Xlsxrb::StyleBuilder.new
+    err = capture_stderr do
+      assert_same(b2, b2.italic)
+    end
+    assert_match(/Calling StyleBuilder#italic with zero arguments as a mutator is deprecated/, err)
+    assert_equal(true, b2.italic)
+
+    # Test strike
+    b3 = Xlsxrb::StyleBuilder.new
+    err = capture_stderr do
+      assert_same(b3, b3.strike)
+    end
+    assert_match(/Calling StyleBuilder#strike with zero arguments as a mutator is deprecated/, err)
+    assert_equal(true, b3.strike)
+
+    # Test underline
+    b4 = Xlsxrb::StyleBuilder.new
+    err = capture_stderr do
+      assert_same(b4, b4.underline)
+    end
+    assert_match(/Calling StyleBuilder#underline with zero arguments as a mutator is deprecated/, err)
+    assert_equal("single", b4.underline)
+
+    # Test superscript and subscript
+    b5 = Xlsxrb::StyleBuilder.new
+    err = capture_stderr { assert_same(b5, b5.superscript) }
+    assert_match(/Calling StyleBuilder#superscript with zero arguments as a mutator is deprecated/, err)
+    assert_equal(true, b5.superscript?)
+
+    b6 = Xlsxrb::StyleBuilder.new
+    err = capture_stderr { assert_same(b6, b6.subscript) }
+    assert_match(/Calling StyleBuilder#subscript with zero arguments as a mutator is deprecated/, err)
+    assert_equal(true, b6.subscript?)
+
+    # Test wrap_text and shrink_to_fit
+    b7 = Xlsxrb::StyleBuilder.new
+    err = capture_stderr { assert_same(b7, b7.wrap_text) }
+    assert_match(/Calling StyleBuilder#wrap_text with zero arguments as a mutator is deprecated/, err)
+    assert_equal(true, b7.wrap_text?)
+
+    b8 = Xlsxrb::StyleBuilder.new
+    err = capture_stderr { assert_same(b8, b8.shrink_to_fit) }
+    assert_match(/Calling StyleBuilder#shrink_to_fit with zero arguments as a mutator is deprecated/, err)
+    assert_equal(true, b8.shrink_to_fit?)
+
+    # Test locked and hidden
+    b9 = Xlsxrb::StyleBuilder.new
+    err = capture_stderr { assert_same(b9, b9.locked) }
+    assert_match(/Calling StyleBuilder#locked with zero arguments as a mutator is deprecated/, err)
+    assert_equal(true, b9.locked?)
+
+    b10 = Xlsxrb::StyleBuilder.new
+    err = capture_stderr { assert_same(b10, b10.hidden) }
+    assert_match(/Calling StyleBuilder#hidden with zero arguments as a mutator is deprecated/, err)
+    assert_equal(true, b10.hidden?)
+  end
+
+  test "0-argument property getters and assignment setters" do
+    b = Xlsxrb::StyleBuilder.new
+    assert_nil(b.font_size)
+    assert_nil(b.font_name)
+    assert_nil(b.font_color)
+    assert_nil(b.fill_color)
+    assert_nil(b.fill_pattern)
+    assert_equal({}, b.fill)
+    assert_nil(b.fill_gradient)
+    assert_equal({}, b.font)
+    assert_equal({}, b.border)
+    assert_equal({}, b.alignment)
+    assert_nil(b.align_horizontal)
+    assert_nil(b.align_vertical)
+    assert_nil(b.text_rotation)
+    assert_nil(b.indent)
+    assert_equal({}, b.protection)
+    assert_nil(b.number_format)
+    assert_nil(b.vert_align)
+
+    # Setters
+    b.font = { name: "Arial", size: 12 }
+    assert_equal("Arial", b.font_name)
+    assert_equal(12, b.font_size)
+
+    b.vert_align = "superscript"
+    assert_equal("superscript", b.vert_align)
+
+    b.fill = { pattern: "solid", fg_color: :red }
+    assert_equal("solid", b.fill_pattern)
+    assert_equal("FFFF0000", b.fill_color)
+
+    b.border = { left: { style: "thin" } }
+    assert_equal({ style: "thin" }, b.border[:left])
+
+    b.wrap_text = true
+    assert_equal(true, b.wrap_text?)
+
+    b.shrink_to_fit = true
+    assert_equal(true, b.shrink_to_fit?)
+
+    b.locked = false
+    assert_equal(false, b.locked?)
+
+    b.hidden = true
+    assert_equal(true, b.hidden?)
+
+    b.number_format = "$#,##0.00"
+    assert_equal("$#,##0.00", b.number_format)
   end
 end

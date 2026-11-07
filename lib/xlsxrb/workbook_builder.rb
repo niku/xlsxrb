@@ -27,6 +27,7 @@ module Xlsxrb
       @sheets = []
       @sheet_builders = [] # Keep track of sheet builders for style processing
       @defined_names = []
+      @styles = {}
       @core_properties = {}
       @app_properties = {}
       @custom_properties = []
@@ -117,6 +118,30 @@ module Xlsxrb
     end
     # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
     alias set_default_font default_font
+
+    # @return [Hash{String => StyleBuilder}]
+    #: Hash[String, StyleBuilder]
+    attr_reader :styles
+
+    # Defines or configures a named cell style at the workbook level.
+    #
+    # @example
+    #   workbook.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF")
+    #
+    # @param name [String, Symbol] The name of the style.
+    # @param opts [Hash] Style options (e.g. bold: true, fill_color: "FF0000").
+    # @yield [style_builder]
+    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
+    # @return [StyleBuilder]
+    # @api public
+    #: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+    def style(name, **opts)
+      style_name = name.to_s
+      style_builder = StyleBuilder.new(style_name)
+      style_builder.apply_options!(**opts) unless opts.empty?
+      yield style_builder if block_given?
+      @styles[style_name] = style_builder
+    end
 
     OMITTED = Object.new.freeze
     private_constant :OMITTED
@@ -248,9 +273,10 @@ module Xlsxrb
     # @param value [String, Integer, Boolean] Property value.
     # @return [void]
     # @api public
-    #: (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
+    #: (Symbol name, String | Integer | bool value) -> void
     def workbook_property(name, value)
       @workbook_properties[name] = value
+      nil
     end
 
     # Returns the list of worksheet names added to this workbook so far.
@@ -354,18 +380,37 @@ module Xlsxrb
       @defined_names << entry
     end
 
-    # Sets the print area for a sheet.
+    # Sets or gets the print area for a sheet.
     #
-    # @param range [String] Cell range (e.g. "A1:G50").
+    # @param range [String, Object, nil] Cell range (e.g. "A1:G50").
     # @param sheet [String, nil] Target sheet name (defaults to latest or "Sheet1").
-    # @return [void]
+    # @return [String, nil, void]
     # @api public
-    #: (String range, ?sheet: String?) -> void
-    def print_area(range, sheet: nil)
+    #: (?untyped range, ?sheet: String?) -> (String | nil | void)
+    def print_area(range = OMITTED, sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
-      value = "'#{sheet_name}'!#{absolute_range(range)}"
+      if range.equal?(OMITTED)
+        dn = @defined_names.find { |d| d[:name] == "_xlnm.Print_Area" && d[:local_sheet_name] == sheet_name }
+        return dn ? dn[:value].split("!", 2).last.tr("$", "") : nil
+      end
+
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
-      defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
+      if range
+        value = "'#{sheet_name}'!#{absolute_range(range)}"
+        defined_name("_xlnm.Print_Area", value, sheet: sheet_name)
+      end
+      nil
+    end
+
+    # Sets the print area for the worksheet.
+    #
+    # @param range [String, nil] Cell range (e.g. "A1:G50").
+    # @return [String, nil]
+    # @api public
+    #: (String? range) -> String?
+    def print_area=(range)
+      print_area(range)
+      range
     end
 
     # Sets repeating print titles (rows and/or columns) for pagination.
@@ -395,6 +440,19 @@ module Xlsxrb
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
       defined_name("_xlnm.Print_Titles", value, sheet: sheet_name)
+      nil
+    end
+
+    # Sets repeating print titles.
+    #
+    # @param opts [Hash, Object] Options with :rows and/or :columns.
+    # @return [Hash, Object]
+    # @api public
+    #: (untyped opts) -> untyped
+    def print_titles=(opts)
+      h = opts.respond_to?(:to_h) ? opts.to_h : opts
+      print_titles(**h)
+      opts
     end
 
     # Sets repeating title rows for pagination on the target or active sheet.
@@ -610,8 +668,8 @@ module Xlsxrb
 
     #: (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
     def process_styles(sheets)
-      # Collect all unique StyleBuilders from all sheets
-      all_style_builders = {}
+      # Collect all unique StyleBuilders from workbook and sheets
+      all_style_builders = @styles.dup
       @sheet_builders.each do |sheet_builder|
         sheet_builder.styles.each do |style_name, style_builder|
           all_style_builders[style_name.to_s] = style_builder

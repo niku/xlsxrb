@@ -1055,7 +1055,11 @@ module Xlsxrb
             @current_rule[:pivot] = true if @current_pivot
             @current_rule[:priority] = attributes["priority"].to_i if attributes["priority"]
             @current_rule[:operator] = attributes["operator"] if attributes["operator"]
-            @current_rule[:format_id] = attributes["dxfId"].to_i if attributes["dxfId"]
+            if attributes["dxfId"]
+              did = attributes["dxfId"].to_i
+              @current_rule[:dxf_id] = did
+              @current_rule[:format_id] = did
+            end
             @current_rule[:stop_if_true] = true if attributes["stopIfTrue"] == "1"
             @current_rule[:above_average] = false if attributes["aboveAverage"] == "0"
             @current_rule[:equal_average] = true if attributes["equalAverage"] == "1"

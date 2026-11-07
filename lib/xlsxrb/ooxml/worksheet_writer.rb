@@ -1219,7 +1219,7 @@ module Xlsxrb
               end
               @builder.close_tag("cfRule")
             else
-              formulas = rule[:formulas] || [rule[:formula]].compact
+              formulas = rule[:formula].is_a?(Array) ? rule[:formula] : (rule[:formulas] || [rule[:formula]].compact)
               if formulas.empty?
                 @builder.empty_tag("cfRule", r_attrs)
               else
@@ -1485,7 +1485,7 @@ module Xlsxrb
       def write_sparkline_color(tag, color)
         attrs = {}
         if color.is_a?(String) || color.is_a?(Symbol)
-          resolved = Xlsxrb::StyleBuilder.new.resolve_color(color)
+          resolved = Xlsxrb::StyleBuilder.resolve_color(color)
           attrs[:rgb] = resolved
         else
           attrs[:rgb] = color[:rgb] if color[:rgb]
@@ -1510,6 +1510,7 @@ module Xlsxrb
             custom_width = col.custom_width || !width.nil?
             outline_level = col.outline_level
             collapsed = col.unmapped_data[:collapsed]
+            best_fit = (col.respond_to?(:best_fit) && col.best_fit) || col.unmapped_data[:best_fit]
           else
             min = col[:min] || ((col[:index] || 0) + 1)
             max = col[:max] || ((col[:index] || 0) + 1)
@@ -1519,6 +1520,7 @@ module Xlsxrb
             custom_width = col[:custom_width] || !width.nil?
             outline_level = col[:outline_level]
             collapsed = col[:collapsed]
+            best_fit = col[:best_fit]
           end
           attrs = {
             min: min.to_s,
@@ -1527,6 +1529,7 @@ module Xlsxrb
           attrs[:width] = width.to_s if width
           attrs[:hidden] = "1" if hidden
           attrs[:customWidth] = "1" if custom_width && width
+          attrs[:bestFit] = "1" if best_fit
           attrs[:outlineLevel] = outline_level.to_s if outline_level
           attrs[:collapsed] = "1" if collapsed
           attrs[:style] = style_id.to_s if style_id.is_a?(Integer)

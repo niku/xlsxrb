@@ -83,7 +83,11 @@ module Xlsxrb
           when "vertAlign"
             @current_font[:vert_align] = attrs["val"] if @current_font && attrs["val"]
           when "sz"
-            @current_font[:sz] = attrs["val"]&.to_f if @current_font
+            if @current_font
+              sz_val = attrs["val"]&.to_f
+              @current_font[:sz] = sz_val
+              @current_font[:size] = sz_val
+            end
           when "color"
             handle_color(attrs)
           when "name"

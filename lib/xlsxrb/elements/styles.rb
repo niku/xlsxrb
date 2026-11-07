@@ -148,6 +148,27 @@ module Xlsxrb
         @data[:fonts]&.at(id)
       end
 
+      # Returns the font size in points for the font entry at index id.
+      #
+      # @param id [Integer, nil]
+      # @return [Numeric, nil]
+      # @api public
+      #: (Integer? id) -> Numeric?
+      def font_size(id)
+        f = font(id)
+        return nil unless f
+
+        sz = f[:size] || f[:sz]
+        sz.is_a?(Numeric) ? sz : nil
+      end
+
+      # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
+      #: (Integer? id) -> Numeric?
+      def sz(id)
+        warn "[DEPRECATION] `sz` is deprecated; use `font_size` instead.", uplevel: 1
+        font_size(id)
+      end
+
       # Looks up a fill entry by 0-based index.
       #
       # @param id [Integer, nil]
@@ -247,6 +268,11 @@ module Xlsxrb
       #: (?Hash[Symbol, untyped]? spec, **untyped kwargs) -> Integer
       def add_font(spec = nil, **kwargs)
         entry = (spec || kwargs).dup
+        if entry.key?(:size) && !entry.key?(:sz)
+          entry[:sz] = entry[:size]
+        elsif entry.key?(:sz) && !entry.key?(:size)
+          entry[:size] = entry[:sz]
+        end
         fonts_arr = (@data[:fonts] ||= [])
         fonts_arr << entry
         fonts_arr.size - 1
@@ -361,8 +387,8 @@ module Xlsxrb
         fill_id = opts[:fill_id] || (opts[:fill] ? add_fill(opts[:fill]) : 0)
         border_id = opts[:border_id] || (opts[:border] ? add_border(opts[:border]) : 0)
         num_fmt_id = opts[:num_fmt_id] || 0
-        if opts[:num_fmt] || opts[:format_code]
-          code = (opts[:num_fmt] || opts[:format_code]).to_s
+        if opts[:number_format] || opts[:num_fmt] || opts[:format_code]
+          code = (opts[:number_format] || opts[:num_fmt] || opts[:format_code]).to_s
           existing_id = num_fmts.key(code) || Ooxml::Utils::BUILTIN_NUM_FMT_CODES.key(code)
           num_fmt_id = existing_id || add_num_fmt(next_num_fmt_id, code)
         end

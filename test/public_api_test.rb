@@ -3992,4 +3992,160 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(/\[DEPRECATION\] `DataValidationBuilder#in=` is deprecated; use `list=` instead/, w_dv)
     assert_match(/\[DEPRECATION\] `DataValidationBuilder#in` is deprecated; use `list` instead/, w_dv)
   end
+
+  test "Commit 5: ChartBuilder and SeriesBuilder zero-arg readers and attr= writers" do
+    cb = Xlsxrb::ChartBuilder.new
+    cb.title = "Sales Report"
+    assert_equal "Sales Report", cb.title
+    assert_equal "Sales Report", cb.title()
+
+    cb.type = :bar
+    assert_equal :bar, cb.type
+    assert_equal :bar, cb.type()
+
+    cb.legend(position: :bottom)
+    assert_equal({ position: :bottom }, cb.legend)
+
+    sb = Xlsxrb::ChartBuilder::SeriesBuilder.new
+    sb.name = "Revenue"
+    assert_equal "Revenue", sb.name
+    assert_equal "Revenue", sb.name()
+
+    sb.values = "Sheet1!B2:B10"
+    assert_equal "Sheet1!B2:B10", sb.values
+    assert_equal "Sheet1!B2:B10", sb.values()
+
+    sb.categories = "Sheet1!A2:A10"
+    assert_equal "Sheet1!A2:A10", sb.categories
+    assert_equal "Sheet1!A2:A10", sb.categories()
+
+    # Deprecation on secondary_axis
+    w_chart_sec = capture_stderr do
+      cb.secondary_axis(true)
+    end
+    assert_match(/\[DEPRECATION\] `secondary_axis` is deprecated; use `secondary_value_axis` instead/, w_chart_sec)
+
+    w_series_sec = capture_stderr do
+      sb.secondary_axis(true)
+    end
+    assert_match(/\[DEPRECATION\] `secondary_axis` is deprecated; use `axis\(:secondary\)` instead/, w_series_sec)
+  end
+
+  test "Commit 5: StyleBuilder font_size, alignment, protection, and attr= writers" do
+    sb = Xlsxrb::StyleBuilder.new("CustomStyle")
+    sb.bold = true
+    sb.italic = true
+    sb.font_name = "Calibri"
+    sb.font_size = 14
+    sb.font_color = :red
+    sb.underline = :double
+    sb.strike = true
+
+    assert_equal 14, sb.font_size
+    assert_equal 14, sb.font_size()
+
+    sb.align_horizontal = :center
+    sb.align_vertical = :top
+    sb.wrap_text = true
+    sb.text_rotation = 45
+    sb.indent = 2
+    assert_equal({ horizontal: :center, vertical: :top, wrap_text: true, text_rotation: 45, indent: 2 }, sb.alignment)
+
+    # Fluent alignment kwargs
+    sb.alignment(horizontal: :right)
+    assert_equal(:right, sb.alignment[:horizontal])
+
+    # Protection
+    sb.locked = true
+    sb.hidden = false
+    assert_equal({ locked: true, hidden: false }, sb.protection)
+
+    # Number format
+    sb.number_format = "#,##0.00"
+    assert_equal "#,##0.00", sb.number_format
+    assert_equal "#,##0.00", sb.number_format_id
+
+    # Deprecations
+    w_style = capture_stderr do
+      assert_equal 14, sb.size
+      sb.size = 16
+      assert_equal 16, sb.sz
+      sb.sz = 18
+      assert_equal "#,##0.00", sb.num_fmt
+      sb.num_fmt = "@"
+      assert_equal "@", sb.num_fmt_id
+      sb.num_fmt_id = "0%"
+    end
+    assert_match(/\[DEPRECATION\] #size is deprecated; use #font_size instead/, w_style)
+    assert_match(/\[DEPRECATION\] #size= is deprecated; use #font_size= instead/, w_style)
+    assert_match(/\[DEPRECATION\] #sz is deprecated; use #font_size instead/, w_style)
+    assert_match(/\[DEPRECATION\] #sz= is deprecated; use #font_size= instead/, w_style)
+    assert_match(/\[DEPRECATION\] #num_fmt is deprecated; use #number_format instead/, w_style)
+    assert_match(/\[DEPRECATION\] #num_fmt= is deprecated; use #number_format= instead/, w_style)
+    assert_match(/\[DEPRECATION\] #num_fmt_id is deprecated; use #number_format_id instead/, w_style)
+    assert_match(/\[DEPRECATION\] #num_fmt_id= is deprecated; use #number_format_id= instead/, w_style)
+  end
+
+  test "Commit 5: ConditionalFormatBuilder dxf_id, font_size, and deprecations" do
+    cf = Xlsxrb::ConditionalFormatBuilder.new("A1:A10")
+    cf.dxf_id = 3
+    assert_equal 3, cf.dxf_id
+    assert_equal 3, cf.dxf_id()
+
+    cf.font_size = 12
+    assert_equal 12, cf.font_size
+    assert_equal 12, cf.font_size()
+
+    w_cf = capture_stderr do
+      assert_equal 3, cf.format_id
+      cf.format_id = 4
+      assert_equal 12, cf.size
+      cf.size = 14
+      assert_equal 14, cf.sz
+      cf.sz = 16
+    end
+    assert_match(/\[DEPRECATION\] `format_id` is deprecated; use `dxf_id` instead/, w_cf)
+    assert_match(/\[DEPRECATION\] `format_id=` is deprecated; use `dxf_id=` instead/, w_cf)
+    assert_match(/\[DEPRECATION\] `size` is deprecated; use `font_size` instead/, w_cf)
+    assert_match(/\[DEPRECATION\] `size=` is deprecated; use `font_size=` instead/, w_cf)
+    assert_match(/\[DEPRECATION\] `sz` is deprecated; use `font_size` instead/, w_cf)
+    assert_match(/\[DEPRECATION\] `sz=` is deprecated; use `font_size=` instead/, w_cf)
+  end
+
+  test "Commit 5: WorkbookBuilder#style, StreamWriter#[], and DSL return types" do
+    builder_styles = nil
+    wb = Xlsxrb.build do |b|
+      b.style(:headline, bold: true, font_size: 16)
+      builder_styles = b.styles
+      b.sheet("Main") do |s|
+        ret_af = s.auto_filter("A1:C10")
+        assert_nil ret_af
+        ret_fc = s.filter_column("A", ["Val"])
+        assert_nil ret_fc
+        ret_sort = s.sort_state("A1:C10", [{ col_id: 0 }])
+        assert_nil ret_sort
+        ret_outline = s.outline_properties(summary_below: true)
+        assert_nil ret_outline
+        ret_split = s.split_pane(x_split: 100, y_split: 200)
+        assert_nil ret_split
+        ret_com = s.comment("A1", "Test comment")
+        assert_nil ret_com
+        ret_tc = s.threaded_comment("B2", "Threaded comment")
+        assert_nil ret_tc
+      end
+    end
+    assert(builder_styles.key?("headline") || builder_styles.key?(:headline))
+    assert_not_nil wb.sheet(0)
+
+    # StreamWriter#[]
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.sheet("First") do |s|
+        s.row([1, 2, 3])
+      end
+      proxy = w["First"]
+      assert_instance_of Xlsxrb::StreamWriter::WorksheetProxy, proxy
+      assert_equal "First", w.current_sheet
+    end
+  end
 end

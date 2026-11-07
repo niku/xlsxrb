@@ -58,7 +58,11 @@ module Xlsxrb
           when "vertAlign"
             @current_font[:vert_align] = attributes["val"] if @inside_rpr && attributes["val"]
           when "sz"
-            @current_font[:sz] = attributes["val"]&.to_f if @inside_rpr
+            if @inside_rpr
+              sz_val = attributes["val"]&.to_f
+              @current_font[:sz] = sz_val
+              @current_font[:size] = sz_val
+            end
           when "color"
             if @inside_rpr
               if attributes["rgb"]
@@ -228,7 +232,11 @@ module Xlsxrb
           when "vertAlign"
             @is_current_font[:vert_align] = attributes["val"] if @inside_is_rpr && attributes["val"]
           when "sz"
-            @is_current_font[:sz] = attributes["val"]&.to_f if @inside_is_rpr
+            if @inside_is_rpr
+              sz_val = attributes["val"]&.to_f
+              @is_current_font[:sz] = sz_val
+              @is_current_font[:size] = sz_val
+            end
           when "color"
             if @inside_is_rpr
               if attributes["rgb"]

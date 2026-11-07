@@ -3529,7 +3529,8 @@ module Xlsxrb
             @text_buffer = +""
           when "comment"
             @inside_comment = true
-            @current_comment = { ref: attributes["ref"], author_id: attributes["authorId"]&.to_i }
+            r = attributes["ref"]
+            @current_comment = { ref: r, author_id: attributes["authorId"]&.to_i }
             @current_comment[:guid] = attributes["guid"] if attributes["guid"]
             sid = attributes["shapeId"]
             @current_comment[:shape_id] = sid.to_i if sid
@@ -3562,7 +3563,11 @@ module Xlsxrb
           when "vertAlign"
             @current_font[:vert_align] = attributes["val"] if @inside_rpr && attributes["val"]
           when "sz"
-            @current_font[:sz] = attributes["val"]&.to_f if @inside_rpr
+            if @inside_rpr
+              sz_val = attributes["val"]&.to_f
+              @current_font[:sz] = sz_val
+              @current_font[:size] = sz_val
+            end
           when "color"
             if @inside_rpr
               if attributes["rgb"]

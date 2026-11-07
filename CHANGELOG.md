@@ -21,9 +21,15 @@
 - Add `Elements::WorkbookProperties#active_sheet` and `Elements::Workbook#active_sheet_index`.
 - Add `Elements::FilterColumn#column_id`.
 - Add structured Hash access for `category_axis` and `value_axis` titles on `Elements::Chart`.
+- Add dedicated assignment setters returning assigned value (`active_sheet=`, `first_sheet=`, `show_sheet_tabs=`, `tab_ratio=`, `code_name=`, `fit_to_page=`, `tab_color=`, `phonetic_properties=`, `sheet_calc_properties=`, `background_image=`, `totals_row=`, `totals_row_count=`, `state=`, `print_area=`, `print_titles=`) across `WorkbookBuilder`, `WorksheetBuilder`, `StreamWriter`, and `StreamWriter::WorksheetProxy`.
+- Add zero-argument property getters across builders and `StyleBuilder`.
+- Add predicate methods (`bold?`, `italic?`, `strike?`, `wrap_text?`, `shrink_to_fit?`, `locked?`, `hidden?`, `superscript?`, `subscript?`) and assignment setters (`font=`, `fill=`, `border=`, `vert_align=`, `superscript=`, `subscript=`, `wrap_text=`, `shrink_to_fit=`, `locked=`, `hidden=`, `protection=`, `number_format=`) on `StyleBuilder`.
+- Re-affirm `totals_row`, `totals_row=`, `totals_row_count`, and `totals_row_count=` as canonical on `TableBuilder` to align with ECMA-376 `totalsRowCount`.
 
 ### Changed
 - Update `Elements::Row#[]` and `StreamRow#[]` to resolve column indices and column letters via `cell_at` instead of indexing the raw sparse `cells` array, returning `nil` when a cell at the specified column is absent.
+- Separate builder getter (`xxx`) and setter (`xxx=`) methods, allowing explicit `nil` resets.
+- Encapsulate `StyleBuilder#resolve_color` as `private`.
 
 ### Deprecated
 - `DslHelpers.sheet_name` is deprecated in favor of `DslHelpers.sanitize_sheet_name`; will be removed in version 0.2.0.
@@ -50,6 +56,11 @@
 - `Elements::WorkbookProperties#active_tab` is deprecated in favor of `#active_sheet`, and `Elements::Workbook#active_tab` is deprecated in favor of `#active_sheet_index`; will be removed in version 0.2.0.
 - `Elements::Chart#cat_axis_title` and `#val_axis_title` are deprecated in favor of `category_axis[:title]` and `value_axis[:title]`; will be removed in version 0.2.0.
 - `Elements::Worksheet` constructor keywords `sheet_calc_pr:`, `calc_pr:`, `phonetic_pr:`, `background_picture:`, `picture:` are deprecated in favor of canonical keyword arguments; will be removed in version 0.2.0.
+- Calling builder getter methods with arguments to set values or mutate state (`active_sheet`, `first_sheet`, `show_sheet_tabs`, `tab_ratio`, `code_name`, `tab_color`, `sheet_calc_properties`, `phonetic_properties`, `background_image`, `state`, and subbuilders `TableBuilder`, `DataValidationBuilder`, `ConditionalFormatBuilder`) is deprecated and will become 0-argument getters in version 0.2.0; use dedicated setters (`xxx=`) instead.
+- Calling `fit_to_page` with arguments is deprecated and will become a 0-argument boolean getter in version 0.2.0; use `fit_to_page = true/false` or `page_setup(fit_to_width: ..., fit_to_height: ...)` instead.
+- Calling `StyleBuilder` boolean mutator methods (`bold`, `italic`, `underline`, `strike`, `superscript`, `subscript`, `wrap_text`, `shrink_to_fit`, `locked`, `hidden`) with zero arguments to mutate state is deprecated; pass `true` explicitly (e.g. `bold(true)`).
+- `TableBuilder#[]` and `#[]=` are deprecated in favor of `#column(name)` and `#add_column`; will be removed in version 0.2.0.
+- `TableBuilder#total_row`, `#total_row=`, `#total_row_count`, and `#total_row_count=` are deprecated in favor of `totals_row`, `totals_row=`, `totals_row_count`, and `totals_row_count=`; will be removed in version 0.2.0.
 
 ### Fixed
 - Prevent attribute loss in `Elements::PivotTable`, `Elements::TableColumn`, `Elements::ThreadedComment`, `Elements::Comment`, and `Elements::FilterColumn` by retaining full schema attributes and capturing unmapped keyword options into `options:`.

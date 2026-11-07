@@ -126,8 +126,8 @@ module Xlsxrb
     # @return [void]
     # @raise [ArgumentError] If width exceeds 255 in strict mode.
     # @api public
-    # : (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
-    def column: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?) -> void
+    # : (Integer | String | Symbol | Range[Integer | String | Symbol] | Array[Integer | String | Symbol] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?best_fit: bool) -> void
+    def column: (Integer | String | Symbol | Range[Integer | String | Symbol] | Array[Integer | String | Symbol] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?best_fit: bool) -> void
 
     # Returns column configurations defined for this worksheet.
     #
@@ -199,23 +199,34 @@ module Xlsxrb
     # @param show_symbols [Boolean, nil] Alias for show_outline_symbols.
     # @param apply_styles [Boolean, nil] Flag indicating whether automatic styles apply to outlines.
     # @param opts [Hash] Additional options.
-    # @return [Hash]
+    # @return [Hash<Symbol, untyped>, void]
     # @api public
-    # : (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?show_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> Hash[Symbol, untyped]
-    def outline_properties: (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?show_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> Hash[Symbol, untyped]
+    # : (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?show_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> (Hash[Symbol, untyped] | void)
+    def outline_properties: (?summary_below: untyped, ?summary_right: untyped, ?show_outline_symbols: untyped, ?show_symbols: untyped, ?apply_styles: untyped, **untyped opts) -> untyped
 
     # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
     alias outline_pr outline_properties
 
+    # Sets worksheet outline and grouping view properties.
+    #
+    # @param opts [Hash] Outline properties.
+    # @return [void]
+    # @api public
+    # : (Hash[Symbol, untyped] opts) -> void
+    def outline_properties=: (Hash[Symbol, untyped] opts) -> void
+
+    alias outline_pr= outline_properties=
+
     # Adds a chart to the worksheet.
     #
+    # @param type [Symbol, String, nil] Optional chart type (e.g. :bar, :line).
     # @param options [Hash] Chart configuration options.
     # @yield [builder]
     # @yieldparam builder [Xlsxrb::ChartBuilder]
     # @return [void]
     # @api public
-    # : (**untyped options) ?{ (ChartBuilder) -> void } -> void
-    def chart: (**untyped options) ?{ (ChartBuilder) -> void } -> void
+    # : (?Symbol | String? type, **untyped options) ?{ (ChartBuilder) -> void } -> void
+    def chart: (?Symbol | String? type, **untyped options) ?{ (ChartBuilder) -> void } -> void
 
     # Adds a hyperlink to a cell.
     #
@@ -231,30 +242,46 @@ module Xlsxrb
 
     # Sets an auto-filter range on the sheet.
     #
-    # @param range [String] The cell range (e.g. "A1:E100").
-    # @return [String]
+    # @param range [String, nil] The cell range (e.g. "A1:E100").
+    # @return [void]
     # @api public
-    # : (String range) -> String
-    def auto_filter: (String range) -> String
+    # : (String? range) -> void
+    def auto_filter: (String? range) -> void
+
+    # Sets the auto-filter range for the worksheet.
+    #
+    # @param range [String, nil] Cell range (e.g. "A1:E100").
+    # @return [String, nil]
+    # @api public
+    # : (String? range) -> String?
+    def auto_filter=: (String? range) -> String?
 
     # Configures filtering rules on a specific column of an auto-filter.
     #
     # @param col_id [Integer, String, Symbol] 0-based column index relative to filter range or column letter ("A", :B).
     # @param filter [Hash] Filter criteria (e.g. values, custom filters).
-    # @return [Hash]
+    # @return [void]
     # @api public
-    # : (Integer | String | Symbol col_id, Hash[untyped, untyped] filter) -> Hash[untyped, untyped]
-    def filter_column: (Integer | String | Symbol col_id, Hash[untyped, untyped] filter) -> Hash[untyped, untyped]
+    # : (Integer | String | Symbol col_id, untyped filter) -> void
+    def filter_column: (Integer | String | Symbol col_id, untyped filter) -> void
 
     # Configures column sort state for the sheet.
     #
     # @param ref [String] The sorted range.
     # @param sort_conditions [Array<Hash>] List of sort condition definitions.
     # @param opts [Hash] Additional sort state options.
-    # @return [Hash]
+    # @return [Elements::SortState, Hash<Symbol, untyped>, nil, void]
     # @api public
-    # : (String ref, Array[Hash[untyped, untyped]] sort_conditions, **untyped opts) -> Hash[untyped, untyped]
-    def sort_state: (String ref, Array[Hash[untyped, untyped]] sort_conditions, **untyped opts) -> Hash[untyped, untyped]
+    # : (?String? ref, ?Array[Hash[untyped, untyped]]? sort_conditions, **untyped opts) -> (untyped | void)
+    def sort_state: (?untyped ref, ?untyped sort_conditions, **untyped opts) -> untyped
+
+    # Sets column sort state for the sheet.
+    #
+    # @param opts [Elements::SortState, Hash, nil] Sort state options.
+    # @return [void]
+    # @api public
+    # : (untyped opts) -> void
+    def sort_state=: (untyped opts) -> void
 
     # Adds a data validation rule to a cell, range, or coordinates.
     #
@@ -393,41 +420,70 @@ module Xlsxrb
     # : (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
     def merge: (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer?, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer?, ?row_end: Integer?) -> void
 
-    # Freezes window panes at the specified row and column.
+    # Freezes window panes at the specified row and column, or queries freeze pane settings.
     #
-    # @param row [Integer] Number of rows to freeze from top (0-based split position).
+    # @param row [Integer, nil] Number of rows to freeze from top (0-based split position).
     # @param column [Integer, String, nil] Number of columns to freeze from left (0-based or letter).
     # @param col [Integer, String, nil] Deprecated alias for column.
+    # @return [Elements::FreezePane, Hash<Symbol, untyped>, nil, void]
+    # @api public
+    # : (?row: Integer | nil, ?column: (Integer | String)?, ?col: (Integer | String)?) -> (untyped | void)
+    def freeze_pane: (?row: untyped, ?column: untyped, ?col: untyped) -> untyped
+
+    # Sets or clears freeze pane configuration.
+    #
+    # @param opts [Elements::FreezePane, Hash, nil] Freeze pane options.
     # @return [void]
     # @api public
-    # : (?row: Integer, ?column: (Integer | String)?, ?col: (Integer | String)?) -> void
-    def freeze_pane: (?row: Integer, ?column: (Integer | String)?, ?col: (Integer | String)?) -> void
+    # : (untyped opts) -> void
+    def freeze_pane=: (untyped opts) -> void
 
-    # Splits window panes without freezing.
+    # Splits window panes without freezing or queries split pane settings.
     #
-    # @param x_split [Integer] Horizontal split offset in points.
-    # @param y_split [Integer] Vertical split offset in points.
+    # @param x_split [Integer, nil] Horizontal split offset in points.
+    # @param y_split [Integer, nil] Vertical split offset in points.
     # @param top_left_cell [String, nil] Top-left cell reference in bottom-right pane.
+    # @param active_pane [String, Symbol, nil] Active pane identifier.
+    # @param state [String, Symbol, nil] Split state.
+    # @return [Elements::SplitPane, Hash<Symbol, untyped>, nil, void]
+    # @api public
+    # : (?x_split: Integer | nil, ?y_split: Integer | nil, ?top_left_cell: String?, ?active_pane: (String | Symbol)?, ?state: (String | Symbol)?) -> (untyped | void)
+    def split_pane: (?x_split: untyped, ?y_split: untyped, ?top_left_cell: untyped, ?active_pane: untyped, ?state: untyped) -> untyped
+
+    # Sets or clears split pane configuration.
+    #
+    # @param opts [Elements::SplitPane, Hash, nil] Split pane options.
     # @return [void]
     # @api public
-    # : (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
-    def split_pane: (?x_split: ::Integer, ?y_split: ::Integer, ?top_left_cell: String?) -> void
+    # : (untyped opts) -> void
+    def split_pane=: (untyped opts) -> void
 
-    # Sets the active cell and selection area for the worksheet.
+    # Sets or queries the active cell and selection area (<selection>).
     #
-    # @param active_cell [String] Active cell reference (e.g. "A1") or range (e.g. "A1:D10").
+    # @param active_cell [String, nil] Active cell reference (e.g. "A1") or range (e.g. "A1:D10").
     # @param sqref [String, nil] Selected range reference (e.g. "A1:D10").
     # @param pane [String, Symbol, nil] Target pane (:topLeft, :topRight, :bottomLeft, :bottomRight).
+    # @return [Elements::Selection, Array<Elements::Selection>, Hash<Symbol, untyped>, nil, void]
+    # @api public
+    # : (?String? active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> (untyped | void)
+    def selection: (?untyped active_cell, ?sqref: untyped, ?pane: untyped) -> untyped
+
+    # Sets or clears the selection configuration.
+    #
+    # @param opts [Elements::Selection, Array<Elements::Selection, Hash>, Hash, nil]
     # @return [void]
     # @api public
-    # : (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
-    def selection: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
+    # : (untyped opts) -> void
+    def selection=: (untyped opts) -> void
 
     # @deprecated Use {#selection} instead.
     # : (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
     def select_cell: (String active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
 
-    # Sets page margins in inches for printing.
+    # Configures or queries page margins in inches for printing (<pageMargins>).
+    #
+    # When called with no arguments, returns the page margins value object or hash.
+    # When called with arguments, configures page margins and returns nil.
     #
     # @param left [Float, nil] Left margin.
     # @param right [Float, nil] Right margin.
@@ -435,18 +491,37 @@ module Xlsxrb
     # @param bottom [Float, nil] Bottom margin.
     # @param header [Float, nil] Header margin.
     # @param footer [Float, nil] Footer margin.
+    # @return [Elements::PageMargins, Hash<Symbol, untyped>, nil, void]
+    # @api public
+    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> (untyped | void)
+    def page_margins: (?left: untyped, ?right: untyped, ?top: untyped, ?bottom: untyped, ?header: untyped, ?footer: untyped) -> untyped
+
+    # Sets or clears page margins configuration.
+    #
+    # @param opts [Hash, Elements::PageMargins, nil]
     # @return [void]
     # @api public
-    # : (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
-    def page_margins: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
+    # : (untyped opts) -> void
+    def page_margins=: (untyped opts) -> void
 
-    # Sets page setup configuration (orientation, paper size, fit to page, scaling).
+    # Configures or queries page setup configuration (<pageSetup>).
+    #
+    # When called with no arguments, returns the page setup value object or hash.
+    # When called with keyword arguments, updates page setup and returns nil.
     #
     # @param opts [Hash] Page setup options (e.g. orientation: :landscape, paper_size: 9).
+    # @return [Elements::PageSetup, Hash<Symbol, untyped>, void]
+    # @api public
+    # : (**untyped opts) -> (untyped | void)
+    def page_setup: (**untyped opts) -> untyped
+
+    # Sets page setup configuration.
+    #
+    # @param opts [Hash, Elements::PageSetup]
     # @return [void]
     # @api public
-    # : (**untyped opts) -> void
-    def page_setup: (**untyped opts) -> void
+    # : (untyped opts) -> void
+    def page_setup=: (untyped opts) -> void
 
     # Configures whether page setup fits content to page width/height.
     # When enabled, optionally sets fit_to_width and/or fit_to_height on page_setup.
@@ -467,16 +542,27 @@ module Xlsxrb
     # @param enabled [Boolean, nil] Whether to fit to page.
     # @return [Boolean]
     # @api public
-    # : (bool? enabled) -> bool
-    def fit_to_page=: (bool? enabled) -> bool
+    # : (bool? enabled) -> bool?
+    def fit_to_page=: (bool? enabled) -> bool?
 
-    # Configures headers and footers for printing.
+    # Configures or queries headers and footers for printing (<headerFooter>).
+    #
+    # When called with no arguments, returns the header/footer value object or hash.
+    # When called with keyword arguments, updates headers and footers and returns nil.
     #
     # @param opts [Hash] Header and footer options (e.g. odd_header: "&CHeader Text").
+    # @return [Elements::HeaderFooter, Hash<Symbol, untyped>, void]
+    # @api public
+    # : (**untyped opts) -> (untyped | void)
+    def header_footer: (**untyped opts) -> untyped
+
+    # Sets header and footer configuration.
+    #
+    # @param opts [Hash, Elements::HeaderFooter]
     # @return [void]
     # @api public
-    # : (**untyped opts) -> void
-    def header_footer: (**untyped opts) -> void
+    # : (untyped opts) -> void
+    def header_footer=: (untyped opts) -> void
 
     # Configures print options for the worksheet.
     #
@@ -517,10 +603,18 @@ module Xlsxrb
     #   sheet.print_area #=> "A1:H50"
     #
     # @param range [String, nil] Cell range (e.g. "A1:H50").
+    # @return [String, nil, void]
+    # @api public
+    # : (?String? range) -> (String | nil | void)
+    def print_area: (?untyped range) -> untyped
+
+    # Sets the print area for the worksheet.
+    #
+    # @param range [String, nil] Cell range (e.g. "A1:H50").
     # @return [String, nil]
     # @api public
-    # : (?String? range) -> String?
-    def print_area: (?String? range) -> String?
+    # : (String? range) -> String?
+    def print_area=: (String? range) -> String?
 
     # Sets or gets repeating print titles (rows and/or columns) for pagination.
     #
@@ -533,10 +627,18 @@ module Xlsxrb
     # @param rows [String, Integer, Range, nil] Repeating row range (e.g. "1:2" or 0-based 0..1).
     # @param columns [String, Integer, Symbol, Range, nil] Repeating column range (e.g. "A:B" or 0..1).
     # @param cols [String, Integer, Symbol, Range, nil] Deprecated alias for columns.
-    # @return [Hash, nil]
+    # @return [Elements::PrintTitles, Hash, nil, void]
     # @api public
-    # : (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?) -> Hash[Symbol, untyped]?
-    def print_titles: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?) -> Hash[Symbol, untyped]?
+    # : (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?) -> (untyped | void)
+    def print_titles: (?rows: untyped, ?columns: untyped, ?cols: untyped) -> untyped
+
+    # Sets repeating print titles for the worksheet.
+    #
+    # @param opts [Elements::PrintTitles, Hash, nil] Options with :rows and/or :columns.
+    # @return [Elements::PrintTitles, Hash, nil]
+    # @api public
+    # : (untyped opts) -> (untyped | void)
+    def print_titles=: (untyped opts) -> untyped
 
     # Sets repeating title rows to appear at the top of each printed page.
     # Accepts 0-indexed row numbers (WriteXLSX / xlsxrb convention) or Excel range string ("1:2").
@@ -570,13 +672,24 @@ module Xlsxrb
     # : (Integer | String first, ?(Integer | String)? last) -> void
     def repeat_columns: (Integer | String first, ?(Integer | String)? last) -> void
 
-    # Sets sheet-level protection with optional password hashing.
+    # Configures or queries sheet-level protection with optional password hashing (<sheetProtection>).
+    #
+    # When called with no arguments, returns the sheet protection value object or hash.
+    # When called with keyword arguments, sets sheet protection and returns nil.
     #
     # @param opts [Hash] Protection options (e.g. password: "secret", select_locked_cells: true).
+    # @return [Elements::SheetProtection, Hash<Symbol, untyped>, nil, void]
+    # @api public
+    # : (**untyped opts) -> (untyped | void)
+    def sheet_protection: (**untyped opts) -> untyped
+
+    # Sets or clears sheet protection configuration.
+    #
+    # @param opts [Elements::SheetProtection, Hash, Boolean, nil]
     # @return [void]
     # @api public
-    # : (**untyped opts) -> void
-    def sheet_protection: (**untyped opts) -> void
+    # : (untyped opts) -> void
+    def sheet_protection=: (untyped opts) -> void
 
     # @deprecated Use {#sheet_protection} instead.
     # : (**untyped opts) -> void
@@ -924,9 +1037,11 @@ module Xlsxrb
     # : (?String? ref, ?columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
     def initialize: (?String? ref, ?columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) -> void
 
+    # @deprecated Use explicit getter methods instead.
     # : (untyped key) -> untyped
     def []: (untyped key) -> untyped
 
+    # @deprecated Use explicit setter methods instead.
     # : (untyped key, untyped value) -> untyped
     def []=: (untyped key, untyped value) -> untyped
 
@@ -1031,8 +1146,8 @@ module Xlsxrb
     # Gets or sets whether the table has a totals row.
     #
     # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#totals_row=} instead.
-    # : (?bool? val) -> bool?
-    def totals_row: (?bool? val) -> bool?
+    # : (?untyped val) -> bool?
+    def totals_row: (?untyped val) -> bool?
 
     # : (bool val) -> bool
     def totals_row=: (bool val) -> bool
@@ -1065,9 +1180,18 @@ module Xlsxrb
     # : (?String? sqref, **untyped opts) -> void
     def initialize: (?String? sqref, **untyped opts) -> void
 
+    # @deprecated Use dedicated property accessors instead. Will be removed in 0.2.0.
+    # @param key [Symbol, String]
+    # @return [Object, nil]
+    # @api public
     # : (untyped key) -> untyped
     def []: (untyped key) -> untyped
 
+    # @deprecated Use dedicated property accessors instead. Will be removed in 0.2.0.
+    # @param key [Symbol, String]
+    # @param value [Object]
+    # @return [Object]
+    # @api public
     # : (untyped key, untyped value) -> untyped
     def []=: (untyped key, untyped value) -> untyped
 
@@ -1248,9 +1372,18 @@ module Xlsxrb
     # : (?String? sqref, **untyped opts) -> void
     def initialize: (?String? sqref, **untyped opts) -> void
 
+    # @deprecated Use dedicated property accessors instead. Will be removed in 0.2.0.
+    # @param key [Symbol, String]
+    # @return [Object, nil]
+    # @api public
     # : (untyped key) -> untyped
     def []: (untyped key) -> untyped
 
+    # @deprecated Use dedicated property accessors instead. Will be removed in 0.2.0.
+    # @param key [Symbol, String]
+    # @param value [Object]
+    # @return [Object]
+    # @api public
     # : (untyped key, untyped value) -> untyped
     def []=: (untyped key, untyped value) -> untyped
 
@@ -1321,10 +1454,16 @@ module Xlsxrb
     # : (untyped val) -> untyped
     def formula=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#formulas=} instead.
+    # @deprecated Use {#formula} instead. Will be removed in 0.2.0.
+    # @return [Object]
+    # @api public
     # : (*untyped vals) -> untyped
     def formulas: (*untyped vals) -> untyped
 
+    # @deprecated Use {#formula=} instead. Will be removed in 0.2.0.
+    # @param vals [Array, Object]
+    # @return [Array]
+    # @api public
     # : (untyped vals) -> untyped
     def formulas=: (untyped vals) -> untyped
 
@@ -1377,18 +1516,31 @@ module Xlsxrb
     # : (untyped val) -> untyped
     def underline=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#size=} instead.
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#font_name=} instead.
+    # : (?String? val) -> String?
+    def font_name: (?String? val) -> String?
+
+    # : (String val) -> String
+    def font_name=: (String val) -> String
+
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#font_size=} instead.
     # : (?untyped val) -> untyped
-    def size: (?untyped val) -> untyped
+    def font_size: (?untyped val) -> untyped
 
     # : (untyped val) -> untyped
+    def font_size=: (untyped val) -> untyped
+
+    # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
+    def size: (?untyped val) -> untyped
+
+    # @deprecated Use {#font_size=} instead. Will be removed in 0.2.0.
     def size=: (untyped val) -> untyped
 
-    # @deprecated Use {#size} instead. Will be removed in 0.2.0.
-    alias sz size
+    # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
+    def sz: (?untyped val) -> untyped
 
-    # @deprecated Use {#size=} instead. Will be removed in 0.2.0.
-    alias sz= size=
+    # @deprecated Use {#font_size=} instead. Will be removed in 0.2.0.
+    def sz=: (untyped val) -> untyped
 
     # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#stop_if_true=} instead.
     # : (?bool? val) -> bool?
@@ -1488,10 +1640,27 @@ module Xlsxrb
     # : (untyped val) -> untyped
     def dxf=: (untyped val) -> untyped
 
-    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#format_id=} instead.
+    # Gets or sets the differential format identifier (dxfId).
+    #
+    # @param val [Integer, nil]
+    # @return [Integer, nil]
+    # @api public
+    # : (?Integer? val) -> Integer?
+    def dxf_id: (?Integer? val) -> Integer?
+
+    # Sets the differential format identifier (dxfId).
+    #
+    # @param val [Integer]
+    # @return [Integer]
+    # @api public
+    # : (Integer val) -> Integer
+    def dxf_id=: (Integer val) -> Integer
+
+    # @deprecated Use {#dxf_id} instead. Will be removed in 0.2.0.
     # : (?Integer? val) -> Integer?
     def format_id: (?Integer? val) -> Integer?
 
+    # @deprecated Use {#dxf_id=} instead. Will be removed in 0.2.0.
     # : (Integer val) -> Integer
     def format_id=: (Integer val) -> Integer
 

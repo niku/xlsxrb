@@ -162,7 +162,11 @@ module Xlsxrb
           when "charset"
             @current_font[:charset] = attributes["val"].to_i if @current_font && attributes["val"]
           when "sz"
-            @current_font[:sz] = attributes["val"]&.to_f if @current_font
+            if @current_font
+              sz_val = attributes["val"]&.to_f
+              @current_font[:sz] = sz_val
+              @current_font[:size] = sz_val
+            end
           when "color"
             parse_color(attributes)
           when "fills"

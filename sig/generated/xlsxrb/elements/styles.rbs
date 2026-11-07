@@ -109,6 +109,18 @@ module Xlsxrb
       # : (Integer? id) -> Hash[Symbol, untyped]?
       def font: (Integer? id) -> Hash[Symbol, untyped]?
 
+      # Returns the font size in points for the font entry at index id.
+      #
+      # @param id [Integer, nil]
+      # @return [Numeric, nil]
+      # @api public
+      # : (Integer? id) -> Numeric?
+      def font_size: (Integer? id) -> Numeric?
+
+      # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
+      # : (Integer? id) -> Numeric?
+      def sz: (Integer? id) -> Numeric?
+
       # Looks up a fill entry by 0-based index.
       #
       # @param id [Integer, nil]

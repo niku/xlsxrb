@@ -81,6 +81,24 @@ module Xlsxrb
     # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
     alias set_default_font default_font
 
+    # @return [Hash{String => StyleBuilder}]
+    # : Hash[String, StyleBuilder]
+    attr_reader styles: untyped
+
+    # Defines or configures a named cell style at the workbook level.
+    #
+    # @example
+    #   workbook.style(:header, bold: true, fill_color: "4F81BD", font_color: "FFFFFF")
+    #
+    # @param name [String, Symbol] The name of the style.
+    # @param opts [Hash] Style options (e.g. bold: true, fill_color: "FF0000").
+    # @yield [style_builder]
+    # @yieldparam style_builder [Xlsxrb::StyleBuilder]
+    # @return [StyleBuilder]
+    # @api public
+    # : (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+    def style: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
+
     OMITTED: untyped
 
     # Gets or sets the active worksheet tab in the workbook window.
@@ -180,8 +198,8 @@ module Xlsxrb
     # @param value [String, Integer, Boolean] Property value.
     # @return [void]
     # @api public
-    # : (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
-    def workbook_property: (Symbol name, String | Integer | bool value) -> (String | Integer | bool)
+    # : (Symbol name, String | Integer | bool value) -> void
+    def workbook_property: (Symbol name, String | Integer | bool value) -> void
 
     # Returns the list of worksheet names added to this workbook so far.
     #
@@ -225,14 +243,22 @@ module Xlsxrb
     # : (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
     def defined_name: (String name, ?untyped value, ?sheet: String?, ?scope: (String | Symbol)?, ?hidden: bool, ?column: untyped, ?columns: untyped, ?col: untyped, ?row: untyped, ?rows: untyped, ?range: untyped, ?ref_sheet: String?, ?local: bool) -> void
 
-    # Sets the print area for a sheet.
+    # Sets or gets the print area for a sheet.
     #
-    # @param range [String] Cell range (e.g. "A1:G50").
+    # @param range [String, Object, nil] Cell range (e.g. "A1:G50").
     # @param sheet [String, nil] Target sheet name (defaults to latest or "Sheet1").
-    # @return [void]
+    # @return [String, nil, void]
     # @api public
-    # : (String range, ?sheet: String?) -> void
-    def print_area: (String range, ?sheet: String?) -> void
+    # : (?untyped range, ?sheet: String?) -> (String | nil | void)
+    def print_area: (?untyped range, ?sheet: untyped) -> untyped
+
+    # Sets the print area for the worksheet.
+    #
+    # @param range [String, nil] Cell range (e.g. "A1:G50").
+    # @return [String, nil]
+    # @api public
+    # : (String? range) -> String?
+    def print_area=: (String? range) -> String?
 
     # Sets repeating print titles (rows and/or columns) for pagination.
     #
@@ -244,6 +270,14 @@ module Xlsxrb
     # @api public
     # : (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
     def print_titles: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?cols: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
+
+    # Sets repeating print titles.
+    #
+    # @param opts [Hash, Object] Options with :rows and/or :columns.
+    # @return [Hash, Object]
+    # @api public
+    # : (untyped opts) -> untyped
+    def print_titles=: (untyped opts) -> untyped
 
     # Sets repeating title rows for pagination on the target or active sheet.
     #

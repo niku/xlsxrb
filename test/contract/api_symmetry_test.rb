@@ -13,13 +13,16 @@ class ApiSymmetryTest < Test::Unit::TestCase
   # Workbook-level delegators or stream-lifecycle methods intentionally on WorksheetProxy
   PROXY_ONLY_METHODS = %i[
     active_sheet
+    active_sheet=
     active_tab
+    active_tab=
     app_property
     cleanup!
     core_property
     custom_property
     default_font
     first_sheet
+    first_sheet=
     internal_sheet_setup
     properties
     protect_workbook
@@ -27,7 +30,9 @@ class ApiSymmetryTest < Test::Unit::TestCase
     set_default_font
     sheet_names
     show_sheet_tabs
+    show_sheet_tabs=
     tab_ratio
+    tab_ratio=
     workbook_property
   ].freeze
 
@@ -47,6 +52,16 @@ class ApiSymmetryTest < Test::Unit::TestCase
   end
 
   def test_worksheet_builder_and_stream_writer_parameter_symmetry
+    normalize_sig = lambda do |sig|
+      sig.map do |type, name|
+        if %i[req opt].include?(type)
+          name.to_s.start_with?("__") ? [type, :arg] : [type, name]
+        else
+          [type, name]
+        end
+      end
+    end
+
     # Compare method signatures between WorksheetBuilder and StreamWriter for common authoring methods
     common_methods = (Xlsxrb::WorksheetBuilder.public_instance_methods(false).reject { |m| m.to_s.include?("__RBS_TEST_") } &
                       Xlsxrb::StreamWriter.public_instance_methods(false).reject { |m| m.to_s.include?("__RBS_TEST_") })
@@ -78,7 +93,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
       builder_sig = builder_params.select { |param| %i[req opt key keyreq].include?(param.first) }
       stream_sig = stream_params.select { |param| %i[req opt key keyreq].include?(param.first) }
 
-      assert_equal builder_sig, stream_sig,
+      assert_equal normalize_sig.call(builder_sig), normalize_sig.call(stream_sig),
                    "Parameter signature mismatch for method :#{method_name} (Builder: #{builder_sig.inspect}, Stream: #{stream_sig.inspect})"
     end
 
@@ -94,13 +109,13 @@ class ApiSymmetryTest < Test::Unit::TestCase
       builder_sig = builder_params.select { |param| %i[req opt key keyreq].include?(param.first) }
       proxy_sig = proxy_params.select { |param| %i[req opt key keyreq].include?(param.first) }
 
-      assert_equal builder_sig, proxy_sig,
+      assert_equal normalize_sig.call(builder_sig), normalize_sig.call(proxy_sig),
                    "WorksheetProxy##{method_name} signature mismatch with WorksheetBuilder##{method_name}"
     end
   end
 
   def test_workbook_builder_and_stream_writer_symmetry
-    workbook_only_methods = %i[[] build]
+    workbook_only_methods = %i[[] build styles]
     wb_methods = Xlsxrb::WorkbookBuilder.public_instance_methods(false).reject { |m| m.to_s.include?("__RBS_TEST_") } - workbook_only_methods
     sw_methods = Xlsxrb::StreamWriter.public_instance_methods(false).reject { |m| m.to_s.include?("__RBS_TEST_") }
 

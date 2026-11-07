@@ -1640,11 +1640,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("StreamCF") do |s|
         (1..5).each { |i| s.row([i, i * 2]) }
         s.conditional_format("A1:B5") do |cf|
-          cf.type :cell_is
-          cf.operator :between
-          cf.formulas 2, 4
-          cf.bold true
-          cf.fill_color "FFFF00"
+          cf.type = :cell_is
+          cf.operator = :between
+          cf.formula = [2, 4]
+          cf.bold = true
+          cf.fill_color = "FFFF00"
         end
       end
     end

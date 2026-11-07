@@ -543,7 +543,8 @@ module Xlsxrb
           rule_attrs = %(type="#{rule_type}")
           rule_attrs << %( priority="#{rule[:priority]}") if rule[:priority]
           rule_attrs << %( operator="#{rule[:operator]}") if rule[:operator]
-          rule_attrs << %( dxfId="#{rule[:format_id]}") if rule[:format_id]
+          did = rule[:dxf_id] || rule[:format_id]
+          rule_attrs << %( dxfId="#{did}") if did
           rule_attrs << %( stopIfTrue="1") if rule[:stop_if_true]
           rule_attrs << %( aboveAverage="0") if rule[:above_average] == false
           rule_attrs << %( equalAverage="1") if rule[:equal_average]
@@ -562,7 +563,7 @@ module Xlsxrb
           when :cell_is, :expression, :above_average, :top10, :duplicate_values, :unique_values,
                :contains_text, :not_contains_text, :begins_with, :ends_with,
                :contains_blanks, :not_contains_blanks, :contains_errors, :not_contains_errors, :time_period
-            formulas = rule[:formulas] || [rule[:formula]].compact
+            formulas = rule[:formula].is_a?(Array) ? rule[:formula] : (rule[:formulas] || [rule[:formula]].compact)
             if formulas.empty?
               parts << "<cfRule #{rule_attrs}/>"
             else

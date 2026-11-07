@@ -101,6 +101,25 @@ module Xlsxrb
         end
       end
 
+      # Returns the font size in points, if specified.
+      #
+      # @return [Numeric, nil]
+      # @api public
+      #: () -> Numeric?
+      def font_size
+        return nil unless font
+
+        sz = font[:size] || font[:sz]
+        sz.is_a?(Numeric) ? sz : nil
+      end
+
+      # @deprecated Use {#font_size} instead. Will be removed in 0.2.0.
+      #: () -> Numeric?
+      def sz
+        warn "[DEPRECATION] `sz` is deprecated; use `font_size` instead.", uplevel: 1
+        font_size
+      end
+
       # Returns the plain text of this run.
       #
       # @return [String]
