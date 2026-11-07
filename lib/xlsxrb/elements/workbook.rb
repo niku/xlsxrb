@@ -52,7 +52,14 @@ module Xlsxrb
       def each(&)
         sheets.each(&)
       end
-      alias each_sheet each
+
+      # @deprecated Use {#each} instead. Will be removed in 0.2.0.
+      #: () { (Elements::Worksheet | StreamSheet) -> void } -> void
+      #: () -> Enumerator[Elements::Worksheet | StreamSheet, void]
+      def each_sheet(&block)
+        warn "[DEPRECATION] #each_sheet is deprecated; use #each instead.", uplevel: 1
+        each(&block)
+      end
 
       # Returns whether the workbook is valid according to ECMA-376 rules.
       #
@@ -126,7 +133,13 @@ module Xlsxrb
         val = workbook_properties[:show_sheet_tabs]
         val != false
       end
-      alias show_sheet_tabs show_sheet_tabs?
+
+      # @deprecated Use {#show_sheet_tabs?} instead. Will be removed in 0.2.0.
+      #: () -> bool
+      def show_sheet_tabs
+        warn "[DEPRECATION] #show_sheet_tabs is deprecated; use #show_sheet_tabs? instead.", uplevel: 1
+        show_sheet_tabs?
+      end
 
       # Returns the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
       #
@@ -145,7 +158,13 @@ module Xlsxrb
       def full_calc_on_load?
         workbook_properties[:full_calc_on_load] ? true : false
       end
-      alias full_calc_on_load full_calc_on_load?
+
+      # @deprecated Use {#full_calc_on_load?} instead. Will be removed in 0.2.0.
+      #: () -> bool
+      def full_calc_on_load
+        warn "[DEPRECATION] #full_calc_on_load is deprecated; use #full_calc_on_load? instead.", uplevel: 1
+        full_calc_on_load?
+      end
 
       # Returns core document properties (e.g. title, creator, created), or an empty hash.
       #
@@ -281,7 +300,13 @@ module Xlsxrb
         close
         with(sheets: loaded_sheets)
       end
-      alias to_workbook load
+
+      # @deprecated Use {#load} instead. Will be removed in 0.2.0.
+      #: () -> Elements::Workbook
+      def to_workbook
+        warn "[DEPRECATION] #to_workbook is deprecated; use #load instead.", uplevel: 1
+        load
+      end
 
       # Closes any streaming resources associated with worksheets.
       #

@@ -575,6 +575,7 @@ module Xlsxrb
 
         @fonts[0] = font
       end
+      # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
       alias set_default_font default_font
 
       # Sets the indexed colors palette (array of ARGB hex strings, e.g. ["FF000000", "FFFFFFFF"]).

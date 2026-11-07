@@ -3174,4 +3174,602 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
   end
+
+  test "builder getter and setter methods are separated and return assigned values" do
+    # 1. WorkbookBuilder
+    Xlsxrb.build do |b|
+      # active_sheet / active_tab
+      b.sheet("Sheet1") { |s| s.row([1]) }
+      b.sheet("Sheet2") { |s| s.row([2]) }
+
+      assert_nil b.active_sheet
+      assert_equal "Sheet1", (b.active_sheet = "Sheet1")
+      assert_equal "Sheet1", b.active_sheet
+      assert_equal "Sheet1", b.active_tab
+      assert_nil(b.active_sheet = nil)
+      assert_nil b.active_sheet
+      assert_equal "Sheet2", b.active_sheet("Sheet2")
+      assert_equal "Sheet2", b.active_sheet
+      assert_nil b.active_sheet(nil)
+      assert_nil b.active_sheet
+      assert_equal "Sheet1", b.send(:active_sheet=, "Sheet1")
+      assert_equal "Sheet2", b.send(:active_tab=, "Sheet2")
+      assert_equal "Sheet2", b.active_sheet
+
+      # first_sheet
+      assert_nil b.first_sheet
+      assert_equal "Sheet2", (b.first_sheet = "Sheet2")
+      assert_equal "Sheet2", b.first_sheet
+      assert_nil(b.first_sheet = nil)
+      assert_nil b.first_sheet
+      assert_equal "Sheet1", b.first_sheet("Sheet1")
+      assert_equal "Sheet1", b.first_sheet
+      assert_nil b.first_sheet(nil)
+      assert_nil b.first_sheet
+      assert_equal "Sheet1", b.send(:first_sheet=, "Sheet1")
+
+      # show_sheet_tabs
+      assert_nil b.show_sheet_tabs
+      assert_equal false, (b.show_sheet_tabs = false)
+      assert_equal false, b.show_sheet_tabs
+      assert_nil(b.show_sheet_tabs = nil)
+      assert_nil b.show_sheet_tabs
+      assert_equal true, b.show_sheet_tabs(true)
+      assert_equal true, b.show_sheet_tabs
+      assert_nil b.show_sheet_tabs(nil)
+      assert_nil b.show_sheet_tabs
+      assert_equal false, b.send(:show_sheet_tabs=, false)
+
+      # tab_ratio
+      assert_nil b.tab_ratio
+      assert_equal 500, (b.tab_ratio = 500)
+      assert_equal 500, b.tab_ratio
+      assert_nil(b.tab_ratio = nil)
+      assert_nil b.tab_ratio
+      assert_equal 750, b.tab_ratio(750)
+      assert_equal 750, b.tab_ratio
+      assert_nil b.tab_ratio(nil)
+      assert_nil b.tab_ratio
+      assert_equal 600, b.send(:tab_ratio=, 600)
+
+      # code_name
+      assert_nil b.code_name
+      assert_equal "WBCode", (b.code_name = "WBCode")
+      assert_equal "WBCode", b.code_name
+      assert_nil(b.code_name = nil)
+      assert_nil b.code_name
+      assert_equal "WBCode2", b.code_name("WBCode2")
+      assert_equal "WBCode2", b.code_name
+      assert_nil b.code_name(nil)
+      assert_nil b.code_name
+      assert_equal "WBCode3", b.send(:code_name=, "WBCode3")
+    end
+
+    # 2. WorksheetBuilder
+    Xlsxrb.build do |b|
+      b.sheet("Sheet1") do |s|
+        # tab_color
+        assert_nil s.tab_color
+        assert_equal "FF0000", (s.tab_color = "FF0000")
+        assert_equal "FF0000", s.tab_color
+        assert_nil(s.tab_color = nil)
+        assert_nil s.tab_color
+        assert_equal "00FF00", s.tab_color("00FF00")
+        assert_equal "00FF00", s.tab_color
+        assert_nil s.tab_color(nil)
+        assert_nil s.tab_color
+        assert_equal "0000FF", s.send(:tab_color=, "0000FF")
+
+        # fit_to_page
+        assert_equal false, s.fit_to_page
+        assert_equal false, s.fit_to_page?
+        assert_equal true, (s.fit_to_page = true)
+        assert_equal true, s.fit_to_page
+        assert_equal false, (s.fit_to_page = false)
+        assert_equal false, s.fit_to_page
+        assert_nil(s.fit_to_page = nil)
+        assert_equal false, s.fit_to_page
+        s.fit_to_page(width: 2)
+        assert_equal true, s.fit_to_page
+        assert_equal true, s.send(:fit_to_page=, true)
+
+        # code_name
+        assert_nil s.code_name
+        assert_equal "WSCode", (s.code_name = "WSCode")
+        assert_equal "WSCode", s.code_name
+        assert_nil(s.code_name = nil)
+        assert_nil s.code_name
+        assert_equal "WSCode2", s.code_name("WSCode2")
+        assert_equal "WSCode2", s.code_name
+        assert_nil s.code_name(nil)
+        assert_nil s.code_name
+        assert_equal "WSCode3", s.send(:code_name=, "WSCode3")
+
+        # sheet_calc_properties / sheet_calc_pr / calc_pr
+        assert_nil s.sheet_calc_properties
+        assert_nil s.sheet_calc_pr
+        assert_nil s.calc_pr
+        calc_hash = { full_calc_on_load: true }
+        assert_equal calc_hash, (s.sheet_calc_properties = calc_hash)
+        assert_equal calc_hash, s.sheet_calc_properties
+        assert_equal calc_hash, s.sheet_calc_pr
+        assert_equal calc_hash, s.calc_pr
+        assert_nil(s.sheet_calc_properties = nil)
+        assert_nil s.sheet_calc_properties
+        assert_nil s.sheet_calc_pr
+        assert_equal calc_hash, (s.sheet_calc_pr = calc_hash)
+        assert_equal calc_hash, s.sheet_calc_properties
+        assert_nil(s.sheet_calc_pr = nil)
+        assert_nil s.sheet_calc_properties
+        assert_equal calc_hash, (s.calc_pr = calc_hash)
+        assert_equal calc_hash, s.sheet_calc_properties
+        assert_nil(s.calc_pr = nil)
+        assert_nil s.sheet_calc_properties
+        s.sheet_calc_properties(full_calc_on_load: true)
+        assert_equal calc_hash, s.sheet_calc_properties
+        assert_nil s.sheet_calc_properties(nil)
+        assert_nil s.sheet_calc_properties
+        assert_equal calc_hash, s.sheet_calc_pr(full_calc_on_load: true)
+        assert_equal calc_hash, s.sheet_calc_properties
+        assert_nil s.sheet_calc_pr(nil)
+        assert_nil s.sheet_calc_properties
+        assert_equal calc_hash, s.send(:sheet_calc_properties=, calc_hash)
+        assert_equal calc_hash, s.send(:sheet_calc_pr=, calc_hash)
+        assert_equal calc_hash, s.send(:calc_pr=, calc_hash)
+
+        # phonetic_properties / phonetic_pr
+        assert_nil s.phonetic_properties
+        assert_nil s.phonetic_pr
+        props = { font_id: 2, type: :hiragana }
+        expected_props = { font_id: 2, type: "Hiragana" }
+        assert_equal props, (s.phonetic_properties = props)
+        assert_equal expected_props, s.phonetic_properties
+        assert_equal expected_props, s.phonetic_pr
+        assert_nil(s.phonetic_properties = nil)
+        assert_nil s.phonetic_properties
+        assert_equal props, (s.phonetic_pr = props)
+        assert_equal expected_props, s.phonetic_pr
+        assert_nil(s.phonetic_pr = nil)
+        assert_nil s.phonetic_pr
+        s.phonetic_properties(font_id: 1, type: :halfwidth_katakana)
+        assert_equal({ font_id: 1, type: "halfwidthKatakana" }, s.phonetic_properties)
+        assert_nil s.phonetic_properties(nil)
+        assert_nil s.phonetic_properties
+        assert_equal props, s.send(:phonetic_properties=, props)
+        assert_equal props, s.send(:phonetic_pr=, props)
+
+        # background_image
+        assert_nil s.background_image
+        assert_nil(s.background_image = nil)
+        assert_nil s.background_image
+        assert_nil s.send(:background_image=, nil)
+
+        # state
+        assert_equal :visible, s.state
+        assert_equal :hidden, (s.state = :hidden)
+        assert_equal :hidden, s.state
+        assert_equal :very_hidden, (s.state = :very_hidden)
+        assert_equal :very_hidden, s.state
+        assert_equal "visible", (s.state = "visible")
+        assert_equal :visible, s.state
+        assert_equal :visible, s.send(:state=, "visible")
+        assert_raises(ArgumentError) { s.state = :invalid_state }
+        assert_equal :hidden, s.state(:hidden)
+        assert_equal :hidden, s.state
+        assert_equal :visible, (s.state = :visible)
+
+        # TableBuilder totals_row / totals_row_count
+        s.row([1, 2])
+        s.table("A1:B1", columns: %w[A B]) do |t|
+          assert_nil t.totals_row_count
+          assert_nil t.total_row_count
+          assert_nil t.totals_row
+          assert_nil t.total_row
+          assert_equal true, (t.totals_row = true)
+          assert_equal true, t.totals_row
+          assert_equal true, t.total_row
+          assert_equal false, (t.totals_row = false)
+          assert_equal false, t.totals_row
+          assert_equal true, (t.total_row = true)
+          assert_equal true, t.totals_row
+          assert_equal true, t.send(:totals_row=, true)
+          assert_equal false, t.send(:total_row=, false)
+
+          assert_equal 0, t.totals_row_count
+          assert_equal 0, t.total_row_count
+          assert_equal 1, (t.totals_row_count = 1)
+          assert_equal 1, t.totals_row_count
+          assert_equal 1, t.total_row_count
+          assert_equal 0, (t.total_row_count = 0)
+          assert_equal 0, t.totals_row_count
+          assert_equal 1, t.send(:totals_row_count=, 1)
+          assert_equal 2, t.send(:total_row_count=, 2)
+          assert_equal 2, t.totals_row_count
+        end
+      end
+    end
+
+    # 3. StreamWriter
+    buf = StringIO.new
+    Xlsxrb.write(buf) do |w|
+      # workbook-level setters on StreamWriter
+      assert_nil w.active_sheet
+      assert_equal "S1", (w.active_sheet = "S1")
+      assert_equal "S1", w.active_sheet
+      assert_equal "S1", w.active_tab
+      assert_nil(w.active_sheet = nil)
+      assert_nil w.active_sheet
+      assert_equal "S2", w.send(:active_sheet=, "S2")
+      assert_equal "S1", w.send(:active_tab=, "S1")
+
+      assert_nil w.first_sheet
+      assert_equal "S1", (w.first_sheet = "S1")
+      assert_nil(w.first_sheet = nil)
+      assert_nil w.first_sheet
+      assert_equal "S1", w.send(:first_sheet=, "S1")
+
+      assert_nil w.show_sheet_tabs
+      assert_equal false, (w.show_sheet_tabs = false)
+      assert_nil(w.show_sheet_tabs = nil)
+      assert_nil w.show_sheet_tabs
+      assert_equal true, w.send(:show_sheet_tabs=, true)
+
+      assert_nil w.tab_ratio
+      assert_equal 400, (w.tab_ratio = 400)
+      assert_nil(w.tab_ratio = nil)
+      assert_nil w.tab_ratio
+      assert_equal 500, w.send(:tab_ratio=, 500)
+
+      # sheet proxy setters
+      w.sheet("S1") do |s|
+        assert_nil s.tab_color
+        assert_equal "AABBCC", (s.tab_color = "AABBCC")
+        assert_equal "AABBCC", s.tab_color
+        assert_nil(s.tab_color = nil)
+        assert_nil s.tab_color
+        assert_equal "112233", s.send(:tab_color=, "112233")
+
+        assert_equal false, s.fit_to_page
+        assert_equal false, s.fit_to_page?
+        assert_equal true, (s.fit_to_page = true)
+        assert_equal true, s.fit_to_page
+        assert_equal false, (s.fit_to_page = false)
+        assert_equal false, s.fit_to_page
+        assert_nil(s.fit_to_page = nil)
+        assert_equal false, s.fit_to_page
+        assert_equal true, s.send(:fit_to_page=, true)
+
+        assert_nil s.code_name
+        assert_equal "StreamCode", (s.code_name = "StreamCode")
+        assert_equal "StreamCode", s.code_name
+        assert_nil(s.code_name = nil)
+        assert_nil s.code_name
+        assert_equal "StreamCode2", s.send(:code_name=, "StreamCode2")
+
+        calc_hash = { full_calc_on_load: true }
+        assert_nil s.sheet_calc_properties
+        assert_nil s.sheet_calc_pr
+        assert_equal calc_hash, (s.sheet_calc_properties = calc_hash)
+        assert_equal calc_hash, s.sheet_calc_properties
+        assert_equal calc_hash, s.sheet_calc_pr
+        assert_nil(s.sheet_calc_properties = nil)
+        assert_nil s.sheet_calc_properties
+        assert_equal calc_hash, (s.sheet_calc_pr = calc_hash)
+        assert_equal calc_hash, s.sheet_calc_properties
+        assert_nil(s.sheet_calc_pr = nil)
+        assert_nil s.sheet_calc_properties
+        assert_equal calc_hash, (s.calc_pr = calc_hash)
+        assert_equal calc_hash, s.sheet_calc_properties
+        assert_nil(s.calc_pr = nil)
+        assert_nil s.sheet_calc_properties
+        assert_equal calc_hash, s.send(:sheet_calc_properties=, calc_hash)
+        assert_equal calc_hash, s.send(:sheet_calc_pr=, calc_hash)
+        assert_equal calc_hash, s.send(:calc_pr=, calc_hash)
+
+        props = { font_id: 3, type: :hiragana }
+        expected_props = { font_id: 3, type: "Hiragana" }
+        assert_nil s.phonetic_properties
+        assert_equal props, (s.phonetic_properties = props)
+        assert_equal expected_props, s.phonetic_properties
+        assert_nil(s.phonetic_properties = nil)
+        assert_nil s.phonetic_properties
+        assert_equal props, (s.phonetic_pr = props)
+        assert_equal expected_props, s.phonetic_pr
+        assert_nil(s.phonetic_pr = nil)
+        assert_nil s.phonetic_pr
+        assert_equal props, s.send(:phonetic_properties=, props)
+        assert_equal props, s.send(:phonetic_pr=, props)
+
+        assert_nil s.background_image
+        assert_nil(s.background_image = nil)
+        assert_nil s.background_image
+        assert_nil s.send(:background_image=, nil)
+
+        # state on WorksheetProxy
+        assert_equal :visible, s.state
+        assert_equal :hidden, (s.state = :hidden)
+        assert_equal :hidden, s.state
+        assert_equal :very_hidden, (s.state = :very_hidden)
+        assert_equal :very_hidden, s.state
+        assert_equal "visible", (s.state = "visible")
+        assert_equal :visible, s.state
+        assert_equal :visible, s.send(:state=, "visible")
+        assert_raises(ArgumentError) { s.state = :invalid_state }
+        assert_equal :hidden, s.state(:hidden)
+        assert_equal :hidden, s.state
+        assert_equal :visible, (s.state = :visible)
+
+        # state on StreamWriter directly
+        assert_equal :hidden, (w.state = :hidden)
+        assert_equal :hidden, w.state
+        assert_equal "very_hidden", (w.state = "very_hidden")
+        assert_equal :very_hidden, w.state
+        assert_equal :very_hidden, w.send(:state=, "very_hidden")
+        assert_raises(ArgumentError) { w.state = :invalid_state }
+        assert_equal :visible, (w.state = :visible)
+
+        s.row([1])
+      end
+    end
+  end
+
+  test "state= configures sheet visibility on WorksheetBuilder, StreamWriter, and WorksheetProxy and roundtrips" do
+    wb1 = Xlsxrb.build do |b|
+      b.sheet("VisibleSheet") { |s| s.row([1]) }
+      b.sheet("HiddenSheet") do |s|
+        s.state = :hidden
+        s.row([2])
+      end
+      b.sheet("VeryHiddenSheet") do |s|
+        s.state = :very_hidden
+        s.row([3])
+      end
+    end
+    assert_equal :visible, wb1.sheet(0).state
+    assert_equal :hidden, wb1.sheet(1).state
+    assert_equal :very_hidden, wb1.sheet(2).state
+
+    data1 = Xlsxrb.write(wb1)
+    wb1_read = Xlsxrb.read(data1).load
+    assert_equal :visible, wb1_read.sheet(0).state
+    assert_equal :hidden, wb1_read.sheet(1).state
+    assert_equal :very_hidden, wb1_read.sheet(2).state
+
+    data2 = Xlsxrb.write do |w|
+      w.sheet("VisStream") { |s| s.row([1]) }
+      w.sheet("HiddenProxy") do |s|
+        s.state = :hidden
+        s.row([2])
+      end
+      w.sheet("VeryHiddenStream")
+      w.state = :very_hidden
+      w.row([3])
+    end
+    wb2 = Xlsxrb.read(data2).load
+    assert_equal :visible, wb2.sheet(0).state
+    assert_equal :hidden, wb2.sheet(1).state
+    assert_equal :very_hidden, wb2.sheet(2).state
+  end
+
+  test "merge accepts coordinate range string, row_range and column_range report 1-based bounds, and bracket access supports 2D indexing" do
+    wb_dom = Xlsxrb.build do |b|
+      b.sheet("Grid") do |s|
+        s.row([10, 20, 30])
+        s.skip_rows(1)
+        s.row([nil, 50])
+        s.merge("A1:C1")
+      end
+    end
+    data = Xlsxrb.write(wb_dom)
+
+    wb = Xlsxrb.read(data).load
+    sheet = wb.sheet(0)
+
+    # Merged cells roundtrip from range string
+    assert_equal(["A1:C1"], sheet.merged_cells)
+
+    # row_range and column_range
+    assert_equal(1..3, sheet.row_range)
+    assert_equal(1..3, sheet.column_range)
+
+    # 2D bracket access and coordinate string access
+    assert_equal(10, sheet[0, 0].value)
+    assert_equal(20, sheet[0, 1].value)
+    assert_equal(10, sheet[0, "A"].value)
+    assert_equal(20, sheet[0, "B"].value)
+    assert_equal(10, sheet["A1"].value)
+    assert_equal(20, sheet["B1"].value)
+    assert_nil(sheet[1, 0])
+    assert_equal(50, sheet[2, 1].value)
+    assert_equal(50, sheet[2, "B"].value)
+    assert_equal(50, sheet["B3"].value)
+
+    # Sparse row bracket access: row[col] accesses column index, not sparse array index
+    row3 = sheet.row_at(2)
+    assert_nil(row3[0])
+    assert_equal(50, row3[1].value)
+    assert_nil(row3["A"])
+    assert_equal(50, row3["B"].value)
+    assert_equal([nil, 50], row3.values)
+
+    # StreamSheet dimension bounds and row_range/column_range (nil when no <dimension> tag is present)
+    Xlsxrb.read(data) do |stream_sheet|
+      assert_nil(stream_sheet.dimension)
+      assert_nil(stream_sheet.row_range)
+      assert_nil(stream_sheet.column_range)
+      assert_equal(["A1:C1"], stream_sheet.merged_cells)
+      assert_not_respond_to(stream_sheet, :[])
+      assert_equal(10, stream_sheet.cell("A1").value)
+      assert_equal(10, stream_sheet.cell(0, 0).value)
+    end
+  end
+
+  def capture_stderr
+    old_stderr = $stderr
+    old_verbose = $VERBOSE
+    $VERBOSE = false
+    $stderr = StringIO.new
+    yield
+    $stderr.string
+  ensure
+    $stderr = old_stderr
+    $VERBOSE = old_verbose
+  end
+
+  test "deprecated aliases and transitional methods emit deprecation warnings" do
+    # 1. Workbook aliases
+    wb = Xlsxrb.build { |b| b.sheet("S1") { |s| s.row([1]) } }
+    assert_match(/\[DEPRECATION\] #show_sheet_tabs is deprecated/, capture_stderr { wb.show_sheet_tabs })
+    assert_match(/\[DEPRECATION\] #full_calc_on_load is deprecated/, capture_stderr { wb.full_calc_on_load })
+    assert_match(/\[DEPRECATION\] #to_workbook is deprecated/, capture_stderr { wb.to_workbook })
+    assert_match(/\[DEPRECATION\] #each_sheet is deprecated/, capture_stderr { wb.each_sheet { |_| nil } })
+
+    # 2. Worksheet aliases
+    ws = wb.sheet(0)
+    assert_match(/\[DEPRECATION\] #trim_empty_rows is deprecated/, capture_stderr { ws.trim_empty_rows })
+    assert_match(/\[DEPRECATION\] #pad_empty_rows is deprecated/, capture_stderr { ws.pad_empty_rows })
+    assert_match(/\[DEPRECATION\] #pad_empty_cells is deprecated/, capture_stderr { ws.pad_empty_cells })
+    assert_match(/\[DEPRECATION\] #fit_to_page is deprecated/, capture_stderr { ws.fit_to_page })
+    assert_match(/\[DEPRECATION\] #full_calc_on_load is deprecated/, capture_stderr { ws.full_calc_on_load })
+    assert_match(/\[DEPRECATION\] #to_worksheet is deprecated/, capture_stderr { ws.to_worksheet })
+    assert_match(/\[DEPRECATION\] #sheet_calc_pr is deprecated/, capture_stderr { ws.sheet_calc_pr })
+    assert_match(/\[DEPRECATION\] #calc_pr is deprecated/, capture_stderr { ws.calc_pr })
+
+    # 3. StreamSheet aliases
+    data = Xlsxrb.write(wb)
+    Xlsxrb.read(data) do |s|
+      assert_match(/\[DEPRECATION\] #trim_empty_rows is deprecated/, capture_stderr { s.trim_empty_rows })
+      assert_match(/\[DEPRECATION\] #pad_empty_rows is deprecated/, capture_stderr { s.pad_empty_rows })
+      assert_match(/\[DEPRECATION\] #pad_empty_cells is deprecated/, capture_stderr { s.pad_empty_cells })
+      assert_match(/\[DEPRECATION\] #fit_to_page is deprecated/, capture_stderr { s.fit_to_page })
+      assert_match(/\[DEPRECATION\] #full_calc_on_load is deprecated/, capture_stderr { s.full_calc_on_load })
+      assert_match(/\[DEPRECATION\] #to_worksheet is deprecated/, capture_stderr { s.to_worksheet })
+      assert_match(/\[DEPRECATION\] #sheet_calc_pr is deprecated/, capture_stderr { s.sheet_calc_pr })
+      assert_match(/\[DEPRECATION\] #calc_pr is deprecated/, capture_stderr { s.calc_pr })
+    end
+
+    # 4. Styles aliases
+    styles = Xlsxrb::Elements::Styles.new({})
+    assert_match(/\[DEPRECATION\] #xf is deprecated/, capture_stderr { styles.xf(0) })
+    assert_match(/\[DEPRECATION\] #format_code_for is deprecated/, capture_stderr { styles.format_code_for(0) })
+    assert_match(/\[DEPRECATION\] #classification_for is deprecated/, capture_stderr { styles.classification_for(0) })
+
+    # 5. StyleBuilder alias
+    sb = Xlsxrb::StyleBuilder.new
+    assert_match(/\[DEPRECATION\] #num_fmt is deprecated/, capture_stderr { sb.num_fmt("0.00") })
+
+    # 6. Builder aliases
+    Xlsxrb.build do |b|
+      b.sheet("BuilderSheet") do |s|
+        assert_match(/\[DEPRECATION\] #add_sparkline is deprecated/, capture_stderr { s.add_sparkline(location: "F1", range: "A1:E1") })
+        assert_match(/\[DEPRECATION\] #ignore_error is deprecated/, capture_stderr { s.ignore_error("A1", number_stored_as_text: true) })
+        assert_match(/\[DEPRECATION\] #add_ignored_error is deprecated/, capture_stderr { s.add_ignored_error("A2", eval_error: true) })
+        assert_match(/\[DEPRECATION\] #sheet_calc_pr is deprecated/, capture_stderr { s.sheet_calc_pr })
+        assert_match(/\[DEPRECATION\] #calc_pr is deprecated/, capture_stderr { s.calc_pr })
+        assert_match(/\[DEPRECATION\] #sheet_calc_pr= is deprecated/, capture_stderr { s.sheet_calc_pr = { full_calc_on_load: true } })
+        assert_match(/\[DEPRECATION\] #calc_pr= is deprecated/, capture_stderr { s.calc_pr = { full_calc_on_load: true } })
+        s.row([1, 2])
+        s.table("A1:B1", columns: %w[A B]) do |t|
+          assert_match(/\[DEPRECATION\] #total_row is deprecated/, capture_stderr { t.total_row })
+          assert_match(/\[DEPRECATION\] #total_row= is deprecated/, capture_stderr { t.total_row = true })
+          assert_match(/\[DEPRECATION\] #total_row_count is deprecated/, capture_stderr { t.total_row_count })
+          assert_match(/\[DEPRECATION\] #total_row_count= is deprecated/, capture_stderr { t.total_row_count = 1 })
+        end
+      end
+    end
+
+    # 7. Top-level and Utils aliases
+    assert_match(/\[DEPRECATION\] Xlsxrb\.sheet_name is deprecated/, capture_stderr { Xlsxrb.sheet_name("Test") })
+    assert_match(/\[DEPRECATION\] Xlsxrb\.color_to_hex is deprecated/, capture_stderr { Xlsxrb.color_to_hex(:red) })
+    assert_match(/\[DEPRECATION\] Xlsxrb\.serial_to_datetime is deprecated/, capture_stderr { Xlsxrb.serial_to_datetime(45_000) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.serial_to_datetime is deprecated/, capture_stderr { Xlsxrb::Utils.serial_to_datetime(45_000) })
+    assert_match(/\[DEPRECATION\] Xlsxrb\.format is deprecated/, capture_stderr { Xlsxrb.format(100) })
+    assert_match(/\[DEPRECATION\] Xlsxrb\.datetime_to_serial is deprecated/, capture_stderr { Xlsxrb.datetime_to_serial(Time.utc(2026, 1, 1)) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.time_to_serial is deprecated/, capture_stderr { Xlsxrb::Utils.time_to_serial(Time.utc(2026, 1, 1)) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.datetime_to_serial is deprecated/, capture_stderr { Xlsxrb::Utils.datetime_to_serial(Time.utc(2026, 1, 1)) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.date_to_serial is deprecated/, capture_stderr { Xlsxrb::Utils.date_to_serial(Date.new(2026, 1, 1)) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.serial_to_date is deprecated/, capture_stderr { Xlsxrb::Utils.serial_to_date(46_023) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.serial_to_time is deprecated/, capture_stderr { Xlsxrb::Utils.serial_to_time(46_023.5) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.ref_to_row_col is deprecated/, capture_stderr { Xlsxrb::Utils.ref_to_row_col("A1") })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.row_col_to_ref is deprecated/, capture_stderr { Xlsxrb::Utils.row_col_to_ref(0, 0) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.parse_range is deprecated/, capture_stderr { Xlsxrb::Utils.parse_range("A1:B2") })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.range_to_ref is deprecated/, capture_stderr { Xlsxrb::Utils.range_to_ref(0, 0, 1, 1) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.col_name_to_index is deprecated/, capture_stderr { Xlsxrb::Utils.col_name_to_index("A") })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.col_index_to_name is deprecated/, capture_stderr { Xlsxrb::Utils.col_index_to_name(0) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Elements::Cell\.column_index is deprecated/, capture_stderr { Xlsxrb::Elements::Cell.column_index("A") })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Elements::Cell\.column_letter is deprecated/, capture_stderr { Xlsxrb::Elements::Cell.column_letter(0) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Elements::Cell\.parse_ref is deprecated/, capture_stderr { Xlsxrb::Elements::Cell.parse_ref("A1") })
+    assert_match(/\[DEPRECATION\] Xlsxrb\.shared_formula keyword :si is deprecated/, capture_stderr { Xlsxrb.shared_formula("A1", si: 0) })
+    assert_match(/\[DEPRECATION\] Xlsxrb::Utils\.expand_formula keyword :col_delta is deprecated/, capture_stderr { Xlsxrb::Utils.expand_formula("A1", col_delta: 1) })
+  end
+
+  test "Commit 2: top-level Xlsxrb coordinate and date facade" do
+    assert_equal(16_384, Xlsxrb::MAX_COLUMN)
+    assert_equal([0, 0], Xlsxrb.parse_ref("A1"))
+    assert_equal([9, 2], Xlsxrb.parse_ref("C10"))
+    assert_equal("A1", Xlsxrb.cell_to_ref(0, 0))
+    assert_equal("C10", Xlsxrb.cell_to_ref(9, 2))
+    assert_equal(0, Xlsxrb.column_index("A"))
+    assert_equal(26, Xlsxrb.column_index("AA"))
+    assert_equal("A", Xlsxrb.column_letter(0))
+    assert_equal("AA", Xlsxrb.column_letter(26))
+    assert_equal([[0, 0], [9, 2]], Xlsxrb.parse_range("A1:C10"))
+    assert_equal("A1:C10", Xlsxrb.range_to_ref(0, 0, 9, 2))
+    assert_equal("A1:C10", Xlsxrb.range_to_ref([[0, 0], [9, 2]]))
+    assert_equal("A1", Xlsxrb.range_to_ref(0, 0, 0, 0))
+    assert_equal("A1", Xlsxrb.range_to_ref([[0, 0], [0, 0]]))
+
+    assert_equal("100.00", Xlsxrb.format_value(100, "0.00"))
+    t = Time.utc(2026, 1, 1, 12, 0, 0)
+    serial = Xlsxrb.time_to_serial(t)
+    assert_in_delta(46_023.5, serial, 0.0001)
+    assert_equal(t, Xlsxrb.serial_to_time(serial))
+
+    # Formula helpers
+    sf = Xlsxrb.shared_formula("A1*2", shared_index: 1, ref: "B1:B10")
+    assert_equal(:shared, sf.type)
+    assert_equal(1, sf.shared_index)
+
+    af1 = Xlsxrb.array_formula("SUM(A1:A10)", "B1")
+    assert_equal(:array, af1.type)
+    assert_equal("B1", af1.ref)
+
+    af2 = Xlsxrb.array_formula("SUM(A1:A10)", ref: "B1", cached_value: Xlsxrb::Elements::CellError::VALUE)
+    assert_equal(:array, af2.type)
+    assert_equal("B1", af2.ref)
+    assert_equal("#VALUE!", af2.cached_value.to_s)
+  end
+
+  test "Commit 2: Elements::CellError constants" do
+    assert_equal("#NULL!", Xlsxrb::Elements::CellError::NULL.code)
+    assert_equal("#DIV/0!", Xlsxrb::Elements::CellError::DIV0.code)
+    assert_equal("#VALUE!", Xlsxrb::Elements::CellError::VALUE.code)
+    assert_equal("#REF!", Xlsxrb::Elements::CellError::REF.code)
+    assert_equal("#NAME?", Xlsxrb::Elements::CellError::NAME.code)
+    assert_equal("#NUM!", Xlsxrb::Elements::CellError::NUM.code)
+    assert_equal("#N/A", Xlsxrb::Elements::CellError::NA.code)
+    assert_equal("#GETTING_DATA", Xlsxrb::Elements::CellError::GETTING_DATA.code)
+    assert_equal(Xlsxrb::Elements::CellError::DIV0, Xlsxrb::Error::DIV0)
+  end
+
+  test "Commit 2: Xlsxrb.modify returns block result and warns when non-Workbook returned" do
+    wb = Xlsxrb.build { |b| b.sheet("S1") { |s| s.row([1, 2, 3]) } }
+    io = StringIO.new(Xlsxrb.write(wb))
+
+    # Non-Workbook return emits deprecation warning
+    res1 = nil
+    warn_output = capture_stderr do
+      res1 = Xlsxrb.modify(io) { 42 }
+    end
+    assert_equal(42, res1)
+    assert_match(/\[DEPRECATION\] Xlsxrb\.modify block must return an Elements::Workbook/, warn_output)
+
+    # Returning Workbook returns that workbook
+    io.rewind
+    res2 = Xlsxrb.modify(io) do |loaded_wb|
+      loaded_wb.update_sheet("S1") { |s| s.update_cell("A1", value: 999) }
+    end
+    assert_kind_of(Xlsxrb::Elements::Workbook, res2)
+    assert_equal(999, res2.sheet(0)["A1"].value)
+  end
 end

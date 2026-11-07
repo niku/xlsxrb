@@ -1210,21 +1210,33 @@ class OoxmlTest < Test::Unit::TestCase
     assert_include(xml, '<c r="F2"><f>SUM(A1:A5)</f><v>0</v></c>')
   end
 
-  test "build_raw_cell_from_value retains false and zero cached_values with proper type" do
-    f_false = Xlsxrb::Elements::Formula.new(expression: "A1>10", cached_value: false)
-    f_zero = Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A5)", cached_value: 0)
-    sst = []
-    sst_index = {}
+  test "formula retains false and zero cached_values with proper type in round-trip" do
+    wb = Xlsxrb.build do |w|
+      w.sheet("S1") do |s|
+        s.row([
+                Xlsxrb::Elements::Formula.new(expression: "A1>10", cached_value: false),
+                Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A5)", cached_value: 0)
+              ])
+      end
+    end
+    assert_equal(false, wb.sheet("S1")["A1"].value)
+    assert_equal("A1>10", wb.sheet("S1")["A1"].formula.expression)
+    assert_equal(0, wb.sheet("S1")["B1"].value)
+    assert_equal("SUM(A1:A5)", wb.sheet("S1")["B1"].formula.expression)
 
-    cell_false = Xlsxrb.build_raw_cell_from_value(0, 0, f_false, sst, sst_index)
-    assert_equal(false, cell_false[:value])
-    assert_equal("b", cell_false[:type])
-    assert_equal("A1>10", cell_false[:formula])
+    bytes = Xlsxrb.write(wb)
+    sheet_xml = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(bytes)) { |zr| zr.read_entry("xl/worksheets/sheet1.xml") }
+    assert_include(sheet_xml, '<c r="A1" t="b"><f>A1&gt;10</f><v>0</v></c>')
+    assert_include(sheet_xml, '<c r="B1"><f>SUM(A1:A5)</f><v>0</v></c>')
 
-    cell_zero = Xlsxrb.build_raw_cell_from_value(0, 1, f_zero, sst, sst_index)
-    assert_equal(0, cell_zero[:value])
-    assert_nil(cell_zero[:type])
-    assert_equal("SUM(A1:A5)", cell_zero[:formula])
+    loaded_wb = Xlsxrb.read(StringIO.new(bytes))
+    s1 = loaded_wb.sheet("S1").load
+    assert_equal(false, s1["A1"].value)
+    f_expr_a1 = s1["A1"].formula.is_a?(Xlsxrb::Elements::Formula) ? s1["A1"].formula.expression : s1["A1"].formula
+    assert_equal("A1>10", f_expr_a1)
+    assert_equal(0, s1["B1"].value)
+    f_expr_b1 = s1["B1"].formula.is_a?(Xlsxrb::Elements::Formula) ? s1["B1"].formula.expression : s1["B1"].formula
+    assert_equal("SUM(A1:A5)", f_expr_b1)
   end
 
   test "Ooxml::Reader resolves case-insensitive part names via ZipReader" do
@@ -1246,8 +1258,8 @@ class OoxmlTest < Test::Unit::TestCase
     end
   end
 
-  test "WorksheetBuilder#row and build_raw_cell forward formula type, ref, and shared_index from Hash" do
-    dom_bytes = Xlsxrb.write do |wb|
+  test "WorksheetBuilder#row forwards formula type, ref, and shared_index from Hash in round-trip" do
+    dom_wb = Xlsxrb.build do |wb|
       wb.sheet("S1") do |s|
         s.row([
                 { formula: "A2:C2*10", type: :array, ref: "A1:C1", value: 10 },
@@ -1255,24 +1267,31 @@ class OoxmlTest < Test::Unit::TestCase
               ])
       end
     end
+    s_dom = dom_wb.sheet("S1")
+    assert_equal("A2:C2*10", s_dom["A1"].formula.expression)
+    assert_equal(:array, s_dom["A1"].formula.type)
+    assert_equal("A1:C1", s_dom["A1"].formula.ref)
+    assert_equal(10, s_dom["A1"].value)
 
+    assert_equal("A2*2", s_dom["B1"].formula.expression)
+    assert_equal(:shared, s_dom["B1"].formula.type)
+    assert_equal("D1:D5", s_dom["B1"].formula.ref)
+    assert_equal(0, s_dom["B1"].formula.shared_index)
+    assert_equal(2, s_dom["B1"].value)
+
+    dom_bytes = Xlsxrb.write(dom_wb)
     dom_sheet_xml = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(dom_bytes)) { |zr| zr.read_entry("xl/worksheets/sheet1.xml") }
     assert_include(dom_sheet_xml, '<f t="array" ref="A1:C1">A2:C2*10</f>')
     assert_include(dom_sheet_xml, '<f t="shared" si="0" ref="D1:D5">A2*2</f>')
 
-    sst = []
-    sst_index = {}
-    raw_from_hash = Xlsxrb.build_raw_cell_from_value(0, 0, { formula: "A2:C2*10", type: :array, ref: "A1:C1", value: 10 }, sst, sst_index)
-    assert_equal(:array, raw_from_hash[:formula_type])
-    assert_equal("A1:C1", raw_from_hash[:formula_ref])
-    assert_equal(10, raw_from_hash[:value])
-
-    f_obj = Xlsxrb::Elements::Formula.new(expression: "A2*2", type: :shared, ref: "D1:D5", shared_index: 0, cached_value: 2)
-    cell_obj = Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 3, formula: f_obj, value: 2)
-    raw_from_cell = Xlsxrb.send(:build_raw_cell, cell_obj, sst, sst_index)
-    assert_equal(:shared, raw_from_cell[:formula_type])
-    assert_equal("D1:D5", raw_from_cell[:formula_ref])
-    assert_equal(0, raw_from_cell[:formula_si])
+    wb = Xlsxrb.read(StringIO.new(dom_bytes))
+    s1 = wb.sheet("S1").load
+    f_expr_a1 = s1["A1"].formula.is_a?(Xlsxrb::Elements::Formula) ? s1["A1"].formula.expression : s1["A1"].formula
+    assert_equal("A2:C2*10", f_expr_a1)
+    assert_equal(10, s1["A1"].value)
+    f_expr_b1 = s1["B1"].formula.is_a?(Xlsxrb::Elements::Formula) ? s1["B1"].formula.expression : s1["B1"].formula
+    assert_equal("A2*2", f_expr_b1)
+    assert_equal(2, s1["B1"].value)
   end
 
   test "WorkbookParser and Xlsxrb.read extract and round-trip activeTab and fullCalcOnLoad" do

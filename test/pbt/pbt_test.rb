@@ -443,8 +443,8 @@ class PbtTest < Test::Unit::TestCase
         assert_equal row_hidden, row[:hidden]
 
         assert_equal cells[0], row[0]
-        assert_equal cells[1], row[1]
-        assert_nil row[2]
+        assert_nil row[1]
+        assert_equal cells[1], row[2]
         assert_equal cells[0], row.cell_at(0)
         assert_nil row.cell_at(1)
         assert_equal cells[1], row.cell_at(2)

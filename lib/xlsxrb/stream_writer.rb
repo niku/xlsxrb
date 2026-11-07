@@ -24,6 +24,9 @@ module Xlsxrb
   #
   # @api public
   class StreamWriter
+    OMITTED = Object.new.freeze
+    private_constant :OMITTED
+
     # @return [String, nil] Name of the currently active worksheet.
     #: String?
     attr_reader :current_sheet
@@ -136,62 +139,97 @@ module Xlsxrb
     # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
-    #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-    def active_sheet(name_or_index = nil)
-      if name_or_index
-        @active_sheet = name_or_index
-      else
-        @active_sheet
-      end
-    end
-    alias active_sheet= active_sheet
-    alias active_tab active_sheet
-    alias active_tab= active_sheet
-
-    # Gets or sets the first sheet tab visible in the sheet tab scroll area.
+    # Gets or sets the active worksheet tab in the workbook window.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#active_sheet=} instead.
     # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
     #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-    def first_sheet(name_or_index = nil)
-      if name_or_index
-        @first_sheet = name_or_index
+    def active_sheet(name_or_index = OMITTED)
+      if name_or_index.equal?(OMITTED)
+        @active_sheet
       else
-        @first_sheet
+        @active_sheet = name_or_index
       end
     end
-    alias first_sheet= first_sheet
+    # @deprecated Use {#active_sheet} instead. Will be removed in 0.2.0.
+    alias active_tab active_sheet
+
+    # Sets the active worksheet tab in the workbook window.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    attr_writer :active_sheet #: (String | Symbol | Integer | nil)
+    # @deprecated Use {#active_sheet=} instead. Will be removed in 0.2.0.
+    alias active_tab= active_sheet=
+
+    # Gets or sets the first sheet tab visible in the sheet tab scroll area.
+    #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#first_sheet=} instead.
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
+    def first_sheet(name_or_index = OMITTED)
+      if name_or_index.equal?(OMITTED)
+        @first_sheet
+      else
+        @first_sheet = name_or_index
+      end
+    end
+
+    # Sets the first sheet tab visible in the sheet tab scroll area.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    attr_writer :first_sheet #: (String | Symbol | Integer | nil)
 
     # Gets or sets whether sheet tabs are visible in the workbook window.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_sheet_tabs=} instead.
     # @param visible [Boolean, nil]
     # @return [Boolean, nil]
     # @api public
     #: (?bool? visible) -> bool?
-    def show_sheet_tabs(visible = nil)
-      if visible.nil?
+    def show_sheet_tabs(visible = OMITTED)
+      if visible.equal?(OMITTED)
         @show_sheet_tabs
       else
         @show_sheet_tabs = visible
       end
     end
-    alias show_sheet_tabs= show_sheet_tabs
+
+    # Sets whether sheet tabs are visible in the workbook window.
+    #
+    # @param visible [Boolean, nil]
+    # @return [Boolean, nil]
+    # @api public
+    attr_writer :show_sheet_tabs #: bool?
 
     # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#tab_ratio=} instead.
     # @param ratio [Integer, nil]
     # @return [Integer, nil]
     # @api public
     #: (?Integer? ratio) -> Integer?
-    def tab_ratio(ratio = nil)
-      if ratio
-        @tab_ratio = ratio
-      else
+    def tab_ratio(ratio = OMITTED)
+      if ratio.equal?(OMITTED)
         @tab_ratio
+      else
+        @tab_ratio = ratio
       end
     end
-    alias tab_ratio= tab_ratio
+
+    # Sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
+    #
+    # @param ratio [Integer, nil]
+    # @return [Integer, nil]
+    # @api public
+    attr_writer :tab_ratio #: Integer?
 
     # Sets a workbook property.
     #
@@ -239,7 +277,43 @@ module Xlsxrb
     def default_font(name = nil, size = nil, **opts)
       @style_writer.default_font(name, size, **opts)
     end
+    # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
     alias set_default_font default_font
+
+    # Creates an {Elements::Formula} object.
+    # @api public
+    #: (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?, ?shared_index: Integer?) -> Elements::Formula
+    def formula(...)
+      Xlsxrb.formula(...)
+    end
+
+    # Creates an array or dynamic array {Elements::Formula} object.
+    # @api public
+    #: (String expression, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), **untyped attrs) -> Elements::Formula
+    def array_formula(...)
+      Xlsxrb.array_formula(...)
+    end
+
+    # Creates a shared formula {Elements::Formula} object.
+    # @api public
+    #: (?String? expression, ?shared_index: Integer?, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
+    def shared_formula(...)
+      Xlsxrb.shared_formula(...)
+    end
+
+    # Creates an {Elements::RichText} object.
+    # @api public
+    #: (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, ?base_font: untyped, **untyped font_props) -> Elements::RichText
+    def rich_text(...)
+      Xlsxrb.rich_text(...)
+    end
+
+    # Creates or returns an {Elements::CellError} object.
+    # @api public
+    #: (String | Symbol | Elements::CellError code) -> Elements::CellError
+    def cell_error(...)
+      Xlsxrb.cell_error(...)
+    end
 
     # Proxy object yielded by the `sheet` method to prevent writing to inactive sheets in streaming mode.
     #
@@ -250,6 +324,41 @@ module Xlsxrb
       def initialize(writer, sheet_name)
         @writer = writer
         @sheet_name = sheet_name
+      end
+
+      # Creates an {Elements::Formula} object.
+      # @api public
+      #: (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?, ?shared_index: Integer?) -> Elements::Formula
+      def formula(...)
+        Xlsxrb.formula(...)
+      end
+
+      # Creates an array or dynamic array {Elements::Formula} object.
+      # @api public
+      #: (String expression, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), **untyped attrs) -> Elements::Formula
+      def array_formula(...)
+        Xlsxrb.array_formula(...)
+      end
+
+      # Creates a shared formula {Elements::Formula} object.
+      # @api public
+      #: (?String? expression, ?shared_index: Integer?, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
+      def shared_formula(...)
+        Xlsxrb.shared_formula(...)
+      end
+
+      # Creates an {Elements::RichText} object.
+      # @api public
+      #: (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, ?base_font: untyped, **untyped font_props) -> Elements::RichText
+      def rich_text(...)
+        Xlsxrb.rich_text(...)
+      end
+
+      # Creates or returns an {Elements::CellError} object.
+      # @api public
+      #: (String | Symbol | Elements::CellError code) -> Elements::CellError
+      def cell_error(...)
+        Xlsxrb.cell_error(...)
       end
 
       # Sets or configures the workbook-wide default font.
@@ -263,6 +372,7 @@ module Xlsxrb
       def default_font(...)
         @writer.default_font(...)
       end
+      # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
       alias set_default_font default_font
 
       # Returns the list of worksheet names created in this workbook so far.
@@ -297,10 +407,8 @@ module Xlsxrb
       # @example Merge with cell reference string
       #   s.merge("A1:C1")
       #
-      # @example Merge with coordinates
-      #   s.merge(row: 0, col_start: 0, col_end: 2)
-      #
-      # @param range [String, nil] The cell range (e.g. "A1:B2").
+      # @deprecated Passing coordinate keyword arguments (row:, col_start:, col_end:, row_start:, row_end:) is deprecated and will be removed in 0.2.0. Use a range string (e.g. merge("A1:C1")) instead.
+      # @param range [String, Hash, nil] The cell range (e.g. "A1:B2").
       # @param row [Integer, nil] 0-based row index.
       # @param col_start [Integer, String, nil] 0-based start column index or letter.
       # @param col_end [Integer, String, nil] 0-based end column index or letter.
@@ -308,7 +416,7 @@ module Xlsxrb
       # @param row_end [Integer, nil] 0-based end row index.
       # @return [void]
       # @api public
-      #: (?String? range, ?row: Integer | nil, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer | nil, ?row_end: Integer | nil) -> void
+      #: (?(String | Hash[Symbol, Integer | String])? range, ?row: Integer | nil, ?col_start: (Integer | String)?, ?col_end: (Integer | String)?, ?row_start: Integer | nil, ?row_end: Integer | nil) -> void
       def merge(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -370,6 +478,7 @@ module Xlsxrb
 
         @writer.row(values, styles: styles, height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level, style: style)
       end
+      # @deprecated Use {#row} instead. Will be removed in 0.2.0.
       alias add_row row
 
       # Appends a row to the worksheet and returns self for chaining.
@@ -403,6 +512,7 @@ module Xlsxrb
 
         @writer.skip_rows(count)
       end
+      # @deprecated Use {#skip_rows} instead. Will be removed in 0.2.0.
       alias skip_row skip_rows
 
       # Configures column width and properties.
@@ -443,8 +553,11 @@ module Xlsxrb
 
         @writer.group_columns(...)
       end
+      # @deprecated Use {#group_columns} instead. Will be removed in 0.2.0.
       alias group_column group_columns
+      # @deprecated Use {#group_columns} instead. Will be removed in 0.2.0.
       alias group_cols group_columns
+      # @deprecated Use {#group_columns} instead. Will be removed in 0.2.0.
       alias group_col group_columns
 
       # Groups multiple rows with outline hierarchy with a block.
@@ -468,6 +581,7 @@ module Xlsxrb
           @writer.group_rows(rows, level: level, collapsed: collapsed, hidden: hidden)
         end
       end
+      # @deprecated Use {#group_rows} instead. Will be removed in 0.2.0.
       alias group_row group_rows
 
       # Configures worksheet-level outline and grouping view properties.
@@ -486,6 +600,7 @@ module Xlsxrb
 
         @writer.outline_properties(...)
       end
+      # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
       alias outline_pr outline_properties
 
       # Adds a chart to the active sheet.
@@ -697,6 +812,7 @@ module Xlsxrb
 
         @writer.threaded_comment(...)
       end
+      # @deprecated Use {#threaded_comment} instead. Will be removed in 0.2.0.
       alias add_threaded_comment threaded_comment
 
       # Adds a Pivot Table to the sheet.
@@ -751,10 +867,12 @@ module Xlsxrb
       # @param range [String, nil] Data range for the sparkline (e.g. "A1:E1").
       # @param type [Symbol, String, nil] Sparkline type (:line, :column, :win_loss / :stacked).
       # @param opts [Hash] Additional sparkline options.
+      # @deprecated Use {#sparkline_group} instead. Will be removed in 0.2.0.
       # @return [void]
       # @api public
       #: (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
       def add_sparkline(...)
+        warn "[DEPRECATION] #add_sparkline is deprecated; use #sparkline_group instead.", uplevel: 1
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.add_sparkline(...)
@@ -775,6 +893,7 @@ module Xlsxrb
       # Sets or gets the active sheet in the workbook window.
       # If called without arguments on the proxy, marks this sheet as the active sheet.
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#active_sheet=} instead.
       # @param name_or_index [String, Symbol, Integer, nil]
       # @return [String, Symbol, Integer, nil]
       # @api public
@@ -784,10 +903,12 @@ module Xlsxrb
 
         @writer.active_sheet(name_or_index)
       end
+      # @deprecated Use {#active_sheet} instead. Will be removed in 0.2.0.
       alias active_tab active_sheet
 
       # Sets or gets the first visible sheet in the tab bar.
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#first_sheet=} instead.
       # @param name_or_index [String, Symbol, Integer, nil]
       # @return [String, Symbol, Integer, nil]
       # @api public
@@ -800,6 +921,7 @@ module Xlsxrb
 
       # Sets or gets whether sheet tabs are visible in the workbook window.
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_sheet_tabs=} instead.
       # @param visible [Boolean, nil]
       # @return [Boolean, nil]
       # @api public
@@ -812,6 +934,7 @@ module Xlsxrb
 
       # Sets or gets the tab ratio between tab bar and horizontal scrollbar (0-1000).
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#tab_ratio=} instead.
       # @param ratio [Integer, nil]
       # @return [Integer, nil]
       # @api public
@@ -824,6 +947,7 @@ module Xlsxrb
 
       # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#state=} instead.
       # @param new_state [Symbol, nil] The new state.
       # @return [Symbol]
       # @api public
@@ -834,8 +958,22 @@ module Xlsxrb
         @writer.state(new_state)
       end
 
+      # Sets the sheet visibility state (:visible, :hidden, or :very_hidden).
+      #
+      # @param new_state [Symbol, String] The new state.
+      # @return [Symbol]
+      # @api public
+      #: (Symbol | String new_state) -> Symbol
+      def state=(new_state)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.state = new_state
+        @writer.state
+      end
+
       # Gets or sets the tab color of this worksheet.
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#tab_color=} instead.
       # @param spec [String, Hash, Symbol, nil] Tab color hex string or hash options.
       # @param opts [Hash] Color keyword arguments (e.g. theme: 1, tint: 0.5).
       # @return [String, Hash, nil]
@@ -846,7 +984,18 @@ module Xlsxrb
 
         @writer.tab_color(...)
       end
-      alias tab_color= tab_color
+
+      # Sets the tab color of this worksheet.
+      #
+      # @param spec [String, Hash, Symbol, nil] Tab color hex string or hash options.
+      # @return [String, Hash, nil]
+      # @api public
+      #: (String | Symbol | Hash[Symbol, untyped] | nil spec) -> (String | Hash[Symbol, untyped] | nil)
+      def tab_color=(spec)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.tab_color = spec
+      end
 
       # Sets sheet properties (e.g. tab color, page setup flags).
       #
@@ -1168,6 +1317,7 @@ module Xlsxrb
       # @example Set background image from binary data
       #   sheet.background_image(png_bytes, ext: "png")
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#background_image=} instead.
       # @param file_data [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
       # @param ext [String, nil] Image extension.
       # @param opts [Hash] Additional options.
@@ -1179,15 +1329,20 @@ module Xlsxrb
 
         @writer.background_image(...)
       end
+      # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
       alias background_picture background_image
+      # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
       alias picture background_image
 
+      #: (untyped val) -> untyped
       def background_image=(val)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
         @writer.background_image = val
       end
+      # @deprecated Use {#background_image=} instead. Will be removed in 0.2.0.
       alias background_picture= background_image=
+      # @deprecated Use {#background_image=} instead. Will be removed in 0.2.0.
       alias picture= background_image=
 
       # Configures sheet view settings (zoom scale, grid lines visibility).
@@ -1261,6 +1416,7 @@ module Xlsxrb
 
         @writer.protected_range(...)
       end
+      # @deprecated Use {#protected_range} instead. Will be removed in 0.2.0.
       alias add_protected_range protected_range
 
       # Adds a cell watch to the sheet.
@@ -1274,6 +1430,7 @@ module Xlsxrb
 
         @writer.cell_watch(...)
       end
+      # @deprecated Use {#cell_watch} instead. Will be removed in 0.2.0.
       alias add_cell_watch cell_watch
 
       # Adds an ignored error entry to the sheet.
@@ -1283,12 +1440,25 @@ module Xlsxrb
       # @return [void]
       # @api public
       #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
-      def ignore_error(...)
+      def ignored_error(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.ignore_error(...)
+        @writer.ignored_error(...)
       end
-      alias add_ignored_error ignore_error
+
+      # @deprecated Use {#ignored_error} instead. Will be removed in 0.2.0.
+      #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+      def ignore_error(...)
+        warn "[DEPRECATION] #ignore_error is deprecated; use #ignored_error instead.", uplevel: 1
+        ignored_error(...)
+      end
+
+      # @deprecated Use {#ignored_error} instead. Will be removed in 0.2.0.
+      #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+      def add_ignored_error(...)
+        warn "[DEPRECATION] #add_ignored_error is deprecated; use #ignored_error instead.", uplevel: 1
+        ignored_error(...)
+      end
 
       # Returns the ignored error entries configured for this sheet.
       #
@@ -1301,6 +1471,7 @@ module Xlsxrb
 
       # Gets or sets phonetic (furigana) guide properties for the sheet.
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#phonetic_properties=} instead.
       # @api public
       #: (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
       def phonetic_properties(...)
@@ -1308,55 +1479,130 @@ module Xlsxrb
 
         @writer.phonetic_properties(...)
       end
-      alias phonetic_properties= phonetic_properties
+      # @deprecated Use {#phonetic_properties} instead. Will be removed in 0.2.0.
       alias phonetic_pr phonetic_properties
-      alias phonetic_pr= phonetic_properties
+
+      # Sets phonetic (furigana) guide properties for the sheet.
+      #
+      # @param spec [Hash, Integer, nil] Options hash or font ID integer.
+      # @return [Hash[Symbol, untyped], Integer, nil]
+      # @api public
+      #: (Hash[Symbol, untyped] | Integer | nil spec) -> (Hash[Symbol, untyped] | Integer | nil)
+      def phonetic_properties=(spec)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.phonetic_properties = spec
+      end
+      # @deprecated Use {#phonetic_properties=} instead. Will be removed in 0.2.0.
+      alias phonetic_pr= phonetic_properties=
 
       # Sets or gets the internal code name of the worksheet.
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#code_name=} instead.
       # @param val [String, Symbol, nil] The code name.
       # @return [String, nil]
       # @api public
       #: (?String | Symbol | nil val) -> String?
-      def code_name(val = nil)
+      def code_name(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.code_name(val)
+        @writer.code_name(...)
       end
-      alias code_name= code_name
+
+      # Sets the internal code name of the worksheet.
+      #
+      # @param val [String, Symbol, nil] The code name.
+      # @return [String, nil]
+      # @api public
+      #: (String | Symbol | nil val) -> String?
+      def code_name=(val)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.code_name = val
+      end
 
       # Configures whether page setup fits content to page width/height.
       # When enabled, optionally sets fit_to_width and/or fit_to_height on page_setup.
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#fit_to_page=} or {#page_setup} with :fit_to_width/:fit_to_height instead.
       # @param enabled [Boolean, nil] Whether to fit to page.
       # @param width [Integer, nil] Pages wide to fit to.
       # @param height [Integer, nil] Pages tall to fit to.
       # @return [Boolean, void]
       # @api public
       #: (?bool? enabled, ?width: Integer?, ?height: Integer?) -> (bool | void)
-      def fit_to_page(enabled = nil, width: nil, height: nil)
+      def fit_to_page(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.fit_to_page(enabled, width: width, height: height)
+        @writer.fit_to_page(...)
       end
-      alias fit_to_page= fit_to_page
       alias fit_to_page? fit_to_page
+
+      # Sets whether page setup fits content to page width/height.
+      #
+      # @param enabled [Boolean, nil] Whether to fit to page.
+      # @return [Boolean]
+      # @api public
+      #: (bool? enabled) -> bool
+      def fit_to_page=(enabled)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.fit_to_page = enabled
+      end
 
       # Configures worksheet calculation properties (<sheetCalcPr>).
       #
+      # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#sheet_calc_properties=} instead.
       # @param spec [Hash, nil] Calculation properties hash.
       # @param full_calc_on_load [Boolean, nil] Whether to recalculate when loading.
       # @return [Hash, nil]
       # @api public
       #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
-      def sheet_calc_pr(spec = nil, full_calc_on_load: nil, **opts)
+      def sheet_calc_properties(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
-        @writer.sheet_calc_pr(spec, full_calc_on_load: full_calc_on_load, **opts)
+        @writer.sheet_calc_properties(...)
       end
-      alias sheet_calc_pr= sheet_calc_pr
-      alias calc_pr sheet_calc_pr
-      alias calc_pr= sheet_calc_pr
+
+      # Sets worksheet calculation properties (<sheetCalcPr>).
+      #
+      # @param spec [Hash, nil] Calculation properties hash.
+      # @return [Hash, nil]
+      # @api public
+      #: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
+      def sheet_calc_properties=(spec)
+        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+
+        @writer.sheet_calc_properties = spec
+      end
+
+      # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
+      #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+      def sheet_calc_pr(...)
+        warn "[DEPRECATION] #sheet_calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
+        sheet_calc_properties(...)
+      end
+
+      # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
+      #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+      def calc_pr(...)
+        warn "[DEPRECATION] #calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
+        sheet_calc_properties(...)
+      end
+
+      # @deprecated Use {#sheet_calc_properties=} instead. Will be removed in 0.2.0.
+      #: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
+      def sheet_calc_pr=(spec)
+        warn "[DEPRECATION] #sheet_calc_pr= is deprecated; use #sheet_calc_properties= instead.", uplevel: 1
+        self.sheet_calc_properties = spec
+      end
+
+      # @deprecated Use {#sheet_calc_properties=} instead. Will be removed in 0.2.0.
+      #: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
+      def calc_pr=(spec)
+        warn "[DEPRECATION] #calc_pr= is deprecated; use #sheet_calc_properties= instead.", uplevel: 1
+        self.sheet_calc_properties = spec
+      end
     end
 
     # Returns the list of worksheet names created in this workbook so far.
@@ -1541,7 +1787,7 @@ module Xlsxrb
         values.each_with_index do |val, col_idx|
           next if val.nil?
 
-          addr = "#{Elements::Cell.column_letter(col_idx)}#{row_num}"
+          addr = "#{Elements::Cell._column_letter(col_idx)}#{row_num}"
           @current_cells[addr] = val
         end
       end
@@ -1574,6 +1820,7 @@ module Xlsxrb
       @current_row_writer.write_row_values(row_index, values, styles: styles, style_map: @style_name_to_id, sst: @sst, sst_index: @sst_index, attrs: attrs)
       start_sheet_entry if !@sheet_entry_started && @current_row_buffer.bytesize >= 65_536
     end
+    # @deprecated Use {#row} instead. Will be removed in 0.2.0.
     alias add_row row
 
     # Appends a row to the worksheet and returns self for chaining.
@@ -1608,6 +1855,7 @@ module Xlsxrb
       sheet if @current_sheet.nil?
       @current_row_index += count
     end
+    # @deprecated Use {#skip_rows} instead. Will be removed in 0.2.0.
     alias skip_row skip_rows
 
     # Sets column formatting and properties for one or multiple columns.
@@ -1679,8 +1927,11 @@ module Xlsxrb
     def group_columns(index, level: 1, collapsed: false, hidden: false, width: nil, style: nil)
       column(index, outline_level: level, collapsed: collapsed, hidden: hidden, width: width, style: style)
     end
+    # @deprecated Use {#group_columns} instead. Will be removed in 0.2.0.
     alias group_column group_columns
+    # @deprecated Use {#group_columns} instead. Will be removed in 0.2.0.
     alias group_cols group_columns
+    # @deprecated Use {#group_columns} instead. Will be removed in 0.2.0.
     alias group_col group_columns
 
     # Groups multiple rows with outline hierarchy with a block.
@@ -1717,6 +1968,7 @@ module Xlsxrb
         @current_row_hidden = prev_hidden
       end
     end
+    # @deprecated Use {#group_rows} instead. Will be removed in 0.2.0.
     alias group_row group_rows
 
     # Configures worksheet-level outline and grouping view properties.
@@ -1748,6 +2000,7 @@ module Xlsxrb
       @current_sheet_properties[:summary_right] = props[:summary_right] unless props[:summary_right].nil?
       props
     end
+    # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
     alias outline_pr outline_properties
 
     # Adds a chart to the current worksheet.
@@ -1963,6 +2216,7 @@ module Xlsxrb
         provider_id: provider_id
       }.compact
     end
+    # @deprecated Use {#threaded_comment} instead. Will be removed in 0.2.0.
     alias add_threaded_comment threaded_comment
 
     # Adds a sparkline group.
@@ -1996,10 +2250,12 @@ module Xlsxrb
     # @param range [String, nil] Data range for the sparkline (e.g. "A1:E1").
     # @param type [Symbol, String, nil] Sparkline type (:line, :column, :win_loss / :stacked).
     # @param opts [Hash] Additional sparkline options.
+    # @deprecated Use {#sparkline_group} instead. Will be removed in 0.2.0.
     # @return [void]
     # @api public
     #: (?location: String?, ?range: String?, ?type: (String | Symbol)?, **untyped opts) -> void
     def add_sparkline(location: nil, range: nil, type: nil, **opts)
+      warn "[DEPRECATION] #add_sparkline is deprecated; use #sparkline_group instead.", uplevel: 1
       loc = location || opts.delete(:location_ref)
       rng = range || opts.delete(:data_ref) || opts.delete(:data)
       raise ArgumentError, "Missing required location: parameter for sparkline" unless loc
@@ -2015,6 +2271,10 @@ module Xlsxrb
 
     # Merges a range of cells into a single cell.
     #
+    # @example
+    #   sheet.merge("A1:C1")
+    #
+    # @deprecated Passing coordinate keyword arguments (row:, col_start:, col_end:, row_start:, row_end:) is deprecated and will be removed in 0.2.0. Use a range string (e.g. merge("A1:C1")) instead.
     # @param range [String, Hash, nil] Cell range (e.g. "A1:B2") or hash of coordinates.
     # @param row [Integer, nil] Single row index.
     # @param col_start [Integer, String, nil] Starting column.
@@ -2043,7 +2303,7 @@ module Xlsxrb
     # @api public
     #: (?row: Integer, ?col: (Integer | String)) -> void
     def freeze_pane(row: 0, col: 0)
-      col = Elements::Cell.column_index(col)
+      col = Elements::Cell._column_index(col)
       sheet if @current_sheet.nil?
       @current_freeze_pane = { row: row, col: col }
     end
@@ -2168,6 +2428,7 @@ module Xlsxrb
     # @example Set background image from file path
     #   sheet.background_image("path/to/background.png")
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#background_image=} instead.
     # @param file_data [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
     # @param ext [String, nil] Image extension ("png", "jpeg", "jpg", "gif", etc.).
     # @param opts [Hash] Additional image options.
@@ -2211,13 +2472,24 @@ module Xlsxrb
         content_type: mime
       }.merge(opts).freeze
     end
+    # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
     alias background_picture background_image
+    # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
     alias picture background_image
 
+    #: (untyped val) -> untyped
     def background_image=(val)
-      background_image(val)
+      sheet if @current_sheet.nil?
+      if val.nil?
+        @current_background_image = nil
+      else
+        background_image(val)
+      end
+      val
     end
+    # @deprecated Use {#background_image=} instead. Will be removed in 0.2.0.
     alias background_picture= background_image=
+    # @deprecated Use {#background_image=} instead. Will be removed in 0.2.0.
     alias picture= background_image=
 
     # Inserts a drawing shape.
@@ -2242,6 +2514,7 @@ module Xlsxrb
 
     # Gets or sets the sheet visibility state (:visible, :hidden, or :very_hidden).
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#state=} instead.
     # @param new_state [Symbol, nil] The new state.
     # @return [Symbol]
     # @api public
@@ -2256,16 +2529,29 @@ module Xlsxrb
       end
     end
 
+    # Sets the sheet visibility state (:visible, :hidden, or :very_hidden).
+    #
+    # @param new_state [Symbol, String] The new state.
+    # @return [Symbol]
+    # @api public
+    #: (Symbol | String new_state) -> Symbol
+    def state=(new_state)
+      sheet if @current_sheet.nil?
+      sheet_properties(:state, new_state)
+      @current_sheet_state
+    end
+
     # Gets or sets the tab color of the current worksheet.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#tab_color=} instead.
     # @param spec [String, Hash, Symbol, nil] Tab color hex string or hash options.
     # @param opts [Hash] Color keyword arguments (e.g. theme: 1, tint: 0.5).
     # @return [String, Hash, nil]
     # @api public
     #: (?String | Symbol | Hash[Symbol, untyped] | nil spec, **untyped opts) -> (String | Hash[Symbol, untyped] | nil)
-    def tab_color(spec = nil, **opts)
+    def tab_color(spec = OMITTED, **opts)
       sheet if @current_sheet.nil?
-      if spec.nil? && opts.empty?
+      if spec.equal?(OMITTED) && opts.empty?
         @current_sheet_properties[:tab_color]
       else
         color = if opts.empty?
@@ -2276,7 +2562,17 @@ module Xlsxrb
         @current_sheet_properties[:tab_color] = color
       end
     end
-    alias tab_color= tab_color
+
+    # Sets the tab color of the current worksheet.
+    #
+    # @param spec [String, Hash, Symbol, nil] Tab color hex string or hash options.
+    # @return [String, Hash, nil]
+    # @api public
+    #: (String | Symbol | Hash[Symbol, untyped] | nil spec) -> (String | Hash[Symbol, untyped] | nil)
+    def tab_color=(spec)
+      sheet if @current_sheet.nil?
+      @current_sheet_properties[:tab_color] = spec
+    end
 
     # Sets a sheet-level property (e.g. tab_color: "FF0000").
     #
@@ -2356,7 +2652,7 @@ module Xlsxrb
     def page_break_col(col_index)
       # simplecov:disable
       # Edge case / untested delegation block
-      col_index = Elements::Cell.column_index(col_index)
+      col_index = Elements::Cell._column_index(col_index)
       sheet if @current_sheet.nil?
       @current_col_breaks << col_index
       # simplecov:enable
@@ -2378,6 +2674,7 @@ module Xlsxrb
       entry.merge!(opts) unless opts.empty?
       @current_protected_ranges << DslHelpers.normalize_protection_options(entry)
     end
+    # @deprecated Use {#protected_range} instead. Will be removed in 0.2.0.
     alias add_protected_range protected_range
 
     # Adds a cell watch to the current sheet.
@@ -2390,6 +2687,7 @@ module Xlsxrb
       sheet if @current_sheet.nil?
       @current_cell_watches << ref.to_s
     end
+    # @deprecated Use {#cell_watch} instead. Will be removed in 0.2.0.
     alias add_cell_watch cell_watch
 
     # Adds an ignored error entry to the current sheet.
@@ -2399,11 +2697,24 @@ module Xlsxrb
     # @return [void]
     # @api public
     #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
-    def ignore_error(sqref, **opts)
+    def ignored_error(sqref, **opts)
       sheet if @current_sheet.nil?
       @current_ignored_errors << { sqref: sqref.to_s }.merge(opts)
     end
-    alias add_ignored_error ignore_error
+
+    # @deprecated Use {#ignored_error} instead. Will be removed in 0.2.0.
+    #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+    def ignore_error(sqref, **opts)
+      warn "[DEPRECATION] #ignore_error is deprecated; use #ignored_error instead.", uplevel: 1
+      ignored_error(sqref, **opts)
+    end
+
+    # @deprecated Use {#ignored_error} instead. Will be removed in 0.2.0.
+    #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
+    def add_ignored_error(sqref, **opts)
+      warn "[DEPRECATION] #add_ignored_error is deprecated; use #ignored_error instead.", uplevel: 1
+      ignored_error(sqref, **opts)
+    end
 
     # Returns the ignored error entries configured for the current sheet.
     #
@@ -2416,6 +2727,7 @@ module Xlsxrb
 
     # Gets or sets phonetic (furigana) guide properties for the current sheet.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#phonetic_properties=} instead.
     # @overload phonetic_properties()
     #   Returns the current phonetic properties.
     #   @return [Hash, nil]
@@ -2428,10 +2740,12 @@ module Xlsxrb
     #   @return [Hash, nil]
     # @api public
     #: (?Hash[Symbol, untyped] | Integer | nil spec, ?font_id: Integer?, ?type: (Symbol | String)?, ?alignment: (Symbol | String)?, **untyped opts) -> Hash[Symbol, untyped]?
-    def phonetic_properties(spec = nil, font_id: nil, type: nil, alignment: nil, **opts)
+    def phonetic_properties(spec = OMITTED, font_id: nil, type: nil, alignment: nil, **opts)
       sheet if @current_sheet.nil?
-      if spec.nil? && font_id.nil? && type.nil? && alignment.nil? && opts.empty?
+      if spec.equal?(OMITTED) && font_id.nil? && type.nil? && alignment.nil? && opts.empty?
         @current_phonetic_properties
+      elsif !spec.equal?(OMITTED) && spec.nil? && font_id.nil? && type.nil? && alignment.nil? && opts.empty?
+        @current_phonetic_properties = nil
       else
         props = if spec.is_a?(Hash)
                   spec.merge(opts)
@@ -2444,67 +2758,127 @@ module Xlsxrb
         @current_phonetic_properties = WorksheetBuilder.normalize_phonetic_properties(props)
       end
     end
-    alias phonetic_properties= phonetic_properties
+    # @deprecated Use {#phonetic_properties} instead. Will be removed in 0.2.0.
     alias phonetic_pr phonetic_properties
-    alias phonetic_pr= phonetic_properties
+
+    # Sets phonetic (furigana) guide properties for the current sheet.
+    #
+    # @param spec [Hash, Integer, nil]
+    # @return [Hash[Symbol, untyped], Integer, nil]
+    # @api public
+    #: (Hash[Symbol, untyped] | Integer | nil spec) -> (Hash[Symbol, untyped] | Integer | nil)
+    def phonetic_properties=(spec)
+      sheet if @current_sheet.nil?
+      if spec.nil?
+        @current_phonetic_properties = nil
+      else
+        props = if spec.is_a?(Hash)
+                  spec.dup
+                elsif spec.is_a?(Integer)
+                  { font_id: spec }
+                else
+                  {}
+                end
+        @current_phonetic_properties = WorksheetBuilder.normalize_phonetic_properties(props)
+      end
+      spec
+    end
+    # @deprecated Use {#phonetic_properties=} instead. Will be removed in 0.2.0.
+    alias phonetic_pr= phonetic_properties=
 
     # Sets or gets the internal code name of the current worksheet (or workbook if no sheet is open).
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#code_name=} instead.
     # @param val [String, Symbol, nil] The code name.
     # @return [String, nil]
     # @api public
     #: (?String | Symbol | nil val) -> String?
-    def code_name(val = nil)
+    def code_name(val = OMITTED)
       if @current_sheet.nil?
-        if val.nil?
+        if val.equal?(OMITTED)
           @workbook_properties[:code_name]
         else
-          @workbook_properties[:code_name] = val.to_s
+          @workbook_properties[:code_name] = val&.to_s
         end
-      elsif val.nil?
+      elsif val.equal?(OMITTED)
         @current_sheet_properties[:code_name]
       else
-        @current_sheet_properties[:code_name] = val.to_s
+        @current_sheet_properties[:code_name] = val&.to_s
       end
     end
-    alias code_name= code_name
+
+    # Sets the internal code name of the current worksheet (or workbook if no sheet is open).
+    #
+    # @param val [String, Symbol, nil] The code name.
+    # @return [String, nil]
+    # @api public
+    #: (String | Symbol | nil val) -> String?
+    def code_name=(val)
+      if @current_sheet.nil?
+        @workbook_properties[:code_name] = val&.to_s
+      else
+        @current_sheet_properties[:code_name] = val&.to_s
+      end
+    end
 
     # Configures whether page setup fits content to page width/height for the current sheet.
     # When enabled, optionally sets fit_to_width and/or fit_to_height on page_setup.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#fit_to_page=} or {#page_setup} with :fit_to_width/:fit_to_height instead.
     # @param enabled [Boolean, nil] Whether to fit to page.
     # @param width [Integer, nil] Pages wide to fit to.
     # @param height [Integer, nil] Pages tall to fit to.
     # @return [Boolean, void]
     # @api public
     #: (?bool? enabled, ?width: Integer?, ?height: Integer?) -> (bool | void)
-    def fit_to_page(enabled = nil, width: nil, height: nil)
+    def fit_to_page(enabled = OMITTED, width: nil, height: nil)
       sheet if @current_sheet.nil?
-      if enabled.nil? && width.nil? && height.nil?
+      if enabled.equal?(OMITTED) && width.nil? && height.nil?
         return @current_sheet_properties[:fit_to_page] ? true : false
       end
 
-      @current_sheet_properties[:fit_to_page] = (enabled.nil? || (enabled ? true : false))
+      @current_sheet_properties[:fit_to_page] = if enabled.equal?(OMITTED)
+                                                  true
+                                                else
+                                                  enabled ? true : false
+                                                end
       page_setup(fit_to_width: width) if width
       page_setup(fit_to_height: height) if height
     end
-    alias fit_to_page= fit_to_page
     alias fit_to_page? fit_to_page
+
+    # Sets whether page setup fits content to page width/height for the current sheet.
+    #
+    # @param enabled [Boolean, nil] Whether to fit to page.
+    # @return [Boolean]
+    # @api public
+    #: (bool? enabled) -> bool
+    def fit_to_page=(enabled)
+      sheet if @current_sheet.nil?
+      @current_sheet_properties[:fit_to_page] = enabled ? true : false
+    end
 
     # Configures worksheet calculation properties (<sheetCalcPr>) for the current sheet.
     #
     # @example Instruct Excel to recalculate formulas when loading sheet
-    #   w.sheet_calc_pr(full_calc_on_load: true)
+    #   w.sheet_calc_properties = { full_calc_on_load: true }
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#sheet_calc_properties=} instead.
     # @param spec [Hash, nil] Calculation properties hash.
     # @param full_calc_on_load [Boolean, nil] Whether to recalculate when loading.
     # @return [Hash, nil]
     # @api public
     #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
-    def sheet_calc_pr(spec = nil, full_calc_on_load: nil, **opts)
+    def sheet_calc_properties(spec = OMITTED, full_calc_on_load: nil, **opts)
       sheet if @current_sheet.nil?
-      if spec.nil? && full_calc_on_load.nil? && opts.empty?
+      if spec.equal?(OMITTED) && full_calc_on_load.nil? && opts.empty?
         return @current_sheet_calc_pr || (@current_sheet_properties[:full_calc_on_load] ? { full_calc_on_load: true } : nil)
+      end
+
+      warn "[DEPRECATION] Calling #sheet_calc_properties with arguments is deprecated and will be removed in 0.2.0. Use #sheet_calc_properties= instead.", uplevel: 1
+      if !spec.equal?(OMITTED) && spec.nil? && full_calc_on_load.nil? && opts.empty?
+        @current_sheet_properties.delete(:full_calc_on_load)
+        return @current_sheet_calc_pr = nil
       end
 
       pr = spec.is_a?(Hash) ? spec.dup : {}
@@ -2513,9 +2887,53 @@ module Xlsxrb
       @current_sheet_properties[:full_calc_on_load] = pr[:full_calc_on_load] unless pr[:full_calc_on_load].nil?
       @current_sheet_calc_pr = pr
     end
-    alias sheet_calc_pr= sheet_calc_pr
-    alias calc_pr sheet_calc_pr
-    alias calc_pr= sheet_calc_pr
+
+    # Sets worksheet calculation properties (<sheetCalcPr>) for the current sheet.
+    #
+    # @param spec [Hash, nil] Calculation properties hash.
+    # @return [Hash, nil]
+    # @api public
+    #: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
+    def sheet_calc_properties=(spec)
+      sheet if @current_sheet.nil?
+      if spec.nil?
+        @current_sheet_properties.delete(:full_calc_on_load)
+        @current_sheet_calc_pr = nil
+      else
+        pr = spec.is_a?(Hash) ? spec.dup : {}
+        @current_sheet_properties[:full_calc_on_load] = pr[:full_calc_on_load] unless pr[:full_calc_on_load].nil?
+        @current_sheet_calc_pr = pr
+      end
+      spec
+    end
+
+    # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
+    #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+    def sheet_calc_pr(spec = OMITTED, full_calc_on_load: nil, **opts)
+      warn "[DEPRECATION] #sheet_calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
+      sheet_calc_properties(spec, full_calc_on_load: full_calc_on_load, **opts)
+    end
+
+    # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
+    #: (?Hash[Symbol, untyped]? spec, ?full_calc_on_load: bool?, **untyped opts) -> Hash[Symbol, untyped]?
+    def calc_pr(spec = OMITTED, full_calc_on_load: nil, **opts)
+      warn "[DEPRECATION] #calc_pr is deprecated; use #sheet_calc_properties instead.", uplevel: 1
+      sheet_calc_properties(spec, full_calc_on_load: full_calc_on_load, **opts)
+    end
+
+    # @deprecated Use {#sheet_calc_properties=} instead. Will be removed in 0.2.0.
+    #: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
+    def sheet_calc_pr=(spec)
+      warn "[DEPRECATION] #sheet_calc_pr= is deprecated; use #sheet_calc_properties= instead.", uplevel: 1
+      self.sheet_calc_properties = spec
+    end
+
+    # @deprecated Use {#sheet_calc_properties=} instead. Will be removed in 0.2.0.
+    #: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
+    def calc_pr=(spec)
+      warn "[DEPRECATION] #calc_pr= is deprecated; use #sheet_calc_properties= instead.", uplevel: 1
+      self.sheet_calc_properties = spec
+    end
 
     # --- Workbook-Level Methods ---
 
@@ -2619,9 +3037,9 @@ module Xlsxrb
       cols_str = if first.is_a?(String)
                    first.include?(":") ? first : "#{first}:#{last || first}"
                  else
-                   first_name = Utils.col_index_to_name(first)
+                   first_name = Elements::Cell._column_letter(first)
                    last_name = if last.is_a?(Integer)
-                                 Utils.col_index_to_name(last)
+                                 Elements::Cell._column_letter(last)
                                elsif last
                                  last.to_s
                                else

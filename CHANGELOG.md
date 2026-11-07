@@ -1,5 +1,37 @@
 ## [Unreleased]
 
+### Added
+- Add Value Object factory delegator methods (`formula`, `array_formula`, `shared_formula`, `rich_text`, `comment`, `cell_error`, `hyperlink`) across `WorkbookBuilder`, `WorksheetBuilder`, `StreamWriter`, and `StreamWriter::WorksheetProxy`.
+- Add canonical coordinate conversion facade methods `Xlsxrb.parse_ref`, `Xlsxrb.cell_to_ref`, `Xlsxrb.column_index`, and `Xlsxrb.column_letter`.
+- Add `Xlsxrb.format_value` as the canonical value formatting method.
+- Add `Xlsxrb.time_to_serial` (and `Utils.time_to_serial`) for converting Time/Date objects to Excel numeric serial numbers.
+- Add `Xlsxrb::MAX_COLUMN` constant (16,384) representing the maximum column count supported by Excel / OpenXML.
+- Support passing nested bounding coordinate arrays `[[top_row, left_col], [bottom_row, right_col]]` (as returned by `parse_range`) to `Xlsxrb.range_to_ref`.
+- Support `column_delta:` keyword in `Xlsxrb::Utils.expand_formula`.
+- Support `ref:` keyword argument in `Xlsxrb.array_formula` and include `Elements::CellError` in `cached_value:` types.
+- Support `new_password:` and writer/reader option forwarding in `Xlsxrb.modify`, and return the block result.
+- Define Ractor-shareable frozen `Elements::CellError` constants (`DIV0`, `NA`, `NAME`, `NULL`, `NUM`, `REF`, `VALUE`, `GETTING_DATA`) on `Elements::CellError`.
+
+### Deprecated
+- `DslHelpers.sheet_name` is deprecated in favor of `DslHelpers.sanitize_sheet_name`; will be removed in version 0.2.0.
+- Positional `pos_ref` in `Xlsxrb.array_formula` is deprecated in favor of keyword `ref:`; will be removed in version 0.2.0.
+- Top-level aliases `Xlsxrb.stream`, `Xlsxrb.sheet_name`, `Xlsxrb.color_to_hex`, `Xlsxrb.serial_to_datetime`, and `Xlsxrb::Utils.serial_to_datetime` are deprecated in favor of `Xlsxrb.read`, `Xlsxrb.sanitize_sheet_name`, `Xlsxrb.to_hex_color`, and `Xlsxrb.serial_to_time`; will be removed in version 0.2.0.
+- `Xlsxrb.format` is deprecated in favor of `Xlsxrb.format_value`; will be removed in version 0.2.0.
+- `Xlsxrb.datetime_to_serial` and `Xlsxrb::Utils.datetime_to_serial` are deprecated in favor of `Xlsxrb.time_to_serial`; will be removed in version 0.2.0.
+- `Xlsxrb::MAX_COL` is deprecated in favor of `Xlsxrb::MAX_COLUMN`; will be removed in version 0.2.0.
+- `Xlsxrb::Utils` coordinate and date conversion methods (`col_name_to_index`, `col_index_to_name`, `ref_to_row_col`, `row_col_to_ref`, `parse_range`, `range_to_ref`, `date_to_serial`, `serial_to_date`, `serial_to_time`, `time_to_serial`) and `Elements::Cell.column_index`, `column_letter`, `parse_ref` are deprecated in favor of top-level `Xlsxrb.*` helpers; will be removed in version 0.2.0.
+- Keyword `:col_delta` in `Xlsxrb::Utils.expand_formula` is deprecated in favor of `:column_delta`; will be removed in version 0.2.0.
+- Keyword `:si` in `Xlsxrb.shared_formula` is deprecated in favor of `:shared_index`; will be removed in version 0.2.0.
+- `Xlsxrb::Error::DIV0`..`VALUE` cell error constants on the exception class are deprecated in favor of `Elements::CellError::DIV0`..`VALUE`; will be removed in version 0.2.0.
+- Redundant method and setter aliases across builders and element readers (`add_row`, `skip_row`, `group_column`, `group_cols`, `group_col`, `group_row`, `outline_pr`, `add_threaded_comment`, `background_picture`, `picture`, `background_picture=`, `picture=`, `add_protected_range`, `add_cell_watch`, `phonetic_pr`, `phonetic_pr=`, `set_default_font`, `add_column`, `first_col`, `last_col`, `range`, `range=`, `col`, `col=`, `row`, `row=`, `sz`, `sz=`, `error`, `error=`, `prompt`, `prompt=`) are deprecated and will be removed in version 0.2.0.
+- Singular `column:` and `row:` keywords in `defined_name` are deprecated in favor of plural `columns:` and `rows:`; will be removed in version 0.2.0.
+- `show_symbols:` keyword in `outline_properties` is deprecated in favor of `show_outline_symbols:`; will be removed in version 0.2.0.
+- `fit_to_page?` on builders is deprecated in favor of `fit_to_page`; will be removed in version 0.2.0.
+
+### Fixed
+- Prevent attribute loss in `Elements::PivotTable`, `Elements::TableColumn`, `Elements::ThreadedComment`, `Elements::Comment`, and `Elements::FilterColumn` by retaining full schema attributes and capturing unmapped keyword options into `options:`.
+- Eliminate internal calls to deprecated `MetadataRecord#[]`, `#merge`, and `cols:` across `WorksheetBuilder`, `WorkbookBuilder`, `StreamSheet`, `Elements::Worksheet`, and `Elements::Styles`.
+
 ## [0.1.17] - 2026-11-01
 
 ### Added

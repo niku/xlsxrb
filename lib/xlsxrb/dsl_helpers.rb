@@ -39,10 +39,10 @@ module Xlsxrb
       else
         r_start = row || row_start || 0
         r_end = row || row_end || 0
-        c_start = Elements::Cell.column_index(col_start || 0)
-        c_end = Elements::Cell.column_index(col_end || 0)
-        start_ref = "#{Elements::Cell.column_letter(c_start)}#{r_start + 1}"
-        end_ref = "#{Elements::Cell.column_letter(c_end)}#{r_end + 1}"
+        c_start = Elements::Cell._column_index(col_start || 0)
+        c_end = Elements::Cell._column_index(col_end || 0)
+        start_ref = "#{Elements::Cell._column_letter(c_start)}#{r_start + 1}"
+        end_ref = "#{Elements::Cell._column_letter(c_end)}#{r_end + 1}"
         "#{start_ref}:#{end_ref}"
       end
     end
@@ -74,9 +74,9 @@ module Xlsxrb
     def self.normalize_column_indices(index)
       case index
       when Range, Array
-        index.map { |i| Elements::Cell.column_index(i) }
+        index.map { |i| Elements::Cell._column_index(i) }
       else
-        [Elements::Cell.column_index(index)]
+        [Elements::Cell._column_index(index)]
       end
     end
 
@@ -185,7 +185,7 @@ module Xlsxrb
 
       cells_array = []
       values.each do |k, v|
-        cells_array[Elements::Cell.column_index(k)] = v
+        cells_array[Elements::Cell._column_index(k)] = v
       end
       cells_array
     end
@@ -202,9 +202,9 @@ module Xlsxrb
       styles_array = []
       styles.each do |k, v|
         if k.is_a?(Range) || k.is_a?(Array)
-          k.each { |idx| styles_array[Elements::Cell.column_index(idx)] = v }
+          k.each { |idx| styles_array[Elements::Cell._column_index(idx)] = v }
         else
-          styles_array[Elements::Cell.column_index(k)] = v
+          styles_array[Elements::Cell._column_index(k)] = v
         end
       end
       styles_array
@@ -286,8 +286,8 @@ module Xlsxrb
     def self.area_ref(col_run, row_run)
       c1, c2 = col_run
       r1, r2 = row_run
-      ref1 = "#{Elements::Cell.column_letter(c1)}#{r1}"
-      c1 == c2 && r1 == r2 ? ref1 : "#{ref1}:#{Elements::Cell.column_letter(c2)}#{r2}"
+      ref1 = "#{Elements::Cell._column_letter(c1)}#{r1}"
+      c1 == c2 && r1 == r2 ? ref1 : "#{ref1}:#{Elements::Cell._column_letter(c2)}#{r2}"
     end
 
     # Combines column intervals and row intervals into chunked space-delimited sqref strings
@@ -342,7 +342,7 @@ module Xlsxrb
       if range
         value = range
       elsif col || rows
-        c_letter = Elements::Cell.column_letter(col ? Elements::Cell.column_index(col) : 0)
+        c_letter = Elements::Cell._column_letter(col ? Elements::Cell._column_index(col) : 0)
         value = if rows.is_a?(Range)
                   r2 = rows.exclude_end? ? rows.end - 1 : rows.end
                   "$#{c_letter}$#{rows.begin}:$#{c_letter}$#{r2}"
@@ -685,7 +685,12 @@ module Xlsxrb
     end
 
     class << self
-      alias sheet_name sanitize_sheet_name
+      # @deprecated Use {.sanitize_sheet_name} instead.
+      #: (untyped raw) -> String
+      def sheet_name(raw)
+        warn "[Xlsxrb DEPRECATION] DslHelpers.sheet_name is deprecated and will be removed in v0.2.0. Use DslHelpers.sanitize_sheet_name instead.", uplevel: 1
+        sanitize_sheet_name(raw)
+      end
     end
   end
 end

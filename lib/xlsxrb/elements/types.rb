@@ -54,6 +54,26 @@ module Xlsxrb
       end
     end
 
+    class CellError
+      # Predefined frozen CellError constants
+      #: Elements::CellError
+      NULL = new(code: "#NULL!").freeze
+      #: Elements::CellError
+      DIV0 = new(code: "#DIV/0!").freeze
+      #: Elements::CellError
+      VALUE = new(code: "#VALUE!").freeze
+      #: Elements::CellError
+      REF = new(code: "#REF!").freeze
+      #: Elements::CellError
+      NAME = new(code: "#NAME?").freeze
+      #: Elements::CellError
+      NUM = new(code: "#NUM!").freeze
+      #: Elements::CellError
+      NA = new(code: "#N/A").freeze
+      #: Elements::CellError
+      GETTING_DATA = new(code: "#GETTING_DATA").freeze
+    end
+
     # Represents a formatted text run within a rich text string.
     #
     # @example

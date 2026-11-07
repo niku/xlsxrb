@@ -133,7 +133,7 @@ module Xlsxrb
       # @api public
       #: () -> String
       def ref
-        "#{self.class.column_letter(column_index)}#{row_index + 1}"
+        "#{self.class._column_letter(column_index)}#{row_index + 1}"
       end
 
       # Returns whether the cell contains a formula.
@@ -419,6 +419,7 @@ module Xlsxrb
       #
       # @param index [Integer] 0-based column index.
       # @return [String] Excel column letter.
+      # @api private
       #: (Integer index) -> String
       def self.calculate_column_letter(index)
         result = +""
@@ -434,42 +435,40 @@ module Xlsxrb
       # Cache column letters up to Excel's limit (16,384)
       @column_letters = (0...16_384).map { |index| calculate_column_letter(index).freeze }.freeze
 
+      # @api private
+      def self._column_letter(index)
+        raise ArgumentError, "Column index must be a non-negative Integer, got #{index.inspect}" unless index.is_a?(Integer) && index >= 0
+
+        @column_letters[index] || calculate_column_letter(index)
+      end
+
       # Converts a 0-based column index to an Excel letter (0 -> "A", 25 -> "Z", 26 -> "AA").
       #
       # @example
       #   Cell.column_letter(0)  #=> "A"
       #   Cell.column_letter(26) #=> "AA"
       #
+      # @deprecated Use {Xlsxrb.column_letter} instead. Will be removed in 0.2.0.
       # @param index [Integer] 0-based column index.
       # @return [String] Excel column letter.
-      # @api public
       #: (untyped index) -> String
       def self.column_letter(index)
-        raise ArgumentError, "Column index must be a non-negative Integer, got #{index.inspect}" unless index.is_a?(Integer) && index >= 0
-
-        @column_letters[index] || calculate_column_letter(index)
+        warn "[DEPRECATION] Xlsxrb::Elements::Cell.column_letter is deprecated; use Xlsxrb.column_letter instead.", uplevel: 1
+        _column_letter(index)
       end
 
       # Pure calculation: converts an uppercase column letter string to a 0-based index.
       #
       # @param letter [String] Uppercase column letter string (e.g. "A", "AA").
       # @return [Integer] 0-based column index.
+      # @api private
       #: (String letter) -> Integer
       def self.calculate_column_index(letter)
         letter.bytes.reduce(0) { |acc, b| (acc * 26) + (b - 64) } - 1
       end
 
-      # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
-      #
-      # @example
-      #   Cell.column_index("A")  #=> 0
-      #   Cell.column_index(:AA)  #=> 26
-      #
-      # @param letter [String, Symbol, Integer] Column letter or integer index.
-      # @return [Integer] 0-based column index.
-      # @api public
-      #: (String | Symbol | Integer letter) -> Integer
-      def self.column_index(letter)
+      # @api private
+      def self._column_index(letter)
         if letter.is_a?(Integer)
           raise ArgumentError, "Column index must be >= 0, got #{letter}" if letter.negative?
 
@@ -489,17 +488,23 @@ module Xlsxrb
         calculate_column_index(str.upcase)
       end
 
-      # Parses an Excel-style reference to [row_index, col_index] (both 0-based).
+      # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
       #
       # @example
-      #   Cell.parse_ref("A1")  #=> [0, 0]
-      #   Cell.parse_ref("C10") #=> [9, 2]
+      #   Cell.column_index("A")  #=> 0
+      #   Cell.column_index(:AA)  #=> 26
       #
-      # @param ref [String, nil] Excel cell reference.
-      # @return [Array(Integer, Integer), nil] 0-based [row_index, col_index].
-      # @api public
-      #: (String? ref) -> [Integer, Integer]?
-      def self.parse_ref(ref)
+      # @deprecated Use {Xlsxrb.column_index} instead. Will be removed in 0.2.0.
+      # @param letter [String, Symbol, Integer] Column letter or integer index.
+      # @return [Integer] 0-based column index.
+      #: (String | Symbol | Integer letter) -> Integer
+      def self.column_index(letter)
+        warn "[DEPRECATION] Xlsxrb::Elements::Cell.column_index is deprecated; use Xlsxrb.column_index instead.", uplevel: 1
+        _column_index(letter)
+      end
+
+      # @api private
+      def self._parse_ref(ref)
         return nil unless ref
 
         bytes = ref.b
@@ -525,6 +530,21 @@ module Xlsxrb
 
         row = row_part.to_i - 1
         [row, col - 1]
+      end
+
+      # Parses an Excel-style reference to [row_index, col_index] (both 0-based).
+      #
+      # @example
+      #   Cell.parse_ref("A1")  #=> [0, 0]
+      #   Cell.parse_ref("C10") #=> [9, 2]
+      #
+      # @deprecated Use {Xlsxrb.parse_ref} instead. Will be removed in 0.2.0.
+      # @param ref [String, nil] Excel cell reference.
+      # @return [Array(Integer, Integer), nil] 0-based [row_index, col_index].
+      #: (String? ref) -> [Integer, Integer]?
+      def self.parse_ref(ref)
+        warn "[DEPRECATION] Xlsxrb::Elements::Cell.parse_ref is deprecated; use Xlsxrb.parse_ref instead.", uplevel: 1
+        _parse_ref(ref)
       end
 
       # Returns whether the coordinates are within OOXML limits (row: 0..1,048,575, col: 0..16,383).

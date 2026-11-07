@@ -95,6 +95,7 @@ module Xlsxrb
       # Returns outline and grouping properties (<outlinePr>) for the given sheet.
       def outline_properties: (?sheet: untyped) -> untyped
 
+      # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
       alias outline_pr outline_properties
 
       # Returns phonetic properties for the given sheet, or nil if not present.

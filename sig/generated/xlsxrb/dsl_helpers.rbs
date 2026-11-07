@@ -202,6 +202,8 @@ module Xlsxrb
     # : (untyped name, ?replace_char: String) -> String
     def self.sanitize_sheet_name: (untyped name, ?replace_char: String) -> String
 
-    alias self.sheet_name self.sanitize_sheet_name
+    # @deprecated Use {.sanitize_sheet_name} instead.
+    # : (untyped raw) -> String
+    def self.sheet_name: (untyped raw) -> String
   end
 end

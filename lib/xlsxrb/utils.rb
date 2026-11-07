@@ -8,6 +8,7 @@ require_relative "ooxml/utils"
 module Xlsxrb
   # Public coordinate conversion and reference parsing utilities.
   #
+  # @deprecated Use top-level {Xlsxrb} coordinate and date helpers instead.
   # @api public
   module Utils
     # Converts a cell reference string (e.g. "A1", "BC100") to 0-based [row, col] coordinates.
@@ -16,12 +17,13 @@ module Xlsxrb
     #   Xlsxrb::Utils.ref_to_row_col("A1")    #=> [0, 0]
     #   Xlsxrb::Utils.ref_to_row_col("BC100") #=> [99, 54]
     #
+    # @deprecated Use {Xlsxrb.parse_ref} instead. Will be removed in 0.2.0.
     # @param cell_ref [String, nil] Excel cell reference string.
     # @return [Array(Integer, Integer), nil] 0-based [row_idx, col_idx] tuple, or nil if invalid.
-    # @api public
     #: (String? cell_ref) -> [Integer, Integer]?
     def self.ref_to_row_col(cell_ref)
-      Elements::Cell.parse_ref(cell_ref)
+      warn "[DEPRECATION] Xlsxrb::Utils.ref_to_row_col is deprecated; use Xlsxrb.parse_ref instead.", uplevel: 1
+      Elements::Cell._parse_ref(cell_ref)
     end
 
     # Converts 0-based [row_idx, col_idx] coordinates to an A1-style reference string.
@@ -30,13 +32,14 @@ module Xlsxrb
     #   Xlsxrb::Utils.row_col_to_ref(0, 0)   #=> "A1"
     #   Xlsxrb::Utils.row_col_to_ref(99, 54) #=> "BC100"
     #
+    # @deprecated Use {Xlsxrb.cell_to_ref} instead. Will be removed in 0.2.0.
     # @param row_idx [Integer] 0-based row index.
     # @param col_idx [Integer] 0-based column index.
     # @return [String] A1-style reference string.
-    # @api public
     #: (Integer row_idx, Integer col_idx) -> String
     def self.row_col_to_ref(row_idx, col_idx)
-      "#{Elements::Cell.column_letter(col_idx)}#{row_idx + 1}"
+      warn "[DEPRECATION] Xlsxrb::Utils.row_col_to_ref is deprecated; use Xlsxrb.cell_to_ref instead.", uplevel: 1
+      "#{Elements::Cell._column_letter(col_idx)}#{row_idx + 1}"
     end
 
     # Converts a cell range reference string (e.g. "A1:C10", "B2:D5", "A1") to 0-based
@@ -48,25 +51,13 @@ module Xlsxrb
     # @example Single cell reference
     #   Xlsxrb::Utils.parse_range("B5")     #=> [[4, 1], [4, 1]]
     #
+    # @deprecated Use {Xlsxrb.parse_range} instead. Will be removed in 0.2.0.
     # @param range_ref [String, nil] Cell range reference string.
     # @return [Array([Integer, Integer], [Integer, Integer]), nil] 0-based coordinate pairs, or nil if invalid.
-    # @api public
     #: (String? range_ref) -> [[Integer, Integer], [Integer, Integer]]?
     def self.parse_range(range_ref)
-      return nil if range_ref.nil? || range_ref.empty?
-
-      parts = range_ref.split(":", 2)
-      first = Elements::Cell.parse_ref(parts[0])
-      return nil unless first
-
-      second = parts[1] ? Elements::Cell.parse_ref(parts[1]) : first
-      return nil unless second
-
-      top_row = [first[0], second[0]].min
-      bottom_row = [first[0], second[0]].max
-      left_col = [first[1], second[1]].min
-      right_col = [first[1], second[1]].max
-      [[top_row, left_col], [bottom_row, right_col]]
+      warn "[DEPRECATION] Xlsxrb::Utils.parse_range is deprecated; use Xlsxrb.parse_range instead.", uplevel: 1
+      Xlsxrb.parse_range(range_ref)
     end
 
     # Converts 0-based bounding coordinates to an A1-style range reference string.
@@ -77,19 +68,16 @@ module Xlsxrb
     # @example Single cell coordinates
     #   Xlsxrb::Utils.range_to_ref(4, 1, 4, 1) #=> "B5"
     #
+    # @deprecated Use {Xlsxrb.range_to_ref} instead. Will be removed in 0.2.0.
     # @param top_row [Integer] 0-based start row index.
     # @param left_col [Integer] 0-based start column index.
     # @param bottom_row [Integer] 0-based end row index.
     # @param right_col [Integer] 0-based end column index.
     # @return [String] A1-style range reference string.
-    # @api public
     #: (Integer top_row, Integer left_col, Integer bottom_row, Integer right_col) -> String
     def self.range_to_ref(top_row, left_col, bottom_row, right_col)
-      if top_row == bottom_row && left_col == right_col
-        row_col_to_ref(top_row, left_col)
-      else
-        "#{row_col_to_ref(top_row, left_col)}:#{row_col_to_ref(bottom_row, right_col)}"
-      end
+      warn "[DEPRECATION] Xlsxrb::Utils.range_to_ref is deprecated; use Xlsxrb.range_to_ref instead.", uplevel: 1
+      Xlsxrb.range_to_ref(top_row, left_col, bottom_row, right_col)
     end
 
     # Converts a column letter name (e.g. "A", "BC") to a 0-based integer index.
@@ -98,12 +86,13 @@ module Xlsxrb
     #   Xlsxrb::Utils.col_name_to_index("A")  #=> 0
     #   Xlsxrb::Utils.col_name_to_index("BC") #=> 54
     #
+    # @deprecated Use {Xlsxrb.column_index} instead. Will be removed in 0.2.0.
     # @param col_name [String, Symbol, Integer] Column letter or index.
     # @return [Integer] 0-based column index.
-    # @api public
     #: (String | Symbol | Integer col_name) -> Integer
     def self.col_name_to_index(col_name)
-      Elements::Cell.column_index(col_name)
+      warn "[DEPRECATION] Xlsxrb::Utils.col_name_to_index is deprecated; use Xlsxrb.column_index instead.", uplevel: 1
+      Elements::Cell._column_index(col_name)
     end
 
     # Converts a 0-based column integer index to a column letter name (e.g. 0 -> "A", 54 -> "BC").
@@ -112,12 +101,13 @@ module Xlsxrb
     #   Xlsxrb::Utils.col_index_to_name(0)  #=> "A"
     #   Xlsxrb::Utils.col_index_to_name(54) #=> "BC"
     #
+    # @deprecated Use {Xlsxrb.column_letter} instead. Will be removed in 0.2.0.
     # @param col_idx [Integer] 0-based column index.
     # @return [String] Column letter name.
-    # @api public
     #: (Integer col_idx) -> String
     def self.col_index_to_name(col_idx)
-      Elements::Cell.column_letter(col_idx)
+      warn "[DEPRECATION] Xlsxrb::Utils.col_index_to_name is deprecated; use Xlsxrb.column_letter instead.", uplevel: 1
+      Elements::Cell._column_letter(col_idx)
     end
 
     # Splits an A1-style cell reference into its column name and 1-based row number.
@@ -133,11 +123,11 @@ module Xlsxrb
     def self.split_coordinate(cell_ref)
       return nil unless cell_ref
 
-      coords = Elements::Cell.parse_ref(cell_ref)
+      coords = Elements::Cell._parse_ref(cell_ref)
       return nil unless coords
 
       row_idx, col_idx = coords
-      [Elements::Cell.column_letter(col_idx), row_idx + 1]
+      [Elements::Cell._column_letter(col_idx), row_idx + 1]
     end
 
     # Converts a Date or Time to an Excel numeric serial number (1900 or 1904 system).
@@ -145,17 +135,14 @@ module Xlsxrb
     # @example
     #   Xlsxrb::Utils.date_to_serial(Date.new(2026, 1, 1)) #=> 46023
     #
+    # @deprecated Use {Xlsxrb.date_to_serial} instead. Will be removed in 0.2.0.
     # @param date_or_time [Date, Time] Date or Time instance.
     # @param date1904 [Boolean] Whether to use the 1904 date system.
     # @return [Integer, Float] Serial number.
-    # @api public
     #: (Date | Time date_or_time, ?date1904: bool) -> (Integer | Float)
     def self.date_to_serial(date_or_time, date1904: false)
-      if date_or_time.is_a?(Time)
-        Ooxml::Utils.datetime_to_serial(date_or_time, date1904: date1904)
-      else
-        Ooxml::Utils.date_to_serial(date_or_time, date1904: date1904)
-      end
+      warn "[DEPRECATION] Xlsxrb::Utils.date_to_serial is deprecated; use Xlsxrb.date_to_serial instead.", uplevel: 1
+      Xlsxrb.date_to_serial(date_or_time, date1904: date1904)
     end
 
     # Checks whether a serial number is a valid Excel date within the supported range.
@@ -178,13 +165,14 @@ module Xlsxrb
     # @example
     #   Xlsxrb::Utils.serial_to_date(46023) #=> #<Date: 2026-01-01>
     #
+    # @deprecated Use {Xlsxrb.serial_to_date} instead. Will be removed in 0.2.0.
     # @param serial [Numeric] Excel serial number.
     # @param date1904 [Boolean] Whether to use the 1904 date system.
     # @return [Date]
-    # @api public
     #: (Numeric serial, ?date1904: bool) -> Date
     def self.serial_to_date(serial, date1904: false)
-      Ooxml::Utils.serial_to_date(serial, date1904: date1904)
+      warn "[DEPRECATION] Xlsxrb::Utils.serial_to_date is deprecated; use Xlsxrb.serial_to_date instead.", uplevel: 1
+      Xlsxrb.serial_to_date(serial, date1904: date1904)
     end
 
     # Converts a Time or Date to a fractional Excel serial number.
@@ -192,17 +180,29 @@ module Xlsxrb
     # @example
     #   Xlsxrb::Utils.datetime_to_serial(Time.utc(2026, 1, 1, 12, 0, 0)) #=> 46023.5
     #
+    # @deprecated Use {Xlsxrb.time_to_serial} instead. Will be removed in 0.2.0.
     # @param time [Time, Date] Time or Date instance.
     # @param date1904 [Boolean] Whether to use the 1904 date system.
     # @return [Float] Fractional serial number.
-    # @api public
     #: (Time | Date time, ?date1904: bool) -> Float
     def self.datetime_to_serial(time, date1904: false)
-      if time.is_a?(Time)
-        Ooxml::Utils.datetime_to_serial(time, date1904: date1904)
-      else
-        Ooxml::Utils.date_to_serial(time, date1904: date1904).to_f
-      end
+      warn "[DEPRECATION] Xlsxrb::Utils.datetime_to_serial is deprecated; use Xlsxrb.time_to_serial instead.", uplevel: 1
+      Xlsxrb.time_to_serial(time, date1904: date1904)
+    end
+
+    # Converts a Time or Date to a fractional Excel serial number.
+    #
+    # @example
+    #   Xlsxrb::Utils.time_to_serial(Time.utc(2026, 1, 1, 12, 0, 0)) #=> 46023.5
+    #
+    # @deprecated Use {Xlsxrb.time_to_serial} instead. Will be removed in 0.2.0.
+    # @param time [Time, Date] Time or Date instance.
+    # @param date1904 [Boolean] Whether to use the 1904 date system.
+    # @return [Float] Fractional serial number.
+    #: (Time | Date time, ?date1904: bool) -> Float
+    def self.time_to_serial(time, date1904: false)
+      warn "[DEPRECATION] Xlsxrb::Utils.time_to_serial is deprecated; use Xlsxrb.time_to_serial instead.", uplevel: 1
+      Xlsxrb.time_to_serial(time, date1904: date1904)
     end
 
     # Converts an Excel serial number to a Time (UTC).
@@ -210,13 +210,14 @@ module Xlsxrb
     # @example
     #   Xlsxrb::Utils.serial_to_time(46023.5) #=> 2026-01-01 12:00:00 UTC
     #
+    # @deprecated Use {Xlsxrb.serial_to_time} instead. Will be removed in 0.2.0.
     # @param serial [Numeric] Excel serial number.
     # @param date1904 [Boolean] Whether to use the 1904 date system.
     # @return [Time]
-    # @api public
     #: (Numeric serial, ?date1904: bool) -> Time
     def self.serial_to_time(serial, date1904: false)
-      Ooxml::Utils.serial_to_datetime(serial, date1904: date1904)
+      warn "[DEPRECATION] Xlsxrb::Utils.serial_to_time is deprecated; use Xlsxrb.serial_to_time instead.", uplevel: 1
+      Xlsxrb.serial_to_time(serial, date1904: date1904)
     end
 
     FORMULA_TOKEN_RE = %r{(?<str>"(?:[^"]|"")*")|(?<ref>(?<=\b|\A|[$!:,()+\-*/^<>=& \r\n])(?<col_abs>\$?)(?<col>[A-Za-z]{1,3})(?<row_abs>\$?)(?<row>\d+)(?!\w|\())}
@@ -233,23 +234,28 @@ module Xlsxrb
     # @param from_ref [String, nil] Master cell reference (e.g. "B2").
     # @param to_ref [String, nil] Target cell reference (e.g. "B3").
     # @param row_delta [Integer, nil] Row shift amount (positive = down, negative = up).
-    # @param col_delta [Integer, nil] Column shift amount (positive = right, negative = left).
+    # @param column_delta [Integer, nil] Column shift amount (positive = right, negative = left).
+    # @param col_delta [Integer, nil] Deprecated alias for column_delta.
     # @return [String, nil] Expanded formula expression.
     # @api public
-    #: (String? formula, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?col_delta: Integer?) -> String?
-    def self.expand_formula(formula, from_ref: nil, to_ref: nil, row_delta: nil, col_delta: nil)
+    #: (String? formula, ?from_ref: String?, ?to_ref: String?, ?row_delta: Integer?, ?col_delta: Integer?, ?column_delta: Integer?) -> String?
+    def self.expand_formula(formula, from_ref: nil, to_ref: nil, row_delta: nil, col_delta: nil, column_delta: nil)
       return formula if formula.nil? || formula.empty?
 
+      if col_delta && column_delta.nil?
+        warn "[DEPRECATION] Xlsxrb::Utils.expand_formula keyword :col_delta is deprecated; use :column_delta instead.", uplevel: 1
+      end
+
       if from_ref && to_ref
-        f_coords = ref_to_row_col(from_ref)
-        t_coords = ref_to_row_col(to_ref)
+        f_coords = Elements::Cell._parse_ref(from_ref)
+        t_coords = Elements::Cell._parse_ref(to_ref)
         return formula unless f_coords && t_coords
 
         rd = t_coords[0] - f_coords[0]
         cd = t_coords[1] - f_coords[1]
       else
         rd = row_delta || 0
-        cd = col_delta || 0
+        cd = column_delta || col_delta || 0
       end
 
       return formula if rd.zero? && cd.zero?
@@ -267,9 +273,9 @@ module Xlsxrb
           new_col = if c_abs || cd.zero?
                       col
                     else
-                      ci = col_name_to_index(col) + cd
+                      ci = Elements::Cell._column_index(col) + cd
                       ci = ci.clamp(0, 16_383)
-                      col_index_to_name(ci)
+                      Elements::Cell._column_letter(ci)
                     end
 
           new_row = if r_abs || rd.zero?
@@ -284,8 +290,11 @@ module Xlsxrb
       end
     end
 
-    class << self
-      alias serial_to_datetime serial_to_time
+    # @deprecated Use {Xlsxrb.serial_to_time} instead. Will be removed in 0.2.0.
+    #: (Numeric serial, ?date1904: bool) -> Time
+    def self.serial_to_datetime(serial, date1904: false)
+      warn "[DEPRECATION] Xlsxrb::Utils.serial_to_datetime is deprecated; use Xlsxrb.serial_to_time instead.", uplevel: 1
+      Xlsxrb.serial_to_time(serial, date1904: date1904)
     end
   end
 end

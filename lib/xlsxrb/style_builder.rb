@@ -803,7 +803,12 @@ module Xlsxrb
       @num_fmt_id = num_fmt_id
       self
     end
-    alias num_fmt number_format
+    # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
+    #: (String | Integer) -> self
+    def num_fmt(num_fmt_id)
+      warn "[DEPRECATION] #num_fmt is deprecated; use #number_format instead.", uplevel: 1
+      number_format(num_fmt_id)
+    end
 
     # Register this style with the given Writer, returning the style_id.
     # writer:: Xlsxrb::Ooxml::Writer instance

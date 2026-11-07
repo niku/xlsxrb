@@ -333,6 +333,7 @@ module Xlsxrb
           show_outline_symbols: props[:show_outline_symbols]
         }.compact
       end
+      # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
       alias outline_pr outline_properties
 
       # Returns phonetic properties for the given sheet, or nil if not present.

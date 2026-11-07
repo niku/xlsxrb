@@ -336,6 +336,8 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(2, sheet_range.first_col)
     assert_equal(10, sheet_range.last_row)
     assert_equal(4, sheet_range.last_col)
+    assert_equal(2..10, sheet_range.row_range)
+    assert_equal(2..4, sheet_range.column_range)
 
     xml_single = <<~XML
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -349,6 +351,8 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_equal(3, sheet_single.first_col)
     assert_equal(5, sheet_single.last_row)
     assert_equal(3, sheet_single.last_col)
+    assert_equal(5..5, sheet_single.row_range)
+    assert_equal(3..3, sheet_single.column_range)
   end
 
   test "stream_sheet dimension handles missing and malformed tags" do
@@ -363,6 +367,8 @@ class StreamSheetTest < Test::Unit::TestCase
     assert_nil(sheet_missing.first_col)
     assert_nil(sheet_missing.last_row)
     assert_nil(sheet_missing.last_col)
+    assert_nil(sheet_missing.row_range)
+    assert_nil(sheet_missing.column_range)
 
     xml_malformed = <<~XML
       <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -443,6 +449,14 @@ class StreamSheetTest < Test::Unit::TestCase
     typecast_collected = []
     sheet.each_row_values(type_cast: true) { |row_vals| typecast_collected << row_vals }
     assert_equal([[10, "hello"], [Date.new(2023, 1, 1), nil, 30]], typecast_collected)
+
+    # cell access on StreamSheet by coordinate string and 0-based indices (deprecated in favor of sheet.load[...])
+    assert_equal(10, sheet.cell("A1").value)
+    assert_equal("hello", sheet.cell("B1").value)
+    assert_equal(10, sheet.cell(0, 0).value)
+    assert_equal("hello", sheet.cell(0, "B").value)
+    assert_nil(sheet.cell("Z99"))
+    assert_nil(sheet.cell(99, 0))
   end
 
   test "stream_sheet trim_empty_rows omits trailing empty rows while preserving inner empty rows" do

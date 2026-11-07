@@ -235,7 +235,8 @@ module Xlsxrb
           h
         end
       else
-        cells[col_index]
+        idx = col_index.is_a?(Integer) ? col_index : Elements::Cell._column_index(col_index)
+        idx ? cell_at(idx) : nil
       end
     end
 
@@ -283,6 +284,7 @@ module Xlsxrb
 
     # Convert row cells to an Array of raw values (sparse columns get nil).
     #
+    # @deprecated Use {#values} to get an Array of cell values, or {#cells} for Cell objects. In 0.2.0, {#to_a} will conform to Enumerable#to_a and return Array<Cell>.
     # @return [Array<Object>]
     # @api public
     #: () -> Array[untyped]

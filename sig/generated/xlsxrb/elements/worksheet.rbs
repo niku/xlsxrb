@@ -13,6 +13,21 @@ module Xlsxrb
     #
     # @api public
     class Worksheet
+      # @return [Array<Hash[Symbol, untyped]>]
+      #
+      # Corresponds to ECMA-376 Part 4 §18.3.1.18 (<conditionalFormatting> and <cfRule> elements).
+      # In the OpenXML specification, conditional formatting definitions are emitted as
+      # `<conditionalFormatting>` elements containing individual rule definitions (`<cfRule>`).
+      # While ECMA-376 uses the uncountable noun `conditionalFormatting` as the XML element name,
+      # xlsxrb exposes these rules collectively as {#conditional_formats} (Array of Hashes)
+      # to maintain symmetric plural collection naming alongside other collections
+      # (e.g. {#tables}, {#data_validations}, {#merged_cells}) and paired with the singular builder
+      # method {WorksheetBuilder#conditional_format}.
+      #
+      # @api public
+      # : Array[Hash[Symbol, untyped]]
+      attr_reader conditional_formats: untyped
+
       attr_reader name: untyped
 
       attr_reader rows: untyped
@@ -20,8 +35,6 @@ module Xlsxrb
       attr_reader columns: untyped
 
       attr_reader charts: untyped
-
-      attr_reader conditional_formatting: untyped
 
       attr_reader data_validations: untyped
 
@@ -87,22 +100,37 @@ module Xlsxrb
 
       attr_reader selection: untyped
 
-      attr_reader sheet_calc_pr: untyped
-
       attr_reader background_image: untyped
 
       attr_reader threaded_comments: untyped
 
       attr_writer dimension: untyped
 
-      alias conditional_formats conditional_formatting
+      # Returns worksheet calculation properties (<sheetCalcPr>), or nil if none configured.
+      #
+      # @return [Hash[Symbol, untyped], nil]
+      # @api public
+      # : () -> Hash[Symbol, untyped]?
+      def sheet_calc_properties: () -> Hash[Symbol, untyped]?
 
+      # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
+      # : () -> Hash[Symbol, untyped]?
+      def sheet_calc_pr: () -> Hash[Symbol, untyped]?
+
+      # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
+      # : () -> Hash[Symbol, untyped]?
+      def calc_pr: () -> Hash[Symbol, untyped]?
+
+      # @deprecated Use {#conditional_formats} instead. Matches the ECMA-376 XML element name (<conditionalFormatting>), but {#conditional_formats} is canonical in xlsxrb. Will be removed in version 0.2.0.
+      alias conditional_formatting conditional_formats
+
+      # @deprecated Use {#phonetic_properties} instead. Will be removed in 0.2.0.
       alias phonetic_pr phonetic_properties
 
-      alias calc_pr sheet_calc_pr
-
+      # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
       alias background_picture background_image
 
+      # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
       alias picture background_image
 
       # @param name [String] The worksheet name (max 31 characters).
@@ -159,7 +187,9 @@ module Xlsxrb
       # : () -> bool
       def trim_empty_rows?: () -> bool
 
-      alias trim_empty_rows trim_empty_rows?
+      # @deprecated Use {#trim_empty_rows?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def trim_empty_rows: () -> bool
 
       # Returns whether skipped rows are padded during iteration.
       #
@@ -168,7 +198,9 @@ module Xlsxrb
       # : () -> bool
       def pad_empty_rows?: () -> bool
 
-      alias pad_empty_rows pad_empty_rows?
+      # @deprecated Use {#pad_empty_rows?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def pad_empty_rows: () -> bool
 
       # Returns whether missing cells within rows are padded during iteration.
       #
@@ -177,7 +209,9 @@ module Xlsxrb
       # : () -> bool
       def pad_empty_cells?: () -> bool
 
-      alias pad_empty_cells pad_empty_cells?
+      # @deprecated Use {#pad_empty_cells?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def pad_empty_cells: () -> bool
 
       # Returns whether the worksheet uses the 1904 date system.
       #
@@ -215,7 +249,9 @@ module Xlsxrb
       # : () -> bool
       def fit_to_page?: () -> bool
 
-      alias fit_to_page fit_to_page?
+      # @deprecated Use {#fit_to_page?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def fit_to_page: () -> bool
 
       # Returns whether full calculation on load is enabled on this worksheet.
       #
@@ -224,7 +260,9 @@ module Xlsxrb
       # : () -> bool
       def full_calc_on_load?: () -> bool
 
-      alias full_calc_on_load full_calc_on_load?
+      # @deprecated Use {#full_calc_on_load?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def full_calc_on_load: () -> bool
 
       # Returns the outline and grouping properties of the worksheet, or an empty hash if none configured.
       #
@@ -233,6 +271,7 @@ module Xlsxrb
       # : () -> Hash[Symbol, untyped]
       def outline_properties: () -> Hash[Symbol, untyped]
 
+      # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
       alias outline_pr outline_properties
 
       # Iterate over rows in the worksheet.
@@ -418,6 +457,13 @@ module Xlsxrb
       # @param col [Integer, nil] Optional 0-based column index.
       # @return [Elements::Cell, nil]
       # @api public
+      # Access a cell by reference (e.g. "A1") or 0-based coordinate indices (row, col).
+      #
+      # @deprecated Use {#[]} instead (e.g. sheet["A1"] or sheet[0, 0]). Will be removed in 0.2.0.
+      # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
+      # @param col [Integer, nil] Optional 0-based column index.
+      # @return [Elements::Cell, nil]
+      # @api public
       # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Elements::Cell?
       def cell: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Elements::Cell?
 
@@ -474,7 +520,9 @@ module Xlsxrb
       # : () -> Elements::Worksheet
       def load: () -> Elements::Worksheet
 
-      alias to_worksheet load
+      # @deprecated Use {#load} instead. Will be removed in 0.2.0.
+      # : () -> Elements::Worksheet
+      def to_worksheet: () -> Elements::Worksheet
 
       FORBIDDEN_NAME_CHARS: ::Regexp
 

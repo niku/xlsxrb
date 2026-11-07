@@ -149,6 +149,7 @@ module Xlsxrb
 
     # Convert row cells to an Array of raw values (sparse columns get nil).
     #
+    # @deprecated Use {#values} to get an Array of cell values, or {#cells} for Cell objects. In 0.2.0, {#to_a} will conform to Enumerable#to_a and return Array<Cell>.
     # @return [Array<Object>]
     # @api public
     # : () -> Array[untyped]

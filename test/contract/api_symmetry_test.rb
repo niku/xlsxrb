@@ -171,6 +171,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
       code_name
       fit_to_page?
       full_calc_on_load?
+      sheet_calc_properties
       sheet_calc_pr
       background_image
     ]

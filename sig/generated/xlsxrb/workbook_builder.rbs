@@ -19,6 +19,55 @@ module Xlsxrb
     # : (?strict_excel_mode: bool, ?default_font: untyped?) -> void
     def initialize: (?strict_excel_mode: bool, ?default_font: untyped?) -> void
 
+    # Creates an {Elements::Formula} object.
+    #
+    # @param expression [String] The formula expression without leading '='.
+    # @param cached_value [Object, nil] Optional precomputed value.
+    # @param type [Symbol, String, nil] Formula type (:shared, :array, etc.).
+    # @param ref [String, nil] Target cell or range reference.
+    # @param shared_index [Integer, nil] Shared formula group index (0-based).
+    # @return [Elements::Formula]
+    # @api public
+    # : (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?, ?shared_index: Integer?) -> Elements::Formula
+    def formula: (String expression, ?cached_value: String | Numeric | bool | Elements::CellError | nil, ?type: (Symbol | String)?, ?ref: String?, ?shared_index: Integer?) -> Elements::Formula
+
+    # Creates an array or dynamic array {Elements::Formula} object.
+    #
+    # @param expression [String] The formula expression without leading '='.
+    # @param ref [String, nil] Target cell or range reference (keyword).
+    # @param cached_value [Object, nil] Optional precomputed value.
+    # @return [Elements::Formula]
+    # @api public
+    # : (String expression, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), **untyped attrs) -> Elements::Formula
+    def array_formula: (String expression, ?ref: String?, ?cached_value: String | Numeric | bool | Elements::CellError | nil, **untyped attrs) -> Elements::Formula
+
+    # Creates a shared formula {Elements::Formula} object.
+    #
+    # @param expression [String, nil] The formula expression.
+    # @param shared_index [Integer, nil] Shared formula group index (0-based).
+    # @param ref [String, nil] Target range for master cell.
+    # @param cached_value [Object, nil] Optional precomputed value.
+    # @return [Elements::Formula]
+    # @api public
+    # : (?String? expression, ?shared_index: Integer?, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
+    def shared_formula: (?String? expression, ?shared_index: Integer?, ?ref: String?, ?cached_value: String | Numeric | bool | Elements::CellError | nil) -> Elements::Formula
+
+    # Creates an {Elements::RichText} object.
+    #
+    # @param runs [Array] Text runs or styling options.
+    # @return [Elements::RichText]
+    # @api public
+    # : (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, ?base_font: untyped, **untyped font_props) -> Elements::RichText
+    def rich_text: (*Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped runs, ?text: String?, ?base_font: untyped, **untyped font_props) -> Elements::RichText
+
+    # Creates or returns an {Elements::CellError} object.
+    #
+    # @param code [String, Symbol, Elements::CellError] Error code or symbol.
+    # @return [Elements::CellError]
+    # @api public
+    # : (String | Symbol | Elements::CellError code) -> Elements::CellError
+    def cell_error: (String | Symbol | Elements::CellError code) -> Elements::CellError
+
     # Sets or configures the workbook-wide default font.
     #
     # @param name [String, Hash, nil] Font name or font options Hash.
@@ -29,61 +78,97 @@ module Xlsxrb
     # : (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
     def default_font: (?String | Hash[Symbol, untyped]? name, ?Float | Integer | nil size, **untyped opts) -> void
 
+    # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
     alias set_default_font default_font
+
+    OMITTED: untyped
 
     # Gets or sets the active worksheet tab in the workbook window.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#active_sheet=} instead.
     # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
     # : (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
     def active_sheet: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
 
-    alias active_sheet= active_sheet
-
+    # @deprecated Use {#active_sheet} instead. Will be removed in 0.2.0.
     alias active_tab active_sheet
 
-    alias active_tab= active_sheet
+    # Sets the active worksheet tab in the workbook window.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    attr_writer active_sheet: String | Symbol | Integer | nil
+
+    # @deprecated Use {#active_sheet=} instead. Will be removed in 0.2.0.
+    alias active_tab= active_sheet=
 
     # Gets or sets the first sheet tab visible in the sheet tab scroll area.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#first_sheet=} instead.
     # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
     # : (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
     def first_sheet: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
 
-    alias first_sheet= first_sheet
+    # Sets the first sheet tab visible in the sheet tab scroll area.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    attr_writer first_sheet: String | Symbol | Integer | nil
 
     # Gets or sets whether sheet tabs are visible in the workbook window.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_sheet_tabs=} instead.
     # @param visible [Boolean, nil]
     # @return [Boolean, nil]
     # @api public
     # : (?bool? visible) -> bool?
     def show_sheet_tabs: (?bool? visible) -> bool?
 
-    alias show_sheet_tabs= show_sheet_tabs
+    # Sets whether sheet tabs are visible in the workbook window.
+    #
+    # @param visible [Boolean, nil]
+    # @return [Boolean, nil]
+    # @api public
+    attr_writer show_sheet_tabs: bool?
 
     # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#tab_ratio=} instead.
     # @param ratio [Integer, nil]
     # @return [Integer, nil]
     # @api public
     # : (?Integer? ratio) -> Integer?
     def tab_ratio: (?Integer? ratio) -> Integer?
 
-    alias tab_ratio= tab_ratio
+    # Sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
+    #
+    # @param ratio [Integer, nil]
+    # @return [Integer, nil]
+    # @api public
+    attr_writer tab_ratio: Integer?
 
     # Gets or sets the internal code name of the workbook.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#code_name=} instead.
     # @param name [String, Symbol, nil] The code name.
     # @return [String, nil]
     # @api public
     # : (?String | Symbol | nil name) -> String?
     def code_name: (?String | Symbol | nil name) -> String?
 
-    alias code_name= code_name
+    # Sets the internal code name of the workbook.
+    #
+    # @param name [String, Symbol, nil] The code name.
+    # @return [String, nil]
+    # @api public
+    # : (String | Symbol | nil name) -> String?
+    def code_name=: (String | Symbol | nil name) -> String?
 
     # Sets a workbook-level property.
     #

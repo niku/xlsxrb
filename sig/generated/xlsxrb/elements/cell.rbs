@@ -241,8 +241,12 @@ module Xlsxrb
       #
       # @param index [Integer] 0-based column index.
       # @return [String] Excel column letter.
+      # @api private
       # : (Integer index) -> String
       def self.calculate_column_letter: (Integer index) -> String
+
+      # @api private
+      def self._column_letter: (untyped index) -> untyped
 
       # Converts a 0-based column index to an Excel letter (0 -> "A", 25 -> "Z", 26 -> "AA").
       #
@@ -250,9 +254,9 @@ module Xlsxrb
       #   Cell.column_letter(0)  #=> "A"
       #   Cell.column_letter(26) #=> "AA"
       #
+      # @deprecated Use {Xlsxrb.column_letter} instead. Will be removed in 0.2.0.
       # @param index [Integer] 0-based column index.
       # @return [String] Excel column letter.
-      # @api public
       # : (untyped index) -> String
       def self.column_letter: (untyped index) -> String
 
@@ -260,8 +264,12 @@ module Xlsxrb
       #
       # @param letter [String] Uppercase column letter string (e.g. "A", "AA").
       # @return [Integer] 0-based column index.
+      # @api private
       # : (String letter) -> Integer
       def self.calculate_column_index: (String letter) -> Integer
+
+      # @api private
+      def self._column_index: (untyped letter) -> untyped
 
       # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
       #
@@ -269,11 +277,14 @@ module Xlsxrb
       #   Cell.column_index("A")  #=> 0
       #   Cell.column_index(:AA)  #=> 26
       #
+      # @deprecated Use {Xlsxrb.column_index} instead. Will be removed in 0.2.0.
       # @param letter [String, Symbol, Integer] Column letter or integer index.
       # @return [Integer] 0-based column index.
-      # @api public
       # : (String | Symbol | Integer letter) -> Integer
       def self.column_index: (String | Symbol | Integer letter) -> Integer
+
+      # @api private
+      def self._parse_ref: (untyped ref) -> untyped
 
       # Parses an Excel-style reference to [row_index, col_index] (both 0-based).
       #
@@ -281,9 +292,9 @@ module Xlsxrb
       #   Cell.parse_ref("A1")  #=> [0, 0]
       #   Cell.parse_ref("C10") #=> [9, 2]
       #
+      # @deprecated Use {Xlsxrb.parse_ref} instead. Will be removed in 0.2.0.
       # @param ref [String, nil] Excel cell reference.
       # @return [Array(Integer, Integer), nil] 0-based [row_index, col_index].
-      # @api public
       # : (String? ref) -> [Integer, Integer]?
       def self.parse_ref: (String? ref) -> [ Integer, Integer ]?
 

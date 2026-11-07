@@ -69,7 +69,7 @@ module Xlsxrb
       # @api public
       #: () -> String
       def cell_ref
-        "#{Cell.column_letter(from_col)}#{from_row + 1}"
+        "#{Cell._column_letter(from_col)}#{from_row + 1}"
       end
       alias cell cell_ref
       alias ref cell_ref
@@ -82,7 +82,7 @@ module Xlsxrb
       def to_cell_ref
         return nil if to_col.nil? || to_row.nil?
 
-        "#{Cell.column_letter(to_col)}#{to_row + 1}"
+        "#{Cell._column_letter(to_col)}#{to_row + 1}"
       end
 
       # Returns whether this image uses a one-cell anchor.

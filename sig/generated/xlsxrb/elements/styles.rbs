@@ -133,7 +133,9 @@ module Xlsxrb
       # : (Integer? id) -> Hash[Symbol, untyped]?
       def cell_xf: (Integer? id) -> Hash[Symbol, untyped]?
 
-      alias xf cell_xf
+      # @deprecated Use {#cell_xf} instead. Will be removed in 0.2.0.
+      # : (Integer? id) -> Hash[Symbol, untyped]?
+      def xf: (Integer? id) -> Hash[Symbol, untyped]?
 
       # Looks up a custom format code by numFmtId.
       #
@@ -284,7 +286,9 @@ module Xlsxrb
 
       alias format_code number_format
 
-      alias format_code_for number_format
+      # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
+      # : (Integer? style_index) -> String?
+      def format_code_for: (Integer? style_index) -> String?
 
       # Returns the classified format category (:date, :datetime, :time, :number, :text, :general) for a style index.
       #
@@ -294,7 +298,9 @@ module Xlsxrb
       # : (Integer? style_index) -> Symbol?
       def format_type: (Integer? style_index) -> Symbol?
 
-      alias classification_for format_type
+      # @deprecated Use {#format_type} instead. Will be removed in 0.2.0.
+      # : (Integer? style_index) -> Symbol?
+      def classification_for: (Integer? style_index) -> Symbol?
 
       # Returns whether the style index represents a date, datetime, or time pattern.
       #

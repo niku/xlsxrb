@@ -38,17 +38,18 @@ module Xlsxrb
               unmapped_data: unmapped_data, errors: computed_errors)
       end
 
-      # Access a cell by 0-based column index, or access row attributes via Symbol.
+      # Access a cell by 0-based column index, column letter, or access row attributes via Symbol.
       #
       # @example
-      #   row[0]          #=> Cell at column 0
+      #   row[0]          #=> Cell at column 0 (or nil if sparse)
+      #   row["A"]        #=> Cell at column "A"
       #   row[:height]    #=> 25.0
       #   row[:cells]     #=> [Cell, Cell, ...]
       #
-      # @param col_index [Integer, Symbol] Column index or attribute symbol.
+      # @param col_index [Integer, String, Symbol] Column index, column letter, or attribute symbol.
       # @return [Elements::Cell, Object, nil]
       # @api public
-      #: (Integer | Symbol col_index) -> untyped
+      #: (Integer | String | Symbol col_index) -> untyped
       def [](col_index)
         case col_index
         when Symbol
@@ -76,7 +77,8 @@ module Xlsxrb
             h
           end
         else
-          cells[col_index]
+          idx = col_index.is_a?(Integer) ? col_index : Cell._column_index(col_index)
+          idx ? cell_at(idx) : nil
         end
       end
 
@@ -232,8 +234,9 @@ module Xlsxrb
 
       # Convert row cells to an Array of raw values.
       #
+      # @deprecated Use {#values} to get an Array of cell values, or {#cells} for Cell objects. In 0.2.0, {#to_a} will conform to Enumerable#to_a and return Array<Cell>.
       # @example
-      #   row.to_a #=> ["ID", "Name", "Total"]
+      #   row.values #=> ["ID", "Name", "Total"]
       #
       # @return [Array<Object>]
       # @api public

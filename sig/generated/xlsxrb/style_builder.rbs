@@ -302,7 +302,9 @@ module Xlsxrb
     # : (String | Integer) -> self
     def number_format: (String | Integer) -> self
 
-    alias num_fmt number_format
+    # @deprecated Use {#number_format} instead. Will be removed in 0.2.0.
+    # : (String | Integer) -> self
+    def num_fmt: (String | Integer) -> self
 
     # Register this style with the given Writer, returning the style_id.
     # writer:: Xlsxrb::Ooxml::Writer instance

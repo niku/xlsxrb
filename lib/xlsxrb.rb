@@ -48,7 +48,11 @@ module Xlsxrb
   MAX_ROW = 1_048_576
 
   # Maximum number of columns supported by Excel / OpenXML.
-  MAX_COL = 16_384
+  MAX_COLUMN = 16_384
+
+  # @deprecated Use {MAX_COLUMN} instead. Will be removed in 0.2.0.
+  MAX_COL = MAX_COLUMN
+  deprecate_constant :MAX_COL
 
   # Maximum number of individual cell/range references allowed in a single data validation element by Excel.
   MAX_REFS_PER_VALIDATION = 32_767
@@ -56,13 +60,16 @@ module Xlsxrb
   # Base class for all exceptions raised by Xlsxrb.
   # Predefined cell error constants are exposed on this class for convenience.
   class Error < StandardError
-    DIV0  = Elements::CellError.new(code: "#DIV/0!")
-    NA    = Elements::CellError.new(code: "#N/A")
-    NAME  = Elements::CellError.new(code: "#NAME?")
-    NULL  = Elements::CellError.new(code: "#NULL!")
-    NUM   = Elements::CellError.new(code: "#NUM!")
-    REF   = Elements::CellError.new(code: "#REF!")
-    VALUE = Elements::CellError.new(code: "#VALUE!")
+    DIV0         = Elements::CellError::DIV0
+    NA           = Elements::CellError::NA
+    NAME         = Elements::CellError::NAME
+    NULL         = Elements::CellError::NULL
+    NUM          = Elements::CellError::NUM
+    REF          = Elements::CellError::REF
+    VALUE        = Elements::CellError::VALUE
+    GETTING_DATA = Elements::CellError::GETTING_DATA
+
+    deprecate_constant :DIV0, :NA, :NAME, :NULL, :NUM, :REF, :VALUE, :GETTING_DATA
   end
 
   # Raised when parsing malformed or invalid XML structures.
@@ -220,25 +227,32 @@ module Xlsxrb
   # Creates a shared formula {Elements::Formula} object for master or follower cell.
   #
   # @example Create a shared formula master
-  #   formula = Xlsxrb.shared_formula("A2*2", si: 0, ref: "B2:B10")
+  #   formula = Xlsxrb.shared_formula("A2*2", shared_index: 0, ref: "B2:B10")
   #
   # @example Create a shared formula follower
-  #   formula = Xlsxrb.shared_formula(si: 0)
+  #   formula = Xlsxrb.shared_formula(shared_index: 0)
   #
   # @param expression [String, nil] The formula expression (nil for follower cells).
-  # @param si [Integer] Shared formula group index (0-based).
+  # @param shared_index [Integer, nil] Shared formula group index (0-based).
+  # @param si [Integer, nil] Legacy alias for shared_index.
   # @param ref [String, nil] Target range for master cell (e.g. "B2:B10").
   # @param cached_value [Object, nil] Optional precomputed value.
   # @return [Elements::Formula]
   # @api public
-  #: (?String? expression, si: Integer, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
-  def self.shared_formula(expression = nil, si:, ref: nil, cached_value: nil)
+  #: (?String? expression, ?shared_index: Integer?, ?si: Integer?, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
+  def self.shared_formula(expression = nil, shared_index: nil, si: nil, ref: nil, cached_value: nil)
+    if si && shared_index.nil?
+      warn "[DEPRECATION] Xlsxrb.shared_formula keyword :si is deprecated; use :shared_index instead.", uplevel: 1
+    end
+    s_idx = shared_index || si
+    raise ArgumentError, "shared_index is required for shared formula" if s_idx.nil?
+
     Elements::Formula.new(
       expression: expression || "",
       cached_value: cached_value,
       type: :shared,
       ref: ref,
-      shared_index: si,
+      shared_index: s_idx,
       calculate_always: cached_value.nil? || nil
     )
   end
@@ -248,23 +262,28 @@ module Xlsxrb
   #
   # @example Create a multi-cell array formula
   #   formula = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", "A1:C1", cached_value: 0)
+  #   formula = Xlsxrb.array_formula("SUM(B1:B10*C1:C10)", ref: "A1:C1", cached_value: 0)
   #
   # @example Create a dynamic array formula
   #   formula = Xlsxrb.array_formula("SORT(UNIQUE(A1:A10))", "D1")
   #
   # @param expression [String] The formula expression without leading '='.
-  # @param ref [String, nil] Target cell or range reference (e.g. "A1:C1" or "D1").
+  # @param pos_ref [String, nil] Target cell or range reference (positional).
+  # @param ref [String, nil] Target cell or range reference (keyword).
   # @param cached_value [Object, nil] Optional precomputed value.
   # @return [Elements::Formula]
   # @api public
-  #: (String expression, ?String? ref, ?cached_value: (String | Numeric | bool | nil)) -> Elements::Formula
-  def self.array_formula(expression, ref = nil, cached_value: nil)
+  #: (String expression, ?String? pos_ref, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), **untyped attrs) -> Elements::Formula
+  def self.array_formula(expression, pos_ref = nil, ref: nil, cached_value: nil, **attrs)
+    warn "[Xlsxrb DEPRECATION] Passing positional ref to Xlsxrb.array_formula is deprecated and will be removed in v0.2.0. Use ref: keyword argument instead.", uplevel: 1 unless pos_ref.nil?
+    target_ref = ref || pos_ref
     Elements::Formula.new(
       expression: expression,
       cached_value: cached_value,
       type: :array,
-      ref: ref,
-      calculate_always: cached_value.nil? || nil
+      ref: target_ref,
+      calculate_always: cached_value.nil? || nil,
+      **attrs
     )
   end
 
@@ -287,6 +306,54 @@ module Xlsxrb
     Elements::Hyperlink.new(url: url, display: display, tooltip: tooltip, location: location)
   end
 
+  # Creates an {Elements::Comment} object for use in cell comments.
+  #
+  # @example Create a cell comment
+  #   comment = Xlsxrb.comment("Review this value", author: "Auditor")
+  #
+  # @param text [String, nil] Comment body text.
+  # @param author [String] Comment author.
+  # @param visible [Boolean] Whether comment is visible by default.
+  # @param ref [String, nil] Cell coordinate (e.g. "A1").
+  # @return [Elements::Comment]
+  # @api public
+  #: (?String? text, ?author: String, ?visible: bool, ?ref: String?, **untyped extra) -> untyped
+  def self.comment(text = nil, author: "Author", visible: false, ref: nil, **extra)
+    if Elements.const_defined?(:Comment)
+      Elements::Comment.new(text: text, author: author, visible: visible, ref: ref, **extra)
+    else
+      { text: text, author: author, visible: visible, ref: ref, **extra }
+    end
+  end
+
+  # Creates or returns an {Elements::CellError} object.
+  #
+  # @example
+  #   err = Xlsxrb.cell_error("#VALUE!")
+  #   err = Xlsxrb.cell_error(:value)
+  #
+  # @param code [String, Symbol, Elements::CellError] Error code or symbol.
+  # @return [Elements::CellError]
+  # @api public
+  #: (String | Symbol | Elements::CellError code) -> Elements::CellError
+  def self.cell_error(code)
+    return code if code.is_a?(Elements::CellError)
+
+    code_str = code.to_s
+    error_map = {
+      null: "#NULL!",
+      div0: "#DIV/0!",
+      value: "#VALUE!",
+      ref: "#REF!",
+      name: "#NAME?",
+      num: "#NUM!",
+      na: "#N/A",
+      getting_data: "#GETTING_DATA"
+    }
+    resolved_code = error_map[code.to_sym] || code_str
+    Elements::CellError.new(code: resolved_code)
+  end
+
   # Formats a cell value according to an Excel format code string.
   #
   # @param value [Object, nil] Value to format.
@@ -295,8 +362,15 @@ module Xlsxrb
   # @return [String] Formatted string representation.
   # @api public
   #: (untyped value, ?String? format_code, ?date1904: bool) -> String
-  def self.format(value, format_code = nil, date1904: false)
+  def self.format_value(value, format_code = nil, date1904: false)
     NumberFormatter.format(value, format_code, date1904: date1904)
+  end
+
+  # @deprecated Use {.format_value} instead. Will be removed in 0.2.0.
+  #: (untyped value, ?String? format_code, ?date1904: bool) -> String
+  def self.format(value, format_code = nil, date1904: false)
+    warn "[DEPRECATION] Xlsxrb.format is deprecated; use Xlsxrb.format_value instead.", uplevel: 1
+    format_value(value, format_code, date1904: date1904)
   end
 
   # Converts a Date or Time to an Excel numeric serial number (1900 or 1904 system).
@@ -310,7 +384,11 @@ module Xlsxrb
   # @api public
   #: (Date | Time date_or_time, ?date1904: bool) -> (Integer | Float)
   def self.date_to_serial(date_or_time, date1904: false)
-    Utils.date_to_serial(date_or_time, date1904: date1904)
+    if date_or_time.is_a?(Time)
+      Ooxml::Utils.datetime_to_serial(date_or_time, date1904: date1904)
+    else
+      Ooxml::Utils.date_to_serial(date_or_time, date1904: date1904)
+    end
   end
 
   # Checks whether a serial number is a valid Excel date within the supported range.
@@ -325,7 +403,7 @@ module Xlsxrb
   # @api public
   #: (untyped serial, ?date1904: bool) -> bool
   def self.valid_excel_date?(serial, date1904: false)
-    Utils.valid_excel_date?(serial, date1904: date1904)
+    Ooxml::Utils.valid_excel_date?(serial, date1904: date1904)
   end
 
   # Converts an Excel serial number to a Date.
@@ -339,21 +417,32 @@ module Xlsxrb
   # @api public
   #: (Numeric serial, ?date1904: bool) -> Date
   def self.serial_to_date(serial, date1904: false)
-    Utils.serial_to_date(serial, date1904: date1904)
+    Ooxml::Utils.serial_to_date(serial, date1904: date1904)
   end
 
   # Converts a Time or Date to a fractional Excel serial number.
   #
   # @example
-  #   Xlsxrb.datetime_to_serial(Time.utc(2026, 1, 1, 12, 0, 0)) #=> 46023.5
+  #   Xlsxrb.time_to_serial(Time.utc(2026, 1, 1, 12, 0, 0)) #=> 46023.5
   #
   # @param time [Time, Date] Time or Date instance.
   # @param date1904 [Boolean] Whether to use the 1904 date system.
   # @return [Float] Fractional serial number.
   # @api public
   #: (Time | Date time, ?date1904: bool) -> Float
+  def self.time_to_serial(time, date1904: false)
+    if time.is_a?(Time)
+      Ooxml::Utils.datetime_to_serial(time, date1904: date1904)
+    else
+      Ooxml::Utils.date_to_serial(time, date1904: date1904).to_f
+    end
+  end
+
+  # @deprecated Use {.time_to_serial} instead. Will be removed in 0.2.0.
+  #: (Time | Date time, ?date1904: bool) -> Float
   def self.datetime_to_serial(time, date1904: false)
-    Utils.datetime_to_serial(time, date1904: date1904)
+    warn "[DEPRECATION] Xlsxrb.datetime_to_serial is deprecated; use Xlsxrb.time_to_serial instead.", uplevel: 1
+    time_to_serial(time, date1904: date1904)
   end
 
   # Converts an Excel serial number to a Time (UTC).
@@ -367,11 +456,71 @@ module Xlsxrb
   # @api public
   #: (Numeric serial, ?date1904: bool) -> Time
   def self.serial_to_time(serial, date1904: false)
-    Utils.serial_to_time(serial, date1904: date1904)
+    Ooxml::Utils.serial_to_datetime(serial, date1904: date1904)
   end
 
-  class << self
-    alias serial_to_datetime serial_to_time
+  # @deprecated Use {.serial_to_time} instead. Will be removed in 0.2.0.
+  #: (Numeric serial, ?date1904: bool) -> Time
+  def self.serial_to_datetime(serial, date1904: false)
+    warn "[DEPRECATION] Xlsxrb.serial_to_datetime is deprecated; use Xlsxrb.serial_to_time instead.", uplevel: 1
+    serial_to_time(serial, date1904: date1904)
+  end
+
+  # Converts a cell reference string (e.g. "A1", "BC100") to 0-based [row, col] coordinates.
+  #
+  # @example
+  #   Xlsxrb.parse_ref("A1")    #=> [0, 0]
+  #   Xlsxrb.parse_ref("BC100") #=> [99, 54]
+  #
+  # @param ref [String, nil] Excel cell reference string.
+  # @return [Array(Integer, Integer), nil] 0-based [row, col] tuple, or nil if invalid.
+  # @api public
+  #: (String? ref) -> [Integer, Integer]?
+  def self.parse_ref(ref)
+    Elements::Cell._parse_ref(ref)
+  end
+
+  # Converts 0-based [row, col] coordinates to an A1-style reference string.
+  #
+  # @example
+  #   Xlsxrb.cell_to_ref(0, 0)   #=> "A1"
+  #   Xlsxrb.cell_to_ref(99, 54) #=> "BC100"
+  #
+  # @param row [Integer] 0-based row index.
+  # @param column [Integer] 0-based column index.
+  # @return [String] A1-style reference string.
+  # @api public
+  #: (Integer row, Integer column) -> String
+  def self.cell_to_ref(row, column)
+    "#{Elements::Cell._column_letter(column)}#{row + 1}"
+  end
+
+  # Converts a column letter (e.g. "A", :AA) to a 0-based column index.
+  #
+  # @example
+  #   Xlsxrb.column_index("A")  #=> 0
+  #   Xlsxrb.column_index(:AA)  #=> 26
+  #
+  # @param col [String, Symbol, Integer] Column letter or integer index.
+  # @return [Integer] 0-based column index.
+  # @api public
+  #: (String | Symbol | Integer col) -> Integer
+  def self.column_index(col)
+    Elements::Cell._column_index(col)
+  end
+
+  # Converts a 0-based column index to an Excel letter (0 -> "A", 25 -> "Z", 26 -> "AA").
+  #
+  # @example
+  #   Xlsxrb.column_letter(0)  #=> "A"
+  #   Xlsxrb.column_letter(26) #=> "AA"
+  #
+  # @param index [Integer] 0-based column index.
+  # @return [String] Excel column letter.
+  # @api public
+  #: (Integer index) -> String
+  def self.column_letter(index)
+    Elements::Cell._column_letter(index)
   end
 
   # Converts a cell range reference string (e.g. "A1:C10", "A1") to 0-based [[top_row, left_col], [bottom_row, right_col]].
@@ -384,23 +533,57 @@ module Xlsxrb
   # @api public
   #: (String? range_ref) -> [[Integer, Integer], [Integer, Integer]]?
   def self.parse_range(range_ref)
-    Utils.parse_range(range_ref)
+    return nil if range_ref.nil? || range_ref.empty?
+
+    parts = range_ref.split(":", 2)
+    first = Elements::Cell._parse_ref(parts[0])
+    return nil unless first
+
+    second = parts[1] ? Elements::Cell._parse_ref(parts[1]) : first
+    return nil unless second
+
+    top_row = [first[0], second[0]].min
+    bottom_row = [first[0], second[0]].max
+    left_col = [first[1], second[1]].min
+    right_col = [first[1], second[1]].max
+    [[top_row, left_col], [bottom_row, right_col]]
   end
 
   # Converts 0-based bounding coordinates to an A1-style range reference string.
+  # Accepts either 4 flat integers (top_row, left_column, bottom_row, right_column)
+  # or a nested pair ([[top_row, left_column], [bottom_row, right_column]]) as returned by parse_range.
   #
-  # @example
+  # @example 4 flat integers
   #   Xlsxrb.range_to_ref(0, 0, 9, 2) #=> "A1:C10"
   #
-  # @param top_row [Integer]
-  # @param left_col [Integer]
-  # @param bottom_row [Integer]
-  # @param right_col [Integer]
-  # @return [String]
+  # @example Nested pair from parse_range
+  #   Xlsxrb.range_to_ref([[0, 0], [9, 2]]) #=> "A1:C10"
+  #
+  # @param top_row_or_bounds [Integer, Array] 0-based start row index or nested bounding coordinates.
+  # @param left_column [Integer, nil] 0-based start column index.
+  # @param bottom_row [Integer, nil] 0-based end row index.
+  # @param right_column [Integer, nil] 0-based end column index.
+  # @return [String] A1-style range reference string.
   # @api public
-  #: (Integer top_row, Integer left_col, Integer bottom_row, Integer right_col) -> String
-  def self.range_to_ref(top_row, left_col, bottom_row, right_col)
-    Utils.range_to_ref(top_row, left_col, bottom_row, right_col)
+  #: (Integer | [[Integer, Integer], [Integer, Integer]] top_row_or_bounds, ?Integer? left_column, ?Integer? bottom_row, ?Integer? right_column) -> String
+  def self.range_to_ref(top_row_or_bounds, left_column = nil, bottom_row = nil, right_column = nil)
+    if top_row_or_bounds.is_a?(Array)
+      first, second = top_row_or_bounds
+      top_row = first[0]
+      left_col = first[1]
+      bot_row = second[0]
+      rgt_col = second[1]
+    else
+      top_row = top_row_or_bounds
+      left_col = left_column || 0
+      bot_row = bottom_row || top_row
+      rgt_col = right_column || left_col
+    end
+    if top_row == bot_row && left_col == rgt_col
+      cell_to_ref(top_row, left_col)
+    else
+      "#{cell_to_ref(top_row, left_col)}:#{cell_to_ref(bot_row, rgt_col)}"
+    end
   end
 
   # Resolves an ECMA-376 indexed color palette index (0..63) to an RRGGBB hex string (or AARRGGBB if alpha: true).
@@ -435,8 +618,11 @@ module Xlsxrb
     Colors.to_hex(color, alpha: alpha)
   end
 
-  class << self
-    alias color_to_hex to_hex_color
+  # @deprecated Use {.to_hex_color} instead. Will be removed in 0.2.0.
+  #: (Integer | String | Symbol | nil color, ?alpha: bool) -> String?
+  def self.color_to_hex(color, alpha: false)
+    warn "[DEPRECATION] Xlsxrb.color_to_hex is deprecated; use Xlsxrb.to_hex_color instead.", uplevel: 1
+    to_hex_color(color, alpha: alpha)
   end
 
   # Sanitizes a worksheet name to ensure it conforms to Excel constraints within 31 characters.
@@ -456,8 +642,11 @@ module Xlsxrb
     DslHelpers.sanitize_sheet_name(name, replace_char: replace_char)
   end
 
-  class << self
-    alias sheet_name sanitize_sheet_name
+  # @deprecated Use {.sanitize_sheet_name} instead. Will be removed in 0.2.0.
+  #: (untyped name, ?replace_char: String) -> String
+  def self.sheet_name(name, replace_char: "_")
+    warn "[DEPRECATION] Xlsxrb.sheet_name is deprecated; use Xlsxrb.sanitize_sheet_name instead.", uplevel: 1
+    sanitize_sheet_name(name, replace_char: replace_char)
   end
 
   # Reads an XLSX file (streaming and lazy-loaded by default) from a file path, IO stream, or binary String.
@@ -627,8 +816,10 @@ module Xlsxrb
     end
   end
 
-  class << self
-    alias stream read
+  # @deprecated Use {.read} instead. Will be removed in 0.2.0.
+  def self.stream(...)
+    warn "[DEPRECATION] Xlsxrb.stream is deprecated; use Xlsxrb.read instead.", uplevel: 1
+    read(...)
   end
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
@@ -786,7 +977,7 @@ module Xlsxrb
       end
       sd = { name: ws.name, rows: ws.rows, columns: columns }
       sd[:charts] = ws.charts unless ws.charts.empty?
-      sd[:conditional_formats] = ws.conditional_formatting unless ws.conditional_formatting.empty?
+      sd[:conditional_formats] = ws.conditional_formats unless ws.conditional_formats.empty?
       sd[:data_validations] = ws.data_validations unless ws.data_validations.empty?
 
       # Extract facade metadata from unmapped_data
@@ -813,7 +1004,7 @@ module Xlsxrb
       sd[:cell_watches] ||= ws.cell_watches if ws.respond_to?(:cell_watches) && !ws.cell_watches.empty?
       sd[:ignored_errors] ||= ws.ignored_errors if ws.respond_to?(:ignored_errors) && !ws.ignored_errors.empty?
       sd[:phonetic_properties] ||= ws.phonetic_properties if ws.respond_to?(:phonetic_properties) && ws.phonetic_properties
-      sd[:sheet_calc_pr] ||= ws.sheet_calc_pr if ws.respond_to?(:sheet_calc_pr) && ws.sheet_calc_pr
+      sd[:sheet_calc_pr] ||= ws.sheet_calc_properties if ws.respond_to?(:sheet_calc_properties) && ws.sheet_calc_properties
       sd[:freeze_pane] ||= ws.freeze_pane if ws.respond_to?(:freeze_pane) && ws.freeze_pane
       sd[:split_pane] ||= ws.split_pane if ws.respond_to?(:split_pane) && ws.split_pane
       sd[:sheet_view] ||= ws.sheet_view if ws.respond_to?(:sheet_view) && ws.sheet_view && !ws.sheet_view.empty?
@@ -936,14 +1127,15 @@ module Xlsxrb
   #
   # @param source [String, IO, StringIO] The source file path or IO object.
   # @param target [String, IO, StringIO, nil] Target file path or IO object (overwrites source if nil).
-  # @param password [String, nil] Optional password for encrypted files.
+  # @param password [String, nil] Optional password for decrypting encrypted source files.
+  # @param new_password [String, nil] Optional password for encrypting the output file (defaults to password).
   # @yield [workbook]
   # @yieldparam workbook [Elements::Workbook] The loaded workbook.
   # @yieldreturn [Elements::Workbook] The modified workbook.
-  # @return [void]
+  # @return [Elements::Workbook] The modified workbook returned by the block.
   # @api public
-  #: (untyped source, ?untyped target, ?password: String?) ?{ (Elements::Workbook) -> untyped } -> void
-  def self.modify(source, target = nil, password: nil)
+  #: (untyped source, ?untyped target, ?password: String?, ?new_password: String?, **untyped opts) ?{ (Elements::Workbook) -> untyped } -> untyped
+  def self.modify(source, target = nil, password: nil, new_password: nil, **opts)
     raise Error, "source is required" if source.nil?
     raise Error, "block is required" unless block_given?
 
@@ -965,8 +1157,12 @@ module Xlsxrb
 
       replaced_entries = {}
       structural_change = false
+      block_result = nil
 
-      Ooxml::ZipReader.open(prepared_source) do |zip_reader|
+      zip_options = {}
+      zip_options[:max_uncompressed_size] = opts[:max_uncompressed_size] if opts[:max_uncompressed_size]
+
+      Ooxml::ZipReader.open(prepared_source, **zip_options) do |zip_reader|
         workbook_path = resolve_workbook_entry(zip_reader)
         wb_dir = File.dirname(workbook_path)
         wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
@@ -1001,7 +1197,18 @@ module Xlsxrb
 
           sheet_entry_map[sheet_info[:name]] = sheet_path
           sheet_xml = zip_reader.read_entry(sheet_path) || ""
-          build_worksheet(sheet_info[:name], sheet_xml, shared_strings, styles, state: sheet_info[:state] || :visible, zip_reader: zip_reader, entry_name: sheet_path)
+          build_worksheet(
+            sheet_info[:name],
+            sheet_xml,
+            shared_strings,
+            styles,
+            state: sheet_info[:state] || :visible,
+            zip_reader: zip_reader,
+            entry_name: sheet_path,
+            trim_empty_rows: opts.fetch(:trim_empty_rows, false),
+            pad_empty_rows: opts.fetch(:pad_empty_rows, false),
+            pad_empty_cells: opts.fetch(:pad_empty_cells, false)
+          )
         end
 
         mod_unmapped = {}
@@ -1023,15 +1230,23 @@ module Xlsxrb
         )
         mutable_shared_strings = shared_strings.dup
 
-        result_workbook = yield original_workbook
-        result_workbook = original_workbook unless result_workbook.is_a?(Elements::Workbook)
+        block_result = yield original_workbook
+        if block_result.is_a?(Elements::Workbook)
+          result_workbook = block_result
+        else
+          warn "[DEPRECATION] Xlsxrb.modify block must return an Elements::Workbook; returning other values is deprecated and will raise TypeError in version 0.2.0.", uplevel: 1
+          result_workbook = original_workbook
+        end
+
+        write_password = new_password.nil? ? password : new_password
 
         structural_change = result_workbook.sheets.size != original_workbook.sheets.size ||
                             result_workbook.sheets.map(&:name) != original_workbook.sheets.map(&:name)
 
         if structural_change
           write_target = target || source
-          write(write_target, result_workbook, password: password)
+          write_opts = opts.slice(:encryption_mode, :compression_level, :shared_strings)
+          write(write_target, result_workbook, password: write_password, **write_opts)
         else
           result_workbook.sheets.each_with_index do |new_sheet, idx|
             orig_sheet = original_workbook.sheets[idx]
@@ -1109,7 +1324,7 @@ module Xlsxrb
             write_dest,
             zip_reader,
             replaced_entries,
-            password: password
+            password: write_password
           )
         end
       end
@@ -1127,6 +1342,7 @@ module Xlsxrb
           source.rewind
         end
       end
+      block_result
     ensure
       if temp_target_path && File.exist?(temp_target_path)
         begin
@@ -1802,10 +2018,10 @@ module Xlsxrb
             rc
           end
         else
-          parsed = Elements::Cell.parse_ref(rc[:ref]) if rc[:ref]
+          parsed = Elements::Cell._parse_ref(rc[:ref]) if rc[:ref]
           row_idx = parsed ? parsed[0] : raw_row[:index]
           col_idx = parsed ? parsed[1] : 0
-          ref = rc[:ref] || "#{Elements::Cell.column_letter(col_idx)}#{row_idx + 1}"
+          ref = rc[:ref] || "#{Elements::Cell._column_letter(col_idx)}#{row_idx + 1}"
           hl = hyperlinks ? hyperlinks[ref] : nil
           cm = comments_map ? comments_map[ref] : nil
           tcs = threaded_comments_map ? threaded_comments_map[ref] : nil
@@ -1861,89 +2077,7 @@ module Xlsxrb
       )
     end
 
-    #: (Elements::Cell cell, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]
-    def build_raw_cell(cell, sst, sst_index, date1904: false)
-      # simplecov:disable
-      # Edge case / untested delegation block
-      ref = cell.ref
-      value = cell.value
-      result = { ref: ref, style_index: cell.style_index }
 
-      case value
-      when String, Xlsxrb::Elements::RichText
-        idx = sst_index[value] ||= begin
-          sst << value
-          sst.size - 1
-        end
-        result[:value] = idx
-        result[:type] = "s"
-      when true, false
-        result[:value] = value
-        result[:type] = "b"
-      when Integer, Float
-        result[:value] = value
-      when Xlsxrb::Elements::CellError
-        result[:value] = value.code
-        result[:type] = "e"
-      when Date
-        result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: date1904)
-      when Time
-        result[:value] = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: date1904)
-      # simplecov:enable
-      when NilClass
-        # empty cell
-      end
-
-      # simplecov:disable
-      # Edge case / untested delegation block
-      if cell.formula
-        f = cell.formula
-        if f.is_a?(Elements::Formula)
-          result[:formula] = f.expression
-          result[:formula_type] = f.type if f.type
-          result[:formula_ref] = f.ref if f.ref
-          result[:formula_si] = f.shared_index if f.shared_index
-          result[:formula_ca] = true if f.calculate_always
-          unless f.cached_value.nil?
-            # Cached value is written as-is (not through SST)
-            result[:value] = f.cached_value
-            case f.cached_value
-            when true, false
-              result[:type] = "b"
-            when Elements::CellError
-              result[:type] = "e"
-              result[:value] = f.cached_value.code
-            else
-              result.delete(:type) # Ensure no type is set; cached values are plain text in <v>
-            end
-            # simplecov:enable
-          end
-        else
-          # simplecov:disable
-          # Edge case / untested delegation block
-          result[:formula] = f
-          # simplecov:enable
-        end
-      end
-      # simplecov:disable
-      # Edge case / untested delegation block
-      result
-      # simplecov:enable
-    end
-
-    #: (Elements::Row row) -> Hash[Symbol, untyped]
-    def build_row_attrs(row)
-      # simplecov:disable
-      # Edge case / untested delegation block
-      attrs = {}
-      attrs[:height] = row.height if row.height
-      attrs[:hidden] = true if row.hidden
-      attrs[:custom_height] = true if row.custom_height
-      attrs[:collapsed] = true if row.collapsed
-      attrs[:outline_level] = row.outline_level if row.outline_level
-      attrs
-      # simplecov:enable
-    end
 
     #: (untyped source, String? password) -> untyped
     def prepare_source_io(source, password)
@@ -2136,8 +2270,8 @@ module Xlsxrb
       max_row = rows.last.index
       min_col = rows.map { |r| r.cells.first&.column_index }.compact.min || 0
       max_col = rows.map { |r| r.cells.last&.column_index }.compact.max || 0
-      min_col_letter = Elements::Cell.column_letter(min_col)
-      max_col_letter = Elements::Cell.column_letter(max_col)
+      min_col_letter = Elements::Cell._column_letter(min_col)
+      max_col_letter = Elements::Cell._column_letter(max_col)
       dim_ref = if min_row == max_row && min_col == max_col
                   "#{min_col_letter}#{min_row + 1}"
                 else
@@ -2430,83 +2564,4 @@ module Xlsxrb
   #
   # @param row_index [Integer] 0-based row index.
   # @param col_index [Integer] 0-based column index.
-  # @param value [Object] Cell value.
-  # @param sst [Array<String>] Shared strings array.
-  # @param sst_index [Hash{String => Integer}] Shared strings index mapping.
-  # @return [Hash{Symbol => Object}] Raw cell hash.
-  # @api public
-  #: (Integer row_index, Integer col_index, untyped value, Array[String] sst, Hash[String, Integer] sst_index, ?date1904: bool) -> Hash[Symbol, untyped]
-  def self.build_raw_cell_from_value(row_index, col_index, value, sst, sst_index, date1904: false)
-    # simplecov:disable
-    # Edge case / untested delegation block
-    ref = "#{Elements::Cell.column_letter(col_index)}#{row_index + 1}"
-    result = { ref: ref }
-
-    case value
-    when Elements::Formula
-      result[:formula] = value.expression
-      result[:formula_type] = value.type if value.type
-      result[:formula_ref] = value.ref if value.ref
-      result[:formula_si] = value.shared_index if value.shared_index
-      result[:formula_ca] = true if value.calculate_always
-      unless value.cached_value.nil?
-        cv = value.cached_value
-        result[:value] = cv
-        case cv
-        when true, false
-          result[:type] = "b"
-        when Xlsxrb::Elements::CellError
-          result[:type] = "e"
-          result[:value] = cv.code
-        end
-      end
-    when Hash
-      if value.key?(:formula) || value.key?(:expression) || (value[:type]&.to_sym == :shared && (value.key?(:shared_index) || value.key?(:si)))
-        result[:formula] = value[:formula] || value[:expression]
-        result[:formula_type] = value[:type] || (:shared if value.key?(:shared_index) || value.key?(:si))
-        result[:formula_ref] = value[:ref] if value[:ref]
-        si = value[:shared_index] || value[:si]
-        result[:formula_si] = si if si
-        result[:formula_ca] = true if value[:calculate_always]
-        cv = value.key?(:value) ? value[:value] : value[:cached_value]
-        unless cv.nil?
-          result[:value] = cv
-          case cv
-          when true, false
-            result[:type] = "b"
-          when Xlsxrb::Elements::CellError
-            result[:type] = "e"
-            result[:value] = cv.code
-          end
-        end
-      end
-    when String, Xlsxrb::Elements::RichText
-      idx = sst_index[value] ||= begin
-        sst << value
-        sst.size - 1
-      end
-      result[:value] = idx
-      result[:type] = "s"
-    when true, false
-      result[:value] = value
-      result[:type] = "b"
-    when Integer, Float
-      result[:value] = value
-    when Xlsxrb::Elements::CellError
-      result[:value] = value.code
-      result[:type] = "e"
-    when Date
-      result[:value] = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: date1904)
-    when Time
-      result[:value] = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: date1904)
-    # simplecov:enable
-    when NilClass
-      # empty cell
-    end
-
-    # simplecov:disable
-    # Edge case / untested delegation block
-    result
-    # simplecov:enable
-  end
 end

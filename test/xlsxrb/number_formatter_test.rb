@@ -11,7 +11,7 @@ class NumberFormatterTest < Test::Unit::TestCase
     assert_equal("1042.5", Xlsxrb::NumberFormatter.format(1042.5, "General"))
     assert_equal("-1042", Xlsxrb::NumberFormatter.format(-1042, "General"))
     assert_equal("Hello", Xlsxrb::NumberFormatter.format("Hello", "General"))
-    assert_equal("1042", Xlsxrb.format(1042))
+    assert_equal("1042", Xlsxrb.format_value(1042))
   end
 
   test "boolean formatting" do

@@ -64,6 +64,33 @@ module Xlsxrb
       def members: () -> [ :code ]
     end
 
+    class CellError
+      # Predefined frozen CellError constants
+      # : Elements::CellError
+      NULL: untyped
+
+      # : Elements::CellError
+      DIV0: untyped
+
+      # : Elements::CellError
+      VALUE: untyped
+
+      # : Elements::CellError
+      REF: untyped
+
+      # : Elements::CellError
+      NAME: untyped
+
+      # : Elements::CellError
+      NUM: untyped
+
+      # : Elements::CellError
+      NA: untyped
+
+      # : Elements::CellError
+      GETTING_DATA: untyped
+    end
+
     # Represents a formatted text run within a rich text string.
     #
     # @example

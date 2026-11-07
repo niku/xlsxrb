@@ -38,6 +38,65 @@ module Xlsxrb
       @tab_ratio = nil
     end
 
+    # Creates an {Elements::Formula} object.
+    #
+    # @param expression [String] The formula expression without leading '='.
+    # @param cached_value [Object, nil] Optional precomputed value.
+    # @param type [Symbol, String, nil] Formula type (:shared, :array, etc.).
+    # @param ref [String, nil] Target cell or range reference.
+    # @param shared_index [Integer, nil] Shared formula group index (0-based).
+    # @return [Elements::Formula]
+    # @api public
+    #: (String expression, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), ?type: (Symbol | String)?, ?ref: String?, ?shared_index: Integer?) -> Elements::Formula
+    def formula(...)
+      Xlsxrb.formula(...)
+    end
+
+    # Creates an array or dynamic array {Elements::Formula} object.
+    #
+    # @param expression [String] The formula expression without leading '='.
+    # @param ref [String, nil] Target cell or range reference (keyword).
+    # @param cached_value [Object, nil] Optional precomputed value.
+    # @return [Elements::Formula]
+    # @api public
+    #: (String expression, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil), **untyped attrs) -> Elements::Formula
+    def array_formula(...)
+      Xlsxrb.array_formula(...)
+    end
+
+    # Creates a shared formula {Elements::Formula} object.
+    #
+    # @param expression [String, nil] The formula expression.
+    # @param shared_index [Integer, nil] Shared formula group index (0-based).
+    # @param ref [String, nil] Target range for master cell.
+    # @param cached_value [Object, nil] Optional precomputed value.
+    # @return [Elements::Formula]
+    # @api public
+    #: (?String? expression, ?shared_index: Integer?, ?ref: String?, ?cached_value: (String | Numeric | bool | Elements::CellError | nil)) -> Elements::Formula
+    def shared_formula(...)
+      Xlsxrb.shared_formula(...)
+    end
+
+    # Creates an {Elements::RichText} object.
+    #
+    # @param runs [Array] Text runs or styling options.
+    # @return [Elements::RichText]
+    # @api public
+    #: (*(Hash[Symbol, untyped] | Elements::RichTextRun | String | Array[untyped] | untyped) runs, ?text: String?, ?base_font: untyped, **untyped font_props) -> Elements::RichText
+    def rich_text(...)
+      Xlsxrb.rich_text(...)
+    end
+
+    # Creates or returns an {Elements::CellError} object.
+    #
+    # @param code [String, Symbol, Elements::CellError] Error code or symbol.
+    # @return [Elements::CellError]
+    # @api public
+    #: (String | Symbol | Elements::CellError code) -> Elements::CellError
+    def cell_error(...)
+      Xlsxrb.cell_error(...)
+    end
+
     # Sets or configures the workbook-wide default font.
     #
     # @param name [String, Hash, nil] Font name or font options Hash.
@@ -56,84 +115,128 @@ module Xlsxrb
       existing[:size] = size if size
       @default_font = existing.merge(opts)
     end
+    # @deprecated Use {#default_font} instead. Will be removed in 0.2.0.
     alias set_default_font default_font
+
+    OMITTED = Object.new.freeze
+    private_constant :OMITTED
 
     # Gets or sets the active worksheet tab in the workbook window.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#active_sheet=} instead.
     # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
     #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-    def active_sheet(name_or_index = nil)
-      if name_or_index
-        @active_sheet = name_or_index
-      else
+    def active_sheet(name_or_index = OMITTED)
+      if name_or_index.equal?(OMITTED)
         @active_sheet
+      else
+        @active_sheet = name_or_index
       end
     end
-    alias active_sheet= active_sheet
+    # @deprecated Use {#active_sheet} instead. Will be removed in 0.2.0.
     alias active_tab active_sheet
-    alias active_tab= active_sheet
+
+    # Sets the active worksheet tab in the workbook window.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    attr_writer :active_sheet #: (String | Symbol | Integer | nil)
+    # @deprecated Use {#active_sheet=} instead. Will be removed in 0.2.0.
+    alias active_tab= active_sheet=
 
     # Gets or sets the first sheet tab visible in the sheet tab scroll area.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#first_sheet=} instead.
     # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @return [String, Symbol, Integer, nil]
     # @api public
     #: (?String | Symbol | Integer | nil name_or_index) -> (String | Symbol | Integer | nil)
-    def first_sheet(name_or_index = nil)
-      if name_or_index
-        @first_sheet = name_or_index
-      else
+    def first_sheet(name_or_index = OMITTED)
+      if name_or_index.equal?(OMITTED)
         @first_sheet
+      else
+        @first_sheet = name_or_index
       end
     end
-    alias first_sheet= first_sheet
+
+    # Sets the first sheet tab visible in the sheet tab scroll area.
+    #
+    # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
+    # @return [String, Symbol, Integer, nil]
+    # @api public
+    attr_writer :first_sheet #: (String | Symbol | Integer | nil)
 
     # Gets or sets whether sheet tabs are visible in the workbook window.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#show_sheet_tabs=} instead.
     # @param visible [Boolean, nil]
     # @return [Boolean, nil]
     # @api public
     #: (?bool? visible) -> bool?
-    def show_sheet_tabs(visible = nil)
-      if visible.nil?
+    def show_sheet_tabs(visible = OMITTED)
+      if visible.equal?(OMITTED)
         @show_sheet_tabs
       else
         @show_sheet_tabs = visible
       end
     end
-    alias show_sheet_tabs= show_sheet_tabs
+
+    # Sets whether sheet tabs are visible in the workbook window.
+    #
+    # @param visible [Boolean, nil]
+    # @return [Boolean, nil]
+    # @api public
+    attr_writer :show_sheet_tabs #: bool?
 
     # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#tab_ratio=} instead.
     # @param ratio [Integer, nil]
     # @return [Integer, nil]
     # @api public
     #: (?Integer? ratio) -> Integer?
-    def tab_ratio(ratio = nil)
-      if ratio
-        @tab_ratio = ratio
-      else
+    def tab_ratio(ratio = OMITTED)
+      if ratio.equal?(OMITTED)
         @tab_ratio
+      else
+        @tab_ratio = ratio
       end
     end
-    alias tab_ratio= tab_ratio
+
+    # Sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
+    #
+    # @param ratio [Integer, nil]
+    # @return [Integer, nil]
+    # @api public
+    attr_writer :tab_ratio #: Integer?
 
     # Gets or sets the internal code name of the workbook.
     #
+    # @deprecated Calling with arguments is deprecated and will be removed in 0.2.0. Use {#code_name=} instead.
     # @param name [String, Symbol, nil] The code name.
     # @return [String, nil]
     # @api public
     #: (?String | Symbol | nil name) -> String?
-    def code_name(name = nil)
-      if name
-        @workbook_properties[:code_name] = name.to_s
-      else
+    def code_name(name = OMITTED)
+      if name.equal?(OMITTED)
         @workbook_properties[:code_name]
+      else
+        @workbook_properties[:code_name] = name&.to_s
       end
     end
-    alias code_name= code_name
+
+    # Sets the internal code name of the workbook.
+    #
+    # @param name [String, Symbol, nil] The code name.
+    # @return [String, nil]
+    # @api public
+    #: (String | Symbol | nil name) -> String?
+    def code_name=(name)
+      @workbook_properties[:code_name] = name&.to_s
+    end
 
     # Sets a workbook-level property.
     #
@@ -303,9 +406,9 @@ module Xlsxrb
       cols_str = if first.is_a?(String)
                    first.include?(":") ? first : "#{first}:#{last || first}"
                  else
-                   first_name = Utils.col_index_to_name(first)
+                   first_name = Elements::Cell._column_letter(first)
                    last_name = if last.is_a?(Integer)
-                                 Utils.col_index_to_name(last)
+                                 Elements::Cell._column_letter(last)
                                elsif last
                                  last.to_s
                                else

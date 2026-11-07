@@ -63,7 +63,9 @@ module Xlsxrb
     # : () -> bool
     def trim_empty_rows?: () -> bool
 
-    alias trim_empty_rows trim_empty_rows?
+    # @deprecated Use {#trim_empty_rows?} instead. Will be removed in 0.2.0.
+    # : () -> bool
+    def trim_empty_rows: () -> bool
 
     # Returns whether skipped rows are padded during iteration.
     #
@@ -72,7 +74,9 @@ module Xlsxrb
     # : () -> bool
     def pad_empty_rows?: () -> bool
 
-    alias pad_empty_rows pad_empty_rows?
+    # @deprecated Use {#pad_empty_rows?} instead. Will be removed in 0.2.0.
+    # : () -> bool
+    def pad_empty_rows: () -> bool
 
     # Returns whether missing cells within rows are padded during iteration.
     #
@@ -81,7 +85,9 @@ module Xlsxrb
     # : () -> bool
     def pad_empty_cells?: () -> bool
 
-    alias pad_empty_cells pad_empty_cells?
+    # @deprecated Use {#pad_empty_cells?} instead. Will be removed in 0.2.0.
+    # : () -> bool
+    def pad_empty_cells: () -> bool
 
     # Returns the dimension reference string (e.g. "A1:Z50000"), or nil if not present.
     #
@@ -92,6 +98,7 @@ module Xlsxrb
 
     # Returns the 1-based index of the first row defined in the sheet dimension, or nil.
     #
+    # @deprecated Returning an Integer row number is deprecated and will be removed in 0.2.0. Use {#row_range} or {#dimension_bounds} for row boundaries.
     # @return [Integer, nil]
     # @api public
     # : () -> Integer?
@@ -104,10 +111,12 @@ module Xlsxrb
     # : () -> Integer?
     def first_column: () -> Integer?
 
+    # @deprecated Use {#first_column} instead. Will be removed in 0.2.0.
     alias first_col first_column
 
     # Returns the 1-based index of the last row defined in the sheet dimension, or nil.
     #
+    # @deprecated Returning an Integer row number is deprecated and will be removed in 0.2.0. Use {#row_range} or {#dimension_bounds} for row boundaries.
     # @return [Integer, nil]
     # @api public
     # : () -> Integer?
@@ -120,7 +129,28 @@ module Xlsxrb
     # : () -> Integer?
     def last_column: () -> Integer?
 
+    # @deprecated Use {#last_column} instead. Will be removed in 0.2.0.
     alias last_col last_column
+
+    # Returns the 1-based range of rows defined in the sheet dimension, or nil.
+    #
+    # @example
+    #   sheet.row_range #=> 1..10
+    #
+    # @return [Range<Integer>, nil]
+    # @api public
+    # : () -> Range[Integer]?
+    def row_range: () -> Range[Integer]?
+
+    # Returns the 1-based range of columns defined in the sheet dimension, or nil.
+    #
+    # @example
+    #   sheet.column_range #=> 1..5
+    #
+    # @return [Range<Integer>, nil]
+    # @api public
+    # : () -> Range[Integer]?
+    def column_range: () -> Range[Integer]?
 
     # Returns whether the sheet uses the 1904 date system.
     #
@@ -246,7 +276,9 @@ module Xlsxrb
     # : () -> Elements::Worksheet
     def load: () -> Elements::Worksheet
 
-    alias to_worksheet load
+    # @deprecated Use {#load} instead. Will be removed in 0.2.0.
+    # : () -> Elements::Worksheet
+    def to_worksheet: () -> Elements::Worksheet
 
     # Returns hyperlinks configured for this worksheet as a Hash of cell references to hyperlink hashes.
     #
@@ -339,12 +371,13 @@ module Xlsxrb
 
     # Access a cell by reference or 0-based coordinates.
     #
+    # @deprecated Use {#load} to materialize an {Elements::Worksheet} and use {Elements::CoordinateAccess#[]} (e.g. sheet.load["A1"] or sheet.load[0, 0]). Will be removed in 0.2.0.
     # @param ref_or_row [String, Symbol, Integer] Cell reference (e.g. "A1") or 0-based row index.
-    # @param col [Integer, nil] Optional 0-based column index.
+    # @param col [Integer, String, Symbol, nil] Optional 0-based column index or column letter.
     # @return [Elements::Cell, nil]
     # @api public
-    # : (String | Symbol | Integer ref_or_row, ?Integer? col) -> Elements::Cell?
-    def cell: (String | Symbol | Integer ref_or_row, ?Integer? col) -> Elements::Cell?
+    # : (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Cell?
+    def cell: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Cell?
 
     # Returns the formatted string representation of a cell's value.
     #
@@ -378,11 +411,21 @@ module Xlsxrb
 
     # Returns conditional formatting rules configured for this worksheet.
     #
+    # Corresponds to ECMA-376 Part 4 §18.3.1.18 (<conditionalFormatting> and <cfRule> elements).
+    # In the OpenXML specification, conditional formatting definitions are emitted as
+    # `<conditionalFormatting>` elements containing individual rule definitions (`<cfRule>`).
+    # While ECMA-376 uses the uncountable noun `conditionalFormatting` as the XML element name,
+    # xlsxrb exposes these rules collectively as {#conditional_formats} (Array of Hashes)
+    # to maintain symmetric plural collection naming alongside other collections
+    # (e.g. {#tables}, {#data_validations}, {#merged_cells}) and paired with the singular builder
+    # method {WorksheetBuilder#conditional_format}.
+    #
     # @return [Array<Hash[Symbol, untyped]>]
     # @api public
     # : () -> Array[Hash[Symbol, untyped]]
     def conditional_formats: () -> Array[Hash[Symbol, untyped]]
 
+    # @deprecated Use {#conditional_formats} instead. Matches the ECMA-376 XML element name (<conditionalFormatting>), but {#conditional_formats} is canonical in xlsxrb. Will be removed in version 0.2.0.
     alias conditional_formatting conditional_formats
 
     # Returns tables defined in this worksheet.
@@ -448,7 +491,9 @@ module Xlsxrb
     # : () -> bool
     def fit_to_page?: () -> bool
 
-    alias fit_to_page fit_to_page?
+    # @deprecated Use {#fit_to_page?} instead. Will be removed in 0.2.0.
+    # : () -> bool
+    def fit_to_page: () -> bool
 
     # Returns whether full calculation on load is enabled on this worksheet.
     #
@@ -457,16 +502,24 @@ module Xlsxrb
     # : () -> bool
     def full_calc_on_load?: () -> bool
 
-    alias full_calc_on_load full_calc_on_load?
+    # @deprecated Use {#full_calc_on_load?} instead. Will be removed in 0.2.0.
+    # : () -> bool
+    def full_calc_on_load: () -> bool
 
     # Returns sheet calculation properties (<sheetCalcPr>), or nil if not present.
     #
     # @return [Hash, nil]
     # @api public
     # : () -> Hash[Symbol, untyped]?
+    def sheet_calc_properties: () -> Hash[Symbol, untyped]?
+
+    # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
+    # : () -> Hash[Symbol, untyped]?
     def sheet_calc_pr: () -> Hash[Symbol, untyped]?
 
-    alias calc_pr sheet_calc_pr
+    # @deprecated Use {#sheet_calc_properties} instead. Will be removed in 0.2.0.
+    # : () -> Hash[Symbol, untyped]?
+    def calc_pr: () -> Hash[Symbol, untyped]?
 
     # Returns the worksheet tab color specification, or nil if not set.
     #
@@ -482,6 +535,7 @@ module Xlsxrb
     # : () -> Hash[Symbol, untyped]
     def outline_properties: () -> Hash[Symbol, untyped]
 
+    # @deprecated Use {#outline_properties} instead. Will be removed in 0.2.0.
     alias outline_pr outline_properties
 
     # Returns sheet format properties (defaultRowHeight, defaultColWidth, baseColWidth) for this worksheet.
@@ -561,6 +615,7 @@ module Xlsxrb
     # : () -> Hash[Symbol, untyped]?
     def phonetic_properties: () -> Hash[Symbol, untyped]?
 
+    # @deprecated Use {#phonetic_properties} instead. Will be removed in 0.2.0.
     alias phonetic_pr phonetic_properties
 
     # Returns the background image configured for this worksheet, or nil.
@@ -570,8 +625,10 @@ module Xlsxrb
     # : () -> Hash[Symbol, untyped]?
     def background_image: () -> Hash[Symbol, untyped]?
 
+    # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
     alias background_picture background_image
 
+    # @deprecated Use {#background_image} instead. Will be removed in 0.2.0.
     alias picture background_image
 
     # Closes any underlying reader resources.

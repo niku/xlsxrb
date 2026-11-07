@@ -37,7 +37,11 @@ module Xlsxrb
       def each: () { (Elements::Worksheet | StreamSheet) -> void } -> void
               | () -> Enumerator[Elements::Worksheet | StreamSheet, void]
 
-      alias each_sheet each
+      # @deprecated Use {#each} instead. Will be removed in 0.2.0.
+      # : () { (Elements::Worksheet | StreamSheet) -> void } -> void
+      # : () -> Enumerator[Elements::Worksheet | StreamSheet, void]
+      def each_sheet: () { (Elements::Worksheet | StreamSheet) -> void } -> void
+                    | () -> Enumerator[Elements::Worksheet | StreamSheet, void]
 
       # Returns whether the workbook is valid according to ECMA-376 rules.
       #
@@ -94,7 +98,9 @@ module Xlsxrb
       # : () -> bool
       def show_sheet_tabs?: () -> bool
 
-      alias show_sheet_tabs show_sheet_tabs?
+      # @deprecated Use {#show_sheet_tabs?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def show_sheet_tabs: () -> bool
 
       # Returns the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
       #
@@ -110,7 +116,9 @@ module Xlsxrb
       # : () -> bool
       def full_calc_on_load?: () -> bool
 
-      alias full_calc_on_load full_calc_on_load?
+      # @deprecated Use {#full_calc_on_load?} instead. Will be removed in 0.2.0.
+      # : () -> bool
+      def full_calc_on_load: () -> bool
 
       # Returns core document properties (e.g. title, creator, created), or an empty hash.
       #
@@ -206,7 +214,9 @@ module Xlsxrb
       # : () -> Elements::Workbook
       def load: () -> Elements::Workbook
 
-      alias to_workbook load
+      # @deprecated Use {#load} instead. Will be removed in 0.2.0.
+      # : () -> Elements::Workbook
+      def to_workbook: () -> Elements::Workbook
 
       # Closes any streaming resources associated with worksheets.
       #

@@ -542,8 +542,11 @@ class ElementsTest < Test::Unit::TestCase
 
     assert(row.valid?)
     assert_equal(c1, row[0])
-    assert_equal(c2, row[1])
-    assert_nil(row[2])
+    assert_nil(row[1])
+    assert_equal(c2, row[2])
+    assert_equal(c1, row["A"])
+    assert_nil(row["B"])
+    assert_equal(c2, row["C"])
 
     # cell_at looks up by column_index
     assert_equal(c1, row.cell_at(0))
@@ -842,6 +845,18 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(c1, ws[:b4])
     assert_nil(ws["Z99"])
 
+    # [] bracket access with 0-based coordinate indices [row, col]
+    assert_equal(c2, ws[1, 0])
+    assert_equal(c2, ws[1, "A"])
+    assert_equal(c1, ws[3, 1])
+    assert_equal(c1, ws[3, "B"])
+    assert_nil(ws[1, 1])
+    assert_nil(ws[99, 0])
+
+    # row_range and column_range
+    assert_equal(2..4, ws.row_range)
+    assert_equal(1..3, ws.column_range)
+
     # cell_value edge cases
     assert_equal("A2", ws.cell_value("A2"))
     assert_equal("A2", ws.cell_value("a2"))
@@ -853,14 +868,17 @@ class ElementsTest < Test::Unit::TestCase
     empty_ws = Xlsxrb::Elements::Worksheet.new(name: "Empty", rows: [])
     assert_nil(empty_ws.first_row)
     assert_nil(empty_ws.last_row)
+    assert_nil(empty_ws.row_range)
     assert_nil(empty_ws.first_column)
     assert_nil(empty_ws.first_col)
     assert_nil(empty_ws.last_column)
     assert_nil(empty_ws.last_col)
+    assert_nil(empty_ws.column_range)
     assert_nil(empty_ws.dimension)
     assert_equal({}, empty_ws.cells_hash)
     assert_equal([], empty_ws.cells)
     assert_nil(empty_ws["A1"])
+    assert_nil(empty_ws[0, 0])
   end
 
   test "worksheet dimension property, with, and deconstruct_keys" do

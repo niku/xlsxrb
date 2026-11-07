@@ -1622,7 +1622,7 @@ module Xlsxrb
       end
 
       def column_letter(index)
-        Xlsxrb::Elements::Cell.column_letter(index)
+        Xlsxrb::Elements::Cell._column_letter(index)
       end
 
       #: (String buf, Elements::RichText rich_text) -> void

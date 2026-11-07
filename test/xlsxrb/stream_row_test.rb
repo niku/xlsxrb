@@ -53,9 +53,13 @@ class StreamRowTest < Test::Unit::TestCase
     assert_equal(row.attributes, row[:attributes])
     assert(row.attributes.frozen?)
 
-    # Integer bracket access
+    # Integer bracket access by column index and column letter
     assert_equal(42, row[0].value)
-    assert_equal("world", row[1].value) # second parsed cell is col 3
+    assert_nil(row[1])
+    assert_nil(row[2])
+    assert_equal("world", row[3].value)
+    assert_equal(42, row["A"].value)
+    assert_equal("world", row["D"].value)
 
     # cell_at 0-based col index
     assert_equal(42, row.cell_at(0).value)
